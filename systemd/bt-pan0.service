@@ -1,0 +1,13 @@
+[Unit]
+Description=Console Pi - Bluetooth PAN bridge (pan0)
+After=network-pre.target
+Before=network.target dnsmasq-bt.service bt-nap.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/console-pi/scripts/bt-pan0-setup.sh
+ExecStop=/usr/sbin/ip link delete pan0
+
+[Install]
+WantedBy=multi-user.target

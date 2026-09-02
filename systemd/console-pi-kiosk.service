@@ -1,0 +1,36 @@
+[Unit]
+Description=Console Pi - Giao dien kiosk tren man hinh cam ung
+After=console-pi-dashboard.service systemd-user-sessions.service
+Wants=console-pi-dashboard.service
+Conflicts=getty@tty1.service
+After=getty@tty1.service
+
+[Service]
+Type=simple
+User=administrator
+Group=administrator
+
+# Can 1 phien dang nhap that (logind) de cage co quyen truy cap
+# DRM (/dev/dri) va input (/dev/input) qua seat0
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty-fail
+StandardOutput=journal
+StandardError=journal
+
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=XDG_SESSION_TYPE=wayland
+Environment=WLR_NO_HARDWARE_CURSORS=1
+
+# -d: tat cac to hop phim thoat (khong cho vo tinh thoat kiosk bang ban phim)
+# -s: cho phep dung phim tat cua ung dung ben trong
+ExecStart=/usr/bin/cage -d -- /opt/console-pi/scripts/kiosk-start.sh
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

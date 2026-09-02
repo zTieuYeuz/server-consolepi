@@ -1,0 +1,6 @@
+[Unit]
+Description=WiFi Fallback - AP or Client mode
+
+[Service]
+Type=oneshot
+ExecStart=/opt/console-pi/scripts/wifi-fallback.sh

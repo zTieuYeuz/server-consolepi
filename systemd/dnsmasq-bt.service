@@ -1,0 +1,14 @@
+[Unit]
+Description=Console Pi - dnsmasq (DHCP) rieng cho Bluetooth PAN (pan0)
+After=bt-pan0.service
+Requires=bt-pan0.service
+BindsTo=bt-pan0.service
+
+[Service]
+Type=exec
+ExecStart=/usr/sbin/dnsmasq -k -C /etc/dnsmasq-bt.conf
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

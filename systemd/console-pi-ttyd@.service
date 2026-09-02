@@ -1,0 +1,13 @@
+[Unit]
+Description=Console Pi ttyd cho /dev/%i
+BindsTo=dev-%i.device
+After=dev-%i.device
+
+[Service]
+Type=exec
+ExecStart=/opt/console-pi/scripts/ttyd-one.sh %i
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=dev-%i.device

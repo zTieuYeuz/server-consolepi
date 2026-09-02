@@ -1,0 +1,12 @@
+[Unit]
+Description=Console Pi - Terminal local (ttyd + tmux)
+After=network.target console-pi-dashboard.service
+
+[Service]
+Type=exec
+ExecStart=/opt/console-pi/scripts/term-launch.sh local
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

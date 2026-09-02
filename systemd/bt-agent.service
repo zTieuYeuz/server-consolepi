@@ -1,0 +1,14 @@
+[Unit]
+Description=Console Pi - Bluetooth auto-pairing agent
+After=bluetooth.service
+Requires=bluetooth.service
+BindsTo=bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/console-pi/scripts/bt-auto-agent.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# File cua tung thiet bi - khong dua len repo
+config.json
+command-library.json
+port-names.json
+screen-rotation
+flask-secret.key
+force-ap.flag
+ifthen-rules.json
+captures/
+*.pcap
+*.log
