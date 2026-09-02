@@ -8,6 +8,9 @@ from .commands import register_commands                    # noqa: F401
 from .settings import register_settings                    # noqa: F401
 from .docs import register_docs                            # noqa: F401
 from .network import register_network                      # noqa: F401
+from .storage import register_storage                      # noqa: F401
+from .direct import register_direct                        # noqa: F401
+from .remote import register_remote                        # noqa: F401
 
 
 def register_all(app):
@@ -20,4 +23,7 @@ def register_all(app):
     register_settings(app)
     register_docs(app)
     register_network(app)
+    register_storage(app)
+    register_direct(app)
+    register_remote(app)
     return app

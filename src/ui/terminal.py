@@ -21,7 +21,6 @@ import os
 import secrets
 import subprocess
 
-from flask import request
 
 from .layout import render_page
 

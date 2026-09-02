@@ -1,0 +1,10 @@
+[Unit]
+Description=Console Pi - DHCP cho che do cam thang thiet bi (eth0)
+# Khong Requires gi ca: che do nay bat/tat theo yeu cau nguoi dung tu
+# dashboard, khong tu chay luc khoi dong.
+
+[Service]
+Type=exec
+ExecStart=/usr/sbin/dnsmasq -k -C /etc/dnsmasq-direct.conf
+Restart=on-failure
+RestartSec=3

@@ -15,9 +15,12 @@ NAV_ITEMS = [
     ("/wifi", "WiFi / AP", "📶"),
     ("/bluetooth", "Bluetooth", "🔵"),
     ("/nettools", "Network Tools", "🛠️"),
+    ("/direct", "Cam thang thiet bi", "🔌"),
     ("/terminal", "Terminal", "⌨️"),
     ("/ssh", "SSH", "🔑"),
     ("/commands", "Thu vien lenh", "📚"),
+    ("/storage", "Kho file", "💾"),
+    ("/remote", "Truy cap tu xa", "🌍"),
     ("/docs", "Tai lieu", "📖"),
     ("/settings", "Cai dat", "⚙️"),
 ]

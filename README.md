@@ -44,9 +44,23 @@ sudo bash consolepi-toolkit/install.sh --local consolepi-toolkit
 
 Pi tự chuyển giữa WiFi client và AP mỗi 2 phút, có nút khoá AP khi cần giữ nguyên.
 
-### Console
-Truy cập cổng RS232 qua web (ttyd + microcom trong tmux). Tự nhận cổng khi cắm
-cáp USB-serial, đặt tên gợi nhớ cho từng cổng.
+### Console — nhận mọi loại cáp
+Truy cập cổng RS232 qua web (ttyd + microcom trong tmux). Nhận **cả hai họ thiết bị**:
+
+| Loại cáp | Thiết bị | Cổng |
+|---|---|---|
+| USB-serial thường (FTDI, Prolific, CH340) | `/dev/ttyUSB0-3` | 8001-8004 |
+| Cáp Cisco USB Console (micro-USB), thiết bị CDC-ACM | `/dev/ttyACM0-3` | 8005-8008 |
+
+Udev rule tự khởi động dịch vụ cho **bất kỳ** cổng serial USB mới cắm — cáp lạ
+chưa từng thấy vẫn tự nhận. Dashboard hiện tên chip để biết đang cắm cáp gì.
+Đặt được tên gợi nhớ cho từng cổng.
+
+### Bluetooth — phân biệt đúng loại thiết bị
+Giải mã **Class of Device** theo chuẩn Bluetooth (không chỉ dựa vào `Icon`), kết
+hợp với UUID dịch vụ mà thiết bị quảng cáo. Nút kết nối khớp đúng hồ sơ:
+máy tính/điện thoại → **PAN** (mạng), bàn phím/chuột → **HID**. Thiết bị đã ghép
+cặp tự nối lại khi bật lên (`ReconnectUUIDs`).
 
 ### Chẩn đoán mạng (9 công cụ)
 ARP Scan · Ping/Traceroute · PCAP Capture · LLDP/CDP Discovery ·
@@ -58,6 +72,32 @@ DHCP Testing · STP/LACP/VLAN Detection · Netmiko (SSH cấu hình switch) ·
 - **SSH** — vừa terminal tương tác, vừa chạy hàng loạt có xem trước
 - **Thư viện lệnh** — lưu/sửa/xoá tập lệnh, sẵn 5 tập lệnh Cisco. Dán được
   thẳng vào terminal (không tự chạy — bạn xem lại rồi mới bấm Enter)
+
+### Sức khoẻ thiết bị & nguồn
+Cảnh báo **sụt áp** (`vcgencmd get_throttled`) — nguyên nhân phổ biến nhất làm Pi
+treo hoặc hỏng thẻ nhớ, và nó báo *trước* khi hỏng. Kèm nhiệt độ CPU, tải, RAM,
+đĩa, thời gian chạy. Nút **Tắt máy / Khởi động lại** có hộp xác nhận.
+
+### Kho file (ISO, firmware)
+Mang theo bộ cài OS, firmware switch, file cấu hình để dùng khi không có internet.
+Ghi theo luồng ra đĩa (không nạp vào RAM), ưu tiên USB nếu có cắm, chặn khi sắp
+đầy, kèm SHA256 để đối chiếu. nginx đã nâng giới hạn lên 8GB.
+
+### Cắm thẳng thiết bị (iLO / iDRAC / IPMI)
+Khi máy chủ tắt lịm và chỉ còn cổng quản lý: Pi thành mạng mini `192.168.99.1`,
+cấp DHCP, quét ARP tìm thiết bị, nhận diện hãng qua OUI (HPE, Dell, Supermicro,
+Lenovo, Cisco), mở thẳng giao diện web của thiết bị. Quét được cả dải IP tĩnh.
+
+### Truy cập từ xa (Cloudflare Tunnel)
+Đưa Pi tới điểm xa, người ở đó chỉ cắm console và cắm mạng — bạn ngồi nhà vẫn vào
+cấu hình được. Không cần mở port, không cần IP tĩnh, chạy được cả sau 4G.
+
+### Tự kiểm tra
+```bash
+sudo /opt/console-pi/scripts/selftest.sh
+```
+Kiểm tra toàn bộ dịch vụ, mọi trang web, từng cổng console, và ba kịch bản:
+cáp LAN thẳng, tự phát AP khi không có WiFi, thiết bị Bluetooth đã ghép tự nối lại.
 
 ### Màn hình cảm ứng (tuỳ chọn)
 Chế độ kiosk toàn màn hình, bàn phím ảo, nút xoay màn hình. Tự động bỏ qua
@@ -90,26 +130,18 @@ hỏi đăng nhập — để bật máy lên là dùng được ngay. Truy cậ
 ## Cấu trúc mã nguồn
 
 ```
-install.sh              Cài đặt một lệnh (idempotent)
+install.sh              Cài đặt một lệnh (chạy lại được nhiều lần)
 uninstall.sh            Gỡ cài đặt
-src/app.py              Lắp ráp app Flask
-src/ui/                 Giao diện + đăng nhập
-    layout.py           Khung chung: thanh trái + thanh trạng thái mạng
-    auth.py             Đăng nhập qua PAM
-    home.py             Trang Tổng quan
-    network.py          WiFi / AP / Bluetooth
-    terminal.py         Terminal local + API gửi phím vào tmux
-    ssh.py              SSH tương tác + chạy hàng loạt
-    commands.py         Thư viện lệnh
-    settings.py         Xoay màn hình, thông tin hệ thống
-    docs.py             Tài liệu tra cứu ngoại tuyến
-src/nettools/           9 công cụ chẩn đoán mạng
-src/scripts/            Script hệ thống
-config/                 Cấu hình nginx
-systemd/                Định nghĩa dịch vụ
+src/app.py              Lắp ráp Flask
+src/ui/                 layout · auth · home · health · network · terminal
+                        ssh · commands · storage · direct · remote · docs · settings
+src/nettools/           9 công cụ chẩn đoán mạng + static/
+src/scripts/            wifi-fallback · ttyd-one · term-launch · kiosk-start
+                        selftest · bt-auto-agent · bt-nap-daemon · bt-pan0-setup
+                        console-bashrc · grc-cisco.conf
+config/                 nginx · udev (serial, wifi, cảm ứng)
+systemd/                13 unit
 ```
-
----
 
 ## Yêu cầu
 

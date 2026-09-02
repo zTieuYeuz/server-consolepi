@@ -192,6 +192,10 @@ done
 [[ -f "$SRC_DIR/uninstall.sh" ]] && install -m 755 "$SRC_DIR/uninstall.sh" "$INSTALL_DIR/uninstall.sh"
 
 find "$INSTALL_DIR" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Khong de file nao trong /opt/console-pi cho phep nguoi khac ghi - ai co
+# shell tren may deu sua duoc noi dung dashboard hien ra.
+find "$INSTALL_DIR" -perm -o+w -not -type l -exec chmod o-w {} + 2>/dev/null || true
 chown -R "$MAIN_USER:$MAIN_USER" "$INSTALL_DIR/nettools" "$INSTALL_DIR/ui" "$INSTALL_DIR/captures" 2>/dev/null || true
 ok "Da chep ma nguon"
 
@@ -287,11 +291,16 @@ ctrl_interface=/var/run/wpa_supplicant
 update_config=1
 country=VN
 EOF
-    chmod 600 /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
     ok "Da tao file WiFi rong"
 else
     ok "GIU NGUYEN danh sach WiFi da luu"
 fi
+
+# Sua quyen o MOI lan cai, khong chi luc tao moi. Cac file nay chua mat khau
+# WiFi va mat khau AP dang chu thuong; mac dinh cua he thong la 644 = bat ky
+# tai khoan nao tren may cung doc duoc. Da gap tren chinh may nay.
+chmod 600 /etc/wpa_supplicant/wpa_supplicant-wlan0.conf 2>/dev/null || true
+chmod 600 /etc/hostapd/hostapd.conf 2>/dev/null || true
 # Service wpa_supplicant he thong tranh quyen dieu khien wlan0 -> phai chan
 # Mask ban wpa_supplicant "toan cuc" (dung chung cho moi interface, do
 # NetworkManager dieu khien) de no khong tranh card WiFi voi hostapd.
@@ -505,6 +514,26 @@ done
 sleep 3
 
 # ------------------------------------------------- 8. Kiem tra
+# Cai dat co khoi dong lai wpa_supplicant@wlan0. Sau khi restart, card
+# associate lai nhung systemd-networkd KHONG tu xin DHCP - phai goi
+# `networkctl reconfigure` sau khi associate xong. Thieu buoc nay thi cai xong
+# WiFi mat IP toi 2 phut (den luot wifi-fallback ke tiep) - rat de tuong la
+# ban cai lam hong mang.
+if ip link show wlan0 >/dev/null 2>&1 && ! systemctl is-active --quiet hostapd; then
+    for _ in $(seq 1 20); do
+        sleep 1
+        wpa_cli -i wlan0 status 2>/dev/null | grep -q "wpa_state=COMPLETED" && break
+    done
+    networkctl reconfigure wlan0 2>/dev/null || true
+    for _ in $(seq 1 10); do
+        sleep 1
+        WIP=$(ip -4 -o addr show wlan0 2>/dev/null | awk '{print $4}' | head -1)
+        [[ -n "$WIP" ]] && break
+    done
+    [[ -n "${WIP:-}" ]] && ok "WiFi da co IP tro lai: $WIP" \
+                        || warn "WiFi chua co IP - wifi-fallback se xu ly trong 2 phut"
+fi
+
 say "Kiem tra sau cai dat"
 FAIL=0
 for s in nginx console-pi-dashboard console-pi-term-local console-pi-term-ssh; do

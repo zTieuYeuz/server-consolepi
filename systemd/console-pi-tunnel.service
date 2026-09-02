@@ -1,0 +1,18 @@
+[Unit]
+Description=Console Pi - Cloudflare Tunnel (truy cap tu xa)
+After=network-online.target
+Wants=network-online.target
+# Mang o hien truong hay chap chon; dung bo cuoc sau vai lan that bai.
+# Khoa nay thuoc [Unit], dat trong [Service] la systemd bo qua im lang.
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+# Token nam trong file rieng quyen 600, KHONG dat thang trong dong lenh:
+# dong lenh cua tien trinh ai cung doc duoc qua `ps`.
+ExecStart=/bin/sh -c 'exec /usr/bin/cloudflared --no-autoupdate tunnel run --token "$(cat /etc/cloudflared/console-pi-token)"'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

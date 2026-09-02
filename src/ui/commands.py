@@ -11,7 +11,7 @@ import json
 import os
 import subprocess
 
-from flask import request, redirect
+from flask import request
 
 from .layout import render_page
 

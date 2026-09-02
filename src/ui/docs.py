@@ -236,6 +236,102 @@ hien dung mau, va ket qua chay hang loat tren web thi luon co mau.</div>
 <p>Sua bang mau: <code>/opt/console-pi/scripts/console-bashrc</code> (shell) va
 <code>/opt/console-pi/scripts/grc-cisco.conf</code> (output thiet bi).</p>"""),
 
+    ("suckhoe", "🩺 Suc khoe thiet bi va nut nguon", """
+<p>Tab <strong>Tong quan</strong> co khoi <em>Suc khoe thiet bi</em>:</p>
+<ul>
+  <li><strong>Nguon dien</strong> - doc tu <code>vcgencmd get_throttled</code>. Day la
+      canh bao quan trong nhat voi Raspberry Pi: cap sac yeu lam Pi treo hoac hong
+      the nho, va no bao TRUOC khi hong. Thay chu do "DANG xay ra" thi doi nguon ngay.</li>
+  <li><strong>Nhiet do CPU</strong> - duoi 65&deg;C la tot, tren 80&deg;C Pi tu giam xung.</li>
+  <li>Thoi gian chay, tai he thong, RAM, dung luong dia.</li>
+</ul>
+<p><strong>Ve pin:</strong> may nay khong co pin nao Pi doc duoc. Da kiem tra:
+<code>i2cdetect</code> bao dia chi 0x36 nhung doc 6 lan ra 6 gia tri ngau nhien -
+do la nhieu tren bus chu khong phai chip pin. Khong co HAT (khong co EEPROM),
+<code>lsusb</code> khong thay UPS nao. Pin trong man hinh di dong khong co duong
+du lieu toi Pi. Neu sau nay gan UPS HAT that, chi can them ham doc chip vao
+<code>BATTERY_READERS</code> trong <code>ui/health.py</code> la muc pin tu hien ra.</p>
+<p><strong>Nut Tat may / Khoi dong lai:</strong> luon dung nut nay truoc khi rut dien.
+Rut dien dot ngot la nguyen nhan pho bien nhat lam hong the nho. Sau khi bam Tat may,
+doi den khi den xanh tren Pi ngung nhap nhay roi hay rut.</p>
+"""),
+
+    ("khofile", "💾 Kho file (ISO, firmware)", """
+<p>Tab <strong>Kho file</strong> de mang theo bo cai OS, firmware switch, file cau hinh -
+dung khi ra hien truong khong co internet.</p>
+<ul>
+  <li>Uu tien ghi ra <strong>USB neu co cam</strong>, khong thi ghi vao the nho cua Pi
+      (<code>/opt/console-pi/storage</code>).</li>
+  <li>File duoc ghi <strong>theo tung khoi 1MB ra dia</strong>, khong nap vao RAM -
+      neu khong thi mot file ISO 5GB se lam het bo nho Pi.</li>
+  <li>Chan tai len khi con duoi <strong>3GB</strong> trong. The nho day co the lam
+      hong he thong file.</li>
+  <li>Moi file kem <strong>SHA256</strong> de doi chieu sau khi chep sang may khac.</li>
+  <li>Chi nhan cac duoi file du lieu (iso, img, bin, tar, gz, xz, zip, conf, cfg...).
+      Khong nhan <code>.sh</code> hay <code>.py</code> - trang nay khong phai cho nap
+      ma tuy y len thiet bi.</li>
+</ul>
+<p>nginx da duoc nang <code>client_max_body_size</code> len <strong>8GB</strong> va
+thoi gian cho len 900 giay. Mac dinh 64m thi ISO nao cung truot voi loi
+<em>413 Request Entity Too Large</em>.</p>
+"""),
+
+    ("camthang", "🔌 Cam thang thiet bi (iLO / iDRAC)", """
+<p>Tinh huong: ra hien truong, may chu tat lim, chi con cong quan ly iLO. Khong co
+switch, khong co DHCP.</p>
+<p>Tab <strong>Cam thang thiet bi</strong> bien Pi thanh mot mang mini tren cong LAN:</p>
+<ol>
+  <li>Cam day mang tu Pi thang sang cong quan ly</li>
+  <li>Bam <strong>Bat che do cam thang</strong> - Pi lay <code>192.168.99.1</code>
+      va chay DHCP cap <code>192.168.99.50-99</code></li>
+  <li>Doi 15-30 giay (iLO khoi dong cham) roi bam <strong>Quet thiet bi</strong></li>
+  <li>Bam nut <strong>Mo</strong> de vao giao dien web cua thiet bi</li>
+</ol>
+<p>Thiet bi dat IP tinh khong xin DHCP thi dung <strong>Quet rong</strong> (do them
+cac dai hay gap) hoac <strong>go thang dai IP</strong> neu biet truoc. Quet ARP hoat
+dong o lop 2 nen van thay duoc thiet bi khac dai IP.</p>
+<p>Hang thiet bi duoc doan tu 3 byte dau cua MAC: HPE (iLO), Dell (iDRAC),
+Supermicro (IPMI), Lenovo (IMM), Cisco, VMware.</p>
+<p><strong>Canh bao:</strong> bat che do nay doi IP cua cong LAN. Neu ban dang truy cap
+dashboard qua chinh cong do thi se mat ket noi - trang web co canh bao san. Bam
+<strong>Tat che do</strong> de tra cong LAN ve DHCP binh thuong.</p>
+"""),
+
+    ("tuxa", "🌍 Truy cap tu xa (Cloudflare Tunnel)", """
+<p>Kich ban: dua Pi cho nguoi khac mang toi diem xa, ho chi cam console va cam mang
+internet. Ban ngoi nha van vao cau hinh duoc.</p>
+<ol>
+  <li>Tab <strong>Truy cap tu xa</strong> &rarr; bam <em>Cai cloudflared</em> (can internet)</li>
+  <li>Vao <strong>Cloudflare Zero Trust &rarr; Networks &rarr; Tunnels</strong>, tao tunnel moi,
+      chon <em>Debian / arm64</em>, sao chep chuoi token sau <code>--token</code></li>
+  <li>Tro tunnel do vao <code>http://127.0.0.1:80</code></li>
+  <li>Dan token vao trang, bam Luu</li>
+</ol>
+<p><strong>Khong can mo port tren router, khong can IP tinh</strong> - cloudflared tu mo
+duong ham ra ngoai, nen chay duoc ca sau 4G va sau nhieu lop NAT.</p>
+<p><strong>Bao mat:</strong> duong ham chi tro vao <code>127.0.0.1:80</code>, ma cong do
+da co lop dang nhap bang tai khoan Linux. Nen bat them <strong>Cloudflare Access</strong>
+de chan ngay tu bien. Token luu quyen 600, chi root doc duoc - ai co token deu dung
+lai duoc duong ham, dung gui qua chat hay email. Xong viec thi tat duong ham.</p>
+"""),
+
+    ("tukiemtra", "✅ Tu kiem tra sau khi khoi dong lai", """
+<p>Chay mot lenh la biet moi thu con dung khong:</p>
+<pre>sudo /opt/console-pi/scripts/selftest.sh</pre>
+<p>No kiem tra: tat ca dich vu, tat ca trang web, tung cong console, va <strong>ba kich
+ban</strong> quan trong nhat:</p>
+<ol>
+  <li><strong>Cam day LAN thang sang laptop</strong> - eth0 co link-local du phong
+      (169.254.x.x) khi khong ai cap DHCP</li>
+  <li><strong>Tu phat AP khi khong co WiFi quen</strong> - kiem tra
+      <code>wpa_supplicant@wlan0</code> duoc bat luc khoi dong,
+      <code>KeepConfiguration=static</code>, va tiet kiem dien WiFi da tat</li>
+  <li><strong>Thiet bi Bluetooth da ghep tu noi lai</strong> - kiem tra
+      <code>ReconnectUUIDs</code> va tat ca thiet bi deu <em>trusted</em></li>
+</ol>
+<p>Ma thoat 0 = tat ca dat. Chay sau moi lan reboot hoac moi lan cai lai.</p>
+"""),
+
     ("services", "⚙️ Dich vu he thong", """
 <table>
 <tr><th style="width:250px;">Dich vu</th><th>Chuc nang</th></tr>
@@ -341,7 +437,88 @@ huong man hinh.</div>"""),
     <td>Cam cap USB cam ung <strong>thang vao Pi</strong>, khong qua hub. Doi cap khac
     (nhieu cap chi co day nguon). Kiem tra:
     <code>lsusb | grep -i touch</code> va <code>sudo libinput debug-events</code></td></tr>
-</table>"""),
+</table>
+<h3>WiFi ket noi duoc nhung KHONG BAO GIO co IP</h3>
+<p><strong>Trieu chung:</strong> <code>wpa_cli status</code> bao <code>wpa_state=COMPLETED</code>,
+nhung <code>ip addr</code> khong co dia chi nao. Nhat ky networkd co dong
+<em>"DHCPv4 connection considered critical, ignoring request to reconfigure it"</em>.</p>
+<p><strong>Nguyen nhan:</strong> <code>KeepConfiguration=yes</code> trong
+<code>/etc/systemd/network/12-wlan0.network</code>. Khoa nay bao networkd coi lease DHCP
+la "quan trong"; khi dia chi bi xoa (bam nut Ngat WiFi, hoac fallback doi che do),
+networkd TU CHOI xin lai va WiFi chet cung cho den khi restart networkd.</p>
+<p><strong>Sua:</strong> doi thanh <code>KeepConfiguration=static</code>. Van giu IP tinh
+cua AP (muc dich ban dau) nhung khong khoa lease DHCP.</p>
+
+<h3>Sau khi khoi dong lai thi mat WiFi hoan toan</h3>
+<p><strong>Nguyen nhan:</strong> ban cai cu <code>mask</code> dich vu
+<code>wpa_supplicant</code> toan cuc (de no khong tranh card voi hostapd) nhung
+<strong>khong bat dich vu thay the</strong>. May van chay duoc chi vi tien trinh tu lan
+boot cu con song - reboot mot phat la mat.</p>
+<p><strong>Sua:</strong> bat <code>wpa_supplicant@wlan0</code>. Kiem tra:
+<code>systemctl is-enabled wpa_supplicant@wlan0</code> phai tra ve <em>enabled</em>.</p>
+
+<h3>Fallback chuyen che do xong thi WiFi khong len lai</h3>
+<p><strong>Nguyen nhan:</strong> <code>wifi-fallback.service</code> la <code>Type=oneshot</code>.
+Systemd giet toan bo cgroup khi service ket thuc - ke ca tien trinh
+<code>wpa_supplicant -B</code> ma script vua sinh ra. Nghia la duong phuc hoi WiFi
+<strong>chua bao gio chay duoc</strong>, va no chi lo ra dung luc can nhat.</p>
+<p><strong>Sua:</strong> script goi <code>systemctl restart wpa_supplicant@wlan0</code>
+thay vi chay tien trinh roi. Tien trinh nam trong cgroup rieng, duoc giam sat.</p>
+
+<h3>Dang dung WiFi binh thuong thi Pi tu nhay sang che do AP</h3>
+<p><strong>Nguyen nhan:</strong> <code>iw scan</code> tra ve rong (hay xay ra khi
+wpa_supplicant vua khoi dong lai hoac card dang ban). Script hieu nham thanh
+"khong co WiFi quen" va bat AP, cat dut ket noi dang dung.</p>
+<p><strong>Sua:</strong> quet toi 3 lan; neu khong thay <strong>MOT SSID nao ca</strong>
+(ke ca mang la) thi ket luan la "quet loi", giu nguyen hien trang.</p>
+
+<h3>Pi bi ghim o che do AP mai khong ve WiFi</h3>
+<p><strong>Nguyen nhan:</strong> chot "AP dang co client thi khong dung toi" khong co gioi
+han thoi gian. Mot thiet bi la (dien thoai hang xom, bo lap wifi) tu bam vao AP la ghim
+Pi vinh vien, mat duong vao qua WiFi nha.</p>
+<p><strong>Sua:</strong> chi giu toi da 5 vong (10 phut) roi danh gia lai mot lan.</p>
+
+<h3>Chuyen tu AP ve client: associate thanh cong nhung khong co IP</h3>
+<p><strong>Nguyen nhan:</strong> goi <code>networkctl reconfigure</code> ngay sau khi bat
+supplicant, luc card chua associate. Khong co gi de xin DHCP, va networkd
+<strong>khong tu thu lai</strong> khi carrier len sau do.</p>
+<p><strong>Sua:</strong> doi <code>wpa_state=COMPLETED</code> roi moi goi reconfigure.
+Do duoc: sau khi sua, chu trinh AP &rarr; client hoan tat trong <strong>17 giay</strong>.</p>
+
+<h3>Dashboard chi nhan 1 trong 2 soi cap console</h3>
+<p><strong>Nguyen nhan:</strong> code chi quet <code>/dev/ttyUSB*</code>. Cap Cisco USB
+Console la thiet bi CDC-ACM nen kernel tao <code>/dev/ttyACM0</code> - bi bo sot hoan toan.</p>
+<p><strong>Sua:</strong> quet ca hai ho. Cap cong rieng: <code>ttyUSB0-3</code> &rarr; 8001-8004,
+<code>ttyACM0-3</code> &rarr; 8005-8008. Cong thuc nay phai KHOP o ba noi:
+<code>ui/home.py</code>, <code>scripts/ttyd-one.sh</code>, va bang <code>map</code> trong
+<code>config/nginx-console-pi.conf</code>. Kem udev rule tu khoi dong dich vu cho bat ky
+cong serial USB moi cam nao.</p>
+
+<h3>Ban cai chay xong ma thieu mot nua</h3>
+<p><strong>Nguyen nhan:</strong> <code>install.sh</code> dung <code>set -e</code>, va vong lap
+chep script gap thu muc <code>__pycache__</code> (Python sinh ra khi chay thu). Lenh
+<code>install</code> bao loi <em>"omitting directory"</em> va ca ban cai dung ngay giua chung -
+khong co thong bao gi ro rang.</p>
+<p><strong>Sua:</strong> chi chep FILE (<code>[[ -f "$f" ]] || continue</code>).
+Bai hoc: moi vong lap chep file trong script co <code>set -e</code> deu phai loc kieu.</p>
+
+<h3>Ghep cap Bluetooth thanh cong nhung thiet bi khong tu noi lai</h3>
+<p><strong>Nguyen nhan:</strong> thieu <code>ReconnectUUIDs</code> trong
+<code>/etc/bluetooth/main.conf</code>, va thiet bi chua duoc <code>trust</code>.</p>
+<p><strong>Sua:</strong> khai bao UUID cua HID (ban phim/chuot) va PAN (mang) trong muc
+<code>[Policy]</code>, va luon <code>trust</code> sau khi ghep cap. Chay
+<code>selftest.sh</code> se bao neu con thiet bi nao chua trusted.</p>
+<p><strong>Luu y khi sua cau hinh:</strong> chot kiem tra trong <code>install.sh</code> phai
+kiem <strong>tat ca</strong> khoa can co, khong chi mot khoa. Chi kiem
+<code>AutoEnable</code> thi ban nang cap them <code>ReconnectUUIDs</code> se bi bo qua im lang.</p>
+
+<h3>File chua mat khau WiFi doc duoc boi moi tai khoan</h3>
+<p><strong>Nguyen nhan:</strong> <code>install.sh</code> chi <code>chmod 600</code> luc TAO MOI
+file. May da co san file thi giu nguyen quyen mac dinh 644.</p>
+<p><strong>Sua:</strong> siet quyen o moi lan cai, cho ca
+<code>wpa_supplicant-wlan0.conf</code> va <code>hostapd.conf</code>. Kiem tra:
+<code>stat -c "%a" /etc/hostapd/hostapd.conf</code> phai la <code>600</code>.</p>
+"""),
 ]
 
 

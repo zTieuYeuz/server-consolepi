@@ -19,7 +19,7 @@ from flask import request
 
 from .layout import render_page
 from .commands import load_library
-from .terminal import (SSH_SESSION, SSH_PORT, get_term_credential,
+from .terminal import (SSH_SESSION, get_term_credential,
                        tmux_session_exists, service_active)
 
 AUDIT_LOG = "/var/log/console-pi-netmiko.log"

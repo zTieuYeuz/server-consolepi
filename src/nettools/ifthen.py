@@ -12,7 +12,6 @@ duong yeu cau AES-128 cua tai lieu goc) voi passphrase nguoi dung tu chon.
 """
 import base64
 import json
-import os
 import re
 
 from flask import request, render_template_string

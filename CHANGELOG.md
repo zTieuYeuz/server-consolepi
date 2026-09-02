@@ -1,5 +1,73 @@
 # Changelog
 
+## 0.3.0
+
+Vong nay tap trung vao **do tin cay**. Thiet bi nay duoc dung khi switch/router
+DA hong - khong the vua sua mang vua sua con Pi. Nhieu loi duoi day chi lo ra
+dung luc can phuc hoi nhat, nen deu duoc kiem chung bang do dac that.
+
+### Loi nghiem trong da sua
+- **`install.sh` dung giua chung ma khong bao loi.** Vong lap chep script gap
+  thu muc `__pycache__`, `install` bao loi, `set -e` dung ca ban cai - nua sau
+  khong bao gio chay. Nay chi chep FILE.
+- **WiFi ket noi duoc nhung khong bao gio co IP.** `KeepConfiguration=yes` lam
+  systemd-networkd coi lease DHCP la "critical"; khi dia chi bi xoa no TU CHOI
+  xin lai. Doi sang `KeepConfiguration=static`.
+- **Reboot la mat WiFi.** `install.sh` mask `wpa_supplicant` toan cuc nhung
+  khong bat dich vu thay the. May van chay chi vi tien trinh tu lan boot cu con
+  song. Nay bat `wpa_supplicant@wlan0`.
+- **Duong phuc hoi WiFi chua bao gio chay duoc.** `wifi-fallback.service` la
+  `Type=oneshot`, systemd giet luon `wpa_supplicant -B` ma script vua sinh ra.
+  Nay dung unit `wpa_supplicant@wlan0`.
+- **Mot lan quet WiFi that bai lam Pi nhay sang AP,** cat dut ket noi dang dung.
+  Nay quet 3 lan va phan biet "quet loi" voi "khong co WiFi quen".
+- **Pi bi ghim o che do AP mai mai** khi co thiet bi la bam vao. Nay chi giu toi
+  da 5 vong (10 phut).
+- **Chuyen AP -> client: associate xong nhung khong co IP.** `networkctl
+  reconfigure` goi truoc khi associate xong thi khong bao gio xin duoc dia chi.
+  Nay doi `wpa_state=COMPLETED`. Do duoc: chu trinh hoan tat trong **17 giay**.
+- **Rot WiFi sau mot luc.** `power_save` dang bat: card ngu, router mat lien lac,
+  nhung IP van con tren interface nen nhin vao tuong mang van tot. Nay tat vinh
+  vien bang udev rule.
+- **File chua mat khau WiFi va mat khau AP doc duoc boi moi tai khoan** (644).
+  `install.sh` chi `chmod 600` luc tao moi. Nay siet quyen o moi lan cai.
+
+### Tinh nang moi
+- **Nhan moi loai cap console.** Truoc day chi quet `/dev/ttyUSB*` nen bo sot cap
+  Cisco USB Console (CDC-ACM, `/dev/ttyACM*`). Nay nhan ca hai ho, cap cong rieng
+  (8001-8004 / 8005-8008), kem udev rule tu khoi dong cho cap chua tung thay.
+  Dashboard hien ten chip.
+- **Suc khoe thiet bi**: canh bao sut ap, nhiet do CPU, tai, RAM, dia, thoi gian
+  chay. Nut **Tat may / Khoi dong lai** co xac nhan.
+- **Kho file** (`/storage`): mang theo ISO, firmware, cau hinh. Ghi theo luong ra
+  dia (khong nap vao RAM), uu tien USB, chan khi sap day, kem SHA256.
+  nginx nang gioi han 64m -> 8g.
+- **Cam thang thiet bi** (`/direct`): Pi thanh mang mini `192.168.99.1` co DHCP,
+  quet ARP tim iLO/iDRAC/IPMI, nhan dien hang qua OUI, mo thang giao dien web.
+  Quet duoc ca dai IP tinh tu nhap.
+- **Truy cap tu xa** (`/remote`): Cloudflare Tunnel - khong can mo port, khong
+  can IP tinh, chay duoc sau 4G. Token luu quyen 600.
+- **Nut ngat WiFi**, canh bao neu dang truy cap qua chinh WiFi do.
+- **Phan loai Bluetooth dung**: giai ma Class of Device + UUID dich vu thay vi
+  chi dua vao `Icon`. Nut ket noi khop dung ho so (PAN cho may tinh/dien thoai,
+  HID cho ban phim/chuot). `ReconnectUUIDs` cho thiet bi da ghep tu noi lai.
+- **Hieu ung cho**: nut chuyen sang trang thai dang chay va tu khoa, kem vach
+  tien do tren cung - mot co che chung (`data-busy`) cho moi trang.
+- **`scripts/selftest.sh`**: kiem tra toan bo he thong va ba kich ban quan trong.
+  Ma thoat 0 = tat ca dat.
+- Mau khi go lenh: bat `colored-stats`, `colored-completion-prefix`, mau cho
+  trang `man`. `install.sh` xoa phien tmux cu de cau hinh moi duoc ap dung -
+  thieu buoc nay thi cai xong khong thay gi doi.
+
+### Tai lieu
+- Them 5 muc moi va **10 su co** vao trang Tai lieu trong dashboard, moi su co
+  ghi ro trieu chung / nguyen nhan / cach sua va cach kiem tra.
+
+### Don dep
+- Xoa import thua trong `ui/ssh.py`, `ui/commands.py`, `ui/terminal.py`,
+  `nettools/ifthen.py`
+- Moi trang tai duoi 50ms; Flask dung 3MB RAM
+
 ## 0.2.1
 
 ### Toi uu hieu nang
