@@ -1,9 +1,19 @@
 /*
  * Console Pi - Ban phim ao + tro giup che do kiosk
  *
- * CHI hoat dong khi mo tu chinh may (man hinh cam ung gan tren Pi).
- * Truy cap tu laptop/dien thoai qua mang thi KHONG hien gi ca - vi may do
- * da co ban phim that roi.
+ * Chay o CA HAI noi, nhung mac dinh khac nhau:
+ *   - Man hinh gan tai cho (localhost) : mac dinh BAT san - man hinh cam
+ *     ung khong co ban phim that.
+ *   - Truy cap tu xa (laptop/dien thoai qua mang, hoac qua Cloudflare
+ *     Tunnel): mac dinh TAT - may do thuong da co ban phim that/ban phim
+ *     ao rieng cua he dieu hanh. NHUNG van hien nut bat/tat o goc man hinh,
+ *     de ai dang dieu khien tu xa bang dien thoai/may tinh bang KHONG CO
+ *     ban phim that van tu bat len duoc khi can - dac biet huu ich khi go
+ *     lenh vao Console/Terminal va can cac phim dac biet (Ctrl+C, Tab,
+ *     Esc, mui ten) ma ban phim ao mac dinh cua trinh duyet khong co.
+ *   Lua chon bat/tat duoc nho rieng theo tung dia chi truy cap (localStorage
+ *   theo origin), nen bat len khi dung tu xa khong anh huong toi man hinh
+ *   tai cho va nguoc lai.
  *
  * Go duoc vao 2 loai dich:
  *   1. O nhap lieu thong thuong (input/textarea) - go truc tiep
@@ -16,15 +26,16 @@
 (function () {
   "use strict";
 
-  // --- Chi chay tren man hinh tai cho -------------------------------------
   var h = location.hostname;
   var IS_LOCAL = (h === "127.0.0.1" || h === "localhost" || h === "::1");
-  if (!IS_LOCAL) return;
   if (window.__consolePiVK) return;
   window.__consolePiVK = true;
 
   // --- Che do kiosk: bo target="_blank" de khong bi ket cua so moi --------
+  // CHI ap dung cho man hinh tai cho: trinh duyet that (truy cap tu xa) can
+  // giu tab moi binh thuong, khong duoc can thiep.
   function killBlank(root) {
+    if (!IS_LOCAL) return;
     var a = (root && root.querySelectorAll ? root : document)
               .querySelectorAll('a[target="_blank"]');
     for (var i = 0; i < a.length; i++) a[i].removeAttribute("target");
@@ -111,8 +122,15 @@
   toggle.title = "Bat/tat ban phim ao";
   document.body.appendChild(toggle);
 
-  // Nho lua chon bat/tat giua cac trang
-  var enabled = localStorage.getItem("cpvk_enabled") !== "0";
+  // Nho lua chon bat/tat rieng theo tung dia chi truy cap (localStorage la
+  // theo origin nen localhost va ten mien Cloudflare tu nhien co gia tri
+  // rieng, khong dung chung).
+  //
+  // Mac dinh: BAT o man hinh tai cho (khong co ban phim that), TAT khi truy
+  // cap tu xa (may do thuong da co ban phim rieng). Nguoi dung co the tu doi
+  // bang nut bat/tat - luc do gia tri da luu se ghi de len mac dinh nay.
+  var luu = localStorage.getItem("cpvk_enabled");
+  var enabled = luu !== null ? (luu !== "0") : IS_LOCAL;
   function paintToggle() {
     toggle.className = enabled ? "" : "off";
     toggle.title = enabled ? "Ban phim ao: DANG BAT" : "Ban phim ao: DANG TAT";
