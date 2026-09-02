@@ -133,6 +133,17 @@ def ten_mien():
 
 
 # =============================================================== giao dien web
+def _goc_ngoai():
+    """
+    Dia chi ma nguoi NGOAI dung de vao. Qua Cloudflare thi la ten mien that,
+    con vao truc tiep trong mang thi la IP/hostname - lay tu chinh request nen
+    luon dung voi duong ma nguoi dung dang di.
+    """
+    from flask import request as _rq
+    proto = _rq.headers.get("X-Forwarded-Proto", "http")
+    return f"{proto}://{_rq.host}"
+
+
 def register_remote(app):
     from flask import request
     from .layout import render_page
@@ -193,6 +204,84 @@ def register_remote(app):
               </form>
             </div>"""
 
+        # --- Duong vao danh cho may / AI ---
+        from . import api as capi
+        ai = capi.api_info()
+        token_moi = request.args.get("_token_moi", "")
+
+        if token_moi:
+            # Hien DUY NHAT mot lan ngay sau khi tao. Trong may chi luu ban bam
+            # SHA256 nen khong the hien lai - dong nen chep ngay
+            ai_khoi = f"""
+            <div class="msg ok" style="margin:0 0 13px;">Da tao token. <strong>Chep ngay
+              bay gio</strong> - roi khoi trang nay la khong xem lai duoc nua.</div>
+            <label>Token (chi hien mot lan)</label>
+            <textarea readonly rows="2" onclick="this.select();"
+                      style="width:100%;font-family:monospace;font-size:13px;">{_esc(token_moi)}</textarea>
+            <p style="margin:13px 0 5px;">Dua nguyen doan nay cho AI ben kia:</p>
+            <textarea readonly rows="4" onclick="this.select();"
+                      style="width:100%;font-family:monospace;font-size:13px;">Toi co mot thiet bi Console Pi o xa. Hay doc tai lieu huong dan tai:
+{_esc(_goc_ngoai())}/ai
+Dung header: Authorization: Bearer {_esc(token_moi)}
+Doc tai lieu do truoc, roi giup toi lam viec voi thiet bi mang dang cam vao no.</textarea>"""
+        elif ai["has_token"]:
+            ai_khoi = f"""
+            <table style="max-width:470px;margin-bottom:12px;">
+              <tr><th style="width:150px;">Trang thai</th>
+                  <td><span style="color:#6ee7a0;">🟢 Dang bat</span></td></tr>
+              <tr><th>Quyen</th><td><code>{_esc(ai['scope'])}</code>
+                  {'&mdash; chi doc' if ai['scope'] == 'read'
+                    else '&mdash; doc va go duoc lenh vao thiet bi mang'}</td></tr>
+              <tr><th>Tao luc</th><td>{_esc(ai['created'])}</td></tr>
+              <tr><th>Dung lan cuoi</th>
+                  <td>{_esc(ai['last_used']) or '<span style="color:#8b93a1;">chua dung</span>'}</td></tr>
+            </table>
+            <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
+              Token that khong hien lai duoc (trong may chi luu ban bam SHA256).
+              Mat thi tao cai moi - cai cu tu het hieu luc.</p>
+            <div class="row" style="gap:10px;flex-wrap:wrap;">
+              <form method="POST" action="/remote/api-token">
+                <input type="hidden" name="scope" value="read">
+                <button type="submit" class="gray" data-busy="Dang tao...">Tao token moi (chi doc)</button>
+              </form>
+              <form method="POST" action="/remote/api-token">
+                <input type="hidden" name="scope" value="full">
+                <button type="submit" class="gray" data-busy="Dang tao...">Tao token moi (day du)</button>
+              </form>
+              <form method="POST" action="/remote/api-thu-hoi"
+                    onsubmit="return confirm('Thu hoi token? AI ben kia se mat quyen truy cap ngay lap tuc.');">
+                <button type="submit" class="red">Thu hoi</button>
+              </form>
+            </div>"""
+        else:
+            ai_khoi = """
+            <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
+              Dang <strong>tat</strong>. Tao token de mot AI (hoac phan mem khac) doc
+              duoc trang thai thiet bi va lam viec voi switch/router dang cam.
+              AI chi can mot duong dan <code>/ai</code> la tu biet phai goi gi.</p>
+            <div class="row" style="gap:10px;flex-wrap:wrap;">
+              <form method="POST" action="/remote/api-token">
+                <input type="hidden" name="scope" value="read">
+                <button type="submit" class="blue" data-busy="Dang tao...">
+                  🔍 Tao token CHI DOC</button>
+              </form>
+              <form method="POST" action="/remote/api-token"
+                    onsubmit="return confirm('Token quyen day du cho phep GO LENH vao switch/router dang cam.\\n\\nChi tao khi that su can, va thu hoi ngay khi xong viec.');">
+                <input type="hidden" name="scope" value="full">
+                <button type="submit" data-busy="Dang tao...">
+                  ⌨️ Tao token DAY DU (go duoc lenh)</button>
+              </form>
+            </div>
+            <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
+              Nen bat dau bang <strong>chi doc</strong>. Chi nang len day du khi that
+              su can go lenh, va thu hoi ngay khi xong.</p>"""
+
+        ai_card = f"""
+        <div class="card">
+          <h3>Cho AI / may khac truy cap</h3>
+          {ai_khoi}
+        </div>"""
+
         log_html = ""
         if cai and tok:
             log_html = f"""
@@ -211,6 +300,8 @@ def register_remote(app):
           {khoi}
         </div>
 
+        {ai_card}
+
         <div class="card" style="border-left:4px solid #ffb74d;">
           <h3 style="color:#ffb74d;">Luu y bao mat</h3>
           <ul style="margin:0;padding-left:19px;line-height:1.75;color:#c9cfda;">
@@ -221,6 +312,9 @@ def register_remote(app):
             <li>Token duoc luu quyen 600, chi root doc duoc. Bat ky ai co token deu
                 dung lai duoc duong ham - dung gui qua chat/email</li>
             <li>Xong viec thi <strong>tat duong ham</strong>, dung de mo thuong xuyen</li>
+            <li>Token cho AI mac dinh <strong>tat</strong>. Token quyen day du go duoc
+                lenh vao switch/router - chi tao khi can, thu hoi ngay khi xong.
+                Moi lan may goi vao deu ghi <code>/var/log/console-pi-api.log</code></li>
           </ul>
         </div>
 
@@ -255,6 +349,25 @@ def register_remote(app):
     def remote_off():
         ok_o, msg = tat_tunnel()
         return page(msg=msg, ok=ok_o)
+
+    @app.route("/remote/api-token", methods=["POST"])
+    def remote_api_token():
+        from . import api as capi
+        from flask import redirect as _rd
+        scope = request.form.get("scope", "read")
+        token = capi.tao_token(scope)
+        # Chuyen huong kem token tren URL de sau khi bam F5 no khong tao lai
+        # token moi. Token chi song trong thanh dia chi cua chinh may nay -
+        # da qua nginx tren localhost, khong di dau ca.
+        from urllib.parse import quote
+        return _rd(f"/remote?_token_moi={quote(token)}")
+
+    @app.route("/remote/api-thu-hoi", methods=["POST"])
+    def remote_api_revoke():
+        from . import api as capi
+        capi.thu_hoi_token()
+        return page(msg="Da thu hoi token. May/AI ben kia mat quyen truy cap ngay.",
+                    ok=True)
 
     @app.route("/remote/xoa-token", methods=["POST"])
     def remote_clear():

@@ -5,7 +5,14 @@
 # dashboard localhost. Dung cage lam compositor Wayland toi gian - no chi
 # chay dung 1 ung dung toan man hinh, khong desktop/taskbar gi ca.
 
-DASH_URL="http://127.0.0.1/"
+# Cong 8880 chu KHONG phai 80. Day la cong rieng chi lang nghe tren loopback,
+# va la CHO DUY NHAT duoc mien dang nhap. Cong 80 (LAN, WiFi, Cloudflare) luon
+# phai dang nhap.
+#
+# Truoc day kiosk dung cong 80 va dieu kien mien dang nhap la "IP = 127.0.0.1".
+# Nhung cloudflared cung chay tren Pi va cung goi vao 127.0.0.1:80, nen moi
+# nguoi qua duong ham deu duoc mien dang nhap - lo hong nghiem trong da sua.
+DASH_URL="http://127.0.0.1:8880/"
 
 # --- Xoay man hinh ------------------------------------------------------
 # Huong lay tu config.json (tab Cai dat ghi vao day) - KHONG hardcode, de

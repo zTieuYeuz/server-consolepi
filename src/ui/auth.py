@@ -111,18 +111,35 @@ def local_bypass_enabled():
 
 def _is_local_screen():
     """
-    Yeu cau cua anh: bat may len la man hinh hien dashboard ngay, khong hoi
-    dang nhap - vi man hinh cam ung go mat khau rat bat tien (va hien tai
-    cam ung dang hong).
+    Man hinh cam ung gan tren Pi duoc vao thang khong can dang nhap - go mat
+    khau tren man hinh cam ung rat bat tien.
 
-    Danh doi ve bao mat: ai cham duoc vao man hinh nay thi vao duoc ca
-    terminal quyen root. Chap nhan duoc vi nguoi do da dung TRUOC MAT thiet
-    bi - luc do ho rut duoc ca the nho ra doc, tuc la da toan quyen roi.
-    Truy cap TU MANG (WiFi/LAN/Bluetooth) VAN PHAI dang nhap binh thuong.
+    Danh doi ve bao mat chap nhan duoc: ai cham duoc vao man hinh nay thi da
+    dung TRUOC MAT thiet bi, luc do ho rut duoc ca the nho ra doc, tuc la da
+    toan quyen roi. Truy cap TU MANG van phai dang nhap binh thuong.
+
+    ---------------------------------------------------------------------
+    LO HONG DA SUA (nghiem trong)
+    ---------------------------------------------------------------------
+    Truoc day dieu kien la `request.remote_addr in ("127.0.0.1", "::1")`.
+
+    Sai o cho: cloudflared chay NGAY TREN Pi va cung goi vao 127.0.0.1:80.
+    Nen MOI NGUOI di qua duong ham Cloudflare deu duoc cham nham la man hinh
+    tai cho, va vao thang dashboard + terminal quyen root KHONG CAN MAT KHAU.
+    Da kiem chung that: goi tu 127.0.0.1 kem X-Forwarded-For tra ve 200 thay
+    vi 302. Bat ky ai biet ten mien deu chiem duoc thiet bi.
+
+    Cach vas: khong tin dia chi IP nua, vi tren cung mot may thi trinh duyet
+    kiosk va cloudflared khong the phan biet bang IP. Thay vao do dua vao
+    CONG ma request di vao:
+      - cong 80   : duong cong cong (LAN / WiFi / Cloudflare) -> phai dang nhap
+      - cong 8880 : chi lang nghe loopback, danh rieng cho trinh duyet kiosk
+    nginx dat header X-ConsolePi-Local=1 CHI o cong 8880, va GHI DE header do
+    (thanh rong) o cong 80 - nen nguoi ngoai co tu gui cung vo tac dung.
     """
     if not local_bypass_enabled():
         return False
-    return request.remote_addr in ("127.0.0.1", "::1")
+    return request.headers.get("X-ConsolePi-Local") == "1"
 
 
 LOGIN_TEMPLATE = """<!DOCTYPE html>
@@ -184,6 +201,32 @@ def register_auth(app):
             return None
         if _is_local_screen():
             return None          # man hinh gan trren Pi - xem muc dich o duoi
+
+        # Duong vao thu ba: token API, danh cho may (vi du mot AI o dau xa
+        # dieu khien giup). Phai kiem tra o day chu khong o rieng cac route
+        # /api, vi before_request nay chay TRUOC moi thu - neu khong thi
+        # request cua may bi day ve /login truoc khi kip toi noi.
+        #
+        # Mac dinh API TAT. Chi khi chu thiet bi tu bat va tu tao token trong
+        # dashboard thi nhanh nay moi cho ai di qua.
+        from .api import kiem_tra_truy_cap
+        kq = kiem_tra_truy_cap()
+        if kq == "ok":
+            return None
+        if kq is not None:
+            return kq            # co gui token nhung bi tu choi (401 / 403)
+
+        # Chua co token: tra ve huong dan lay token, KHONG lo bat ky thong
+        # tin nao ve he thong
+        if request.path == "/ai":
+            from flask import Response
+            from .api import TAI_LIEU_CHUA_CO_TOKEN
+            return Response(TAI_LIEU_CHUA_CO_TOKEN,
+                            mimetype="text/markdown", status=401)
+        if request.path.startswith("/api/"):
+            from flask import jsonify
+            return jsonify({"error": "Can token. Xem huong dan tai /ai"}), 401
+
         return redirect("/login")
 
     @app.route("/login", methods=["GET", "POST"])
@@ -220,6 +263,11 @@ def register_auth(app):
         mat khau rieng nua.
         """
         if session.get("user") or _is_local_screen():
+            return "", 200
+        # Token API cung duoc di qua, de may goi duoc ca cac duong terminal
+        # va console ma nginx dang canh
+        from .api import quyen_cua_request
+        if quyen_cua_request():
             return "", 200
         return "", 401
 

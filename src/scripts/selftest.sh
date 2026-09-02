@@ -48,6 +48,46 @@ for p in / /wifi /bluetooth /nettools /terminal /ssh /commands /docs /settings; 
     kiem_trang "$p"
 done
 
+# ---------------------------------------------------------------- bao mat
+muc "Bao mat duong vao"
+
+# Chot chan cho mot lo hong da tung co that: cloudflared chay ngay tren Pi va
+# goi vao 127.0.0.1:80, nen khi dieu kien mien dang nhap con dua vao dia chi
+# IP thi MOI NGUOI qua duong ham Cloudflare deu vao thang dashboard va
+# terminal quyen root khong can mat khau. Phep thu nay mo phong dung cach do.
+MA=$(curl -s -o /dev/null -m 8 -w "%{http_code}" \
+     -H "X-Forwarded-For: 203.0.113.55" http://127.0.0.1/)
+if [ "$MA" = "302" ] || [ "$MA" = "401" ]; then
+    dat "Duong cong cong (cong 80) doi dang nhap - dung"
+else
+    tach "NGUY HIEM: cong 80 tra ve $MA thay vi 302. Nguoi tu Internet qua"
+    tach "  Cloudflare co the vao thang dashboard va terminal root khong can mat khau!"
+fi
+
+# Cong kiosk phai chi lang nghe tren loopback, khong duoc ra mang
+if ss -tlnH 2>/dev/null | grep -q "127.0.0.1:8880"; then
+    dat "Cong kiosk 8880 chi lang nghe tren loopback"
+elif ss -tlnH 2>/dev/null | grep -q ":8880"; then
+    tach "NGUY HIEM: cong 8880 dang lang nghe ra mang - ai cung vao duoc khong can mat khau"
+else
+    luu "Chua thay cong kiosk 8880 (binh thuong neu may khong gan man hinh)"
+fi
+
+for f in /etc/wpa_supplicant/wpa_supplicant-wlan0.conf /etc/hostapd/hostapd.conf; do
+    if [ -f "$f" ]; then
+        Q=$(stat -c "%a" "$f" 2>/dev/null)
+        [ "$Q" = "600" ] && dat "$(basename "$f") quyen 600" \
+                         || tach "$(basename "$f") quyen $Q - chua mat khau ma ai cung doc duoc"
+    fi
+done
+
+if grep -q '"api_enabled": *true' /opt/console-pi/config.json 2>/dev/null; then
+    QUYEN=$(grep -o '"api_token_scope": *"[a-z]*"' /opt/console-pi/config.json 2>/dev/null | grep -o '[a-z]*"$' | tr -d '"')
+    luu "API cho may/AI dang BAT (quyen: ${QUYEN:-?}). Thu hoi token khi xong viec."
+else
+    dat "API cho may/AI dang tat"
+fi
+
 # ---------------------------------------------------------------- console
 muc "Cong console"
 PORTS=$(ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null)
