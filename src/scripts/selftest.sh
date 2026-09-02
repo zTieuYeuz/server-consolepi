@@ -181,6 +181,23 @@ if [ "$N_PAIR" -gt 0 ]; then
     done | grep -c x)
     [ "$N_TRUST" -eq "$N_PAIR" ] && dat "Tat ca deu duoc tin cay (tu noi lai duoc)" \
         || luu "$((N_PAIR-N_TRUST)) thiet bi chua 'trusted' - se khong tu noi lai"
+
+    # Bat trang thai ghep cap hong mot nua: Paired=yes nhung Bonded=no.
+    # BlueZ se tu choi gan ho so HID ("Rejected connection from !bonded
+    # device") nen ban phim/chuot bao la dang ket noi ma go khong an gi -
+    # rat kho doan neu khong kiem tra dung truong Bonded. Da gap that.
+    HONG=$(bluetoothctl devices Paired 2>/dev/null | awk '{print $2}' | while read -r m; do
+        I=$(bluetoothctl info "$m" 2>/dev/null)
+        echo "$I" | grep -q "Bonded: no" && echo "$m"
+    done)
+    if [ -n "$HONG" ]; then
+        for m in $HONG; do
+            tach "Thiet bi $m: Paired nhung Bonded=no - se KHONG dung duoc."
+            tach "  Vao tab Bluetooth bam 'Ghep cap lai' de xoa ban ghi va ghep lai tu dau."
+        done
+    else
+        dat "Khong co thiet bi nao bi ghep cap hong (Bonded=no)"
+    fi
 else
     luu "Chua ghep cap thiet bi Bluetooth nao"
 fi

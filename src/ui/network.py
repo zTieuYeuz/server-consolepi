@@ -287,8 +287,14 @@ def bt_scan(seconds=10):
 
 def bt_device_info(mac):
     """Thong tin 1 thiet bi, kem phan loai (ban phim / may tinh / tai nghe...)."""
-    info = {"paired": False, "connected": False, "trusted": False,
-            "icon": "", "name": mac, "cod": 0, "uuids": []}
+    # 'bonded' KHAC 'paired'. BlueZ co the danh dau Paired=yes ma van khong
+    # luu duoc khoa lien ket (Bonded=no) - ban ghi ghep cap hong mot nua.
+    # Voi ban phim/chuot thi day la loi CHET NGUOI: BlueZ tu choi gan ho so
+    # HID ("Rejected connection from !bonded device"), nen thiet bi hien la
+    # Connected=yes nhung kernel khong tao /dev/input nao ca -> nguoi dung
+    # thay "dang ket noi" ma go khong an gi. Phai doc rieng de bat duoc.
+    info = {"paired": False, "bonded": False, "connected": False,
+            "trusted": False, "icon": "", "name": mac, "cod": 0, "uuids": []}
     try:
         out = subprocess.run(["bluetoothctl", "info", mac],
                              capture_output=True, text=True, timeout=6).stdout
@@ -297,6 +303,7 @@ def bt_device_info(mac):
             if t.startswith("Name:"):      info["name"] = t[5:].strip()
             elif t.startswith("Icon:"):    info["icon"] = t[5:].strip()
             elif t.startswith("Paired:"):    info["paired"] = t.endswith("yes")
+            elif t.startswith("Bonded:"):    info["bonded"] = t.endswith("yes")
             elif t.startswith("Connected:"): info["connected"] = t.endswith("yes")
             elif t.startswith("Trusted:"):   info["trusted"] = t.endswith("yes")
             elif t.startswith("Class:"):
@@ -340,6 +347,15 @@ def _pair_worker(mac):
     """Ghep cap o luong nen. Ban phim can nguoi dung go ma nen co the lau."""
     steps = []
     try:
+        # Xoa sach ban ghi cu TRUOC KHI ghep. Ly do: BlueZ co the con giu mot
+        # ban ghi hong mot nua (Paired=yes nhung khong co khoa lien ket). Khi
+        # do lenh `pair` tra ve "Already Paired" va di tiep, nhung ho so HID
+        # van bi tu choi vinh vien - ghep bao nhieu lan cung khong khoi.
+        # Xoa truoc thi moi lan ghep deu la mot lan ghep that su moi.
+        subprocess.run(["bluetoothctl", "remove", mac],
+                       capture_output=True, timeout=15)
+        time.sleep(1)
+
         for action, limit in (("pair", 60), ("trust", 10), ("connect", 25)):
             _PAIR["step"] = action
             r = subprocess.run(["bluetoothctl", action, mac],
@@ -359,6 +375,20 @@ def _pair_worker(mac):
 
     _PAIR["ok"] = all(g for _, g, _ in steps) and len(steps) == 3
     _PAIR["detail"] = " | ".join(f"{a}: {m}" for a, _, m in steps)
+
+    # Kiem tra lai bang SU THAT chu khong tin chu "success" cua bluetoothctl:
+    # no bao thanh cong ca khi khoa lien ket khong duoc luu. Voi ban phim/chuot
+    # ma thieu khoa nay thi BlueZ se tu choi gan ho so HID va thiet bi khong
+    # go duoc gi - phai bao ro ngay tai day thay vi de nguoi dung ngoi doan.
+    if _PAIR["ok"]:
+        sau = bt_device_info(mac)
+        if not sau.get("bonded", False):
+            _PAIR["ok"] = False
+            _PAIR["detail"] += (" | CANH BAO: ghep xong nhung khong luu duoc khoa "
+                                "lien ket (Bonded: no). Ban phim se khong go duoc. "
+                                "Hay xoa ghep cap tren CHINH BAN PHIM (thuong giu "
+                                "nut Connect vai giay cho den khi den nhap nhay) "
+                                "roi ghep lai.")
     _PAIR["step"] = "xong"
     _PAIR["running"] = False
 
@@ -715,8 +745,21 @@ def _bt_page(msg="", ok=True, scanned=None):
     rows = ""
     for mac, i in infos:
         c = i["cls"]
-        state = ("🟢 dang ket noi" if i["connected"]
-                 else ("⚪ da ghep, chua noi" if i["paired"] else "—"))
+
+        # Trang thai phai noi DUNG SU THAT. Truong hop nguy hiem nhat la
+        # Connected=yes nhung Bonded=no: BlueZ tu choi gan ho so HID nen ban
+        # phim khong go duoc gi, ma giao dien cu van hien "dang ket noi" mau
+        # xanh -> nguoi dung ngoi cho mai khong hieu tai sao. Da gap that.
+        hong_bond = i["connected"] and not i.get("bonded", False)
+        if hong_bond:
+            state = ('<span style="color:#ff6b6b;">🔴 Noi duoc nhung KHONG dung duoc'
+                     '<br><small>Thieu khoa lien ket (Bonded: no) - phai ghep cap lai</small></span>')
+        elif i["connected"]:
+            state = "🟢 dang ket noi"
+        elif i["paired"]:
+            state = "⚪ da ghep, chua noi"
+        else:
+            state = "—"
 
         # Nut phai khop voi LOAI thiet bi. Ban phim/chuot dung ho so HID;
         # may tinh, dien thoai, iPad dung ho so mang PAN - goi nham thi
@@ -729,6 +772,15 @@ def _bt_page(msg="", ok=True, scanned=None):
             btn = ('<button type="submit" class="small" data-busy="Dang noi...">'
                    '⌨️ Ket noi ban phim/chuot</button>')
             prof = "hid"
+
+        # Ban ghi ghep cap hong thi bam "Ket noi" bao nhieu lan cung vo ich -
+        # BlueZ se tu choi lai dung cho do. Cach duy nhat la xoa ban ghi roi
+        # ghep lai tu dau, nen dua thang nut do ra.
+        if hong_bond:
+            btn = ('<button type="submit" class="small" '
+                   'formaction="/bt-ghep-lai" data-busy="Dang xoa va ghep lai...">'
+                   '🔁 Ghep cap lai</button>')
+            prof = ""
         else:
             btn = ('<button type="submit" class="small" data-busy="Dang noi...">'
                    'Ket noi lai</button>')
@@ -1010,6 +1062,26 @@ def register_network(app):
             return _bt_page(msg=err, ok=False)
         time.sleep(2)      # cho agent kip sinh ma so de hien ngay
         return _bt_page(msg="Dang ghep cap - lam theo huong dan ben duoi.", ok=True)
+
+    @app.route("/bt-ghep-lai", methods=["POST"])
+    def bt_repair_route():
+        """
+        Xoa sach ban ghi ghep cap roi ghep lai tu dau.
+
+        Dung cho truong hop thiet bi bao Connected nhung Bonded=no: luc do bam
+        "Ket noi" bao nhieu lan cung bi BlueZ tu choi ("Rejected connection from
+        !bonded device"), chi co xoa han roi ghep lai moi khoi.
+        """
+        mac = request.form.get("mac", "")
+        started, err = bt_pair_start(mac)      # ham nay da tu xoa ban ghi cu
+        if not started:
+            return _bt_page(msg=err, ok=False)
+        time.sleep(2)
+        return _bt_page(
+            msg=("Da xoa ban ghi cu va dang ghep cap lai. Neu la ban phim, hay "
+                 "bat che do ghep cap tren ban phim (thuong giu nut Connect vai "
+                 "giay den khi den nhap nhay) roi go ma so hien ben duoi."),
+            ok=True)
 
     @app.route("/bt-connect", methods=["POST"])
     def bt_connect_route():
