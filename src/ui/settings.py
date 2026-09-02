@@ -145,6 +145,16 @@ def register_settings(app):
         ok, msg = set_rotation(val)
         return _render_settings(msg=msg, ok=ok)
 
+    @app.route("/settings/pin-i2c", methods=["POST"])
+    def settings_pin_i2c():
+        bat = request.form.get("bat") == "1"
+        cfg = load_config()
+        cfg["doc_pin_i2c"] = bat
+        save_config(cfg)
+        return _render_settings(
+            msg=("Da bat doc pin qua I2C. Neu chua thay gi, kiem tra da bat I2C trong "
+                 "raspi-config chua." if bat else "Da tat doc pin qua I2C."), ok=True)
+
     @app.route("/settings/regen-term-pass", methods=["POST"])
     def regen_term_pass():
         import secrets
@@ -196,9 +206,49 @@ def _render_settings(msg="", ok=True):
           </div>
         </div>"""
 
+    # --- Doc pin qua I2C ---
+    from . import health
+    bat_on = bool(cfg.get("doc_pin_i2c", False))
+    bat_now = health.battery()
+    i2c_co = any(os.path.exists(f"/dev/i2c-{n}") for n in (0, 1))
+
+    if bat_now:
+        bat_trang_thai = f'<span style="color:#6ee7a0;">🔋 Dang doc duoc: {bat_now}</span>'
+    elif bat_on and not i2c_co:
+        bat_trang_thai = ('<span style="color:#ffb74d;">Da bat nhung chua co '
+                          '<code>/dev/i2c-*</code>. Bat I2C truoc: '
+                          '<code>sudo raspi-config</code> &rarr; Interface Options &rarr; I2C</span>')
+    elif bat_on:
+        bat_trang_thai = ('<span style="color:#8b93a1;">Da bat nhung khong tim thay chip '
+                          'do pin nao hop le tren bus I2C</span>')
+    else:
+        bat_trang_thai = '<span style="color:#8b93a1;">Dang tat</span>'
+
+    bat_card = f"""
+    <div class="card">
+      <h3>Doc pin qua I2C</h3>
+      <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+        UPS USB va cac UPS HAT co driver kernel thi <strong>tu hien</strong>, khong can
+        bat gi o day. Muc nay chi danh cho UPS HAT doc qua I2C
+        (Waveshare UPS HAT B/C, Geekworm X1200/X728, PiSugar).</p>
+      <p style="margin:0 0 12px;">{bat_trang_thai}</p>
+      <form method="POST" action="/settings/pin-i2c">
+        <input type="hidden" name="bat" value="{'0' if bat_on else '1'}">
+        <button type="submit" class="{'red' if bat_on else 'blue'}" data-busy="Dang luu...">
+          {'Tat doc pin I2C' if bat_on else 'Bat doc pin I2C'}</button>
+      </form>
+      <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
+        Khong bat san vi do dia chi I2C mu de cho ket qua gia - chinh may nay tung
+        cho gia tri rac o <code>0x36</code>. Khi bat, code doc 4 lan va chi tin khi
+        ket qua on dinh va nam trong khoang dien ap pin that.
+        <a href="/docs#pin">Xem chi tiet</a>
+      </p>
+    </div>"""
+
     body = f"""
     {msg_html}
     {screen_card}
+    {bat_card}
 
     <div class="card">
       <h3>Mat khau terminal</h3>

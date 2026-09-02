@@ -256,6 +256,64 @@ Rut dien dot ngot la nguyen nhan pho bien nhat lam hong the nho. Sau khi bam Tat
 doi den khi den xanh tren Pi ngung nhap nhay roi hay rut.</p>
 """),
 
+    ("pin", "🔋 Hien % pin - can gan gi", """
+<p><strong>Tinh trang hien tai: may nay khong co pin nao Pi doc duoc.</strong>
+Da kiem chung bang ba cach doc lap:</p>
+<ul>
+  <li><code>/sys/class/power_supply/</code> &rarr; <strong>rong</strong>, khong co thiet bi nao</li>
+  <li><code>upower</code> &rarr; bao <code>battery-missing-symbolic</code>, 0%</li>
+  <li><code>lsusb</code> &rarr; khong co UPS nao. <code>i2cdetect</code> bao dia chi
+      <code>0x36</code> nhung doc 6 lan ra 6 gia tri ngau nhien
+      (<code>0x39 0x1c 0x2b 0x1e 0x24 0x29</code>) &mdash; do la <strong>nhieu tren bus</strong>,
+      khong phai chip do pin</li>
+</ul>
+<p>Pin trong man hinh di dong khong giup duoc: no chi noi voi Pi qua HDMI va day
+nguon, <strong>khong co duong du lieu</strong> nao de bao dung luong.</p>
+
+<h3>Gan gi thi hien duoc ngay</h3>
+<p>Dashboard da co san lop doc pin. Cam phan cung vao la <strong>tu hien</strong>,
+khong phai sua code:</p>
+<table>
+<tr><th style="width:250px;">Phan cung</th><th>Cach Pi doc duoc</th></tr>
+<tr><td><strong>UPS USB theo chuan HID Power Device</strong><br>
+    <small style="color:#8b93a1;">APC Back-UPS, Eaton, CyberPower...</small></td>
+    <td>Cam USB, cai <code>nut</code>. Kernel tu tao muc trong
+    <code>/sys/class/power_supply</code> &rarr; muc 1 thay ngay, khong can bat gi.
+    <strong>Day la cach chac chan nhat.</strong></td></tr>
+<tr><td><strong>UPS HAT co driver kernel</strong><br>
+    <small style="color:#8b93a1;">vd loai dung chip co driver san</small></td>
+    <td>Cung xuat hien trong <code>/sys/class/power_supply</code>. Tu hien.</td></tr>
+<tr><td><strong>UPS HAT doc qua I2C</strong><br>
+    <small style="color:#8b93a1;">Waveshare UPS HAT (B)/(C), Geekworm X1200/X728,
+    PiSugar - dung chip INA219 hoac MAX17040/17048</small></td>
+    <td>Bat I2C (<code>raspi-config</code> &rarr; Interface &rarr; I2C), roi vao
+    <strong>Cai dat</strong> bat <em>Doc pin qua I2C</em>.</td></tr>
+</table>
+
+<h3>Vi sao doc I2C phai TU BAT, khong bat san</h3>
+<p>Do dia chi I2C mu la khong an toan. Chinh may nay tung cho ket qua <strong>gia</strong>
+o <code>0x36</code>. Neu code tin ngay lan doc dau thi dashboard se hien mot con so
+pin <strong>hoan toan bia dat</strong> &mdash; con te hon la khong hien gi, vi anh se
+tin no khi dang o hien truong.</p>
+<p>Khi bat, code doc <strong>4 lan lien tiep</strong> va chi tin khi ca ba dieu kien
+cung dung:</p>
+<ol>
+  <li>Moi lan doc deu cho dien ap trong khoang pin Li-ion that (2.5V - 4.6V)</li>
+  <li>Cac lan doc <strong>gan nhau</strong> (lech duoi 0.15V) &mdash; nhieu bus se nhay lung tung</li>
+  <li>Phan tram nam trong 0-100</li>
+</ol>
+<p>Sai bat ky dieu kien nao thi bo qua dia chi do. Tha khong hien con hon hien sai.</p>
+
+<h3>Cai khong nen lam</h3>
+<p><strong>Dung suy pin tu <code>vcgencmd measure_volts</code>.</strong> Lenh do do dien ap
+<em>loi CPU</em> (khoang 0.9V), khong phai dien ap nguon vao. Khong co quan he gi voi
+dung luong pin. Suy ra % tu no la bia so.</p>
+<p>Trong khi chua co phan cung pin, hay dung <strong>canh bao sut ap</strong> o tab
+Tong quan (<code>vcgencmd get_throttled</code>). No khong cho biet con bao nhieu %,
+nhung <strong>bao truoc</strong> khi nguon yeu den muc lam Pi treo - la dieu thuc su
+can biet o hien truong.</p>
+"""),
+
     ("khofile", "💾 Kho file (ISO, firmware)", """
 <p>Tab <strong>Kho file</strong> de mang theo bo cai OS, firmware switch, file cau hinh -
 dung khi ra hien truong khong co internet.</p>

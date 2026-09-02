@@ -239,9 +239,16 @@ def register_home(app):
         mem_u, mem_t, mem_p = h["mem"]
         dk_u, dk_t, dk_p = h["disk"]
 
-        bat_row = ""
+        # Dong Pin LUON hien - co phan cung thi hien so that, khong thi noi
+        # thang la khong doc duoc va can gan gi. Giau han di thi nguoi dung
+        # cu tuong dashboard thieu tinh nang.
         if h["battery"]:
-            bat_row = f"<tr><td>Pin</td><td>{_esc(str(h['battery']))}</td></tr>"
+            bat_row = (f'<tr><td>Pin</td><td><span style="color:#6ee7a0;font-weight:600;">'
+                       f'🔋 {_esc(str(h["battery"]))}</span></td></tr>')
+        else:
+            bat_row = ('<tr><td>Pin</td><td><span style="color:#8b93a1;">'
+                       'Khong co phan cung bao pin &mdash; '
+                       '<a href="/docs#pin">cach gan de hien duoc</a></span></td></tr>')
 
         health_html = f"""
         <table>
