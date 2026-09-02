@@ -191,6 +191,51 @@ sudo libinput debug-events</pre>
 (127.0.0.1). Vao tu laptop/iPad thi khong hien - vi may do da co ban phim rieng.
 Nut tron goc phai duoi de bat/tat.</p>"""),
 
+    ("mau", "🎨 Mau sac trong terminal", """
+<p>Ca 3 khung terminal dung chung bang mau tuong phan cao. Quy uoc mau theo
+thoi quen doc cua dan mang:</p>
+<table>
+<tr><th style="width:130px;">Mau</th><th>Y nghia</th></tr>
+<tr><td><span style="color:#ff6b6b;font-weight:600;">Do</span></td>
+    <td>Van de: down, err-disabled, error, timeout, drops</td></tr>
+<tr><td><span style="color:#7ddc7d;font-weight:600;">Xanh la</span></td>
+    <td>Tot: up, connected, established, permit, success</td></tr>
+<tr><td><span style="color:#ffd166;">Vang</span></td>
+    <td>Canh bao / trung gian: half-duplex, learning, administratively</td></tr>
+<tr><td><span style="color:#68d5d5;">Xanh nhat</span></td><td>Dia chi IP</td></tr>
+<tr><td><span style="color:#6cb6ff;">Xanh duong</span></td><td>Dia chi MAC</td></tr>
+<tr><td><span style="color:#d99bff;">Tim</span></td><td>Ten cong / interface</td></tr>
+</table>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Terminal local</h3>
+<p>Shell da co san mau (dau nhac, <code>ls</code>, <code>grep</code>) va cac lenh
+mang duoc to mau qua <code>grc</code>: <code>ping</code>, <code>traceroute</code>,
+<code>ip</code>, <code>ss</code>, <code>netstat</code>, <code>nmap</code>,
+<code>tcpdump</code>, <code>mtr</code>, <code>dig</code>...</p>
+<pre>* Loi tat co san
+ports     xem cong dang mo
+myip      dia chi IP cac giao dien
+routes    bang dinh tuyen
+serial    cac cong console dang cam
+logs      nhat ky dashboard
+
+* Xem file output thiet bi voi mau kieu Cisco
+cisco capture.txt
+cat file.txt | grcat /opt/console-pi/scripts/grc-cisco.conf</pre>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ket qua chay lenh hang loat (tab SSH)</h3>
+<p>Output hien tren web duoc to mau day du theo bang tren - IP, MAC, ten cong,
+trang thai up/down deu co mau rieng.</p>
+
+<div class="msg info"><strong>Vi sao console Cisco tuong tac khong tu co mau:</strong>
+output do chinh thiet bi gui ve, ma da so thiet bi Cisco khong gui ma mau ANSI.
+To mau theo thoi gian thuc phai loc tung dong, se lam tre viec go phim - danh doi
+khong dang. Bu lai: thiet bi CO gui mau (NX-OS, IOS-XE, thiet bi nen Linux) se
+hien dung mau, va ket qua chay hang loat tren web thi luon co mau.</div>
+
+<p>Sua bang mau: <code>/opt/console-pi/scripts/console-bashrc</code> (shell) va
+<code>/opt/console-pi/scripts/grc-cisco.conf</code> (output thiet bi).</p>"""),
+
     ("services", "⚙️ Dich vu he thong", """
 <table>
 <tr><th style="width:250px;">Dich vu</th><th>Chuc nang</th></tr>

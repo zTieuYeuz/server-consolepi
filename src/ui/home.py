@@ -58,13 +58,21 @@ def get_ports():
     return out
 
 
-def service_state(name):
+def service_states(names):
+    """
+    Hoi trang thai NHIEU dich vu bang MOT lenh.
+    Truoc day goi rieng tung cai (8 lan spawn tien trinh moi lan tai trang) -
+    tren Pi doi thap rat cham. systemctl is-active nhan nhieu ten cung luc.
+    """
     try:
-        r = subprocess.run(["systemctl", "is-active", name],
-                           capture_output=True, text=True, timeout=4)
-        return r.stdout.strip()
+        r = subprocess.run(["systemctl", "is-active"] + list(names),
+                           capture_output=True, text=True, timeout=6)
+        lines = r.stdout.split()
+        if len(lines) == len(names):
+            return dict(zip(names, lines))
     except Exception:
-        return "unknown"
+        pass
+    return {n: "unknown" for n in names}
 
 
 def iface_detail(name):
@@ -80,6 +88,9 @@ def iface_detail(name):
             info["mac"] = f.read().strip()
     except Exception:
         pass
+    # Doc IP tu /proc/net/route + lenh ip chi khi can.
+    # Uu tien /sys va /proc vi khong phai spawn tien trinh - nhanh hon nhieu
+    # tren Pi doi thap (Pi 3 / Zero).
     try:
         out = subprocess.run(["ip", "-4", "-o", "addr", "show", name],
                              capture_output=True, text=True, timeout=4).stdout
@@ -149,9 +160,10 @@ def register_home(app):
             </tr>"""
 
         # --- Dich vu ---
+        states = service_states([s for s, _ in SERVICES])
         svc_rows = ""
         for svc, label in SERVICES:
-            st = service_state(svc)
+            st = states.get(svc, "unknown")
             icon = "🟢" if st == "active" else ("⚪" if st in ("inactive", "unknown") else "🔴")
             svc_rows += (f"<tr><td>{label}</td><td><code style='font-size:12px;'>{svc}</code></td>"
                          f"<td>{icon} {st}</td></tr>")

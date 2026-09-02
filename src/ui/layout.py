@@ -109,34 +109,52 @@ code { font-family:ui-monospace, monospace; background:#22262b; padding:1px 5px;
 """
 
 
-def _iface_info(name):
-    """Tra ve (co_ip, ip, chi_tiet) cua 1 interface."""
-    ip = ""
-    try:
-        out = subprocess.run(["ip", "-4", "-o", "addr", "show", name],
-                             capture_output=True, text=True, timeout=4).stdout
-        for tok in out.split():
-            if "/" in tok and tok.count(".") == 3:
-                ip = tok.split("/")[0]
-                break
-    except Exception:
-        pass
+import socket
+import struct
+import time
 
-    state = ""
+# Thanh trang thai duoc goi lai moi 30 giay tu MOI trang dang mo. Nho ket qua
+# vai giay de khong lam viec trung lap - dang ke tren Pi doi thap.
+_STATUS_CACHE = {"data": None, "at": 0.0}
+STATUS_TTL = 4.0
+
+
+def _ipv4_of(name):
+    """
+    Lay dia chi IPv4 cua 1 interface bang ioctl - KHONG spawn tien trinh.
+    Truoc day goi lenh `ip` cho tung interface (3 lan moi lan tai trang);
+    tren Pi 3/Zero moi lan spawn ton hang chuc mili giay.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sk:
+            packed = struct.pack("256s", name.encode()[:15])
+            return socket.inet_ntoa(
+                __import__("fcntl").ioctl(sk.fileno(), 0x8915, packed)[20:24]
+            )
+    except Exception:
+        return ""
+
+
+def _iface_info(name):
+    """Tra ve (co_ip, ip, trang_thai_link) cua 1 interface."""
+    ip = _ipv4_of(name)
     try:
         with open(f"/sys/class/net/{name}/operstate") as f:
             state = f.read().strip()
     except Exception:
         state = "?"
-
     return bool(ip), ip, state
 
 
-def get_status_chips():
+def get_status_chips(use_cache=True):
     """
     Thong tin cho thanh trang thai: card LAN, card WiFi, Bluetooth PAN.
-    Yeu cau so 2 cua anh: co IP thi hien IP.
+    Co IP thi hien IP, khong thi ghi ro ly do.
     """
+    if use_cache and _STATUS_CACHE["data"] is not None:
+        if time.time() - _STATUS_CACHE["at"] < STATUS_TTL:
+            return _STATUS_CACHE["data"]
+
     chips = []
 
     # --- eth0 (card LAN) ---
@@ -192,6 +210,8 @@ def get_status_chips():
         "up": up_b,
     })
 
+    _STATUS_CACHE["data"] = chips
+    _STATUS_CACHE["at"] = time.time()
     return chips
 
 

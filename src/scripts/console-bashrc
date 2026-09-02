@@ -1,0 +1,63 @@
+# Console Pi - Cau hinh shell cho terminal tren web
+#
+# Duoc nap bang `bash --rcfile` khi mo tab Terminal, KHONG sua .bashrc cua
+# he thong - de khong dung vao cau hinh ca nhan cua nguoi dung.
+
+# Nap cau hinh goc truoc (neu co) roi moi de len
+[ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
+[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+
+# ---------------------------------------------------------------- Mau sac
+export TERM=xterm-256color
+export CLICOLOR=1
+
+# Dau nhac: [user@host] duong-dan $
+#   root -> do (canh bao dang co toan quyen), user thuong -> xanh la
+if [ "$(id -u)" -eq 0 ]; then
+    PS1='\[\e[1;31m\][\u@\h]\[\e[0m\] \[\e[1;34m\]\w\[\e[0m\] \[\e[1;31m\]#\[\e[0m\] '
+else
+    PS1='\[\e[1;32m\][\u@\h]\[\e[0m\] \[\e[1;34m\]\w\[\e[0m\] \$ '
+fi
+
+# Mau cho lenh thong dung
+alias ls='ls --color=auto'
+alias ll='ls -lah --color=auto'
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias diff='diff --color=auto'
+alias dmesg='dmesg --color=always'
+alias journalctl='journalctl --no-pager'
+
+# ------------------------------------------------- Mau cho lenh mang (grc)
+# grc to mau output theo mau san co: IP, MAC, cong, trang thai up/down...
+if command -v grc >/dev/null 2>&1; then
+    for c in ping ping6 traceroute traceroute6 ifconfig netstat ss \
+             ip nmap tcpdump mtr df du free dig; do
+        alias "$c"="grc --colour=auto $c"
+    done
+fi
+
+# ------------------------------------------------ Mau cho output thiet bi
+# Doc log/output Cisco co mau: dung `cisco` truoc lenh, vi du:
+#   cisco cat capture.txt
+#   grc --colour=on --config=conf.cisco cat file
+alias cisco='grcat /opt/console-pi/scripts/grc-cisco.conf'
+
+# ------------------------------------------------------------ Loi tat hay dung
+alias ports='ss -tlnp'
+alias myip='ip -brief -color addr'
+alias routes='ip -brief -color route'
+alias serial='ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null'
+alias logs='journalctl -u console-pi-dashboard -n 50'
+
+# ---------------------------------------------------------- Loi chao dau tien
+if [ -z "$CONSOLE_PI_GREETED" ]; then
+    export CONSOLE_PI_GREETED=1
+    printf '\e[1;32m'
+    echo "Console Pi - terminal"
+    printf '\e[0m'
+    echo "Loi tat: ports  myip  routes  serial  logs"
+    echo "Lenh mang (ping/traceroute/ip/ss/nmap...) da co mau san."
+    echo "Xem file co mau kieu Cisco:  cisco <ten-file>"
+    echo
+fi

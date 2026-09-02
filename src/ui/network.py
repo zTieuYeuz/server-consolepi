@@ -68,20 +68,53 @@ def get_net_status():
 
 
 # ---------------------------------------------------------------- WiFi
-def scan_wifi():
+# Ket qua quet WiFi duoc nho lai. Ly do: `iw scan` mat 2-3 giay, neu quet
+# moi lan tai trang thi trang WiFi luon cham 3 giay - rat kho chiu, nhat la
+# tren Pi doi thap. Gio trang hien ngay, quet chay nen va cap nhat sau.
+_SCAN_CACHE = {"ssids": [], "at": 0.0, "running": False}
+SCAN_TTL = 45          # giay - du lau de khong quet lien tuc
+
+
+def scan_wifi(force=False):
+    """Tra ve danh sach SSID da nho. KHONG quet o day (tranh lam cham trang)."""
+    if force or (time.time() - _SCAN_CACHE["at"] > SCAN_TTL):
+        start_scan_async()
+    return _SCAN_CACHE["ssids"]
+
+
+def _do_scan():
     try:
         r = subprocess.run(["iw", "dev", "wlan0", "scan"],
-                           capture_output=True, text=True, timeout=20)
+                           capture_output=True, text=True, timeout=25)
         ssids = []
         for line in r.stdout.split("\n"):
             line = line.strip()
             if line.startswith("SSID:"):
-                s = line.replace("SSID:", "").strip()
-                if s and s not in ssids:
-                    ssids.append(s)
-        return ssids
+                v = line.replace("SSID:", "").strip()
+                if v and v not in ssids:
+                    ssids.append(v)
+        if ssids:
+            _SCAN_CACHE["ssids"] = ssids
+        _SCAN_CACHE["at"] = time.time()
     except Exception:
-        return []
+        _SCAN_CACHE["at"] = time.time()
+    finally:
+        _SCAN_CACHE["running"] = False
+
+
+def start_scan_async():
+    """Quet o luong nen de khong chan viec tai trang."""
+    if _SCAN_CACHE["running"]:
+        return
+    _SCAN_CACHE["running"] = True
+    threading.Thread(target=_do_scan, daemon=True).start()
+
+
+def scan_age():
+    """Bao nhieu giay truoc da quet - de hien cho nguoi dung biet do moi."""
+    if not _SCAN_CACHE["at"]:
+        return None
+    return int(time.time() - _SCAN_CACHE["at"])
 
 
 def load_saved_wifi():
@@ -346,10 +379,23 @@ def _wifi_page(msg="", ok=True):
     scan_form = ""
     if not locked:
         ssids = scan_wifi()
+        age = scan_age()
         opts = "".join(f"<option>{_esc(s)}</option>" for s in ssids)
+        if not ssids:
+            fresh = "Dang quet lan dau, bam Quet lai sau vai giay..."
+        elif age is None:
+            fresh = ""
+        elif age < 60:
+            fresh = f"quet {age} giay truoc"
+        else:
+            fresh = f"quet {age // 60} phut truoc"
         scan_form = f"""
         <h2>Ket noi WiFi moi</h2>
         <div class="card">
+          <form method="POST" action="/wifi-rescan" style="margin-bottom:12px;">
+            <button type="submit" class="gray small">🔄 Quet lai</button>
+            <span style="color:#8b93a1;font-size:13px;margin-left:9px;">{fresh}</span>
+          </form>
           <form method="POST" action="/connect-wifi">
             <label>Chon WiFi ({len(ssids)} mang tim thay)</label>
             <select name="ssid" required>{opts}</select>
@@ -547,6 +593,13 @@ def register_network(app):
         </div>
         <p><a class="btn" href="/wifi">← Quay lai trang WiFi</a></p>"""
         return render_page(body, active="/wifi", title="Dang chuyen mang")
+
+    @app.route("/wifi-rescan", methods=["POST"])
+    def wifi_rescan():
+        start_scan_async()
+        time.sleep(3)      # cho quet mot chut de nguoi dung thay ket qua ngay
+        return _wifi_page(msg="Dang quet lai. Neu chua thay du, bam Quet lai lan nua.",
+                          ok=True)
 
     @app.route("/wifi-add", methods=["POST"])
     def wifi_add():

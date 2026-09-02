@@ -31,6 +31,79 @@ DEVICE_TYPES = [
 ]
 
 
+
+# ---------------------------------------------------------------------------
+# To mau output thiet bi mang hien tren web
+#
+# Khac voi terminal (output tu thiet bi gui ve, khong the sua real-time),
+# o day la HTML do minh sinh ra nen to mau duoc triet de.
+# Mau chon theo thoi quen doc cua dan mang:
+#   do = van de, xanh la = tot, vang = canh bao,
+#   xanh nhat = dia chi IP, tim = ten cong
+# ---------------------------------------------------------------------------
+import html as _html
+import re as _re
+
+_RULES = [
+    # Trang thai xau
+    (_re.compile(r"\b(?:down|err-disabled|errdisable|shutdown|failed|denied|deny|"
+                 r"invalid|error|CRC|collision|drops?|unreachable|timeout|inactive|"
+                 r"blocking|discarding)\b", _re.I), "c-bad"),
+    # Trang thai tot
+    (_re.compile(r"\b(?:up|connected|established|active|forwarding|permit|success|"
+                 r"enabled|reachable|full-duplex)\b", _re.I), "c-good"),
+    # Canh bao
+    (_re.compile(r"\b(?:warning|notice|half-duplex|learning|listening|standby|"
+                 r"administratively|notconnect|disabled)\b", _re.I), "c-warn"),
+    # Ten cong Cisco (day du va viet tat)
+    (_re.compile(r"\b(?:GigabitEthernet|TenGigabitEthernet|FastEthernet|Ethernet|"
+                 r"Serial|Loopback|Port-channel|Vlan|Tunnel|Management)[\d/\.]*\b"), "c-if"),
+    (_re.compile(r"\b(?:Gi|Fa|Te|Et|Se|Lo|Po|Vl|Tu|Mg)\d+(?:/\d+)*(?:\.\d+)?\b"), "c-if"),
+    # MAC kieu Cisco va kieu thong thuong
+    (_re.compile(r"\b(?:[0-9a-fA-F]{4}\.){2}[0-9a-fA-F]{4}\b"), "c-mac"),
+    (_re.compile(r"\b(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}\b"), "c-mac"),
+    # Dia chi IPv4
+    (_re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?\b"), "c-ip"),
+]
+
+COLOR_CSS = """
+.termout { background:#0f1114; border:1px solid #2c3036; padding:13px;
+           border-radius:6px; overflow-x:auto; white-space:pre-wrap;
+           word-break:break-word; font-size:13px; line-height:1.55;
+           font-family:ui-monospace, Menlo, Consolas, monospace; color:#d5dae2; }
+.termout .c-bad  { color:#ff6b6b; font-weight:600; }
+.termout .c-good { color:#7ddc7d; font-weight:600; }
+.termout .c-warn { color:#ffd166; }
+.termout .c-ip   { color:#68d5d5; }
+.termout .c-mac  { color:#6cb6ff; }
+.termout .c-if   { color:#d99bff; }
+"""
+
+
+def colorize_output(text):
+    """Chuyen output thiet bi thanh HTML co mau. Luon escape truoc de an toan."""
+    if not text:
+        return ""
+    out = _html.escape(text)
+
+    # Danh dau bang the tam roi doi sang <span> o buoc cuoi, tranh viec
+    # quy tac sau to mau trung vao the HTML cua quy tac truoc.
+    marks = []
+
+    def _sub(m, cls):
+        marks.append((cls, m.group(0)))
+        return f"\x00{len(marks) - 1}\x00"
+
+    for rx, cls in _RULES:
+        out = rx.sub(lambda m, c=cls: _sub(m, c), out)
+
+    def _restore(m):
+        cls, val = marks[int(m.group(1))]
+        return f'<span class="{cls}">{val}</span>'
+
+    return _re.sub(r"\x00(\d+)\x00", _restore, out)
+
+
 def _esc(s):
     return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;"))
@@ -119,7 +192,8 @@ def _render(msg="", ok=True, prefill="", form=None, result=None, preview=None):
         else:
             result_html = (f'<div class="msg ok">Chay xong'
                            f'{" va da luu cau hinh" if result.get("saved") else ""}.</div>'
-                           f'<h2>Ket qua</h2><pre>{_esc(result.get("output"))}</pre>')
+                           f'<h2>Ket qua</h2>'
+                           f'<div class="termout">{colorize_output(result.get("output"))}</div>')
 
     # --- Man hinh xem truoc truoc khi chay ---
     if preview:

@@ -88,6 +88,7 @@ PKGS_CORE=(
     bluez avahi-daemon
     lldpd arp-scan tcpdump tshark traceroute nmap eapoltest
     ethtool usbutils lsof
+    grc
 )
 # fonts-noto-color-emoji: KHONG the thieu. Pi OS Lite khong co font emoji,
 # thieu no thi moi icon tren giao dien hien thanh o vuong rong.

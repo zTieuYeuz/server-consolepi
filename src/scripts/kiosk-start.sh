@@ -41,6 +41,23 @@ PROFILE_DIR=/tmp/console-pi-kiosk-profile
 rm -rf "$PROFILE_DIR"
 mkdir -p "$PROFILE_DIR"
 
+# --- Dieu chinh theo dung luong RAM cua may -----------------------------
+# Pi 3 (1GB) va Pi Zero 2W (512MB) khong gong noi Chromium mac dinh:
+# no de ra 1 tien trinh cho moi trang + GPU + zygote, de an het 1GB.
+# Nhung may nay can gioi han so tien trinh va bo nho JS.
+RAM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
+
+LOW_RAM_FLAGS=""
+if [ "$RAM_MB" -lt 1500 ]; then
+    LOW_RAM_FLAGS="--process-per-site         --renderer-process-limit=2         --js-flags=--max-old-space-size=96         --disable-gpu-rasterization         --disable-smooth-scrolling"
+    echo "RAM ${RAM_MB}MB - bat che do tiet kiem bo nho"
+elif [ "$RAM_MB" -lt 3000 ]; then
+    LOW_RAM_FLAGS="--process-per-site --renderer-process-limit=3"
+    echo "RAM ${RAM_MB}MB - gioi han vua phai"
+else
+    echo "RAM ${RAM_MB}MB - dung cau hinh day du"
+fi
+
 exec chromium \
     --kiosk \
     --user-data-dir="$PROFILE_DIR" \
@@ -56,4 +73,15 @@ exec chromium \
     --touch-events=enabled \
     --enable-features=OverlayScrollbar \
     --autoplay-policy=user-gesture-required \
+    --disable-background-networking \
+    --disable-background-timer-throttling \
+    --disable-component-update \
+    --disable-domain-reliability \
+    --disable-sync \
+    --disable-extensions \
+    --disable-breakpad \
+    --no-pings \
+    --metrics-recording-only \
+    --disable-dev-shm-usage \
+    $LOW_RAM_FLAGS \
     "$DASH_URL"
