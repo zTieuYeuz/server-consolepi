@@ -484,7 +484,7 @@ systemctl daemon-reload
 ENABLE_LIST=( console-pi-dashboard console-pi-term-local console-pi-term-ssh
               bt-pan0 dnsmasq-bt bt-agent bt-nap
               wifi-fallback.timer lldpd bluetooth avahi-daemon nginx
-              wpa_supplicant@wlan0 )
+              wpa_supplicant@wlan0 console-pi-selftest )
 [[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( console-pi-kiosk )
 
 for s in "${ENABLE_LIST[@]}"; do

@@ -1,0 +1,17 @@
+[Unit]
+Description=Console Pi - tu kiem tra sau khi khoi dong
+# Cho moi thu on dinh roi moi kiem tra: wifi-fallback chay lan dau sau ~2 phut,
+# Bluetooth can thoi gian noi lai thiet bi da ghep.
+After=multi-user.target console-pi-dashboard.service nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Doi 150 giay: du de wifi-fallback chay it nhat mot vong va Bluetooth noi lai
+ExecStartPre=/bin/sleep 150
+ExecStart=/bin/sh -c '/opt/console-pi/scripts/selftest.sh > /var/log/console-pi-selftest.log 2>&1; echo "ma thoat: $?" >> /var/log/console-pi-selftest.log'
+RemainAfterExit=yes
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target
