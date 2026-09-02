@@ -343,6 +343,16 @@ def bt_agent_state():
     return None
 
 
+def _thiet_bi_da_thay(mac):
+    """Kiem tra BlueZ co dang "biet" thiet bi nay khong (da tung discover)."""
+    try:
+        out = subprocess.run(["bluetoothctl", "devices"],
+                             capture_output=True, text=True, timeout=6).stdout
+        return mac.lower() in out.lower()
+    except Exception:
+        return False
+
+
 def _pair_worker(mac):
     """Ghep cap o luong nen. Ban phim can nguoi dung go ma nen co the lau."""
     steps = []
@@ -354,26 +364,59 @@ def _pair_worker(mac):
         # Xoa truoc thi moi lan ghep deu la mot lan ghep that su moi.
         subprocess.run(["bluetoothctl", "remove", mac],
                        capture_output=True, timeout=15)
-        time.sleep(1)
 
-        for action, limit in (("pair", 60), ("trust", 10), ("connect", 25)):
-            _PAIR["step"] = action
-            r = subprocess.run(["bluetoothctl", action, mac],
-                               capture_output=True, text=True, timeout=limit)
-            out = (r.stdout + r.stderr).strip().splitlines()
-            last = out[-1] if out else ""
-            good = any(k in last.lower() for k in
-                       ("success", "successful", "already"))
-            steps.append((action, good, last[:120]))
-            if action == "pair" and not good:
+        # LOI DA GAP THAT (quan trong): sau khi `remove`, BlueZ QUEN HAN thiet
+        # bi - no khong con nam trong danh sach "da biet" nua. Goi `pair` ngay
+        # sau do that bai tuc khac voi loi "Device ... not available", VI
+        # `pair` theo dia chi MAC chi hoat dong voi thiet bi da duoc discover.
+        #
+        # Rieng ban phim/chuot Bluetooth con co mot dac diem: sau khi bi tu
+        # choi ket noi (do chua bonded), no se tu dong thu KET NOI LAI toi
+        # dung dia chi Pi nhieu lan - day la "page request" truc tiep, KHONG
+        # phai quang ba discover, nen `bluetoothctl scan` thong thuong khong
+        # bat duoc no. No CHI hien ra duoc khi nguoi dung bat lai che do ghep
+        # cap tren CHINH ban phim (giu nut Connect cho den khi den nhap nhay
+        # NHANH - khac voi nhap nhay cham la dang co reconnect binh thuong).
+        #
+        # Vi vay o day ta quet toi da 20 giay, kiem tra dinh ky xem thiet bi
+        # da xuat hien chua, thay vi doi cung mot khoang thoi gian co dinh.
+        _PAIR["step"] = "quet"
+        subprocess.Popen(["bluetoothctl", "--timeout", "20", "scan", "on"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        thay = False
+        for _ in range(20):
+            time.sleep(1)
+            if _thiet_bi_da_thay(mac):
+                thay = True
                 break
+        subprocess.run(["bluetoothctl", "scan", "off"],
+                       capture_output=True, timeout=8)
+
+        if not thay:
+            steps.append(("quet", False,
+                          "Khong tim thay thiet bi sau 20s quet. Ban phim co the "
+                          "chua o che do ghep cap (giu nut Connect/pairing tren "
+                          "ban phim cho den khi den nhap nhay NHANH, roi thu lai "
+                          "ngay), hoac da het pin."))
+        else:
+            for action, limit in (("pair", 60), ("trust", 10), ("connect", 25)):
+                _PAIR["step"] = action
+                r = subprocess.run(["bluetoothctl", action, mac],
+                                   capture_output=True, text=True, timeout=limit)
+                out = (r.stdout + r.stderr).strip().splitlines()
+                last = out[-1] if out else ""
+                good = any(k in last.lower() for k in
+                           ("success", "successful", "already"))
+                steps.append((action, good, last[:120]))
+                if action == "pair" and not good:
+                    break
     except subprocess.TimeoutExpired:
         steps.append((_PAIR["step"], False,
                       "Qua thoi gian cho - ban phim khong phan hoi hoac chua go ma"))
     except Exception as e:
         steps.append((_PAIR["step"], False, str(e)[:120]))
 
-    _PAIR["ok"] = all(g for _, g, _ in steps) and len(steps) == 3
+    _PAIR["ok"] = all(g for _, g, _ in steps) and len(steps) == 4
     _PAIR["detail"] = " | ".join(f"{a}: {m}" for a, _, m in steps)
 
     # Kiem tra lai bang SU THAT chu khong tin chu "success" cua bluetoothctl:
@@ -415,8 +458,16 @@ def bt_connect_profile(mac, want=""):
     tinh/dien thoai ta goi thang org.bluez.Network1.Connect(NAP) de lay mang;
     voi ban phim/chuot thi connect binh thuong la dung (ho so HID).
 
-    Luon `trust` truoc: khong trust thi lan sau bat len thiet bi khong tu noi
-    lai duoc - dung kich ban 3 anh can.
+    Chi `trust` khi thiet bi DA BOND that su - khong phai luc nao cung trust.
+    khong trust thi lan sau bat len thiet bi khong tu noi lai duoc (kich ban 3
+    anh can), NHUNG trust mot thiet bi CHUA bond la co hai: ReconnectUUIDs
+    (main.conf) khien BlueZ lien tuc thu ket noi nen tren voi bat ky thiet bi
+    trusted nao quang bao HID/PAN - voi thiet bi chua bond, moi lan thu deu
+    bi tu choi ("Rejected connection from !bonded device"), tao thanh vong
+    lap spam nen VA con co the tranh chap tai nguyen HCI voi mot lan ghep cap
+    moi dang co gang thuc hien cung luc. Da gap that: bam "Ket noi" tren
+    thiet bi chua bond -> trust bi bat sai -> lan ghep cap lai sau do that
+    bai kho hieu vi adapter dang ban doi pho voi cac lan tu-ket-noi nen.
     """
     if not re.fullmatch(r"[0-9A-Fa-f:]{17}", mac or ""):
         return False, "Dia chi MAC khong hop le."
@@ -424,6 +475,10 @@ def bt_connect_profile(mac, want=""):
     info = bt_device_info(mac)
     kind = want or info["cls"]["kind"]
     ten = info["name"]
+
+    if not info.get("bonded", False):
+        return False, (f"{ten} chua ghep cap that su (thieu khoa lien ket). "
+                       "Bam 'Ghep cap lai' thay vi 'Ket noi'.")
 
     subprocess.run(["bluetoothctl", "trust", mac], capture_output=True, timeout=10)
 
