@@ -1,0 +1,12 @@
+# Console Pi - tu nhan moi loai cap console
+#
+# Truoc day phai `systemctl enable console-pi-ttyd@ttyUSB0` san cho tung
+# thiet bi. Cap la chua tung cam thi khong co gi khoi dong dich vu.
+#
+# Dong duoi bat systemd khoi dong dich vu cho BAT KY cong serial USB nao vua
+# cam - khong can biet truoc ten hay loai chip. Ho tro ca:
+#   ttyUSB*  cap dung chip chuyen doi (FTDI, Prolific, CH340, CP210x...)
+#   ttyACM*  thiet bi CDC-ACM (cap console micro-USB cua Cisco...)
+SUBSYSTEM=="tty", ACTION=="add", ENV{ID_BUS}=="usb", \
+    KERNEL=="ttyUSB*|ttyACM*", TAG+="systemd", \
+    ENV{SYSTEMD_WANTS}+="console-pi-ttyd@%k.service"

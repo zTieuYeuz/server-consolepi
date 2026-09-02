@@ -286,8 +286,9 @@ def bt_scan(seconds=10):
 
 
 def bt_device_info(mac):
-    """Tra ve dict thong tin 1 thiet bi (Paired/Connected/Trusted/Icon)."""
-    info = {"paired": False, "connected": False, "trusted": False, "icon": "", "name": mac}
+    """Thong tin 1 thiet bi, kem phan loai (ban phim / may tinh / tai nghe...)."""
+    info = {"paired": False, "connected": False, "trusted": False,
+            "icon": "", "name": mac, "cod": 0, "uuids": []}
     try:
         out = subprocess.run(["bluetoothctl", "info", mac],
                              capture_output=True, text=True, timeout=6).stdout
@@ -298,31 +299,128 @@ def bt_device_info(mac):
             elif t.startswith("Paired:"):    info["paired"] = t.endswith("yes")
             elif t.startswith("Connected:"): info["connected"] = t.endswith("yes")
             elif t.startswith("Trusted:"):   info["trusted"] = t.endswith("yes")
+            elif t.startswith("Class:"):
+                try:
+                    info["cod"] = int(t.split()[1], 16)
+                except (IndexError, ValueError):
+                    pass
+            elif t.startswith("UUID:"):
+                m = re.search(r"\(([0-9a-fA-F-]{36})\)", t)
+                if m:
+                    info["uuids"].append(m.group(1))
     except Exception:
         pass
+    info["cls"] = classify_bt(info["cod"], info["uuids"], info["icon"])
     return info
 
 
-def bt_pair(mac):
-    """Ghep cap + tin cay + ket noi 1 thiet bi (ban phim, chuot...)."""
+BT_STATE_FILE = "/run/console-pi-bt.json"
+
+# Trang thai ghep cap dang chay (chay o luong nen de trang web khong bi treo)
+_PAIR = {"running": False, "mac": "", "step": "", "ok": None, "detail": ""}
+
+
+def bt_agent_state():
+    """
+    Doc ma so ma agent dang hien (de nguoi dung go len ban phim).
+    Agent ghi file nay khi BlueZ hoi ma - xem scripts/bt-auto-agent.py
+    """
+    try:
+        with open(BT_STATE_FILE) as f:
+            d = json.load(f)
+        # Chi coi la con hieu luc trong 2 phut
+        if time.time() - d.get("at", 0) < 120:
+            return d
+    except Exception:
+        pass
+    return None
+
+
+def _pair_worker(mac):
+    """Ghep cap o luong nen. Ban phim can nguoi dung go ma nen co the lau."""
     steps = []
-    for action in ("pair", "trust", "connect"):
-        try:
+    try:
+        for action, limit in (("pair", 60), ("trust", 10), ("connect", 25)):
+            _PAIR["step"] = action
             r = subprocess.run(["bluetoothctl", action, mac],
-                               capture_output=True, text=True, timeout=35)
+                               capture_output=True, text=True, timeout=limit)
             out = (r.stdout + r.stderr).strip().splitlines()
             last = out[-1] if out else ""
-            good = ("success" in last.lower() or "successful" in last.lower()
-                    or "already" in last.lower())
-            steps.append((action, good, last[:110]))
+            good = any(k in last.lower() for k in
+                       ("success", "successful", "already"))
+            steps.append((action, good, last[:120]))
             if action == "pair" and not good:
-                break        # khong ghep duoc thi khoi lam tiep
+                break
+    except subprocess.TimeoutExpired:
+        steps.append((_PAIR["step"], False,
+                      "Qua thoi gian cho - ban phim khong phan hoi hoac chua go ma"))
+    except Exception as e:
+        steps.append((_PAIR["step"], False, str(e)[:120]))
+
+    _PAIR["ok"] = all(g for _, g, _ in steps) and len(steps) == 3
+    _PAIR["detail"] = " | ".join(f"{a}: {m}" for a, _, m in steps)
+    _PAIR["step"] = "xong"
+    _PAIR["running"] = False
+
+
+def bt_pair_start(mac):
+    """Bat dau ghep cap o luong nen, tra ve ngay de trang web khong treo."""
+    if _PAIR["running"]:
+        return False, "Dang ghep cap thiet bi khac, doi mot chut."
+    _PAIR.update(running=True, mac=mac, step="pair", ok=None, detail="")
+    threading.Thread(target=_pair_worker, args=(mac,), daemon=True).start()
+    return True, ""
+
+
+def bt_pair_state():
+    return dict(_PAIR)
+
+
+def bt_connect_profile(mac, want=""):
+    """
+    Ket noi theo DUNG ho so cua thiet bi.
+
+    `bluetoothctl connect` chung chung de that bai voi thiet bi da ho so
+    (vd laptop quang cao ca A2DP lan PAN): BlueZ chon dai va bao loi. Voi may
+    tinh/dien thoai ta goi thang org.bluez.Network1.Connect(NAP) de lay mang;
+    voi ban phim/chuot thi connect binh thuong la dung (ho so HID).
+
+    Luon `trust` truoc: khong trust thi lan sau bat len thiet bi khong tu noi
+    lai duoc - dung kich ban 3 anh can.
+    """
+    if not re.fullmatch(r"[0-9A-Fa-f:]{17}", mac or ""):
+        return False, "Dia chi MAC khong hop le."
+
+    info = bt_device_info(mac)
+    kind = want or info["cls"]["kind"]
+    ten = info["name"]
+
+    subprocess.run(["bluetoothctl", "trust", mac], capture_output=True, timeout=10)
+
+    if kind == "net":
+        try:
+            import dbus
+            bus = dbus.SystemBus()
+            path = "/org/bluez/hci0/dev_" + mac.upper().replace(":", "_")
+            net = dbus.Interface(bus.get_object("org.bluez", path), "org.bluez.Network1")
+            iface = str(net.Connect("nap"))
+            return True, (f"Da ket noi mang Bluetooth voi {ten} qua giao dien "
+                          f"{iface}. May do se cap IP cho Pi.")
         except Exception as e:
-            steps.append((action, False, str(e)[:110]))
-            break
-    ok = all(g for _, g, _ in steps) and len(steps) == 3
-    detail = " | ".join(f"{a}: {m}" for a, _, m in steps)
-    return ok, detail
+            detail = str(e).split(":")[-1].strip()[:110]
+            return False, (f"Khong noi duoc mang (PAN) voi {ten}: {detail}. "
+                           "Tren may do phai bat chia se ket noi qua Bluetooth "
+                           "(Windows: Personal Area Network; Mac: Internet Sharing).")
+
+    r = subprocess.run(["bluetoothctl", "connect", mac],
+                       capture_output=True, text=True, timeout=25)
+    out = (r.stdout + r.stderr).strip().splitlines()
+    last = out[-1] if out else ""
+    good = "success" in last.lower() or "Connected: yes" in r.stdout
+    if good:
+        loai = info["cls"]["label"].lower()
+        return True, f"Da ket noi {ten} ({loai})."
+    return False, f"Khong ket noi duoc {ten}: {last[:120]}"
 
 
 def bt_unpair(mac):
@@ -335,8 +433,153 @@ def bt_unpair(mac):
         return False, str(e)[:120]
 
 
+
+# ---------------------------------------------------------------------------
+# Phan loai thiet bi Bluetooth
+#
+# Truoc day chi dua vao truong `Icon` cua BlueZ voi bang 6 muc, nen laptop,
+# iPad, may Mac, dien thoai deu roi vao "khac" va nut "Ket noi" thi goi
+# `bluetoothctl connect` chung chung - khong biet nen noi ho so mang (PAN)
+# hay ho so ban phim (HID). Do la ly do ghep cap ban phim hay treo.
+#
+# Class of Device la mot so 24 bit theo chuan Bluetooth:
+#   bit 2-7   : minor class (y nghia phu thuoc major)
+#   bit 8-12  : major class  <- xac dinh LOAI thiet bi
+#   bit 13-23 : service class (co dich vu mang / audio / ... khong)
+# ---------------------------------------------------------------------------
+
+MAJOR_CLASSES = {
+    0: ("Khong ro", "🔗"),
+    1: ("May tinh", "💻"),
+    2: ("Dien thoai", "📱"),
+    3: ("Thiet bi mang", "🌐"),
+    4: ("Am thanh", "🎧"),
+    5: ("Ban phim / Chuot", "⌨️"),
+    6: ("May anh / May in", "🖨️"),
+    7: ("Thiet bi deo", "⌚"),
+    8: ("Do choi", "🧸"),
+    9: ("Y te", "🩺"),
+}
+
+# Minor class khi major = 1 (May tinh) va = 5 (Peripheral)
+MINOR_COMPUTER = {1: "May ban", 2: "May chu", 3: "Laptop",
+                  4: "Handheld", 5: "Palm", 6: "Wearable"}
+MINOR_PHONE = {1: "Dien thoai di dong", 2: "Dien thoai ban",
+               3: "Smart phone", 4: "Modem", 5: "ISDN"}
+
+UUID_HID = "00001124-0000-1000-8000-00805f9b34fb"   # Human Interface Device
+UUID_NAP = "00001116-0000-1000-8000-00805f9b34fb"   # Network Access Point
+UUID_PANU = "00001115-0000-1000-8000-00805f9b34fb"  # PAN User
+UUID_A2DP = "0000110b-0000-1000-8000-00805f9b34fb"  # Audio Sink
+
+
+def classify_bt(cod, uuids=None, icon=""):
+    """
+    Tra ve {"major", "label", "icon", "kind"} - `kind` la thu ma UI dung de
+    quyet dinh hien nut nao: "hid" (ban phim/chuot), "net" (may tinh, dien
+    thoai - noi mang qua PAN), "audio", hoac "other".
+
+    Uu tien UUID that su thiet bi quang cao, roi moi den Class of Device,
+    cuoi cung moi den Icon cua BlueZ (kem chinh xac nhat).
+    """
+    uuids = [str(u).lower() for u in (uuids or [])]
+    try:
+        cod = int(cod or 0)
+    except (TypeError, ValueError):
+        cod = 0
+
+    major = (cod >> 8) & 0x1F
+    minor = (cod >> 2) & 0x3F
+    label, emoji = MAJOR_CLASSES.get(major, ("Khong ro", "🔗"))
+
+    if major == 1 and minor in MINOR_COMPUTER:
+        label = MINOR_COMPUTER[minor]
+    elif major == 2 and minor in MINOR_PHONE:
+        label = MINOR_PHONE[minor]
+    elif major == 5:
+        # bit 6-7 cua minor: 01 = ban phim, 10 = chuot, 11 = ca hai
+        kb = minor & 0x10
+        ms = minor & 0x20
+        if kb and ms:
+            label, emoji = "Ban phim + Chuot", "⌨️"
+        elif ms:
+            label, emoji = "Chuot", "🖱️"
+        elif kb:
+            label, emoji = "Ban phim", "⌨️"
+
+    # UUID la bang chung manh nhat ve viec thiet bi LAM DUOC gi
+    if UUID_HID in uuids:
+        kind = "hid"
+        if major not in (5,):
+            label, emoji = (label or "Thiet bi nhap lieu"), "⌨️"
+    elif UUID_NAP in uuids or UUID_PANU in uuids:
+        kind = "net"
+    elif UUID_A2DP in uuids:
+        kind = "audio"
+    elif major == 5:
+        kind = "hid"
+    elif major in (1, 2, 3):
+        kind = "net"
+    elif major == 4:
+        kind = "audio"
+    else:
+        kind = "other"
+
+    # Khong doc duoc CoD (thiet bi BLE chi quang cao) -> dua vao Icon
+    if cod == 0 and icon:
+        fallback = {"input-keyboard": ("Ban phim", "⌨️", "hid"),
+                    "input-mouse": ("Chuot", "🖱️", "hid"),
+                    "computer": ("May tinh", "💻", "net"),
+                    "phone": ("Dien thoai", "📱", "net"),
+                    "audio-card": ("Loa", "🔊", "audio"),
+                    "audio-headset": ("Tai nghe", "🎧", "audio")}
+        if icon in fallback:
+            label, emoji, kind = fallback[icon]
+
+    return {"major": major, "label": label, "icon": emoji, "kind": kind}
+
+
+# Giu lai cho code cu chua chuyen sang classify_bt()
 ICON_MAP = {"input-keyboard": "⌨️", "input-mouse": "🖱️", "computer": "💻",
             "phone": "📱", "audio-card": "🔊", "audio-headset": "🎧"}
+
+
+
+def wifi_disconnect():
+    """
+    Ngat WiFi mot cach AN TOAN de con noi lai duoc.
+
+    KHONG dung `ip addr flush` tran lan: tren may nay wlan0 do systemd-networkd
+    quan ly, xoa dia chi bang tay lam lech trang thai lease. Cach dung la ha
+    wpa_supplicant (ca dang unit lan dang -B do wifi-fallback.sh chay), roi bao
+    networkd cau hinh lai - mat carrier thi networkd tu bo dia chi.
+    """
+    subprocess.run(["systemctl", "stop", "wpa_supplicant@wlan0"],
+                   capture_output=True, timeout=15)
+    subprocess.run(["pkill", "-f", "wpa_supplicant -B -i wlan0"],
+                   capture_output=True, timeout=10)
+    time.sleep(1)
+    subprocess.run(["networkctl", "reconfigure", "wlan0"],
+                   capture_output=True, timeout=15)
+    return True, ("Da ngat WiFi. Pi se tu danh gia lai trong vong 2 phut: "
+                  "thay mang quen thi noi lai, khong thay thi bat AP ConsolePi.")
+
+
+def client_via_wlan():
+    """
+    Nguoi dung co dang truy cap QUA chinh WiFi nay khong?
+    Neu co, bam ngat WiFi se lam ho mat ket noi - phai canh bao truoc.
+    """
+    try:
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
+        ip = ip.split(",")[0].strip()
+        _, _, wlan_ip = get_net_status()
+        if not ip or not wlan_ip:
+            return False
+        # Cung 3 octet dau = cung dai mang wlan0
+        return ip.rsplit(".", 1)[0] == wlan_ip.rsplit(".", 1)[0]
+    except Exception:
+        return False
 
 
 # ------------------------------------------------------------- Trang
@@ -393,7 +636,7 @@ def _wifi_page(msg="", ok=True):
         <h2>Ket noi WiFi moi</h2>
         <div class="card">
           <form method="POST" action="/wifi-rescan" style="margin-bottom:12px;">
-            <button type="submit" class="gray small">🔄 Quet lai</button>
+            <button type="submit" class="gray small" data-busy="Dang quet WiFi...">🔄 Quet lai</button>
             <span style="color:#8b93a1;font-size:13px;margin-left:9px;">{fresh}</span>
           </form>
           <form method="POST" action="/connect-wifi">
@@ -405,13 +648,32 @@ def _wifi_page(msg="", ok=True):
               <input type="checkbox" name="save" value="1" checked style="width:20px;height:20px;">
               <span>Luu de lan sau tu ket noi</span>
             </label>
-            <div class="row" style="margin-top:13px;"><button type="submit">Ket noi</button></div>
+            <div class="row" style="margin-top:13px;"><button type="submit" data-busy="Dang ket noi, cho 20-30 giay...">Ket noi</button></div>
           </form>
           <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
             Neu dang xem qua WiFi, ket noi se dut khi Pi chuyen mang. Sau 20-30 giay
             hay noi may vao mang moi roi vao lai <code>http://server-console.local</code>.
           </p>
         </div>"""
+
+    # Nut ngat chi hien khi dang thuc su ket noi WiFi (khong phai che do AP)
+    disconnect_html = ""
+    if mode == "Client" and ssid:
+        warn = ""
+        if client_via_wlan():
+            warn = ('<div class="msg warn" style="margin:11px 0 0;">⚠️ Ban dang truy cap '
+                    'QUA chinh WiFi nay. Ngat se lam mat ket noi cua ban - hay cam day LAN '
+                    'hoac noi vao AP ConsolePi truoc.</div>')
+        disconnect_html = f"""
+        <form method="POST" action="/wifi-disconnect" style="margin-top:12px;"
+              onsubmit="return confirm('Ngat ket noi WiFi {_esc(ssid)}?');">
+          <button type="submit" class="red" data-busy="Dang ngat...">
+            ⏏ Ngat ket noi WiFi
+          </button>
+          <span style="color:#8b93a1;font-size:13px;margin-left:9px;">
+            Khong xoa WiFi da luu. Pi tu danh gia lai sau toi da 2 phut.
+          </span>
+        </form>{warn}"""
 
     body = f"""
     {msg_html}{last_html}
@@ -422,6 +684,7 @@ def _wifi_page(msg="", ok=True):
         <tr><th>Mang</th><td>{_esc(ssid) or '-'}</td></tr>
         <tr><th>Dia chi IP</th><td><code>{ip or '-'}</code></td></tr>
       </table>
+      {disconnect_html}
     </div>
     {ap_card}
     {scan_form}
@@ -451,18 +714,37 @@ def _bt_page(msg="", ok=True, scanned=None):
     # --- Thiet bi da ghep cap ---
     rows = ""
     for mac, i in infos:
-        icon = ICON_MAP.get(i["icon"], "🔗")
+        c = i["cls"]
         state = ("🟢 dang ket noi" if i["connected"]
                  else ("⚪ da ghep, chua noi" if i["paired"] else "—"))
+
+        # Nut phai khop voi LOAI thiet bi. Ban phim/chuot dung ho so HID;
+        # may tinh, dien thoai, iPad dung ho so mang PAN - goi nham thi
+        # BlueZ bao loi kho hieu hoac treo.
+        if c["kind"] == "net":
+            btn = ('<button type="submit" class="small" data-busy="Dang noi mang...">'
+                   '🌐 Ket noi mang (PAN)</button>')
+            prof = "net"
+        elif c["kind"] == "hid":
+            btn = ('<button type="submit" class="small" data-busy="Dang noi...">'
+                   '⌨️ Ket noi ban phim/chuot</button>')
+            prof = "hid"
+        else:
+            btn = ('<button type="submit" class="small" data-busy="Dang noi...">'
+                   'Ket noi lai</button>')
+            prof = ""
+
         rows += f"""
         <tr>
-          <td>{icon} <strong>{_esc(i['name'])}</strong><br>
+          <td>{c['icon']} <strong>{_esc(i['name'])}</strong><br>
               <code style="font-size:12px;">{_esc(mac)}</code></td>
+          <td>{_esc(c['label'])}</td>
           <td>{state}</td>
           <td>
             <form method="POST" action="/bt-connect" style="display:inline;">
               <input type="hidden" name="mac" value="{_esc(mac)}">
-              <button type="submit" class="small">Ket noi lai</button>
+              <input type="hidden" name="profile" value="{prof}">
+              {btn}
             </form>
             <form method="POST" action="/bt-unpair" style="display:inline;"
                   onsubmit="return confirm('Xoa ghep cap {_esc(i['name'])}?');">
@@ -481,16 +763,16 @@ def _bt_page(msg="", ok=True, scanned=None):
             if mac in paired_macs:
                 continue
             i = bt_device_info(mac)
-            icon = ICON_MAP.get(i["icon"], "🔗")
+            c = i["cls"]
             new_rows += f"""
             <tr>
-              <td>{icon} <strong>{_esc(name)}</strong><br>
+              <td>{c['icon']} <strong>{_esc(name)}</strong><br>
                   <code style="font-size:12px;">{_esc(mac)}</code></td>
-              <td>{_esc(i['icon']) or 'khong ro loai'}</td>
+              <td>{_esc(c['label'])}</td>
               <td>
                 <form method="POST" action="/bt-pair" style="display:inline;">
                   <input type="hidden" name="mac" value="{_esc(mac)}">
-                  <button type="submit" class="blue small">Ghep cap</button>
+                  <button type="submit" class="blue small" data-busy="Dang ghep...">Ghep cap</button>
                 </form>
               </td>
             </tr>"""
@@ -500,24 +782,77 @@ def _bt_page(msg="", ok=True, scanned=None):
                    <th style="width:120px;">Thao tac</th></tr>{new_rows}</table>
         {'<p style="color:#8b93a1;">Khong thay thiet bi moi nao. Nho bat che do ghep cap tren ban phim (thuong giu nut Connect vai giay den khi den nhap nhay).</p>' if not new_rows else ''}"""
 
+    # --- Khoi hien ma so / trang thai ghep cap ---
+    ag = bt_agent_state()
+    ps = bt_pair_state()
+    pair_html = ""
+
+    if ag and ag.get("kind") == "passkey":
+        pair_html = f"""
+        <div class="card" style="border-left:4px solid #ffd166;background:#2a2519;">
+          <h3 style="color:#ffd166;">⌨️ Go ma nay TREN BAN PHIM Bluetooth</h3>
+          <div style="font-size:44px;font-weight:700;letter-spacing:9px;
+                      font-family:ui-monospace,monospace;color:#fff;
+                      text-align:center;padding:14px 0;">{_esc(ag.get('value'))}</div>
+          <p style="text-align:center;color:#c9ced6;margin:0;">
+            Go 6 chu so tren roi bam <strong>Enter</strong> ngay tren ban phim
+            <strong>{_esc(ag.get('device'))}</strong>.
+          </p>
+          <p style="text-align:center;color:#8b93a1;font-size:13px;margin-top:9px;">
+            Da go {ag.get('entered', 0)} ky tu &middot; trang tu lam moi moi 3 giay
+          </p>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ag and ag.get("kind") == "confirm":
+        pair_html = f"""
+        <div class="card" style="border-left:4px solid #6cb6ff;">
+          <h3>Ma xac nhan: <code style="font-size:22px;">{_esc(ag.get('value'))}</code></h3>
+          <p style="color:#8b93a1;margin:0;">Doi chieu voi ma hien tren
+          <strong>{_esc(ag.get('device'))}</strong> roi bam dong y ben do.</p>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ps.get("running"):
+        pair_html = f"""
+        <div class="card" style="border-left:4px solid #6cb6ff;">
+          <h3>⏳ Dang ghep cap {_esc(ps.get('mac'))}</h3>
+          <p style="color:#8b93a1;margin:0;">Buoc hien tai: <code>{_esc(ps.get('step'))}</code>.
+          Neu la ban phim, hay <strong>bat che do ghep cap tren ban phim</strong>
+          (thuong giu nut Connect den khi den nhap nhay) va cho ma so hien ra.</p>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ps.get("ok") is False and ps.get("detail"):
+        pair_html = f"""
+        <div class="msg err">Ghep cap that bai.<br>
+        <span style="font-size:13px;">{_esc(ps.get('detail'))}</span></div>"""
+    elif ps.get("ok") is True:
+        pair_html = '<div class="msg ok">Da ghep cap va ket noi thanh cong.</div>'
+
     body = f"""
     {msg_html}
+    {pair_html}
 
     <h2>Ghep ban phim / chuot Bluetooth</h2>
     <div class="card">
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-        Dung khi man hinh cam ung khong tien go chu. Bat che do ghep cap tren
-        ban phim truoc (thuong giu nut cho den khi den nhap nhay), roi bam Quet.
+        Dung khi man hinh cam ung khong tien go chu.
       </p>
+      <ol style="color:#8b93a1;font-size:13px;margin:0 0 12px;padding-left:19px;line-height:1.75;">
+        <li>Bat che do ghep cap tren ban phim (thuong giu nut Connect den khi den nhap nhay)</li>
+        <li>Bam <strong>Quet thiet bi</strong> ben duoi</li>
+        <li>Bam <strong>Ghep cap</strong> o dong ban phim</li>
+        <li>Man hinh se hien <strong>6 chu so</strong> - go day so do <strong>tren chinh ban phim
+            Bluetooth</strong> roi bam Enter</li>
+      </ol>
       <form method="POST" action="/bt-scan">
-        <button type="submit">🔍 Quet thiet bi (10 giay)</button>
+        <button type="submit" data-busy="Dang quet 10 giay...">🔍 Quet thiet bi</button>
       </form>
     </div>
     {scan_html}
 
     <h2>Thiet bi da ghep cap ({len(devs)})</h2>
-    <table><tr><th>Thiet bi</th><th style="width:170px;">Trang thai</th>
-               <th style="width:200px;">Thao tac</th></tr>{rows}</table>
+    <table><tr><th>Thiet bi</th><th style="width:150px;">Loai</th>
+               <th style="width:160px;">Trang thai</th>
+               <th style="width:230px;">Thao tac</th></tr>{rows}</table>
     {'<p style="color:#8b93a1;">Chua ghep cap thiet bi nao.</p>' if not devs else ''}
 
     <h2>Ket noi mang qua Bluetooth (PAN)</h2>
@@ -542,7 +877,7 @@ def _bt_page(msg="", ok=True, scanned=None):
           <span>Quen tat ca thiet bi da ghep cap</span>
         </label>
         <div class="row" style="margin-top:13px;">
-          <button type="submit" class="gray">🔄 Reset Bluetooth</button>
+          <button type="submit" class="gray" data-busy="Dang khoi dong lai...">🔄 Reset Bluetooth</button>
         </div>
       </form>
     </div>"""
@@ -593,6 +928,11 @@ def register_network(app):
         </div>
         <p><a class="btn" href="/wifi">← Quay lai trang WiFi</a></p>"""
         return render_page(body, active="/wifi", title="Dang chuyen mang")
+
+    @app.route("/wifi-disconnect", methods=["POST"])
+    def wifi_disconnect_route():
+        ok_d, msg = wifi_disconnect()
+        return _wifi_page(msg=msg, ok=ok_d)
 
     @app.route("/wifi-rescan", methods=["POST"])
     def wifi_rescan():
@@ -665,24 +1005,18 @@ def register_network(app):
     @app.route("/bt-pair", methods=["POST"])
     def bt_pair_route():
         mac = request.form.get("mac", "")
-        ok_p, detail = bt_pair(mac)
-        if ok_p:
-            return _bt_page(msg=f"Da ghep cap va ket noi {mac}.", ok=True)
-        return _bt_page(msg=f"Ghep cap that bai. Chi tiet: {detail}", ok=False)
+        started, err = bt_pair_start(mac)
+        if not started:
+            return _bt_page(msg=err, ok=False)
+        time.sleep(2)      # cho agent kip sinh ma so de hien ngay
+        return _bt_page(msg="Dang ghep cap - lam theo huong dan ben duoi.", ok=True)
 
     @app.route("/bt-connect", methods=["POST"])
     def bt_connect_route():
         mac = request.form.get("mac", "")
-        try:
-            r = subprocess.run(["bluetoothctl", "connect", mac],
-                               capture_output=True, text=True, timeout=25)
-            out = (r.stdout + r.stderr).strip().splitlines()
-            last = out[-1] if out else ""
-            good = "success" in last.lower()
-            return _bt_page(msg=(f"Da ket noi {mac}." if good
-                                 else f"Khong ket noi duoc: {last[:120]}"), ok=good)
-        except Exception as e:
-            return _bt_page(msg=f"Loi: {e}", ok=False)
+        want = request.form.get("profile", "")   # "net" | "hid" | "" (tu doan)
+        ok_c, msg = bt_connect_profile(mac, want)
+        return _bt_page(msg=msg, ok=ok_c)
 
     @app.route("/bt-unpair", methods=["POST"])
     def bt_unpair_route():

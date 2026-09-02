@@ -1,0 +1,13 @@
+# Console Pi - TAT tiet kiem dien tren card WiFi
+#
+# VI SAO: mac dinh Raspberry Pi bat power_save cho wlan0. Card WiFi ngu bot de
+# tiet kiem dien, nhung hau qua la:
+#   - Router mat lien lac voi Pi sau mot luc khong co traffic
+#   - Console/SSH/ping deu khong toi duoc
+#   - NHUNG IP van con tren interface -> man hinh Pi van hien IP nhu binh thuong
+#     khien nguoi dung tuong mang van tot
+#
+# Day la nguyen nhan kinh dien gay "dang dung tu nhien rot WiFi" tren Pi.
+# Voi thiet bi console dung luc su co mang, khong duoc phep de xay ra.
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="wlan*", \
+    RUN+="/usr/sbin/iw dev %k set power_save off"

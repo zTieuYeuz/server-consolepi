@@ -12,11 +12,23 @@
 DEV="$1"
 [ -z "$DEV" ] && { echo "Dung: $0 ttyUSB0"; exit 1; }
 
-IDX="${DEV#ttyUSB}"
+# Hai ho thiet bi dung dai cong rieng de khong dam nhau:
+#   ttyUSB0..3 -> 8001..8004  (cap FTDI / Prolific / CH340)
+#   ttyACM0..3 -> 8005..8008  (cap Cisco USB Console va thiet bi CDC-ACM khac)
+# Cong thuc PHAI khop voi console_port_for() trong ui/home.py va bang map
+# trong config/nginx-console-pi.conf.
+case "$DEV" in
+    ttyACM*) BASE=8005; IDX="${DEV#ttyACM}" ;;
+    ttyUSB*) BASE=8001; IDX="${DEV#ttyUSB}" ;;
+    *)       echo "Khong ho tro thiet bi: $DEV"; exit 1 ;;
+esac
 case "$IDX" in ''|*[!0-9]*) IDX=0 ;; esac
-PORT=$((8001 + IDX))
+PORT=$((BASE + IDX))
 SESSION="console-$DEV"
 BAUD="${CONSOLE_BAUD:-9600}"
+
+# Thiet bi phai ton tai (co the vua bi rut ra)
+[ -e "/dev/$DEV" ] || { echo "Khong thay /dev/$DEV"; exit 1; }
 
 # Cung bang mau voi cac terminal khac. Thiet bi Cisco thuong khong tu gui
 # ma mau, nhung nhung thiet bi co gui (NX-OS, IOS-XE, thiet bi nen Linux)

@@ -170,7 +170,7 @@ def _render_settings(msg="", ok=True):
         buttons = "".join(f"""
           <form method="POST" action="/settings/rotate" style="display:inline;">
             <input type="hidden" name="rotation" value="{val}">
-            <button type="submit" class="{'blue' if transform == val else 'gray'}">{label}</button>
+            <button type="submit" class="{'blue' if transform == val else 'gray'}" data-busy="Dang xoay...">{label}</button>
           </form>""" for val, label in ROTATIONS)
         screen_card = f"""
         <div class="card">

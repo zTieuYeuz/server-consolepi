@@ -19,6 +19,22 @@ else
     PS1='\[\e[1;32m\][\u@\h]\[\e[0m\] \[\e[1;34m\]\w\[\e[0m\] \$ '
 fi
 
+# Mau khi go lenh va khi bam Tab goi y (nhe, khong can thu vien ngoai).
+# Khong dung ble.sh/zsh-syntax-highlighting vi qua nang cho Pi - do la
+# thiet bi dung luc su co, khong duoc de shell cham.
+bind 'set colored-stats on'            2>/dev/null   # mau theo loai file khi Tab
+bind 'set colored-completion-prefix on' 2>/dev/null  # to phan da go khi goi y
+bind 'set visible-stats on'            2>/dev/null   # them ky hieu loai file
+bind 'set mark-symlinked-directories on' 2>/dev/null
+
+# Mau cho trang man (doc tai lieu lenh de hon)
+export LESS_TERMCAP_md=$'\e[1;36m'    # tieu de dam - xanh
+export LESS_TERMCAP_us=$'\e[1;32m'    # gach chan - xanh la
+export LESS_TERMCAP_so=$'\e[1;33;44m' # dong trang thai
+export LESS_TERMCAP_me=$'\e[0m'
+export LESS_TERMCAP_ue=$'\e[0m'
+export LESS_TERMCAP_se=$'\e[0m'
+
 # Mau cho lenh thong dung
 alias ls='ls --color=auto'
 alias ll='ls -lah --color=auto'

@@ -229,7 +229,7 @@ def _render(msg="", ok=True, prefill="", form=None, result=None, preview=None):
             <span>Luu cau hinh vinh vien (write memory) - KHO HOAN TAC, mac dinh khong tick</span>
           </label>
           <div class="row" style="margin-top:14px;">
-            <button type="submit" class="red">✅ Xac nhan va chay</button>
+            <button type="submit" class="red" data-busy="Dang chay tren thiet bi...">✅ Xac nhan va chay</button>
             <a class="btn gray" href="/ssh">Huy</a>
           </div>
         </form>"""
@@ -254,7 +254,7 @@ def _render(msg="", ok=True, prefill="", form=None, result=None, preview=None):
           <input type="text" name="user" placeholder="admin" style="max-width:160px;" required></div>
         <div><label>Cong</label>
           <input type="number" name="port" value="22" style="max-width:95px;"></div>
-        <div><button type="submit">🔑 Ket noi</button></div>
+        <div><button type="submit" data-busy="Dang gui lenh...">🔑 Ket noi</button></div>
       </form>
       <p style="color:#8b93a1;font-size:13px;margin:10px 0 0;">
         Lenh ssh se duoc go vao khung terminal ben duoi. Nhap mat khau thiet bi truc tiep trong do.
@@ -300,7 +300,7 @@ def _render(msg="", ok=True, prefill="", form=None, result=None, preview=None):
         <textarea name="commands" required style="max-width:100%;min-height:170px;">{_esc(prefill)}</textarea>
 
         <div class="row" style="margin-top:13px;">
-          <button type="submit">👁 Xem truoc roi chay</button>
+          <button type="submit" data-busy="Dang chuan bi...">👁 Xem truoc roi chay</button>
         </div>
       </form>
     </div>

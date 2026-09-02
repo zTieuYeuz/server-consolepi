@@ -182,7 +182,11 @@ mv "$INSTALL_DIR/nettools.new" "$INSTALL_DIR/nettools"
 
 install -m 644 "$SRC_DIR/src/app.py" "$INSTALL_DIR/app.py"
 install -m 644 "$SRC_DIR/VERSION"    "$INSTALL_DIR/VERSION"
+# Chi chep FILE. Neu gap thu muc (vd __pycache__ do Python sinh ra khi
+# chay thu script), `install` bao loi va `set -e` lam dung ca ban cai -
+# da tung xay ra that.
 for f in "$SRC_DIR"/src/scripts/*; do
+    [[ -f "$f" ]] || continue
     install -m 755 "$f" "$INSTALL_DIR/scripts/$(basename "$f")"
 done
 [[ -f "$SRC_DIR/uninstall.sh" ]] && install -m 755 "$SRC_DIR/uninstall.sh" "$INSTALL_DIR/uninstall.sh"
@@ -197,7 +201,7 @@ say "Cau hinh he thong"
 # --- systemd-networkd: giu IP tinh cua AP khong bi xoa ---
 mkdir -p /etc/systemd/network
 if [[ ! -f /etc/systemd/network/12-wlan0.network ]] || \
-   ! grep -q "KeepConfiguration" /etc/systemd/network/12-wlan0.network 2>/dev/null; then
+   ! grep -q "KeepConfiguration=static" /etc/systemd/network/12-wlan0.network 2>/dev/null; then
     cat > /etc/systemd/network/12-wlan0.network <<'EOF'
 [Match]
 Name=wlan0
@@ -206,9 +210,17 @@ Name=wlan0
 DHCP=ipv4
 # KHONG xoa IP "la" (vd 192.168.50.1 cua AP do script tu gan) khi reconfigure.
 # Thieu dong nay: bat AP xong bi systemd-networkd am tham xoa mat IP.
-KeepConfiguration=yes
+#
+# Phai la 'static', KHONG duoc dung 'yes':
+#   yes -> networkd coi lease DHCP la "critical". Sau khi IP wlan0 bi xoa
+#          (nut Ngat WiFi, hoac wifi-fallback chuyen che do), networkd tu choi
+#          xin lai IP: "DHCPv4 connection considered critical, ignoring request
+#          to reconfigure it". WiFi ket noi duoc nhung KHONG BAO GIO co IP,
+#          phai restart systemd-networkd moi song. Da gap that.
+#   static -> van giu IP tinh cua AP, nhung lease DHCP thi khong bi khoa.
+KeepConfiguration=static
 EOF
-    ok "Da tao 12-wlan0.network (co KeepConfiguration=yes)"
+    ok "Da tao 12-wlan0.network (KeepConfiguration=static)"
 else
     ok "12-wlan0.network da dung"
 fi
@@ -281,11 +293,22 @@ else
     ok "GIU NGUYEN danh sach WiFi da luu"
 fi
 # Service wpa_supplicant he thong tranh quyen dieu khien wlan0 -> phai chan
+# Mask ban wpa_supplicant "toan cuc" (dung chung cho moi interface, do
+# NetworkManager dieu khien) de no khong tranh card WiFi voi hostapd.
 systemctl mask wpa_supplicant 2>/dev/null || true
+
+# ...nhung PHAI bat ban theo-interface thay the, neu khong sau khi reboot
+# KHONG CO GI khoi dong wpa_supplicant va WiFi khong bao gio len.
+# Truoc day may van chay duoc chi vi tien trinh tu lan boot cu con song;
+# reboot mot phat la mat WiFi. Da kiem chung.
+systemctl unmask wpa_supplicant@wlan0 2>/dev/null || true
 
 # --- Bluetooth: ten thiet bi + tu bat ---
 mkdir -p /etc/bluetooth
-if ! grep -q "^AutoEnable" /etc/bluetooth/main.conf 2>/dev/null; then
+# Kiem tra TAT CA khoa can co, khong chi AutoEnable. Neu chi kiem tra 1 khoa
+# thi ban nang cap them khoa moi se bi bo qua im lang (da gap voi ReconnectUUIDs).
+if ! grep -q "^ReconnectUUIDs" /etc/bluetooth/main.conf 2>/dev/null \
+   || ! grep -q "^AutoEnable" /etc/bluetooth/main.conf 2>/dev/null; then
     python3 - <<'PY'
 import re
 p = "/etc/bluetooth/main.conf"
@@ -306,7 +329,16 @@ def setkv(sec, key, val, s):
     return s[:i] + blk + s[end:]
 for sec, k, v in [("General","DiscoverableTimeout","0"),
                   ("General","PairableTimeout","0"),
-                  ("Policy","AutoEnable","true")]:
+                  ("Policy","AutoEnable","true"),
+                  # Kich ban 3: thiet bi DA ghep cap bat len la noi lai ngay,
+                  # khong phai vao dashboard bam nut. BlueZ chi tu noi lai khi
+                  # duoc liet ke o day: HID (ban phim/chuot) va PAN (mang).
+                  ("Policy","ReconnectUUIDs",
+                   "00001124-0000-1000-8000-00805f9b34fb,"
+                   "00001116-0000-1000-8000-00805f9b34fb,"
+                   "00001115-0000-1000-8000-00805f9b34fb"),
+                  ("Policy","ReconnectAttempts","7"),
+                  ("Policy","ReconnectIntervals","1,2,4,8,16,32,64")]:
     s = setkv(sec, k, v, s)
 open(p, "w").write(s)
 PY
@@ -314,6 +346,20 @@ PY
 fi
 grep -q "PRETTY_HOSTNAME=ConsolePi" /etc/machine-info 2>/dev/null || \
     echo "PRETTY_HOSTNAME=ConsolePi" > /etc/machine-info
+
+# --- Tu nhan moi loai cap console + tat tiet kiem dien WiFi ---
+for r in 99-consolepi-serial.rules 99-consolepi-wifi.rules; do
+    if [[ -f "$SRC_DIR/config/$r" ]]; then
+        install -m 644 "$SRC_DIR/config/$r" "/etc/udev/rules.d/$r"
+    fi
+done
+udevadm control --reload-rules 2>/dev/null || true
+ok "Da cai quy tac tu nhan cap console va tat tiet kiem dien WiFi"
+
+# Tat tiet kiem dien ngay (khong doi cam lai card)
+for w in /sys/class/net/wlan*; do
+    [[ -e "$w" ]] && iw dev "$(basename "$w")" set power_save off 2>/dev/null || true
+done
 
 # --- Cam ung khi man hinh xoay ---
 # cage/wlroots KHONG tu xoay toa do cam ung theo huong man hinh, nen phai
@@ -428,7 +474,8 @@ systemctl daemon-reload
 # 127.0.0.1:5000 - neu bat nginx truoc thi cong 80 con bi giu, nginx chet.
 ENABLE_LIST=( console-pi-dashboard console-pi-term-local console-pi-term-ssh
               bt-pan0 dnsmasq-bt bt-agent bt-nap
-              wifi-fallback.timer lldpd bluetooth avahi-daemon nginx )
+              wifi-fallback.timer lldpd bluetooth avahi-daemon nginx
+              wpa_supplicant@wlan0 )
 [[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( console-pi-kiosk )
 
 for s in "${ENABLE_LIST[@]}"; do
@@ -436,7 +483,10 @@ for s in "${ENABLE_LIST[@]}"; do
 done
 
 # ttyd cho tung cong serial dang cam (template unit, tu bam theo udev)
-for dev in /dev/ttyUSB*; do
+# Ca hai ho thiet bi: ttyUSB (FTDI/Prolific/CH340) va ttyACM (cap Cisco USB
+# console, cac thiet bi CDC-ACM). Chi quet ttyUSB* la bo sot dung cai cap
+# micro-USB cua Cisco.
+for dev in /dev/ttyUSB* /dev/ttyACM*; do
     [[ -e "$dev" ]] || continue
     systemctl enable "console-pi-ttyd@$(basename "$dev")" >/dev/null 2>&1 || true
 done
