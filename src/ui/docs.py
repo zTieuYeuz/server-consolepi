@@ -236,6 +236,51 @@ hien dung mau, va ket qua chay hang loat tren web thi luon co mau.</div>
 <p>Sua bang mau: <code>/opt/console-pi/scripts/console-bashrc</code> (shell) va
 <code>/opt/console-pi/scripts/grc-cisco.conf</code> (output thiet bi).</p>"""),
 
+    ("porttest", "🔌 Kiem tra cong mang day", """
+<p>Tab <strong>Network Tools → Kiem tra cong mang</strong> gop moi thu can biet khi cam
+day RJ45 vao mot switch/router chua biet gi ve no.</p>
+
+<h3>Toc do / Duplex that</h3>
+<p>Doc truc tiep tu driver card mang (<code>ethtool</code>), khong phai suy doan:</p>
+<ul>
+  <li><strong>Toc do thuong luong</strong> - 10/100/1000 Mbps that su, khong phai toc do
+      toi da ma cap ho tro</li>
+  <li><strong>Duplex</strong> - Half Duplex hau nhu chac chan la loi cau hinh
+      (duplex mismatch), gay mat goi va cham nghiem trong</li>
+  <li><strong>Nang luc hai ben</strong> - so sanh nang luc Pi quang ba voi nang luc phia
+      switch quang ba, giup biet AI dang "ep" toc do thap hon</li>
+</ul>
+<p>Canh bao tu dong khi ca hai ben deu ho tro Gigabit ma chi thuong luong duoc thap hon -
+day thuong la dau hieu day cap kem chat luong.</p>
+
+<h3>Thong ke loi duong truyen</h3>
+<p>So goi CRC error, drop, collision... Day cap kem hoac bi nhieu se hien ra o day
+<strong>truoc ca khi</strong> nguoi dung nhan ra mang cham.</p>
+
+<h3>Cap vat ly (TDR)</h3>
+<p>Mot so card mang ho tro do khoang cach den cho day dut qua phan mem
+(<code>ethtool --test</code>). Chip mang tren dong Raspberry Pi hien tai
+<strong>khong ho tro</strong> tinh nang nay - trang se noi ro thay vi bao ket qua sai.</p>
+
+<h3>PoE</h3>
+<p>Chi hien khi phan cung THAT SU co mach do (vi du mot so PoE HAT rieng). Raspberry Pi
+khong co san mach nay.</p>
+
+<h3>Bang thong that</h3>
+<p>Toc do thuong luong o tren chi la <strong>gioi han toi da</strong> cua cong - muon biet
+bang thong THAT phai truyen du lieu qua day. Hai cach:</p>
+<ul>
+  <li><strong>Cloudflare Speed Test</strong> - khong can chuan bi gi o dau kia, bam la chay
+      ngay. Hop khi cong dang cam vao switch/router bat ky (khong co iperf3 server rieng).
+      Tai 25MB tu <code>speed.cloudflare.com</code>, dich vu speedtest cong khai chinh
+      chu cua Cloudflare.</li>
+  <li><strong>iperf3</strong> - chinh xac hon, nhung can MOT MAY THU HAI (laptop/server cam
+      chung switch) chay <code>iperf3 -s</code> truoc. Do duoc ca hai chieu Upload (Pi gui
+      di) va Download (Pi nhan ve) - huu ich de biet switch co that su Gigabit end-to-end
+      hay khong, tach biet voi toc do Internet.</li>
+</ul>
+"""),
+
     ("suckhoe", "🩺 Suc khoe thiet bi va nut nguon", """
 <p>Tab <strong>Tong quan</strong> co khoi <em>Suc khoe thiet bi</em>:</p>
 <ul>

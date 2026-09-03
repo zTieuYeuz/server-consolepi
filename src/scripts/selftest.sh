@@ -21,8 +21,12 @@ kiem_dich_vu() {
 }
 
 kiem_trang() {
+    # Dung cong 8880 (danh rieng cho man hinh kiosk tai cho, duoc mien dang
+    # nhap) chu KHONG phai cong 80. Sau ban va lo hong Cloudflare, cong 80
+    # LUON doi dang nhap (dung, xem muc Bao mat duong vao o tren) - dung no
+    # o day se bao 302 va bi hieu nham la loi.
     local code
-    code=$(curl -s -o /dev/null -m 8 -w "%{http_code}" "http://127.0.0.1$1")
+    code=$(curl -s -o /dev/null -m 8 -w "%{http_code}" "http://127.0.0.1:8880$1")
     if [ "$code" = "200" ]; then dat "Trang $1"
     else tach "Trang $1 tra ve $code"; fi
 }
