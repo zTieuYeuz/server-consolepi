@@ -87,10 +87,20 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
     # Loc dau vao: host/user duoc ghep thanh 1 DONG LENH chay trong shell cua
     # terminal, khong loc thi mot gia tri kieu "1.1.1.1; rm -rf /" se chay
     # that su tren Pi.
-    if not re.fullmatch(r"[A-Za-z0-9._:\-]{1,255}", host):
-        return False, "Dia chi khong hop le (chi cho chu, so va cac dau . - _ :)."
-    if not re.fullmatch(r"[A-Za-z0-9._\-\\]{1,64}", user):
-        return False, "Tai khoan khong hop le (chi cho chu, so va cac dau . - _ \\)."
+    #
+    # LO HONG RIENG DA VA (ra soat lai code): ca 2 mau tren DEU cho phep dau
+    # "-" o VI TRI DAU chuoi. Voi lenh `ssh`, mot host/user bat dau bang "-"
+    # la ky thuat CHEN CO LENH THAT SU va nguy hiem - vi du host =
+    # "-oProxyCommand=<lenh tuy y>" khien ssh chay LENH TUY Y ngay khi ket
+    # noi, du cac ky tu nguy hiem nhu ";  $ ` & |" da bi chan tu truoc. Nay
+    # bat buoc KY TU DAU TIEN phai la chu/so, khong duoc la dau "-" (hay bat
+    # ky ky tu dac biet nao khac).
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:\-]{0,254}", host):
+        return False, ("Dia chi khong hop le (phai bat dau bang chu/so, sau do cho "
+                       "them cac dau . - _ :).")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._\-\\]{0,63}", user):
+        return False, ("Tai khoan khong hop le (phai bat dau bang chu/so, sau do cho "
+                       "them cac dau . - _ \\).")
     try:
         cong = int(port or 22)
     except (TypeError, ValueError):

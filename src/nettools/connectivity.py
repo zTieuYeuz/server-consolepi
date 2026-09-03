@@ -1,11 +1,28 @@
 """
 Console Pi Network Tools - Ping / Traceroute (netool.io: Connectivity Test)
 """
+import re
 import subprocess
 
 from flask import request, render_template_string
 
 from . import nettools_bp
+
+# LO HONG DA VA (ra soat lai code, khong phai da gap that): truoc day
+# khong kiem tra gi ca truoc khi dua "host" thang vao subprocess.run(). Vi
+# goi dang list (khong shell=True) nen KHONG the chen lenh shell duoc, NHUNG
+# neu "host" bat dau bang dau "-" (vd "--flood" hoac "-f") thi ping/
+# traceroute co the hieu nham do la MOT CO LENH thay vi ten may - va "ping
+# --flood" can quyen root de chay (ma tien trinh Flask nay CHINH LA root).
+# Rui ro thuc te thap (chi admin da dang nhap moi goi duoc, va ho da co
+# quyen root qua Terminal roi) nhung van nen chan cho chac, phong truong hop
+# co lo hong CSRF khac khien trinh duyet cua admin tu dong gui form nay ma
+# ho khong hay biet.
+_MAU_HOST_HOP_LE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.\-:]{0,253}$")
+
+
+def _host_hop_le(host):
+    return bool(host) and bool(_MAU_HOST_HOP_LE.fullmatch(host))
 
 
 def run_ping(host, iface="eth0", count=4, timeout=2):
@@ -83,8 +100,12 @@ def ping_route():
 
     ping_out = trace_out = ""
     if ran:
-        ping_out = run_ping(host, iface=iface)
-        trace_out = run_traceroute(host, iface=iface)
+        if not _host_hop_le(host):
+            ping_out = trace_out = ("(dia chi khong hop le - chi cho chu, so va "
+                                    "cac dau . - : , khong duoc bat dau bang dau -)")
+        else:
+            ping_out = run_ping(host, iface=iface)
+            trace_out = run_traceroute(host, iface=iface)
 
     return render_template_string(
         PING_TEMPLATE, host=host, iface=iface, ran=ran,

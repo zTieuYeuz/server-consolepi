@@ -110,7 +110,12 @@ def tim_mtu(host, iface="eth0", timeout=2):
     tran theo MTU that cua interface. Neu mot router bao thang MTU qua ICMP
     Frag-needed thi dung ngay ket qua do, khong can do tiep.
     """
-    if not host or not re.fullmatch(r"[A-Za-z0-9.\-:]{1,255}", host):
+    # Bat dau bang chu/so (khong duoc la dau "-"): "host" duoc dua thang vao
+    # subprocess dang list (khong shell=True) nen khong the chen lenh shell,
+    # nhung neu bat dau bang "-" thi ping co the hieu nham do la MOT CO LENH
+    # (vd "--flood" - can quyen root, tien trinh nay chinh la root) thay vi
+    # dia chi. Ra soat lai code phat hien, khong phai da gap that.
+    if not host or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.\-:]{0,254}", host):
         return {"ok": False, "error": "Dia chi/hostname khong hop le.", "mtu": None,
                 "chi_tiet": [], "canh_bao": None, "tu_router": False}
 

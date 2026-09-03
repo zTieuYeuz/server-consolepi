@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.17
+
+**Va lo hong chen co lenh (argument injection) qua dia chi/tai khoan** o 4
+noi: Ping/Traceroute, MTU Discovery, Kiem tra TLS, va tab SSH. Ra soat lai
+code phat hien, khong phai da gap that.
+
+Mau kiem tra dau vao cu (`[A-Za-z0-9.\-:]`) cho phep dau "-" o **vi tri dau
+chuoi**. Voi cong cu goi subprocess dang list (khong `shell=True`) thi
+khong chen duoc lenh shell, nhung mot gia tri nhu `--flood` co the bi
+`ping` hieu nham la MOT CO LENH thay vi dia chi - va tien trinh Flask nay
+chay duoi quyen root nen `ping --flood` se chay duoc that.
+
+**Rieng tab SSH nghiem trong hon nhieu**: host/user o day duoc go THANG
+vao mot shell that qua tmux de chay lenh `ssh`. Mot host bat dau bang
+`-oProxyCommand=<lenh tuy y>` la ky thuat chen co SSH THAT SU va nguy
+hiem - cho phep chay lenh tuy y ngay khi ket noi, hoan toan khong can
+dung den cac ky tu `; $ \` & |` da bi chan tu truoc.
+
+Sua bang cach bat buoc **ky tu dau tien phai la chu hoac so**, khong duoc
+la dau "-" hay bat ky ky tu dac biet nao khac, o ca 4 noi. Da kiem thu voi
+cac chuoi chen thuc te (`-f`, `--flood`, `-oProxyCommand=...`, `-l`,
+`-4.4.4.4`) - deu bi chan; dia chi/tai khoan hop le (`8.8.8.8`,
+`google.com`, `switch-01.lan`, `fe80::1`) van hoat dong binh thuong qua
+kiem thu voi phien tmux that.
+
 ## 0.4.16
 
 **Phat hien nghiem trong nhat trong dot ra soat toi nay: tinh nang "Tab

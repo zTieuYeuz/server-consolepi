@@ -71,7 +71,12 @@ def kiem_tra_tls(host, port=443, timeout=5):
             "tu_ky": bool, "khop_ten": bool}
     """
     host = (host or "").strip()
-    if not host or not re.fullmatch(r"[A-Za-z0-9.\-:]{1,255}", host):
+    # Bat dau bang chu/so: tranh truong hop host="-..." bi cong cu khac (neu
+    # sau nay co ai goi ham nay roi dua ket qua vao 1 lenh CLI) hieu nham
+    # thanh co lenh. Ham nay tu no dung ssl.socket (khong qua subprocess) nen
+    # khong co nguy co that ngay bay gio, nhung giu dong quy uoc kiem tra dau
+    # vao NHAT QUAN voi cac cong cu khac trong du an la dieu nen lam.
+    if not host or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.\-:]{0,254}", host):
         return {"ok": False, "error": "Dia chi/hostname khong hop le."}
     try:
         port = int(port)
