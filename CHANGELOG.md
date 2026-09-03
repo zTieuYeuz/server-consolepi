@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.4
+
+Sua triet de loi **dan tap lenh bi mat ky tu dau dong** tren switch that
+(`show inventory` -> `how inventory`). Ban 0.4.3 cho co dinh 0.18s giua cac
+dong - VAN MAT CHU, vi `show version` tren switch in ra hang tram dong mat
+vai giay, thiet bi con dang in thi dong sau da toi noi.
+
+Nay khong cho theo dong ho nua ma **cho den khi thiet bi thuc su san sang**:
+man hinh ngung thay doi 0.5s **va** dong cuoi giong dau nhac (ket thuc bang
+`#`, `>`, `$`). Chi "im lang" thoi la chua du - thiet bi cham co the ngung
+giua chung roi in tiep. Neu im lang 2.5s ma van khong thay dau nhac thi cung
+di tiep, de khong ket lai voi thiet bi co dau nhac la.
+
+Kem theo xu ly **`--More--`** (Cisco chia trang): tu bam Space de thiet bi in
+tiep. Trong luc lam da gap them 1 loi cung kieu **ngay trong ma vua viet**:
+ban dau chi kiem tra `--More--` khi man hinh CO THAY DOI, nhung thiet bi dung
+o `--More--` thi man hinh dung im -> bi cham nham la "da in xong" -> gui dong
+ke tiep va ky tu dau tien cua dong do bi thiet bi an lam PHIM BAM sang trang,
+mat chu dung y het loi cu. Nay kiem tra o moi vong.
+
+Da kiem chung bang 2 "thiet bi gia" mo phong switch that (loai in cham vai
+giay va loai co chia trang `--More--`): ca 2 deu giu nguyen ven tung ky tu,
+dong cuoi nam cho bam Enter dung nhu thiet ke.
+
 ## 0.4.3
 
 Bon loi thuc te khi dung tab SSH/terminal, moi loi deu do dac lai truoc khi sua:

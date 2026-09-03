@@ -10,6 +10,7 @@ File luu: /opt/console-pi/command-library.json  (giu nguyen khi cai dat lai)
 import json
 import os
 import subprocess
+import time
 
 from flask import request
 
@@ -161,7 +162,90 @@ def send_to_tmux(session_name, text, press_enter=False):
         return False, f"Loi: {e}"
 
 
-def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.18, toi_da_dong=120):
+def _chup_man_hinh_tmux(session_name):
+    try:
+        r = subprocess.run(["tmux", "capture-pane", "-p", "-t", session_name],
+                           capture_output=True, text=True, timeout=5)
+        return r.stdout if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def _dong_cuoi_man_hinh(text):
+    dong = [l.rstrip() for l in (text or "").splitlines() if l.strip()]
+    return dong[-1] if dong else ""
+
+
+def _giong_dau_nhac(dong):
+    """
+    Dong nay co giong dau nhac dang cho go lenh khong?
+
+    Switch/router: "Switch#", "Switch>", "Switch(config-if)#".
+    May Linux:     "... $" hoac "... #".
+    KHONG tinh dau ":" la dau nhac - do thuong la dau nhac MAT KHAU, gui lenh
+    vao do la sai cho.
+    """
+    d = (dong or "").rstrip()
+    return d.endswith("#") or d.endswith(">") or d.endswith("$")
+
+
+def _cho_thiet_bi_in_xong(session_name, im_lang_giay=0.5,
+                          im_lang_khong_dau_nhac=2.5, cho_toi_da=25.0):
+    """
+    Doi cho toi khi thiet bi IN XONG va THUC SU san sang nhan lenh tiep theo.
+
+    VI SAO KHONG cho mot khoang co dinh: lenh "show version" tren switch that
+    in ra hang tram dong, mat vai giay. Cho co dinh 0.18s roi ban dong ke
+    tiep thi thiet bi VAN DANG IN, chua doc kip dau vao -> mat ky tu dau dong
+    (loi that: "show inventory" thanh "how inventory").
+
+    Dieu kien coi la san sang - phai du CA HAI:
+      1. Man hinh khong doi trong `im_lang_giay`
+      2. Dong cuoi GIONG DAU NHAC (ket thuc bang # > $)
+    Chi "im lang" thoi la CHUA DU: thiet bi cham co the ngung giua chung 1
+    nhip roi in tiep, hoac dang dung o "--More--" cho bam phim - ca hai deu
+    khong phai la da xong. Neu im lang lau (`im_lang_khong_dau_nhac`) ma van
+    khong thay dau nhac thi cung tra ve, de khong ket lai voi nhung thiet bi
+    co dau nhac la.
+
+    LOI THAT DA GAP NGAY TRONG HAM NAY: ban dau chi kiem tra "--More--" khi
+    man hinh CO THAY DOI. Nhung thiet bi dung o "--More--" thi man hinh dung
+    im -> bi cham nham la "da in xong" -> gui dong ke tiep, va ky tu dau tien
+    cua dong do bi thiet bi an luon lam PHIM BAM de sang trang. Ket qua dung
+    y het loi cu: mat 1 ky tu dau dong. Nay kiem tra "--More--" o MOI vong.
+    """
+    het_han = time.time() + cho_toi_da
+    truoc = _chup_man_hinh_tmux(session_name)
+    lan_doi_cuoi = time.time()
+
+    while time.time() < het_han:
+        time.sleep(0.15)
+        hien = _chup_man_hinh_tmux(session_name)
+        cuoi = _dong_cuoi_man_hinh(hien)
+
+        # Kiem tra o MOI vong, khong phu thuoc man hinh co doi hay khong
+        if "--more--" in cuoi.lower():
+            subprocess.run(["tmux", "send-keys", "-t", session_name, "Space"],
+                           capture_output=True, timeout=5)
+            truoc = hien
+            lan_doi_cuoi = time.time()
+            continue
+
+        if hien != truoc:
+            truoc = hien
+            lan_doi_cuoi = time.time()
+            continue
+
+        im_lang = time.time() - lan_doi_cuoi
+        if im_lang >= im_lang_giay and _giong_dau_nhac(cuoi):
+            return True
+        if im_lang >= im_lang_khong_dau_nhac:
+            return True
+
+    return False
+
+
+def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.25, toi_da_dong=120):
     """
     Dan tap lenh vao phien tmux nhung GUI TUNG DONG, co giai lao giua cac dong.
 
@@ -171,17 +255,20 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.18, toi_da_dong=120):
     thiet bi con dang xu ly + echo lai dong truoc, cac ky tu dau cua dong ke
     tiep bi ROI MAT.
 
-    LOI THAT DA GAP: dan tap lenh 3 dong vao switch thi dong "show interfaces
-    trunk" thanh "how interfaces trunk" - mat dung 1 ky tu dau. Da kiem chung
-    lai duong dan phia server khong he cat chu (dan vao bash nhan du nguyen
-    van), nen thu pham la toc do ban ra qua nhanh so voi thiet bi.
+    LOI THAT DA GAP (2 vong):
+      1. Ban ca khoi ra 1 luot -> "show interfaces trunk" thanh "how
+         interfaces trunk".
+      2. Sua thanh cho CO DINH 0.18s giua cac dong -> VAN MAT CHU, vi
+         "show version" tren switch that in ra hang tram dong mat vai giay,
+         0.18s la qua ngan, thiet bi con dang in thi dong sau da toi.
+    Nen bay gio KHONG cho theo thoi gian co dinh nua ma CHO DEN KHI THIET BI
+    IN XONG (man hinh im lang) roi moi gui dong tiep - dung nhip cua tung
+    thiet bi, thiet bi cham cach may cung khong mat chu.
 
-    KHONG bam Enter o DONG CUOI: cac dong trước no thi thiet bi mang coi
+    KHONG bam Enter o DONG CUOI: cac dong truoc no thi thiet bi mang coi
     xuong dong = Enter nen se chay, rieng dong cuoi de nguyen cho nguoi dung
     doc lai lan cuoi roi tu bam - giu dung nguyen tac "xem roi moi chay".
     """
-    import time
-
     dong = [d for d in text.rstrip("\n").split("\n")]
     if not dong or not any(d.strip() for d in dong):
         return False, "Khong co noi dung de dan."
@@ -196,25 +283,46 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.18, toi_da_dong=120):
             return False, (f"Chua co phien terminal '{session_name}'. "
                            f"Mo khung terminal truoc roi bam lai.")
 
+        han_chot = time.time() + 180          # tran tong: khong treo mai mai
+        da_gui = 0
+        cham_gio = False
+
         for i, d in enumerate(dong):
+            if time.time() > han_chot:
+                cham_gio = True
+                break
+
             # -l = gui NGUYEN VAN, khong dich cac chuoi trung ten phim
             # (vi du dong lenh co chu "Space" hay "Enter") thanh phim bam.
             subprocess.run(["tmux", "send-keys", "-l", "-t", session_name, d],
                            capture_output=True, timeout=5)
+            da_gui += 1
+
             if i < len(dong) - 1:
                 subprocess.run(["tmux", "send-keys", "-t", session_name, "Enter"],
                                capture_output=True, timeout=5)
+                # Cho THIET BI in xong roi moi gui dong ke tiep (khong phai
+                # cho mot khoang co dinh - xem giai thich o tren).
+                _cho_thiet_bi_in_xong(session_name)
+                # Nghi them 1 nhip ngan: vai thiet bi in xong dau nhac roi
+                # van con ban vai chuc ms truoc khi doc duoc dau vao.
                 time.sleep(tre_giay)
     except FileNotFoundError:
         return False, "Chua cai tmux tren may."
     except Exception as e:
         return False, f"Loi: {e}"
 
+    if cham_gio:
+        return False, (f"Da gui {da_gui}/{len(dong)} dong roi phai dung vi qua 3 phut - "
+                       f"thiet bi phan hoi qua cham hoac dang ket. Kiem tra khung terminal, "
+                       f"dan phan con lai sau.")
+
     n = len([d for d in dong if d.strip()])
     if len(dong) == 1:
-        return True, f"Da dan vao khung terminal (CHUA chay) - bam Enter trong terminal de chay."
-    return True, (f"Da dan {n} lenh, gui tung dong mot de thiet bi khong roi mat chu. "
-                  f"Dong CUOI chua bam Enter - doc lai roi tu bam de chay.")
+        return True, "Da dan vao khung terminal (CHUA chay) - bam Enter trong terminal de chay."
+    return True, (f"Da dan {n} lenh: gui tung dong, moi dong deu CHO THIET BI IN XONG moi "
+                  f"gui dong tiep nen khong bi roi mat chu. Dong CUOI chua bam Enter - "
+                  f"doc lai roi tu bam de chay.")
 
 
 def _esc(s):
