@@ -64,8 +64,9 @@ cặp tự nối lại khi bật lên (`ReconnectUUIDs`).
 
 ### Chẩn đoán mạng (9 công cụ)
 ARP Scan · Ping/Traceroute · PCAP Capture · LLDP/CDP Discovery ·
-DHCP Testing · STP/LACP/VLAN Detection · Netmiko (SSH cấu hình switch) ·
-802.1X Testing · IF/THEN Automation
+**Kiểm tra toàn diện cổng mạng** (tốc độ/duplex, lỗi đường truyền, PoE, DHCP,
+Internet, băng thông qua Cloudflare — một nút bấm) · STP/LACP/VLAN Detection ·
+Netmiko (SSH cấu hình switch) · 802.1X Testing · IF/THEN Automation
 
 ### Terminal & Tự động hoá
 - **Terminal local** — dòng lệnh trên Pi, phiên tmux không mất khi đóng trình duyệt

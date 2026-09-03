@@ -5,7 +5,7 @@ bam MOT NUT la test het).
 
 Mot lan bam "Kiem tra toan dien" se lam:
   1. Doc thong tin cong vat ly (ethtool) - toc do/duplex that, loi duong
-     truyen, cap, PoE. KHONG can DHCP, luon hien duoc ngay ca khi cong chua
+     truyen, PoE. KHONG can DHCP, luon hien duoc ngay ca khi cong chua
      co IP nao ca.
   2. Gui DHCPDISCOVER, cho DHCPOFFER (khong tieu ton lease - an toan).
   3. Neu co OFFER: tu dong xin that mot lease (REQUEST/ACK), kiem tra ra
@@ -132,14 +132,6 @@ def doc_thong_ke_loi(iface):
     return {"ok": True, "so_lieu": so_lieu, "tong_loi": sum(so_lieu.values())}
 
 
-def kiem_tra_cap(iface):
-    """Nhieu driver pho thong (bcmgenet cua Pi la mot vi du) KHONG ho tro TDR."""
-    rc, out, err = _chay(["ethtool", "--test", iface], timeout=20)
-    if rc != 0 or "not supported" in (err + out).lower() or "Cannot test" in (err + out):
-        return {"ho_tro": False}
-    return {"ho_tro": True, "ket_qua": out.strip()}
-
-
 def doc_poe(iface):
     """Chi hien khi phan cung THAT SU co mach do - khong bia du lieu."""
     for duong in (f"/sys/class/net/{iface}/device/poe_power", "/sys/class/hwmon/hwmon0/poe_watts"):
@@ -155,7 +147,7 @@ def doc_poe(iface):
 def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
     """
     Tra ve {"ok", "error", "offers": [...], "internet": {...}|None,
-            "cong": {...}, "loi_truyen": {...}, "cap": {...}, "poe": {...}}
+            "cong": {...}, "loi_truyen": {...}, "poe": {...}}
 
     LUU Y KY THUAT: dung sniff() + sendp() rieng biet thay vi srp(), vi
     srp() tu ghep cap request/response bang IP.answers() - co logic khong
@@ -169,7 +161,6 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
     """
     cong = doc_thong_tin_cong(iface)
     loi_truyen = doc_thong_ke_loi(iface)
-    cap = kiem_tra_cap(iface)
     poe = doc_poe(iface)
 
     try:
@@ -179,7 +170,7 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
         )
     except ImportError as e:
         return {"ok": False, "error": f"Loi import scapy: {e}", "offers": [], "internet": None,
-                "cong": cong, "loi_truyen": loi_truyen, "cap": cap, "poe": poe}
+                "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
 
     conf.verb = 0
 
@@ -188,7 +179,7 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
         hw = mac2str(hw_str)
     except Exception as e:
         return {"ok": False, "error": f"Khong lay duoc MAC cua {iface}: {e}", "offers": [], "internet": None,
-                "cong": cong, "loi_truyen": loi_truyen, "cap": cap, "poe": poe}
+                "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
 
     xid = random.randint(1, 0xFFFFFFFF)
     pkt = (
@@ -223,11 +214,11 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
     except PermissionError:
         sniffer.stop()
         return {"ok": False, "error": "Khong du quyen mo raw socket (can chay duoi quyen root).",
-                "offers": [], "internet": None, "cong": cong, "loi_truyen": loi_truyen, "cap": cap, "poe": poe}
+                "offers": [], "internet": None, "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
     except OSError as e:
         sniffer.stop()
         return {"ok": False, "error": f"Loi khi gui goi tin: {e}", "offers": [], "internet": None,
-                "cong": cong, "loi_truyen": loi_truyen, "cap": cap, "poe": poe}
+                "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
     else:
         sniffer.stop()
 
@@ -263,7 +254,7 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
         internet_result = _test_internet_qua_dhcp(iface, xid, offers[0], hw)
 
     return {"ok": True, "error": None, "offers": offers, "internet": internet_result,
-            "cong": cong, "loi_truyen": loi_truyen, "cap": cap, "poe": poe}
+            "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
 
 
 def _mask_to_prefixlen(mask):
@@ -507,7 +498,7 @@ DHCP_TEMPLATE = """
 <body>
     <h1>🔌🌐 Kiem tra toan dien cong mang</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Mot nut bam duy nhat: doc toc do/duplex/loi duong truyen/cap/PoE cua cong,
+    <p class="hint">Mot nut bam duy nhat: doc toc do/duplex/loi duong truyen/PoE cua cong,
     gui DHCPDISCOVER, va neu co IP thi kiem tra luon ra Internet + do bang thong that
     (Cloudflare Speed Test) - tat ca trong 1 lan.</p>
     <p class="hint">Khuyen nghi dung <strong>eth0</strong>. Tren <strong>wlan0</strong> cong cu van
@@ -550,11 +541,6 @@ DHCP_TEMPLATE = """
             {% if result.loi_truyen.tong_loi == 0 %}🟢 Khong co loi nao duoc ghi nhan{% else %}
             🔴 Tong {{ result.loi_truyen.tong_loi }} loi - day cap co the kem chat luong hoac bi nhieu{% endif %}</p>
         {% else %}<p class="hint">{{ result.loi_truyen.loi }}</p>{% endif %}
-
-        <h3>Cap vat ly (TDR)</h3>
-        {% if result.cap.ho_tro %}<pre style="background:#111;padding:10px;border-radius:4px;">{{ result.cap.ket_qua }}</pre>
-        {% else %}<p class="hint">Card mang nay khong ho tro do khoang cach den cho dut cap qua phan mem.
-        Dung dong ho do cap (cable tester) rieng neu can kiem tra chi tiet day vat ly.</p>{% endif %}
 
         <h3>PoE (nguon qua cap mang)</h3>
         {% if result.poe.phat_hien %}<p>🟢 Phat hien PoE: {{ result.poe.gia_tri }}</p>

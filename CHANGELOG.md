@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.3.1
+
+Vong nay sua mot **lo hong bao mat nghiem trong**, gop hai cong cu chan
+doan lam mot, va sua nhieu loi phat hien duoc trong luc kiem thu that tren
+may (khong phai doan - tat ca deu do dac/tai hien duoc).
+
+### Bao mat (quan trong - nen cap nhat ngay neu dang dung Cloudflare Tunnel)
+- **Nguoi di qua Cloudflare Tunnel bi cham nham la man hinh gan tai cho,
+  vao thang dashboard va terminal quyen root khong can dang nhap.** Dieu
+  kien mien dang nhap truoc day dua vao dia chi IP (`127.0.0.1`), nhung
+  `cloudflared` chay ngay tren Pi va cung goi vao dia chi do. Da sua bang
+  cach chuyen sang phan biet theo CONG: cong 80 (LAN/WiFi/Cloudflare) luon
+  doi dang nhap, cong 8880 (chi loopback) danh rieng cho man hinh kiosk.
+  `selftest.sh` co them chot chan mo phong dung kieu tan cong nay.
+
+### Tinh nang moi
+- **Duong vao danh cho may/AI** (`GET /ai`, `/api/system`,
+  `/api/console/<dev>/read|send`): dua thiet bi toi diem xa va nho mot AI
+  o dau khac dieu khien giup. Mac dinh tat, tu tao token trong tab *Truy
+  cap tu xa*, hai muc quyen (chi doc / day du), token chi hien mot lan.
+- **Kiem tra toan dien cong mang** (gop DHCP Testing + Kiem tra cong vat ly
+  thanh MOT nut bam): toc do/duplex that, thong ke loi duong truyen, PoE,
+  DHCP, va neu co IP thi tu dong kiem tra ra Internet (ping 8.8.8.8, ping
+  google.com, mo web that) + do bang thong qua Cloudflare Speed Test -
+  khong can iperf3 hay may thu hai. Da bo tinh nang do cap TDR (`ethtool
+  --test`) vi chip mang tren Raspberry Pi khong ho tro - thay vi hien ket
+  qua sai thi bo han, khong con nhac den trong giao dien lan tai lieu.
+- Cho phep bat/tat ban phim ao tren trang truy cap tu xa (truoc day chi co
+  o man hinh gan tai cho).
+- Doc pin an toan hai muc (kernel/UPower luon bat; UPS HAT qua I2C phai tu
+  bat trong Cai dat, vi do dia chi I2C mu de cho ket qua gia).
+
+### Loi da sua (phat hien va kiem chung bang do dac that)
+- **LLDP/CDP Discovery** hien ten thiet bi la "?" va Mgmt IP la "-" moi
+  lan, ke ca khi router/switch quang ba day du - ham phan tich JSON gia
+  dinh sai cau truc du lieu that su cua `lldpcli`.
+- **Ghep cap Bluetooth "hong mot nua"**: thiet bi bao `Connected: yes`
+  nhung khong `Bonded`, khien ban phim khong go duoc gi ma giao dien van
+  hien "dang ket noi" mau xanh. Them kiem tra `Bonded` rieng, nut "Ghep
+  cap lai" tu xoa ban ghi cu truoc khi ghep lai.
+- **DHCP Testing tren wlan0 khong bao gio nhan duoc OFFER**: goi tin co
+  hai dia chi MAC mau thuan nhau (Ethernet header vs BOOTP chaddr) khien
+  AP WiFi im lang khong tra loi. Sua xong: 5/5 lan thu deu thanh cong.
+- **Kiem tra Internet qua DHCP bao "That bai" gia**: khi OFFER tra ve
+  trung IP da co san tren cong (rat hay gap khi test tren chinh cong quan
+  tri), va khi mot router WiFi co tuyen duong rieng cho dung 8.8.8.8 danh
+  cuop goi tin sang cong khac.
+
 ## 0.3.0
 
 Vong nay tap trung vao **do tin cay**. Thiet bi nay duoc dung khi switch/router

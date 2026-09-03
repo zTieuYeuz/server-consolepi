@@ -252,8 +252,6 @@ bang thong - khong phai bam nhieu noi.</p>
       ma chi thuong luong duoc thap hon</li>
   <li><strong>Thong ke loi duong truyen</strong> - CRC error, drop, collision... hien ra
       truoc ca khi nguoi dung nhan ra mang cham</li>
-  <li><strong>Cap vat ly (TDR)</strong> - mot so card ho tro do khoang cach den cho dut cap;
-      chip mang tren Raspberry Pi hien tai khong ho tro, trang noi ro thay vi bao sai</li>
   <li><strong>PoE</strong> - chi hien khi phan cung THAT SU co mach do</li>
 </ul>
 
