@@ -142,6 +142,7 @@ PING_MONITOR_TEMPLATE = """
         .stat .so { font-size:22px; font-weight:700; }
         .stat .nhan { color:#999; font-size:12px; }
         #canvas_ping { background:#111; border-radius:6px; width:100%; height:220px; display:block; margin-top:12px; }
+        #loi_js { display:none; }
     </style>
 </head>
 <body>
@@ -150,30 +151,48 @@ PING_MONITOR_TEMPLATE = """
     <p class="hint">Bat len roi vua rung/uon lai tung doan day mang, vua nhin do thi - dut quang
     dung luc nao la biet doan do co van de. Tu dong dung sau toi da 30 phut de tranh chay quen.</p>
 
+    {% if msg %}<div class="{{ 'err' if not ok else 'card' }}">{{ msg }}</div>{% endif %}
+    <div id="loi_js" class="err"></div>
+
     <form id="form_bat_dau" method="POST" action="/nettools/ping-monitor/start" style="margin-top:16px;">
         <label>Dia chi can theo doi:</label>
-        <input type="text" name="host" placeholder="vd 192.168.1.1" required>
+        <input type="text" name="host" value="{{ trang_thai_hien_tai.host or '' }}" placeholder="vd 192.168.1.1" required>
         <label style="margin-left:10px;">Interface:</label>
         <select name="iface">
-            <option value="eth0">eth0</option>
-            <option value="wlan0">wlan0</option>
+            <option value="eth0" {{ 'selected' if trang_thai_hien_tai.iface=='eth0' else '' }}>eth0</option>
+            <option value="wlan0" {{ 'selected' if trang_thai_hien_tai.iface=='wlan0' else '' }}>wlan0</option>
         </select>
         <label style="margin-left:10px;">Thoi luong toi da (giay):</label>
         <input type="number" name="thoi_luong_giay" value="600" min="10" max="1800" style="width:90px;">
         <button type="submit" style="margin-left:10px;" data-busy="Dang bat dau...">▶ Bat dau</button>
     </form>
     <form id="form_dung" method="POST" action="/nettools/ping-monitor/stop" style="margin-top:10px;">
-        <button type="submit" class="red">⏹ Dung</button>
+        <button type="submit" class="red" data-busy="Dang dung...">⏹ Dung</button>
     </form>
 
     <div class="card">
+        <!--
+        QUAN TRONG: cac o so lieu duoi day duoc SERVER DIEN SAN gia tri that
+        (khong phai "-" co dinh cho JS tu dien sau). Ly do: neu chi de JS lo
+        cap nhat va co bat ky truc trac gi phia trinh duyet (mang cham, loi
+        JS, tab bi treo...), nguoi dung se thay man hinh TRONG HOAN TOAN va
+        tuong cong cu khong hoat dong - du server van dang chay dung. Server
+        render san dam bao LUON co gi do de nhin thay ngay khi tai trang,
+        JS chi lam nhiem vu CAP NHAT SONG tiep theo.
+        -->
         <div class="stats">
-            <div class="stat"><div class="so" id="s_trang_thai">-</div><div class="nhan">Trang thai</div></div>
-            <div class="stat"><div class="so" id="s_mat_goi">-</div><div class="nhan">Mat goi</div></div>
-            <div class="stat"><div class="so" id="s_hien_tai">-</div><div class="nhan">RTT hien tai (ms)</div></div>
-            <div class="stat"><div class="so" id="s_min_max">-</div><div class="nhan">RTT min/avg/max (ms)</div></div>
+            <div class="stat"><div class="so" id="s_trang_thai">{{ 'Dang chay: ' + trang_thai_hien_tai.host if trang_thai_hien_tai.running else 'Chua bat' }}</div><div class="nhan">Trang thai</div></div>
+            <div class="stat"><div class="so" id="s_mat_goi">{{ trang_thai_hien_tai.thong_ke.mat_goi_pct }}%</div><div class="nhan">Mat goi</div></div>
+            <div class="stat"><div class="so" id="s_hien_tai">{{ trang_thai_hien_tai.thong_ke.rtt_hien_tai if trang_thai_hien_tai.thong_ke.rtt_hien_tai is not none else '-' }}</div><div class="nhan">RTT hien tai (ms)</div></div>
+            <div class="stat"><div class="so" id="s_min_max">{{ (trang_thai_hien_tai.thong_ke.rtt_min ~ ' / ' ~ trang_thai_hien_tai.thong_ke.rtt_avg ~ ' / ' ~ trang_thai_hien_tai.thong_ke.rtt_max) if trang_thai_hien_tai.thong_ke.rtt_min is not none else '-' }}</div><div class="nhan">RTT min/avg/max (ms)</div></div>
         </div>
         <canvas id="canvas_ping" width="900" height="220"></canvas>
+        {% if not trang_thai_hien_tai.running %}
+        <p class="hint" id="ghi_chu_tinh" style="margin:8px 0 0;">
+            {% if trang_thai_hien_tai.mau %}Phien gan nhat da dung{% if trang_thai_hien_tai.ly_do_dung %} ({{ trang_thai_hien_tai.ly_do_dung }}){% endif %}.
+            {% else %}Chua bat lan nao. Dien dia chi o tren roi bam Bat dau.{% endif %}
+        </p>
+        {% endif %}
     </div>
 
 <script>
@@ -182,6 +201,11 @@ PING_MONITOR_TEMPLATE = """
   var canvas = document.getElementById("canvas_ping");
   var ctx = canvas.getContext("2d");
   var hen_gio = null;
+  var loi_lien_tiep = 0;
+
+  // Ve san du lieu server da render, khong doi JS chay xong 1 giay dau
+  // tien moi co gi tren do thi.
+  var mau_ban_dau = {{ (trang_thai_hien_tai.mau or [])|tojson }};
 
   function ve(mau) {
     var w = canvas.clientWidth || 900, h = canvas.clientHeight || 220;
@@ -225,10 +249,21 @@ PING_MONITOR_TEMPLATE = """
     });
   }
 
+  function hien_loi(chuoi) {
+    var o = document.getElementById("loi_js");
+    if (chuoi) { o.textContent = chuoi; o.style.display = "block"; }
+    else { o.style.display = "none"; }
+  }
+
   function cap_nhat() {
     fetch("/nettools/ping-monitor/data", { cache: "no-store" })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error("Server tra ve HTTP " + r.status);
+        return r.json();
+      })
       .then(function (d) {
+        loi_lien_tiep = 0;
+        hien_loi(null);
         document.getElementById("s_trang_thai").textContent = d.running ? ("Dang chay: " + d.host) : "Da dung";
         document.getElementById("s_mat_goi").textContent = d.thong_ke.mat_goi_pct + "%";
         document.getElementById("s_hien_tai").textContent = d.thong_ke.rtt_hien_tai != null ? d.thong_ke.rtt_hien_tai : "-";
@@ -237,8 +272,21 @@ PING_MONITOR_TEMPLATE = """
         ve(d.mau);
         if (!d.running && hen_gio) { clearInterval(hen_gio); hen_gio = null; }
       })
-      .catch(function () {});
+      .catch(function (e) {
+        // KHONG duoc nuot loi im lang - truoc day .catch(function(){}) rong
+        // khien trang "trang hoan toan" ma khong ro ly do neu fetch/JSON
+        // that bai vi bat ky nguyen nhan gi. Sau 3 lan loi lien tiep (~3s)
+        // moi hien canh bao, tranh bao dong gia vi 1 lan mat goi thoang qua.
+        loi_lien_tiep++;
+        if (loi_lien_tiep >= 3) {
+          hien_loi("Khong lien lac duoc voi server de lay du lieu ping (" + e.message + "). " +
+                   "Thu tai lai trang.");
+        }
+      });
   }
+
+  // Ve san du lieu server da render (khong doi 1 giay dau tien).
+  ve(mau_ban_dau);
 
   hen_gio = setInterval(cap_nhat, 1000);
   cap_nhat();
@@ -253,9 +301,14 @@ PING_MONITOR_TEMPLATE = """
 """
 
 
+def _render(msg="", ok=True):
+    tt = trang_thai()
+    return render_template_string(PING_MONITOR_TEMPLATE, msg=msg, ok=ok, trang_thai_hien_tai=tt)
+
+
 @nettools_bp.route("/nettools/ping-monitor")
 def ping_monitor_route():
-    return render_template_string(PING_MONITOR_TEMPLATE)
+    return _render()
 
 
 @nettools_bp.route("/nettools/ping-monitor/start", methods=["POST"])
@@ -263,16 +316,19 @@ def ping_monitor_start_route():
     host = request.form.get("host", "").strip()
     iface = request.form.get("iface", "eth0")
     thoi_luong = request.form.get("thoi_luong_giay", "600")
-    bat_dau(host, iface=iface, thoi_luong_giay=thoi_luong)
-    from flask import redirect
-    return redirect("/nettools/ping-monitor")
+    ok, msg = bat_dau(host, iface=iface, thoi_luong_giay=thoi_luong)
+    # KHONG redirect va bo qua msg nhu truoc - neu dang co phien khac chay,
+    # bat_dau() se tu choi va nguoi dung PHAI thay ly do tai sao, khong
+    # duoc de trang "im re" nhu khong co gi xay ra (day chinh la loi da gap
+    # that: bam Bat dau nhung co san 1 phien cu con song, bi tu choi am
+    # tham, nguoi dung tuong nut khong hoat dong).
+    return _render(msg=msg, ok=ok)
 
 
 @nettools_bp.route("/nettools/ping-monitor/stop", methods=["POST"])
 def ping_monitor_stop_route():
-    dung()
-    from flask import redirect
-    return redirect("/nettools/ping-monitor")
+    ok, msg = dung()
+    return _render(msg=msg, ok=ok)
 
 
 @nettools_bp.route("/nettools/ping-monitor/data")
