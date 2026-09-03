@@ -55,9 +55,8 @@ TOOLS_READONLY = [
     ("/nettools/ping", "📶 Ping / Traceroute", "Kiem tra ket noi toi 1 dia chi/hostname", True),
     ("/nettools/pcap", "📼 PCAP Capture", "Bat goi tin, luu ra USB, xem lai bang tshark", True),
     ("/nettools/lldp", "🔗 LLDP/CDP Discovery", "Tim switch hostname, port, VLAN, PoE quang ba", True),
-    ("/nettools/dhcp-test", "🌐 DHCP Testing", "Gui DHCP DISCOVER, xem thong tin OFFER tra ve", True),
+    ("/nettools/dhcp-test", "🔌🌐 Kiem tra cong mang", "Toc do/duplex, loi duong truyen, PoE, DHCP, Internet, bang thong - tat ca trong 1 nut", True),
     ("/nettools/l2-scan", "🌲 STP/LACP/VLAN Scan", "Bat goi BPDU/LACP/802.1Q tren day dang cam", True),
-    ("/nettools/port-test", "🔌 Kiem tra cong mang", "Toc do/duplex, loi duong truyen, PoE, bang thong that", True),
 ]
 
 TOOLS_WRITE = [
@@ -82,7 +81,6 @@ from . import pcap  # noqa: E402,F401
 from . import lldp  # noqa: E402,F401
 from . import dhcp_test  # noqa: E402,F401
 from . import l2_sniff  # noqa: E402,F401
-from . import port_test  # noqa: E402,F401
 from . import netmiko_tool  # noqa: E402,F401
 from . import dot1x  # noqa: E402,F401
 from . import ifthen  # noqa: E402,F401
