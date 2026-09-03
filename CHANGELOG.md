@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.16
+
+**Phat hien nghiem trong nhat trong dot ra soat toi nay: tinh nang "Tab
+Terminal giong tab SSH" (them o soan lenh, nut Dan tu chon cach dan) o
+0.4.6 CHUA BAO GIO DUOC TRIEN KHAI THAT SU len may, du da bao voi nguoi
+dung la xong.** Nguyen nhan: luc do khong co quyen sudo nen chi dua lenh
+`sudo cp ...` de nguoi dung tu chay, nhung dong lenh do khong duoc thuc
+hien (co le bi cuon troi giua luc dang xu ly su co Bluetooth ngay sau do).
+Nhung lan sau co sudo lai chi deploy CAC FILE lien quan Bluetooth, khong
+kiem tra lai toan bo hang doi deploy con thieu.
+
+Phat hien bang cach **so sanh truc tiep `diff -rq src/ui /opt/console-pi/ui`**
+- day nen la buoc kiem tra chuan sau moi phien lam viec dai co xen ke nhieu
+chu de, thay vi tin tren tri nho hoi thoai la "da deploy roi". Da deploy du
+`soanlenh.py`, `ssh.py`, `terminal.py`, `docs.py` va xac nhan lai qua HTTP
+that: ca 2 tab deu co o soan lenh, route `/terminal/paste` va `/ssh/paste`
+chay dung.
+
 ## 0.4.15
 
 **Da vao duoc mang qua Bluetooth PAN that su tren Windows 11** - ghi lai dung
