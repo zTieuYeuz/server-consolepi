@@ -171,3 +171,36 @@ def _wrap_in_layout(response):
     except Exception:
         pass          # loi boc khung khong duoc lam hong ca trang
     return response
+
+
+def register_no_cache_json(app):
+    """
+    Goi tu app.py: chan CDN/proxy trung gian (vd Cloudflare Tunnel) cache
+    nham cac endpoint JSON sinh du lieu song (ping-monitor/data, api/status...).
+
+    LOI THAT DA GAP: fetch(url, {cache:"no-store"}) o phia trinh duyet CHI
+    dieu khien cache CUC BO cua trinh duyet, KHONG ngan duoc mot proxy trung
+    gian (Cloudflare) tu y cache response neu server goc khong noi ro trong
+    header. Nguoi dung qua Cloudflare Tunnel bam "Bat dau" ping lien tuc,
+    request /data dau tien bi Cloudflare cache lai (vi luc do co the dang
+    tra ve 404/loi tam thoi), moi request /data sau do deu duoc Cloudflare
+    tra thang tu cache ma KHONG BAO GIO cham toi Pi that su - xac nhan qua
+    log nginx tren Pi khong thay request nao toi tu trinh duyet nguoi dung.
+
+    Chan tan goc bang cach ep MOI response JSON (mimetype application/json)
+    tren TOAN BO app (khong rieng nettools - "/api/status" cua ui/home.py
+    dung chung 1 nguy co) phai co Cache-Control: no-store, de cac cong cu
+    polling JSON sau nay tu dong duoc bao ve, khong lap lai loi nay.
+    """
+
+    @app.after_request
+    def _khong_cache_json(response):
+        try:
+            if (response.content_type or "").startswith("application/json"):
+                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                response.headers["Pragma"] = "no-cache"
+        except Exception:
+            pass
+        return response
+
+    return app

@@ -26,7 +26,7 @@ sys.path.insert(0, "/opt/console-pi")
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from nettools import nettools_bp, register_vkeyboard
+from nettools import nettools_bp, register_no_cache_json, register_vkeyboard
 from ui import register_all
 
 app = Flask(__name__)
@@ -41,6 +41,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.register_blueprint(nettools_bp)
 register_all(app)
 register_vkeyboard(app)
+register_no_cache_json(app)
 
 
 if __name__ == "__main__":
