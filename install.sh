@@ -327,7 +327,8 @@ mkdir -p /etc/bluetooth
 # Kiem tra TAT CA khoa can co, khong chi AutoEnable. Neu chi kiem tra 1 khoa
 # thi ban nang cap them khoa moi se bi bo qua im lang (da gap voi ReconnectUUIDs).
 if ! grep -q "^ReconnectUUIDs" /etc/bluetooth/main.conf 2>/dev/null \
-   || ! grep -q "^AutoEnable" /etc/bluetooth/main.conf 2>/dev/null; then
+   || ! grep -q "^AutoEnable" /etc/bluetooth/main.conf 2>/dev/null \
+   || ! grep -q "^Class" /etc/bluetooth/main.conf 2>/dev/null; then
     python3 - <<'PY'
 import re
 p = "/etc/bluetooth/main.conf"
@@ -348,6 +349,15 @@ def setkv(sec, key, val, s):
     return s[:i] + blk + s[end:]
 for sec, k, v in [("General","DiscoverableTimeout","0"),
                   ("General","PairableTimeout","0"),
+                  # Khai bao Pi la MAY TINH (major class 0x01).
+                  # LOI THAT DA GAP: khong dat khoa nay thi BlueZ tu sinh
+                  # class 0x420000 - major class = 0x00 (khong ro loai). Nhieu
+                  # ban phim Bluetooth chi chiu ghep voi host tu khai la may
+                  # tinh, thay "khong ro loai" la bo qua. Da do tren may that:
+                  # dat xong class thanh 0x420100 (major = Computer) ma VAN
+                  # giu nguyen bit Networking nen Bluetooth PAN khong he anh
+                  # huong (pan0 van giu 192.168.60.1).
+                  ("General","Class","0x000100"),
                   ("Policy","AutoEnable","true"),
                   # Kich ban 3: thiet bi DA ghep cap bat len la noi lai ngay,
                   # khong phai vao dashboard bam nut. BlueZ chi tu noi lai khi

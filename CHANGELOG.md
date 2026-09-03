@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.8
+
+Hai loi that lam **khong ghep duoc ban phim Bluetooth**, ca hai deu do dac
+tren may that (khong phai doc code suong):
+
+- **Pi tu khai la thiet bi "khong ro loai"**. BlueZ tu sinh class
+  `0x420000` - major class = `0x00` (Miscellaneous). Nhieu ban phim Bluetooth
+  chi chiu ghep voi host tu khai la MAY TINH, thay "khong ro loai" thi bo qua.
+  Nay dat `Class = 0x000100` trong `/etc/bluetooth/main.conf` (khoa nay von co
+  san trong file nhung bi chu thich). Da do lai sau khi sua: class thanh
+  `0x420100` (major = Computer) va **van giu nguyen bit Networking** nen
+  Bluetooth PAN khong he anh huong (pan0 giu nguyen 192.168.60.1). install.sh
+  cung dat khoa nay nen cai lai khong mat.
+
+- **Tat quet NGAY TRUOC khi ghep cap**. Luong cu: quet -> thay thiet bi ->
+  `scan off` -> `pair`. BlueZ coi thiet bi vua quet duoc ma chua ghep la "tam
+  thoi" va xoa khoi danh sach rat nhanh sau khi ngung quet, nen den luc `pair`
+  thi bao thang `Device ... not available` du vai giay truoc con thay ro. **Da
+  tai hien duoc dung loi nay 2 lan tren may that.** Nay giu quet chay suot ca
+  qua trinh pair/trust/connect, chi tat o khoi `finally`.
+
 ## 0.4.7
 
 Sua loi ghep cap **ban phim Bluetooth kieu PIN cu** - dung cai lam nguoi dung

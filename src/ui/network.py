@@ -380,8 +380,18 @@ def _pair_worker(mac):
         #
         # Vi vay o day ta quet toi da 20 giay, kiem tra dinh ky xem thiet bi
         # da xuat hien chua, thay vi doi cung mot khoang thoi gian co dinh.
+        # GIU QUET CHAY SUOT ca qua trinh ghep cap, khong tat ngay khi vua
+        # thay thiet bi.
+        #
+        # LOI THAT DA GAP: truoc day thay thiet bi la tat quet ngay roi moi
+        # `pair`. BlueZ coi thiet bi vua quet duoc ma chua ghep cap la "tam
+        # thoi" va XOA khoi danh sach rat nhanh sau khi ngung quet - den luc
+        # chay `pair` thi bao thang "Device ... not available" du vai giay
+        # truoc con thay ro rang. Da tai hien duoc dung loi nay tren may that.
+        # Vi vay dat thoi gian quet du dai (120s) de phu het ca buoc pair/
+        # trust/connect, va chi tat quet o khoi finally ben duoi.
         _PAIR["step"] = "quet"
-        subprocess.Popen(["bluetoothctl", "--timeout", "20", "scan", "on"],
+        subprocess.Popen(["bluetoothctl", "--timeout", "120", "scan", "on"],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         thay = False
         for _ in range(20):
@@ -389,8 +399,6 @@ def _pair_worker(mac):
             if _thiet_bi_da_thay(mac):
                 thay = True
                 break
-        subprocess.run(["bluetoothctl", "scan", "off"],
-                       capture_output=True, timeout=8)
 
         if not thay:
             steps.append(("quet", False,
@@ -415,6 +423,14 @@ def _pair_worker(mac):
                       "Qua thoi gian cho - ban phim khong phan hoi hoac chua go ma"))
     except Exception as e:
         steps.append((_PAIR["step"], False, str(e)[:120]))
+    finally:
+        # Luon tat quet du ghep cap thanh cong hay khong - de quet chay ngam
+        # se ton pin va lam nhieu song cho chinh ket noi vua tao.
+        try:
+            subprocess.run(["bluetoothctl", "scan", "off"],
+                           capture_output=True, timeout=8)
+        except Exception:
+            pass
 
     _PAIR["ok"] = all(g for _, g, _ in steps) and len(steps) == 4
     _PAIR["detail"] = " | ".join(f"{a}: {m}" for a, _, m in steps)
