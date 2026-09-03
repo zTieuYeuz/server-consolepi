@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.12
+
+Sua loi **man hinh Pi hien trang trang "Method Not Allowed"** sau khi thu
+ket noi Bluetooth. Bat duoc qua log that: `GET /bt-connect HTTP/1.1" 405`.
+
+NGUYEN NHAN GOC, anh huong CA APP chu khong rieng Bluetooth: rat nhieu route
+POST (`bt-connect`, `bt-unpair`, `wifi-*`, `bt-scan`...) hien trang HTML
+thang ra sau khi xu ly xong, KHONG chuyen huong. Vi vay dia chi tren trinh
+duyet dung nguyen o duong dan POST do sau khi bam nut. Tren man hinh cam
+ung, chi can cu chi **keo xuong lam moi (pull-to-refresh)** la trinh duyet
+gui lai dung request do nhung bang GET - Flask tu choi (route chi cho
+POST), Werkzeug hien trang loi trang boc xau xi, nguoi dung tuong ca
+dashboard bi vo.
+
+Sua tan goc (doi het cac route POST sang chuyen huong sau khi xu ly) la
+thay doi lon dung vao rat nhieu file, rui ro cao. Thay bang cach an toan
+hon: bat loi 405 O TOAN APP (`app.py`), dua nguoi dung ve lai trang truoc
+do (doc tu header Referer) thay vi hien trang loi - cho **moi route trong
+app**, khong chi Bluetooth. Co kiem tra Referer phai cung goc voi chinh
+Pi truoc khi tin, tranh bi dan sang trang la neu header do bi gia mao.
+
 ## 0.4.11
 
 **Nut "Ket noi mang (PAN)" lam NGUOC chieu.** Nut nay goi

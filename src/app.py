@@ -20,10 +20,11 @@ Chay duoi quyen root (systemd khong khai User=) vi can raw socket cho cac
 cong cu bat goi tin va quyen sua cau hinh mang.
 """
 import sys
+from urllib.parse import urlparse
 
 sys.path.insert(0, "/opt/console-pi")
 
-from flask import Flask
+from flask import Flask, redirect, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from nettools import nettools_bp, register_no_cache_json, register_vkeyboard
@@ -42,6 +43,37 @@ app.register_blueprint(nettools_bp)
 register_all(app)
 register_vkeyboard(app)
 register_no_cache_json(app)
+
+
+@app.errorhandler(405)
+def _loi_sai_phuong_thuc(e):
+    """
+    LOI THAT DA GAP: rat nhieu route POST (bt-connect, bt-unpair, wifi-*,
+    bt-scan...) hien trang HTML thang ra sau khi xu ly xong, KHONG chuyen
+    huong. Vi vay dia chi tren trinh duyet VAN DUNG NGUYEN o duong dan POST
+    do sau khi bam nut. Tren man hinh cam ung, chi can cu chi keo xuong lam
+    moi (pull-to-refresh) la trinh duyet gui lai dung request do nhung bang
+    GET - Flask tu choi (route chi cho POST), Werkzeug hien trang loi trang
+    boc xau xi "Method Not Allowed", lam nguoi dung tuong ca dashboard bi vo
+    (da gap dung tinh huong nay: man hinh Pi "trang boc" sau khi thu ket noi
+    Bluetooth).
+
+    Sua tan goc (doi tat ca route POST sang chuyen huong sau khi xu ly) la
+    thay doi lon dung vao rat nhieu file, rui ro cao. Cach nay an toan hon:
+    bat loi 405 O TOAN APP, dua nguoi dung VE LAI TRANG TRUOC DO (Referer)
+    thay vi hien trang loi. Hanh dong that su da chay xong tu lan POST that
+    truoc do; lan GET nham chi la du gay, khong can bao gi them.
+    """
+    dich = "/"
+    try:
+        p = urlparse(request.referrer or "")
+        # Chi tin duong dan CUNG GOC (khong netloc, hoac netloc trung host
+        # hien tai) - tranh bi dan huong sang trang la neu Referer bi gia.
+        if p.path and (not p.netloc or p.netloc == request.host):
+            dich = p.path
+    except Exception:
+        pass
+    return redirect(dich)
 
 
 if __name__ == "__main__":
