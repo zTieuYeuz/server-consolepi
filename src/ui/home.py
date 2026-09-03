@@ -354,7 +354,7 @@ def register_home(app):
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <iframe src="{base}/" title="Console {devname}"
-                  style="width:100%;height:600px;border:0;display:block;background:#000;"></iframe>
+                  style="width:100%;height:calc(100vh - 260px);min-height:420px;border:0;display:block;background:#000;"></iframe>
         </div>
         <div class="msg info">
           Cham vao khung den de go lenh. Neu dung man hinh cam ung, ban phim ao

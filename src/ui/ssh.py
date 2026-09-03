@@ -262,7 +262,7 @@ def _render(msg="", ok=True, prefill="", form=None, result=None, preview=None):
     </div>
     <div class="card" style="padding:0;overflow:hidden;">
       <iframe src="/term-ssh/" title="SSH terminal"
-              style="width:100%;height:460px;border:0;display:block;background:#000;"></iframe>
+              style="width:100%;height:calc(100vh - 460px);min-height:320px;border:0;display:block;background:#000;"></iframe>
     </div>
 
     <h2>2. Chay hang loat (chon tu thu vien, sua roi xac nhan)</h2>

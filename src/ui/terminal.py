@@ -79,22 +79,27 @@ def service_active(name):
         return False
 
 
-def _terminal_body(kind, base_path, session_name, service_name, intro_html):
+def _terminal_body(kind, base_path, session_name, service_name, warn_html):
     running = service_active(service_name)
     has_session = tmux_session_exists(session_name)
 
-    status = (f'<div class="msg ok">Terminal dang chay &middot; phien tmux '
-              f'<code>{session_name}</code> {"dang mo" if has_session else "se tu tao khi mo"}</div>'
-              if running else
-              f'<div class="msg err">Dich vu <code>{service_name}</code> chua chay. '
-              f'Chay: <code>sudo systemctl start {service_name}</code></div>')
+    # 1 dong duy nhat (thay vi 2 banner rieng canh bao + trang thai) - danh
+    # cho man hinh nho/cua so trinh duyet thap thi khung terminal van con
+    # nhieu khong gian de nhin, khong bi choan het boi phan chu thich.
+    if running:
+        status = (f'{warn_html} &middot; tmux <code>{session_name}</code> '
+                  f'{"dang mo" if has_session else "se tu tao khi mo"}')
+        banner = f'<div class="msg warn">{status}</div>'
+    else:
+        banner = (f'<div class="msg err">{warn_html} &middot; Dich vu '
+                 f'<code>{service_name}</code> chua chay. '
+                 f'Chay: <code>sudo systemctl start {service_name}</code></div>')
 
     return f"""
-    {intro_html}
-    {status}
+    {banner}
     <div class="card" style="padding:0;overflow:hidden;">
       <iframe src="{base_path}/" title="{kind}"
-              style="width:100%;height:560px;border:0;display:block;background:#000;"></iframe>
+              style="width:100%;height:calc(100vh - 300px);min-height:420px;border:0;display:block;background:#000;"></iframe>
     </div>
     <div class="row">
       <a class="btn" href="{base_path}/">↗ Mo terminal toan man hinh</a>
@@ -105,14 +110,10 @@ def _terminal_body(kind, base_path, session_name, service_name, intro_html):
 def register_terminal(app):
     @app.route("/terminal")
     def terminal_page():
-        intro = """
-        <div class="msg warn">
-          <strong>Luu y:</strong> Day la terminal cua chinh Pi voi <strong>quyen root</strong>.
-          Dung de sua chua khi can (xem log, sua file cau hinh, khoi dong lai dich vu).
-          Go lenh can than.
-        </div>"""
+        warn = ('<strong>Luu y:</strong> Terminal cua chinh Pi voi <strong>quyen root</strong> '
+               '- go lenh can than')
         body = _terminal_body("Terminal local", "/term-local", LOCAL_SESSION,
-                              "console-pi-term-local.service", intro)
+                              "console-pi-term-local.service", warn)
         html = render_page(body, active="/terminal", title="Terminal",
                            subtitle="Dong lenh truc tiep tren Pi (phien tmux giu nguyen khi dong trinh duyet)")
         # Bao cho ban phim ao biet go phim vao phien tmux nao
