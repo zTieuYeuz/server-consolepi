@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.13
+
+**Ban phim Bluetooth bi mat ghep cap** - tim ra do o "🔄 Reset Bluetooth" o
+cuoi trang co o tick "Quen tat ca thiet bi da ghep cap". Nguoi dung dang loi
+khac (khong vao mang PAN duoc) nen thu bam Reset de "sua dai", vo tinh tick
+nham o do va mat luon ban phim da ghep cap thanh cong truoc - phai ghep lai
+tu dau oan uong. Xac nhan lai: **phia Pi khong he hong gi** (adapter, Class,
+cac dich vu deu binh thuong), ghep lai la duoc ngay.
+
+Sua de khong lap lai: hop `confirm()` gio **doc trang thai o tick truoc khi
+hoi** - neu dang tick "Quen tat ca" thi hien canh bao rieng, noi thang se mat
+ban phim/chuot/dien thoai va phai ghep lai tu dau, kem ghi ro **loi vao mang
+PAN khong lien quan gi den viec nay** (tranh nham tuong reset-quen-het se sua
+duoc loi PAN). Truoc day chi co 1 dong canh bao chung chung "Reset Bluetooth?"
+du co tick "Quen tat ca" hay khong, de bam qua ma khong doc ky.
+
 ## 0.4.12
 
 Sua loi **man hinh Pi hien trang trang "Method Not Allowed"** sau khi thu

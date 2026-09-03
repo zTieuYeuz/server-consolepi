@@ -1133,16 +1133,38 @@ def _bt_page(msg="", ok=True, scanned=None):
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
         Dung khi khong ghep cap hoac khong ket noi lai duoc.
       </p>
-      <form method="POST" action="/bt-reset"
-            onsubmit="return confirm('Reset Bluetooth? Cac thiet bi dang noi se bi ngat.');">
+      <form method="POST" action="/bt-reset" id="form_bt_reset"
+            onsubmit="return xacNhanBtReset(this);">
         <label style="display:flex;align-items:center;gap:9px;">
-          <input type="checkbox" name="forget" value="1" style="width:20px;height:20px;">
-          <span>Quen tat ca thiet bi da ghep cap</span>
+          <input type="checkbox" name="forget" value="1" id="chk_quen_thiet_bi" style="width:20px;height:20px;">
+          <span style="color:#ff6b6b;font-weight:600;">Quen tat ca thiet bi da ghep cap
+            (ban phim/chuot/dien thoai deu phai ghep lai tu dau)</span>
         </label>
         <div class="row" style="margin-top:13px;">
           <button type="submit" class="gray" data-busy="Dang khoi dong lai...">🔄 Reset Bluetooth</button>
         </div>
       </form>
+      <script>
+        // Loi that da gap: nguoi dung dang bi loi Bluetooth khac (vd khong
+        // vao mang PAN duoc) nen thu bam Reset de "sua dai", vo tinh tick
+        // nham o "Quen tat ca thiet bi" va mat luon ban phim da ghep cap
+        // thanh cong truoc do - phai ghep cap lai tu dau oan uong. Hop
+        // confirm() rieng, noi thang ban phim se mat, khi o do dang duoc
+        // tick, thay vi 1 dong canh bao chung chung de bam qua khong doc.
+        function xacNhanBtReset(form) {{
+          var quen = document.getElementById("chk_quen_thiet_bi").checked;
+          if (quen) {{
+            return confirm("CANH BAO: se QUEN HET moi thiet bi da ghep cap " +
+                            "(ban phim, chuot, dien thoai...). Phai ghep cap " +
+                            "lai TU DAU cho tung cai. Chi dung khi ban phim/" +
+                            "chuot dang loi that su, khong phai de sua loi vao " +
+                            "mang PAN (loi do khong lien quan den ghep cap).\\n\\n" +
+                            "Chac chan muon QUEN HET khong?");
+          }}
+          return confirm("Reset Bluetooth? Cac thiet bi dang noi se bi ngat " +
+                          "tam thoi (khong mat ghep cap, tu noi lai duoc).");
+        }}
+      </script>
     </div>"""
 
     return render_page(body, active="/bluetooth", title="Bluetooth",
