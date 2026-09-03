@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.5
+
+**Trang Tai lieu lam lai theo tab** cho de tra, de doc, de tim:
+- Cot ben trai la danh sach muc **xep theo nhom** (He thong / Ket noi / Lam viec
+  hang ngay / Cong cu mang / Thiet bi & nguon / Su co), bam la mo dung muc do -
+  khong con cuon mot trang dai 20 muc.
+- **O tim kiem toan van**: go tu khoa thi tung muc hien **so lan xuat hien**, cac
+  muc khong khop tu an di, va tu mo muc khop dau tien de thay ket qua ngay.
+  Chi muc tim kiem doc tu chinh noi dung dang co tren trang nen **khong lam trang
+  nang them**.
+- Nut **Xem tat ca** de doc lien mach, dung Ctrl+F cua trinh duyet, hoac in ra giay.
+- Giu nguyen duong dan cu kieu `/docs#suco`, va nho muc dang xem lan truoc.
+- Muc nao quen xep nhom van hien ra o nhom "Khac" - them muc moi khong so bi mat.
+
+**Cap nhat noi dung tai lieu** cho khop nhung gi vua sua:
+- Cach o mat khau tab SSH hoat dong, va vi sao co tinh khong dung `sshpass -p`.
+- Vi sao dan tap lenh phai cham (doi thiet bi in xong), va xu ly `--More--`.
+- Con lan chuot cuon man hinh (`mouse on`).
+- Them 2 su co that vao bang su co: SSH bao "no matching key exchange method
+  found" voi thiet bi cu (kem canh bao KHONG duoc them `ssh-dss`), va dan tap
+  lenh bi mat ky tu dau dong.
+- Sua "6 cong cu mang moi" thanh 5 (Ping lien tuc da bo o 0.4.1).
+
 ## 0.4.4
 
 Sua triet de loi **dan tap lenh bi mat ky tu dau dong** tren switch that

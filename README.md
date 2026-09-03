@@ -101,6 +101,12 @@ Lenovo, Cisco), mở thẳng giao diện web của thiết bị. Quét được 
 Đưa Pi tới điểm xa, người ở đó chỉ cắm console và cắm mạng — bạn ngồi nhà vẫn vào
 cấu hình được. Không cần mở port, không cần IP tĩnh, chạy được cả sau 4G.
 
+### Tài liệu tra cứu ngay trên máy
+Trang **Tài liệu** gom 20 mục (kiến trúc, vị trí file, lệnh bảo trì, sự cố đã gặp),
+chia theo tab kèm ô tìm kiếm toàn văn — gõ từ khoá là hiện số kết quả trong từng mục.
+Có nút *Xem tất cả* để dùng Ctrl+F hoặc in ra giấy. **Chạy hoàn toàn ngoại tuyến**,
+tra được cả khi thiết bị không có internet.
+
 ### Tự kiểm tra
 ```bash
 sudo /opt/console-pi/scripts/selftest.sh

@@ -123,10 +123,41 @@ sudo tmux send-keys -t consolepi-local "show version" Enter</pre>
 <code>/opt/console-pi/command-library.json</code>. Nut <em>Gui vao Terminal</em> dan lenh
 vao nhung <strong>khong tu bam Enter</strong> - ban xem lai roi tu chay.
 Nut <em>Dung o tab SSH</em> chep tap lenh sang o soan o tab SSH de sua IP/ten,
-roi bam <em>Dan vao terminal</em> (cung khong tu bam Enter).
+roi bam <em>Dan vao terminal</em>.
 O tren cung cua trang co <strong>o tim kiem</strong> loc theo ten/mo ta/the/noi dung lenh,
 va cac <strong>nut the</strong> bam 1 cai la loc ngay - tien khi dung man hinh cam ung
-khong co ban phim.</p>"""),
+khong co ban phim.</p>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Tab SSH - o mat khau dien san</h3>
+<p>Dien mat khau vao o thi Pi se go giup vao terminal <strong>dung luc thiet bi hoi</strong>
+(cho bang <code>tmux capture-pane</code> toi khi thay dau nhac mat khau). Vi dau nhac mat
+khau khong hien lai ky tu nen mat khau <strong>khong bao gio hien tren man hinh</strong>,
+khong vao <code>ps</code>, khong vao lich su lenh.</p>
+<p>Co tinh <strong>KHONG dung <code>sshpass -p</code></strong>: cach do dat mat khau tho
+ngay tren dong lenh - ai chay <code>ps</code> cung doc duoc, va no con nam lai trong lich su
+cuon cua terminal. De trong o mat khau thi ket noi xong ban tu nhap nhu binh thuong.
+Neu qua 12 giay khong thay dau nhac, trang bao that la khong thay (thiet bi cham, dung
+khoa, hoac khong ket noi duoc) chu khong im lang coi nhu xong.</p>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Dan tap lenh vao thiet bi - vi sao cham</h3>
+<p>Nut <em>Dan vao terminal</em> gui <strong>tung dong mot</strong>, va truoc moi dong deu
+<strong>doi thiet bi in xong</strong> (man hinh ngung doi 0,5s <em>va</em> dong cuoi giong
+dau nhac <code>#</code> <code>&gt;</code> <code>$</code>). Vi vay dan 1 tap lenh mat vai
+giay - do la co y.</p>
+<div class="msg info"><strong>Vi sao phai lam vay:</strong> CLI thiet bi mang khong co dieu
+khien luong. Ban ca khoi ra 1 luot thi trong luc thiet bi con dang in ket qua lenh truoc,
+ky tu dau cua dong ke tiep bi ROI MAT - loi that da gap: <code>show inventory</code> toi
+noi thanh <code>how inventory</code>. Cho theo dong ho co dinh cung khong an: mot lenh
+<code>show version</code> in ra hang tram dong, vai giay moi xong.</div>
+<p>Cung tu xu ly <code>--More--</code> (Cisco chia trang) bang cach bam Space giup.
+<strong>Luu y that:</strong> thiet bi mang coi moi xuong dong la Enter, nen cac dong phia
+tren <em>se chay</em> khi dan; rieng <strong>dong CUOI khong bam Enter</strong> de ban doc
+lai lan cuoi roi tu chay. Buoc "xem truoc khi chay" nam o o soan tren web.</p>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Con lan chuot de xem lai man hinh</h3>
+<p>tmux duoc bat <code>mouse on</code> nen banh xe chuot cuon dung lich su man hinh.
+Neu tat di (<code>tmux set -g mouse off</code>) thi banh xe se bi dich thanh phim Mui ten,
+tuc la <strong>goi lai cac lenh cu</strong> chu khong phai cuon - day la loi that da gap.</p>"""),
 
     ("console", "🔌 Cong console (RS232)", """
 <pre>* Xem cong dang cam
@@ -482,7 +513,7 @@ sudo /opt/console-pi/uninstall.sh --purge      (xoa sach)</pre>
 WiFi da luu, ten cong console, thu vien lenh, rule IF/THEN, cau hinh AP,
 huong man hinh.</div>"""),
 
-    ("congcumoi", "🧰 6 cong cu mang moi (v0.4.0)", """
+    ("congcumoi", "🧰 5 cong cu mang moi (v0.4.x)", """
 <h3>📏 MTU Discovery</h3>
 <p>Tim MTU that cua duong truyen bang ping "khong phan manh" (DF), tang/giam kich thuoc theo
 kieu nhi phan (~10-14 lan thu). Neu mot router giua duong tra ve ICMP "Frag needed" kem MTU
@@ -546,6 +577,27 @@ switch GHI len Pi) se khong bao gio chay duoc.</p>
 <tr><td><strong>Console dinh/rot ky tu</strong></td>
     <td>Co nhieu tien trinh cung giu 1 cong serial.
     <code>sudo lsof /dev/ttyUSB0</code> roi <code>kill</code> cai thua.</td></tr>
+
+<tr><td><strong>SSH bao "no matching key exchange method found"</strong><br>
+    <span style="color:#8b93a1;font-size:12px;">Their offer: diffie-hellman-group1-sha1...</span></td>
+    <td>OpenSSH ban moi bo mac dinh cac thuat toan cu dua tren SHA-1, ma switch/router doi cu
+    chi ho tro dung nhung thuat toan do. Console Pi da cai san
+    <code>/etc/ssh/ssh_config.d/consolepi-legacy-devices.conf</code> de bat lai (chi cho SSH
+    <em>client</em> di ra, khong noi long sshd cua Pi). Neu file bi mat: cai lai bang
+    <code>install.sh</code>, hoac kiem tra <code>ssh -G &lt;ip&gt;</code> xem con bao loi
+    cu phap khong.<br>
+    <strong>Luu y:</strong> KHONG them <code>ssh-dss</code> vao file do - OpenSSH 10 da bo
+    han thuat toan nay, them vao se lam <code>ssh</code> loi cu phap va <em>khong chay duoc
+    gi ca</em> (loi that da gap).</td></tr>
+
+<tr><td><strong>Dan tap lenh vao switch bi mat ky tu dau dong</strong><br>
+    <span style="color:#8b93a1;font-size:12px;">vd "show inventory" thanh "how inventory"</span></td>
+    <td>Thiet bi con dang in ket qua lenh truoc thi dong ke tiep da toi - CLI thiet bi mang
+    khong co dieu khien luong. Nut <em>Dan vao terminal</em> o tab SSH da xu ly san (gui
+    tung dong, doi thiet bi in xong moi gui tiep). Neu dan bang cach khac (copy tay, dan
+    ca khoi) thi van bi - nen dung nut do.<br>
+    Cung trieu chung nay xay ra khi thiet bi dung o <code>--More--</code>: ky tu dau tien
+    bi thiet bi an lam phim bam sang trang.</td></tr>
 
 <tr><td><strong>Bat AP xong mat IP 192.168.50.1</strong></td>
     <td>systemd-networkd "reconfigure" va xoa mat IP tinh do script tu gan.
@@ -677,20 +729,199 @@ file. May da co san file thi giu nguyen quyen mac dinh 644.</p>
 ]
 
 
+# Xep cac muc thanh nhom cho de tra cuu. Muc nao quen xep nhom van hien ra
+# (o nhom "Khac") chu khong bi mat - them muc moi khong so lam mat tai lieu.
+NHOM = [
+    ("He thong", ["kientruc", "dangnhap", "vitri", "services", "update", "tukiemtra"]),
+    ("Ket noi", ["wifi", "bluetooth", "tuxa", "camthang"]),
+    ("Lam viec hang ngay", ["terminal", "console", "mau", "khofile", "manhinh"]),
+    ("Cong cu mang", ["porttest", "congcumoi"]),
+    ("Thiet bi & nguon", ["suckhoe", "pin"]),
+    ("Su co", ["suco"]),
+]
+
+DOCS_CSS = """
+<style>
+.tl-bo { display:flex; gap:16px; align-items:flex-start; }
+.tl-ben { width:270px; flex:none; position:sticky; top:12px; }
+.tl-nd  { flex:1; min-width:0; }
+.tl-tim { width:100%; margin-bottom:8px; }
+.tl-dem { color:#8b93a1; font-size:12px; margin:0 0 10px; }
+.tl-nhom { color:#6b7280; font-size:11px; text-transform:uppercase; letter-spacing:.5px;
+           margin:14px 0 5px; font-weight:600; }
+.tl-nut { display:block; width:100%; text-align:left; background:transparent; border:none;
+          border-left:3px solid transparent; color:#c9ced6; padding:9px 11px; font-size:13.5px;
+          cursor:pointer; border-radius:0 6px 6px 0; min-height:0; font-family:inherit; }
+.tl-nut:hover { background:#22262b; color:#fff; }
+.tl-nut.chon { background:#22262b; border-left-color:#4CAF50; color:#fff; font-weight:600; }
+.tl-nut .sl { float:right; background:#4CAF50; color:#10240f; border-radius:99px;
+              padding:0 7px; font-size:11px; font-weight:700; }
+.tl-muc { display:none; }
+.tl-muc.hien { display:block; }
+.tl-muc h2 { margin-top:0; }
+.tl-danh { background:#3a2f14; }
+@media (max-width: 900px) {
+  .tl-bo { flex-direction:column; }
+  .tl-ben { width:100%; position:static; }
+}
+</style>
+"""
+
+DOCS_JS = """
+<script>
+(function () {
+  "use strict";
+  var oTim = document.getElementById("tl_tim");
+  if (!oTim) return;
+  var nut = Array.prototype.slice.call(document.querySelectorAll(".tl-nut"));
+  var muc = Array.prototype.slice.call(document.querySelectorAll(".tl-muc"));
+  var dem = document.getElementById("tl_dem");
+  var nutTatCa = document.getElementById("tl_tat_ca");
+  var xemTatCa = false;
+
+  // Chi muc tim kiem lay tu chinh noi dung dang co tren trang (textContent),
+  // khong nhung them ban sao vao HTML - trang khong nang them chut nao.
+  var chiMuc = {};
+  muc.forEach(function (m) { chiMuc[m.id] = m.textContent.toLowerCase(); });
+
+  function moMuc(id) {
+    muc.forEach(function (m) { m.classList.toggle("hien", xemTatCa || m.id === id); });
+    nut.forEach(function (n) { n.classList.toggle("chon", n.dataset.muc === id); });
+    if (!xemTatCa) {
+      try { history.replaceState(null, "", "#" + id); } catch (e) {}
+      try { localStorage.setItem("consolepi-docs-muc", id); } catch (e) {}
+    }
+  }
+
+  function demSoLan(chuoi, tu) {
+    if (!tu) return 0;
+    var so = 0, i = chuoi.indexOf(tu);
+    while (i !== -1) { so++; i = chuoi.indexOf(tu, i + tu.length); }
+    return so;
+  }
+
+  function loc() {
+    var q = (oTim.value || "").trim().toLowerCase();
+    var hien = 0, dauTien = null;
+    nut.forEach(function (n) {
+      var id = n.dataset.muc;
+      var so = q ? demSoLan(chiMuc[id] || "", q) : 0;
+      var khop = !q || so > 0;
+      n.style.display = khop ? "block" : "none";
+      var o = n.querySelector(".sl");
+      if (o) { o.textContent = so; o.style.display = (q && so) ? "inline" : "none"; }
+      if (khop) { hien++; if (!dauTien) dauTien = id; }
+    });
+    // An ca tieu de nhom neu ca nhom khong con muc nao khop
+    document.querySelectorAll(".tl-nhom").forEach(function (h) {
+      var con = false, e = h.nextElementSibling;
+      while (e && e.classList.contains("tl-nut")) {
+        if (e.style.display !== "none") { con = true; break; }
+        e = e.nextElementSibling;
+      }
+      h.style.display = con ? "block" : "none";
+    });
+
+    dem.textContent = q ? ("Tim thay " + hien + "/" + nut.length + " muc")
+                        : (nut.length + " muc tai lieu");
+    // Dang tim ma muc dang mo lai khong khop -> nhay sang muc khop dau tien,
+    // de go xong la thay ket qua ngay, khong phai bam them.
+    if (q && dauTien) {
+      var dangMo = document.querySelector(".tl-nut.chon");
+      if (!dangMo || dangMo.style.display === "none") moMuc(dauTien);
+    }
+  }
+
+  nut.forEach(function (n) {
+    n.addEventListener("click", function () {
+      if (xemTatCa) { xemTatCa = false; nutTatCa.textContent = "📖 Xem tat ca"; }
+      moMuc(n.dataset.muc);
+      document.querySelector(".tl-nd").scrollIntoView({ block: "nearest" });
+    });
+  });
+
+  oTim.addEventListener("input", loc);
+  document.getElementById("tl_xoa").addEventListener("click", function () {
+    oTim.value = ""; loc(); oTim.focus();
+  });
+
+  // Xem tat ca: de dung Ctrl+F cua trinh duyet, hoac in ra giay
+  nutTatCa.addEventListener("click", function () {
+    xemTatCa = !xemTatCa;
+    nutTatCa.textContent = xemTatCa ? "📑 Xem theo tab" : "📖 Xem tat ca";
+    muc.forEach(function (m) { m.classList.toggle("hien", xemTatCa); });
+    if (!xemTatCa) {
+      var c = document.querySelector(".tl-nut.chon");
+      moMuc(c ? c.dataset.muc : muc[0].id);
+    }
+  });
+
+  // Mo muc theo #dia-chi (giu duoc cac duong dan cu kieu /docs#suco),
+  // neu khong co thi mo lai muc lan truoc dang xem.
+  var banDau = (location.hash || "").replace("#", "");
+  if (!chiMuc.hasOwnProperty(banDau)) {
+    try { banDau = localStorage.getItem("consolepi-docs-muc") || ""; } catch (e) { banDau = ""; }
+  }
+  if (!chiMuc.hasOwnProperty(banDau)) banDau = muc[0].id;
+  moMuc(banDau);
+  loc();
+})();
+</script>
+"""
+
+
 def register_docs(app):
     @app.route("/docs")
     def docs_page():
-        nav = " &middot; ".join(f'<a href="#{sid}">{title.split(" ", 1)[1]}</a>'
-                                for sid, title, _ in SECTIONS)
-        blocks = ""
-        for sid, title, html in SECTIONS:
-            blocks += f'<h2 id="{sid}">{title}</h2><div class="card">{html}</div>'
+        theo_id = {sid: (title, html) for sid, title, html in SECTIONS}
+        da_xep = set()
+
+        ben = ""
+        for ten_nhom, cac_id in NHOM:
+            hang = ""
+            for sid in cac_id:
+                if sid not in theo_id:
+                    continue
+                da_xep.add(sid)
+                hang += (f'<button type="button" class="tl-nut" data-muc="{sid}">'
+                         f'<span class="sl" style="display:none;">0</span>'
+                         f'{theo_id[sid][0]}</button>')
+            if hang:
+                ben += f'<div class="tl-nhom">{ten_nhom}</div>{hang}'
+
+        # Muc chua duoc xep nhom van phai hien ra - khong duoc am tham mat
+        con_lai = [(sid, t) for sid, t, _ in SECTIONS if sid not in da_xep]
+        if con_lai:
+            ben += '<div class="tl-nhom">Khac</div>' + "".join(
+                f'<button type="button" class="tl-nut" data-muc="{sid}">'
+                f'<span class="sl" style="display:none;">0</span>{t}</button>'
+                for sid, t in con_lai)
+
+        blocks = "".join(
+            f'<section class="tl-muc" id="{sid}"><div class="card">'
+            f'<h2 style="margin-top:0;">{title}</h2>{html}</div></section>'
+            for sid, title, html in SECTIONS)
 
         body = f"""
-        <div class="msg info">Trang nay hoat dong hoan toan ngoai tuyen - tra cuu duoc
-        ca khi thiet bi khong co internet.</div>
-        <div class="card"><strong>Muc luc:</strong><br>{nav}</div>
-        {blocks}"""
+        {DOCS_CSS}
+        <div class="tl-bo">
+          <aside class="tl-ben">
+            <input type="text" id="tl_tim" class="tl-tim"
+                   placeholder="🔎 Tim trong toan bo tai lieu...">
+            <div class="row" style="gap:7px;margin-bottom:4px;">
+              <button type="button" class="gray small" id="tl_xoa">✕ Xoa</button>
+              <button type="button" class="gray small" id="tl_tat_ca">📖 Xem tat ca</button>
+            </div>
+            <p class="tl-dem" id="tl_dem"></p>
+            {ben}
+          </aside>
+          <div class="tl-nd">
+            <div class="msg info" style="margin-top:0;">Trang nay hoat dong hoan toan
+            ngoai tuyen - tra cuu duoc ca khi thiet bi khong co internet.</div>
+            {blocks}
+          </div>
+        </div>
+        {DOCS_JS}"""
 
         return render_page(body, active="/docs", title="Tai lieu",
                            subtitle="Kien truc, vi tri file, lenh bao tri, su co thuong gap")
