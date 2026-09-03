@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.11
+
+**Nut "Ket noi mang (PAN)" lam NGUOC chieu.** Nut nay goi
+`Network1.Connect("nap")` - tuc la bao *Pi di XIN mang cua may kia*, trong khi
+viec can lam la *may kia xin mang cua Pi*. May Windows chi quang ba **PANU**
+(vai tro may xin mang), khong co dich vu NAP, nen BlueZ tra ve
+`Operation is not supported` - da do that tren may nguoi dung. Nguoi dung doc
+dong loi do khong the biet phai lam gi.
+
+Trong Bluetooth PAN, ben CHO mang (NAP) **khong bao gio tu bat dau ket noi
+duoc** - luon phai ben XIN mang (PANU) goi sang. Pi la ben cho mang nen chi
+co the ngoi doi. Nay nut kiem tra truoc: neu may kia khong co dich vu NAP thi
+noi thang viec can lam **o may do**, thay vi nem ra dong loi kho hieu.
+
+**Tai lieu - cai bay lon nhat tren Windows:** trang *Settings &rarr; Bluetooth
+&amp; other devices* (giao dien moi) KHONG HE CO chuc nang PAN - o do ConsolePi
+chi hien "Connected" kem moi nut *Remove device*. Phai dung Control Panel kieu
+cu (`control printers`, hoac `explorer shell:::{A8A91A66-...}`, hoac qua
+`ncpa.cpl`). Da ghi ro ca 3 duong vao tai lieu, kem cach xu ly khi khong thay
+dong "Connect using" (Windows luu danh sach dich vu tu luc ghep cap, phai xoa
+o ca hai phia roi ghep lai).
+
+Da kiem chung phia Pi hoan toan san sang: `pan0` dung la cau noi, DHCP lang
+nghe tren 192.168.60.1, va adapter dang quang ba dung UUID NAP
+(`00001116`) - xac nhan qua D-Bus.
+
 ## 0.4.10
 
 **Phan biet "da ket noi Bluetooth" voi "da vao mang"** - dung cho gay hieu

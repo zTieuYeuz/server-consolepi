@@ -327,6 +327,21 @@ BT_STATE_FILE = "/run/console-pi-bt.json"
 _PAIR = {"running": False, "mac": "", "step": "", "ok": None, "detail": ""}
 
 
+def _co_dich_vu_nap(mac):
+    """
+    Thiet bi kia co CHIA SE MANG khong (co dich vu NAP - 00001116)?
+
+    Phan biet voi PANU (00001115) la vai tro MAY XIN MANG. May Windows thong
+    thuong chi quang ba PANU, nen Pi khong the "goi sang xin mang" duoc.
+    """
+    try:
+        r = subprocess.run(["bluetoothctl", "info", mac],
+                           capture_output=True, text=True, timeout=8)
+        return "00001116-0000-1000-8000-00805f9b34fb" in r.stdout.lower()
+    except Exception:
+        return False
+
+
 def bt_da_vao_mang(mac):
     """
     Thiet bi da THUC SU vao mang Bluetooth PAN chua? Tra ve (roi, ip).
@@ -554,6 +569,23 @@ def bt_connect_profile(mac, want=""):
     subprocess.run(["bluetoothctl", "trust", mac], capture_output=True, timeout=10)
 
     if kind == "net":
+        # AI NOI CHUYEN VOI AI: trong Bluetooth PAN, ben CHO mang la "NAP",
+        # ben XIN mang la "PANU". Ket noi LUON do ben xin mang bat dau; ben
+        # cho mang chi ngoi doi, KHONG the tu goi sang.
+        #
+        # LOI THAT DA GAP: nut nay goi Network1.Connect("nap") - tuc la bao
+        # PI DI XIN MANG CUA MAY KIA. Voi may Windows chi quang ba PANU (may
+        # xin mang, khong chia se mang) thi BlueZ tra ve "Operation is not
+        # supported" - da do that tren may nguoi dung. Nguoi dung doc dong do
+        # khong the hieu la phai lam gi. Nay kiem tra truoc va noi thang viec
+        # can lam o may ben kia.
+        if not _co_dich_vu_nap(mac):
+            return False, (
+                f"{ten} chi dong vai tro MAY XIN MANG (PANU), no khong chia se mang. "
+                f"Pi moi la ben CHO mang, ma trong Bluetooth ben cho mang KHONG THE tu "
+                f"bat dau ket noi - phai lam tu chinh {ten}: mo Devices and Printers "
+                f"(go 'devicesandprinters' o o Run), chuot phai ConsolePi -> Connect using "
+                f"-> Access point. Xong may do se tu nhan IP dai 192.168.60.x.")
         try:
             import dbus
             bus = dbus.SystemBus()
