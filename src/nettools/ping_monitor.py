@@ -256,7 +256,11 @@ PING_MONITOR_TEMPLATE = """
   }
 
   function cap_nhat() {
-    fetch("/nettools/ping-monitor/data", { cache: "no-store" })
+    // Them timestamp vao URL: dam bao CDN/proxy trung gian (Cloudflare Tunnel)
+    // luon coi day la 1 URL CHUA TUNG THAY, khong the tra ve ban da cache tu
+    // truoc do (kem ca ban da cache TRUOC KHI Flask co header Cache-Control -
+    // header moi chi chan cache VE SAU, khong tu xoa cache cu da luu san).
+    fetch("/nettools/ping-monitor/data?_=" + Date.now(), { cache: "no-store" })
       .then(function (r) {
         if (!r.ok) throw new Error("Server tra ve HTTP " + r.status);
         return r.json();
