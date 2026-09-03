@@ -52,6 +52,20 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=False):
     phu hop voi DHCP (goi OFFER tra tu server IP khac, dia chi broadcast,
     khien srp() bo sot OFFER that du no da toi noi). sniff() bat moi goi
     UDP port 68 trong khoang thoi gian cho, khong phu thuoc logic ghep cap.
+
+    TU GUI LAI DISCOVER NHIEU LAN (quan trong voi wlan0): da kiem chung
+    thuc te tren chinh may nay - DHCPDISCOVER va DHCPOFFER deu la goi tin
+    BROADCAST, va broadcast tren 802.11 KHONG co ACK/retry o tang lien ket
+    (khac han unicast). Mot lan gui duy nhat co the mat hoan toan du router
+    hoan toan khoe manh - da kiem chung bang doi chieu voi `nmap
+    --script broadcast-dhcp-discover` va tcpdump doc lap: cung mot noi dung
+    goi tin, cung mot router, co lan nhan duoc OFFER co lan khong, hoan toan
+    ngau nhien - khong phai do sai dinh dang goi tin (da thu doi MAC that/
+    gia, doi TTL, them Parameter-Request-List, dem toi 300+ byte deu khong
+    lam thay doi ket qua mot cach on dinh). Day chinh la ly do RFC 2131 quy
+    dinh client PHAI tu gui lai DISCOVER neu chua thay OFFER - khong phai
+    tra loi mot lan la xong. Tren eth0 hau nhu luon thanh cong tu lan dau vi
+    Ethernet co dinh khong co van de mat goi broadcast nay.
     """
     try:
         from scapy.all import (
@@ -71,12 +85,27 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=False):
 
     xid = random.randint(1, 0xFFFFFFFF)
     pkt = (
-        Ether(dst="ff:ff:ff:ff:ff:ff") /
+        # BAT BUOC ghi ro src=hw_str: neu bo trong, scapy tu dien MAC theo
+        # conf.iface (interface MAC DINH cua scapy, thuong la interface dau
+        # tien no thay - KHONG chac chan la cung `iface` dang test). Da gap
+        # loi that: tren wlan0, Ethernet src tu dien lai la MAC cua eth0,
+        # trong khi BOOTP chaddr van dung la MAC cua wlan0 - hai dia chi mau
+        # thuan nhau trong cung mot goi. Router (dac biet AP WiFi co kiem
+        # tra chat) coi day la dau hieu gia mao va IM LANG khong tra loi,
+        # du goi tin van roi khoi day binh thuong (khong bao loi gi ca, nen
+        # rat kho phat hien neu khong doi chieu tung byte tren day).
+        Ether(src=hw_str, dst="ff:ff:ff:ff:ff:ff") /
         IP(src="0.0.0.0", dst="255.255.255.255") /
         UDP(sport=68, dport=67) /
         BOOTP(chaddr=hw, xid=xid, flags=0x8000) /
         DHCP(options=[("message-type", "discover"), "end"])
     )
+
+    # So lan gui lai va khoang cach giua cac lan - du de "trung" duoc it
+    # nhat mot cua so khong bi mat goi tren broadcast WiFi, ma van tra loi
+    # trong thoi gian hop ly cho nguoi dung bam nut cho.
+    SO_LAN_GUI = 3
+    KHOANG_CACH = max(1.0, timeout / SO_LAN_GUI)
 
     captured = []
     sniffer = AsyncSniffer(
@@ -86,8 +115,12 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=False):
     try:
         sniffer.start()
         time.sleep(0.3)  # dam bao sniffer da san sang truoc khi gui
-        sendp(pkt, iface=iface, verbose=0)
-        time.sleep(timeout)
+        # Gui du ca 3 lan va doi du thoi gian, KHONG dung som khi thay 1
+        # OFFER: co nhieu DHCP server tra loi la dau hieu huu ich (nghi ngo
+        # rogue DHCP), dung som se bo lo cac OFFER den tre hon.
+        for _ in range(SO_LAN_GUI):
+            sendp(pkt, iface=iface, verbose=0)
+            time.sleep(KHOANG_CACH)
     except PermissionError:
         sniffer.stop()
         return {"ok": False, "error": "Khong du quyen mo raw socket (can chay duoi quyen root).",
@@ -98,7 +131,12 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=False):
     else:
         sniffer.stop()
 
+    # Gui lai toi 3 lan (o tren) co nghia la MOT server that su co the tra
+    # loi nhieu lan - phai gop trung theo (server_id, offered_ip) truoc khi
+    # hien, neu khong se bao nham "nhieu DHCP server" (canh bao rogue DHCP
+    # gia) chi vi chinh server do da tra loi hon 1 lan cho cac lan gui lai.
     offers = []
+    da_thay = set()
     for recv in captured:
         if not recv.haslayer(DHCP) or not recv.haslayer(BOOTP):
             continue
@@ -108,6 +146,10 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=False):
                 ((o[0], o[1]) for o in recv[DHCP].options if isinstance(o, tuple))}
         if opts.get("message-type") != 2:  # 2 = DHCPOFFER
             continue
+        khoa = (opts.get("server_id", "?"), recv[BOOTP].yiaddr)
+        if khoa in da_thay:
+            continue
+        da_thay.add(khoa)
         offers.append({
             "offered_ip": recv[BOOTP].yiaddr,
             "server_id": opts.get("server_id", "?"),
@@ -148,8 +190,13 @@ def _dhcp_request_ack(iface, xid, offer, hw, timeout=5):
     from scapy.all import Ether, IP, UDP, BOOTP, DHCP, sendp, AsyncSniffer, conf
     conf.verb = 0
 
+    # hw la bytes (tu mac2str) - doi nguoc lai thanh chuoi "aa:bb:.." de dat
+    # cho Ether src. Phai KHOP voi chaddr, cung ly do da giai thich trong
+    # run_dhcp_test() o tren: lech nhau la bi router im lang tu choi.
+    hw_str_lai = ":".join(f"{b:02x}" for b in hw)
+
     pkt = (
-        Ether(dst="ff:ff:ff:ff:ff:ff") /
+        Ether(src=hw_str_lai, dst="ff:ff:ff:ff:ff:ff") /
         IP(src="0.0.0.0", dst="255.255.255.255") /
         UDP(sport=68, dport=67) /
         BOOTP(chaddr=hw, xid=xid, flags=0x8000) /
