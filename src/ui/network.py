@@ -327,6 +327,43 @@ BT_STATE_FILE = "/run/console-pi-bt.json"
 _PAIR = {"running": False, "mac": "", "step": "", "ok": None, "detail": ""}
 
 
+def bt_da_vao_mang(mac):
+    """
+    Thiet bi da THUC SU vao mang Bluetooth PAN chua? Tra ve (roi, ip).
+
+    VI SAO PHAI TACH RIENG voi "Connected": Windows ghep cap xong la bao
+    "Connected" ngay, nhung do moi la ket noi Bluetooth (thuong la ho so am
+    thanh). Muon VAO MANG thi may tinh con phai tu chu dong noi vao dich vu
+    NAP - o Windows la chuot phai ConsolePi > Connect using > Access point.
+    Pi la ben CHO mang nen khong the tu ep may tinh vao mang duoc.
+
+    LOI THAT DA GAP: giao dien cu chi doc "Connected" nen hien "dang ket noi"
+    mau xanh cho may tinh, trong khi thuc te chua he co duong mang nao - nguoi
+    dung tuong da xong roi ngoi doi mai khong vao duoc 192.168.60.1.
+
+    Dau hieu vao mang THAT: co giao dien bnep gan vao cau pan0, va dnsmasq da
+    cap IP cho dung dia chi MAC do.
+    """
+    try:
+        cong = os.listdir("/sys/class/net/pan0/brif")
+    except Exception:
+        cong = []
+    if not any(c.startswith("bnep") for c in cong):
+        return False, ""
+
+    m = (mac or "").lower()
+    for duong in ("/var/lib/misc/dnsmasq.leases", "/var/lib/dnsmasq/dnsmasq.leases"):
+        try:
+            with open(duong) as f:
+                for dong in f:
+                    phan = dong.split()
+                    if len(phan) >= 3 and phan[1].lower() == m:
+                        return True, phan[2]
+        except Exception:
+            pass
+    return True, ""      # co duong mang nhung chua thay IP da cap
+
+
 def bt_agent_state():
     """
     Doc ma so ma agent dang hien (de nguoi dung go len ban phim).
@@ -843,6 +880,19 @@ def _bt_page(msg="", ok=True, scanned=None):
         if hong_bond:
             state = ('<span style="color:#ff6b6b;">🔴 Noi duoc nhung KHONG dung duoc'
                      '<br><small>Thieu khoa lien ket (Bonded: no) - phai ghep cap lai</small></span>')
+        elif i["connected"] and c["kind"] == "net":
+            # May tinh/dien thoai: "Connected" MOI CHI la ket noi Bluetooth,
+            # chua chac da vao mang. Phai noi ro 2 viec nay khac nhau.
+            vao_mang, ip_cap = bt_da_vao_mang(mac)
+            if vao_mang:
+                state = ('<span style="color:#7ddc7d;">🟢 da vao mang'
+                         + (f'<br><small>IP: {_esc(ip_cap)}</small>' if ip_cap else '')
+                         + '</span>')
+            else:
+                state = ('<span style="color:#ffd166;">🟡 co ket noi Bluetooth, '
+                         'CHUA vao mang<br><small>Tren may do: chuot phai '
+                         '<strong>ConsolePi</strong> &rarr; Connect using &rarr; '
+                         'Access point. Pi khong tu ep vao mang duoc.</small></span>')
         elif i["connected"]:
             state = "🟢 dang ket noi"
         elif i["paired"]:

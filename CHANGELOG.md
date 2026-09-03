@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.10
+
+**Phan biet "da ket noi Bluetooth" voi "da vao mang"** - dung cho gay hieu
+nham cho nguoi dung: may ban ghep cap xong, dashboard hien "🟢 dang ket noi"
+mau xanh, nhung vao `192.168.60.1` thi khong duoc.
+
+Do tren may that: may ban `DESKTOP-I2O01BN` co `Connected: yes` nhung
+**khong he co giao dien `bnep` nao gan vao cau `pan0`, dnsmasq chua cap IP
+cho ai**. Tuc la moi ket noi Bluetooth (Windows tu noi ho so am thanh khi
+ghep cap xong), chua he vao mang. Pi la ben CHO mang nen **khong the tu ep**
+may tinh vao mang - may tinh phai tu chu dong noi vao dich vu NAP.
+
+Nay trang Bluetooth doc dau hieu THAT (co `bnep` trong cau `pan0` + IP da cap
+trong file lease cua dnsmasq) va hien 3 trang thai khac nhau cho may tinh/
+dien thoai:
+- 🟢 **da vao mang** (kem IP da cap)
+- 🟡 **co ket noi Bluetooth, CHUA vao mang** - kem huong dan ngay tai cho:
+  chuot phai ConsolePi &rarr; Connect using &rarr; Access point
+- ⚪ da ghep, chua noi
+
+**Xac nhan: ghep nhieu thiet bi cung luc VAN DUOC.** Do tren may nay: ban
+phim (HID) va may ban (PAN) cung ket noi mot luc, khong xung dot.
+
 ## 0.4.9
 
 **Da ghep duoc ban phim Bluetooth tren may that** (Samsung `04E8:7021`):

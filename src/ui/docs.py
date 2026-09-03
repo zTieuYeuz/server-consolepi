@@ -243,9 +243,25 @@ san xuat (hay gap: 0000, 1234, 8888) va noi ro tren man hinh, khong bat ban go g
 <p>Khi ghep cap that bai, xem dau vet tung buoc BlueZ da hoi gi:
 <code>journalctl -u bt-agent -n 30</code>.</p>
 
-<p>Ket noi mang qua Bluetooth: ghep may voi ten <strong>ConsolePi</strong> roi vao
-<code>http://192.168.60.1</code>. Tren Windows: mo <code>devicesandprinters</code>,
-chuot phai ConsolePi &rarr; <em>Connect using</em> &rarr; <em>Access point</em>.</p>
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ket noi mang qua Bluetooth (PAN)</h3>
+<p>Ghep may voi ten <strong>ConsolePi</strong> roi vao <code>http://192.168.60.1</code>.
+Tren Windows: mo <code>devicesandprinters</code>, chuot phai ConsolePi &rarr;
+<em>Connect using</em> &rarr; <em>Access point</em>.</p>
+<div class="msg warn"><strong>"Da ket noi" KHONG co nghia la da vao mang.</strong> Windows
+ghep cap xong la bao Connected ngay, nhung do moi la ket noi Bluetooth (thuong la ho so am
+thanh). Muon vao mang thi <strong>may tinh phai tu chu dong</strong> noi vao dich vu NAP
+bang buoc <em>Connect using &rarr; Access point</em> o tren - <strong>Pi la ben CHO mang nen
+khong the tu ep may tinh vao mang duoc</strong>. Trang Bluetooth phan biet ro 2 trang thai
+nay: 🟡 <em>co ket noi Bluetooth, CHUA vao mang</em> va 🟢 <em>da vao mang</em> (kem IP da
+cap). Dau hieu vao mang that: co giao dien <code>bnep</code> gan vao cau <code>pan0</code>
+va dnsmasq da cap IP.</div>
+<pre>* Kiem tra nhanh tu Pi
+ls /sys/class/net/pan0/brif/     (phai thay bnep0 khi co may vao mang)
+cat /var/lib/misc/dnsmasq.leases (IP da cap cho tung may)</pre>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ghep nhieu thiet bi cung luc</h3>
+<p>Duoc. Bluetooth cho nhieu ket noi song song, va da kiem chung tren chinh may nay:
+ban phim (HID) va may ban (PAN) <strong>cung ket noi mot luc khong xung dot</strong>.</p>
 <div class="msg warn">Neu ghep cap that bai voi loi
 <code>br-connection-profile-unavailable</code>: xoa ghep cap o CA HAI phia roi ghep lai.
 Tren Windows nho tat/bat lai Bluetooth de giai phong trang thai ket.</div>"""),
