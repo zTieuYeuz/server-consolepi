@@ -503,12 +503,6 @@ de thay ro dang tin ai, va phat hien dung luc chung chi da het han that su.</p>
 xac thuc. Moi truong hop khac (tu ky, het han, sai ten) deu hien ro ly do, khong bao gio im
 lang coi la an toan.</p>
 
-<h3>📈 Ping lien tuc (do thi song)</h3>
-<p>Bat len roi vua rung/uon lai tung doan day mang vua nhin do thi - dut quang dung luc nao la
-biet doan do co van de. Do thi ve bang canvas thuan (khong thu vien ngoai), cap nhat moi giay.
-Tu dong dung sau toi da 30 phut (chinh duoc luc bat dau) de tranh mot luong nen bi quen chay
-mai mai.</p>
-
 <h3>🗺️ So do mang 1 doan</h3>
 <p>Ghep ARP Scan + LLDP/CDP Discovery co san thanh 1 so do: Pi → switch dang cam vao (neu co
 quang ba LLDP/CDP) → cac thiet bi tren cung doan mang. <strong>Gioi han that:</strong> chi ve

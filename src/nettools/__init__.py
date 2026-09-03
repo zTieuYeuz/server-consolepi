@@ -60,7 +60,6 @@ TOOLS_READONLY = [
     ("/nettools/mtu", "📏 MTU Discovery", "Do MTU thuc te toi 1 dia chi (phat hien VPN/PPPoE lam giam MTU)", True),
     ("/nettools/dns-check", "🌐 Kiem tra DNS", "Doi chieu ket qua phan giai ten mien qua nhieu DNS server", True),
     ("/nettools/tls-check", "🔒 Kiem tra chung chi TLS", "Xem chi tiet + tinh trang tin cay cua chung chi HTTPS quan ly", True),
-    ("/nettools/ping-monitor", "📈 Ping lien tuc (do thi song)", "Theo doi rot goi thoi gian thuc khi rung/cam lai day", True),
     ("/nettools/topology", "🗺️ So do mang 1 doan", "Ve Pi - switch - cac host tren cung 1 segment (ARP+LLDP)", True),
 ]
 
@@ -90,7 +89,6 @@ from . import l2_sniff  # noqa: E402,F401
 from . import mtu_discover  # noqa: E402,F401
 from . import dns_check  # noqa: E402,F401
 from . import tls_check  # noqa: E402,F401
-from . import ping_monitor  # noqa: E402,F401
 from . import topology  # noqa: E402,F401
 from . import tftp_server  # noqa: E402,F401
 from . import netmiko_tool  # noqa: E402,F401

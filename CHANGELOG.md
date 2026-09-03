@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1
+
+Bo tinh nang **Ping lien tuc (do thi song)** (`/nettools/ping-monitor`) da
+them o 0.4.0 - danh gia thuc te khong huu dung du da sua 2 loi that (silent-
+rejection khi bam Bat dau, va endpoint `/data` bi Cloudflare Worker rieng
+cua nguoi dung tra ve 404 khi truy cap tu xa). Go het module, route, muc
+tai lieu, dong nhac trong README - khong de sot code chet.
+
 ## 0.4.0
 
 Them 6 cong cu chan doan mang moi, tat ca da kiem chung bang do dac that
