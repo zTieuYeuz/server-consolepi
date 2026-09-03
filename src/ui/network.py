@@ -390,22 +390,40 @@ def _pair_worker(mac):
         # truoc con thay ro rang. Da tai hien duoc dung loi nay tren may that.
         # Vi vay dat thoi gian quet du dai (120s) de phu het ca buoc pair/
         # trust/connect, va chi tat quet o khoi finally ben duoi.
+        # Cua so quet 150 GIAY, khong phai 20.
+        #
+        # DAY LA SO DO THAT, khong phai uoc luong: ghep ban phim Samsung cua
+        # nguoi dung tren chinh may nay, ban phim mat **116 giay** ke tu luc
+        # bat dau quet moi chiu quang ba ra. Cua so cu 20 giay (va ca muc 60
+        # giay thu o ban sua truoc) DEU KHONG DU - trang bao "khong tim thay"
+        # du ban phim hoan toan binh thuong, va vi dung ngay o buoc quet nen
+        # khong de lai dau vet nao trong log de lan ra nguyen nhan.
+        #
+        # Ly do ban phim lau nhu vay: nguoi dung bam nut tren TRANG WEB truoc,
+        # roi moi cam ban phim len giu nut pairing; cong them nhieu ban phim
+        # phai giu nut vai giay moi vao che do quang ba.
+        TONG_GIAY_QUET = 150
         _PAIR["step"] = "quet"
         subprocess.Popen(["bluetoothctl", "--timeout", "120", "scan", "on"],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         thay = False
-        for _ in range(20):
+        for giay in range(TONG_GIAY_QUET):
             time.sleep(1)
+            # Hien dem nguoc de nguoi dung biet con bao lau ma bam nut tren
+            # ban phim, thay vi ngoi doan.
+            _PAIR["step"] = f"quet (con {TONG_GIAY_QUET - giay}s - bam nut ghep cap tren ban phim ngay)"
             if _thiet_bi_da_thay(mac):
                 thay = True
                 break
 
         if not thay:
             steps.append(("quet", False,
-                          "Khong tim thay thiet bi sau 20s quet. Ban phim co the "
-                          "chua o che do ghep cap (giu nut Connect/pairing tren "
-                          "ban phim cho den khi den nhap nhay NHANH, roi thu lai "
-                          "ngay), hoac da het pin."))
+                          f"Khong tim thay thiet bi sau {TONG_GIAY_QUET}s quet. Ban phim "
+                          "gan nhu chac chan CHUA o che do ghep cap: giu nut Connect/"
+                          "pairing tren ban phim cho den khi den nhap nhay NHANH (nhap "
+                          "nhay cham la dang tim lai may cu, khong phai che do ghep cap), "
+                          "roi bam Ghep cap lai ngay. Ban phim chi giu che do nay 1-3 "
+                          "phut. Neu van khong thay: thu thay pin."))
         else:
             for action, limit in (("pair", 60), ("trust", 10), ("connect", 25)):
                 _PAIR["step"] = action

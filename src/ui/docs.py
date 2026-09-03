@@ -211,11 +211,22 @@ bluetoothctl remove AA:BB:CC:DD:EE:FF
 
 * Khoi dong lai toan bo (bt-agent va bt-nap tu theo)
 sudo systemctl restart bluetooth</pre>
-<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ghep ban phim: vi sao phai go mot day so</h3>
-<p>Nhieu nguoi thay vo ly: <em>ban phim chua ket noi thi go ma vao dau?</em> Nhung day dung la
-cach ghep cap chuan cua Bluetooth (Windows/macOS cung lam y het). Trong luc ghep cap da co
-mot duong truyen tam giua Pi va ban phim; ban phim <strong>chua</strong> go chu vao may duoc,
-nhung <strong>da</strong> gui duoc day so xac thuc qua duong do. Go xong bam <strong>Enter</strong>.</p>
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ghep ban phim: co ban phim can go ma, co ban phim khong</h3>
+<div class="msg ok"><strong>RAT NHIEU ban phim KHONG can go ma gi ca</strong> - chung dung
+kieu ghep "Just Works", bam Ghep cap la xong. Da do tren may that voi ban phim Samsung
+(<code>04E8:7021</code>): BlueZ khong he hoi ma nao, ghep thang thanh cong. Vi vay <em>khong
+thay man hinh hien so nao</em> la binh thuong, khong phai loi.</div>
+<p>Con voi ban phim CO doi ma: nhieu nguoi thay vo ly <em>"ban phim chua ket noi thi go ma
+vao dau?"</em> - nhung day dung la cach ghep cap chuan cua Bluetooth (Windows/macOS cung lam
+y het). Trong luc ghep cap da co mot duong truyen tam giua Pi va ban phim; ban phim
+<strong>chua</strong> go chu vao may duoc, nhung <strong>da</strong> gui duoc day so xac
+thuc qua duong do. Go xong bam <strong>Enter</strong>.</p>
+<div class="msg warn"><strong>Quan trong nhat khi ghep khong duoc:</strong> ban phim chi
+quang ba khi dang o dung che do ghep cap (den nhap nhay <strong>NHANH</strong>; nhap nhay
+cham la dang tim lai may cu). Do that tren may nay: tu luc bat dau quet den luc ban phim
+chiu quang ba mat <strong>116 giay</strong>. Vi vay cua so quet cua dashboard de
+<strong>150 giay</strong> va co dem nguoc ngay tren trang - cu bam Ghep cap truoc roi thong
+tha cam ban phim len giu nut pairing.</div>
 <p>Chuan Bluetooth co 2 kieu, Pi ho tro ca hai va <strong>deu hien so len man hinh</strong>:</p>
 <ul>
 <li><strong>Passkey</strong> (thiet bi doi moi): Pi sinh 6 chu so, ban go tren ban phim.</li>

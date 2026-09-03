@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.9
+
+**Da ghep duoc ban phim Bluetooth tren may that** (Samsung `04E8:7021`):
+Paired/Bonded/Trusted/Connected deu `yes`, nhan tao ra thiet bi nhap lieu
+that (`input: Bluetooth Keyboard`). selftest tu 33 dat/3 luu y len
+**36 dat/2 luu y**.
+
+Hai dieu do duoc trong luc ghep, deu di nguoc gia dinh ban dau:
+
+- **Ban phim nay KHONG can go ma nao ca.** Agent khong he duoc BlueZ hoi cau
+  nao - no dung kieu ghep "Just Works". Nghia la nguoi dung noi dung: *ban
+  phim dau can ghep bang ma so*. Voi ban phim kieu nay, man hinh khong hien
+  so gi la BINH THUONG, khong phai loi. (Cac sua o 0.4.7 ve nhanh ma PIN van
+  can, nhung danh cho ban phim doi cu hon.)
+- **Ban phim mat 116 GIAY moi chiu quang ba** ke tu luc bat dau quet. Cua so
+  quet cu 20 giay - va ca muc 60 giay thu o ban sua truoc - **deu khong du**.
+  Nay de **150 giay**, kem dem nguoc hien ngay tren trang de nguoi dung biet
+  con bao lau. Vi qua trinh dung ngay o buoc quet nen truoc day khong he de
+  lai dau vet nao trong log, rat kho lan ra nguyen nhan.
+
+Tai lieu: noi ro nhieu ban phim khong can ma, va nhan manh den phai nhap nhay
+NHANH moi la che do ghep cap.
+
 ## 0.4.8
 
 Hai loi that lam **khong ghep duoc ban phim Bluetooth**, ca hai deu do dac
