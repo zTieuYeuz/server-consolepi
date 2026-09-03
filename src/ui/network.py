@@ -325,6 +325,12 @@ BT_STATE_FILE = "/run/console-pi-bt.json"
 
 # Trang thai ghep cap dang chay (chay o luong nen de trang web khong bi treo)
 _PAIR = {"running": False, "mac": "", "step": "", "ok": None, "detail": ""}
+# Khoa cho bt_pair_start(): tranh 2 request POST toi gan nhau (vd nguoi dung
+# bam dup lien tuc, thuong xay ra that khi dang sot ruot) cung doc thay
+# "running=False" TRUOC KHI mot trong hai kip dat lai thanh True - dan den
+# 2 luong _pair_worker chay chong len nhau tren cung 1 luc, cung dung 1 kenh
+# Bluetooth (goi bluetoothctl "remove"/"pair" tu 2 noi cung luc).
+_KHOA_PAIR = threading.Lock()
 
 
 def _co_dich_vu_nap(mac):
@@ -406,7 +412,22 @@ def _thiet_bi_da_thay(mac):
 
 
 def _pair_worker(mac):
-    """Ghep cap o luong nen. Ban phim can nguoi dung go ma nen co the lau."""
+    """
+    Ghep cap o luong nen. Ban phim can nguoi dung go ma nen co the lau.
+
+    LO HONG DO TIN CAY DA TIM RA (chua gap that, phat hien khi ra soat lai):
+    doan kiem tra "su that" o cuoi ham (goi bt_device_info sau khi ghep) nam
+    NGOAI khoi try/finally chinh. Neu doan do nem loi bat ngo, ca ham se
+    thoat SOM ma KHONG BAO GIO chay toi dong "_PAIR['running'] = False" -
+    _PAIR se ket cung o trang thai "dang chay" MAI MAI, khien bt_pair_start()
+    tu choi moi lan ghep cap tiep theo voi thong bao "Dang ghep cap thiet bi
+    khac, doi mot chut" du that ra khong co gi dang chay ca. Nguoi dung se
+    phai khoi dong lai ca dashboard moi sua duoc, ma khong biet vi sao.
+
+    Sua bang try/finally BAO TRUM TOAN BO than ham: "_PAIR['running'] = False"
+    gio nam trong finally ngoai cung, chay dam bao du bat ky dong nao ben
+    trong nem loi gi di nua.
+    """
     steps = []
     try:
         # Xoa sach ban ghi cu TRUOC KHI ghep. Ly do: BlueZ co the con giu mot
@@ -502,31 +523,41 @@ def _pair_worker(mac):
         except Exception:
             pass
 
-    _PAIR["ok"] = all(g for _, g, _ in steps) and len(steps) == 4
-    _PAIR["detail"] = " | ".join(f"{a}: {m}" for a, _, m in steps)
+    # Tu day tro xuong nam trong try/finally RIENG: neu buoc kiem tra sau
+    # ghep gap loi bat ngo, "_PAIR['running']" van PHAI duoc dat lai False -
+    # thieu buoc nay thi tinh nang ghep cap se ket cung "dang chay" mai mai,
+    # tu choi moi lan ghep cap tiep theo cho den khi khoi dong lai dashboard.
+    try:
+        _PAIR["ok"] = all(g for _, g, _ in steps) and len(steps) == 4
+        _PAIR["detail"] = " | ".join(f"{a}: {m}" for a, _, m in steps)
 
-    # Kiem tra lai bang SU THAT chu khong tin chu "success" cua bluetoothctl:
-    # no bao thanh cong ca khi khoa lien ket khong duoc luu. Voi ban phim/chuot
-    # ma thieu khoa nay thi BlueZ se tu choi gan ho so HID va thiet bi khong
-    # go duoc gi - phai bao ro ngay tai day thay vi de nguoi dung ngoi doan.
-    if _PAIR["ok"]:
-        sau = bt_device_info(mac)
-        if not sau.get("bonded", False):
-            _PAIR["ok"] = False
-            _PAIR["detail"] += (" | CANH BAO: ghep xong nhung khong luu duoc khoa "
-                                "lien ket (Bonded: no). Ban phim se khong go duoc. "
-                                "Hay xoa ghep cap tren CHINH BAN PHIM (thuong giu "
-                                "nut Connect vai giay cho den khi den nhap nhay) "
-                                "roi ghep lai.")
-    _PAIR["step"] = "xong"
-    _PAIR["running"] = False
+        # Kiem tra lai bang SU THAT chu khong tin chu "success" cua bluetoothctl:
+        # no bao thanh cong ca khi khoa lien ket khong duoc luu. Voi ban phim/chuot
+        # ma thieu khoa nay thi BlueZ se tu choi gan ho so HID va thiet bi khong
+        # go duoc gi - phai bao ro ngay tai day thay vi de nguoi dung ngoi doan.
+        if _PAIR["ok"]:
+            sau = bt_device_info(mac)
+            if not sau.get("bonded", False):
+                _PAIR["ok"] = False
+                _PAIR["detail"] += (" | CANH BAO: ghep xong nhung khong luu duoc khoa "
+                                    "lien ket (Bonded: no). Ban phim se khong go duoc. "
+                                    "Hay xoa ghep cap tren CHINH BAN PHIM (thuong giu "
+                                    "nut Connect vai giay cho den khi den nhap nhay) "
+                                    "roi ghep lai.")
+    except Exception as e:
+        _PAIR["ok"] = False
+        _PAIR["detail"] = (_PAIR.get("detail") or "") + f" | Loi khi kiem tra lai sau ghep: {str(e)[:120]}"
+    finally:
+        _PAIR["step"] = "xong"
+        _PAIR["running"] = False
 
 
 def bt_pair_start(mac):
     """Bat dau ghep cap o luong nen, tra ve ngay de trang web khong treo."""
-    if _PAIR["running"]:
-        return False, "Dang ghep cap thiet bi khac, doi mot chut."
-    _PAIR.update(running=True, mac=mac, step="pair", ok=None, detail="")
+    with _KHOA_PAIR:
+        if _PAIR["running"]:
+            return False, "Dang ghep cap thiet bi khac, doi mot chut."
+        _PAIR.update(running=True, mac=mac, step="pair", ok=None, detail="")
     threading.Thread(target=_pair_worker, args=(mac,), daemon=True).start()
     return True, ""
 

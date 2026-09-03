@@ -592,7 +592,15 @@ def register_commands(app, tmux_session="consolepi-local"):
         items = load_library()
         if not (0 <= idx < len(items)):
             return render_library_page(msg="Khong tim thay tap lenh.", ok=False)
-        ok, msg = send_to_tmux(tmux_session, items[idx].get("commands", ""))
+        # Dung dan_thong_minh (khong phai send_to_tmux thang) - LOI THAT SUYT
+        # LAP LAI: neu nguoi dung dang mo Terminal roi tu SSH vao 1 thiet bi
+        # mang tu trong do (khong qua o soan cua tab SSH), roi quay lai
+        # Thu vien lenh bam "Gui vao Terminal", ban cu se dan CA KHOI vao
+        # thang thiet bi do -> dung y het loi "roi mat ky tu dau dong" da
+        # sua o cho khac. dan_thong_minh() tu nhan biet dung o shell hay
+        # dang o thiet bi ngoai va chon cach dan phu hop, bat ke vao tu
+        # duong nao.
+        ok, msg = dan_thong_minh(tmux_session, items[idx].get("commands", ""))
         return render_library_page(msg=msg, ok=ok)
 
     return app
