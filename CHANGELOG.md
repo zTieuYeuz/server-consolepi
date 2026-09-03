@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.15
+
+**Da vao duoc mang qua Bluetooth PAN that su tren Windows 11** - ghi lai dung
+quy trinh vao tai lieu (thay cho phan canh bao loi truoc do):
+
+1. **Ghep cap phai khoi dong TU PHIA WINDOWS** (Settings -> Bluetooth &
+   devices -> Add device), khong phai bam Ghep cap tren Pi truoc.
+2. Ghep xong Windows bao "Connected" nhung **CHUA vao mang duoc ngay** - day
+   chi la ghep cap Bluetooth thuan tuy.
+3. **Buoc quyet dinh**: mo Devices and Printers kieu cu (`control printers`)
+   -> chuot phai ConsolePi -> **Connect using -> Access point**.
+
+Da kiem chung that sau buoc 3: giao dien `bnep0` xuat hien trong cau `pan0`,
+dnsmasq cap dung IP (`192.168.60.29`) cho may tinh.
+
+Them nhac nho: phai bam **Trust** cho may tinh sau khi xong (nhu da lam voi
+ban phim) - thieu buoc nay thi lan sau Bluetooth rot la phai lam lai tu buoc 3
+moi lan, khong tu noi lai duoc.
+
 ## 0.4.14
 
 **Ghi lai quy trinh ghep ban phim Bluetooth DA THANH CONG that** vao tai lieu

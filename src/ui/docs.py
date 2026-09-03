@@ -272,28 +272,41 @@ san xuat (hay gap: 0000, 1234, 8888) va noi ro tren man hinh, khong bat ban go g
 
 <h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ket noi mang qua Bluetooth (PAN)</h3>
 <p>Ghep may voi ten <strong>ConsolePi</strong> roi vao <code>http://192.168.60.1</code>.</p>
-<div class="msg err"><strong>Cai bay lon nhat tren Windows 10/11:</strong> trang
-<em>Settings &rarr; Bluetooth &amp; other devices</em> (giao dien moi) <strong>KHONG HE CO
-chuc nang PAN</strong> - o do ConsolePi chi hien "Connected" kem moi nut <em>Remove
-device</em>, khong co cach nao vao mang. Phai dung <strong>Control Panel kieu cu</strong>.
-Da mat thoi gian that vi cho nay.</div>
-<pre>* Cach 1 - mo Devices and Printers kieu cu (Win + R roi go):
-control printers
 
-* Cach 2 - neu Windows chuyen huong ve Settings, mo thang bang dinh danh:
-explorer shell:::{A8A91A66-3A7D-4424-8D24-04E180695C7A}
+<div class="msg ok"><strong>Da lam duoc that tren Windows 11 - quy trinh dung, lam theo dung
+thu tu nay:</strong>
+<ol style="margin:8px 0 0 18px;padding:0;">
+<li><strong>Ghep cap khoi dong TU PHIA WINDOWS</strong> (khong phai bam Ghep cap tren Pi
+truoc): Windows &rarr; <em>Settings &rarr; Bluetooth &amp; devices &rarr; Add device &rarr;
+Bluetooth</em> &rarr; chon <strong>ConsolePi</strong> &rarr; so sanh ma 6 so hien tren ca 2
+may khop nhau &rarr; bam <em>Yes/Connect</em> ben Windows.</li>
+<li><strong>Sau khi ghep xong (Windows bao "Connected"), CHUA vao mang duoc ngay</strong> -
+day chi la ghep cap Bluetooth, chua phai join mang. Buoc tiep theo moi la buoc quyet dinh.</li>
+<li><strong>Mo Devices and Printers kieu cu</strong> (Win + R, go <code>control printers</code>)
+&rarr; chuot phai <strong>ConsolePi</strong> &rarr; <em>Connect using</em> &rarr;
+<em>Access point</em>.</li>
+</ol>
+<p style="margin-top:8px;">Xong buoc 3, may tinh se nhan IP dai <code>192.168.60.x</code> va
+vao duoc <code>192.168.60.1</code> ngay. Da kiem chung that: giao dien <code>bnep0</code>
+xuat hien trong cau <code>pan0</code>, dnsmasq cap dung IP cho may.</p>
+<p style="margin-top:8px;"><strong>Dung quen bam Trust</strong> tren trang Bluetooth (hoac
+<code>bluetoothctl trust &lt;mac&gt;</code>) cho may tinh sau khi xong - neu khong, lan sau
+Bluetooth rot thi Pi se KHONG tu noi lai, phai lam lai tu buoc 3 (Connect using) moi lan.</p>
+</div>
 
-* Cach 3 - di duong Network Connections:
-ncpa.cpl
-  -> chuot phai "Bluetooth Network Connection"
-  -> View Bluetooth Network Devices -> chon ConsolePi -> Connect</pre>
-<p>Trong <em>Devices and Printers</em>: chuot phai <strong>ConsolePi</strong> &rarr;
-<em>Connect using</em> &rarr; <em>Access point</em>.</p>
 <div class="msg warn"><strong>Neu khong thay dong "Connect using":</strong> Windows luu
 danh sach dich vu cua thiet bi tu LUC GHEP CAP. Neu luc do Pi chua dang ky NAP thi Windows
 khong biet Pi co chia se mang, va dong do se khong bao gio hien ra. Cach sua: xoa thiet bi
-o CA HAI phia (Windows: Remove device; Pi: nut Xoa tren trang Bluetooth) roi ghep cap lai -
-Windows se doc lai danh sach dich vu.</div>
+o CA HAI phia (Windows: Remove device; Pi: nut Xoa tren trang Bluetooth) roi ghep cap lai TU
+PHIA WINDOWS nhu buoc 1 o tren - Windows se doc lai danh sach dich vu tu dau.</div>
+
+<pre>* Neu Windows chuyen huong Devices and Printers ve Settings, mo thang bang dinh danh:
+explorer shell:::{A8A91A66-3A7D-4424-8D24-04E180695C7A}
+
+* Duong khac - Network Connections:
+ncpa.cpl
+  -> chuot phai "Bluetooth Network Connection"
+  -> View Bluetooth Network Devices -> chon ConsolePi -> Connect</pre>
 <div class="msg warn"><strong>"Da ket noi" KHONG co nghia la da vao mang.</strong> Windows
 ghep cap xong la bao Connected ngay, nhung do moi la ket noi Bluetooth (thuong la ho so am
 thanh). Muon vao mang thi <strong>may tinh phai tu chu dong</strong> noi vao dich vu NAP
