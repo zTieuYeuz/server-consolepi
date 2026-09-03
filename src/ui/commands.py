@@ -161,6 +161,62 @@ def send_to_tmux(session_name, text, press_enter=False):
         return False, f"Loi: {e}"
 
 
+def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.18, toi_da_dong=120):
+    """
+    Dan tap lenh vao phien tmux nhung GUI TUNG DONG, co giai lao giua cac dong.
+
+    VI SAO KHONG dung send_to_tmux() o day: ham do bắn ca khoi van ban ra 1
+    luot. Voi bash thi khong sao, nhung voi THIET BI MANG THAT (switch/router
+    qua SSH hoac cong console) thi CLI khong co dieu khien luong - trong luc
+    thiet bi con dang xu ly + echo lai dong truoc, cac ky tu dau cua dong ke
+    tiep bi ROI MAT.
+
+    LOI THAT DA GAP: dan tap lenh 3 dong vao switch thi dong "show interfaces
+    trunk" thanh "how interfaces trunk" - mat dung 1 ky tu dau. Da kiem chung
+    lai duong dan phia server khong he cat chu (dan vao bash nhan du nguyen
+    van), nen thu pham la toc do ban ra qua nhanh so voi thiet bi.
+
+    KHONG bam Enter o DONG CUOI: cac dong trước no thi thiet bi mang coi
+    xuong dong = Enter nen se chay, rieng dong cuoi de nguyen cho nguoi dung
+    doc lai lan cuoi roi tu bam - giu dung nguyen tac "xem roi moi chay".
+    """
+    import time
+
+    dong = [d for d in text.rstrip("\n").split("\n")]
+    if not dong or not any(d.strip() for d in dong):
+        return False, "Khong co noi dung de dan."
+    if len(dong) > toi_da_dong:
+        return False, (f"Tap lenh co {len(dong)} dong, vuot qua {toi_da_dong} dong cho 1 lan dan. "
+                       f"Chia nho ra dan lam nhieu lan cho an toan.")
+
+    try:
+        has = subprocess.run(["tmux", "has-session", "-t", session_name],
+                             capture_output=True, timeout=5)
+        if has.returncode != 0:
+            return False, (f"Chua co phien terminal '{session_name}'. "
+                           f"Mo khung terminal truoc roi bam lai.")
+
+        for i, d in enumerate(dong):
+            # -l = gui NGUYEN VAN, khong dich cac chuoi trung ten phim
+            # (vi du dong lenh co chu "Space" hay "Enter") thanh phim bam.
+            subprocess.run(["tmux", "send-keys", "-l", "-t", session_name, d],
+                           capture_output=True, timeout=5)
+            if i < len(dong) - 1:
+                subprocess.run(["tmux", "send-keys", "-t", session_name, "Enter"],
+                               capture_output=True, timeout=5)
+                time.sleep(tre_giay)
+    except FileNotFoundError:
+        return False, "Chua cai tmux tren may."
+    except Exception as e:
+        return False, f"Loi: {e}"
+
+    n = len([d for d in dong if d.strip()])
+    if len(dong) == 1:
+        return True, f"Da dan vao khung terminal (CHUA chay) - bam Enter trong terminal de chay."
+    return True, (f"Da dan {n} lenh, gui tung dong mot de thiet bi khong roi mat chu. "
+                  f"Dong CUOI chua bam Enter - doc lai roi tu bam de chay.")
+
+
 def _esc(s):
     return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;"))

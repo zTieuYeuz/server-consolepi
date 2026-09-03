@@ -22,8 +22,22 @@ esac
 # Bang mau: tuong phan cao, phan biet ro trang thai khi doc output thiet bi mang
 THEME='{"background":"#0f1114","foreground":"#d5dae2","cursor":"#4CAF50","selectionBackground":"#2f4a5f","black":"#22262b","red":"#ff6b6b","green":"#7ddc7d","yellow":"#ffd166","blue":"#6cb6ff","magenta":"#d99bff","cyan":"#68d5d5","white":"#c8cdd4","brightBlack":"#5a6472","brightRed":"#ff8f8f","brightGreen":"#a2f0a2","brightYellow":"#ffe08a","brightBlue":"#9ccdff","brightMagenta":"#e6bcff","brightCyan":"#93e6e6","brightWhite":"#f0f3f7"}'
 
+# Tao san phien roi BAT CHUOT cho tmux truoc khi ttyd gan vao.
+#
+# LOI THAT DA GAP: lan con lan chuot len de xem lai man hinh thi terminal
+# lai chay cac lenh cu. Ly do: tmux chua bat chuot nen banh xe chuot bi dich
+# thanh phim Mui ten len/xuong -> trung voi phim goi lai lich su lenh. Bat
+# "mouse on" thi banh xe cuon dung lich su MAN HINH cua tmux nhu mong doi.
+# Dat -g (toan cuc) de moi phien tao sau nay cung duoc, khong phai nho lam lai.
+tmux new-session -A -d -s "$SESSION" \
+    bash --rcfile /opt/console-pi/scripts/console-bashrc 2>/dev/null || true
+tmux set-option -g mouse on 2>/dev/null || true
+
 # Shell co mau san (dau nhac, ls, grep, va cac lenh mang qua grc).
 # Dung --rcfile de KHONG dung vao .bashrc cua he thong.
+#
+# disableLeaveAlert=true: bo hop thoai "Leave site?" cua ttyd moi khi roi
+# trang. Truoc day bam nut gi tren trang SSH cung bi hoi, rat vuong.
 exec /usr/local/bin/ttyd \
     -p "$PORT" \
     -i 127.0.0.1 \
@@ -32,6 +46,8 @@ exec /usr/local/bin/ttyd \
     -t titleFixed="Console Pi - $KIND" \
     -t fontSize=15 \
     -t fontFamily="ui-monospace, Menlo, Consolas, monospace" \
+    -t disableLeaveAlert=true \
+    -t disableResizeOverlay=true \
     -t "theme=$THEME" \
     tmux new-session -A -s "$SESSION" \
         bash --rcfile /opt/console-pi/scripts/console-bashrc

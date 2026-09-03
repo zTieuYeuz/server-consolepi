@@ -35,6 +35,14 @@ BAUD="${CONSOLE_BAUD:-9600}"
 # se hien dung mau va de doc.
 THEME='{"background":"#0f1114","foreground":"#d5dae2","cursor":"#4CAF50","selectionBackground":"#2f4a5f","black":"#22262b","red":"#ff6b6b","green":"#7ddc7d","yellow":"#ffd166","blue":"#6cb6ff","magenta":"#d99bff","cyan":"#68d5d5","white":"#c8cdd4","brightBlack":"#5a6472","brightRed":"#ff8f8f","brightGreen":"#a2f0a2","brightYellow":"#ffe08a","brightBlue":"#9ccdff","brightMagenta":"#e6bcff","brightCyan":"#93e6e6","brightWhite":"#f0f3f7"}'
 
+# Bat chuot cho tmux (giong term-launch.sh): khong bat thi banh xe chuot bi
+# dich thanh phim Mui ten -> lan chuot de xem lai man hinh lai hoa ra goi lai
+# cac lenh cu. Bat roi thi banh xe cuon dung lich su man hinh.
+tmux new-session -A -d -s "$SESSION" \
+    /usr/bin/microcom -s "$BAUD" -p "/dev/$DEV" 2>/dev/null || true
+tmux set-option -g mouse on 2>/dev/null || true
+
+# disableLeaveAlert=true: bo hop thoai "Leave site?" moi khi roi trang.
 exec /usr/local/bin/ttyd \
     -p "$PORT" \
     -i 127.0.0.1 \
@@ -43,6 +51,8 @@ exec /usr/local/bin/ttyd \
     -t titleFixed="$DEV" \
     -t fontSize=15 \
     -t fontFamily="ui-monospace, Menlo, Consolas, monospace" \
+    -t disableLeaveAlert=true \
+    -t disableResizeOverlay=true \
     -t "theme=$THEME" \
     tmux new-session -A -s "$SESSION" \
     /usr/bin/microcom -s "$BAUD" -p "/dev/$DEV"

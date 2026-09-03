@@ -29,7 +29,7 @@ import time
 from flask import request
 
 from .layout import render_page
-from .commands import load_library, send_to_tmux
+from .commands import load_library, dan_tung_dong_vao_tmux
 from .terminal import SSH_SESSION, tmux_session_exists, service_active
 
 # Dau nhac mat khau cua ssh ("...'s password:", "Enter passphrase for key ...:")
@@ -152,12 +152,62 @@ SSH_JS = """
   if (!o) return;
   var chon = document.getElementById("chon_tap");
   var bao = document.getElementById("bao_js");
+  var baoServer = document.getElementById("bao_server");
   var KHOA_LUU = "consolepi-ssh-o-lenh";
 
   function noi(chuoi, xau) {
     bao.textContent = chuoi;
     bao.style.color = xau ? "#ffd166" : "#8b93a1";
   }
+
+  // ---------------------------------------------------------------------
+  // Gui form bang fetch, KHONG tai lai trang.
+  //
+  // Truoc day 2 nut nay la form POST binh thuong nen moi lan bam la trang
+  // tai lai -> trinh duyet hoi "Leave site?" (do ttyd trong khung terminal
+  // co dang ky canh bao truoc khi roi trang de khoi mat phien), va khung
+  // terminal cung bi nap lai tu dau. Gui bang fetch thi terminal giu nguyen,
+  // khong con hop thoai nao.
+  // ---------------------------------------------------------------------
+  function hienServer(chuoi, ok) {
+    baoServer.textContent = chuoi;
+    baoServer.className = "msg " + (ok ? "ok" : "err");
+    baoServer.style.display = chuoi ? "block" : "none";
+  }
+
+  function guiForm(form, nut, chuNut) {
+    var chuCu = nut.innerHTML;
+    nut.disabled = true;
+    nut.innerHTML = chuNut;
+    hienServer("", true);
+    fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: { "X-Console-Pi": "fetch" },
+      cache: "no-store"
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("Server tra ve HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (d) { hienServer(d.msg, d.ok); })
+      .catch(function (e) { hienServer("Khong lien lac duoc voi server: " + e.message, false); })
+      .finally(function () { nut.disabled = false; nut.innerHTML = chuCu; });
+  }
+
+  var formKetNoi = document.getElementById("form_ket_noi");
+  formKetNoi.addEventListener("submit", function (e) {
+    e.preventDefault();
+    guiForm(formKetNoi, document.getElementById("nut_ket_noi"), "Dang ket noi...");
+    // Xoa mat khau khoi man hinh ngay sau khi gui di
+    formKetNoi.querySelector("[name=password]").value = "";
+  });
+
+  var formDan = document.getElementById("form_dan");
+  formDan.addEventListener("submit", function (e) {
+    e.preventDefault();
+    guiForm(formDan, document.getElementById("nut_dan"), "Dang dan...");
+  });
 
   // Giu lai noi dung dang soan khi tai lai trang / bam Ket noi. Chi luu tren
   // may dang dung, khong gui ve server.
@@ -255,72 +305,56 @@ def _render(msg="", ok=True, prefill=""):
                    '<div class="msg err">Dich vu terminal SSH chua chay: '
                    '<code>sudo systemctl start console-pi-term-ssh</code></div>')
 
+    # Bo trong: chi 1 hang nhap gon, khong tieu de/doan giai thich dai - de
+    # danh cang nhieu chieu cao cang tot cho khung terminal.
     body = f"""
     {msg_html}
     {term_status}
+    <div id="bao_server" class="msg ok" style="display:none;"></div>
 
-    <h2 style="margin-top:4px;">1. Ket noi</h2>
-    <div class="card">
-      <form method="POST" action="/ssh/connect" class="row">
-        <div><label>Dia chi thiet bi</label>
-          <input type="text" name="host" placeholder="192.168.1.1" style="max-width:200px;" required></div>
-        <div><label>Tai khoan</label>
-          <input type="text" name="user" placeholder="admin" style="max-width:150px;" required></div>
-        <div><label>Mat khau (de trong = tu nhap)</label>
-          <input type="password" name="password" autocomplete="new-password"
-                 placeholder="dien san cho nhanh" style="max-width:190px;"></div>
-        <div><label>Cong</label>
-          <input type="number" name="port" value="22" style="max-width:90px;"></div>
-        <div><button type="submit" data-busy="Dang ket noi...">🔑 Ket noi</button></div>
-      </form>
-      <p style="color:#8b93a1;font-size:13px;margin:10px 0 0;">
-        Mat khau chi duoc go thang vao khung terminal khi thiet bi hoi, <strong>khong luu lai</strong>
-        va khong hien tren man hinh. De trong thi ket noi xong anh tu nhap trong terminal.
-      </p>
-    </div>
+    <form method="POST" action="/ssh/connect" id="form_ket_noi" class="row"
+          style="align-items:flex-end;margin-bottom:10px;">
+      <div><label style="margin-top:0;">Dia chi</label>
+        <input type="text" name="host" placeholder="192.168.1.1" style="max-width:180px;" required></div>
+      <div><label style="margin-top:0;">Tai khoan</label>
+        <input type="text" name="user" placeholder="admin" style="max-width:140px;" required></div>
+      <div><label style="margin-top:0;">Mat khau</label>
+        <input type="password" name="password" autocomplete="new-password"
+               placeholder="de trong = tu nhap" style="max-width:175px;"></div>
+      <div><label style="margin-top:0;">Cong</label>
+        <input type="number" name="port" value="22" style="max-width:85px;"></div>
+      <div><button type="submit" id="nut_ket_noi">🔑 Ket noi</button></div>
+    </form>
 
-    <h2>2. Terminal</h2>
-    <div class="card" style="padding:0;overflow:hidden;">
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px;">
       <iframe src="/term-ssh/" title="SSH terminal"
-              style="width:100%;height:calc(100vh - 470px);min-height:320px;border:0;display:block;background:#000;"></iframe>
+              style="width:100%;height:calc(100vh - 330px);min-height:360px;border:0;display:block;background:#000;"></iframe>
     </div>
 
-    <h2>3. O soan tap lenh</h2>
-    <div class="card">
-      <form method="POST" action="/ssh/paste">
-        <label>Lay tap lenh co san tu Thu vien</label>
-        <div class="row">
-          <select id="chon_tap" style="max-width:340px;">
-            <option value="">-- Chon tap lenh --</option>
-            {lib_options}
-          </select>
-          <button type="button" class="gray" id="nut_chep">📄 Chep vao o ben duoi</button>
-        </div>
-
-        <label>Noi dung (sua thoai mai truoc khi dan - doi IP, ten cong, VLAN...)</label>
-        <textarea name="noi_dung" id="o_lenh" style="max-width:100%;min-height:150px;"
-                  placeholder="Go lenh o day, hoac chon tap lenh o tren...">{_esc(prefill)}</textarea>
-
-        <div class="row" style="margin-top:12px;">
-          <button type="submit" class="blue" data-busy="Dang dan...">⌨️ Dan vao terminal</button>
-          <button type="button" class="gray" id="nut_copy">📋 Copy</button>
-          <button type="button" class="gray" id="nut_dan_cb">📥 Dan tu clipboard vao o</button>
-          <button type="button" class="gray" id="nut_xoa">🧹 Xoa o</button>
-        </div>
-        <p id="bao_js" style="color:#8b93a1;font-size:13px;margin:10px 0 0;min-height:18px;"></p>
-      </form>
-      <p style="color:#8b93a1;font-size:13px;margin:4px 0 0;">
-        <strong>Dan vao terminal</strong> chi dat lenh vao khung terminal, <strong>khong tu bam
-        Enter</strong> - anh doc lai lan cuoi roi tu bam chay. Noi dung o nay duoc giu lai khi
-        tai lai trang.
-      </p>
-    </div>
+    <form method="POST" action="/ssh/paste" id="form_dan">
+      <div class="row" style="margin-bottom:8px;">
+        <select id="chon_tap" style="max-width:300px;">
+          <option value="">-- Chon tap lenh tu Thu vien --</option>
+          {lib_options}
+        </select>
+        <button type="button" class="gray" id="nut_chep">📄 Chep vao o</button>
+      </div>
+      <textarea name="noi_dung" id="o_lenh" style="max-width:100%;min-height:110px;"
+                placeholder="Go lenh o day, hoac chon tap lenh o tren roi sua lai IP/ten cong...">{_esc(prefill)}</textarea>
+      <div class="row" style="margin-top:10px;">
+        <button type="submit" class="blue" id="nut_dan">⌨️ Dan vao terminal</button>
+        <button type="button" class="gray" id="nut_copy">📋 Copy</button>
+        <button type="button" class="gray" id="nut_dan_cb">📥 Dan tu clipboard</button>
+        <button type="button" class="gray" id="nut_xoa">🧹 Xoa o</button>
+      </div>
+      <p id="bao_js" style="color:#8b93a1;font-size:13px;margin:9px 0 0;min-height:18px;">Dan =
+      gui tung dong mot (thiet bi khong roi mat chu); dong CUOI chua bam Enter de anh doc lai.</p>
+    </form>
 
     <script>var THU_VIEN = {lib_json};</script>
     {SSH_JS}"""
 
-    html = render_page(body, active="/ssh", title="SSH",
-                       subtitle="Ket noi tuong tac toi thiet bi mang, kem o soan tap lenh")
+    html = render_page(body, active="/ssh", title="SSH", subtitle="")
     return html.replace("<body>", f'<body data-tmux-session="{SSH_SESSION}">', 1)
 
 
@@ -336,6 +370,18 @@ def register_ssh(app):
                 prefill = lib[i].get("commands", "")
         return _render(prefill=prefill)
 
+    def _tra_ve(ok, msg, prefill=""):
+        """
+        Goi tu fetch (JS) thi tra JSON de trang KHONG phai tai lai - vua muot
+        hon, vua khong lam khung terminal nap lai tu dau, vua khong dinh hop
+        thoai "Leave site?" cua ttyd. Goi kieu form thuong (JS loi/bi tat) thi
+        van dung nhu cu - khong bao gio mat duong lui.
+        """
+        if request.headers.get("X-Console-Pi") == "fetch":
+            from flask import jsonify
+            return jsonify({"ok": ok, "msg": msg})
+        return _render(msg=msg, ok=ok, prefill=prefill)
+
     @app.route("/ssh/connect", methods=["POST"])
     def ssh_connect():
         f = request.form
@@ -344,15 +390,16 @@ def register_ssh(app):
                                     f.get("port", 22) or 22,
                                     f.get("password", ""))
         # Khong bao gio tra mat khau nguoc lai trang.
-        return _render(msg=msg, ok=ok)
+        return _tra_ve(ok, msg)
 
     @app.route("/ssh/paste", methods=["POST"])
     def ssh_paste():
         noi_dung = request.form.get("noi_dung", "")
         if not noi_dung.strip():
-            return _render(msg="O lenh dang trong - chua co gi de dan.", ok=False)
-        # press_enter=False: dan xong KHONG tu chay, de anh doc lai roi tu bam.
-        ok, msg = send_to_tmux(SSH_SESSION, noi_dung)
-        return _render(msg=msg, ok=ok, prefill=noi_dung)
+            return _tra_ve(False, "O lenh dang trong - chua co gi de dan.", noi_dung)
+        # Gui TUNG DONG co giai lao: thiet bi mang khong roi mat ky tu dau
+        # dong (xem giai thich trong dan_tung_dong_vao_tmux).
+        ok, msg = dan_tung_dong_vao_tmux(SSH_SESSION, noi_dung)
+        return _tra_ve(ok, msg, noi_dung)
 
     return app

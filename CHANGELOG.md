@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.3
+
+Bon loi thuc te khi dung tab SSH/terminal, moi loi deu do dac lai truoc khi sua:
+
+- **Dan tap lenh bi ROI KY TU DAU DONG** (vi du that: `show interfaces trunk`
+  thanh `how interfaces trunk`). Da kiem chung duong dan phia server KHONG cat
+  chu (dan vao bash nhan du nguyen van), nen thu pham la ban ca khoi ra 1 luot
+  qua nhanh: thiet bi mang khong co dieu khien luong o CLI, trong luc con dang
+  echo dong truoc thi ky tu dau dong sau bi mat. Nay **gui tung dong mot, giai
+  lao 0.18s giua cac dong**; dong CUOI khong bam Enter de con doc lai.
+- **Hoi "Leave site?" moi lan bam Ket noi / Dan**. Hai nut do truoc day la form
+  POST binh thuong nen ca trang tai lai, ma ttyd co dang ky canh bao truoc khi
+  roi trang. Nay **gui bang fetch, khong tai lai trang** - khung terminal giu
+  nguyen phien, khong con hop thoai. Neu JS loi thi form van chay nhu cu
+  (khong mat duong lui). Kem theo bat `disableLeaveAlert` cho ttyd.
+- **Lan con lan chuot len lai chay cac lenh cu**: tmux chua bat chuot nen banh
+  xe bi dich thanh phim Mui ten (= goi lai lich su lenh). Nay bat `mouse on`
+  cho tmux -> banh xe cuon dung lich su man hinh.
+- **Khung terminal nho, phan tren nhieu chu thua**: bo tieu de danh so va cac
+  doan giai thich dai, gop o nhap thanh 1 hang; khung terminal tu `100vh-470px`
+  len `100vh-330px` (cao them ~140px).
+
 ## 0.4.2
 
 **Thu vien lenh** - bo tri lai cho de nhin, de tim:
