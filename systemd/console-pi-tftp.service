@@ -1,0 +1,30 @@
+[Unit]
+Description=Console Pi - May chu TFTP (sao luu/phuc hoi config, firmware switch)
+# Khong Requires gi ca: dich vu nay bat/tat theo yeu cau nguoi dung tu
+# dashboard, khong tu chay luc khoi dong (TFTP khong co xac thuc).
+#
+# Dung rieng unit nay, KHONG dung "tftpd-hpa.service" co san cua goi Debian:
+# goi tftpd-hpa mac dinh se tu bat + tu enable dich vu cua no khi cai dat
+# (postinst script), di nguoc nguyen tac "khong tu bat dich vu mang khong
+# xac thuc luc boot" cua du an nay. Console Pi tu quan ly rieng unit nay va
+# tat unit mac dinh cua goi ngay sau khi cai (xem huong dan trong giao
+# dien web).
+
+[Service]
+Type=simple
+# --listen        : chay o che do doc lap (khong can inetd/xinetd goi vao)
+# --user tftp     : giam quyen sau khi mo cong 69 (goi tftpd-hpa da tao san
+#                   user he thong "tftp" luc cai dat)
+# --address       : chi lang nghe UDP/69, moi interface (loc theo interface
+#                   thuc hien o tang mang neu can, TFTP khong co khai niem
+#                   "interface=" nhu DHCP)
+# --secure        : chi cho phep truy cap trong pham vi thu muc goc, chan
+#                   moi duong dan co ".." vuot ra ngoai
+# --create        : BAT BUOC de switch GHI duoc file len Pi (copy running-
+#                   config tftp://). Thieu co nay thi tftpd chi cho DOC,
+#                   giong het han che cua dnsmasq ma du an nay co chu dich
+#                   tranh bang cach dung tftpd-hpa thay vi dnsmasq.
+ExecStart=/usr/sbin/in.tftpd --listen --user tftp --address 0.0.0.0:69 \
+    --secure --create /opt/console-pi/tftp
+Restart=on-failure
+RestartSec=3

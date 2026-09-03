@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.4.0
+
+Them 6 cong cu chan doan mang moi, tat ca da kiem chung bang do dac that
+tren phan cung (khong chi doc code) - danh sach chi tiet o phan "Loi da
+phat hien va sua trong luc lam" ben duoi cho biet nhung gi khong nhu du
+tinh ban dau va cach sua.
+
+### Tinh nang moi
+- **MTU Discovery** (`/nettools/mtu`): tim MTU that toi 1 dia chi bang ping
+  DF nhi phan. Khi mot router bao thang ICMP "Frag needed" thi dung ngay
+  ket qua do (dang tin cay nhat). Canh bao nguyen nhan pho bien khi MTU
+  duoi 1500 (PPPoE ~1492, VPN/GRE/IPsec ~1400-1436). Da kiem chung tren
+  chinh mang nha: phat hien dung MTU 1492 (PPPoE that) toi 8.8.8.8, va
+  1500 sach toi gateway cung subnet
+- **Kiem tra DNS** (`/nettools/dns-check`): doi chieu 1 ten mien qua DNS he
+  thong + Google/Cloudflare/Quad9, dung scapy dung goi UDP/53 qua socket
+  thuong (khong can quyen root). Canh bao lech ket qua kem chu thich CDN
+  de khong bao gia
+- **Kiem tra chung chi TLS** (`/nettools/tls-check`): xem chi tiet + tinh
+  trang tin cay chung chi HTTPS quan tri (switch/router/iLO). Luon phan
+  biet ro "lay duoc de xem" va "duoc he thong tin cay" - khong bao gio
+  hien banner "hop le" cho chung chi tu ky/het han/sai ten
+- **Ping lien tuc kem do thi song** (`/nettools/ping-monitor`): theo doi
+  rot goi thoi gian thuc khi rung/cam lai day, do thi canvas tu ve tay
+  (khong thu vien ngoai). Tu dong dung sau toi da 30 phut
+- **So do mang 1 doan** (`/nettools/topology`): ghep ARP Scan + LLDP/CDP co
+  san thanh so do Pi → switch → cac host. Noi ro gioi han chi 1 doan mang,
+  khong ve duoc nhieu switch noi tiep
+- **May chu TFTP** (`/nettools/tftp`): bat/tat TFTP de `copy running-config
+  tftp://` (sao luu config len Pi) va `copy tftp://.../firmware.bin flash:`
+  (nap firmware). Mac dinh TAT, chi lang nghe tren eth0
+
+### Loi da phat hien va sua trong luc lam (khong doan, do dac that)
+- **TFTP: du dinh ban dau dung dnsmasq (da co san, khong can cai them) la
+  SAI.** Doc ky tai lieu dnsmasq moi phat hien TFTP tich hop san cua no
+  CHI HO TRO DOC, khong ho tro GHI - nghia la lenh quan trong nhat (switch
+  ghi config len Pi) se khong bao gio chay duoc. Sua bang cach dung
+  `tftpd-hpa` (them 1 goi moi, co `--create` de ho tro ghi), va tat ngay
+  dich vu mac dinh cua goi nay sau khi cai (no tu bat luc cai dat - di
+  nguoc nguyen tac khong tu bat dich vu mang khong xac thuc)
+- **DNS check qua scapy `sr1()` can quyen root** (raw socket) - doi sang
+  dung lop DNS/DNSQR cua scapy CHI DE DUNG GOI TIN, gui/nhan qua socket UDP
+  thuong (`socket.SOCK_DGRAM`) - vua khong can quyen root, vua nhanh hon
+- **TLS check voi CERT_NONE**: `ssl.getpeercert()` chuan tra ve RONG khi
+  tat xac thuc (gioi han da biet cua thu vien chuan) - phai lay dang nhi
+  phan roi phan tich bang `cryptography` (da co san trong du an)
+
+### Don dep
+- Xoa `iperf3` khoi danh sach goi cai dat (con sot tu tinh nang da bo o
+  ban 0.3.1, khong con noi nao dung den)
+
 ## 0.3.1
 
 Vong nay sua mot **lo hong bao mat nghiem trong**, gop hai cong cu chan

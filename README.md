@@ -62,10 +62,16 @@ hợp với UUID dịch vụ mà thiết bị quảng cáo. Nút kết nối kh�
 máy tính/điện thoại → **PAN** (mạng), bàn phím/chuột → **HID**. Thiết bị đã ghép
 cặp tự nối lại khi bật lên (`ReconnectUUIDs`).
 
-### Chẩn đoán mạng (9 công cụ)
+### Chẩn đoán mạng (15 công cụ)
 ARP Scan · Ping/Traceroute · PCAP Capture · LLDP/CDP Discovery ·
 **Kiểm tra toàn diện cổng mạng** (tốc độ/duplex, lỗi đường truyền, PoE, DHCP,
 Internet, băng thông qua Cloudflare — một nút bấm) · STP/LACP/VLAN Detection ·
+**MTU Discovery** (phát hiện PPPoE/VPN làm giảm MTU) ·
+**Kiểm tra DNS** (đối chiếu nhiều DNS server, phát hiện hijack) ·
+**Kiểm tra chứng chỉ TLS** (subject/issuer/hạn dùng, không bao giờ giả vờ tin cậy) ·
+**Ping liên tục kèm đồ thị sống** (theo dõi rớt gói khi rung dây) ·
+**Sơ đồ mạng 1 đoạn** (Pi → switch → host, ghép ARP + LLDP) ·
+**Máy chủ TFTP** (sao lưu/nạp cấu hình, firmware switch) ·
 Netmiko (SSH cấu hình switch) · 802.1X Testing · IF/THEN Automation
 
 ### Terminal & Tự động hoá
@@ -136,7 +142,7 @@ uninstall.sh            Gỡ cài đặt
 src/app.py              Lắp ráp Flask
 src/ui/                 layout · auth · home · health · network · terminal
                         ssh · commands · storage · direct · remote · docs · settings
-src/nettools/           9 công cụ chẩn đoán mạng + static/
+src/nettools/           15 công cụ chẩn đoán mạng + static/
 src/scripts/            wifi-fallback · ttyd-one · term-launch · kiosk-start
                         selftest · bt-auto-agent · bt-nap-daemon · bt-pan0-setup
                         console-bashrc · grc-cisco.conf

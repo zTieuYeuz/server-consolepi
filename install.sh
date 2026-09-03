@@ -88,7 +88,7 @@ PKGS_CORE=(
     bluez avahi-daemon
     lldpd arp-scan tcpdump tshark traceroute nmap eapoltest
     ethtool usbutils lsof
-    iperf3
+    tftpd-hpa
     grc
 )
 # fonts-noto-color-emoji: KHONG the thieu. Pi OS Lite khong co font emoji,
@@ -114,6 +114,15 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
     ok "Da cai xong"
 else
     ok "Tat ca goi da co san"
+fi
+
+# Goi tftpd-hpa TU BAT SAN dich vu cua no ngay khi cai (postinst script) -
+# di nguoc nguyen tac "khong tu bat dich vu mang khong xac thuc luc boot"
+# cua du an nay. Console Pi dung unit rieng (console-pi-tftp.service, bat/
+# tat qua tab May chu TFTP), nen phai tat han dich vu mac dinh cua goi o day.
+if systemctl is-enabled --quiet tftpd-hpa 2>/dev/null || systemctl is-active --quiet tftpd-hpa 2>/dev/null; then
+    systemctl disable --now tftpd-hpa 2>/dev/null || true
+    ok "Da tat dich vu tftpd-hpa mac dinh (Console Pi tu quan ly rieng, mac dinh TAT)"
 fi
 
 # ttyd khong co trong repo Debian -> tai ban binary

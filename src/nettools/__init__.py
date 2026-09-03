@@ -57,9 +57,15 @@ TOOLS_READONLY = [
     ("/nettools/lldp", "🔗 LLDP/CDP Discovery", "Tim switch hostname, port, VLAN, PoE quang ba", True),
     ("/nettools/dhcp-test", "🔌🌐 Kiem tra cong mang", "Toc do/duplex, loi duong truyen, PoE, DHCP, Internet, bang thong - tat ca trong 1 nut", True),
     ("/nettools/l2-scan", "🌲 STP/LACP/VLAN Scan", "Bat goi BPDU/LACP/802.1Q tren day dang cam", True),
+    ("/nettools/mtu", "📏 MTU Discovery", "Do MTU thuc te toi 1 dia chi (phat hien VPN/PPPoE lam giam MTU)", True),
+    ("/nettools/dns-check", "🌐 Kiem tra DNS", "Doi chieu ket qua phan giai ten mien qua nhieu DNS server", True),
+    ("/nettools/tls-check", "🔒 Kiem tra chung chi TLS", "Xem chi tiet + tinh trang tin cay cua chung chi HTTPS quan ly", True),
+    ("/nettools/ping-monitor", "📈 Ping lien tuc (do thi song)", "Theo doi rot goi thoi gian thuc khi rung/cam lai day", True),
+    ("/nettools/topology", "🗺️ So do mang 1 doan", "Ve Pi - switch - cac host tren cung 1 segment (ARP+LLDP)", True),
 ]
 
 TOOLS_WRITE = [
+    ("/nettools/tftp", "📤 May chu TFTP", "Bat/tat TFTP de sao luu/phuc hoi config, firmware tu switch/router", True),
     ("/nettools/netmiko", "⚙️ Netmiko Config", "Tu dong SSH vao switch chay lenh cau hinh (co xem truoc)", True),
     ("/nettools/dot1x", "🔐 802.1X Testing", "Test xac thuc EAP voi RADIUS server (khong dung eth0)", True),
     ("/nettools/ifthen", "🧩 IF/THEN Automation", "Rule tu dong goi y cau hinh khi phat hien switch quen", True),
@@ -81,6 +87,12 @@ from . import pcap  # noqa: E402,F401
 from . import lldp  # noqa: E402,F401
 from . import dhcp_test  # noqa: E402,F401
 from . import l2_sniff  # noqa: E402,F401
+from . import mtu_discover  # noqa: E402,F401
+from . import dns_check  # noqa: E402,F401
+from . import tls_check  # noqa: E402,F401
+from . import ping_monitor  # noqa: E402,F401
+from . import topology  # noqa: E402,F401
+from . import tftp_server  # noqa: E402,F401
 from . import netmiko_tool  # noqa: E402,F401
 from . import dot1x  # noqa: E402,F401
 from . import ifthen  # noqa: E402,F401

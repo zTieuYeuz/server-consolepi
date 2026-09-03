@@ -478,6 +478,64 @@ sudo /opt/console-pi/uninstall.sh --purge      (xoa sach)</pre>
 WiFi da luu, ten cong console, thu vien lenh, rule IF/THEN, cau hinh AP,
 huong man hinh.</div>"""),
 
+    ("congcumoi", "🧰 6 cong cu mang moi (v0.4.0)", """
+<h3>📏 MTU Discovery</h3>
+<p>Tim MTU that cua duong truyen bang ping "khong phan manh" (DF), tang/giam kich thuoc theo
+kieu nhi phan (~10-14 lan thu). Neu mot router giua duong tra ve ICMP "Frag needed" kem MTU
+that thi dung ngay ket qua do - dang tin cay nhat, khong can do them.</p>
+<p>Huu ich khi mang co trieu chung: ping/duyet web binh thuong nhung tai file lon hay video hay
+treo/cham - dau hieu kinh dien cua MTU bi giam giua duong (PPPoE thuong con 1492, VPN/GRE/IPsec
+thuong con 1400-1436).</p>
+
+<h3>🌐 Kiem tra DNS</h3>
+<p>Truy van 1 ten mien toi DNS he thong hien tai + 3 DNS cong khai (Google, Cloudflare, Quad9)
+cung luc, so sanh ket qua. Neu DNS he thong tra ve dia chi khac han cac DNS cong khai, day la
+dau hieu manh cua DNS bi can thiep (ISP chen quang cao, mang cong ty loc, captive portal).</p>
+<p style="color:#8b93a1;">Luu y: cac trang lon dung CDN toan cau (Google, Facebook...) von da
+tra ve IP khac nhau tuy vi tri dia ly cua tung DNS server - do la BINH THUONG, khong phai dau
+hieu xau. Dung mot domain rieng/it dung CDN de ket luan chac chan hon.</p>
+
+<h3>🔒 Kiem tra chung chi TLS</h3>
+<p>Xem chi tiet chung chi HTTPS cua giao dien quan tri switch/router/iLO/iDRAC. Cac thiet bi nay
+GAN NHU LUON dung chung chi tu ky - do la BINH THUONG. Cong cu nay khong phai de bao "sai", ma
+de thay ro dang tin ai, va phat hien dung luc chung chi da het han that su.</p>
+<p>Nguyen tac an toan: banner xanh "hop le" CHI hien khi chuoi chung nhan duoc he thong THAT SU
+xac thuc. Moi truong hop khac (tu ky, het han, sai ten) deu hien ro ly do, khong bao gio im
+lang coi la an toan.</p>
+
+<h3>📈 Ping lien tuc (do thi song)</h3>
+<p>Bat len roi vua rung/uon lai tung doan day mang vua nhin do thi - dut quang dung luc nao la
+biet doan do co van de. Do thi ve bang canvas thuan (khong thu vien ngoai), cap nhat moi giay.
+Tu dong dung sau toi da 30 phut (chinh duoc luc bat dau) de tranh mot luong nen bi quen chay
+mai mai.</p>
+
+<h3>🗺️ So do mang 1 doan</h3>
+<p>Ghep ARP Scan + LLDP/CDP Discovery co san thanh 1 so do: Pi → switch dang cam vao (neu co
+quang ba LLDP/CDP) → cac thiet bi tren cung doan mang. <strong>Gioi han that:</strong> chi ve
+duoc 1 doan mang noi truc tiep vao cong dang quet - khong ve duoc nhieu switch noi tiep qua
+nhieu hop (can SNMP walk lien switch, ngoai pham vi cong cu nay). Neu khong phat hien switch
+qua LLDP, so do noi ro dieu do thay vi ve gia.</p>
+
+<h3>📤 May chu TFTP</h3>
+<p>Bat/tat may chu TFTP de dung lenh Cisco kinh dien:</p>
+<pre>copy running-config tftp://&lt;IP-cua-Pi&gt;/backup.cfg   (sao luu cau hinh len Pi)
+copy tftp://&lt;IP-cua-Pi&gt;/firmware.bin flash:            (nap firmware tu Pi xuong switch)</pre>
+<p><strong>Chi tiet ky thuat quan trong:</strong> dung <code>tftpd-hpa</code> (goi TFTP chuan
+cua Debian), KHONG dung TFTP tich hop san trong <code>dnsmasq</code> nhu du dinh ban dau -
+doc ky tai lieu dnsmasq moi phat hien no <strong>chi ho tro doc (download)</strong>, khong ho
+tro ghi. Neu dung dnsmasq thi lenh quan trong nhat (<code>copy running-config tftp://</code>,
+switch GHI len Pi) se khong bao gio chay duoc.</p>
+<ul>
+  <li>Mac dinh <strong>TAT</strong> - TFTP khong co xac thuc, ai cam vao cong cung doc/ghi
+      duoc. Chi bat khi dang thuc su lam viec</li>
+  <li>Chi lang nghe tren <strong>eth0</strong> (kich ban dung la cam day thang vao switch)</li>
+  <li>Thu muc nhan file rieng <code>/opt/console-pi/tftp</code>, khong chung voi Kho file
+      (ISO/firmware) chinh</li>
+  <li>Sau khi cai goi <code>tftpd-hpa</code>, dich vu mac dinh cua goi bi tat ngay (Console Pi
+      dung unit rieng <code>console-pi-tftp.service</code>, tu quan ly bat/tat)</li>
+</ul>
+"""),
+
     ("suco", "🔧 Su co da tung gap va cach sua", """
 <table>
 <tr><th style="width:290px;">Trieu chung</th><th>Nguyen nhan &amp; cach sua</th></tr>
