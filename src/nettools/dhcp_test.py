@@ -215,8 +215,24 @@ def _test_internet_qua_dhcp(iface, xid, offer, hw):
     Pi da co IP tu truoc (vi du eth0 dang la duong quan tri), DHCP server
     thuong tra lai DUNG dia chi hien tai cho cung MAC do (RFC 2131 muc 4.3.1
     - server uu tien cap lai lease cu neu con hop le cho client da biet).
-    Luc do KHONG can them dia chi phu hay dinh tuyen rieng gi ca - cong da
-    co san duong di dung roi, chi viec kiem tra thang.
+    Luc do KHONG can `ip addr add` gi ca (IP da co san tren cong).
+
+    NHUNG VAN PHAI thiet lap dinh tuyen rieng (policy routing) CA TRONG
+    TRUONG HOP NAY. Da gap loi that: may co nhieu cong ra Internet (vi du
+    eth0 la LAN chinh, wlan0 la WiFi), va router WiFi cap mot tuyen duong
+    RIENG cho dung 8.8.8.8 di qua wlan0 (kieu "classless static route" hoc
+    tuong tu). Tuyen duong danh rieng cho MOT dia chi luon duoc uu tien hon
+    default route bat ke metric, nen `ping -I <ip_eth0> 8.8.8.8` bi kernel
+    day nham qua wlan0 - goi tin mang dia chi nguon cua eth0 nhung lai di ra
+    tu cong wlan0, bi loai bo giua duong (sai subnet nguon). Ket qua: ping
+    8.8.8.8 bao mat 100% goi tin, trong khi ping google.com (IP khac, khong
+    dinh tuyen dac biet) van thanh cong binh thuong - de gay hieu lam la loi
+    mang that, trong khi mang hoan toan on.
+
+    Dinh tuyen rieng (ip rule uu tien theo dia chi NGUON, danh gia truoc ca
+    bang main) giai quyet dut diem: moi goi tin nguon tu {ip} deu bi ep di
+    dung qua {iface}/{gw}, bo qua hoan toan moi tuyen duong dac biet nam
+    trong bang main - bat ke dich la 8.8.8.8 hay bat ky dia chi nao khac.
     """
     ket_qua = {"lease_ok": False, "loi": None, "ip": None, "gw": None,
               "ping_8888": None, "ping_google": None, "web": []}
@@ -234,6 +250,7 @@ def _test_internet_qua_dhcp(iface, xid, offer, hw):
 
     da_co_san = ip in _dia_chi_hien_co_tren_cong(iface)
     da_them_ip = False
+    da_them_dinh_tuyen = False
 
     try:
         if not da_co_san:
@@ -250,25 +267,27 @@ def _test_internet_qua_dhcp(iface, xid, offer, hw):
                 return ket_qua
             da_them_ip = not trung_dia_chi
 
-            # 2) Bang dinh tuyen RIENG cho lease nay: goi tin XUAT PHAT TU
-            # dia chi {ip} se di theo gateway {gw} cua chinh no - khong dung
-            # chung, khong doi default route hien tai cua Pi tren cong nay.
-            subprocess.run(["ip", "route", "flush", "table", str(_TEST_TABLE)],
-                           capture_output=True, timeout=8)
-            subprocess.run(["ip", "route", "add", f"{ip}/{prefix}", "dev", iface,
-                            "src", ip, "table", str(_TEST_TABLE)],
-                           capture_output=True, timeout=8)
-            subprocess.run(["ip", "route", "add", "default", "via", gw, "dev", iface,
-                            "src", ip, "table", str(_TEST_TABLE)],
-                           capture_output=True, timeout=8)
-            subprocess.run(["ip", "rule", "del", "priority", str(_TEST_RULE_PRIO)],
-                           capture_output=True, timeout=8)  # xoa rule cu neu con sot
-            subprocess.run(["ip", "rule", "add", "from", ip, "table", str(_TEST_TABLE),
+        # 2) LUON LUON thiet lap dinh tuyen rieng theo dia chi NGUON, ke ca
+        # khi IP da co san tren cong (xem giai thich dai o docstring: neu
+        # khong co buoc nay, mot tuyen duong dac biet nam san trong bang
+        # main - vi du router WiFi cap rieng cho 8.8.8.8 - co the danh cuop
+        # goi tin sang cong khac va lam sai lech ket qua test mot cach kho
+        # hieu). ip rule uu tien 199 duoc kiem truoc ca bang main (32766)
+        # nen chan dut moi tuyen duong dac biet do truoc khi no kip anh huong.
+        subprocess.run(["ip", "route", "flush", "table", str(_TEST_TABLE)],
+                       capture_output=True, timeout=8)
+        subprocess.run(["ip", "route", "add", f"{ip}/{prefix}", "dev", iface,
+                        "src", ip, "table", str(_TEST_TABLE)],
+                       capture_output=True, timeout=8)
+        subprocess.run(["ip", "route", "add", "default", "via", gw, "dev", iface,
+                        "src", ip, "table", str(_TEST_TABLE)],
+                       capture_output=True, timeout=8)
+        subprocess.run(["ip", "rule", "del", "priority", str(_TEST_RULE_PRIO)],
+                       capture_output=True, timeout=8)  # xoa rule cu neu con sot
+        r = subprocess.run(["ip", "rule", "add", "from", ip, "table", str(_TEST_TABLE),
                             "priority", str(_TEST_RULE_PRIO)],
-                           capture_output=True, timeout=8)
-        # else: IP nay CHINH LA dia chi hien co cua cong - da co san duong di
-        # dung (main table), khong can them gi, cung khong duoc dong vao gi
-        # de tranh anh huong ket noi hien tai cua Pi tren cong nay.
+                           capture_output=True, text=True, timeout=8)
+        da_them_dinh_tuyen = (r.returncode == 0)
 
         # Chi bay gio moi coi la "san sang de kiem tra that su".
         ket_qua.update(lease_ok=True, ip=ip, gw=gw)
@@ -316,13 +335,16 @@ def _test_internet_qua_dhcp(iface, xid, offer, hw):
         # da co lease that su nen van giu lease_ok=True, chi bao them loi.
         ket_qua["loi"] = (ket_qua.get("loi") or "") + f" Loi khong luong truoc: {e}"
     finally:
-        # DON SACH - luon chay du thanh cong hay that bai giua chung, va CHI
-        # don nhung gi CHINH TA da tao ra (khong dong vao IP/route co san).
-        if da_them_ip:
+        # DON SACH - luon chay du thanh cong hay that bai giua chung. Rule
+        # va bang dinh tuyen thi luon don (vi luon la thu ta them, bat ke
+        # IP co san hay khong); dia chi IP CHI xoa neu chinh ta la nguoi
+        # them no (khong dong vao IP von da co san tren cong).
+        if da_them_dinh_tuyen:
             subprocess.run(["ip", "rule", "del", "priority", str(_TEST_RULE_PRIO)],
                            capture_output=True, timeout=8)
-            subprocess.run(["ip", "route", "flush", "table", str(_TEST_TABLE)],
-                           capture_output=True, timeout=8)
+        subprocess.run(["ip", "route", "flush", "table", str(_TEST_TABLE)],
+                       capture_output=True, timeout=8)
+        if da_them_ip:
             subprocess.run(["ip", "addr", "del", f"{ip}/{prefix}", "dev", iface],
                            capture_output=True, timeout=8)
 
