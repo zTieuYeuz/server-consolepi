@@ -122,7 +122,11 @@ sudo tmux send-keys -t consolepi-local "show version" Enter</pre>
 <p><strong>Thu vien lenh:</strong> luu tai
 <code>/opt/console-pi/command-library.json</code>. Nut <em>Gui vao Terminal</em> dan lenh
 vao nhung <strong>khong tu bam Enter</strong> - ban xem lai roi tu chay.
-Nut <em>Dung o tab SSH</em> chep sang tab SSH de sua IP/ten truoc khi chay hang loat.</p>"""),
+Nut <em>Dung o tab SSH</em> chep tap lenh sang o soan o tab SSH de sua IP/ten,
+roi bam <em>Dan vao terminal</em> (cung khong tu bam Enter).
+O tren cung cua trang co <strong>o tim kiem</strong> loc theo ten/mo ta/the/noi dung lenh,
+va cac <strong>nut the</strong> bam 1 cai la loc ngay - tien khi dung man hinh cam ung
+khong co ban phim.</p>"""),
 
     ("console", "🔌 Cong console (RS232)", """
 <pre>* Xem cong dang cam
@@ -223,15 +227,15 @@ logs      nhat ky dashboard
 cisco capture.txt
 cat file.txt | grcat /opt/console-pi/scripts/grc-cisco.conf</pre>
 
-<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ket qua chay lenh hang loat (tab SSH)</h3>
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ket qua chay lenh tren web (Netmiko Config)</h3>
 <p>Output hien tren web duoc to mau day du theo bang tren - IP, MAC, ten cong,
 trang thai up/down deu co mau rieng.</p>
 
-<div class="msg info"><strong>Vi sao console Cisco tuong tac khong tu co mau:</strong>
+<div class="msg info"><strong>Vi sao console/SSH tuong tac khong tu co mau:</strong>
 output do chinh thiet bi gui ve, ma da so thiet bi Cisco khong gui ma mau ANSI.
 To mau theo thoi gian thuc phai loc tung dong, se lam tre viec go phim - danh doi
 khong dang. Bu lai: thiet bi CO gui mau (NX-OS, IOS-XE, thiet bi nen Linux) se
-hien dung mau, va ket qua chay hang loat tren web thi luon co mau.</div>
+hien dung mau, va ket qua chay qua Netmiko Config tren web thi luon co mau.</div>
 
 <p>Sua bang mau: <code>/opt/console-pi/scripts/console-bashrc</code> (shell) va
 <code>/opt/console-pi/scripts/grc-cisco.conf</code> (output thiet bi).</p>"""),

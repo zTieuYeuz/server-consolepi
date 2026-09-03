@@ -150,8 +150,11 @@ def send_to_tmux(session_name, text, press_enter=False):
         n = len([l for l in text.splitlines() if l.strip()])
         if press_enter:
             return True, f"Da dan va chay {n} lenh trong terminal."
-        return True, (f"Da dan {n} lenh vao terminal (chua chay). "
-                      f"Mo tab Terminal xem lai, sua neu can, roi bam Enter de chay.")
+        # Loi nhan trung tinh: ham nay duoc goi ca tu trang Thu vien lenh lan
+        # tu trang SSH (khung terminal nam ngay tren cung trang), nen khong
+        # noi cung "mo tab Terminal" nua.
+        return True, (f"Da dan {n} lenh vao khung terminal (CHUA chay). "
+                      f"Doc lai lan cuoi roi bam Enter trong khung terminal de chay.")
     except FileNotFoundError:
         return False, "Chua cai tmux tren may."
     except Exception as e:
@@ -163,25 +166,101 @@ def _esc(s):
             .replace(">", "&gt;").replace('"', "&quot;"))
 
 
+# CSS + JS cho o tim kiem. De rieng ngoai f-string vi trong JS co rat nhieu
+# dau ngoac nhon - nhet vao f-string phai nhan doi het, rat de sai va kho doc.
+LIB_CSS = """
+<style>
+.tim-hop { display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+.tim-hop input { max-width:420px; }
+.the-loc { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px; }
+.the-loc .the { background:#22262b; border:1px solid #363b42; color:#a8b0bd;
+                border-radius:99px; padding:6px 13px; font-size:13px; cursor:pointer;
+                min-height:34px; }
+.the-loc .the:hover { background:#2c3036; color:#fff; }
+.lenh-luoi { display:grid; grid-template-columns:repeat(auto-fill,minmax(345px,1fr)); gap:13px; }
+.lenh-luoi .card { margin-bottom:0; display:flex; flex-direction:column; }
+.lenh-luoi pre { max-height:132px; overflow:auto; margin:9px 0 0; flex:1; }
+.tap-ten { margin:0 0 3px; font-size:15px; color:#4CAF50; }
+.tap-mo-ta { color:#8b93a1; font-size:13px; }
+.tap-meta { color:#6b7280; font-size:12px; margin-top:4px; }
+</style>
+"""
+
+LIB_JS = """
+<script>
+(function () {
+  "use strict";
+  var o = document.getElementById("tim_lenh");
+  if (!o) return;
+  var nutXoa = document.getElementById("xoa_tim");
+  var dem = document.getElementById("dem_kq");
+  var trong = document.getElementById("khong_thay");
+  var the = Array.prototype.slice.call(document.querySelectorAll("[data-tim]"));
+
+  function loc() {
+    var q = (o.value || "").trim().toLowerCase();
+    var hien = 0;
+    the.forEach(function (el) {
+      var khop = !q || (el.getAttribute("data-tim") || "").indexOf(q) >= 0;
+      el.style.display = khop ? "" : "none";
+      if (khop) hien++;
+    });
+    dem.textContent = hien + "/" + the.length;
+    trong.style.display = hien ? "none" : "block";
+    nutXoa.style.display = q ? "inline-block" : "none";
+  }
+
+  o.addEventListener("input", loc);
+  nutXoa.addEventListener("click", function () { o.value = ""; loc(); o.focus(); });
+
+  // Bam vao the (tag) = loc theo the do. Tien khi dung man hinh cam ung
+  // khong co ban phim: khong can go chu nao van loc duoc.
+  document.querySelectorAll("[data-the]").forEach(function (c) {
+    c.addEventListener("click", function () {
+      var t = c.getAttribute("data-the");
+      o.value = (o.value.trim().toLowerCase() === t) ? "" : t;   // bam lai = bo loc
+      loc();
+    });
+  });
+
+  loc();
+})();
+</script>
+"""
+
+
 def render_library_page(msg="", ok=True, edit_index=None):
     items = load_library()
+
+    # Gom the (tag) duy nhat de lam nut loc nhanh
+    tat_ca_the = []
+    for it in items:
+        for t in (it.get("tags") or "").split(","):
+            t = t.strip().lower()
+            if t and t not in tat_ca_the:
+                tat_ca_the.append(t)
+    the_html = "".join(
+        f'<button type="button" class="the" data-the="{_esc(t)}">{_esc(t)}</button>'
+        for t in sorted(tat_ca_the)
+    )
+    the_khoi = f'<div class="the-loc">{the_html}</div>' if the_html else ""
 
     rows = ""
     for i, it in enumerate(items):
         cmds = _esc(it.get("commands", ""))
         n_lines = len([l for l in it.get("commands", "").splitlines() if l.strip()])
+        # Chuoi de tim kiem: gom ten + mo ta + the + noi dung lenh, viet
+        # thuong san de JS chi viec so sanh, khong phai xu ly gi them.
+        kho_tim = _esc(" ".join([
+            it.get("name", ""), it.get("desc", ""),
+            it.get("tags", ""), it.get("commands", ""),
+        ]).lower())
         rows += f"""
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;">
-            <div style="flex:1;min-width:220px;">
-              <h3 style="margin-bottom:3px;">{_esc(it.get('name'))}</h3>
-              <div style="color:#8b93a1;font-size:13px;">{_esc(it.get('desc'))}</div>
-              <div style="color:#6b7280;font-size:12px;margin-top:4px;">
-                {n_lines} lenh &middot; {_esc(it.get('tags'))}
-              </div>
-            </div>
-          </div>
-          <pre style="margin-top:10px;">{cmds}</pre>
+        <div class="card" data-tim="{kho_tim}">
+          <h3 class="tap-ten">{_esc(it.get('name'))}</h3>
+          <div class="tap-mo-ta">{_esc(it.get('desc'))}</div>
+          <div class="tap-meta">{n_lines} lenh &middot; {_esc(it.get('tags'))}</div>
+          <pre>{cmds}</pre>
           <div class="row" style="margin-top:10px;">
             <form method="POST" action="/commands/send" style="display:inline;">
               <input type="hidden" name="index" value="{i}">
@@ -203,12 +282,9 @@ def render_library_page(msg="", ok=True, edit_index=None):
     # Form them moi hoac sua
     editing = edit_index is not None and 0 <= edit_index < len(items)
     cur = items[edit_index] if editing else {"name": "", "desc": "", "tags": "", "commands": ""}
-    form_title = f"✏️ Sua: {_esc(cur.get('name'))}" if editing else "➕ Them tap lenh moi"
     action = "/commands/update" if editing else "/commands/add"
 
-    form_html = f"""
-    <h2>{form_title}</h2>
-    <div class="card">
+    form_ruot = f"""
       <form method="POST" action="{action}">
         {f'<input type="hidden" name="index" value="{edit_index}">' if editing else ''}
         <label>Ten tap lenh</label>
@@ -217,7 +293,7 @@ def render_library_page(msg="", ok=True, edit_index=None):
         <label>Mo ta ngan</label>
         <input type="text" name="desc" value="{_esc(cur.get('desc'))}"
                placeholder="Nho ghi ro cho nao can sua truoc khi chay">
-        <label>The (phan cach bang dau phay)</label>
+        <label>The (phan cach bang dau phay) - dung de loc nhanh o tren</label>
         <input type="text" name="tags" value="{_esc(cur.get('tags'))}"
                placeholder="cisco, vlan, cau hinh">
         <label>Cac lenh (moi dong 1 lenh)</label>
@@ -226,21 +302,45 @@ def render_library_page(msg="", ok=True, edit_index=None):
           <button type="submit">{'Luu thay doi' if editing else 'Them vao thu vien'}</button>
           {'<a class="btn gray" href="/commands">Huy</a>' if editing else ''}
         </div>
-      </form>
-    </div>"""
+      </form>"""
+
+    if editing:
+        # Dang sua thi mo san va dua len TREN CUNG - do la viec anh dang lam.
+        form_html = f"""
+        <h2>✏️ Sua: {_esc(cur.get('name'))}</h2>
+        <div class="card">{form_ruot}</div>"""
+    else:
+        # Khong sua thi thu gon xuong DUOI danh sach: vao trang la thay ngay
+        # thu vien de tim, khong bi form them moi choan het phan tren.
+        form_html = f"""
+        <details style="margin-top:18px;">
+          <summary style="cursor:pointer;color:#4CAF50;font-size:16px;font-weight:600;
+                          padding:10px 0;">➕ Them tap lenh moi</summary>
+          <div class="card" style="margin-top:10px;">{form_ruot}</div>
+        </details>"""
 
     msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
 
     body = f"""
+    {LIB_CSS}
     {msg_html}
-    <div class="msg info">
-      <strong>Cach dung:</strong> <em>Gui vao Terminal</em> se dan lenh vao terminal dang mo
-      nhung <strong>khong tu bam Enter</strong> - anh xem lai roi tu chay.
-      <em>Dung o tab SSH</em> se chep sang tab SSH de sua IP/ten truoc khi chay hang loat.
+    <div class="tim-hop">
+      <input type="text" id="tim_lenh" placeholder="🔎 Go de tim: ten, mo ta, the, hoac noi dung lenh...">
+      <button type="button" class="gray small" id="xoa_tim" style="display:none;">✕ Xoa tim</button>
+      <span style="color:#8b93a1;font-size:13px;">Hien <strong id="dem_kq">0/0</strong> tap lenh</span>
     </div>
+    {the_khoi}
+    <div id="khong_thay" class="msg info" style="display:none;">
+      Khong co tap lenh nao khop. Thu tu khoa ngan hon, hoac bam ✕ Xoa tim.
+    </div>
+    <div class="lenh-luoi">{rows}</div>
     {form_html}
-    <h2>Danh sach ({len(items)} tap lenh)</h2>
-    {rows}"""
+    <div class="msg info" style="margin-top:18px;">
+      <strong>Cach dung:</strong> <em>Gui vao Terminal</em> dan lenh vao terminal dang mo nhung
+      <strong>khong tu bam Enter</strong> - anh xem lai roi tu chay.
+      <em>Dung o tab SSH</em> chep tap lenh sang o soan o tab SSH de sua IP/ten truoc khi dan.
+    </div>
+    {LIB_JS}"""
 
     return render_page(body, active="/commands", title="Thu vien lenh",
                        subtitle="Luu san cac tap lenh hay dung, sua duoc truoc khi chay")

@@ -1,107 +1,39 @@
 """
-Console Pi - Tab SSH (yeu cau so 7)
+Console Pi - Tab SSH
 
-Anh chon "Ca hai" nen co 2 che do:
+Chi con 1 che do duy nhat: SSH TUONG TAC bang terminal that (ttyd + tmux),
+go duoc moi thu nhu PuTTY. Kem ngay duoi khung terminal 1 O SOAN TAP LENH:
+chon tap lenh co san tu Thu vien -> sua lai IP/ten cho dung -> Copy hoac dan
+thang vao terminal.
 
-  1. SSH TUONG TAC  - terminal that (ttyd + tmux), go duoc moi thu nhu PuTTY.
-     Bam "Ket noi" se chay lenh ssh trong phien tmux.
+DA BO "chay hang loat" (Netmiko) o tab nay theo yeu cau: no trung vai tro voi
+cong cu "Netmiko Config" ben Network Tools, va trong thuc te lam viec thi
+duong nao cung phai nhin man hinh thiet bi that de biet lenh an vao chua.
 
-  2. CHAY HANG LOAT - chon tap lenh tu Thu vien, SUA lai (doi IP/ten...),
-     XEM TRUOC roi moi xac nhan chay. Dung Netmiko nen ho tro nhieu hang
-     thiet bi va thay duoc ket qua tung lenh.
-
-Diem chung: luon cho SUA va XEM TRUOC truoc khi thuc thi - vi day la thao
-tac ghi len thiet bi that.
+TU DIEN MAT KHAU - vi sao KHONG dung sshpass:
+  - sshpass -p '<mk>' dat mat khau THANG TREN DONG LENH: ai chay `ps` cung
+    doc duoc, va no con nam lai trong lich su cuon cua terminal.
+  - Cach dung o day: go lenh ssh vao terminal, roi DOI cho toi khi dong cuoi
+    cua man hinh dung la dau nhac mat khau, moi go mat khau vao. Dau nhac
+    mat khau khong hien lai ky tu nen mat khau khong bao gio hien tren man
+    hinh, khong vao `ps`, khong vao lich su lenh. Da kiem chung that bang
+    tmux capture-pane truoc khi viet ham nay.
+  - Neu qua 12 giay khong thay dau nhac (thiet bi cham, dung khoa, khong ket
+    noi duoc...) thi BAO THAT la khong thay, khong im lang coi nhu xong.
 """
+import json
+import re
 import subprocess
+import time
 
 from flask import request
 
 from .layout import render_page
-from .commands import load_library
-from .terminal import (SSH_SESSION, get_term_credential,
-                       tmux_session_exists, service_active)
+from .commands import load_library, send_to_tmux
+from .terminal import SSH_SESSION, tmux_session_exists, service_active
 
-AUDIT_LOG = "/var/log/console-pi-netmiko.log"
-
-DEVICE_TYPES = [
-    "cisco_ios", "cisco_xe", "cisco_nxos", "arista_eos",
-    "hp_comware", "hp_procurve", "juniper_junos",
-    "mikrotik_routeros", "ubiquiti_edge", "linux",
-]
-
-
-
-# ---------------------------------------------------------------------------
-# To mau output thiet bi mang hien tren web
-#
-# Khac voi terminal (output tu thiet bi gui ve, khong the sua real-time),
-# o day la HTML do minh sinh ra nen to mau duoc triet de.
-# Mau chon theo thoi quen doc cua dan mang:
-#   do = van de, xanh la = tot, vang = canh bao,
-#   xanh nhat = dia chi IP, tim = ten cong
-# ---------------------------------------------------------------------------
-import html as _html
-import re as _re
-
-_RULES = [
-    # Trang thai xau
-    (_re.compile(r"\b(?:down|err-disabled|errdisable|shutdown|failed|denied|deny|"
-                 r"invalid|error|CRC|collision|drops?|unreachable|timeout|inactive|"
-                 r"blocking|discarding)\b", _re.I), "c-bad"),
-    # Trang thai tot
-    (_re.compile(r"\b(?:up|connected|established|active|forwarding|permit|success|"
-                 r"enabled|reachable|full-duplex)\b", _re.I), "c-good"),
-    # Canh bao
-    (_re.compile(r"\b(?:warning|notice|half-duplex|learning|listening|standby|"
-                 r"administratively|notconnect|disabled)\b", _re.I), "c-warn"),
-    # Ten cong Cisco (day du va viet tat)
-    (_re.compile(r"\b(?:GigabitEthernet|TenGigabitEthernet|FastEthernet|Ethernet|"
-                 r"Serial|Loopback|Port-channel|Vlan|Tunnel|Management)[\d/\.]*\b"), "c-if"),
-    (_re.compile(r"\b(?:Gi|Fa|Te|Et|Se|Lo|Po|Vl|Tu|Mg)\d+(?:/\d+)*(?:\.\d+)?\b"), "c-if"),
-    # MAC kieu Cisco va kieu thong thuong
-    (_re.compile(r"\b(?:[0-9a-fA-F]{4}\.){2}[0-9a-fA-F]{4}\b"), "c-mac"),
-    (_re.compile(r"\b(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}\b"), "c-mac"),
-    # Dia chi IPv4
-    (_re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?\b"), "c-ip"),
-]
-
-COLOR_CSS = """
-.termout { background:#0f1114; border:1px solid #2c3036; padding:13px;
-           border-radius:6px; overflow-x:auto; white-space:pre-wrap;
-           word-break:break-word; font-size:13px; line-height:1.55;
-           font-family:ui-monospace, Menlo, Consolas, monospace; color:#d5dae2; }
-.termout .c-bad  { color:#ff6b6b; font-weight:600; }
-.termout .c-good { color:#7ddc7d; font-weight:600; }
-.termout .c-warn { color:#ffd166; }
-.termout .c-ip   { color:#68d5d5; }
-.termout .c-mac  { color:#6cb6ff; }
-.termout .c-if   { color:#d99bff; }
-"""
-
-
-def colorize_output(text):
-    """Chuyen output thiet bi thanh HTML co mau. Luon escape truoc de an toan."""
-    if not text:
-        return ""
-    out = _html.escape(text)
-
-    # Danh dau bang the tam roi doi sang <span> o buoc cuoi, tranh viec
-    # quy tac sau to mau trung vao the HTML cua quy tac truoc.
-    marks = []
-
-    def _sub(m, cls):
-        marks.append((cls, m.group(0)))
-        return f"\x00{len(marks) - 1}\x00"
-
-    for rx, cls in _RULES:
-        out = rx.sub(lambda m, c=cls: _sub(m, c), out)
-
-    def _restore(m):
-        cls, val = marks[int(m.group(1))]
-        return f'<span class="{cls}">{val}</span>'
-
-    return _re.sub(r"\x00(\d+)\x00", _restore, out)
+# Dau nhac mat khau cua ssh ("...'s password:", "Enter passphrase for key ...:")
+_DAU_NHAC_MK = re.compile(r"(?:password|passphrase).*:\s*$", re.I)
 
 
 def _esc(s):
@@ -109,216 +41,286 @@ def _esc(s):
             .replace(">", "&gt;").replace('"', "&quot;"))
 
 
-def start_ssh_in_tmux(host, user, port=22):
-    """Chay lenh ssh trong phien tmux de terminal web hien ra."""
+def _chup_man_hinh(session):
+    """Doc noi dung dang hien tren man hinh cua phien tmux."""
+    try:
+        r = subprocess.run(["tmux", "capture-pane", "-p", "-t", session],
+                           capture_output=True, text=True, timeout=5)
+        return r.stdout if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def _dong_cuoi(text):
+    dong = [l.rstrip() for l in (text or "").splitlines() if l.strip()]
+    return dong[-1] if dong else ""
+
+
+def _la_dau_nhac_mat_khau(dong):
+    return bool(dong) and bool(_DAU_NHAC_MK.search(dong))
+
+
+def _cho_dau_nhac_mat_khau(session, truoc, giay_toi_da=12):
+    """
+    Doi cho toi khi man hinh terminal hien dau nhac mat khau.
+
+    Bat buoc man hinh phai KHAC luc truoc khi go lenh: neu khong so sanh, mot
+    dau nhac mat khau con sot lai cua phien cu se bi cham nham la dau nhac
+    cua phien vua mo, va mat khau se bi go nham cho.
+    """
+    het_han = time.time() + giay_toi_da
+    while time.time() < het_han:
+        time.sleep(0.3)
+        hien = _chup_man_hinh(session)
+        if hien and hien != truoc and _la_dau_nhac_mat_khau(_dong_cuoi(hien)):
+            return True
+    return False
+
+
+def start_ssh_in_tmux(host, user, port=22, password=""):
+    """Chay lenh ssh trong phien tmux; tu dien mat khau neu duoc nhap san."""
+    host = (host or "").strip()
+    user = (user or "").strip()
     if not host or not user:
         return False, "Thieu dia chi hoac tai khoan."
+
+    # Loc dau vao: host/user duoc ghep thanh 1 DONG LENH chay trong shell cua
+    # terminal, khong loc thi mot gia tri kieu "1.1.1.1; rm -rf /" se chay
+    # that su tren Pi.
+    if not re.fullmatch(r"[A-Za-z0-9._:\-]{1,255}", host):
+        return False, "Dia chi khong hop le (chi cho chu, so va cac dau . - _ :)."
+    if not re.fullmatch(r"[A-Za-z0-9._\-\\]{1,64}", user):
+        return False, "Tai khoan khong hop le (chi cho chu, so va cac dau . - _ \\)."
     try:
-        if not tmux_session_exists(SSH_SESSION):
-            return False, (f"Chua co phien terminal SSH. Mo tab SSH (khung terminal ben duoi) "
-                           f"de tao phien truoc roi bam lai.")
-        cmd = f"ssh -o StrictHostKeyChecking=accept-new -p {int(port)} {user}@{host}"
+        cong = int(port or 22)
+    except (TypeError, ValueError):
+        return False, "Cong khong hop le."
+    if not 1 <= cong <= 65535:
+        return False, "Cong phai trong khoang 1-65535."
+
+    if not tmux_session_exists(SSH_SESSION):
+        return False, ("Chua co phien terminal SSH. Mo khung terminal ben duoi "
+                       "de tao phien truoc roi bam lai.")
+
+    truoc = _chup_man_hinh(SSH_SESSION)
+    # Terminal dang dung o 1 dau nhac mat khau cu: go lenh vao day thi ca dong
+    # lenh se bi hieu la mat khau. Dung lai va noi ro, thay vi lam roi them.
+    if _la_dau_nhac_mat_khau(_dong_cuoi(truoc)):
+        return False, ("Khung terminal dang dung o dau nhac mat khau cua lan truoc. "
+                       "Vao khung terminal xu ly xong (nhap mat khau hoac bam Ctrl+C) "
+                       "roi bam Ket noi lai.")
+
+    cmd = f"ssh -o StrictHostKeyChecking=accept-new -p {cong} {user}@{host}"
+    try:
         subprocess.run(["tmux", "send-keys", "-t", SSH_SESSION, cmd, "Enter"],
                        capture_output=True, timeout=5)
-        return True, f"Da gui lenh ket noi toi {host}. Nhap mat khau trong khung terminal ben duoi."
     except Exception as e:
         return False, f"Loi: {e}"
 
+    if not password:
+        return True, (f"Da gui lenh ket noi toi {host}. "
+                      f"Nhap mat khau trong khung terminal ben duoi.")
 
-def run_batch(host, device_type, username, password, commands, save=False, port=22, timeout=15):
-    """Chay hang loat lenh qua Netmiko (co the la lenh doc hoac lenh cau hinh)."""
-    try:
-        from netmiko import ConnectHandler
-        from netmiko.exceptions import (NetmikoTimeoutException,
-                                        NetmikoAuthenticationException)
-    except ImportError as e:
-        return {"ok": False, "error": f"Thieu netmiko: {e}", "output": ""}
-
-    device = {"device_type": device_type, "host": host, "username": username,
-              "password": password, "port": int(port), "timeout": timeout}
-
-    import time as _t
-    def _audit(result):
-        try:
-            with open(AUDIT_LOG, "a") as f:
-                f.write(f"{_t.strftime('%Y-%m-%d %H:%M:%S')} | host={host} | "
-                        f"type={device_type} | action=ssh-batch | "
-                        f"commands={commands!r} | result={result}\n")
-        except Exception:
-            pass
+    if not _cho_dau_nhac_mat_khau(SSH_SESSION, truoc, 12):
+        return True, (f"Da gui lenh ket noi toi {host} nhung sau 12 giay khong thay dau "
+                      f"nhac mat khau - co the thiet bi phan hoi cham, dang dung khoa (key), "
+                      f"hoac khong ket noi duoc. Xem khung terminal ben duoi, nhap tay neu can.")
 
     try:
-        conn = ConnectHandler(**device)
-        output = conn.send_config_set(commands)
-        if save:
-            output += "\n--- LUU CAU HINH ---\n" + str(conn.save_config())
-        conn.disconnect()
-    except NetmikoAuthenticationException:
-        _audit("AUTH FAILED")
-        return {"ok": False, "error": "Sai tai khoan hoac mat khau.", "output": ""}
-    except NetmikoTimeoutException:
-        _audit("TIMEOUT")
-        return {"ok": False, "error": f"Khong ket noi duoc toi {host} (timeout).", "output": ""}
+        # -l = gui NGUYEN VAN. Thieu -l thi tmux dich cac chuoi trung ten phim
+        # (vi du mat khau chua "Enter", "Space") thanh phim bam thay vi ky tu.
+        subprocess.run(["tmux", "send-keys", "-l", "-t", SSH_SESSION, password],
+                       capture_output=True, timeout=5)
+        subprocess.run(["tmux", "send-keys", "-t", SSH_SESSION, "Enter"],
+                       capture_output=True, timeout=5)
     except Exception as e:
-        _audit(f"ERROR: {e}")
-        return {"ok": False, "error": str(e), "output": ""}
+        return False, f"Loi khi gui mat khau: {e}"
 
-    _audit("OK" + (" + SAVED" if save else ""))
-    return {"ok": True, "error": None, "output": output, "saved": save}
+    return True, (f"Da ket noi toi {host} va tu dien mat khau. "
+                  f"Xem ket qua trong khung terminal ben duoi.")
 
 
-def _render(msg="", ok=True, prefill="", form=None, result=None, preview=None):
-    form = form or {}
+# ---------------------------------------------------------------------------
+# JS cua trang. De rieng ngoai f-string vi co rat nhieu dau ngoac nhon, nhet
+# vao f-string phai nhan doi het - rat de sai va kho doc.
+# ---------------------------------------------------------------------------
+SSH_JS = """
+<script>
+(function () {
+  "use strict";
+  var o = document.getElementById("o_lenh");
+  if (!o) return;
+  var chon = document.getElementById("chon_tap");
+  var bao = document.getElementById("bao_js");
+  var KHOA_LUU = "consolepi-ssh-o-lenh";
+
+  function noi(chuoi, xau) {
+    bao.textContent = chuoi;
+    bao.style.color = xau ? "#ffd166" : "#8b93a1";
+  }
+
+  // Giu lai noi dung dang soan khi tai lai trang / bam Ket noi. Chi luu tren
+  // may dang dung, khong gui ve server.
+  function luu() { try { localStorage.setItem(KHOA_LUU, o.value); } catch (e) {} }
+  o.addEventListener("input", luu);
+  if (!o.value) {
+    try {
+      var cu = localStorage.getItem(KHOA_LUU);
+      if (cu) o.value = cu;
+    } catch (e) {}
+  } else {
+    luu();
+  }
+
+  document.getElementById("nut_chep").addEventListener("click", function () {
+    var i = chon.value;
+    if (i === "") { noi("Chon 1 tap lenh trong danh sach truoc.", true); return; }
+    o.value = THU_VIEN[i].lenh;
+    luu();
+    noi("Da chep \\"" + THU_VIEN[i].ten + "\\" vao o. Sua lai IP/ten cho dung roi dan.");
+  });
+
+  function copyCachCu() {
+    // Trang chay HTTP thuong (vao bang IP trong LAN) thi navigator.clipboard
+    // KHONG ton tai - trinh duyet chi cho dung Clipboard API o ngu canh bao
+    // mat (HTTPS hoac localhost). execCommand cu van chay duoc tren HTTP.
+    try {
+      o.focus(); o.select();
+      var ok = document.execCommand("copy");
+      noi(ok ? "Da copy noi dung o lenh." :
+               "Trinh duyet khong cho copy tu dong - noi dung da duoc boi den, copy tay giup em.", !ok);
+    } catch (e) {
+      noi("Trinh duyet khong cho copy tu dong - noi dung da duoc boi den, copy tay giup em.", true);
+    }
+  }
+
+  document.getElementById("nut_copy").addEventListener("click", function () {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(o.value).then(
+        function () { noi("Da copy noi dung o lenh."); },
+        function () { copyCachCu(); }
+      );
+    } else {
+      copyCachCu();
+    }
+  });
+
+  document.getElementById("nut_dan_cb").addEventListener("click", function () {
+    if (navigator.clipboard && navigator.clipboard.readText && window.isSecureContext) {
+      navigator.clipboard.readText().then(function (t) {
+        o.value = t; luu(); noi("Da dan noi dung tu clipboard vao o.");
+      }, function () {
+        noi("Trinh duyet chan doc clipboard. Cham vao o roi dan tay, hoac dung ban phim ao.", true);
+      });
+    } else {
+      noi("Vao bang HTTP nen trinh duyet khong cho doc clipboard. Cham vao o roi dan tay, " +
+          "hoac dung ban phim ao.", true);
+    }
+  });
+
+  document.getElementById("nut_xoa").addEventListener("click", function () {
+    o.value = ""; luu(); noi("Da xoa o lenh.");
+  });
+})();
+</script>
+"""
+
+
+def _render(msg="", ok=True, prefill=""):
     lib = load_library()
-    user, pw = get_term_credential()
-    host_addr = request.host.split(":")[0]
     term_running = service_active("console-pi-term-ssh.service")
 
     lib_options = "".join(
         f'<option value="{i}">{_esc(it.get("name"))}</option>' for i, it in enumerate(lib)
     )
-    lib_data = "".join(
-        f'<script type="application/json" id="lib{i}">{_esc(it.get("commands",""))}</script>'
-        for i, it in enumerate(lib)
-    )
+    # Nhung du lieu do NGUOI DUNG TU NHAP vao trong the <script> - phai chan
+    # duong thoat ra ngoai chay ma doc hai:
+    #   - ensure_ascii=True: moi ky tu ngoai ASCII thanh \\uXXXX, khong bao gio
+    #     lam vo cu phap JS (ke ca U+2028/U+2029 von lam vo chuoi JS).
+    #   - Doi < > & thanh \\u003c \\u003e \\u0026: trong JSON, 3 ky tu nay chi
+    #     xuat hien BEN TRONG chuoi nen doi la an toan, va sau khi doi thi
+    #     trang khong con ky tu "<" tho nao trong the <script>.
+    #     DA THU THAT: chi thay "</" bang "<\\/" la CHUA DU - mot tap lenh chua
+    #     "<script>" van lot vao nguyen ven, ma theo chuan HTML, gap "<script"
+    #     ben trong the script se day bo phan tich sang trang thai dac biet
+    #     (script data double escaped) khien the </script> ke tiep KHONG con
+    #     dong the nua -> vo trang / mo duong chen ma.
+    lib_json = (json.dumps(
+        [{"ten": it.get("name", ""), "lenh": it.get("commands", "")} for it in lib],
+        ensure_ascii=True,
+    ).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026"))
 
     msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
-
-    # --- Ket qua chay hang loat ---
-    result_html = ""
-    if result:
-        if result.get("error"):
-            result_html = f'<div class="msg err">Loi: {_esc(result["error"])}</div>'
-        else:
-            result_html = (f'<div class="msg ok">Chay xong'
-                           f'{" va da luu cau hinh" if result.get("saved") else ""}.</div>'
-                           f'<h2>Ket qua</h2>'
-                           f'<div class="termout">{colorize_output(result.get("output"))}</div>')
-
-    # --- Man hinh xem truoc truoc khi chay ---
-    if preview:
-        cmds = preview.get("commands", "")
-        n = len([l for l in cmds.splitlines() if l.strip()])
-        body = f"""
-        <div class="msg warn">
-          <strong>⚠ Xem truoc - CHUA KET NOI GI CA.</strong>
-          Doc ky {n} lenh duoi day truoc khi xac nhan. Day la thao tac ghi len thiet bi that.
-        </div>
-        <div class="card">
-          <h3>Se ket noi toi</h3>
-          <table style="max-width:460px;">
-            <tr><th style="width:130px;">Dia chi</th><td><code>{_esc(preview.get('host'))}:{_esc(preview.get('port'))}</code></td></tr>
-            <tr><th>Loai thiet bi</th><td><code>{_esc(preview.get('device_type'))}</code></td></tr>
-            <tr><th>Tai khoan</th><td><code>{_esc(preview.get('username'))}</code></td></tr>
-          </table>
-        </div>
-        <div class="card">
-          <h3>Cac lenh se chay</h3>
-          <pre>{_esc(cmds)}</pre>
-        </div>
-        <form method="POST" action="/ssh/run"
-              onsubmit="return confirm('XAC NHAN chay {n} lenh tren {_esc(preview.get('host'))}?');">
-          <input type="hidden" name="host" value="{_esc(preview.get('host'))}">
-          <input type="hidden" name="port" value="{_esc(preview.get('port'))}">
-          <input type="hidden" name="device_type" value="{_esc(preview.get('device_type'))}">
-          <input type="hidden" name="username" value="{_esc(preview.get('username'))}">
-          <input type="hidden" name="password" value="{_esc(preview.get('password'))}">
-          <input type="hidden" name="commands" value="{_esc(cmds)}">
-          <label style="display:flex;align-items:center;gap:9px;">
-            <input type="checkbox" name="save" value="1" style="width:20px;height:20px;">
-            <span>Luu cau hinh vinh vien (write memory) - KHO HOAN TAC, mac dinh khong tick</span>
-          </label>
-          <div class="row" style="margin-top:14px;">
-            <button type="submit" class="red" data-busy="Dang chay tren thiet bi...">✅ Xac nhan va chay</button>
-            <a class="btn gray" href="/ssh">Huy</a>
-          </div>
-        </form>"""
-        return render_page(body, active="/ssh", title="SSH - Xem truoc",
-                           subtitle="Buoc cuoi truoc khi ghi len thiet bi that")
-
     term_status = ("" if term_running else
                    '<div class="msg err">Dich vu terminal SSH chua chay: '
                    '<code>sudo systemctl start console-pi-term-ssh</code></div>')
 
     body = f"""
     {msg_html}
-    {result_html}
-
-    <h2>1. SSH tuong tac (go truc tiep nhu PuTTY)</h2>
     {term_status}
+
+    <h2 style="margin-top:4px;">1. Ket noi</h2>
     <div class="card">
       <form method="POST" action="/ssh/connect" class="row">
         <div><label>Dia chi thiet bi</label>
-          <input type="text" name="host" placeholder="192.168.1.1" style="max-width:210px;" required></div>
+          <input type="text" name="host" placeholder="192.168.1.1" style="max-width:200px;" required></div>
         <div><label>Tai khoan</label>
-          <input type="text" name="user" placeholder="admin" style="max-width:160px;" required></div>
+          <input type="text" name="user" placeholder="admin" style="max-width:150px;" required></div>
+        <div><label>Mat khau (de trong = tu nhap)</label>
+          <input type="password" name="password" autocomplete="new-password"
+                 placeholder="dien san cho nhanh" style="max-width:190px;"></div>
         <div><label>Cong</label>
-          <input type="number" name="port" value="22" style="max-width:95px;"></div>
-        <div><button type="submit" data-busy="Dang gui lenh...">🔑 Ket noi</button></div>
+          <input type="number" name="port" value="22" style="max-width:90px;"></div>
+        <div><button type="submit" data-busy="Dang ket noi...">🔑 Ket noi</button></div>
       </form>
       <p style="color:#8b93a1;font-size:13px;margin:10px 0 0;">
-        Lenh ssh se duoc go vao khung terminal ben duoi. Nhap mat khau thiet bi truc tiep trong do.
+        Mat khau chi duoc go thang vao khung terminal khi thiet bi hoi, <strong>khong luu lai</strong>
+        va khong hien tren man hinh. De trong thi ket noi xong anh tu nhap trong terminal.
       </p>
     </div>
+
+    <h2>2. Terminal</h2>
     <div class="card" style="padding:0;overflow:hidden;">
       <iframe src="/term-ssh/" title="SSH terminal"
-              style="width:100%;height:calc(100vh - 460px);min-height:320px;border:0;display:block;background:#000;"></iframe>
+              style="width:100%;height:calc(100vh - 470px);min-height:320px;border:0;display:block;background:#000;"></iframe>
     </div>
 
-    <h2>2. Chay hang loat (chon tu thu vien, sua roi xac nhan)</h2>
+    <h2>3. O soan tap lenh</h2>
     <div class="card">
-      <form method="POST" action="/ssh/preview">
+      <form method="POST" action="/ssh/paste">
+        <label>Lay tap lenh co san tu Thu vien</label>
         <div class="row">
-          <div><label>Dia chi thiet bi</label>
-            <input type="text" name="host" required placeholder="192.168.1.1" style="max-width:210px;"
-                   value="{_esc(form.get('host'))}"></div>
-          <div><label>Cong SSH</label>
-            <input type="number" name="port" value="{_esc(form.get('port') or 22)}" style="max-width:95px;"></div>
-          <div><label>Loai thiet bi</label>
-            <select name="device_type" style="max-width:200px;">
-              {"".join(f'<option {"selected" if form.get("device_type")==d else ""}>{d}</option>' for d in DEVICE_TYPES)}
-            </select></div>
-        </div>
-        <div class="row">
-          <div><label>Tai khoan</label>
-            <input type="text" name="username" required style="max-width:200px;"
-                   value="{_esc(form.get('username'))}"></div>
-          <div><label>Mat khau</label>
-            <input type="password" name="password" required style="max-width:200px;"></div>
-        </div>
-
-        <label>Lay tap lenh co san tu thu vien</label>
-        <div class="row">
-          <select id="libSel" style="max-width:340px;">
+          <select id="chon_tap" style="max-width:340px;">
             <option value="">-- Chon tap lenh --</option>
             {lib_options}
           </select>
-          <button type="button" class="gray" onclick="loadLib()">📋 Chep vao o ben duoi</button>
+          <button type="button" class="gray" id="nut_chep">📄 Chep vao o ben duoi</button>
         </div>
 
-        <label>Cac lenh se chay (SUA lai IP/ten cho dung truoc khi tiep tuc)</label>
-        <textarea name="commands" required style="max-width:100%;min-height:170px;">{_esc(prefill)}</textarea>
+        <label>Noi dung (sua thoai mai truoc khi dan - doi IP, ten cong, VLAN...)</label>
+        <textarea name="noi_dung" id="o_lenh" style="max-width:100%;min-height:150px;"
+                  placeholder="Go lenh o day, hoac chon tap lenh o tren...">{_esc(prefill)}</textarea>
 
-        <div class="row" style="margin-top:13px;">
-          <button type="submit" data-busy="Dang chuan bi...">👁 Xem truoc roi chay</button>
+        <div class="row" style="margin-top:12px;">
+          <button type="submit" class="blue" data-busy="Dang dan...">⌨️ Dan vao terminal</button>
+          <button type="button" class="gray" id="nut_copy">📋 Copy</button>
+          <button type="button" class="gray" id="nut_dan_cb">📥 Dan tu clipboard vao o</button>
+          <button type="button" class="gray" id="nut_xoa">🧹 Xoa o</button>
         </div>
+        <p id="bao_js" style="color:#8b93a1;font-size:13px;margin:10px 0 0;min-height:18px;"></p>
       </form>
+      <p style="color:#8b93a1;font-size:13px;margin:4px 0 0;">
+        <strong>Dan vao terminal</strong> chi dat lenh vao khung terminal, <strong>khong tu bam
+        Enter</strong> - anh doc lai lan cuoi roi tu bam chay. Noi dung o nay duoc giu lai khi
+        tai lai trang.
+      </p>
     </div>
-    {lib_data}
-    <script>
-      function loadLib() {{
-        var sel = document.getElementById('libSel');
-        if (!sel.value) return;
-        var el = document.getElementById('lib' + sel.value);
-        if (!el) return;
-        var ta = document.querySelector('textarea[name=commands]');
-        ta.value = el.textContent;
-        ta.focus();
-      }}
-    </script>"""
+
+    <script>var THU_VIEN = {lib_json};</script>
+    {SSH_JS}"""
 
     html = render_page(body, active="/ssh", title="SSH",
-                       subtitle="Ket noi tuong tac hoac chay hang loat lenh len thiet bi mang")
+                       subtitle="Ket noi tuong tac toi thiet bi mang, kem o soan tap lenh")
     return html.replace("<body>", f'<body data-tmux-session="{SSH_SESSION}">', 1)
 
 
@@ -339,30 +341,18 @@ def register_ssh(app):
         f = request.form
         ok, msg = start_ssh_in_tmux(f.get("host", "").strip(),
                                     f.get("user", "").strip(),
-                                    f.get("port", 22) or 22)
+                                    f.get("port", 22) or 22,
+                                    f.get("password", ""))
+        # Khong bao gio tra mat khau nguoc lai trang.
         return _render(msg=msg, ok=ok)
 
-    @app.route("/ssh/preview", methods=["POST"])
-    def ssh_preview():
-        f = request.form
-        return _render(preview={
-            "host": f.get("host", "").strip(), "port": f.get("port", 22) or 22,
-            "device_type": f.get("device_type", "cisco_ios"),
-            "username": f.get("username", "").strip(),
-            "password": f.get("password", ""),
-            "commands": f.get("commands", ""),
-        })
-
-    @app.route("/ssh/run", methods=["POST"])
-    def ssh_run():
-        f = request.form
-        cmds = [c for c in (f.get("commands") or "").splitlines() if c.strip()]
-        res = run_batch(f.get("host", "").strip(), f.get("device_type", "cisco_ios"),
-                        f.get("username", "").strip(), f.get("password", ""),
-                        cmds, save=(f.get("save") == "1"), port=f.get("port", 22) or 22)
-        return _render(result=res, form={
-            "host": f.get("host"), "port": f.get("port"),
-            "device_type": f.get("device_type"), "username": f.get("username"),
-        }, prefill=f.get("commands", ""))
+    @app.route("/ssh/paste", methods=["POST"])
+    def ssh_paste():
+        noi_dung = request.form.get("noi_dung", "")
+        if not noi_dung.strip():
+            return _render(msg="O lenh dang trong - chua co gi de dan.", ok=False)
+        # press_enter=False: dan xong KHONG tu chay, de anh doc lai roi tu bam.
+        ok, msg = send_to_tmux(SSH_SESSION, noi_dung)
+        return _render(msg=msg, ok=ok, prefill=noi_dung)
 
     return app

@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.4.2
+
+**Thu vien lenh** - bo tri lai cho de nhin, de tim:
+- Them **o tim kiem** loc tuc thi theo ten + mo ta + the + noi dung lenh.
+- Them **nut the (tag)** bam 1 cai la loc ngay - dung duoc khi khong co ban phim.
+- Danh sach chuyen thanh **luoi the**, moi tap lenh 1 the gon; form "Them tap
+  lenh moi" thu gon xuong duoi (truoc day choan het phan tren, vao trang khong
+  thay ngay thu vien de tim).
+
+**Tab SSH** - lam lai theo dung cach lam viec thuc te:
+- Them **o mat khau** dien san. Mat khau duoc go vao terminal DUNG LUC thiet bi
+  hoi (doi bang `tmux capture-pane` toi khi thay dau nhac), nen khong hien tren
+  man hinh, khong vao `ps`, khong vao lich su lenh - **khac han `sshpass -p`**
+  von dat mat khau tho ngay tren dong lenh. Qua 12 giay khong thay dau nhac thi
+  bao that la khong thay, khong im lang coi nhu xong.
+- Them **o soan tap lenh** ngay duoi khung terminal: chon tap lenh tu Thu vien →
+  sua IP/ten → **Copy** / **Dan tu clipboard** / **Dan vao terminal** (dan xong
+  khong tu bam Enter). Noi dung dang soan duoc giu lai khi tai lai trang.
+- **Bo "chay hang loat"** (trung vai tro voi cong cu Netmiko Config ben Network
+  Tools).
+
+**2 lo hong that duoc va trong lan sua nay** (phat hien bang kiem thu, khong
+phai doc code suong):
+- **Chen lenh qua o dia chi/tai khoan**: dia chi va tai khoan truoc day duoc
+  ghep thang vao 1 dong lenh chay trong terminal QUYEN ROOT ma khong loc gi -
+  nhap `1.1.1.1; rm -rf /` la chay that. Nay chan bang bieu thuc chinh quy.
+- **Chen ma qua noi dung thu vien lenh**: noi dung tap lenh duoc nhung vao the
+  `<script>` cua trang SSH. Chi thay `</` bang `<\/` la CHUA DU - mot tap lenh
+  chua `<script>` van lot nguyen ven, ma theo chuan HTML thi gap `<script` ben
+  trong the script se day bo phan tich sang trang thai dac biet khien the
+  `</script>` ke tiep khong con dong the nua. Nay ma hoa ca `< > &` thanh
+  `< > &`.
+
 ## 0.4.1
 
 Bo tinh nang **Ping lien tuc (do thi song)** (`/nettools/ping-monitor`) da

@@ -75,9 +75,12 @@ Netmiko (SSH cấu hình switch) · 802.1X Testing · IF/THEN Automation
 
 ### Terminal & Tự động hoá
 - **Terminal local** — dòng lệnh trên Pi, phiên tmux không mất khi đóng trình duyệt
-- **SSH** — vừa terminal tương tác, vừa chạy hàng loạt có xem trước
-- **Thư viện lệnh** — lưu/sửa/xoá tập lệnh, sẵn 5 tập lệnh Cisco. Dán được
-  thẳng vào terminal (không tự chạy — bạn xem lại rồi mới bấm Enter)
+- **SSH** — terminal tương tác (như PuTTY), điền sẵn được mật khẩu, kèm ô soạn
+  tập lệnh ngay dưới khung terminal: chọn từ thư viện → sửa → Copy hoặc dán thẳng
+  vào terminal
+- **Thư viện lệnh** — lưu/sửa/xoá tập lệnh, sẵn 5 tập lệnh Cisco, có ô tìm kiếm
+  và lọc theo thẻ. Dán được thẳng vào terminal (không tự chạy — bạn xem lại rồi
+  mới bấm Enter)
 
 ### Sức khoẻ thiết bị & nguồn
 Cảnh báo **sụt áp** (`vcgencmd get_throttled`) — nguyên nhân phổ biến nhất làm Pi
