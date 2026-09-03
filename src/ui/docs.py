@@ -197,6 +197,33 @@ console bi dinh/rot ky tu, kiem tra co ai giu trung khong:
     ("bluetooth", "🔵 Bluetooth", """
 <p>Trang Bluetooth lam 2 viec: <strong>ghep ban phim/chuot</strong> (khi man hinh cam ung
 kho go) va <strong>ket noi mang PAN du phong</strong>.</p>
+
+<div class="msg ok"><strong>Da ghep thanh cong that tren may nay - ban phim Samsung
+(50:E6:76:A6:8B:90).</strong> Quy trinh dung, ghi lai de dam bao lam lai duoc neu lo mat:
+<ol style="margin:8px 0 0 18px;padding:0;">
+<li><strong>Ghep MOI (lan dau, hoac sau khi da xoa/quen):</strong>
+  Giu nut Connect tren ban phim <strong>lien tuc</strong> cho den khi den nhap nhay NHANH,
+  RIENG luc do moi bam <em>Ghep cap</em> tren trang web (dung cua so 150 giay co dem nguoc).
+  Neu khong bam sau khi da giu nut - vi bam qua tre thi ban phim co the da thoat che do
+  ghep cap, se bao "khong tim thay thiet bi" du hoan toan binh thuong.</li>
+<li><strong>Sau khi ghep xong, ban phim se TU DONG ngat ket noi sau vai giay</strong> neu
+  khong go gi - day la tinh nang tiet kiem pin cua chinh ban phim, KHONG PHAI loi. Khoa
+  lien ket (Bonded) van con nguyen, khong mat gi ca.</li>
+<li><strong>De noi lai (KHONG phai ghep lai tu dau):</strong> bam NHANH 1 cai vao nut
+  Connect tren ban phim (KHONG giu lau - giu lau se vao lai che do ghep cap MOI va co the
+  lam mat khoa cu). Ban phim se tu goi sang Pi trong vai chuc giay.</li>
+</ol>
+<p style="margin-top:8px;"><strong>TUYET DOI KHONG bam nut "Ghep cap lai"</strong> khi ban
+phim CHI DON GIAN la mat ket noi tam thoi (van con trong danh sach, trang thai "da ghep,
+chua noi") - nut do se XOA khoa lien ket dang co roi ghep MOI TU DAU, mo lai nguy co that
+bai neu ban phim khong dang o che do ghep cap luc do. Chi dung "Ghep cap lai" khi trang thai
+that su bao <em>thieu khoa lien ket</em>.</p>
+<p style="margin-top:8px;"><strong>Kiem tra khoa lien ket con luu tren dia hay khong</strong>
+(nguon su that cuoi cung, khong phu thuoc bo nho tam cua bluetoothctl):</p>
+<pre>sudo cat /var/lib/bluetooth/*/50:E6:76:A6:8B:90/info
+* Phai thay muc [LinkKey] voi 1 chuoi Key=... - con dong nghia van con ghep, mat dong
+  nay nghia la phai ghep lai tu dau that su (khong con cach nao khac).</pre>
+</div>
 <pre>* Xem thiet bi da ghep cap
 bluetoothctl devices
 

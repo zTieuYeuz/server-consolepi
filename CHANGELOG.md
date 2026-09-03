@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.14
+
+**Ghi lai quy trinh ghep ban phim Bluetooth DA THANH CONG that** vao tai lieu
+(muc dau tien cua trang Bluetooth), sau nhieu vong debug that tren may cua
+nguoi dung:
+
+- Ghep MOI: giu nut Connect LIEN TUC den khi den nhap nhay NHANH, RIENG luc do
+  moi bam Ghep cap tren web - bam tre la that bai kieu "khong tim thay" du
+  ban phim hoan toan binh thuong.
+- Sau khi ghep, ban phim TU DONG ngat sau vai giay khong go gi - day la tinh
+  nang tiet kiem pin cua chinh ban phim, khong phai loi, khoa lien ket
+  (Bonded) khong mat.
+- De NOI LAI (khac voi ghep lai): bam NHANH 1 cai vao nut Connect (KHONG giu
+  lau - giu lau vao lai che do ghep MOI, co nguy co lam mat khoa cu).
+- **Canh bao quan trong nhat**: TUYET DOI khong bam "Ghep cap lai" khi ban
+  phim chi don gian mat ket noi tam thoi (van "da ghep, chua noi") - nut do
+  XOA khoa lien ket dang co roi ghep MOI TU DAU, mo lai nguy co that bai neu
+  ban phim khong dang o che do ghep cap dung luc do bam.
+- Them lenh kiem tra khoa lien ket con luu tren dia hay khong (nguon su that
+  cuoi cung, khong phu thuoc bo nho tam cua bluetoothctl):
+  `sudo cat /var/lib/bluetooth/*/<mac>/info` - tim muc `[LinkKey]`.
+
 ## 0.4.13
 
 **Ban phim Bluetooth bi mat ghep cap** - tim ra do o "🔄 Reset Bluetooth" o
