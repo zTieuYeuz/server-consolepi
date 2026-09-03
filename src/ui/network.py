@@ -894,7 +894,13 @@ def _bt_page(msg="", ok=True, scanned=None):
     ps = bt_pair_state()
     pair_html = ""
 
-    if ag and ag.get("kind") == "passkey":
+    # "passkey" (ghep cap doi moi) va "pin" (ghep cap kieu cu, Bluetooth 2.x)
+    # deu la CUNG MOT VIEC doi voi nguoi dung: go day so nay tren ban phim roi
+    # bam Enter. Truoc day chi hien "passkey", con "pin" bi bo qua hoan toan ->
+    # ban phim cu doi go ma ma tren man hinh khong hien gi ca, nguoi dung chi
+    # thay "dang ghep cap" roi treo den het gio.
+    if ag and ag.get("kind") in ("passkey", "pin") and ag.get("go_tren_ban_phim", True):
+        kieu_cu = ag.get("kind") == "pin"
         pair_html = f"""
         <div class="card" style="border-left:4px solid #ffd166;background:#2a2519;">
           <h3 style="color:#ffd166;">⌨️ Go ma nay TREN BAN PHIM Bluetooth</h3>
@@ -902,14 +908,48 @@ def _bt_page(msg="", ok=True, scanned=None):
                       font-family:ui-monospace,monospace;color:#fff;
                       text-align:center;padding:14px 0;">{_esc(ag.get('value'))}</div>
           <p style="text-align:center;color:#c9ced6;margin:0;">
-            Go 6 chu so tren roi bam <strong>Enter</strong> ngay tren ban phim
+            Go day so tren roi bam <strong>Enter</strong> ngay tren ban phim
             <strong>{_esc(ag.get('device'))}</strong>.
           </p>
           <p style="text-align:center;color:#8b93a1;font-size:13px;margin-top:9px;">
-            Da go {ag.get('entered', 0)} ky tu &middot; trang tu lam moi moi 3 giay
+            {'Ban phim doi cu (ghep cap kieu PIN) - van go y het nhu tren.'
+             if kieu_cu else f"Da go {ag.get('entered', 0)} ky tu"}
+            &middot; trang tu lam moi moi 3 giay
+          </p>
+          <p style="text-align:center;color:#8b93a1;font-size:12px;margin-top:6px;">
+            Ban phim chua ket noi van go duoc ma nay - do la cach ghep cap chuan
+            (Windows/macOS cung lam y het).
           </p>
         </div>
         <meta http-equiv="refresh" content="3">"""
+    elif ag and ag.get("kind") == "pin":
+        # Thiet bi khong go duoc (tai nghe/loa cu): chi thong bao, khong bat
+        # nguoi dung go gi ca.
+        pair_html = f"""
+        <div class="card" style="border-left:4px solid #6cb6ff;">
+          <h3>Dang dung ma PIN <code style="font-size:20px;">{_esc(ag.get('value'))}</code></h3>
+          <p style="color:#8b93a1;margin:0;">Thiet bi <strong>{_esc(ag.get('device'))}</strong>
+          khong phai ban phim nen khong go duoc ma. Pi dung ma mac dinh cua nha san xuat.
+          Neu that bai, tra cuu ma PIN in tren thiet bi (hay gap: 0000, 1234, 8888).</p>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ag and ag.get("kind") == "need-passkey":
+        pair_html = f"""
+        <div class="msg err">
+          <strong>Thiet bi nay doi Pi nhap ma do chinh no hien ra.</strong><br>
+          <span style="font-size:13px;">
+          <strong>{_esc(ag.get('device'))}</strong> dang cho mot ma so ma no hien tren man
+          hinh cua no - Pi khong doc duoc ma do nen buoc nay se that bai. Ban phim/chuot
+          thong thuong KHONG dung kieu nay; neu gap, nhieu kha nang thiet bi dang o sai
+          che do ghep cap. Tat roi bat lai che do ghep cap tren thiet bi va thu lai.
+          </span>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ag and ag.get("kind") == "cancelled":
+        pair_html = """
+        <div class="msg err">Thiet bi da HUY ghep cap giua chung. Thuong do het thoi gian
+        cho tren thiet bi, hoac ma go vao bi sai. Bat lai che do ghep cap tren thiet bi
+        roi bam Ghep cap lai.</div>"""
     elif ag and ag.get("kind") == "confirm":
         pair_html = f"""
         <div class="card" style="border-left:4px solid #6cb6ff;">

@@ -211,6 +211,27 @@ bluetoothctl remove AA:BB:CC:DD:EE:FF
 
 * Khoi dong lai toan bo (bt-agent va bt-nap tu theo)
 sudo systemctl restart bluetooth</pre>
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Ghep ban phim: vi sao phai go mot day so</h3>
+<p>Nhieu nguoi thay vo ly: <em>ban phim chua ket noi thi go ma vao dau?</em> Nhung day dung la
+cach ghep cap chuan cua Bluetooth (Windows/macOS cung lam y het). Trong luc ghep cap da co
+mot duong truyen tam giua Pi va ban phim; ban phim <strong>chua</strong> go chu vao may duoc,
+nhung <strong>da</strong> gui duoc day so xac thuc qua duong do. Go xong bam <strong>Enter</strong>.</p>
+<p>Chuan Bluetooth co 2 kieu, Pi ho tro ca hai va <strong>deu hien so len man hinh</strong>:</p>
+<ul>
+<li><strong>Passkey</strong> (thiet bi doi moi): Pi sinh 6 chu so, ban go tren ban phim.</li>
+<li><strong>PIN kieu cu</strong> (Bluetooth 2.x): Pi sinh ma PIN, ban cung go tren ban phim.</li>
+</ul>
+<div class="msg warn"><strong>Loi that da sua (v0.4.7):</strong> nhanh <em>PIN kieu cu</em>
+truoc day bi bo quen - agent tra ve ma <code>0000</code> nhung trang web KHONG co cho nao
+hien ma do ra. Ban phim doi go ma, con nguoi dung chi thay "dang ghep cap" roi treo den het
+gio - <em>dung la vo ly</em>. Nay ca 2 kieu deu hien so ro rang. Cung sua: ban phim
+<strong>lien touchpad</strong> truoc day bi nhan diem nham thanh "thiet bi khong go duoc"
+(chi bat ma loai ban phim thuan) nen khong duoc hien ma.</div>
+<p>Thiet bi <strong>khong go duoc</strong> (tai nghe, loa) thi Pi dung ma co dinh cua nha
+san xuat (hay gap: 0000, 1234, 8888) va noi ro tren man hinh, khong bat ban go gi.</p>
+<p>Khi ghep cap that bai, xem dau vet tung buoc BlueZ da hoi gi:
+<code>journalctl -u bt-agent -n 30</code>.</p>
+
 <p>Ket noi mang qua Bluetooth: ghep may voi ten <strong>ConsolePi</strong> roi vao
 <code>http://192.168.60.1</code>. Tren Windows: mo <code>devicesandprinters</code>,
 chuot phai ConsolePi &rarr; <em>Connect using</em> &rarr; <em>Access point</em>.</p>

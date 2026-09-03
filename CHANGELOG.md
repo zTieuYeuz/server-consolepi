@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.4.7
+
+Sua loi ghep cap **ban phim Bluetooth kieu PIN cu** - dung cai lam nguoi dung
+thay "vo ly": ban phim doi go mot day so, nhung tren man hinh khong hien so nao.
+
+- **Nhanh PIN kieu cu bi bo quen hoan toan o giao dien.** Agent nhan yeu cau
+  `RequestPinCode` (Bluetooth 2.x), tra ve `0000` va ghi trang thai
+  `kind="pin"` - nhung trang web CHI co nhanh hien `passkey` va `confirm`,
+  khong he co nhanh nao hien `pin`. Ket qua: ban phim dung cho go ma, nguoi
+  dung chi thay "dang ghep cap" roi treo den het gio. Nay ca 2 kieu (passkey
+  doi moi va PIN kieu cu) deu hien so to ro giua man hinh kem huong dan.
+- **Ban phim lien touchpad bi nhan dien nham.** Theo chuan Bluetooth, 2 bit
+  loai thiet bi co 4 gia tri: `01` = ban phim, `11` = ban phim lien
+  chuot/touchpad. Ban dau chi bat `01` nen loai combo (rat pho bien) bi coi la
+  "thiet bi khong go duoc" va bi day sang nhanh ma co dinh, khong hien ma.
+  Kiem thu voi cac ma CoD that da bat duoc loi nay truoc khi giao.
+- **Ma PIN cho ban phim gio sinh ngau nhien** thay vi co dinh `0000` (an toan
+  hon, va van dung cach lam chuan). Rieng thiet bi khong go duoc (tai nghe,
+  loa) van giu ma co dinh vi ma cua chung do nha may quy dinh - sinh ngau
+  nhien la chac chan hong.
+- **Them 2 nhanh trang thai truoc day cung bi bo roi**: `need-passkey` (thiet
+  bi doi Pi nhap ma do chinh no hien - ban phim khong dung kieu nay) va
+  `cancelled` (thiet bi huy giua chung), deu noi ro ly do thay vi im lang.
+- **Agent nay ghi log tung buoc** ra `journalctl -u bt-agent`. Truoc day chi
+  in 1 dong luc khoi dong nen ghep cap that bai la khong con dau vet nao de
+  lan ra nguyen nhan - da xac nhan dung tren may that.
+- Tai lieu: them muc giai thich vi sao ban phim chua ket noi van go duoc ma
+  xac thuc (day la cach chuan, Windows/macOS cung vay).
+
 ## 0.4.6
 
 **Tab Terminal nay giong tab SSH**: them o soan tap lenh ngay duoi khung
