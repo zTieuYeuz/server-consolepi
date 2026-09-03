@@ -21,6 +21,8 @@ import os
 import secrets
 import subprocess
 
+from flask import request
+
 
 from .layout import render_page
 
@@ -95,16 +97,19 @@ def _terminal_body(kind, base_path, session_name, service_name, warn_html):
                  f'<code>{service_name}</code> chua chay. '
                  f'Chay: <code>sudo systemctl start {service_name}</code></div>')
 
+    from .soanlenh import khoi_soan_lenh
+
     return f"""
     {banner}
-    <div class="card" style="padding:0;overflow:hidden;">
+    <div id="bao_server" class="msg ok" style="display:none;"></div>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px;">
       <iframe src="{base_path}/" title="{kind}"
-              style="width:100%;height:calc(100vh - 300px);min-height:420px;border:0;display:block;background:#000;"></iframe>
+              style="width:100%;height:calc(100vh - 330px);min-height:360px;border:0;display:block;background:#000;"></iframe>
     </div>
-    <div class="row">
-      <a class="btn" href="{base_path}/">↗ Mo terminal toan man hinh</a>
-      <a class="btn gray" href="/commands">📚 Lay lenh tu thu vien</a>
-    </div>"""
+    <div class="row" style="margin-bottom:12px;">
+      <a class="btn gray" href="{base_path}/">↗ Mo terminal toan man hinh</a>
+    </div>
+    {khoi_soan_lenh("/terminal/paste", "consolepi-local-o-lenh")}"""
 
 
 def register_terminal(app):
@@ -117,6 +122,34 @@ def register_terminal(app):
         html = render_page(body, active="/terminal", title="Terminal",
                            subtitle="Dong lenh truc tiep tren Pi (phien tmux giu nguyen khi dong trinh duyet)")
         # Bao cho ban phim ao biet go phim vao phien tmux nao
+        return html.replace("<body>", f'<body data-tmux-session="{LOCAL_SESSION}">', 1)
+
+    @app.route("/terminal/paste", methods=["POST"])
+    def terminal_paste():
+        """
+        Dan noi dung o soan vao khung Terminal.
+
+        Goi tu fetch thi tra JSON de trang KHONG tai lai - khung terminal giu
+        nguyen phien va khong dinh hop thoai "Leave site?" cua ttyd. Goi kieu
+        form thuong (JS loi/bi tat) thi van ra trang binh thuong.
+        """
+        from .commands import dan_thong_minh
+        noi_dung = request.form.get("noi_dung", "")
+        if not noi_dung.strip():
+            ok, msg = False, "O lenh dang trong - chua co gi de dan."
+        else:
+            ok, msg = dan_thong_minh(LOCAL_SESSION, noi_dung)
+
+        if request.headers.get("X-Console-Pi") == "fetch":
+            from flask import jsonify
+            return jsonify({"ok": ok, "msg": msg})
+
+        warn = ('<strong>Luu y:</strong> Terminal cua chinh Pi voi <strong>quyen root</strong> '
+                '- go lenh can than')
+        body = _terminal_body("Terminal local", "/term-local", LOCAL_SESSION,
+                              "console-pi-term-local.service", warn)
+        html = render_page(f'<div class="msg {"ok" if ok else "err"}">{msg}</div>' + body,
+                           active="/terminal", title="Terminal", subtitle="")
         return html.replace("<body>", f'<body data-tmux-session="{LOCAL_SESSION}">', 1)
 
     @app.route("/api/send-keys", methods=["POST"])

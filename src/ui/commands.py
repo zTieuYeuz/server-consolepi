@@ -171,6 +171,50 @@ def _chup_man_hinh_tmux(session_name):
         return ""
 
 
+# Cac "vo" shell tren may - dan vao day thi an toan de dan ca khoi
+VO_SHELL = {"bash", "sh", "zsh", "dash", "fish", "ash", "ksh", "tmux"}
+
+
+def _lenh_dang_chay(session_name):
+    """Chuong trinh dang chay trong phien tmux: 'bash', 'ssh', 'microcom'..."""
+    try:
+        r = subprocess.run(["tmux", "display-message", "-p", "-t", session_name,
+                            "#{pane_current_command}"],
+                           capture_output=True, text=True, timeout=5)
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def dan_thong_minh(session_name, text):
+    """
+    Dan tap lenh, TU CHON cach dan cho dung voi thu dang o trong terminal.
+
+    Hai cach dan co diem manh nguoc nhau, chon nham la hong:
+      - Dang o SHELL cua Pi (bash): dan ca khoi kieu "bracketed paste" -
+        moi dong nam yen tai dau nhac, KHONG dong nao chay cho den khi nguoi
+        dung tu bam Enter. An toan nhat cho mot shell quyen root.
+      - Dang SSH/console VAO THIET BI MANG: khong the dan ca khoi vi CLI
+        thiet bi khong co dieu khien luong -> roi mat ky tu dau dong. Phai
+        gui tung dong va cho thiet bi in xong.
+
+    Nho `tmux display-message #{pane_current_command}` biet duoc dang chay
+    'bash' hay 'ssh'/'microcom', nen khong phai bat nguoi dung tu chon.
+    """
+    lenh = (_lenh_dang_chay(session_name) or "").lower()
+
+    if lenh in VO_SHELL:
+        ok, msg = send_to_tmux(session_name, text)
+        if ok:
+            msg = f"Dang o shell '{lenh}' nen dan ca khoi - CHUA dong nao chay. " + msg
+        return ok, msg
+
+    ok, msg = dan_tung_dong_vao_tmux(session_name, text)
+    if ok and lenh:
+        msg = f"Terminal dang chay '{lenh}' (thiet bi ngoai) nen gui tung dong. " + msg
+    return ok, msg
+
+
 def _dong_cuoi_man_hinh(text):
     dong = [l.rstrip() for l in (text or "").splitlines() if l.strip()]
     return dong[-1] if dong else ""

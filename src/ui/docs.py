@@ -139,11 +139,26 @@ cuon cua terminal. De trong o mat khau thi ket noi xong ban tu nhap nhu binh thu
 Neu qua 12 giay khong thay dau nhac, trang bao that la khong thay (thiet bi cham, dung
 khoa, hoac khong ket noi duoc) chu khong im lang coi nhu xong.</p>
 
-<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Dan tap lenh vao thiet bi - vi sao cham</h3>
-<p>Nut <em>Dan vao terminal</em> gui <strong>tung dong mot</strong>, va truoc moi dong deu
-<strong>doi thiet bi in xong</strong> (man hinh ngung doi 0,5s <em>va</em> dong cuoi giong
-dau nhac <code>#</code> <code>&gt;</code> <code>$</code>). Vi vay dan 1 tap lenh mat vai
-giay - do la co y.</p>
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">O soan tap lenh (co o CA tab Terminal lan tab SSH)</h3>
+<p>Duoi khung terminal cua ca 2 tab deu co o soan giong het nhau: chon tap lenh tu Thu vien →
+sua lai IP/ten cong → <em>Dan vao terminal</em> / <em>Copy</em> / <em>Dan tu clipboard</em>.
+Noi dung dang soan duoc giu lai khi tai lai trang, va <strong>moi tab giu rieng</strong>
+(soan do o tab SSH khong de len tab Terminal).</p>
+
+<p>Nut <em>Dan vao terminal</em> <strong>tu chon cach dan</strong> dua vao thu dang chay
+trong terminal (<code>tmux display-message -p '#{pane_current_command}'</code>):</p>
+<ul>
+<li><strong>Dang o shell cua Pi</strong> (bash/sh/zsh): dan ca khoi, <strong>khong dong nao
+chay</strong> - an toan nhat cho mot shell quyen root, ban bam Enter moi chay.</li>
+<li><strong>Dang SSH/console vao thiet bi</strong> (ssh, microcom...): gui <strong>tung dong
+mot</strong>, truoc moi dong deu <strong>doi thiet bi in xong</strong> (man hinh ngung doi
+0,5s <em>va</em> dong cuoi giong dau nhac <code>#</code> <code>&gt;</code> <code>$</code>).
+Vi vay dan mot tap lenh mat vai giay - do la co y.</li>
+</ul>
+<p><em>Gioi han that:</em> cach nhan biet dua vao TEN chuong trinh dang chay. Neu ban chay
+mot <strong>script bash</strong> tu no noi chuyen voi thiet bi thi tmux van bao la
+"bash" -&gt; se dan ca khoi. Truong hop nay hiem; voi <code>ssh</code>/<code>microcom</code>
+thong thuong thi nhan dung.</p>
 <div class="msg info"><strong>Vi sao phai lam vay:</strong> CLI thiet bi mang khong co dieu
 khien luong. Ban ca khoi ra 1 luot thi trong luc thiet bi con dang in ket qua lenh truoc,
 ky tu dau cua dong ke tiep bi ROI MAT - loi that da gap: <code>show inventory</code> toi

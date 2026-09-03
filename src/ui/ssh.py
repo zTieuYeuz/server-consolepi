@@ -21,7 +21,6 @@ TU DIEN MAT KHAU - vi sao KHONG dung sshpass:
   - Neu qua 12 giay khong thay dau nhac (thiet bi cham, dung khoa, khong ket
     noi duoc...) thi BAO THAT la khong thay, khong im lang coi nhu xong.
 """
-import json
 import re
 import subprocess
 import time
@@ -29,7 +28,8 @@ import time
 from flask import request
 
 from .layout import render_page
-from .commands import load_library, dan_tung_dong_vao_tmux
+from .commands import load_library, dan_thong_minh
+from .soanlenh import khoi_soan_lenh
 from .terminal import SSH_SESSION, tmux_session_exists, service_active
 
 # Dau nhac mat khau cua ssh ("...'s password:", "Enter passphrase for key ...:")
@@ -148,128 +148,44 @@ SSH_JS = """
 <script>
 (function () {
   "use strict";
-  var o = document.getElementById("o_lenh");
-  if (!o) return;
-  var chon = document.getElementById("chon_tap");
-  var bao = document.getElementById("bao_js");
+  var formKetNoi = document.getElementById("form_ket_noi");
+  if (!formKetNoi) return;
   var baoServer = document.getElementById("bao_server");
-  var KHOA_LUU = "consolepi-ssh-o-lenh";
 
-  function noi(chuoi, xau) {
-    bao.textContent = chuoi;
-    bao.style.color = xau ? "#ffd166" : "#8b93a1";
-  }
-
-  // ---------------------------------------------------------------------
-  // Gui form bang fetch, KHONG tai lai trang.
-  //
-  // Truoc day 2 nut nay la form POST binh thuong nen moi lan bam la trang
-  // tai lai -> trinh duyet hoi "Leave site?" (do ttyd trong khung terminal
-  // co dang ky canh bao truoc khi roi trang de khoi mat phien), va khung
-  // terminal cung bi nap lai tu dau. Gui bang fetch thi terminal giu nguyen,
-  // khong con hop thoai nao.
-  // ---------------------------------------------------------------------
-  function hienServer(chuoi, ok) {
-    baoServer.textContent = chuoi;
-    baoServer.className = "msg " + (ok ? "ok" : "err");
-    baoServer.style.display = chuoi ? "block" : "none";
-  }
-
-  function guiForm(form, nut, chuNut) {
+  // Gui bang fetch, KHONG tai lai trang. Truoc day day la form POST binh
+  // thuong nen moi lan bam Ket noi la ca trang tai lai -> trinh duyet hoi
+  // "Leave site?" (ttyd co dang ky canh bao truoc khi roi trang de khoi mat
+  // phien), va khung terminal cung bi nap lai tu dau.
+  formKetNoi.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var nut = document.getElementById("nut_ket_noi");
     var chuCu = nut.innerHTML;
-    nut.disabled = true;
-    nut.innerHTML = chuNut;
-    hienServer("", true);
-    fetch(form.action, {
-      method: "POST",
-      body: new FormData(form),
-      headers: { "X-Console-Pi": "fetch" },
-      cache: "no-store"
+    var oMk = formKetNoi.querySelector("[name=password]");
+    nut.disabled = true; nut.innerHTML = "Dang ket noi...";
+    baoServer.style.display = "none";
+
+    fetch(formKetNoi.action, {
+      method: "POST", body: new FormData(formKetNoi),
+      headers: { "X-Console-Pi": "fetch" }, cache: "no-store"
     })
       .then(function (r) {
         if (!r.ok) throw new Error("Server tra ve HTTP " + r.status);
         return r.json();
       })
-      .then(function (d) { hienServer(d.msg, d.ok); })
-      .catch(function (e) { hienServer("Khong lien lac duoc voi server: " + e.message, false); })
+      .then(function (d) {
+        baoServer.textContent = d.msg;
+        baoServer.className = "msg " + (d.ok ? "ok" : "err");
+        baoServer.style.display = "block";
+      })
+      .catch(function (err) {
+        baoServer.textContent = "Khong lien lac duoc voi server: " + err.message;
+        baoServer.className = "msg err";
+        baoServer.style.display = "block";
+      })
       .finally(function () { nut.disabled = false; nut.innerHTML = chuCu; });
-  }
 
-  var formKetNoi = document.getElementById("form_ket_noi");
-  formKetNoi.addEventListener("submit", function (e) {
-    e.preventDefault();
-    guiForm(formKetNoi, document.getElementById("nut_ket_noi"), "Dang ket noi...");
     // Xoa mat khau khoi man hinh ngay sau khi gui di
-    formKetNoi.querySelector("[name=password]").value = "";
-  });
-
-  var formDan = document.getElementById("form_dan");
-  formDan.addEventListener("submit", function (e) {
-    e.preventDefault();
-    guiForm(formDan, document.getElementById("nut_dan"), "Dang dan...");
-  });
-
-  // Giu lai noi dung dang soan khi tai lai trang / bam Ket noi. Chi luu tren
-  // may dang dung, khong gui ve server.
-  function luu() { try { localStorage.setItem(KHOA_LUU, o.value); } catch (e) {} }
-  o.addEventListener("input", luu);
-  if (!o.value) {
-    try {
-      var cu = localStorage.getItem(KHOA_LUU);
-      if (cu) o.value = cu;
-    } catch (e) {}
-  } else {
-    luu();
-  }
-
-  document.getElementById("nut_chep").addEventListener("click", function () {
-    var i = chon.value;
-    if (i === "") { noi("Chon 1 tap lenh trong danh sach truoc.", true); return; }
-    o.value = THU_VIEN[i].lenh;
-    luu();
-    noi("Da chep \\"" + THU_VIEN[i].ten + "\\" vao o. Sua lai IP/ten cho dung roi dan.");
-  });
-
-  function copyCachCu() {
-    // Trang chay HTTP thuong (vao bang IP trong LAN) thi navigator.clipboard
-    // KHONG ton tai - trinh duyet chi cho dung Clipboard API o ngu canh bao
-    // mat (HTTPS hoac localhost). execCommand cu van chay duoc tren HTTP.
-    try {
-      o.focus(); o.select();
-      var ok = document.execCommand("copy");
-      noi(ok ? "Da copy noi dung o lenh." :
-               "Trinh duyet khong cho copy tu dong - noi dung da duoc boi den, copy tay giup em.", !ok);
-    } catch (e) {
-      noi("Trinh duyet khong cho copy tu dong - noi dung da duoc boi den, copy tay giup em.", true);
-    }
-  }
-
-  document.getElementById("nut_copy").addEventListener("click", function () {
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(o.value).then(
-        function () { noi("Da copy noi dung o lenh."); },
-        function () { copyCachCu(); }
-      );
-    } else {
-      copyCachCu();
-    }
-  });
-
-  document.getElementById("nut_dan_cb").addEventListener("click", function () {
-    if (navigator.clipboard && navigator.clipboard.readText && window.isSecureContext) {
-      navigator.clipboard.readText().then(function (t) {
-        o.value = t; luu(); noi("Da dan noi dung tu clipboard vao o.");
-      }, function () {
-        noi("Trinh duyet chan doc clipboard. Cham vao o roi dan tay, hoac dung ban phim ao.", true);
-      });
-    } else {
-      noi("Vao bang HTTP nen trinh duyet khong cho doc clipboard. Cham vao o roi dan tay, " +
-          "hoac dung ban phim ao.", true);
-    }
-  });
-
-  document.getElementById("nut_xoa").addEventListener("click", function () {
-    o.value = ""; luu(); noi("Da xoa o lenh.");
+    oMk.value = "";
   });
 })();
 </script>
@@ -277,29 +193,7 @@ SSH_JS = """
 
 
 def _render(msg="", ok=True, prefill=""):
-    lib = load_library()
     term_running = service_active("console-pi-term-ssh.service")
-
-    lib_options = "".join(
-        f'<option value="{i}">{_esc(it.get("name"))}</option>' for i, it in enumerate(lib)
-    )
-    # Nhung du lieu do NGUOI DUNG TU NHAP vao trong the <script> - phai chan
-    # duong thoat ra ngoai chay ma doc hai:
-    #   - ensure_ascii=True: moi ky tu ngoai ASCII thanh \\uXXXX, khong bao gio
-    #     lam vo cu phap JS (ke ca U+2028/U+2029 von lam vo chuoi JS).
-    #   - Doi < > & thanh \\u003c \\u003e \\u0026: trong JSON, 3 ky tu nay chi
-    #     xuat hien BEN TRONG chuoi nen doi la an toan, va sau khi doi thi
-    #     trang khong con ky tu "<" tho nao trong the <script>.
-    #     DA THU THAT: chi thay "</" bang "<\\/" la CHUA DU - mot tap lenh chua
-    #     "<script>" van lot vao nguyen ven, ma theo chuan HTML, gap "<script"
-    #     ben trong the script se day bo phan tich sang trang thai dac biet
-    #     (script data double escaped) khien the </script> ke tiep KHONG con
-    #     dong the nua -> vo trang / mo duong chen ma.
-    lib_json = (json.dumps(
-        [{"ten": it.get("name", ""), "lenh": it.get("commands", "")} for it in lib],
-        ensure_ascii=True,
-    ).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026"))
-
     msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
     term_status = ("" if term_running else
                    '<div class="msg err">Dich vu terminal SSH chua chay: '
@@ -331,27 +225,7 @@ def _render(msg="", ok=True, prefill=""):
               style="width:100%;height:calc(100vh - 330px);min-height:360px;border:0;display:block;background:#000;"></iframe>
     </div>
 
-    <form method="POST" action="/ssh/paste" id="form_dan">
-      <div class="row" style="margin-bottom:8px;">
-        <select id="chon_tap" style="max-width:300px;">
-          <option value="">-- Chon tap lenh tu Thu vien --</option>
-          {lib_options}
-        </select>
-        <button type="button" class="gray" id="nut_chep">📄 Chep vao o</button>
-      </div>
-      <textarea name="noi_dung" id="o_lenh" style="max-width:100%;min-height:110px;"
-                placeholder="Go lenh o day, hoac chon tap lenh o tren roi sua lai IP/ten cong...">{_esc(prefill)}</textarea>
-      <div class="row" style="margin-top:10px;">
-        <button type="submit" class="blue" id="nut_dan">⌨️ Dan vao terminal</button>
-        <button type="button" class="gray" id="nut_copy">📋 Copy</button>
-        <button type="button" class="gray" id="nut_dan_cb">📥 Dan tu clipboard</button>
-        <button type="button" class="gray" id="nut_xoa">🧹 Xoa o</button>
-      </div>
-      <p id="bao_js" style="color:#8b93a1;font-size:13px;margin:9px 0 0;min-height:18px;">Dan =
-      gui tung dong mot (thiet bi khong roi mat chu); dong CUOI chua bam Enter de anh doc lai.</p>
-    </form>
-
-    <script>var THU_VIEN = {lib_json};</script>
+    {khoi_soan_lenh("/ssh/paste", "consolepi-ssh-o-lenh", prefill)}
     {SSH_JS}"""
 
     html = render_page(body, active="/ssh", title="SSH", subtitle="")
@@ -397,9 +271,10 @@ def register_ssh(app):
         noi_dung = request.form.get("noi_dung", "")
         if not noi_dung.strip():
             return _tra_ve(False, "O lenh dang trong - chua co gi de dan.", noi_dung)
-        # Gui TUNG DONG co giai lao: thiet bi mang khong roi mat ky tu dau
-        # dong (xem giai thich trong dan_tung_dong_vao_tmux).
-        ok, msg = dan_tung_dong_vao_tmux(SSH_SESSION, noi_dung)
+        # Tu chon cach dan cho dung voi thu dang chay trong terminal (dang
+        # SSH vao thiet bi thi gui tung dong; con dang o shell thi dan ca
+        # khoi, khong dong nao chay). Xem dan_thong_minh().
+        ok, msg = dan_thong_minh(SSH_SESSION, noi_dung)
         return _tra_ve(ok, msg, noi_dung)
 
     return app

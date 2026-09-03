@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.6
+
+**Tab Terminal nay giong tab SSH**: them o soan tap lenh ngay duoi khung
+terminal (chon tap lenh tu Thu vien -> sua -> Copy / Dan tu clipboard / Dan vao
+terminal), gui bang fetch nen khong tai lai trang va khong dinh hop thoai
+"Leave site?". Khung terminal cung cao them (`100vh-330px`).
+
+Khoi soan lenh duoc tach ra `src/ui/soanlenh.py` dung chung cho ca 2 tab - sua
+1 lan la ca 2 cung duoc, khong bi lech nhau theo thoi gian. Moi tab giu rieng
+noi dung dang soan (soan do o tab SSH khong de len tab Terminal).
+
+**Nut Dan tu chon dung cach dan** dua vao chuong trinh dang chay trong terminal
+(`tmux display-message -p '#{pane_current_command}'`):
+- Dang o **shell cua Pi** (bash/sh/zsh): dan ca khoi, **khong dong nao chay** -
+  an toan cho shell quyen root, nguoi dung bam Enter moi chay.
+- Dang **SSH/console vao thiet bi** (ssh, microcom...): gui tung dong, cho
+  thiet bi in xong moi gui tiep (khoi roi mat ky tu dau dong), dong cuoi de
+  nguoi dung tu bam Enter.
+
+Chon nham cach la hong: dan ca khoi vao thiet bi thi mat chu, con gui tung
+dong vao shell quyen root thi tung lenh se CHAY luon. Da kiem chung: bash ->
+'bash', chay ssh -> 'ssh', chay python3 -> 'python3'. *Gioi han that da do
+duoc:* neu chay mot **script bash** tu no noi chuyen voi thiet bi thi tmux van
+bao "bash" nen se dan ca khoi - truong hop hiem, da ghi ro trong tai lieu.
+
 ## 0.4.5
 
 **Trang Tai lieu lam lai theo tab** cho de tra, de doc, de tim:
