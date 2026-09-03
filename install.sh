@@ -459,6 +459,18 @@ if [[ -f "$SRC_DIR/config/nginx-console-pi.conf" ]]; then
     fi
 fi
 
+# --- ssh client: cho phep ket noi toi thiet bi mang cu ---
+# OpenSSH ban moi bo mac dinh KEX/host-key/cipher dua tren SHA-1 - hau het
+# switch/router doi cu (chinh la thu Console Pi dung de chan doan) chi ho
+# tro dung nhung thuat toan cu do. Khong co file nay thi SSH toi thiet bi
+# cu bao thang "no matching key exchange method found", khong ket noi duoc
+# gi ca - da gap that tren chinh thiet bi cua nguoi dung.
+if [[ -f "$SRC_DIR/config/ssh_config-legacy-devices.conf" ]]; then
+    install -m 644 "$SRC_DIR/config/ssh_config-legacy-devices.conf" \
+            /etc/ssh/ssh_config.d/consolepi-legacy-devices.conf
+    ok "Da cho phep SSH client ket noi thiet bi mang cu (KEX/cipher SHA-1)"
+fi
+
 # --- lldpd: bat tuong thich CDP (switch Cisco) ---
 if [[ -f /etc/default/lldpd ]] && ! grep -q '^DAEMON_ARGS=".*-c' /etc/default/lldpd; then
     sed -i 's/^#*DAEMON_ARGS=.*/DAEMON_ARGS="-c"/' /etc/default/lldpd
