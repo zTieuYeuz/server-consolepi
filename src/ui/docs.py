@@ -570,6 +570,62 @@ duong ham ra ngoai, nen chay duoc ca sau 4G va sau nhieu lop NAT.</p>
 da co lop dang nhap bang tai khoan Linux. Nen bat them <strong>Cloudflare Access</strong>
 de chan ngay tu bien. Token luu quyen 600, chi root doc duoc - ai co token deu dung
 lai duoc duong ham, dung gui qua chat hay email. Xong viec thi tat duong ham.</p>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Dung qua hotspot 4G/5G tu dien thoai</h3>
+<div class="msg ok"><strong>Da sua va kiem chung that (v0.4.18).</strong> Kich ban: o cong ty
+khong co WiFi, Bluetooth bi cam, day mang bi <em>port-security</em> chan - chi con cach
+phat hotspot tu dien thoai cho Pi dung. Truoc day tunnel <strong>fail</strong> trong dung
+tinh huong nay.</div>
+<p><strong>Nguyen nhan that</strong> (doc duoc tu <code>journalctl -u console-pi-tunnel</code>):
+<code>write udp [::]:... sendmsg: network is unreachable</code>. Cloudflared mac dinh dung
+<strong>QUIC (giao thuc chay tren UDP)</strong>, ma mang di dong rat hay chan hoac khong on
+dinh voi UDP; kem theo do la mang di dong thuong cap dia chi IPv6 nhung duong di IPv6 thuc
+te lai khong hoat dong.</p>
+<p><strong>Cach sua:</strong> ep cloudflared dung <strong>HTTP2 qua TCP cong 443</strong> -
+duong nay gan nhu luon duoc cho qua vi khong phan biet duoc voi luu luong HTTPS binh thuong:</p>
+<pre>ExecStart=... cloudflared --no-autoupdate --protocol http2 --edge-ip-version 4 tunnel run ...</pre>
+<p>Kiem tra dang chay dung giao thuc nao:</p>
+<pre>journalctl -u console-pi-tunnel | grep -i "primary protocol\\|Registered tunnel"
+* Phai thay: "cloudflared will use 'http2' as primary protocol"
+* Va: "Registered tunnel connection ... protocol=http2"</pre>
+<div class="msg warn"><strong>Luu y ky thuat quan trong cho ban sau:</strong> co
+<code>--protocol</code> da bi cloudflared ban moi (2026.8.3) <strong>an khoi</strong>
+<code>--help</code> nhung <em>van hoat dong that su</em> - da kiem chung: mot co khong ton tai
+se bi tu choi ngay ("flag provided but not defined"), con <code>--protocol</code> thi duoc
+chap nhan binh thuong. Neu ban cloudflared tuong lai go han co nay thi se can ghim lai
+phien ban cu hon.</div>
+<p><strong>Neu van khong vao duoc:</strong> loi <code>403</code> kem chu
+<em>"Cloudflare Access"</em> la <strong>binh thuong</strong> - do la lop xac thuc o bien,
+phai dang nhap bang tai khoan da cau hinh trong Cloudflare Zero Trust, khong phai loi
+duong ham. Duong ham hong that thi Cloudflare tra loi <code>502</code> hoac
+<code>523</code> chu khong phai trang Access.</p>
+"""),
+
+    ("nhatky", "📋 Nhat ky loi - khi can check lai", """
+<p>Tab <strong>Nhat ky loi</strong> tren thanh menu gom 2 phan, khong can nho lenh nao:</p>
+<ul>
+<li><strong>Loi ung dung</strong>: moi loi Python <em>khong duoc bat</em> trong dashboard,
+kem <strong>traceback day du</strong> va thoi diem xay ra. Truoc day nhung loi nay chi hien
+1 trang loi chung chung roi bien mat khong con dau vet - ngoai hien truong khong con cach
+nao biet chuyen gi da xay ra.</li>
+<li><strong>Canh bao dich vu</strong>: doc journal cua tung dich vu chinh (dashboard,
+tunnel, bluetooth, nginx...) nhung <em>chi loc canh bao/loi</em>, bo qua cac dong thong bao
+binh thuong - cung du lieu ma <code>journalctl -u &lt;dich vu&gt;</code> cho ra.</li>
+</ul>
+<pre>* File nhat ky loi ung dung
+/var/log/console-pi-errors.log
+
+* Xem bang dong lenh neu muon
+sudo tail -50 /var/log/console-pi-errors.log
+sudo journalctl -u console-pi-dashboard -p warning -n 50</pre>
+<div class="msg info"><strong>Khong lo day the nho:</strong> file nay tu xoay vong o muc 2MB
+(giu 3 ban cu, toi da ~8MB). Cac nhat ky khac cua Console Pi (fallback WiFi, netmiko, API,
+selftest) duoc xoay vong bang <code>logrotate</code>, cau hinh o
+<code>/etc/logrotate.d/console-pi</code> - hang tuan hoac khi vuot 5MB, giu 4 ban nen.
+Day the nho la mot trong nhung nguyen nhan hong Pi pho bien nhat.</div>
+<p><strong>Nhat ky nay chi ghi loi THAT SU</strong> (loi bat ngo trong ma nguon). Cac loi ma
+cong cu da tu bao ro tren man hinh (vd "khong ket noi duoc thiet bi", "qua thoi gian cho")
+<em>khong</em> ghi vao day - chung da hien ngay luc do roi, ghi them chi lam nhieu.</p>
 """),
 
     ("tukiemtra", "✅ Tu kiem tra sau khi khoi dong lai", """
@@ -855,7 +911,7 @@ file. May da co san file thi giu nguyen quyen mac dinh 644.</p>
 # Xep cac muc thanh nhom cho de tra cuu. Muc nao quen xep nhom van hien ra
 # (o nhom "Khac") chu khong bi mat - them muc moi khong so lam mat tai lieu.
 NHOM = [
-    ("He thong", ["kientruc", "dangnhap", "vitri", "services", "update", "tukiemtra"]),
+    ("He thong", ["kientruc", "dangnhap", "vitri", "services", "update", "tukiemtra", "nhatky"]),
     ("Ket noi", ["wifi", "bluetooth", "tuxa", "camthang"]),
     ("Lam viec hang ngay", ["terminal", "console", "mau", "khofile", "manhinh"]),
     ("Cong cu mang", ["porttest", "congcumoi"]),

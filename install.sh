@@ -481,6 +481,17 @@ if [[ -f "$SRC_DIR/config/ssh_config-legacy-devices.conf" ]]; then
     ok "Da cho phep SSH client ket noi thiet bi mang cu (KEX/cipher SHA-1)"
 fi
 
+# --- logrotate: khong de nhat ky lam day the nho ---
+# Pi dung ngoai hien truong nhieu thang lien, cac file nhat ky tu ghi them
+# mai. Da do that: console-pi-fallback.log ghi 1 dong moi 2 phut, sau vai
+# thang co the len hang tram MB. Day the la mot trong nhung nguyen nhan
+# hong Pi pho bien nhat va rat kho chan doan khi dang o hien truong.
+if [[ -f "$SRC_DIR/config/logrotate-console-pi" ]]; then
+    install -m 644 "$SRC_DIR/config/logrotate-console-pi" \
+            /etc/logrotate.d/console-pi
+    ok "Da bat xoay vong nhat ky (khong lo day the nho)"
+fi
+
 # --- lldpd: bat tuong thich CDP (switch Cisco) ---
 if [[ -f /etc/default/lldpd ]] && ! grep -q '^DAEMON_ARGS=".*-c' /etc/default/lldpd; then
     sed -i 's/^#*DAEMON_ARGS=.*/DAEMON_ARGS="-c"/' /etc/default/lldpd

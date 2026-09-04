@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.4.18
+
+**1. SUA LOI TUNNEL KHONG CHAY DUOC TREN HOTSPOT DIEN THOAI** (da fail that
+o cong ty). Kich ban: khong co WiFi, Bluetooth bi cam, day mang bi
+port-security chan - chi con hotspot 4G/5G tu dien thoai.
+
+Nguyen nhan doc duoc tu log that: `write udp [::]:... sendmsg: network is
+unreachable`. Cloudflared mac dinh dung **QUIC (chay tren UDP)**, ma mang di
+dong rat hay chan/khong on dinh voi UDP; kem theo do la mang di dong thuong
+cap IPv6 nhung duong di IPv6 thuc te khong hoat dong.
+
+Sua: ep `--protocol http2` (TCP cong 443, gan nhu luon duoc cho qua vi
+khong phan biet duoc voi HTTPS thuong) va `--edge-ip-version 4`. Da kiem
+chung that sau khi sua: `cloudflared will use 'http2' as primary protocol`,
+ca 2 ket noi deu `protocol=http2`, **0 loi trong 30 giay theo doi lien tuc**.
+
+*Chi tiet ky thuat quan trong*: co `--protocol` da bi ban cloudflared moi
+(2026.8.3) AN KHOI `--help` nhung VAN HOAT DONG - kiem chung bang cach so
+sanh voi mot co khong ton tai (co la bi tu choi ngay, `--protocol` thi duoc
+chap nhan binh thuong). Neu ban tuong lai go han co nay thi phai ghim lai
+phien ban cu hon.
+
+**2. HE THONG NHAT KY LOI** - tab moi "Nhat ky loi" tren menu:
+- Ghi lai **moi loi Python khong duoc bat** trong dashboard kem traceback
+  day du (truoc day chi hien trang loi chung chung roi bien mat khong dau
+  vet - o hien truong khong con cach nao biet chuyen gi da xay ra).
+- Xem duoc canh bao/loi journal cua tung dich vu chinh ngay tren web,
+  khong can nho lenh `journalctl`.
+- Tu xoay vong o 2MB (giu 3 ban, toi da ~8MB), khong lo day the nho.
+
+*LOI THAT DA BAT DUOC KHI VIET TINH NANG NAY (truoc khi trien khai)*: cach
+lam ban dau la "ghi log roi `raise` lai loi nguyen van" voi y dinh khong doi
+hanh vi. Nhung Flask goi `errorhandler(Exception)` o **hai cho** khac nhau,
+va `raise` lai o lan goi thu hai se thoat ra ngoai ca tang WSGI - lam
+**trinh duyet nhan ket noi bi ngat** thay vi trang loi 500, va con bien
+**loi 404 binh thuong thanh 500**. Neu trien khai ban do thi te hon han so
+voi truoc khi co tinh nang. Da phat hien qua kiem thu HTTP that (khong phai
+test client, vi test client co hanh vi khac) va sua thanh tra ve response
+truc tiep, khong `raise` o bat ky nhanh nao.
+
+**3. XOAY VONG NHAT KY (logrotate)** cho cac file log con lai: da do that
+`console-pi-fallback.log` ghi 1 dong moi 2 phut va chua tung duoc xoay vong -
+sau vai thang dung ngoai hien truong co the len hang tram MB. Day the nho
+la mot trong nhung nguyen nhan hong Pi pho bien nhat.
+
 ## 0.4.17
 
 **Va lo hong chen co lenh (argument injection) qua dia chi/tai khoan** o 4

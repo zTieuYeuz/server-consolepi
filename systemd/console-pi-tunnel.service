@@ -10,7 +10,28 @@ StartLimitIntervalSec=0
 Type=notify
 # Token nam trong file rieng quyen 600, KHONG dat thang trong dong lenh:
 # dong lenh cua tien trinh ai cung doc duoc qua `ps`.
-ExecStart=/bin/sh -c 'exec /usr/bin/cloudflared --no-autoupdate tunnel run --token "$(cat /etc/cloudflared/console-pi-token)"'
+#
+# --protocol http2: EP HAN dung HTTP2 qua TCP/443 thay vi QUIC (mac dinh)
+# qua UDP. LOI THAT DA GAP tren mang hotspot 4G/5G tu dien thoai (dung o
+# cong ty khi khong co WiFi/Bluetooth, day mang bi port-security chan nen
+# chi con duong hotspot dien thoai): log that "write udp [::]:.. sendmsg:
+# network is unreachable" - nha mang di dong thuong chan/khong on dinh voi
+# UDP noi chung (khong rieng gi QUIC), day la nguyen nhan hay gap nhat khi
+# mot dich vu tunnel/VPN chay tot tren WiFi/LAN nhung rot lien tuc tren
+# mang di dong. TCP/443 (HTTP2) gan nhu luon duoc cho qua vi khong the
+# phan biet duoc voi luu luong HTTPS thong thuong.
+#
+# CHI TIET KY THUAT QUAN TRONG: co --protocol da bi cloudflared ban moi
+# (2026.8.3) AN KHOI --help (khong con hien trong tai lieu), nhung VAN
+# CON HOAT DONG THAT SU - da kiem chung: mot co khong ton tai se bi tu choi
+# ngay ("flag provided but not defined"), con --protocol thi duoc chap
+# nhan va di thang toi buoc kiem tra token. Neu ban cloudflared tuong lai
+# go han co nay, se can tim cach khac (vd ghim lai phien ban cu hon).
+#
+# --edge-ip-version 4: giu them de phong further - mang di dong hay cap
+# IPv6 nhung duong di IPv6 thuc te khong hoat dong, du dang dung HTTP2 hay
+# QUIC thi van nen uu tien IPv4 truoc cho chac.
+ExecStart=/bin/sh -c 'exec /usr/bin/cloudflared --no-autoupdate --protocol http2 --edge-ip-version 4 tunnel run --token "$(cat /etc/cloudflared/console-pi-token)"'
 Restart=always
 RestartSec=5
 

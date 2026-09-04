@@ -76,6 +76,52 @@ def _loi_sai_phuong_thuc(e):
     return redirect(dich)
 
 
+@app.errorhandler(Exception)
+def _ghi_loi_toan_cuc(e):
+    """
+    Ghi MOI loi Python khong duoc bat (unhandled exception) vao nhat ky
+    tap trung truoc khi tra loi 500 binh thuong cho trinh duyet - xem
+    trang /logs.
+
+    VI SAO CAN: truoc day 1 loi bat ngo trong bat ky route nao chi hien 1
+    trang loi chung chung roi BIEN MAT khong con dau vet - ngoai hien truong
+    (cong ty, mang la, khong co ai de hoi ngay) khong con cach nao biet
+    chuyen gi da xay ra. Nay moi loi deu duoc ghi lai kem traceback day du,
+    xem lai duoc bat cu luc nao qua /logs, khong can nho lenh journalctl.
+
+    LOI THAT DA GAP KHI VIET HAM NAY (bat duoc truoc khi trien khai, khong
+    phai sau khi hong that): ban dau ham nay "ghi log roi raise lai nguyen
+    van loi" voi y dinh "chi them, khong doi hanh vi". NHUNG Flask goi
+    @app.errorhandler(Exception) o HAI CHO khac nhau - mot lan trong luc
+    dispatch (handle_user_exception), MOT LAN NUA o tang WSGI cuoi cung
+    (handle_exception, khi khong con noi nao bat duoc nua). raise lai o
+    LAN GOI THU HAI se thoat hang ra NGOAI CA TANG WSGI - khong con la loi
+    Python o trong app nua ma la loi ơ tang server, ket qua la TRINH DUYET
+    NHAN DUOC KET NOI BI NGAT thay vi trang loi 500 binh thuong (da kiem
+    chung that qua HTTP that truoc khi sua, khong doan mo). Neu trien khai
+    ban dau do thi MOI loi khong duoc bat trong toan bo dashboard se lam
+    nguoi dung thay trang trang/mat ket noi thay vi trang loi ro rang - te
+    hon ca truoc khi co tinh nang ghi log nay.
+
+    Sua: KHONG raise lai o CA HAI nhanh. Nhanh HTTPException (404, 403...)
+    cung KHONG duoc raise - da kiem chung that: raise lai o day khien Flask
+    coi day la loi khong xu ly duoc, bien 1 loi 404 binh thuong thanh 500 -
+    tra ve `e.get_response()` moi giu dung nguyen ma trang thai va noi dung
+    goc cua loi HTTP do (405 van do handler rieng ben tren xu ly truoc vi
+    Flask uu tien handler dang ky cho DUNG ma trang thai hon la handler
+    dang ky cho Exception noi chung).
+    """
+    from werkzeug.exceptions import HTTPException, InternalServerError
+    if isinstance(e, HTTPException):
+        return e.get_response()
+    try:
+        from ui.errlog import ghi_loi
+        ghi_loi(request.path, f"{type(e).__name__}: {e}", ngoai_le=e)
+    except Exception:
+        pass
+    return InternalServerError().get_response()
+
+
 if __name__ == "__main__":
     # threaded=True: cac cong cu quet mang co the block vai giay,
     # khong duoc de treo ca dashboard

@@ -1,0 +1,26 @@
+# Console Pi - xoay vong nhat ky, tranh lam day the nho
+#
+# VI SAO CAN: Pi dung ngoai hien truong nhieu thang lien, cac file nhat ky
+# tu ghi them mai khong ai xoa. Da do that: console-pi-fallback.log da 80KB
+# va TANG LIEN TUC (moi 2 phut ghi 1 dong khi kiem tra WiFi) - sau vai thang
+# co the len hang tram MB. The nho Pi thuong chi 8-32GB va DAY THE la mot
+# trong nhung nguyen nhan hong Pi pho bien nhat (he thong khong ghi duoc
+# gi nua, dich vu chet hang loat, rat kho chan doan khi dang o hien truong).
+#
+# Nhat ky loi cua dashboard (console-pi-errors.log) da tu xoay vong bang
+# RotatingFileHandler trong Python, KHONG dua vao day de tranh 2 co che
+# xoay vong danh nhau tren cung 1 file.
+/var/log/console-pi-fallback.log
+/var/log/console-pi-netmiko.log
+/var/log/console-pi-api.log
+/var/log/console-pi-selftest.log
+{
+    weekly
+    rotate 4
+    size 5M
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

@@ -56,6 +56,10 @@ if [[ "$PURGE" == "yes" ]]; then
     # ssh tren chinh may nay, an toan de xoa khi purge.
     rm -f /etc/ssh/ssh_config.d/consolepi-legacy-devices.conf
 
+    # Cau hinh xoay vong nhat ky + cac file nhat ky do Console Pi tao ra
+    rm -f /etc/logrotate.d/console-pi
+    rm -f /var/log/console-pi-*.log /var/log/console-pi-*.log.*
+
     # udev rules rieng cua Console Pi (dat ten cong serial, xoay man hinh
     # cham, doi ten WiFi). Chi xoa khi purge - ban cai lai thong thuong
     # (khong purge) van can giu de "cai lai nhieu lan khong mat gi".
