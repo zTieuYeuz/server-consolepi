@@ -599,6 +599,27 @@ phien ban cu hon.</div>
 phai dang nhap bang tai khoan da cau hinh trong Cloudflare Zero Trust, khong phai loi
 duong ham. Duong ham hong that thi Cloudflare tra loi <code>502</code> hoac
 <code>523</code> chu khong phai trang Access.</p>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">DNS du phong - ly do that lam tunnel chet o mang la</h3>
+<div class="msg err"><strong>Day moi la nguyen nhan chinh khi "cam day mang thi duoc,
+dung WiFi thi khong".</strong> May chu DNS do DHCP cap <em>chi ton tai trong mang do</em>.
+Mang Pi sang noi khac (hotspot dien thoai o cong ty) thi DNS cu khong con lien lac duoc -
+khong phan giai duoc ten mien nao ca, cloudflared khong tim duoc
+<code>region1.v2.argotunnel.com</code> nen <strong>duong ham chet</strong>. Log that:
+<code>Failed to refresh DNS local resolver ... i/o timeout</code>.</div>
+<p><strong>Da sua (v0.4.19):</strong> them DNS cong cong <code>1.1.1.1</code> va
+<code>8.8.8.8</code> lam du phong cho ca eth0 (NetworkManager) lan wlan0
+(systemd-networkd). Cai lai bang <code>install.sh</code> cung tu dat lai, khong mat.</p>
+<pre>* Kiem tra nhanh
+cat /etc/resolv.conf          (phai thay 1.1.1.1 va 8.8.8.8)
+sudo /opt/console-pi/scripts/selftest.sh | grep -A3 "DNS du phong"</pre>
+<div class="msg warn"><strong>Con mot bay nua khi o cong ty:</strong> duong ra qua
+<code>eth0</code> luon duoc uu tien hon <code>wlan0</code> (metric 100 so voi 1024). Neu
+cam day mang ma day do bi <em>port-security</em> chan, may van co gang di ra bang day do
+va chet, du WiFi hotspot van tot. <strong>Cach chac an nhat: RUT HAN day mang khi dung
+hotspot dien thoai.</strong> Kiem tra dang di ra bang duong nao:
+<pre>ip route get 1.1.1.1
+* Phai thay "dev wlan0" khi dung hotspot dien thoai</pre></div>
 """),
 
     ("nhatky", "📋 Nhat ky loi - khi can check lai", """

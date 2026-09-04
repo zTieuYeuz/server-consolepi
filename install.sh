@@ -215,13 +215,27 @@ say "Cau hinh he thong"
 # --- systemd-networkd: giu IP tinh cua AP khong bi xoa ---
 mkdir -p /etc/systemd/network
 if [[ ! -f /etc/systemd/network/12-wlan0.network ]] || \
-   ! grep -q "KeepConfiguration=static" /etc/systemd/network/12-wlan0.network 2>/dev/null; then
+   ! grep -q "KeepConfiguration=static" /etc/systemd/network/12-wlan0.network 2>/dev/null || \
+   ! grep -q "^DNS=" /etc/systemd/network/12-wlan0.network 2>/dev/null; then
     cat > /etc/systemd/network/12-wlan0.network <<'EOF'
 [Match]
 Name=wlan0
 
 [Network]
 DHCP=ipv4
+# DNS DU PHONG - LOI THAT DA GAP (fail o cong ty):
+# May chu DNS do DHCP cap chi ton tai TRONG MANG DO. Khi mang mang Pi sang
+# noi khac (vd hotspot 4G/5G tu dien thoai o cong ty), DNS cu khong con lien
+# lac duoc nua -> khong phan giai duoc ten mien nao -> cloudflared khong tim
+# duoc "region1.v2.argotunnel.com" -> DUONG HAM TU XA CHET. Log that:
+# 'Failed to refresh DNS local resolver error="lookup
+#  region1.v2.argotunnel.com: i/o timeout"'.
+#
+# Hai dong duoi day la DU PHONG, dung SAU DNS cua DHCP (khong thay the):
+# mang nao co DNS rieng hoat dong thi van uu tien dung DNS do (de phan giai
+# duoc ten may noi bo), chet moi rot sang DNS cong cong.
+DNS=1.1.1.1
+DNS=8.8.8.8
 # KHONG xoa IP "la" (vd 192.168.50.1 cua AP do script tu gan) khi reconfigure.
 # Thieu dong nay: bat AP xong bi systemd-networkd am tham xoa mat IP.
 #

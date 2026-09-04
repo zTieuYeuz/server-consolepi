@@ -144,6 +144,24 @@ else
     tach "Khong thay giao dien eth0"
 fi
 
+# ------------------------------------------------- DNS du phong (mang la)
+# LOI THAT DA GAP (fail o cong ty): may chu DNS do DHCP cap chi ton tai
+# TRONG MANG DO. Mang Pi sang noi khac (hotspot 4G/5G tu dien thoai) thi DNS
+# cu chet -> khong phan giai duoc ten mien -> cloudflared khong tim duoc
+# argotunnel.com -> DUONG HAM TU XA CHET. Kiem tra o day de neu cau hinh du
+# phong bi mat (vd cai lai he dieu hanh, doi cau hinh mang) thi biet ngay.
+muc "DNS du phong (de chay duoc o mang la)"
+if grep -qE "^nameserver (1\.1\.1\.1|8\.8\.8\.8)" /etc/resolv.conf 2>/dev/null; then
+    dat "Co DNS cong cong du phong trong resolv.conf"
+else
+    tach "THIEU DNS du phong - o mang la (hotspot dien thoai) co the khong phan giai duoc ten mien, tunnel se chet"
+fi
+if timeout 6 python3 -c "import socket; socket.gethostbyname('region1.v2.argotunnel.com')" 2>/dev/null; then
+    dat "Phan giai duoc ten mien cua Cloudflare Tunnel"
+else
+    tach "KHONG phan giai duoc region1.v2.argotunnel.com - duong ham tu xa se khong ket noi duoc"
+fi
+
 # ---------------------------------------------------------------- kich ban 2
 muc "Kich ban 2 - tu phat AP khi khong co WiFi quen"
 [ -x /opt/console-pi/scripts/wifi-fallback.sh ] \

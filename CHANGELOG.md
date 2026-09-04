@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.4.19
+
+**TIM RA NGUYEN NHAN THAT cua "cam day mang thi duoc, dung WiFi thi khong"**
+- day moi la ly do tunnel fail o cong ty, khong phai giao thuc QUIC (0.4.18
+  van dung nhung chua du).
+
+**Van de: DNS ghim cung vao mang cu.** May chu DNS do DHCP cap chi ton tai
+TRONG MANG DO. `/etc/resolv.conf` chi co dung 1 dong:
+`nameserver 192.168.110.21` - dia chi thuoc mang day o nha. Mang Pi sang noi
+khac (hotspot 4G/5G tu dien thoai o cong ty) thi may chu DNS do khong con
+lien lac duoc -> khong phan giai duoc bat ky ten mien nao -> cloudflared
+khong tim duoc `region1.v2.argotunnel.com` -> **duong ham tu xa chet**. Khop
+dung log that sang nay: `Failed to refresh DNS local resolver ... i/o timeout`.
+
+**Sua:** them DNS cong cong `1.1.1.1` + `8.8.8.8` lam du phong cho ca hai
+duong:
+- `eth0` (NetworkManager): `nmcli con mod ... +ipv4.dns`
+- `wlan0` (systemd-networkd): them `DNS=` vao `12-wlan0.network`
+- `install.sh` cung dat lai khi cai lai, khong mat.
+
+Da kiem chung sau khi sua: `resolv.conf` co du 3 nameserver, phan giai duoc
+`region1.v2.argotunnel.com`, `cloudflare.com`, `github.com`; tunnel van chay
+`protocol=http2`, 0 loi.
+
+**selftest.sh: them 2 muc kiem tra** - co DNS du phong khong, va co phan giai
+duoc ten mien cua Cloudflare Tunnel khong. Neu sau nay cau hinh bi mat (cai
+lai he dieu hanh, doi mang) la biet ngay thay vi doi den luc ra hien truong
+moi phat hien. **38 dat / 2 luu y** (truoc la 36/2).
+
+**Con mot bay nua da ghi vao tai lieu:** duong ra qua `eth0` luon duoc uu
+tien hon `wlan0` (metric 100 so voi 1024). O cong ty neu cam day mang ma day
+bi port-security chan, may van co gang di ra bang day do va chet, du hotspot
+WiFi van tot. Cach chac an: **rut han day mang khi dung hotspot dien thoai**.
+Kiem tra bang `ip route get 1.1.1.1` - phai thay `dev wlan0`.
+
 ## 0.4.18
 
 **1. SUA LOI TUNNEL KHONG CHAY DUOC TREN HOTSPOT DIEN THOAI** (da fail that
