@@ -495,6 +495,19 @@ if [[ -f "$SRC_DIR/config/ssh_config-legacy-devices.conf" ]]; then
     ok "Da cho phep SSH client ket noi thiet bi mang cu (KEX/cipher SHA-1)"
 fi
 
+# --- NetworkManager: DNS du phong luon co, bat ke giao dien nao dang chay ---
+# LOI THAT DA GAP: rut day mang (eth0), chi con WiFi (wlan0, do systemd-
+# networkd quan ly rieng) thi /etc/resolv.conf BI XOA TRANG - NetworkManager
+# chi biet DNS cua eth0, khong biet gi ve wlan0. Khong phan giai duoc ten
+# mien nao ca -> Cloudflare Tunnel chet ("Temporary failure in name
+# resolution"). Xem chi tiet trong chinh file cau hinh duoc cai o day.
+if [[ -f "$SRC_DIR/config/NetworkManager-dns-fallback.conf" ]]; then
+    mkdir -p /etc/NetworkManager/conf.d
+    install -m 644 "$SRC_DIR/config/NetworkManager-dns-fallback.conf" \
+            /etc/NetworkManager/conf.d/99-consolepi-dns-fallback.conf
+    ok "Da them DNS du phong (1.1.1.1, 8.8.8.8) - luon phan giai duoc ten mien du mat DNS noi bo"
+fi
+
 # --- logrotate: khong de nhat ky lam day the nho ---
 # Pi dung ngoai hien truong nhieu thang lien, cac file nhat ky tu ghi them
 # mai. Da do that: console-pi-fallback.log ghi 1 dong moi 2 phut, sau vai

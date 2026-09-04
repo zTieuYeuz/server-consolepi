@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.20
+
+**Sua triet de: DNS bi xoa trang khi rut day mang, chi con WiFi.** Ban
+0.4.19 them DNS du phong vao TUNG giao dien rieng le (nmcli +ipv4.dns cho
+eth0, DNS= trong 12-wlan0.network cho wlan0) - VAN CHUA DU, vi
+NetworkManager (ben ghi `/etc/resolv.conf`) chi biet DNS cua eth0 (do no
+quan ly), hoan toan khong biet gi ve cau hinh DNS rieng cua wlan0 (do
+systemd-networkd quan ly). Ngat eth0 la NetworkManager xoa trang DNS,
+khong con dong nameserver nao ca - da tai hien duoc dung loi nay bang cach
+ngat that eth0 va quan sat.
+
+**Sua dung goc:** them `/etc/NetworkManager/conf.d/99-consolepi-dns-fallback.conf`
+voi cau hinh **global DNS** (`[global-dns]` + `[global-dns-domain-*]`) -
+day la cap DNS cua toan bo NetworkManager, AP DUNG BAT KE GIAO DIEN NAO
+DANG HOAT DONG, khong phu thuoc giao dien cu the nao con song hay khong.
+
+**Da kiem chung that bang cach ngat han eth0** (dat luoi an toan tu bat lai
+sau 90 giay truoc khi thu, tranh mat mang that su):
+- `resolv.conf` van con `1.1.1.1`, `8.8.8.8` sau khi ngat eth0
+- Phan giai duoc `region1.v2.argotunnel.com`, `cloudflare.com`
+- Cloudflare Tunnel van `active`, 0 loi
+- Truy cap qua `https://consolepi.home-server.id.vn` tra ve `403` (trang
+  Cloudflare Access, KHONG PHAI loi ket noi 502/523) - xac nhan duong
+  truyen thong suot end-to-end chi bang WiFi, khong can eth0.
+
+`install.sh` cung cai file nay khi cai lai, khong mat.
+
 ## 0.4.19
 
 **TIM RA NGUYEN NHAN THAT cua "cam day mang thi duoc, dung WiFi thi khong"**
