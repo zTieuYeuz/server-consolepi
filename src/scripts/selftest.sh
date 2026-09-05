@@ -101,7 +101,14 @@ else
     for dev in $PORTS; do
         d=$(basename "$dev")
         if systemctl is-active --quiet "console-pi-ttyd@$d"; then
-            code=$(curl -s -o /dev/null -m 8 -w "%{http_code}" "http://127.0.0.1/term-console/$d/")
+            # LOI THAT DA GAP (ngu yen tu truoc gio vi chua bao gio co cap
+            # console that de kich hoat nhanh nay): dung cong 80 (duong cong
+            # cong) thay vi 8880 (kiosk, duoc mien dang nhap) - giong dung
+            # bai hoc da ghi o kiem_trang() phia tren nhung QUEN AP DUNG o
+            # day, vi day la 1 khoi kiem tra rieng tu viet tay chu khong goi
+            # qua ham kiem_trang(). Cong 80 LUON doi dang nhap (dung, xem
+            # muc Bao mat) nen se bao 302 va bi hieu nham la loi that.
+            code=$(curl -s -o /dev/null -m 8 -w "%{http_code}" "http://127.0.0.1:8880/term-console/$d/")
             [ "$code" = "200" ] && dat "$d mo duoc console" \
                                 || tach "$d: ttyd chay nhung nginx tra ve $code"
         else

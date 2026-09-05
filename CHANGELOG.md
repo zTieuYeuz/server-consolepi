@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.22
+
+**Sua selftest.sh bao nham loi khi co cap console that** - phat hien ngay
+sau khi trien khai ban 0.4.21, lan dau tien trong suot qua trinh phat trien
+co mot cap console USB that duoc cam vao may luc chay selftest.
+
+**Nguyen nhan:** khoi kiem tra rieng cho tung cong console
+(`/dev/ttyUSB*`) tu viet tay, dung `curl http://127.0.0.1/term-console/...`
+qua **cong 80** (duong cong cong, LUON doi dang nhap theo dung thiet ke bao
+mat) roi mong doi HTTP 200 - chac chan nhan 302. Bai hoc nay da duoc ghi va
+sua cho ham dung chung `kiem_trang()` (dung cong 8880, duong kiosk duoc
+mien dang nhap) tu truoc, nhung khoi kiem tra console rieng le nay **quen
+ap dung**, nen ngu yen chua bao gio bi phat hien vi chua co cap console
+that nao duoc cam trong luc test.
+
+**Sua:** doi sang cong 8880, giong `kiem_trang()`. selftest tu **38 dat/1
+luu y/1 that bai** len lai **39 dat/1 luu y**, 0 that bai.
+
 ## 0.4.21
 
 **Sua loi that gap tai mang cong ty: "Kiem tra toan dien cong mang" bao
