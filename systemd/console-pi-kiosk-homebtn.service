@@ -1,0 +1,15 @@
+[Unit]
+Description=Console Pi - Tiem nut noi Ve Dashboard vao moi trang cua kiosk
+After=console-pi-kiosk.service
+Wants=console-pi-kiosk.service
+
+[Service]
+Type=simple
+User=administrator
+Group=administrator
+ExecStart=/usr/bin/python3 /opt/console-pi/scripts/kiosk-homebtn.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

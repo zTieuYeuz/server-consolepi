@@ -14,7 +14,8 @@ PURGE="no"
 # Tunnel) qua giao dien web roi sau do go cai dat, cac dich vu do se BI BO
 # LAI CHAY NGAM tren may - rieng console-pi-tunnel la nghiem trong nhat vi no
 # tiep tuc PHOI PI RA INTERNET du nguoi dung tuong da go sach roi.
-SERVICES=( console-pi-dashboard console-pi-kiosk console-pi-term-local
+SERVICES=( console-pi-dashboard console-pi-kiosk console-pi-kiosk-homebtn
+           console-pi-term-local
            console-pi-term-ssh console-pi-selftest console-pi-tftp
            console-pi-tunnel bt-pan0 bt-agent bt-nap dnsmasq-bt
            dnsmasq-direct wifi-fallback.timer wifi-fallback )

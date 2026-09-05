@@ -100,8 +100,13 @@ PKGS_CORE=(
 # khong ra tieng, khong bao loi gi. Cac goi nay tu bat unit trong
 # default.target/sockets.target cua rieng nguoi dung kiosk khi cai xong,
 # khong can cau hinh gi them (xem scripts/kiosk-start.sh).
+# python3-websocket: dung boi scripts/kiosk-homebtn.py - tiem nut noi "Ve
+# Dashboard" vao moi trang qua giao thuc DevTools cua Chromium, de co duong
+# quay ve chac chan sau su co tung gap (bam link trong YouTube bi dua sang
+# website khac va ket cung, xem docstring cua script do).
 PKGS_SCREEN=( cage chromium wlr-randr fonts-noto-color-emoji
-              pipewire pipewire-audio pipewire-pulse wireplumber )
+              pipewire pipewire-audio pipewire-pulse wireplumber
+              python3-websocket )
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -567,19 +572,24 @@ say "Cai dat dich vu"
 for f in "$SRC_DIR"/systemd/*.service "$SRC_DIR"/systemd/*.timer; do
     [[ -e "$f" ]] || continue
     base="$(basename "$f")"
-    # Kiosk chi cai khi co man hinh
-    if [[ "$base" == "console-pi-kiosk.service" && "$WANT_SCREEN" != "yes" ]]; then
+    # Kiosk va nut noi Ve Dashboard cua no chi cai khi co man hinh
+    if [[ ( "$base" == "console-pi-kiosk.service" || "$base" == "console-pi-kiosk-homebtn.service" ) \
+          && "$WANT_SCREEN" != "yes" ]]; then
         continue
     fi
     install -m 644 "$f" "/etc/systemd/system/$base"
 done
 
-# Service kiosk chay duoi tai khoan chinh, khong hardcode "administrator"
+# Service kiosk (va nut noi Ve Dashboard chay cung tai khoan) chay duoi tai
+# khoan chinh, khong hardcode "administrator"
 if [[ "$WANT_SCREEN" == "yes" && -f /etc/systemd/system/console-pi-kiosk.service ]]; then
     UID_MAIN="$(id -u "$MAIN_USER")"
     sed -i "s/^User=.*/User=$MAIN_USER/; s/^Group=.*/Group=$MAIN_USER/; \
             s|XDG_RUNTIME_DIR=/run/user/[0-9]*|XDG_RUNTIME_DIR=/run/user/$UID_MAIN|" \
         /etc/systemd/system/console-pi-kiosk.service
+    [[ -f /etc/systemd/system/console-pi-kiosk-homebtn.service ]] && \
+        sed -i "s/^User=.*/User=$MAIN_USER/; s/^Group=.*/Group=$MAIN_USER/" \
+            /etc/systemd/system/console-pi-kiosk-homebtn.service
 fi
 
 systemctl daemon-reload
@@ -591,7 +601,7 @@ ENABLE_LIST=( console-pi-dashboard console-pi-term-local console-pi-term-ssh
               bt-pan0 dnsmasq-bt bt-agent bt-nap
               wifi-fallback.timer lldpd bluetooth avahi-daemon nginx
               wpa_supplicant@wlan0 console-pi-selftest )
-[[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( console-pi-kiosk )
+[[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( console-pi-kiosk console-pi-kiosk-homebtn )
 
 for s in "${ENABLE_LIST[@]}"; do
     systemctl enable "$s" >/dev/null 2>&1 || warn "Khong bat duoc $s"

@@ -1,51 +1,50 @@
 """
 Console Pi - Tab YouTube (giai tri luc ranh, theo yeu cau cua anh Thoai)
 
-LICH SU (de hieu vi sao trang nay CHI nhung video, khong dieu huong thang
-sang youtube.com nua - da thu va that bai that su, khong phai doan):
+LICH SU (3 vong doi, moi vong deu dua tren that bai/phan hoi that su cua
+vong truoc - khong doan):
 
-  1. Ban dau lam dang "dan link roi nhung iframe" (an toan, khong roi trang).
-  2. Anh Thoai phan hoi muon duoc "mo YouTube luon" - da doi sang dieu huong
-     thang (<a href="https://www.youtube.com">) + bat co che vuot canh man
-     hinh de lui (Chromium --overscroll-history-navigation) lam duong quay
-     ve, vi kiosk khong co thanh dia chi/nut Back.
-  3. THAT BAI THAT SU: anh Thoai bam vao 1 lien ket ben trong YouTube, bi
-     dua sang mot trang web khac (datbike.vn) roi KET CUNG luon o do - vuot
-     canh man hinh khong dua duoc ve dashboard hay YouTube. Phai remote vao
-     chay `systemctl restart console-pi-kiosk` de cuu man hinh.
-  4. Nguyen nhan that: co che "vuot canh de lui" cua Chromium duoc thiet ke
-     chinh cho touchpad/chuot tren Windows/macOS - tren Linux voi man hinh
-     cam ung thuan (khong co touchpad), no khong duoc trien khai day du/dang
-     tin cay. Tuc la NGAY CA KHI da bat flag, cu chi vuot khong chac chan
-     hoat dong - lam nguoi dung bi ket cung That su tren mot website bat ky
-     ma khong co duong nao quay lai, phai remote vao sua tu xa.
+  1. Ban dau: dan link roi nhung iframe (an toan nhung bat tien, "cam tablet
+     ma phai dan link thi vo ly" - dung nhu vay).
+  2. Doi sang dieu huong thang sang youtube.com + "vuot canh man hinh de
+     lui" lam duong quay ve. THAT BAI THAT SU: bam vao 1 lien ket trong
+     YouTube, bi dua sang mot website khac (datbike.vn) roi KET CUNG luon o
+     do - vuot canh khong dua ve duoc, phai remote vao chay
+     `systemctl restart console-pi-kiosk` moi cuu duoc man hinh. Nguyen
+     nhan: co che vuot canh cua Chromium chu yeu lam cho touchpad/chuot tren
+     Windows/macOS, tren man hinh cam ung Linux khong duoc trien khai day
+     du/dang tin cay.
+  3. Da rut lai ve dang nhung o vong 2, nhung anh Thoai phan hoi dung: dung
+     tablet thi phai bam la vao thang duoc, khong the bat dan link.
 
-=> KET LUAN: dieu huong thang ra ngoai youtube.com (hay bat ky trang nao
-   khac) tren man hinh kiosk nay la KHONG AN TOAN - da chuyen ve han dang
-   NHUNG (embed) trong iframe, KHONG con nut "Mo YouTube" dieu huong that
-   nua. Da tat lai co che vuot canh (--overscroll-history-navigation=0
-   trong scripts/kiosk-start.sh) vi no khong dang tin cay va tu no cung la
-   1 duong roi dashboard ngoai y muon o BAT KY trang nao khac (khong rieng
-   YouTube) neu vo tinh vuot trung.
+=> GIAI PHAP CUOI CUNG (da kiem chung that bang script test rieng, dieu
+   huong qua nhieu trang cuc bo khac nhau va xac nhan ket qua "FOUND" moi
+   lan, khong doan): thay vi dua vao mot cu chi khong dang tin cay, lam
+   mot nut "🏠 Console Pi" LUON NOI CO DINH tren MOI trang duoc tai, bat ke
+   la trang nao (YouTube, hay ngay ca datbike.vn neu lo bam trung lan
+   nua) - bam vao la ve thang dashboard. Nut nay khong phai code cua trang
+   nay hay cua YouTube - no duoc TIEM TU BEN NGOAI boi mot tien trinh nen
+   rieng (scripts/kiosk-homebtn.py) dieu khien Chromium qua giao thuc
+   DevTools cua chinh no (--remote-debugging-port=9222 trong
+   kiosk-start.sh, CHI nghe tren 127.0.0.1 - da xac nhan bang `ss -tlnp`
+   khong lo ra mang ngoai). Xem chi tiet ky thuat trong file do.
 
-Muon that su "mo YouTube tu do duyet" ma van co duong ve chac chan, cach
-duy nhat dang tin cay la lam mot nut "Ve Dashboard" luon noi tren MOI trang
-web (bat ke dang o dau) bang cach dieu khien Chromium tu ben ngoai qua
-giao thuc DevTools (remote debugging), khong phu thuoc vao chinh trang web
-dang mo. Day la mot cong viec rieng, chua lam (can may dai voi anh Thoai
-truoc khi lam vi no mo them 1 cong debug tren May, du chi nghe tren
-localhost) - hien tai CHUA co, nen KHONG dua vao dieu huong that.
+   Vi nut nay hoat dong o TAT CA moi trang (khong phu thuoc website nao),
+   nut "🌐 Mo YouTube" dieu huong thang duoc dua tro lai an toan - lan nay
+   duong quay ve khong con phu thuoc vao 1 cu chi rieng cua trang YouTube
+   nua ma la mot co che chung, doc lap voi noi dung dang mo.
 
-Gioi han that con lai (khong bia): YouTube khong cho embed tim kiem/duyet
-day du (da kiem tra `curl -I` - www.youtube.com/m.youtube.com/trang ket
-qua deu tra X-Frame-Options: SAMEORIGIN, chan iframe). Cach chac chan luon
-dung la dan thang duong link video (chia se tu dien thoai). O tim kiem
-nhanh dung mot kieu embed khong chinh thuc (`listType=search`) - co the
-ngung hoat dong bat cu luc nao neu YouTube doi, da ghi ro tren giao dien.
-
-Ban phim ao CUA CONSOLE PI chay binh thuong tren cac o nhap CUA CHINH
-TRANG NAY (dan link, go tu khoa) - no chi khong the gan vao BEN TRONG
-video dang nhung (video load tu youtube.com, mot trang khac).
+Gioi han that con lai (khong bia):
+  - YouTube khong cho embed tim kiem/duyet day du trong iframe (da kiem tra
+    `curl -I` - X-Frame-Options: SAMEORIGIN). Nut "Mo YouTube" giai quyet
+    dung cho truong hop nay vi no KHONG dung iframe, dieu huong that.
+  - Ban phim ao cua Console Pi CHI chay tren trang cua chinh no. Mot khi da
+    o trong trang youtube.com that (sau khi bam "Mo YouTube"), o tim
+    kiem/binh luan/chat cua YouTube se KHONG hien ban phim ao - da kiem
+    chung compositor kiosk (`cage`) khong ho tro giao thuc "layer-shell" ma
+    moi ban phim ao he thong can (chi tiet: xem /docs#youtube). Van giu
+    cach nhung video (khong roi trang, ban phim ao hoat dong binh thuong
+    tren o nhap cua chinh trang nay) cho truong hop chi muon nghe nhac nen.
 """
 import re
 
@@ -57,10 +56,10 @@ _ID_PATTERNS = [
     r"(?:v=|/embed/|/shorts/|youtu\.be/)([A-Za-z0-9_-]{11})",
 ]
 
-# KHONG duoc them allow-top-navigation/allow-popups: day la phong thu 2 lop
-# sau bai hoc dieu huong that bai o tren - du chi con dan video/tim kiem
-# vao iframe, van chan tuyet doi kha nang mot video/quang cao BEN TRONG
-# iframe dieu huong ca trang dashboard di noi khac.
+# KHONG duoc them allow-top-navigation/allow-popups: phong thu 2 lop cho
+# video/tim kiem nhung - du nut Home da xu ly duoc truong hop dieu huong
+# that (nut "Mo YouTube"), van khong de video/quang cao BEN TRONG iframe tu
+# y dieu huong ca trang dashboard di noi khac.
 _IFRAME_SANDBOX = "allow-scripts allow-same-origin allow-presentation"
 
 
@@ -125,36 +124,51 @@ def register_youtube(app):
             </div>
             <p style="color:#8b93a1;font-size:13px;margin-top:9px;">
               Kieu tim kiem nay khong phai duong chinh thuc cua YouTube - neu
-              khong ra ket qua, hay dan thang duong link video vao o ben tren.</p>"""
+              khong ra ket qua, hay bam nut "Mo YouTube" o tren de tim that.</p>"""
 
         err_html = f'<div class="msg err">{_esc(err)}</div>' if err else ""
 
         body = f"""
         {err_html}
-        <div class="msg warn">
-          <strong>Da bo nut "Mo YouTube" dieu huong thang.</strong> Da thu va
-          that bai that su: vuot canh man hinh de quay ve khong dang tin cay
-          tren man hinh cam ung nay, co lan bi ket cung tren mot trang web
-          khac va phai remote vao sua. Video gio CHI phat trong khung ben
-          duoi - khong bao gio roi khoi dashboard, luon an toan.
+        <div class="card" style="border-left:4px solid #4CAF50;">
+          <h3>🌐 Mo YouTube (duyet/tim kiem day du)</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 13px;">
+            Bam la vao thang YouTube that - duyet, tim kiem, dang nhap tai
+            khoan nhu tren dien thoai/tablet binh thuong.</p>
+          <a class="btn" href="https://www.youtube.com" style="font-size:16px;">
+            🌐 Mo YouTube</a>
+          <div class="msg ok" style="margin-top:14px;">
+            <strong>Luon co duong ve:</strong> se thay 1 nut nho
+            <strong>"🏠 Console Pi"</strong> noi o goc duoi ben trai man
+            hinh, o BAT KY trang nao dang mo - bam vao do la ve thang
+            dashboard nay ngay lap tuc, khong can vuot hay go gi ca.
+          </div>
+          <div class="msg info" style="margin-top:10px;">
+            O tim kiem/binh luan/chat cua chinh trang YouTube se khong hien
+            ban phim ao cua Console Pi (chi tiet ky thuat: xem
+            <a href="/docs#youtube">Tai lieu</a>). Muon go duoc o do thi can
+            ban phim that (USB hoac Bluetooth, xem tab
+            <a href="/bluetooth">Bluetooth</a>).
+          </div>
         </div>
 
         <div class="card">
-          <h3>Phat video theo duong dan</h3>
+          <h3>Hoac phat 1 video ngay trong dashboard (khong roi trang)</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-            Mo YouTube tren dien thoai, bam <strong>Chia se → Sao chep duong
+            Hop khi chi muon nghe nhac nen ma van giu nguyen tab dang lam -
+            mo YouTube tren dien thoai, bam <strong>Chia se → Sao chep duong
             dan</strong>, roi dan vao day.</p>
           <form method="POST">
             <label>Duong dan hoac ID video</label>
             <input type="text" name="link" placeholder="https://youtu.be/..." required>
             <div class="row" style="margin-top:13px;">
-              <button type="submit" data-busy="Dang tai...">▶ Phat</button>
+              <button type="submit" class="gray" data-busy="Dang tai...">▶ Phat</button>
             </div>
           </form>
         </div>
 
         <div class="card">
-          <h3>Hoac tim kiem nhanh (co the khong on dinh)</h3>
+          <h3>Tim kiem nhanh, xem ngay trong trang (co the khong on dinh)</h3>
           <form method="POST">
             <label>Tu khoa</label>
             <input type="text" name="query" placeholder="vi du: lofi hip hop radio" required>
@@ -167,6 +181,6 @@ def register_youtube(app):
 
         return render_page(
             body, active="/youtube", title="YouTube",
-            subtitle="Giai tri luc ranh - video luon nam trong khung dashboard, khong bao gio roi trang")
+            subtitle="Giai tri luc ranh")
 
     return app

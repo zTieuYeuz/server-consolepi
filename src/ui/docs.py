@@ -489,46 +489,52 @@ ACT ngung nhap nhay), roi moi gat cong tac vat ly cua vo.</p>
 """),
 
     ("youtube", "📺 Tab YouTube (giai tri)", """
-<p>Tab <a href="/youtube">YouTube</a> de xem video giai lao giua luc lam viec.
-Video luon phat trong 1 khung nhung (iframe) NGAY TRONG trang nay - khong
-bao gio dieu huong roi khoi dashboard.</p>
+<p>Tab <a href="/youtube">YouTube</a> de xem video giai lao giua luc lam viec.</p>
 
-<p><strong>Da tung thu cho "Mo YouTube" dieu huong thang, va da bo di sau
-khi that bai that su (khong phai chi doan truoc):</strong> ban dau co nut
-mo thang trang youtube.com that de duyet/tim kiem tu do. De co duong quay
-ve (kiosk khong co thanh dia chi/nut Back), da bat co che "vuot canh man
-hinh de lui" cua Chromium. Nhung khi dung that, nguoi dung bam vao 1 lien
-ket ben trong YouTube, bi dua sang mot website khac (datbike.vn) roi
-<strong>ket cung luon o do</strong> - vuot canh khong dua ve duoc dashboard
-hay YouTube, phai remote vao chay <code>systemctl restart console-pi-kiosk</code>
-moi cuu duoc man hinh. Nguyen nhan: co che vuot canh nay cua Chromium chu
-yeu lam cho touchpad/chuot tren Windows/macOS, tren Linux voi man hinh cam
-ung thuan khong duoc trien khai day du/dang tin cay - bat flag len khong co
-nghia la cu chi chac chan hoat dong. Da bo hoan toan nut dieu huong thang
-va tat lai flag do (<code>scripts/kiosk-start.sh</code>) de khong con nguy
-co ket cung tren bat ky trang nao nua.</p>
+<p><strong>Nut "🌐 Mo YouTube"</strong> - bam la vao thang trang YouTube
+that, duyet/tim kiem/dang nhap tai khoan binh thuong nhu tren dien
+thoai/tablet.</p>
 
-<p><strong>Vi sao go vao o tim kiem tren trang nay lai binh thuong, nhung
-trong VIDEO dang nhung thi khong hien ban phim ao?</strong> Ban phim ao cua
-Console Pi chay tren MOI o nhap thuoc trang cua chinh no (o "dan link", o
-"tim kiem") - nhung noi dung BEN TRONG video nhung (tai tu youtube.com, la
-mot website khac) thi ban phim ao khong gan vao duoc. Da thu tim cach de he
-thong hien ban phim ao chung cho moi ung dung (cai thu <code>wvkbd</code>
-va <code>squeekboard</code>, chay tren chinh phien man hinh dang song) -
-ca hai deu bao loi ngay "khong co layer shell" roi thoat, vi bo dieu phoi
-man hinh dung cho kiosk (<code>cage</code>) la loai toi gian, khong cai
-giao thuc ma moi ban phim ao Wayland tieu chuan can (xac nhan bang
-<code>strings $(which cage) | grep layer_shell</code> - khong ra dong nao).
-Doi sang compositor khac co ho tro (vd <code>labwc</code>/<code>sway</code>)
-co the giai quyet duoc ve mat ky thuat nhung anh huong ca co che khoa kiosk
-- chua lam khi chua duoc dong y ro rang.</p>
+<p><strong>Duong quay ve dashboard:</strong> se thay 1 nut noi
+<strong>"🏠 Console Pi"</strong> o goc duoi ben trai man hinh, o BAT KY
+trang nao dang mo (khong rieng gi YouTube) - bam vao la ve thang dashboard
+ngay. Da tung thu dung cu chi "vuot canh man hinh de lui" cua Chromium cho
+viec nay va THAT BAI THAT SU: nguoi dung bam vao 1 lien ket ben trong
+YouTube, bi dua sang mot website khac (datbike.vn) roi ket cung luon o do -
+vuot canh khong dua ve duoc, phai remote vao chay
+<code>systemctl restart console-pi-kiosk</code> moi cuu duoc man hinh (co
+che vuot canh cua Chromium chu yeu lam cho touchpad/chuot tren Windows/
+macOS, tren man hinh cam ung Linux khong duoc trien khai day du/dang tin
+cay). Da doi sang cach dang tin cay hon: mot tien trinh nen rieng
+(<code>scripts/kiosk-homebtn.py</code>) dieu khien Chromium tu ben ngoai
+qua giao thuc DevTools cua chinh no de TIEM nut noi do vao MOI trang duoc
+tai - khong phu thuoc cu chi cam ung nao, da kiem chung that bang cach
+dieu huong qua nhieu trang khac nhau va xac nhan nut van con moi lan.</p>
 
-<p><strong>Neu chi muon nghe nhac nen</strong> - dung khung "Phat video theo
-duong dan": mo YouTube tren dien thoai, bam <strong>Chia se &rarr; Sao chep
-duong dan</strong>, dan vao o nhap, bam Phat.</p>
-<p><strong>O "Tim kiem nhanh" co the khong ra ket qua</strong> - day la mot
-kieu nhung khong chinh thuc cua YouTube, co the ngung hoat dong bat cu luc
-nao neu YouTube thay doi. Khi do hay dan thang duong link video.</p>
+<p><strong>Vi sao go vao o tim kiem/binh luan/chat cua chinh trang YouTube
+khong hien ban phim ao cua Console Pi?</strong> Ban phim ao chi chay tren
+trang CUA CHINH NO - khong gan vao mot website khac nhu youtube.com duoc.
+Da thu tim cach he thong hien ban phim ao chung cho moi ung dung (cai thu
+<code>wvkbd</code> va <code>squeekboard</code>, chay tren chinh phien man
+hinh dang song) - ca hai deu bao loi ngay "khong co layer shell" roi
+thoat, vi bo dieu phoi man hinh dung cho kiosk (<code>cage</code>) la loai
+toi gian, khong cai giao thuc ma moi ban phim ao Wayland tieu chuan can
+(xac nhan bang <code>strings $(which cage) | grep layer_shell</code> -
+khong ra dong nao). Doi sang compositor khac co ho tro (vd
+<code>labwc</code>/<code>sway</code>) co the giai quyet duoc ve mat ky
+thuat nhung anh huong ca co che khoa kiosk - chua lam khi chua duoc dong y
+ro rang. Muon go duoc o do thi can ban phim that: cam USB hoac ghep noi
+qua tab <a href="/bluetooth">Bluetooth</a> (da ho tro san thiet bi HID).</p>
+
+<p><strong>Neu chi muon nghe nhac nen ma khong roi trang dang lam</strong> -
+dung khung "Phat 1 video ngay trong dashboard": mo YouTube tren dien
+thoai, bam <strong>Chia se &rarr; Sao chep duong dan</strong>, dan vao o
+nhap, bam Phat - video hien ngay trong trang qua iframe, khong roi khoi
+dashboard.</p>
+<p><strong>O "Tim kiem nhanh, xem ngay trong trang" co the khong ra ket
+qua</strong> - day la mot kieu nhung khong chinh thuc cua YouTube, co the
+ngung hoat dong bat cu luc nao neu YouTube thay doi. Khi do hay bam nut
+"Mo YouTube" o tren de tim that.</p>
 
 <h3 style="color:#4CAF50;">Am thanh (loa) cho video</h3>
 <p>May nay ban dau KHONG co server am thanh nao chay (chi co thu vien

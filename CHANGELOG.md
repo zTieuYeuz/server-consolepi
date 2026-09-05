@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.31
+
+**Dua tro lai nut "Mo YouTube" dieu huong that, lan nay voi duong ve dang
+tin cay thuc su** - phan hoi truc tiep sau 0.4.30 ("cầm cái này như tablet
+lam sao ma dan link, anh can vao youtube nhan vo la vo do luon").
+
+- Nut "🌐 Mo YouTube" quay tro lai, dieu huong thang sang youtube.com that
+  (duyet/tim kiem/dang nhap tai khoan binh thuong).
+- **Giai phap moi cho duong ve** (thay cho vuot canh man hinh da that bai o
+  0.4.29/0.4.30): mot tien trinh nen moi
+  (`scripts/kiosk-homebtn.py`, service `console-pi-kiosk-homebtn`) dieu
+  khien Chromium tu ben ngoai qua giao thuc DevTools cua chinh no
+  (`--remote-debugging-port=9222` trong `kiosk-start.sh` - CHI nghe tren
+  127.0.0.1, da xac nhan bang `ss -tlnp` khong lo ra mang ngoai) de TIEM 1
+  nut noi "🏠 Console Pi" vao MOI trang duoc tai, bat ke la trang nao. Bam
+  vao la ve thang dashboard ngay - khong phu thuoc cu chi cam ung nao nua.
+- Da kiem chung THAT (khong doan): dieu huong qua nhieu trang cuc bo khac
+  nhau va xac nhan nut van xuat hien moi lan; tat kiosk roi bat lai
+  (mo phong Chromium crash/restart) va xac nhan tien trinh nen tu phat
+  hien Chromium moi, ket noi lai, dang ky lai thanh cong.
+- Nut nay tu an tren chinh cac trang cua Console Pi (da co thanh dieu
+  huong rieng, thua nut nay).
+- Them `python3-websocket` vao goi cai dat va service moi vao
+  `install.sh`/`uninstall.sh` de lan cai moi/go cai deu day du.
+
 ## 0.4.30
 
 **Su co that: nguoi dung bi ket cung tren mot website khac, phai remote vao

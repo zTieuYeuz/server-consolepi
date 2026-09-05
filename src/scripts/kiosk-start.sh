@@ -66,19 +66,25 @@ else
 fi
 
 # LOI THAT DA GAP (khong phai doan): tung bat --overscroll-history-navigation=1
-# de lam duong "vuot canh de quay ve dashboard" cho tab YouTube (khi do co
-# nut dieu huong thang sang youtube.com). Da THAT BAI THAT SU: nguoi dung
-# bam vao 1 lien ket trong YouTube, bi dua sang mot website khac (datbike.vn)
-# roi KET CUNG luon o do - vuot canh khong dua ve duoc, phai remote vao chay
-# `systemctl restart console-pi-kiosk` moi cuu duoc man hinh. Nguyen nhan: co
-# che nay cua Chromium chu yeu lam cho touchpad/chuot tren Windows/macOS,
-# tren Linux voi man hinh cam ung thuan khong duoc trien khai day du/dang tin
-# cay. Da TAT lai (=0, mac dinh goc) va bo hoan toan nut dieu huong thang
-# trong ui/youtube.py - video YouTube gio CHI phat qua iframe nhung ngay
-# trong dashboard, khong bao gio thuc su roi trang nua nen khong con can
-# duong "quay ve" nao ca.
+# de lam duong "vuot canh de quay ve dashboard" cho tab YouTube (nut dieu
+# huong thang sang youtube.com). Da THAT BAI THAT SU: nguoi dung bam vao 1
+# lien ket trong YouTube, bi dua sang mot website khac (datbike.vn) roi KET
+# CUNG luon o do - vuot canh khong dua ve duoc, phai remote vao chay
+# `systemctl restart console-pi-kiosk` moi cuu duoc man hinh. Nguyen nhan:
+# co che nay cua Chromium chu yeu lam cho touchpad/chuot tren Windows/macOS,
+# tren Linux voi man hinh cam ung thuan khong duoc trien khai day du/dang
+# tin cay. Da TAT LAI ve mac dinh (=0) - khong dua vao cu chi nay nua.
+#
+# --remote-debugging-port=9222: CHI nghe tren 127.0.0.1 (mac dinh cua
+# Chromium khi khong chi dia chi khac - da xac nhan bang `ss -tlnp`, khong
+# lo ra mang ngoai). Dung boi scripts/kiosk-homebtn.py chay o service rieng
+# (console-pi-kiosk-homebtn.service) de tiem 1 nut noi "Ve Dashboard" vao
+# MOI trang duoc tai - day la duong quay ve THAT SU dang tin cay (khong phu
+# thuoc cu chi cam ung nao), thay the cho --overscroll-history-navigation
+# da that bai o tren. Xem chi tiet trong scripts/kiosk-homebtn.py.
 exec chromium \
     --kiosk \
+    --remote-debugging-port=9222 \
     --user-data-dir="$PROFILE_DIR" \
     --no-first-run \
     --no-default-browser-check \
