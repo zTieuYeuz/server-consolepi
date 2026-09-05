@@ -60,6 +60,11 @@ if [[ "$PURGE" == "yes" ]]; then
     rm -f /etc/logrotate.d/console-pi
     rm -f /var/log/console-pi-*.log /var/log/console-pi-*.log.*
 
+    # Cau hinh giu nhat ky journal 60 ngay - xoa de tra ve mac dinh cua he
+    # thong (khong con Console Pi de dung nua thi khong can ep gioi han rieng)
+    rm -f /etc/systemd/journald.conf.d/60-console-pi.conf
+    systemctl restart systemd-journald 2>/dev/null || true
+
     # udev rules rieng cua Console Pi (dat ten cong serial, xoay man hinh
     # cham, doi ten WiFi). Chi xoa khi purge - ban cai lai thong thuong
     # (khong purge) van can giu de "cai lai nhieu lan khong mat gi".

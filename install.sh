@@ -516,7 +516,35 @@ fi
 if [[ -f "$SRC_DIR/config/logrotate-console-pi" ]]; then
     install -m 644 "$SRC_DIR/config/logrotate-console-pi" \
             /etc/logrotate.d/console-pi
-    ok "Da bat xoay vong nhat ky (khong lo day the nho)"
+    ok "Da bat xoay vong nhat ky (giu 60 ngay, khong lo day the nho)"
+fi
+
+# --- journald: giu nhat ky he thong it nhat 60 ngay ---
+# Mac dinh systemd-journald khong dam bao thoi gian giu lai (chi gioi han
+# theo dung luong). Can ep ro MaxRetentionSec de cac su co xay ra ngoai
+# hien truong (khong SSH vao duoc luc do) van con xem lai duoc khi ve nha.
+if [[ -f "$SRC_DIR/config/journald-console-pi.conf" ]]; then
+    mkdir -p /etc/systemd/journald.conf.d
+    install -m 644 "$SRC_DIR/config/journald-console-pi.conf" \
+            /etc/systemd/journald.conf.d/60-console-pi.conf
+    systemctl restart systemd-journald
+    # LOI THAT DA GAP: Raspberry Pi OS co san 1 drop-in rieng
+    # (40-rpi-volatile-storage.conf) ep Storage=volatile (journal chi nam
+    # trong RAM o /run, MAT SACH khi tat may) - de tiet kiem the SD. File
+    # 60-console-pi.conf o tren DA ghi de dung Storage=persistent (60 sau
+    # 40 nen thang), nhung journald KHONG tu chuyen journal dang co tu
+    # /run sang /var/log/journal chi bang restart - phai goi flush ro rang,
+    # neu khong phai doi den lan reboot ke tiep moi that su ghi vao dia.
+    journalctl --flush 2>/dev/null || true
+    ok "Da bat nhat ky he thong (journal) giu it nhat 60 ngay, ghi xuong dia ngay"
+fi
+
+# --- nginx: nhat ky truy cap/loi cung can giu 60 ngay (mac dinh Debian la
+# 14 ngay) - nginx la cua ngo mang chinh cua Console Pi, loi tunnel/proxy
+# thuong the hien o day truoc tien.
+if [[ -f /etc/logrotate.d/nginx ]] && grep -q "rotate 14" /etc/logrotate.d/nginx; then
+    sed -i 's/rotate 14/rotate 60/' /etc/logrotate.d/nginx
+    ok "Da tang thoi gian giu nhat ky nginx len 60 ngay"
 fi
 
 # --- lldpd: bat tuong thich CDP (switch Cisco) ---

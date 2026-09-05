@@ -12,13 +12,17 @@ File nay:
   - `ghi_loi()`  : goi tu bat ky dau trong app de ghi 1 dong loi, kem
                    traceback day du neu co.
   - `doc_nhat_ky()`: doc lai de hien tren trang web /logs.
-  - Tu dong XOAY VONG file (RotatingFileHandler) - khong de file phinh to
-    vo han qua nhieu thang dung ngoai hien truong, la nguyen nhan hay bi
-    quen trong cac du an nho.
+  - XOAY VONG: KHONG con tu xoay vong o day (truoc dung RotatingFileHandler
+    cua Python). Ly do doi: yeu cau thuc te la giu it nhat 60 NGAY cho moi
+    nhat ky cua Console Pi (dung o hien truong khong SSH duoc, phai doi ve
+    nha moi xem lai). RotatingFileHandler chi xoay theo DUNG LUONG (2MB) -
+    khong dam bao thoi gian, ngay bi loi lap lai nhieu co the xoa mat du
+    lieu cu chi trong vai gio. Nay chi ghi them (append) don gian; viec
+    xoay vong + giu 60 ngay giao het cho logrotate (xem
+    config/logrotate-console-pi) - MOT co che duy nhat, tranh xung dot.
 """
-import logging
-import logging.handlers
 import subprocess
+import time
 import traceback
 
 LOG_FILE = "/var/log/console-pi-errors.log"
@@ -30,22 +34,6 @@ DICH_VU_CAN_THEO_DOI = [
     "console-pi-term-ssh", "bluetooth", "bt-agent", "bt-nap", "nginx",
 ]
 
-_logger = logging.getLogger("console_pi_errors")
-_logger.setLevel(logging.ERROR)
-if not _logger.handlers:
-    try:
-        # 2MB x 3 ban cu = toi da ~8MB - du de xem lai vai tuan ma khong so
-        # lo day the SD (loai the thuong dung cho Pi chi 8-32GB).
-        _handler = logging.handlers.RotatingFileHandler(
-            LOG_FILE, maxBytes=2 * 1024 * 1024, backupCount=3, encoding="utf-8")
-        _handler.setFormatter(logging.Formatter(
-            "%(asctime)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
-        _logger.addHandler(_handler)
-    except Exception:
-        # Khong ghi duoc file (vd quyen, dia day) thi TUYET DOI khong duoc
-        # lam sap ung dung chinh - im lang bo qua, ung dung van chay tiep.
-        pass
-
 
 def ghi_loi(nguon, thong_diep, ngoai_le=None):
     """
@@ -56,7 +44,7 @@ def ghi_loi(nguon, thong_diep, ngoai_le=None):
     ngoai_le   : doi tuong Exception (neu co) - se ghi kem traceback day du
                  de con dieu tra sau, khong chi 1 dong mo ta suong
     """
-    dong = f"[{nguon}] {thong_diep}"
+    dong = f"{time.strftime('%Y-%m-%d %H:%M:%S')} | [{nguon}] {thong_diep}"
     if ngoai_le is not None:
         try:
             dong += "\n" + "".join(traceback.format_exception(
@@ -64,8 +52,14 @@ def ghi_loi(nguon, thong_diep, ngoai_le=None):
         except Exception:
             pass
     try:
-        _logger.error(dong)
+        # copytruncate cua logrotate co the cat file giua luc ghi - "a" mo
+        # lai file moi lan goi (khong giu handle mo lau dai) nen luon ghi
+        # dung vao file HIEN TAI, khong bao gio ghi lac vao ban da xoay vong.
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(dong + "\n")
     except Exception:
+        # Khong ghi duoc file (vd quyen, dia day) thi TUYET DOI khong duoc
+        # lam sap ung dung chinh - im lang bo qua, ung dung van chay tiep.
         pass
 
 

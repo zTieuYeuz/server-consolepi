@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.4.24
+
+**Bao dam giu nhat ky it nhat 60 ngay cho TOAN BO he thong** - yeu cau
+thuc te: may dung o cong ty khach khong SSH vao duoc luc do, phai doi ve
+nha moi xem lai duoc chuyen gi da xay ra. Truoc day khong co gi dam bao
+thoi gian giu lai ca.
+
+**Phat hien quan trong khi lam:** Raspberry Pi OS co san 1 drop-in
+(`/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf`) ep
+`Storage=volatile` - nghia la nhat ky he thong (`journalctl`, noi ghi lai
+dich vu tunnel/Bluetooth/dashboard khoi dong-dung-loi) **chi nam trong
+RAM va MAT SACH moi lan tat may**, khong phai do loi cau hinh cua du an
+nay ma la mac dinh cua he dieu hanh de tiet kiem the SD. Thu muc
+`/var/log/journal` da ton tai tu truoc (tao thang 6) nhung luon RONG -
+day chinh la nguyen nhan that su cua nghi van "log co ve bi mat" tu truoc.
+
+**Da sua:**
+- `config/journald-console-pi.conf` (moi) -> `/etc/systemd/journald.conf.d/60-console-pi.conf`:
+  ep `Storage=persistent`, `MaxRetentionSec=60day`, `SystemMaxUse=500M`.
+  Ten file bat dau bang `60-` de ap dung SAU (de de) file `40-` cua he dieu
+  hanh. `install.sh` goi them `journalctl --flush` de ghi journal dang co
+  trong RAM xuong dia NGAY, khong phai doi den lan reboot ke tiep.
+- `config/logrotate-console-pi`: gop them `console-pi-dhcptest.log` va
+  `console-pi-errors.log` vao chung 1 co che xoay vong (`daily`,
+  `rotate 60`, `maxsize 5M`, nen lai) - truoc day 2 file nay hoac khong
+  duoc xoay vong (`dhcptest.log` moi them o ban 0.4.21, quen dua vao) hoac
+  tu xoay vong rieng theo dung luong khong dam bao thoi gian
+  (`errors.log`, RotatingFileHandler 2MB x3 ~vai tuan tuy toc do loi).
+- `src/ui/errlog.py`: bo `RotatingFileHandler`, chuyen sang ghi them don
+  gian - giao het viec xoay vong cho logrotate, tranh 2 co che danh nhau
+  tren cung 1 file.
+- `install.sh`: tang thoi gian giu nhat ky nginx (`/etc/logrotate.d/nginx`)
+  tu 14 len 60 ngay - day la cua ngo mang chinh, loi tunnel/proxy thuong
+  the hien o day truoc tien.
+- `uninstall.sh` (purge): don lai cau hinh journald 60 ngay khi go cai dat.
+- Tai lieu (`/docs`, muc "Nhat ky loi") cap nhat day du danh sach nhat ky
+  va cach xem lai theo khoang thoi gian bang `journalctl --since/--until`.
+
+Da kiem tra that tren may dang chay: `journalctl --flush` xac nhan journal
+chuyen tu `/run/log/journal` (RAM) sang `/var/log/journal` (dia that);
+`logrotate -d` xac nhan cau hinh moi nhan dung ca 6 file; selftest van
+39 dat sau khi trien khai.
+
 ## 0.4.23
 
 **Tach nut Tat may / Khoi dong lai ra tab rieng "Nguon dien"** - truoc day

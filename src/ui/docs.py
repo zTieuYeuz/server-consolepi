@@ -672,14 +672,37 @@ binh thuong - cung du lieu ma <code>journalctl -u &lt;dich vu&gt;</code> cho ra.
 * Xem bang dong lenh neu muon
 sudo tail -50 /var/log/console-pi-errors.log
 sudo journalctl -u console-pi-dashboard -p warning -n 50</pre>
-<div class="msg info"><strong>Khong lo day the nho:</strong> file nay tu xoay vong o muc 2MB
-(giu 3 ban cu, toi da ~8MB). Cac nhat ky khac cua Console Pi (fallback WiFi, netmiko, API,
-selftest) duoc xoay vong bang <code>logrotate</code>, cau hinh o
-<code>/etc/logrotate.d/console-pi</code> - hang tuan hoac khi vuot 5MB, giu 4 ban nen.
-Day the nho la mot trong nhung nguyen nhan hong Pi pho bien nhat.</div>
-<p><strong>Nhat ky nay chi ghi loi THAT SU</strong> (loi bat ngo trong ma nguon). Cac loi ma
-cong cu da tu bao ro tren man hinh (vd "khong ket noi duoc thiet bi", "qua thoi gian cho")
-<em>khong</em> ghi vao day - chung da hien ngay luc do roi, ghi them chi lam nhieu.</p>
+<div class="msg ok"><strong>Giu it nhat 60 ngay - dung cho dung kich ban "mang len cong ty, ve
+nha moi xem lai duoc":</strong>
+<ul style="margin:6px 0 0 18px;">
+  <li><code>console-pi-errors.log</code>, <code>console-pi-fallback.log</code>,
+      <code>console-pi-netmiko.log</code>, <code>console-pi-api.log</code>,
+      <code>console-pi-selftest.log</code>, <code>console-pi-dhcptest.log</code> - tat ca
+      xoay vong bang <code>logrotate</code>
+      (<code>/etc/logrotate.d/console-pi</code>): hang ngay hoac khi vuot 5MB (loi lap lai
+      lien tuc), <strong>giu 60 ban nen (~60 ngay)</strong>.</li>
+  <li><strong>Nhat ky he thong (journal)</strong> - <code>journalctl</code>, noi ghi lai
+      moi lan dich vu (tunnel, Bluetooth, dashboard...) khoi dong/dung/loi - duoc ep giu
+      <strong>it nhat 60 ngay</strong> qua <code>/etc/systemd/journald.conf.d/60-console-pi.conf</code>
+      (mac dinh cua he thong KHONG dam bao thoi gian, chi gioi han theo dung luong, nen phai
+      ep ro rang).</li>
+  <li><strong>Nhat ky nginx</strong> (<code>/var/log/nginx/access.log</code>,
+      <code>error.log</code>) - cua ngo mang chinh cua dashboard, cung tang tu 14 len
+      <strong>60 ngay</strong>.</li>
+</ul>
+Van gioi han dung luong (SD 29GB thuong con hang chuc GB trong) de tranh day the -
+nguyen nhan hong Pi pho bien nhat - nhung 60 ngay la muc toi thieu duoc dam bao cho MOI
+loai nhat ky tren, khong chi rieng 1 file.</div>
+<p><strong>Nhat ky loi ung dung chi ghi loi THAT SU</strong> (loi bat ngo trong ma nguon).
+Cac loi ma cong cu da tu bao ro tren man hinh (vd "khong ket noi duoc thiet bi", "qua thoi
+gian cho") <em>khong</em> ghi vao day - chung da hien ngay luc do roi, ghi them chi lam
+nhieu. Muon xem lai toan bo hoat dong cua 1 dich vu (khong chi loi) thi dung journal that
+qua dong lenh, vi du:</p>
+<pre>* Xem canh bao/loi cua dashboard trong 60 ngay qua
+sudo journalctl -u console-pi-dashboard -p warning --since "-60 days"
+
+* Xem toan bo hoat dong cua tunnel (Cloudflare) hom di cong ty, vi du 3/9/2026
+sudo journalctl -u console-pi-tunnel --since "2026-09-03" --until "2026-09-04"</pre>
 """),
 
     ("tukiemtra", "✅ Tu kiem tra sau khi khoi dong lai", """
