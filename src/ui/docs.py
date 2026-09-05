@@ -496,7 +496,7 @@ that, duyet/tim kiem/dang nhap tai khoan binh thuong nhu tren dien
 thoai/tablet.</p>
 
 <p><strong>Duong quay ve dashboard:</strong> se thay 1 nut noi
-<strong>"🏠 Console Pi"</strong> o goc tren ben trai man hinh, o BAT KY
+<strong>"🏠 Console Pi"</strong> o goc duoi ben trai man hinh, o BAT KY
 trang nao dang mo (khong rieng gi YouTube) - bam vao la ve thang dashboard
 ngay. Da tung thu dung cu chi "vuot canh man hinh de lui" cua Chromium cho
 viec nay va THAT BAI THAT SU: nguoi dung bam vao 1 lien ket ben trong

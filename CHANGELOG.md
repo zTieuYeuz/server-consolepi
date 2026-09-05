@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.34
+
+**Doi nut "🏠 Console Pi" ve goc duoi ben trai** (`scripts/kiosk-helper.py`)
+- phan hoi truc tiep: dat o goc tren che mat thanh cong cu/logo cua nhieu
+  trang (vd YouTube). Da kiem chung lai tren chinh youtube.com that: nut
+  gio nam o day man hinh, khong con chan noi dung phia tren.
+
+**Dang dieu tra: khong nghe duoc am thanh** - da phat hien mot huong moi:
+man hinh RasPad chi co DUY NHAT cong HDMI0 dang cam that
+(`/sys/class/drm/card1-HDMI-A-1/status` = connected, HDMI-A-2 =
+disconnected) - neu loa gan trong vo RasPad nhan am thanh qua chinh cap
+HDMI nay (kieu man hinh HDMI tich hop loa, kha bien voi thiet ke RasPad)
+thay vi giac 3.5mm nhu gia dinh ban dau, thi phai chinh ngo ra am thanh
+mac dinh sang HDMI moi nghe duoc. Da thu doi ngo ra mac dinh sang HDMI
+(`wpctl set-default`) va dang cho anh Thoai xac nhan co nghe duoc video
+YouTube khong - CHUA ket luan, chua sua vinh vien vao code cho den khi co
+xac nhan that.
+
 ## 0.4.33
 
 **Sua loi that: ban phim ao khong hien tren chinh trang YouTube** - phan

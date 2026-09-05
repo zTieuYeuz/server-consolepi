@@ -154,7 +154,7 @@ def register_youtube(app):
             🌐 Mo YouTube</a>
           <div class="msg ok" style="margin-top:14px;">
             <strong>Luon co duong ve:</strong> se thay 1 nut nho
-            <strong>"🏠 Console Pi"</strong> noi o goc tren ben trai man
+            <strong>"🏠 Console Pi"</strong> noi o goc duoi ben trai man
             hinh, o BAT KY trang nao dang mo - bam vao do la ve thang
             dashboard nay ngay lap tuc, khong can vuot hay go gi ca.
           </div>

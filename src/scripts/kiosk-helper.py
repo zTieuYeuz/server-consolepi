@@ -87,8 +87,14 @@ INJECT_JS_TEMPLATE = r"""
     var b = document.createElement("button");
     b.textContent = "🏠 Console Pi";
     b.type = "button";
+    // Goc duoi ben trai (khong phai goc tren) - theo yeu cau thuc te: goc
+    // tren de chong len thanh cong cu/logo cua nhieu trang (vd YouTube).
+    // Luu y: khi ban phim ao dang mo (cung o duoi man hinh), ban phim se
+    // ve DE LEN nut nay (kb duoc tao/gan vao DOM sau, cung z-index toi da
+    // nen phan tu sau thang tren) - chap nhan duoc vi luc dang go chu
+    // khong can bam nut nay, no hien lai ngay khi dong ban phim.
     b.style.cssText = [
-      "position:fixed", "left:10px", "top:10px", "z-index:2147483647",
+      "position:fixed", "left:10px", "bottom:14px", "z-index:2147483647",
       "background:#4CAF50", "color:#fff", "border:none", "border-radius:20px",
       "padding:9px 15px", "font-size:14px", "font-family:system-ui,Arial,sans-serif",
       "box-shadow:0 3px 14px rgba(0,0,0,.5)", "cursor:pointer",
