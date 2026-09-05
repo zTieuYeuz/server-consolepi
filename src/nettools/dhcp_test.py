@@ -30,6 +30,25 @@ _TEST_RULE_PRIO = 199
 WEB_CHECKS = [("http://example.com", 80), ("https://www.google.com", 443)]
 CLOUDFLARE_BYTES = 25_000_000
 
+# Nhat ky rieng cho cong cu nay - cung khuon mau AUDIT_LOG da dung o
+# netmiko_tool.py/api.py. LY DO CAN: cong cu nay thuong dung o hien truong
+# (mang la, cong ty) dung luc khong the SSH/nho su ho tro tu xa duoc - neu
+# ket qua chi hien tren man hinh roi mat di (tat may, chuyen trang), khong
+# con cach nao xem lai OFFER/ACK that su chua gi de doi chieu sau nay.
+AUDIT_LOG = "/var/log/console-pi-dhcptest.log"
+
+
+def _ghi_nhat_ky(iface, offers, internet_result):
+    try:
+        import time as _t
+        dong = f"{_t.strftime('%Y-%m-%d %H:%M:%S')} | iface={iface} | offers={offers}"
+        if internet_result is not None:
+            dong += f" | internet={internet_result}"
+        with open(AUDIT_LOG, "a") as f:
+            f.write(dong + "\n")
+    except Exception:
+        pass  # khong bao gio de ghi log lam hong ca lan kiem tra
+
 
 def _chay(cmd, timeout=10):
     try:
@@ -244,7 +263,13 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
             "offered_ip": recv[BOOTP].yiaddr,
             "server_id": opts.get("server_id", "?"),
             "subnet_mask": opts.get("subnet_mask", "?"),
-            "router": opts.get("router", "?"),
+            # RFC 3442: Option 121 (Classless Static Routes) duoc UU TIEN
+            # hon Option 3 (Router) neu ca hai cung co mat. Nhieu mang
+            # doanh nghiep chi gui Option 121, khong gui Option 3 - thieu
+            # nhanh nay se bao nham "khong co gateway" du mang hoan toan
+            # binh thuong. Xem _gateway_tu_option121() de biet chi tiet.
+            "router": (_gateway_tu_option121(opts) if opts.get("classless_static_routes")
+                      else opts.get("router", "?")),
             "name_server": opts.get("name_server", "?"),
             "lease_time": opts.get("lease_time", "?"),
         })
@@ -253,8 +278,52 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
     if test_internet and offers:
         internet_result = _test_internet_qua_dhcp(iface, xid, offers[0], hw)
 
+    _ghi_nhat_ky(iface, offers, internet_result)
+
     return {"ok": True, "error": None, "offers": offers, "internet": internet_result,
             "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
+
+
+def _gateway_tu_option121(opts):
+    """
+    Doc gateway tu Option 121 (Classless Static Routes, RFC 3442) - CHUAN
+    QUOC TE ma nhieu mang doanh nghiep/hien dai dung THAY THE cho Option 3
+    (Router) co dien, dac biet khi mang co nhieu router/VLAN va can chi ra
+    tuyen duong cu the thay vi 1 gateway don gian.
+
+    LOI THAT DA GAP (tim ra qua kiem tra thuc te tai 1 mang cong ty): cong
+    cu nay TRUOC DAY chi biet doc Option 3, nen khi mang chi gui Option 121
+    (khong co Option 3 luon) thi bao nham "khong the dinh tuyen de test" du
+    mang hoan toan binh thuong - ping/traceroute thu cong qua chinh giao
+    dien do van chay tot (he dieu hanh da tu doc dung Option 121 roi, chi
+    rieng cong cu nay chua biet).
+
+    RFC 3442 quy dinh RO: neu Option 121 CO MAT, client PHAI uu tien no hon
+    Option 3 (du Option 3 cung co mat) - ham nay tra ve gateway cua tuyen
+    MAC DINH (dich 0.0.0.0/0) trong Option 121 neu tim thay, "?" neu khong.
+    """
+    tuyen = opts.get("classless_static_routes")
+    if not tuyen:
+        return "?"
+    # Gia tri la 1 danh sach chuoi dang "dich/prefixlen:gateway"
+    if isinstance(tuyen, str):
+        tuyen = [tuyen]
+    for muc in tuyen:
+        try:
+            dich, gw = str(muc).split(":", 1)
+            mang, prefix = dich.split("/")
+            if mang == "0.0.0.0" and prefix == "0":
+                return gw
+        except (ValueError, AttributeError):
+            continue
+    # Khong co tuyen mac dinh ro rang (0.0.0.0/0) - lay tuyen DAU TIEN lam
+    # phuong an du phong, con hon la bao "khong co gi ca" trong khi Option
+    # 121 ro rang CO du lieu dinh tuyen that.
+    try:
+        _, gw = str(tuyen[0]).split(":", 1)
+        return gw
+    except (ValueError, AttributeError, IndexError):
+        return "?"
 
 
 def _mask_to_prefixlen(mask):
@@ -318,7 +387,12 @@ def _dhcp_request_ack(iface, xid, offer, hw, timeout=5):
             continue
         ip = recv[BOOTP].yiaddr
         mask = opts.get("subnet_mask", offer.get("subnet_mask"))
-        gw = opts.get("router", offer.get("router"))
+        # Cung uu tien Option 121 nhu luc doc OFFER - xem giai thich o
+        # _gateway_tu_option121() va cho dat "router" trong OFFER phia tren.
+        if opts.get("classless_static_routes"):
+            gw = _gateway_tu_option121(opts)
+        else:
+            gw = opts.get("router", offer.get("router"))
         dns = opts.get("name_server", offer.get("name_server"))
         return True, ip, mask, gw, dns, None
 

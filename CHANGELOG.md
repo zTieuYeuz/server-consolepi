@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.4.21
+
+**Sua loi that gap tai mang cong ty: "Kiem tra toan dien cong mang" bao
+nham "khong co gateway hop le" du mang hoan toan binh thuong.** Nguoi dung
+bam nut kiem tra, cong cu bao loi va tu choi test Internet/bang thong -
+nhung `ping`/`traceroute` lam tay qua CHINH cong do (kem ICMP Redirect that
+tu router) lai chay hoan toan binh thuong.
+
+**Nguyen nhan:** mang do khong gui Option 3 (Router) co dien - chi gui
+**Option 121 (Classless Static Routes, RFC 3442)**, mot chuan quoc te ngay
+cang pho bien o mang doanh nghiep/hien dai. He dieu hanh (Windows/Linux) da
+tu biet doc Option 121 tu lau, nhung cong cu nay truoc gio chi biet doc
+Option 3 nen ket luan sai "khong co gateway" du du lieu dinh tuyen that su
+CO trong goi tin, chi la o option khac.
+
+**Sua:** them ham doc Option 121, uu tien no hon Option 3 dung theo RFC
+3442 khi ca hai cung co mat (tim tuyen mac dinh 0.0.0.0/0, lay gateway cua
+tuyen do). Da kiem thu voi 4 tinh huong: chi co Option 121 (dung du lieu mo
+phong khop chinh xac mang cong ty da gap), chi co Option 3, Option 121 co
+nhieu tuyen khong tuyen mac dinh ro rang (lay tuyen dau lam du phong), va
+khong co gi ca.
+
+**Them nhat ky rieng cho cong cu nay** (`/var/log/console-pi-dhcptest.log`)
+- ghi lai OFFER/ACK that su nhan duoc moi lan bam kiem tra. Ly do: cong cu
+nay hay dung o hien truong (mang la, cong ty) dung luc khong the SSH hay
+nho su ho tro tu xa - truoc day ket qua chi hien tren man hinh roi mat, ve
+nha khong con cach nao xem lai. Cung them 2 dong vao bang "Vi tri file quan
+trong" trong tai lieu (`console-pi-dhcptest.log` va `console-pi-errors.log`
+tu 0.4.16).
+
 ## 0.4.20
 
 **Sua triet de: DNS bi xoa trang khi rut day mang, chi con WiFi.** Ban

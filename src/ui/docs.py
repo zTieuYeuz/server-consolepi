@@ -67,6 +67,10 @@ truyen dang ro - luc do can them HTTPS hoac chi vao qua VPN.</div>"""),
 <tr><td><code>/etc/nginx/sites-available/console-pi.conf</code></td><td>Cau hinh cong trung gian</td></tr>
 <tr><td><code>/var/log/console-pi-fallback.log</code></td><td>Nhat ky tu chuyen WiFi/AP</td></tr>
 <tr><td><code>/var/log/console-pi-netmiko.log</code></td><td>Nhat ky moi lan chay lenh len thiet bi mang</td></tr>
+<tr><td><code>/var/log/console-pi-dhcptest.log</code></td><td>Nhat ky moi lan bam "Kiem tra toan dien cong mang" -
+    OFFER/ACK that su nhan duoc, huu ich khi kiem tra o hien truong (khong SSH duoc luc do) roi xem lai sau</td></tr>
+<tr><td><code>/var/log/console-pi-errors.log</code></td><td>Loi Python khong duoc bat trong dashboard, kem traceback -
+    xem truc tiep tren web qua tab "Nhat ky loi"</td></tr>
 </table>
 <div class="msg ok">Cac file <strong>in dam</strong> duoc GIU NGUYEN khi cai de ban moi.</div>"""),
 
@@ -433,6 +437,26 @@ dinh tuyen rieng cho dia chi do, roi:</p>
 con anh huong gi den cong dang test.</p>
 <p style="color:#8b93a1;">Khong dung iperf3 (can chuan bi may thu hai, khong phu hop khi
 chi co mot minh Pi cam vao switch/router).</p>
+
+<h3 style="color:#4CAF50;">Da sua: mang chi dung Option 121 (RFC 3442) bi bao nham "khong co gateway"</h3>
+<div class="msg err"><strong>Loi that gap tai 1 mang cong ty:</strong> cong cu bao
+"Nhan duoc IP nhung thieu subnet mask hoac gateway hop le - khong the dinh tuyen de test",
+trong khi <code>ping</code>/<code>traceroute</code> lam tay qua CHINH cong do lai chay hoan
+toan binh thuong (co ca ICMP Redirect that tu router mang).</div>
+<p><strong>Nguyen nhan:</strong> mang do khong gui <strong>Option 3 (Router)</strong> co dien
+- chi gui <strong>Option 121 (Classless Static Routes, RFC 3442)</strong>, mot chuan quoc te
+ngay cang pho bien o mang doanh nghiep/hien dai (cho phep khai bao nhieu tuyen duong cu the
+thay vi 1 gateway don gian). He dieu hanh (Windows/Linux) da tu doc dung Option 121 tu lau,
+nhung cong cu nay truoc day chi biet doc Option 3 nen bao sai.</p>
+<p><strong>Da sua:</strong> doc them Option 121, uu tien no hon Option 3 dung theo RFC 3442
+neu ca hai cung co mat (tim tuyen mac dinh <code>0.0.0.0/0</code>, lay gateway cua tuyen do).
+Da kiem thu voi du lieu mo phong dung dinh dang mang cong ty gap phai.</p>
+
+<h3 style="color:#4CAF50;">Xem lai ket qua da test truoc do</h3>
+<p>Moi lan bam "Kiem tra toan dien" deu ghi 1 dong vao
+<code>/var/log/console-pi-dhcptest.log</code> (OFFER/ACK that su nhan duoc). Huu ich khi
+kiem tra o hien truong (mang la, cong ty) roi ve nha moi xem lai duoc, khong can nho chinh
+xac may gio da test luc con o do.</p>
 """),
 
     ("suckhoe", "🩺 Suc khoe thiet bi va nut nguon", """
