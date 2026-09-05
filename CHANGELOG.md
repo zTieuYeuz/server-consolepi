@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.32
+
+**Ban phim ao GIO DA hien duoc tren chinh trang YouTube that** (o tim
+kiem/binh luan/chat) - phan hoi truc tiep: "em thật sự ko thể bật bàn
+phím ảo trên trang youtube hả". Ket luan truoc ("khong lam duoc, phai
+dung ban phim that/USB/Bluetooth") CHUA DUNG - da sua.
+
+- Doi ten `scripts/kiosk-homebtn.py` -> `scripts/kiosk-helper.py` (va
+  service tuong ung `console-pi-kiosk-homebtn` -> `console-pi-kiosk-helper`)
+  vi gio lam nhieu hon la chi mot nut Home.
+- Them ban phim ao dang HTML/JS thuan (khong phai ban phim ao he thong)
+  duoc TIEM qua cung co che CDP dang dung cho nut "Ve Dashboard" - chay
+  ben trong chinh trang dang mo nen KHONG can giao thuc layer-shell hay
+  quyen he thong nao (khac voi wvkbd/squeekboard da thu va that bai truoc
+  do). Ho tro `<input>`, `<textarea>`, va phan tu `contenteditable`
+  (dung cho khung binh luan/chat), dung "native value setter" de tuong
+  thich voi trang dung framework kieu React.
+- Da kiem chung that (khong doan): tiem vao 1 trang test co du 3 loai o
+  nhap tren, mo phong dung kieu du lieu cua o tim kiem/binh luan/chat that,
+  go chu/xoa/Enter deu hoat dong dung va cac trang do nhan dung su kien
+  `input`/`keydown`.
+- Chuyen nut "🏠 Console Pi" tu goc duoi len goc tren ben trai man hinh de
+  khong de chong len ban phim ao moi hien o duoi man hinh.
+- Cap nhat tai lieu va `ui/youtube.py` ghi ro gioi han that con lai (chi
+  kiem chung 3 loai o nhap chuan, o nhap dac biet phuc tap hon chua kiem
+  chung tung truong hop).
+
 ## 0.4.31
 
 **Dua tro lai nut "Mo YouTube" dieu huong that, lan nay voi duong ve dang

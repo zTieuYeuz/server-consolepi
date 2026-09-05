@@ -19,32 +19,47 @@ vong truoc - khong doan):
 
 => GIAI PHAP CUOI CUNG (da kiem chung that bang script test rieng, dieu
    huong qua nhieu trang cuc bo khac nhau va xac nhan ket qua "FOUND" moi
-   lan, khong doan): thay vi dua vao mot cu chi khong dang tin cay, lam
-   mot nut "🏠 Console Pi" LUON NOI CO DINH tren MOI trang duoc tai, bat ke
-   la trang nao (YouTube, hay ngay ca datbike.vn neu lo bam trung lan
-   nua) - bam vao la ve thang dashboard. Nut nay khong phai code cua trang
-   nay hay cua YouTube - no duoc TIEM TU BEN NGOAI boi mot tien trinh nen
-   rieng (scripts/kiosk-homebtn.py) dieu khien Chromium qua giao thuc
-   DevTools cua chinh no (--remote-debugging-port=9222 trong
-   kiosk-start.sh, CHI nghe tren 127.0.0.1 - da xac nhan bang `ss -tlnp`
-   khong lo ra mang ngoai). Xem chi tiet ky thuat trong file do.
+   lan, khong doan): thay vi dua vao mot cu chi khong dang tin cay, mot
+   tien trinh nen rieng (scripts/kiosk-helper.py) dieu khien Chromium tu
+   ben ngoai qua giao thuc DevTools cua chinh no
+   (--remote-debugging-port=9222 trong kiosk-start.sh, CHI nghe tren
+   127.0.0.1 - da xac nhan bang `ss -tlnp` khong lo ra mang ngoai) de TIEM
+   vao MOI trang duoc tai (bat ke la trang nao - YouTube, hay ngay ca
+   datbike.vn neu lo bam trung lan nua):
+     1. Mot nut "🏠 Console Pi" luon noi co dinh - bam vao la ve thang
+        dashboard.
+     2. Mot ban phim ao HTML/JS thuan (khong phai ban phim ao he thong) -
+        xem muc rieng ben duoi.
+   Xem chi tiet ky thuat day du trong scripts/kiosk-helper.py.
 
-   Vi nut nay hoat dong o TAT CA moi trang (khong phu thuoc website nao),
-   nut "🌐 Mo YouTube" dieu huong thang duoc dua tro lai an toan - lan nay
-   duong quay ve khong con phu thuoc vao 1 cu chi rieng cua trang YouTube
-   nua ma la mot co che chung, doc lap voi noi dung dang mo.
+   Vi nut Ve Dashboard hoat dong o TAT CA moi trang (khong phu thuoc
+   website nao), nut "🌐 Mo YouTube" dieu huong thang duoc dua tro lai an
+   toan - lan nay duong quay ve khong con phu thuoc vao 1 cu chi rieng cua
+   trang YouTube nua ma la mot co che chung, doc lap voi noi dung dang mo.
+
+Ve ban phim ao tren YouTube that (da tung ket luan "khong lam duoc" - KET
+LUAN DO CHUA DUNG, da sua):
+  Ket luan truoc: vkeyboard.js (dashboard) chi chay duoc tren trang cua
+  chinh no, va ban phim ao he thong (wvkbd/squeekboard) khong chay duoc vi
+  compositor kiosk (`cage`) thieu giao thuc "layer-shell". CA HAI DIEU NAY
+  DEU DUNG - nhung tu do ket luan "khong the co ban phim ao tren trang
+  khac" la SAI. Mot khi da co CDP de tiem nut Ve Dashboard, CUNG dung
+  duoc chinh co che do de tiem mot ban phim ao HTML/JS THUAN vao ben trong
+  YouTube - khong can layer-shell hay quyen he thong nao ca, vi no chi la
+  DOM/script binh thuong chay trong chinh trang do. Da kiem chung that
+  (khong doan): tiem vao 1 trang test co input/textarea/contenteditable,
+  go chu, xoa, bam Enter deu hoat dong dung, gia lap y het kieu du lieu
+  cua o tim kiem/binh luan/chat that.
 
 Gioi han that con lai (khong bia):
   - YouTube khong cho embed tim kiem/duyet day du trong iframe (da kiem tra
     `curl -I` - X-Frame-Options: SAMEORIGIN). Nut "Mo YouTube" giai quyet
     dung cho truong hop nay vi no KHONG dung iframe, dieu huong that.
-  - Ban phim ao cua Console Pi CHI chay tren trang cua chinh no. Mot khi da
-    o trong trang youtube.com that (sau khi bam "Mo YouTube"), o tim
-    kiem/binh luan/chat cua YouTube se KHONG hien ban phim ao - da kiem
-    chung compositor kiosk (`cage`) khong ho tro giao thuc "layer-shell" ma
-    moi ban phim ao he thong can (chi tiet: xem /docs#youtube). Van giu
-    cach nhung video (khong roi trang, ban phim ao hoat dong binh thuong
-    tren o nhap cua chinh trang nay) cho truong hop chi muon nghe nhac nen.
+  - Ban phim ao tiem qua CDP chi chac chan go duoc vao <input>/<textarea>/
+    phan tu contenteditable tieu chuan (da kiem chung 3 loai nay). O nhap
+    dac biet phuc tap hon (vd trinh soan thao rich-text nhieu lop long
+    nhau) chua kiem chung tung truong hop - neu gap o nao khong go duoc,
+    bao lai de kiem tra rieng.
 """
 import re
 
@@ -139,16 +154,16 @@ def register_youtube(app):
             🌐 Mo YouTube</a>
           <div class="msg ok" style="margin-top:14px;">
             <strong>Luon co duong ve:</strong> se thay 1 nut nho
-            <strong>"🏠 Console Pi"</strong> noi o goc duoi ben trai man
+            <strong>"🏠 Console Pi"</strong> noi o goc tren ben trai man
             hinh, o BAT KY trang nao dang mo - bam vao do la ve thang
             dashboard nay ngay lap tuc, khong can vuot hay go gi ca.
           </div>
-          <div class="msg info" style="margin-top:10px;">
-            O tim kiem/binh luan/chat cua chinh trang YouTube se khong hien
-            ban phim ao cua Console Pi (chi tiet ky thuat: xem
-            <a href="/docs#youtube">Tai lieu</a>). Muon go duoc o do thi can
-            ban phim that (USB hoac Bluetooth, xem tab
-            <a href="/bluetooth">Bluetooth</a>).
+          <div class="msg ok" style="margin-top:10px;">
+            <strong>Ban phim ao cung hien duoc luon</strong> khi cham vao o
+            tim kiem/binh luan/chat cua chinh trang YouTube - se thay ban
+            phim quen thuoc hien len duoi man hinh giong cac trang khac
+            cua Console Pi. Chi tiet ky thuat: xem
+            <a href="/docs#youtube">Tai lieu</a>.
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 [Unit]
-Description=Console Pi - Tiem nut noi Ve Dashboard vao moi trang cua kiosk
+Description=Console Pi - Tiem nut Ve Dashboard + ban phim ao vao moi trang cua kiosk
 After=console-pi-kiosk.service
 Wants=console-pi-kiosk.service
 
@@ -7,7 +7,7 @@ Wants=console-pi-kiosk.service
 Type=simple
 User=administrator
 Group=administrator
-ExecStart=/usr/bin/python3 /opt/console-pi/scripts/kiosk-homebtn.py
+ExecStart=/usr/bin/python3 /opt/console-pi/scripts/kiosk-helper.py
 Restart=always
 RestartSec=3
 

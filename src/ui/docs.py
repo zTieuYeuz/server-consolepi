@@ -496,7 +496,7 @@ that, duyet/tim kiem/dang nhap tai khoan binh thuong nhu tren dien
 thoai/tablet.</p>
 
 <p><strong>Duong quay ve dashboard:</strong> se thay 1 nut noi
-<strong>"🏠 Console Pi"</strong> o goc duoi ben trai man hinh, o BAT KY
+<strong>"🏠 Console Pi"</strong> o goc tren ben trai man hinh, o BAT KY
 trang nao dang mo (khong rieng gi YouTube) - bam vao la ve thang dashboard
 ngay. Da tung thu dung cu chi "vuot canh man hinh de lui" cua Chromium cho
 viec nay va THAT BAI THAT SU: nguoi dung bam vao 1 lien ket ben trong
@@ -506,25 +506,39 @@ vuot canh khong dua ve duoc, phai remote vao chay
 che vuot canh cua Chromium chu yeu lam cho touchpad/chuot tren Windows/
 macOS, tren man hinh cam ung Linux khong duoc trien khai day du/dang tin
 cay). Da doi sang cach dang tin cay hon: mot tien trinh nen rieng
-(<code>scripts/kiosk-homebtn.py</code>) dieu khien Chromium tu ben ngoai
-qua giao thuc DevTools cua chinh no de TIEM nut noi do vao MOI trang duoc
-tai - khong phu thuoc cu chi cam ung nao, da kiem chung that bang cach
-dieu huong qua nhieu trang khac nhau va xac nhan nut van con moi lan.</p>
+(<code>scripts/kiosk-helper.py</code>, service
+<code>console-pi-kiosk-helper</code>) dieu khien Chromium tu ben ngoai qua
+giao thuc DevTools cua chinh no (<code>--remote-debugging-port=9222</code>,
+chi nghe tren 127.0.0.1) de TIEM nut noi do vao MOI trang duoc tai - khong
+phu thuoc cu chi cam ung nao, da kiem chung that bang cach dieu huong qua
+nhieu trang khac nhau va xac nhan nut van con moi lan; tat/bat lai kiosk
+de mo phong Chromium bi restart va xac nhan tu ket noi lai thanh cong.</p>
 
-<p><strong>Vi sao go vao o tim kiem/binh luan/chat cua chinh trang YouTube
-khong hien ban phim ao cua Console Pi?</strong> Ban phim ao chi chay tren
-trang CUA CHINH NO - khong gan vao mot website khac nhu youtube.com duoc.
-Da thu tim cach he thong hien ban phim ao chung cho moi ung dung (cai thu
-<code>wvkbd</code> va <code>squeekboard</code>, chay tren chinh phien man
-hinh dang song) - ca hai deu bao loi ngay "khong co layer shell" roi
-thoat, vi bo dieu phoi man hinh dung cho kiosk (<code>cage</code>) la loai
-toi gian, khong cai giao thuc ma moi ban phim ao Wayland tieu chuan can
-(xac nhan bang <code>strings $(which cage) | grep layer_shell</code> -
-khong ra dong nao). Doi sang compositor khac co ho tro (vd
-<code>labwc</code>/<code>sway</code>) co the giai quyet duoc ve mat ky
-thuat nhung anh huong ca co che khoa kiosk - chua lam khi chua duoc dong y
-ro rang. Muon go duoc o do thi can ban phim that: cam USB hoac ghep noi
-qua tab <a href="/bluetooth">Bluetooth</a> (da ho tro san thiet bi HID).</p>
+<p><strong>Ban phim ao tren chinh trang YouTube that (o tim kiem/binh
+luan/chat)</strong> - CO hien duoc, dung cach TIEM giong het nut Ve
+Dashboard o tren. Ket luan truoc day noi "khong the co ban phim ao chung
+cho ung dung khac" la dung MOT NUA: dung cho ban phim ao HE THONG
+(<code>wvkbd</code>/<code>squeekboard</code> - da thu cai va chay tren
+chinh phien man hinh kiosk, ca hai deu bao loi ngay "khong co layer shell"
+vi <code>cage</code> la compositor toi gian, khong cai giao thuc
+"wlr-layer-shell" ma cac ban phim ao Wayland tieu chuan can - xac nhan
+bang <code>strings $(which cage) | grep layer_shell</code> khong ra dong
+nao). NHUNG mot ban phim ao dang HTML/JS thuan (giong het cach
+vkeyboard.js lam tren trang cua Console Pi) khong can layer-shell hay
+quyen he thong gi ca - no chi la DOM/script chay ben trong chinh trang
+dang mo, tiem duoc qua CDP y het nut Home. Da kiem chung that (khong
+doan): tiem vao mot trang test co <code>&lt;input&gt;</code>,
+<code>&lt;textarea&gt;</code> va phan tu <code>contenteditable</code>
+(gia lap dung kieu o tim kiem/binh luan/chat that), go chu/xoa/Enter deu
+hoat dong dung, gia tri thay doi va cac su kien <code>input</code>/
+<code>keydown</code> deu duoc trang do nhan thay (quan trong voi cac
+trang dung framework nhu React - phai dung "native value setter" thay vi
+gan <code>.value</code> truc tiep, neu khong React se khong nhan ra thay
+doi).</p>
+<p>Gioi han that con lai: chi kiem chung chac chan voi 3 loai o nhap
+chuan (<code>input</code>/<code>textarea</code>/<code>contenteditable</code>).
+Neu gap mot o nhap dac biet tren YouTube (hoac trang khac) khong go duoc,
+bao lai de kiem tra rieng - khong bia la da ho tro het moi truong hop.</p>
 
 <p><strong>Neu chi muon nghe nhac nen ma khong roi trang dang lam</strong> -
 dung khung "Phat 1 video ngay trong dashboard": mo YouTube tren dien
