@@ -499,14 +499,37 @@ chi, khong co nut Back. Duong DUY NHAT de quay ve: <strong>vuot ngon tay tu
 sat mep trai man hinh sang phai</strong> (giong cu chi vuot lui tren dien
 thoai). Da bat lai co che nay rieng cho tinh huong nay
 (<code>scripts/kiosk-start.sh</code>).</p>
+
+<p><strong>Vi sao go vao o tim kiem/binh luan/chat cua chinh trang YouTube
+khong hien ban phim ao?</strong> Ban phim ao cua Console Pi chi chay duoc
+tren trang CUA CHINH NO - khong the gan vao mot website khac nhu youtube.com.
+Da thu tim cach khac: cai thu hai ban phim ao he thong pho bien cho man
+hinh Linux nhung/kiosk (<code>wvkbd</code> va <code>squeekboard</code>) va
+chay thu ngay tren phien man hinh dang song - ca hai deu bao loi ngay lap
+tuc "khong co layer shell" roi thoat. Nguyen nhan: bo dieu phoi man hinh
+dung cho kiosk (<code>cage</code>) la loai toi gian, CHI chay dung 1 ung
+dung toan man hinh va khong cai giao thuc "layer-shell" ma moi ban phim ao
+Wayland tieu chuan can de hien de tren ung dung dang chay - da xac nhan
+bang <code>strings $(which cage) | grep layer_shell</code> khong ra ket qua
+nao. Day la gioi han that cua kien truc dang dung (doi sang compositor
+khac co ho tro nhu <code>labwc</code>/<code>sway</code> co the giai quyet
+duoc, nhung la thay doi lon anh huong ca co che khoa kiosk - chua lam khi
+chua duoc dong y ro rang).</p>
+<p><strong>Giai phap dang dung:</strong> o "Muon tim theo tu khoa truoc?"
+ngay trong khung "Mo YouTube" cho go tu khoa BANG BAN PHIM AO CUA CONSOLE
+PI (van hien binh thuong vi day la o nhap cua chinh trang nay), roi mo
+thang trang ket qua that - khong can go gi tren trang YouTube nua. Rieng
+viec go binh luan/chat/dang nhap tai khoan tren chinh YouTube thi bat buoc
+phai dung ban phim that: cam USB hoac ghep noi qua tab
+<a href="/bluetooth">Bluetooth</a> (da ho tro san thiet bi HID).</p>
+
 <p><strong>Neu chi muon nghe nhac nen ma khong roi trang dang lam</strong> -
 dung khung "Phat 1 video ngay trong dashboard": mo YouTube tren dien thoai,
 bam <strong>Chia se &rarr; Sao chep duong dan</strong>, dan vao o nhap, bam
 Phat - video hien ngay trong trang, khong mat thanh dieu huong.</p>
 <p><strong>O "Tim kiem nhanh, xem ngay trong trang" co the khong ra ket qua</strong>
 - day la mot kieu nhung khong chinh thuc cua YouTube, co the ngung hoat dong
-bat cu luc nao neu YouTube thay doi. Khi do hay dung nut "Mo YouTube" o tren
-de tim kiem that.</p>
+bat cu luc nao neu YouTube thay doi. Khi do hay dung o tim kiem o tren.</p>
 """),
 
     ("pin", "🔋 Hien % pin - can gan gi", """

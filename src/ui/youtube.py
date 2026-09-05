@@ -31,6 +31,47 @@ dien vi day khong phai thao tac hien nhien (khong co nut nao hien thi ca).
 Van giu them cach "dan link roi phat trong khung" (embed qua /embed/<id>,
 KHONG bi chan iframe) - hop khi chi muon nghe 1 bai nhac nen ma khong can
 roi dashboard (vi du dang xem Nettools, khong muon mat cho).
+
+------------------------------------------------------------------------
+LOI THAT DA GAP VA DA KIEM CHUNG (khong doan): sau khi bam "Mo YouTube",
+o TIM KIEM/BINH LUAN/CHAT tren chinh trang youtube.com khong hien ban phim
+ao - vi vkeyboard.js chi chay tren trang CUA CHINH Console Pi, khong the
+gan vao mot website khac (youtube.com) duoc.
+
+Da thu tim cach de he thong hien ban phim ao tren MOI ung dung (khong rieng
+gi trang cua minh), giong dien thoai that:
+  1. Cai thu wvkbd va squeekboard (2 ban phim ao Wayland pho bien nhat cho
+     man hinh nhung/kiosk) va chay thang tren phien Wayland dang song cua
+     kiosk de xem thuc te co hien duoc khong.
+  2. Ca hai deu bao loi NGAY LAP TUC: "layer shell not available" / "No
+     layer shell global available" - roi thoat, khong hien gi ca.
+  3. Nguyen nhan: bo dieu phoi man hinh (compositor) dang dung cho kiosk
+     la `cage` (xem scripts/kiosk-start.sh) - day la loai kiosk toi gian,
+     CHI chay dung 1 ung dung toan man hinh va KHONG cai dat giao thuc
+     "wlr-layer-shell" ma moi ban phim ao Wayland tieu chuan can de tu ve
+     minh len TREN ung dung dang chay. Da xac nhan bang lenh
+     `strings $(which cage) | grep layer_shell` - khong co dong nao ca.
+  4. Da go 2 goi thu nghiem tren ngay sau khi kiem tra xong (khong dung
+     duoc thi khong de lai chiem dung luong vo ich).
+
+=> Ket luan trung thuc: VOI compositor `cage` hien tai, KHONG co ban phim
+   ao he thong nao chay duoc chung voi kiosk. Day la gioi han that cua
+   kien truc dang dung, khong phai loi code cua tab YouTube. Doi sang mot
+   compositor khac co ho tro layer-shell (vi du labwc, sway) co the giai
+   quyet duoc VE MAT KY THUAT, nhung do la mot thay doi lon anh huong toi
+   toan bo co che khoa kiosk (cage co chu dich CHI cho chay 1 ung dung,
+   labwc/sway la trinh quan ly cua so day du hon, be mat rui ro lon hon) -
+   KHONG tu y doi khi chua duoc anh Thoai dong y ro rang.
+
+Giai phap thuc te da lam trong luc cho:
+  - Them o "Tim va mo ket qua" NGAY TREN TRANG NAY: go tu khoa bang ban
+    phim ao CUA CHINH CONSOLE PI (da biet chay tot), bam Tim la mo thang
+    trang ket qua that cua YouTube da dien san tu khoa - khong can go gi
+    them tren trang YouTube cho truong hop TIM KIEM.
+  - Rieng viec go BINH LUAN/CHAT/dang nhap tai khoan tren chinh trang
+    YouTube thi hien tai BAT BUOC phai dung ban phim that: cam USB hoac
+    ghep noi Bluetooth (tab Bluetooth cua Console Pi da ho tro san thiet
+    bi HID nhu ban phim/chuot).
 """
 import re
 
@@ -111,15 +152,36 @@ def register_youtube(app):
         <div class="card" style="border-left:4px solid #4CAF50;">
           <h3>🌐 Mo YouTube (duyet/tim kiem day du)</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 13px;">
-            Roi khoi dashboard, mo thang trang YouTube that - go tim, xem
-            danh sach de xuat, dang nhap tai khoan... nhu tren dien thoai.</p>
+            Roi khoi dashboard, mo thang trang YouTube that - xem danh sach
+            de xuat, dang nhap tai khoan... nhu tren dien thoai.</p>
           <a class="btn" href="https://www.youtube.com" style="font-size:16px;">
-            🌐 Mo YouTube</a>
-          <div class="msg warn" style="margin-top:14px;">
+            🌐 Mo trang chu YouTube</a>
+
+          <p style="color:#8b93a1;font-size:13px;margin:16px 0 9px;">
+            Muon tim theo tu khoa truoc? Go o day (ban phim ao cua Console Pi
+            van hien binh thuong vi day la o nhap cua chinh trang nay) roi
+            bam Tim - se mo thang trang ket qua that, khong can go lai:</p>
+          <form method="GET" action="https://www.youtube.com/results">
+            <input type="text" name="search_query" placeholder="Tim tren YouTube..." required>
+            <div class="row" style="margin-top:11px;">
+              <button type="submit" style="font-size:16px;">🔎 Tim va mo</button>
+            </div>
+          </form>
+
+          <div class="msg warn" style="margin-top:16px;">
             <strong>Cach quay lai dashboard:</strong> vuot ngon tay tu SAT MEP
             TRAI man hinh sang phai (giong vuot lui tren dien thoai). Man
             hinh nay khong co nut Back hay thanh dia chi nen phai dung cu chi
             nay - khong co cach nao khac de quay ve.
+          </div>
+          <div class="msg info" style="margin-top:10px;">
+            <strong>Luu y quan trong:</strong> mot khi da o trong trang
+            YouTube that, o binh luan/chat/dang nhap tai khoan cua chinh
+            YouTube se <strong>khong hien ban phim ao</strong> - da kiem tra
+            va xac nhan man hinh cam ung nay khong ho tro ban phim ao chay
+            chung voi nhieu ung dung (chi tiet ky thuat: xem <a href="/docs#youtube">
+            Tai lieu</a>). Muon go duoc o do thi can cam ban phim that (USB
+            hoac Bluetooth, xem tab <a href="/bluetooth">Bluetooth</a>).
           </div>
         </div>
 

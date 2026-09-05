@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.4.29
+
+**Dieu tra that: vi sao ban phim ao khong hien khi go vao trang YouTube
+that** (phan hoi tu anh Thoai sau khi dung nut "Mo YouTube" cua 0.4.28).
+
+- Da kiem chung THAT (khong doan): cai thu 2 ban phim ao he thong pho bien
+  cho Linux/kiosk (`wvkbd`, `squeekboard`) va chay thu ngay tren phien man
+  hinh kiosk dang song - ca hai deu bao loi ngay "khong co layer shell"
+  roi thoat. Nguyen nhan: bo dieu phoi man hinh dung cho kiosk (`cage`) la
+  loai toi gian, chi chay dung 1 ung dung toan man hinh, KHONG cai giao
+  thuc "wlr-layer-shell" ma moi ban phim ao Wayland tieu chuan can de hien
+  de len tren ung dung dang chay - xac nhan bang
+  `strings $(which cage) | grep layer_shell` khong ra ket qua. Day la gioi
+  han that cua kien truc kiosk dang dung, khong phai loi cua tab YouTube.
+  Da go sach 2 goi thu nghiem ngay sau khi kiem tra xong.
+- Doi sang compositor khac co ho tro (vd `labwc`/`sway`) co the giai quyet
+  duoc ve mat ky thuat, nhung anh huong toi ca co che khoa kiosk hien tai
+  (`cage` co chu dich chi cho chay 1 ung dung) - KHONG tu y doi, can dong y
+  ro rang truoc vi day la thay doi lon.
+- **Giai phap thuc te da them** (`src/ui/youtube.py`): o "Tim va mo ket
+  qua" ngay trong khung "Mo YouTube" - go tu khoa bang ban phim ao cua
+  chinh Console Pi (van hien binh thuong vi la o nhap cua trang minh), bam
+  Tim se mo thang trang ket qua that cua YouTube da dien san tu khoa,
+  khong can go gi tren trang YouTube nua cho truong hop tim kiem.
+- Rieng go binh luan/chat/dang nhap tai khoan tren chinh YouTube van bat
+  buoc phai dung ban phim that - da ghi ro tren giao dien va tro toi tab
+  Bluetooth (da ho tro san ghep noi ban phim/chuot qua HID).
+- Cap nhat muc tai lieu "📺 Tab YouTube" giai thich day du dieu tra tren.
+
 ## 0.4.28
 
 **Tab YouTube: mo YouTube THAT thay vi chi dan link** - phan hoi truc tiep
