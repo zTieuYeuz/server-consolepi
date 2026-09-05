@@ -23,6 +23,7 @@ NAV_ITEMS = [
     ("/remote", "Truy cap tu xa", "🌍"),
     ("/docs", "Tai lieu", "📖"),
     ("/logs", "Nhat ky loi", "📋"),
+    ("/power", "Nguon dien", "⏻"),
     ("/settings", "Cai dat", "⚙️"),
 ]
 

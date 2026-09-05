@@ -36,6 +36,23 @@ def _esc(s):
             .replace(">", "&gt;").replace('"', "&quot;"))
 
 
+def power_msg_html(h):
+    """Dung chung giua Tong quan va tab Nguon dien (dung 1 nguon logic)."""
+    th = h["throttle"]
+    if th is None:
+        return ('<span style="color:#8b93a1;">Khong doc duoc (may nay '
+                'khong phai Raspberry Pi)</span>')
+    if th["now"]:
+        return ('<span style="color:#ff6b6b;">⛔ ' +
+                _esc(", ".join(th["now"])) +
+                ' - DANG xay ra. Doi nguon/cap sac tot hon ngay.</span>')
+    if th["past"]:
+        return ('<span style="color:#ffb74d;">⚠️ ' +
+                _esc(", ".join(th["past"])) +
+                ' - da tung xay ra ke tu luc bat may. Nguon dang o ranh gioi.</span>')
+    return '<span style="color:#6ee7a0;">🟢 Nguon on dinh, khong sut ap</span>'
+
+
 def load_names():
     import json
     try:
@@ -218,21 +235,7 @@ def register_home(app):
 
         # --- Suc khoe he thong + nguon ---
         h = health.snapshot()
-        th = h["throttle"]
-
-        if th is None:
-            power_msg = ('<span style="color:#8b93a1;">Khong doc duoc (may nay '
-                         'khong phai Raspberry Pi)</span>')
-        elif th["now"]:
-            power_msg = ('<span style="color:#ff6b6b;">⛔ ' +
-                         _esc(", ".join(th["now"])) +
-                         ' - DANG xay ra. Doi nguon/cap sac tot hon ngay.</span>')
-        elif th["past"]:
-            power_msg = ('<span style="color:#ffb74d;">⚠️ ' +
-                         _esc(", ".join(th["past"])) +
-                         ' - da tung xay ra ke tu luc bat may. Nguon dang o ranh gioi.</span>')
-        else:
-            power_msg = '<span style="color:#6ee7a0;">🟢 Nguon on dinh, khong sut ap</span>'
+        power_msg = power_msg_html(h)
 
         temp = h["temp"]
         temp_color = "#6ee7a0" if (temp or 0) < 65 else ("#ffb74d" if (temp or 0) < 80 else "#ff6b6b")
@@ -261,20 +264,7 @@ def register_home(app):
           <tr><td>Dia</td><td>{dk_u} / {dk_t} GB &nbsp;({dk_p}%)</td></tr>
           {bat_row}
         </table>
-
-        <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
-          <form method="POST" action="/power/reboot"
-                onsubmit="return confirm('Khoi dong lai Console Pi ngay bay gio?\n\nMoi phien console dang mo se bi dong.');">
-            <button type="submit" class="gray" data-busy="Dang khoi dong lai...">🔄 Khoi dong lai</button>
-          </form>
-          <form method="POST" action="/power/poweroff"
-                onsubmit="return confirm('TAT HAN Console Pi?\n\nBat lai phai cam dien truc tiep - khong bat tu xa duoc.');">
-            <button type="submit" class="red" data-busy="Dang tat may...">⏻ Tat may</button>
-          </form>
-          <span style="color:#8b93a1;font-size:13px;align-self:center;">
-            Luon tat may bang nut nay truoc khi rut dien, tranh hong the nho.
-          </span>
-        </div>"""
+        <p style="margin-top:10px;"><a class="btn" href="/power">⏻ Tat may / Khoi dong lai</a></p>"""
 
         body = f"""
         <h2>Cong console dang cam</h2>
@@ -298,18 +288,6 @@ def register_home(app):
         return render_page(body, active="/", title="Tong quan",
                            subtitle="Trang thai thiet bi va cac cong console")
 
-
-    @app.route("/power/<what>", methods=["POST"])
-    def power_route(what):
-        ok, msg = health.power_action(what)
-        color = "ok" if ok else "err"
-        # Trang tinh, khong tu chuyen huong: may sap tat/khoi dong lai nen
-        # moi request tiep theo se that bai va nguoi dung tuong co loi.
-        body = f"""
-        <div class="msg {color}" style="font-size:15px;">{_esc(msg)}</div>
-        <p style="margin-top:15px;"><a class="btn" href="/">Ve trang Tong quan</a></p>"""
-        return render_page(body, active="/", title="Nguon",
-                           subtitle="Lenh da duoc gui toi he thong"), (200 if ok else 400)
 
     @app.route("/api/status")
     def api_status():

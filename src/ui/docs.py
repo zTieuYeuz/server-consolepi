@@ -474,9 +474,18 @@ do la nhieu tren bus chu khong phai chip pin. Khong co HAT (khong co EEPROM),
 <code>lsusb</code> khong thay UPS nao. Pin trong man hinh di dong khong co duong
 du lieu toi Pi. Neu sau nay gan UPS HAT that, chi can them ham doc chip vao
 <code>BATTERY_READERS</code> trong <code>ui/health.py</code> la muc pin tu hien ra.</p>
-<p><strong>Nut Tat may / Khoi dong lai:</strong> luon dung nut nay truoc khi rut dien.
-Rut dien dot ngot la nguyen nhan pho bien nhat lam hong the nho. Sau khi bam Tat may,
-doi den khi den xanh tren Pi ngung nhap nhay roi hay rut.</p>
+<p><strong>Nut Tat may / Khoi dong lai:</strong> da chuyen sang tab rieng
+<a href="/power">Nguon dien</a> (truoc day nam chung trong Tong quan). Luon dung nut nay
+truoc khi rut dien - rut dien dot ngot la nguyen nhan pho bien nhat lam hong the nho.
+Sau khi bam Tat may, doi den khi den xanh tren Pi ngung nhap nhay roi hay rut.</p>
+<p><strong>May gan trong vo RasPad thi sao?</strong> Nut Tat may CHI tat duoc he dieu
+hanh tren module Raspberry Pi - KHONG tat duoc man hinh/mach nguon rieng cua vo RasPad.
+Da kiem tra that (khong doan): I2C dang bi tat trong cau hinh boot (khong co
+<code>/dev/i2c-1</code>), va khong tim thay driver/dich vu nao cua RasPad/SunFounder
+tren he thong - nen phan mem tren Pi khong co duong nao noi chuyen voi mach nguon cua
+vo. Vo RasPad dung cong tac nguon vat ly rieng de cat dien toan bo (man hinh + Pi); day
+la cach DUY NHAT hien tai de tat hoan toan: bam Tat may tren dashboard truoc (doi den
+ACT ngung nhap nhay), roi moi gat cong tac vat ly cua vo.</p>
 """),
 
     ("pin", "🔋 Hien % pin - can gan gi", """

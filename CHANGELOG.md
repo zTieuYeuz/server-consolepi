@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.23
+
+**Tach nut Tat may / Khoi dong lai ra tab rieng "Nguon dien"** - truoc day
+hai nut nay nam chung trong tab Tong quan. Ly do: may nay thuong duoc gan
+vao vo RasPad, va nguoi dung can mot noi ro rang de tim nut nguon, tach
+biet khoi cac thong tin theo doi khac.
+
+Tab moi (`/power`, module `ui/power.py`) giu nguyen hanh vi cu (goi
+`health.power_action()`, dung `systemctl --no-block` de HTTP tra loi truoc
+khi may that su tat/khoi dong lai), them phan giai thich ro rang ve gioi
+han khi gan trong vo RasPad.
+
+**Da kiem tra that (khong bia) kha nang tat hoan toan vo RasPad qua phan
+mem:** I2C dang bi tat trong `/boot/firmware/config.txt`
+(`dtparam=i2c_arm` bi comment, khong co `/dev/i2c-1`), va khong tim thay
+bat ky driver kernel, dtoverlay, hay dich vu he thong nao mang ten
+raspad/sunfounder tren may (grep toan bo `systemctl list-unit-files`,
+`dmesg`, `lsmod`). Ket luan trung thuc: **khong phat hien duoc kenh dieu
+khien nguon nao cua rieng vo RasPad tu phia phan mem** - vo RasPad dung
+cong tac nguon vat ly rieng de cat dien toan bo (man hinh + Pi), day la
+cach duy nhat de tat hoan toan hien tai. Da ghi ro dieu nay tren giao dien
+(`/power`) va trong Tai lieu (muc "Suc khoe thiet bi va nut nguon") thay vi
+gia vo co tinh nang khong that su ton tai.
+
 ## 0.4.22
 
 **Sua selftest.sh bao nham loi khi co cap console that** - phat hien ngay

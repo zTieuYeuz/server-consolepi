@@ -13,6 +13,7 @@ from .direct import register_direct                        # noqa: F401
 from .remote import register_remote                        # noqa: F401
 from .api import register_api                              # noqa: F401
 from .logs import register_logs                            # noqa: F401
+from .power import register_power                          # noqa: F401
 
 
 def register_all(app):
@@ -30,4 +31,5 @@ def register_all(app):
     register_remote(app)
     register_api(app)
     register_logs(app)
+    register_power(app)
     return app
