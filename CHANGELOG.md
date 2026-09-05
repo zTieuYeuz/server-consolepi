@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.35
+
+**Doi tab "YouTube" thanh "Giai tri", them TikTok, bo cach dan link/tim
+kiem** - don gian hoa theo yeu cau thuc te sau khi luoi an toan (nut Home
++ ban phim ao tiem qua CDP) da chung minh hoat dong tin cay: khong con can
+cach "dan link/nhung iframe" du phong nua.
+
+- Doi ten `src/ui/youtube.py` -> `src/ui/entertainment.py`, route
+  `/youtube` -> `/giaitri`, nhan tab thanh "Giai tri".
+- Bo hoan toan khung "Phat video theo duong dan" (dan link roi nhung
+  iframe) va "Tim kiem nhanh, xem ngay trong trang" (embed
+  `listType=search` khong chinh thuc) - chi con 2 nut dieu huong that:
+  **🌐 Mo YouTube** va **🎵 Mo TikTok**, ca hai deu duoc luoi an toan cua
+  `console-pi-kiosk-helper` bao ve nhu nhau (nut Home + ban phim ao tiem
+  qua CDP hoat dong tren BAT KY trang nao, khong rieng gi YouTube).
+- Cap nhat tai lieu: muc "📺 Tab YouTube" -> "📺 Tab Giai tri (YouTube,
+  TikTok)", gop lai gon hon, bo cac doan noi ve tinh nang da xoa.
+
 ## 0.4.34
 
 **Doi nut "🏠 Console Pi" ve goc duoi ben trai** (`scripts/kiosk-helper.py`)

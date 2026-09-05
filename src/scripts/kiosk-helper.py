@@ -9,7 +9,7 @@ LICH SU / LY DO (khong doan, da kiem chung that):
      website khac (bam link trong YouTube, bi dua sang datbike.vn, "vuot
      canh man hinh" khong dua ve duoc, phai remote vao chay
      `systemctl restart console-pi-kiosk` moi cuu duoc man hinh) - xem
-     them trong ui/youtube.py. Giai phap: dieu khien Chromium tu ben ngoai
+     them trong ui/entertainment.py. Giai phap: dieu khien Chromium tu ben ngoai
      qua giao thuc DevTools cua chinh no de TIEM 1 nut noi luon xuat hien
      tren MOI trang, bam la ve dashboard, khong phu thuoc cu chi cam ung.
 

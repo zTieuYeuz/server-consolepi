@@ -488,18 +488,14 @@ la cach DUY NHAT hien tai de tat hoan toan: bam Tat may tren dashboard truoc (do
 ACT ngung nhap nhay), roi moi gat cong tac vat ly cua vo.</p>
 """),
 
-    ("youtube", "📺 Tab YouTube (giai tri)", """
-<p>Tab <a href="/youtube">YouTube</a> de xem video giai lao giua luc lam viec.</p>
+    ("giaitri", "📺 Tab Giai tri (YouTube, TikTok)", """
+<p>Tab <a href="/giaitri">Giai tri</a> co 2 nut mo thang YouTube/TikTok
+that de giai lao giua luc lam viec.</p>
 
-<p><strong>Nut "🌐 Mo YouTube"</strong> - bam la vao thang trang YouTube
-that, duyet/tim kiem/dang nhap tai khoan binh thuong nhu tren dien
-thoai/tablet.</p>
-
-<p><strong>Duong quay ve dashboard:</strong> se thay 1 nut noi
-<strong>"🏠 Console Pi"</strong> o goc duoi ben trai man hinh, o BAT KY
-trang nao dang mo (khong rieng gi YouTube) - bam vao la ve thang dashboard
-ngay. Da tung thu dung cu chi "vuot canh man hinh de lui" cua Chromium cho
-viec nay va THAT BAI THAT SU: nguoi dung bam vao 1 lien ket ben trong
+<p><strong>Vi sao bam la vao thang trang that duoc, khong chi dan link</strong>
+- da tung thu dan link/nhung iframe (an toan nhung bat tien tren man hinh
+cam ung), roi thu dieu huong that + "vuot canh man hinh de lui" lam duong
+quay ve nhung THAT BAI THAT SU: nguoi dung bam vao 1 lien ket ben trong
 YouTube, bi dua sang mot website khac (datbike.vn) roi ket cung luon o do -
 vuot canh khong dua ve duoc, phai remote vao chay
 <code>systemctl restart console-pi-kiosk</code> moi cuu duoc man hinh (co
@@ -509,57 +505,63 @@ cay). Da doi sang cach dang tin cay hon: mot tien trinh nen rieng
 (<code>scripts/kiosk-helper.py</code>, service
 <code>console-pi-kiosk-helper</code>) dieu khien Chromium tu ben ngoai qua
 giao thuc DevTools cua chinh no (<code>--remote-debugging-port=9222</code>,
-chi nghe tren 127.0.0.1) de TIEM nut noi do vao MOI trang duoc tai - khong
-phu thuoc cu chi cam ung nao, da kiem chung that bang cach dieu huong qua
-nhieu trang khac nhau va xac nhan nut van con moi lan; tat/bat lai kiosk
-de mo phong Chromium bi restart va xac nhan tu ket noi lai thanh cong.</p>
+chi nghe tren 127.0.0.1) de TIEM vao MOI trang duoc tai (bat ke la trang
+nao - YouTube, TikTok, hay bat ky website nao khac):</p>
+<ul>
+  <li>Mot nut noi <strong>"🏠 Console Pi"</strong> o goc duoi ben trai - bam
+      la ve thang dashboard ngay, khong phu thuoc cu chi cam ung nao. Da
+      kiem chung that bang cach dieu huong qua nhieu trang khac nhau va
+      xac nhan nut van con moi lan; tat/bat lai kiosk de mo phong Chromium
+      bi restart va xac nhan tu ket noi lai thanh cong.</li>
+  <li>Mot <strong>ban phim ao</strong> hien len khi cham vao o tim
+      kiem/binh luan/chat cua chinh trang dang mo.</li>
+</ul>
 
-<p><strong>Ban phim ao tren chinh trang YouTube that (o tim kiem/binh
-luan/chat)</strong> - CO hien duoc, dung cach TIEM giong het nut Ve
-Dashboard o tren. Ket luan truoc day noi "khong the co ban phim ao chung
-cho ung dung khac" la dung MOT NUA: dung cho ban phim ao HE THONG
-(<code>wvkbd</code>/<code>squeekboard</code> - da thu cai va chay tren
-chinh phien man hinh kiosk, ca hai deu bao loi ngay "khong co layer shell"
-vi <code>cage</code> la compositor toi gian, khong cai giao thuc
-"wlr-layer-shell" ma cac ban phim ao Wayland tieu chuan can - xac nhan
-bang <code>strings $(which cage) | grep layer_shell</code> khong ra dong
-nao). NHUNG mot ban phim ao dang HTML/JS thuan (giong het cach
+<p><strong>Ve ban phim ao tren trang khac (da tung ket luan "khong lam
+duoc" - CHUA DUNG, da sua):</strong> ket luan truoc dung MOT NUA - dung
+cho ban phim ao HE THONG (<code>wvkbd</code>/<code>squeekboard</code> - da
+thu cai va chay tren chinh phien man hinh kiosk, ca hai deu bao loi ngay
+"khong co layer shell" vi <code>cage</code> la compositor toi gian, khong
+cai giao thuc "wlr-layer-shell" ma cac ban phim ao Wayland tieu chuan can
+- xac nhan bang <code>strings $(which cage) | grep layer_shell</code>
+khong ra dong nao), nhung SAI khi ket luan rong ra "khong the co ban phim
+ao tren trang khac". Mot ban phim ao dang HTML/JS thuan (giong het cach
 vkeyboard.js lam tren trang cua Console Pi) khong can layer-shell hay
 quyen he thong gi ca - no chi la DOM/script chay ben trong chinh trang
-dang mo, tiem duoc qua CDP y het nut Home. Da kiem chung that (khong
-doan): tiem vao mot trang test co <code>&lt;input&gt;</code>,
-<code>&lt;textarea&gt;</code> va phan tu <code>contenteditable</code>
-(gia lap dung kieu o tim kiem/binh luan/chat that), go chu/xoa/Enter deu
-hoat dong dung, gia tri thay doi va cac su kien <code>input</code>/
-<code>keydown</code> deu duoc trang do nhan thay (quan trong voi cac
-trang dung framework nhu React - phai dung "native value setter" thay vi
-gan <code>.value</code> truc tiep, neu khong React se khong nhan ra thay
-doi).</p>
-<p>Gioi han that con lai: chi kiem chung chac chan voi 3 loai o nhap
-chuan (<code>input</code>/<code>textarea</code>/<code>contenteditable</code>).
-Neu gap mot o nhap dac biet tren YouTube (hoac trang khac) khong go duoc,
-bao lai de kiem tra rieng - khong bia la da ho tro het moi truong hop.</p>
+dang mo, tiem duoc qua CDP y het nut Home.</p>
+<p>Da kiem chung that tren chinh youtube.com (khong doan, dung CDP bat
+loi runtime chu khong chi doc code): lan dau ban phim khong hien vi
+YouTube ep chinh sach bao mat <strong>Trusted Types</strong>
+(CSP <code>require-trusted-types-for 'script'</code>) chan gan
+<code>.innerHTML</code> bang chuoi thuong (ke ca chuoi rong) - code cu
+dung cach nay de xoa ban phim cu truoc khi ve lai, nem loi ngay trong ham
+xu ly focus nen loi am tham, ban phim khong bao gio kip hien len. Da sua
+bang cach xoa tung phan tu con qua <code>removeChild</code> - DOM API an
+toan, khong bi Trusted Types dong. Sau khi sua, kiem chung lai: bam o tim
+kiem -> ban phim hien dung, go chu -> gia tri dung, bam xoa -> dung, va
+cac su kien <code>input</code>/<code>keydown</code> deu duoc trang nhan
+thay (quan trong voi trang dung framework nhu React - phai dung
+"native value setter" thay vi gan <code>.value</code> truc tiep).</p>
+<p>Gioi han that con lai: ban phim chi chac chan go duoc vao
+<code>&lt;input&gt;</code>/<code>&lt;textarea&gt;</code>/phan tu
+<code>contenteditable</code> tieu chuan. Neu gap mot o nhap dac biet
+(tren YouTube, TikTok, hay trang khac) khong go duoc, bao lai de kiem tra
+rieng - khong bia la da ho tro het moi truong hop.</p>
 
-<p><strong>Neu chi muon nghe nhac nen ma khong roi trang dang lam</strong> -
-dung khung "Phat 1 video ngay trong dashboard": mo YouTube tren dien
-thoai, bam <strong>Chia se &rarr; Sao chep duong dan</strong>, dan vao o
-nhap, bam Phat - video hien ngay trong trang qua iframe, khong roi khoi
-dashboard.</p>
-<p><strong>O "Tim kiem nhanh, xem ngay trong trang" co the khong ra ket
-qua</strong> - day la mot kieu nhung khong chinh thuc cua YouTube, co the
-ngung hoat dong bat cu luc nao neu YouTube thay doi. Khi do hay bam nut
-"Mo YouTube" o tren de tim that.</p>
-
-<h3 style="color:#4CAF50;">Am thanh (loa) cho video</h3>
+<h3 style="color:#4CAF50;">Am thanh (loa)</h3>
 <p>May nay ban dau KHONG co server am thanh nao chay (chi co thu vien
 <code>libpulse0</code>, khong co tien trinh phuc vu that) - Chromium phat
 video nhung khong ra tieng vi khong co noi nao de day am thanh toi. Da cai
 va bat <code>pipewire</code> + <code>pipewire-pulse</code> + <code>wireplumber</code>
 chay theo phien dang nhap cua nguoi dung kiosk (tu dong khoi dong lai moi
-lan may boot, khong can cau hinh them). Ngo ra mac dinh la
-<strong>Built-in Audio Stereo</strong> - giac 3.5mm/loa gan trong cua module
-Raspberry Pi (khong phai qua HDMI). Neu vo RasPad dau loa vao ngo khac,
-doi ngo ra bang <code>wpctl status</code> de xem danh sach roi
+lan may boot, khong can cau hinh them).</p>
+<p><strong>Dang dieu tra ngo ra dung</strong>: phat hien man hinh RasPad
+chi co <strong>HDMI0</strong> dang cam that
+(<code>/sys/class/drm/card1-HDMI-A-1/status</code> = connected, cong con
+lai disconnected) - neu loa gan trong vo nhan am thanh qua chinh cap HDMI
+nay (kieu man hinh HDMI tich hop loa) thay vi giac 3.5mm nhu gia dinh ban
+dau, phai chinh ngo ra am thanh mac dinh sang HDMI moi nghe duoc. Doi ngo
+ra bang <code>wpctl status</code> (xem danh sach) roi
 <code>wpctl set-default &lt;id&gt;</code>.</p>
 """),
 
@@ -1068,7 +1070,7 @@ NHOM = [
     ("Lam viec hang ngay", ["terminal", "console", "mau", "khofile", "manhinh"]),
     ("Cong cu mang", ["porttest", "congcumoi"]),
     ("Thiet bi & nguon", ["suckhoe", "pin"]),
-    ("Giai tri", ["youtube"]),
+    ("Giai tri", ["giaitri"]),
     ("Su co", ["suco"]),
 ]
 
