@@ -489,20 +489,24 @@ ACT ngung nhap nhay), roi moi gat cong tac vat ly cua vo.</p>
 """),
 
     ("youtube", "📺 Tab YouTube (giai tri)", """
-<p>Tab <a href="/youtube">YouTube</a> de xem video giai lao giua luc lam viec.
-Cach dung: mo YouTube tren dien thoai, bam <strong>Chia se &rarr; Sao chep duong
-dan</strong>, roi dan vao o "Duong dan hoac ID video" va bam Phat.</p>
-<p><strong>Vi sao khong go duoc thang vao YouTube tim video nhu binh thuong?</strong>
-Man hinh cam ung gan tren Pi chay trinh duyet o che do kiosk toan man hinh -
-khong co thanh dia chi, khong co nut Back, ca cu chi vuot lui cung bi tat.
-Neu bam thang sang trang youtube.com day du thi se bi <strong>ket cung</strong>
-tren do, khong con duong nao quay lai dashboard. Vi vay video luon duoc nhung
-(embed) NGAY TRONG khung giao dien chung, co san thanh dieu huong ben trai de
-luc nao cung bam sang tab khac duoc.</p>
-<p><strong>O "Tim kiem nhanh" co the khong ra ket qua</strong> - day la mot
-kieu nhung khong chinh thuc cua YouTube, co the ngung hoat dong bat cu luc
-nao neu YouTube thay doi. Khi do hay dung cach dan duong dan o tren, luon
-chac chan hoat dong.</p>
+<p>Tab <a href="/youtube">YouTube</a> de xem video giai lao giua luc lam viec.</p>
+<p><strong>Nut "🌐 Mo YouTube"</strong> - mo trang YouTube that, day du: duyet,
+tim kiem, dang nhap tai khoan nhu tren dien thoai binh thuong. Cach nay roi
+khoi dashboard nen mat thanh dieu huong.</p>
+<p><strong>Quay lai dashboard bang cach nao?</strong> Man hinh cam ung gan
+tren Pi chay trinh duyet o che do kiosk toan man hinh - khong co thanh dia
+chi, khong co nut Back. Duong DUY NHAT de quay ve: <strong>vuot ngon tay tu
+sat mep trai man hinh sang phai</strong> (giong cu chi vuot lui tren dien
+thoai). Da bat lai co che nay rieng cho tinh huong nay
+(<code>scripts/kiosk-start.sh</code>).</p>
+<p><strong>Neu chi muon nghe nhac nen ma khong roi trang dang lam</strong> -
+dung khung "Phat 1 video ngay trong dashboard": mo YouTube tren dien thoai,
+bam <strong>Chia se &rarr; Sao chep duong dan</strong>, dan vao o nhap, bam
+Phat - video hien ngay trong trang, khong mat thanh dieu huong.</p>
+<p><strong>O "Tim kiem nhanh, xem ngay trong trang" co the khong ra ket qua</strong>
+- day la mot kieu nhung khong chinh thuc cua YouTube, co the ngung hoat dong
+bat cu luc nao neu YouTube thay doi. Khi do hay dung nut "Mo YouTube" o tren
+de tim kiem that.</p>
 """),
 
     ("pin", "🔋 Hien % pin - can gan gi", """

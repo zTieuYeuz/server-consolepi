@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.4.28
+
+**Tab YouTube: mo YouTube THAT thay vi chi dan link** - phan hoi truc tiep
+sau ban 0.4.27 ("khong phai dan link ma anh muon em mo youtube luon").
+
+- Nut moi **"🌐 Mo YouTube"** dieu huong thang sang `https://www.youtube.com`
+  - duyet/tim kiem/dang nhap tai khoan binh thuong nhu tren dien thoai,
+  khong con gioi han trong khung nhung (embed) nua.
+- **Thay doi bat buoc di kem** (`scripts/kiosk-start.sh`): bat lai
+  `--overscroll-history-navigation=1` cua Chromium (truoc day dang tat). Ly
+  do: man hinh cam ung chay kiosk toan man hinh, KHONG CO thanh dia chi hay
+  nut Back - neu dieu huong thang sang youtube.com ma khong co duong nao de
+  lui lai thi nguoi dung se bi ket cung tren do, phai khoi dong lai kiosk
+  moi ve duoc dashboard. Vuot ngon tay tu sat mep trai man hinh sang phai
+  (cu chi lui trang chuan cua Chromium) gio la duong quay ve - da ghi ro
+  huong dan ngay tren giao dien vi day khong phai thao tac hien nhien.
+- Van giu 2 cach cu (dan link phat ngay trong trang, tim kiem nhanh kieu
+  khong chinh thuc) cho truong hop chi muon nghe nhac nen ma khong roi
+  dashboard - khong xoa tinh nang cu, chi them lua chon moi len dau.
+- Da kiem tra that: nhung ca trang youtube.com/m.youtube.com/trang ket qua
+  tim kiem vao iframe deu bi chan boi header `X-Frame-Options: SAMEORIGIN`
+  (dung `curl -I` xac nhan, khong doan) - day la gioi han tu phia Google,
+  khong co cach nao vuot qua ma khong dung reverse proxy phuc tap va de vo
+  (video/CDN cua YouTube nam o nhieu ten mien khac nhau), nen khong lam.
+
 ## 0.4.27
 
 **Tab YouTube moi** (`src/ui/youtube.py`) - giai tri luc ranh giua gio lam

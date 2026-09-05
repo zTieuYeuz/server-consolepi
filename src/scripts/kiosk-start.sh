@@ -65,6 +65,13 @@ else
     echo "RAM ${RAM_MB}MB - dung cau hinh day du"
 fi
 
+# --overscroll-history-navigation=1: BAT vuot canh de lui/tien (mac dinh
+# truoc day tat di). Kiosk khong co thanh dia chi/nut Back, nen tab YouTube
+# (ui/youtube.py) can duong nao do de nguoi dung thoat khoi youtube.com quay
+# lai dashboard sau khi bam "Mo YouTube" - day la duong DUY NHAT (khong co
+# extension/proxy nao lam duoc viec nay tren trang cua Google). Rui ro: neu
+# vuot manh dung canh trai/phai luc dang xem bang rong (vd danh sach ARP) co
+# the vo tinh lui trang - chap nhan duoc, giong moi trinh duyet dien thoai.
 exec chromium \
     --kiosk \
     --user-data-dir="$PROFILE_DIR" \
@@ -74,7 +81,7 @@ exec chromium \
     --disable-session-crashed-bubble \
     --disable-features=TranslateUI,Translate \
     --disable-pinch \
-    --overscroll-history-navigation=0 \
+    --overscroll-history-navigation=1 \
     --noerrdialogs \
     --check-for-update-interval=31536000 \
     --touch-events=enabled \
