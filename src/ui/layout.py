@@ -10,6 +10,15 @@ tu viet lai <html> tu dau. Thiet ke cho man hinh cam ung 1280x800:
 import subprocess
 
 # (duong dan, nhan, icon)
+#
+# LOI THAT DA TIM RA (nguoi dung bao icon Nguon dien/reboot "bi loi" tren man
+# hinh cam ung RasPad): ky tu ⏻ (U+23FB, khoi Unicode "Miscellaneous
+# Technical") KHONG nam trong pham vi ma font Noto Color Emoji mac dinh cua
+# Pi OS Lite phu toi - hien thanh o vuong trong (tofu) thay vi bieu tuong.
+# Da doi sang ⚡ (khoi Emoji chuan, luon co san). Tuyet doi khong dung lai cac
+# ky tu trong khoi U+2300-23FF (⏯ ⏸ ⏹ ⏻ ⏼ ⏽...) cho icon hien tren man hinh
+# nay - chi dung emoji thuoc khoi chuan (mat cuoi, con vat, do vat thong
+# thuong) da kiem chung la luon co san tren Pi OS.
 NAV_ITEMS = [
     ("/", "Tong quan", "🏠"),
     ("/wifi", "WiFi / AP", "📶"),
@@ -23,12 +32,13 @@ NAV_ITEMS = [
     ("/remote", "Truy cap tu xa", "🌍"),
     ("/docs", "Tai lieu", "📖"),
     ("/logs", "Nhat ky loi", "📋"),
-    ("/power", "Nguon dien", "⏻"),
+    ("/power", "Nguon dien", "⚡"),
     ("/settings", "Cai dat", "⚙️"),
 ]
 
 BASE_CSS = """
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { touch-action: manipulation; }   /* bo do tre 300ms cho tap tren man hinh cam ung */
 body { margin:0; font-family: system-ui, Arial, sans-serif; background:#15171a; color:#e6e6e6; }
 a { color:#4CAF50; text-decoration:none; }
 
@@ -39,13 +49,19 @@ a { color:#4CAF50; text-decoration:none; }
 .brand { padding:14px 16px; font-size:15px; font-weight:700; color:#4CAF50;
          border-bottom:1px solid #2c3036; letter-spacing:.5px; }
 .brand small { display:block; color:#6b7280; font-weight:400; font-size:11px; margin-top:2px; }
-.nav a { display:flex; align-items:center; gap:10px; padding:13px 16px; color:#c9ced6;
-         font-size:14px; border-left:3px solid transparent; }
+/* Muc menu toi thieu 48px chieu cao (khuyen nghi cho man hinh cam ung la
+   >=44px) va co hieu ung bam :active - :hover khong bao gio kich hoat tren
+   cam ung nen thieu no nguoi dung khong biet minh vua cham trung hay chua. */
+.nav a { display:flex; align-items:center; gap:10px; padding:15px 16px; min-height:48px;
+         color:#c9ced6; font-size:14px; border-left:3px solid transparent;
+         -webkit-user-select:none; user-select:none; }
 .nav a:hover { background:#22262b; }
+.nav a:active { background:#2c3036; }
 .nav a.active { background:#22262b; border-left-color:#4CAF50; color:#fff; font-weight:600; }
-.nav a .ic { font-size:17px; width:22px; text-align:center; }
+.nav a .ic { font-size:18px; width:24px; text-align:center; }
 .side .foot { margin-top:auto; padding:10px 16px; border-top:1px solid #2c3036;
               font-size:11px; color:#6b7280; }
+.side .foot a { display:inline-block; min-height:32px; line-height:32px; }
 
 .main { flex:1; min-width:0; display:flex; flex-direction:column; }
 
@@ -62,6 +78,7 @@ a { color:#4CAF50; text-decoration:none; }
 .chip .x { font-size:11px; color:#8b93a1; margin-top:1px; }
 .status .spacer { flex:1; }
 .status .act { display:flex; gap:8px; align-items:center; }
+.status .act .btn { min-height:40px; }
 
 /* ---- Vung noi dung ---- */
 .content { padding:18px 20px 40px; flex:1; }
@@ -78,18 +95,27 @@ th,td { padding:10px 11px; text-align:left; border-bottom:1px solid #2c3036; fon
 th { background:#22262b; color:#a8b0bd; font-size:12px; text-transform:uppercase;
      letter-spacing:.4px; font-weight:600; }
 input[type=text],input[type=password],input[type=number],select,textarea {
-  padding:11px 12px; background:#22262b; color:#e6e6e6; border:1px solid #363b42;
-  border-radius:6px; font-size:15px; width:100%; max-width:440px; font-family:inherit; }
+  padding:12px 13px; background:#22262b; color:#e6e6e6; border:1px solid #363b42;
+  border-radius:6px; font-size:16px; width:100%; max-width:440px; font-family:inherit;
+  min-height:44px; }
 textarea { font-family:ui-monospace, monospace; min-height:110px; }
 label { display:block; margin:11px 0 4px; font-size:13px; color:#a8b0bd; }
 button, .btn { padding:11px 18px; background:#4CAF50; color:#fff; border:none;
   border-radius:6px; font-size:14px; cursor:pointer; display:inline-block;
-  min-height:44px; font-family:inherit; }   /* 44px = co toi thieu de cham ngon tay */
+  min-height:44px; font-family:inherit;    /* 44px = co toi thieu de cham ngon tay */
+  -webkit-user-select:none; user-select:none; transition:transform .08s, filter .08s; }
 button:hover,.btn:hover { background:#43a047; }
+/* :active thay cho :hover - tren man hinh cam ung khong co chuot di qua de
+   :hover kich hoat, thieu phan hoi nay nguoi dung khong biet vua cham trung
+   nut hay chua va hay bam lai nhieu lan (co the go trung lenh). */
+button:active,.btn:active { transform:scale(.96); filter:brightness(.88); }
+button[disabled] { transform:none; }
 button.gray,.btn.gray { background:#4b5563; }
 button.red,.btn.red { background:#ef4444; }
 button.blue,.btn.blue { background:#2563eb; }
-button.small { padding:7px 13px; font-size:13px; min-height:36px; }
+/* Van giu nho hon nut chinh de phan biet muc do quan trong, nhung khong duoi
+   nguong 40px - duoi muc nay ngon tay nguoi lon rat de bam nham nut ben canh. */
+button.small { padding:9px 14px; font-size:13px; min-height:40px; }
 pre { background:#0f1114; border:1px solid #2c3036; padding:12px; border-radius:6px;
       overflow-x:auto; white-space:pre-wrap; word-break:break-word; font-size:13px; }
 code { font-family:ui-monospace, monospace; background:#22262b; padding:1px 5px;
@@ -215,6 +241,32 @@ def get_status_chips(use_cache=True):
         "up": up_b,
     })
 
+    # --- Cloudflare Tunnel (yeu cau: muon thay trang thai nay ngay tren thanh
+    # trang thai, ngang hang voi LAN/WiFi/Bluetooth thay vi phai vao rieng
+    # tab Truy cap tu xa moi biet duong ham co dang chay hay khong) ---
+    # Import cho vao trong ham (khong dat o dau file): remote.py co import
+    # nguoc lai render_page tu chinh file nay - dat import o dau file se tao
+    # vong lap import. Cac ham duoc goi o day deu re (shutil.which/os.path,
+    # toi da 1 lenh systemctl is-active), cung muc chi phi voi cac chip khac.
+    from . import remote as _remote
+    cf_cai = _remote.da_cai()
+    cf_tok = _remote.co_token() if cf_cai else False
+    cf_chay = _remote.dang_chay() if (cf_cai and cf_tok) else False
+    if not cf_cai:
+        cf_val, cf_extra = "Chua cai dat", "Xem tab Truy cap tu xa"
+    elif not cf_tok:
+        cf_val, cf_extra = "Chua cau hinh", "Thieu token duong ham"
+    elif cf_chay:
+        cf_val, cf_extra = "Dang chay", "Ra Internet qua Cloudflare"
+    else:
+        cf_val, cf_extra = "Da tat", "Duong ham dang khong bat"
+    chips.append({
+        "key": "Cloudflare",
+        "val": cf_val,
+        "extra": cf_extra,
+        "up": cf_chay,
+    })
+
     _STATUS_CACHE["data"] = chips
     _STATUS_CACHE["at"] = time.time()
     return chips
@@ -267,7 +319,7 @@ def render_page(body_html, active="/", title="Console Pi", subtitle="", extra_cs
     <div class="status">
       {chips_html}
       <div class="spacer"></div>
-      <div class="act"><a href="{active}" class="btn gray small">🔄 Lam moi</a></div>
+      <div class="act"><a href="{active}" class="btn gray small">🔃 Lam moi</a></div>
     </div>
     <div class="content">
       <h1>{title}</h1>

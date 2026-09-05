@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.4.25
+
+**Dai tu giao dien cho man hinh cam ung RasPad** (khong doi cau truc/logic
+cac trang, chi sua CSS/JS/icon dung chung):
+
+- **Sua icon "bi loi"**: ky tu `⏻` (U+23FB, khoi Unicode "Miscellaneous
+  Technical") dung cho tab Nguon dien/nut Tat may KHONG nam trong pham vi
+  font Noto Color Emoji mac dinh cua Pi OS Lite - hien thanh o vuong trong
+  (tofu) tren man hinh cam ung thay vi bieu tuong that. Da doi sang `⚡`
+  (nav + link Tong quan) va `🛑` (nut Tat may) - deu thuoc khoi Emoji chuan
+  luon co san. Doi luon icon "Lam moi" tren thanh trang thai tu `🔄` sang
+  `🔃` de khong con trung voi icon nut "Khoi dong lai" (de gay nham lan
+  giua hai thao tac khac hau qua rat khac nhau).
+- **Them trang thai Cloudflare Tunnel vao thanh trang thai chung** (`layout.py`),
+  ngang hang voi LAN/WiFi/Bluetooth - truoc day phai vao rieng tab Truy cap
+  tu xa moi biet duong ham dang bat hay tat.
+- **Toi uu cho cam ung toan bo giao dien**: bo do tre 300ms khi cham
+  (`touch-action:manipulation`), them hieu ung bam `:active` cho moi
+  nut/lien ket (truoc day chi co `:hover` - khong bao gio kich hoat tren
+  cam ung nen nguoi dung khong biet vua cham trung hay chua), tang chieu
+  cao toi thieu muc menu len 48px va nut nho (`button.small`) tu 36px len
+  40px (duoi muc nay ngon tay nguoi lon de bam nham nut ke ben).
+- **Sua loi ban phim ao "phai bam giu moi an"** (`vkeyboard.js`): phim
+  chuyen so `?123` va phim viet hoa `⇧` tu ve lai TOAN BO ban phim
+  (`render()`) ngay trong luc ngon tay con dang cham xuong - xoa mat chinh
+  cai nut dang duoc cham giua chung cu chi, khien trinh duyet cam ung hieu
+  nham thanh cu chi bi huy va can giu du lau moi tinh la mot lan cham hop
+  le. Da sua bang cach doi hanh dong sang chay o `setTimeout(fn, 0)` - de
+  cu chi cham hien tai xu ly xong tren DOM con nguyen roi moi ve lai.
+- **Ban phim ao tu co gian theo chieu cao man hinh** (dung CSS `clamp()`
+  voi don vi `vh` thay vi px co dinh): truoc day cao co dinh 58px chiem qua
+  nhieu dien tich tren man hinh nho (RasPad 7"), gio tu thu nho tren man
+  thap nhung khong bao gio duoi 40px chieu cao / 16px chu de van bam trung
+  duoc bang ngon tay.
+
 ## 0.4.24
 
 **Bao dam giu nhat ky it nhat 60 ngay cho TOAN BO he thong** - yeu cau

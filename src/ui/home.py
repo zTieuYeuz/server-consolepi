@@ -264,7 +264,7 @@ def register_home(app):
           <tr><td>Dia</td><td>{dk_u} / {dk_t} GB &nbsp;({dk_p}%)</td></tr>
           {bat_row}
         </table>
-        <p style="margin-top:10px;"><a class="btn" href="/power">⏻ Tat may / Khoi dong lai</a></p>"""
+        <p style="margin-top:10px;"><a class="btn" href="/power">⚡ Tat may / Khoi dong lai</a></p>"""
 
         body = f"""
         <h2>Cong console dang cam</h2>

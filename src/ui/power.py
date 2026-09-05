@@ -48,7 +48,7 @@ def register_power(app):
           </form>
           <form method="POST" action="/power/poweroff"
                 onsubmit="return confirm('TAT HAN Console Pi?\\n\\nBat lai phai cam dien truc tiep - khong bat tu xa duoc.');">
-            <button type="submit" class="red" data-busy="Dang tat may...">⏻ Tat may</button>
+            <button type="submit" class="red" data-busy="Dang tat may...">🛑 Tat may</button>
           </form>
         </div>
         <p style="color:#8b93a1;font-size:13px;margin-top:10px;">
@@ -68,7 +68,7 @@ def register_power(app):
           (thuong o canh vo) de cap/ngat dien cho toan bo cum man hinh + Pi -
           day la cach DUY NHAT de tat hoan toan hien tai. Quy trinh dung:
           <ol style="margin:8px 0 0 18px;">
-            <li>Bam "⏻ Tat may" o tren, doi den ACT tren Pi ngung nhap nhay (Pi da tat han).</li>
+            <li>Bam "🛑 Tat may" o tren, doi den ACT tren Pi ngung nhap nhay (Pi da tat han).</li>
             <li>Sau do gat cong tac nguon vat ly cua vo RasPad de cat dien man hinh.</li>
           </ol>
         </div>"""
