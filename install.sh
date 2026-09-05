@@ -93,7 +93,15 @@ PKGS_CORE=(
 )
 # fonts-noto-color-emoji: KHONG the thieu. Pi OS Lite khong co font emoji,
 # thieu no thi moi icon tren giao dien hien thanh o vuong rong.
-PKGS_SCREEN=( cage chromium wlr-randr fonts-noto-color-emoji )
+#
+# pipewire/pipewire-pulse/wireplumber: KHONG the thieu neu muon nghe duoc
+# am thanh (vd tab YouTube). LOI THAT DA GAP: Pi OS Lite khong co server am
+# thanh nao ca (chi co thu vien libpulse0) - Chromium phat video "cham" ma
+# khong ra tieng, khong bao loi gi. Cac goi nay tu bat unit trong
+# default.target/sockets.target cua rieng nguoi dung kiosk khi cai xong,
+# khong can cau hinh gi them (xem scripts/kiosk-start.sh).
+PKGS_SCREEN=( cage chromium wlr-randr fonts-noto-color-emoji
+              pipewire pipewire-audio pipewire-pulse wireplumber )
 
 export DEBIAN_FRONTEND=noninteractive
 

@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.4.30
+
+**Su co that: nguoi dung bi ket cung tren mot website khac, phai remote vao
+cuu man hinh.** Sau khi bam nut "Mo YouTube" (them o 0.4.28) va bam tiep 1
+lien ket ben trong YouTube, bi dua sang datbike.vn - vuot canh man hinh de
+"quay ve dashboard" (giai phap da lam o 0.4.28) KHONG hoat dong, phai chay
+`systemctl restart console-pi-kiosk` tu xa moi cuu duoc.
+
+- **Da bo hoan toan nut "Mo YouTube" dieu huong thang** va tat lai
+  `--overscroll-history-navigation` ve `0` (mac dinh goc,
+  `scripts/kiosk-start.sh`). Nguyen nhan that: co che vuot canh cua
+  Chromium chu yeu lam cho touchpad/chuot tren Windows/macOS, tren Linux
+  voi man hinh cam ung thuan KHONG duoc trien khai day du/dang tin cay -
+  bat flag khong dam bao cu chi chay duoc. Video YouTube gio CHI phat qua
+  iframe nhung ngay trong dashboard (nhu ban 0.4.27), khong bao gio dieu
+  huong roi trang nua nen khong con nguy co ket cung.
+- **Them lop phong thu thu 2**: iframe video gio co `sandbox="allow-scripts
+  allow-same-origin allow-presentation"` (KHONG co allow-top-navigation),
+  chan tuyet doi kha nang mot video/quang cao ben trong iframe dieu huong
+  ca trang dashboard di noi khac - phong truong hop tuong tu xay ra ngay ca
+  khi chi con dang nhung (embed).
+- Cap nhat lai muc tai lieu "📺 Tab YouTube" ghi ro su co that va ly do doi
+  huong.
+
+**Bat am thanh cho video** - may nay truoc gio khong co server am thanh
+nao chay (chi co thu vien `libpulse0`, khong co tien trinh phuc vu that)
+nen Chromium phat video khong ra tieng. Da cai va bat
+`pipewire` + `pipewire-pulse` + `wireplumber` chay theo phien dang nhap
+cua nguoi dung kiosk - tu dong khoi dong lai moi lan may boot (cac unit
+duoc goi tu dong bat trong `default.target`/`sockets.target` cua chinh goi
+cai dat, khong can cau hinh gi them). Ngo ra mac dinh: Built-in Audio
+Stereo (giac 3.5mm/loa gan trong cua module Pi, am luong dat 85%) - da
+kiem tra that bang `speaker-test` va `pw-play`.
+
 ## 0.4.29
 
 **Dieu tra that: vi sao ban phim ao khong hien khi go vao trang YouTube

@@ -489,47 +489,58 @@ ACT ngung nhap nhay), roi moi gat cong tac vat ly cua vo.</p>
 """),
 
     ("youtube", "📺 Tab YouTube (giai tri)", """
-<p>Tab <a href="/youtube">YouTube</a> de xem video giai lao giua luc lam viec.</p>
-<p><strong>Nut "🌐 Mo YouTube"</strong> - mo trang YouTube that, day du: duyet,
-tim kiem, dang nhap tai khoan nhu tren dien thoai binh thuong. Cach nay roi
-khoi dashboard nen mat thanh dieu huong.</p>
-<p><strong>Quay lai dashboard bang cach nao?</strong> Man hinh cam ung gan
-tren Pi chay trinh duyet o che do kiosk toan man hinh - khong co thanh dia
-chi, khong co nut Back. Duong DUY NHAT de quay ve: <strong>vuot ngon tay tu
-sat mep trai man hinh sang phai</strong> (giong cu chi vuot lui tren dien
-thoai). Da bat lai co che nay rieng cho tinh huong nay
-(<code>scripts/kiosk-start.sh</code>).</p>
+<p>Tab <a href="/youtube">YouTube</a> de xem video giai lao giua luc lam viec.
+Video luon phat trong 1 khung nhung (iframe) NGAY TRONG trang nay - khong
+bao gio dieu huong roi khoi dashboard.</p>
 
-<p><strong>Vi sao go vao o tim kiem/binh luan/chat cua chinh trang YouTube
-khong hien ban phim ao?</strong> Ban phim ao cua Console Pi chi chay duoc
-tren trang CUA CHINH NO - khong the gan vao mot website khac nhu youtube.com.
-Da thu tim cach khac: cai thu hai ban phim ao he thong pho bien cho man
-hinh Linux nhung/kiosk (<code>wvkbd</code> va <code>squeekboard</code>) va
-chay thu ngay tren phien man hinh dang song - ca hai deu bao loi ngay lap
-tuc "khong co layer shell" roi thoat. Nguyen nhan: bo dieu phoi man hinh
-dung cho kiosk (<code>cage</code>) la loai toi gian, CHI chay dung 1 ung
-dung toan man hinh va khong cai giao thuc "layer-shell" ma moi ban phim ao
-Wayland tieu chuan can de hien de tren ung dung dang chay - da xac nhan
-bang <code>strings $(which cage) | grep layer_shell</code> khong ra ket qua
-nao. Day la gioi han that cua kien truc dang dung (doi sang compositor
-khac co ho tro nhu <code>labwc</code>/<code>sway</code> co the giai quyet
-duoc, nhung la thay doi lon anh huong ca co che khoa kiosk - chua lam khi
-chua duoc dong y ro rang).</p>
-<p><strong>Giai phap dang dung:</strong> o "Muon tim theo tu khoa truoc?"
-ngay trong khung "Mo YouTube" cho go tu khoa BANG BAN PHIM AO CUA CONSOLE
-PI (van hien binh thuong vi day la o nhap cua chinh trang nay), roi mo
-thang trang ket qua that - khong can go gi tren trang YouTube nua. Rieng
-viec go binh luan/chat/dang nhap tai khoan tren chinh YouTube thi bat buoc
-phai dung ban phim that: cam USB hoac ghep noi qua tab
-<a href="/bluetooth">Bluetooth</a> (da ho tro san thiet bi HID).</p>
+<p><strong>Da tung thu cho "Mo YouTube" dieu huong thang, va da bo di sau
+khi that bai that su (khong phai chi doan truoc):</strong> ban dau co nut
+mo thang trang youtube.com that de duyet/tim kiem tu do. De co duong quay
+ve (kiosk khong co thanh dia chi/nut Back), da bat co che "vuot canh man
+hinh de lui" cua Chromium. Nhung khi dung that, nguoi dung bam vao 1 lien
+ket ben trong YouTube, bi dua sang mot website khac (datbike.vn) roi
+<strong>ket cung luon o do</strong> - vuot canh khong dua ve duoc dashboard
+hay YouTube, phai remote vao chay <code>systemctl restart console-pi-kiosk</code>
+moi cuu duoc man hinh. Nguyen nhan: co che vuot canh nay cua Chromium chu
+yeu lam cho touchpad/chuot tren Windows/macOS, tren Linux voi man hinh cam
+ung thuan khong duoc trien khai day du/dang tin cay - bat flag len khong co
+nghia la cu chi chac chan hoat dong. Da bo hoan toan nut dieu huong thang
+va tat lai flag do (<code>scripts/kiosk-start.sh</code>) de khong con nguy
+co ket cung tren bat ky trang nao nua.</p>
 
-<p><strong>Neu chi muon nghe nhac nen ma khong roi trang dang lam</strong> -
-dung khung "Phat 1 video ngay trong dashboard": mo YouTube tren dien thoai,
-bam <strong>Chia se &rarr; Sao chep duong dan</strong>, dan vao o nhap, bam
-Phat - video hien ngay trong trang, khong mat thanh dieu huong.</p>
-<p><strong>O "Tim kiem nhanh, xem ngay trong trang" co the khong ra ket qua</strong>
-- day la mot kieu nhung khong chinh thuc cua YouTube, co the ngung hoat dong
-bat cu luc nao neu YouTube thay doi. Khi do hay dung o tim kiem o tren.</p>
+<p><strong>Vi sao go vao o tim kiem tren trang nay lai binh thuong, nhung
+trong VIDEO dang nhung thi khong hien ban phim ao?</strong> Ban phim ao cua
+Console Pi chay tren MOI o nhap thuoc trang cua chinh no (o "dan link", o
+"tim kiem") - nhung noi dung BEN TRONG video nhung (tai tu youtube.com, la
+mot website khac) thi ban phim ao khong gan vao duoc. Da thu tim cach de he
+thong hien ban phim ao chung cho moi ung dung (cai thu <code>wvkbd</code>
+va <code>squeekboard</code>, chay tren chinh phien man hinh dang song) -
+ca hai deu bao loi ngay "khong co layer shell" roi thoat, vi bo dieu phoi
+man hinh dung cho kiosk (<code>cage</code>) la loai toi gian, khong cai
+giao thuc ma moi ban phim ao Wayland tieu chuan can (xac nhan bang
+<code>strings $(which cage) | grep layer_shell</code> - khong ra dong nao).
+Doi sang compositor khac co ho tro (vd <code>labwc</code>/<code>sway</code>)
+co the giai quyet duoc ve mat ky thuat nhung anh huong ca co che khoa kiosk
+- chua lam khi chua duoc dong y ro rang.</p>
+
+<p><strong>Neu chi muon nghe nhac nen</strong> - dung khung "Phat video theo
+duong dan": mo YouTube tren dien thoai, bam <strong>Chia se &rarr; Sao chep
+duong dan</strong>, dan vao o nhap, bam Phat.</p>
+<p><strong>O "Tim kiem nhanh" co the khong ra ket qua</strong> - day la mot
+kieu nhung khong chinh thuc cua YouTube, co the ngung hoat dong bat cu luc
+nao neu YouTube thay doi. Khi do hay dan thang duong link video.</p>
+
+<h3 style="color:#4CAF50;">Am thanh (loa) cho video</h3>
+<p>May nay ban dau KHONG co server am thanh nao chay (chi co thu vien
+<code>libpulse0</code>, khong co tien trinh phuc vu that) - Chromium phat
+video nhung khong ra tieng vi khong co noi nao de day am thanh toi. Da cai
+va bat <code>pipewire</code> + <code>pipewire-pulse</code> + <code>wireplumber</code>
+chay theo phien dang nhap cua nguoi dung kiosk (tu dong khoi dong lai moi
+lan may boot, khong can cau hinh them). Ngo ra mac dinh la
+<strong>Built-in Audio Stereo</strong> - giac 3.5mm/loa gan trong cua module
+Raspberry Pi (khong phai qua HDMI). Neu vo RasPad dau loa vao ngo khac,
+doi ngo ra bang <code>wpctl status</code> de xem danh sach roi
+<code>wpctl set-default &lt;id&gt;</code>.</p>
 """),
 
     ("pin", "🔋 Hien % pin - can gan gi", """

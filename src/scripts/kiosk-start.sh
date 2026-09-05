@@ -65,13 +65,18 @@ else
     echo "RAM ${RAM_MB}MB - dung cau hinh day du"
 fi
 
-# --overscroll-history-navigation=1: BAT vuot canh de lui/tien (mac dinh
-# truoc day tat di). Kiosk khong co thanh dia chi/nut Back, nen tab YouTube
-# (ui/youtube.py) can duong nao do de nguoi dung thoat khoi youtube.com quay
-# lai dashboard sau khi bam "Mo YouTube" - day la duong DUY NHAT (khong co
-# extension/proxy nao lam duoc viec nay tren trang cua Google). Rui ro: neu
-# vuot manh dung canh trai/phai luc dang xem bang rong (vd danh sach ARP) co
-# the vo tinh lui trang - chap nhan duoc, giong moi trinh duyet dien thoai.
+# LOI THAT DA GAP (khong phai doan): tung bat --overscroll-history-navigation=1
+# de lam duong "vuot canh de quay ve dashboard" cho tab YouTube (khi do co
+# nut dieu huong thang sang youtube.com). Da THAT BAI THAT SU: nguoi dung
+# bam vao 1 lien ket trong YouTube, bi dua sang mot website khac (datbike.vn)
+# roi KET CUNG luon o do - vuot canh khong dua ve duoc, phai remote vao chay
+# `systemctl restart console-pi-kiosk` moi cuu duoc man hinh. Nguyen nhan: co
+# che nay cua Chromium chu yeu lam cho touchpad/chuot tren Windows/macOS,
+# tren Linux voi man hinh cam ung thuan khong duoc trien khai day du/dang tin
+# cay. Da TAT lai (=0, mac dinh goc) va bo hoan toan nut dieu huong thang
+# trong ui/youtube.py - video YouTube gio CHI phat qua iframe nhung ngay
+# trong dashboard, khong bao gio thuc su roi trang nua nen khong con can
+# duong "quay ve" nao ca.
 exec chromium \
     --kiosk \
     --user-data-dir="$PROFILE_DIR" \
@@ -81,7 +86,7 @@ exec chromium \
     --disable-session-crashed-bubble \
     --disable-features=TranslateUI,Translate \
     --disable-pinch \
-    --overscroll-history-navigation=1 \
+    --overscroll-history-navigation=0 \
     --noerrdialogs \
     --check-for-update-interval=31536000 \
     --touch-events=enabled \
