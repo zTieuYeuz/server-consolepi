@@ -257,7 +257,15 @@ INJECT_JS_TEMPLATE = r"""
   }
 
   function renderKb() {
-    kb.innerHTML = "";
+    // KHONG duoc dung kb.innerHTML = "" - LOI THAT DA TIM RA (khong doan):
+    // YouTube ep chinh sach Trusted Types (CSP "require-trusted-types-for
+    // 'script'"), chan TUYET DOI moi gan .innerHTML bang chuoi thuong (ke
+    // ca chuoi rong) - nem TypeError ngay lap tuc va lam dut ca ham nay
+    // giua chung, khien ban phim khong bao gio kip hien len
+    // (kb.classList.add("on") nam sau doan bi nem loi nen khong chay toi).
+    // Dung vong lap xoa tung con bang removeChild - la DOM API an toan,
+    // khong bi Trusted Types dong toi.
+    while (kb.firstChild) kb.removeChild(kb.firstChild);
     var bar = document.createElement("div");
     bar.className = "bar";
     bar.textContent = "⌨ Ban phim ao Console Pi";

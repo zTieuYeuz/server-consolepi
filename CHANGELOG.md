@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.33
+
+**Sua loi that: ban phim ao khong hien tren chinh trang YouTube** - phan
+hoi truc tiep sau 0.4.32 ("em làm sao thì không có âm thanh và không có
+bàn phím bấm").
+
+Da dieu tra that tren chinh youtube.com that (khong doan, dung CDP de bat
+loi runtime): `renderKb()` trong `scripts/kiosk-helper.py` dung
+`kb.innerHTML = ""` de xoa ban phim cu truoc khi ve lai. YouTube ep chinh
+sach bao mat **Trusted Types** (CSP `require-trusted-types-for 'script'`)
+- chinh sach nay CHAN TUYET DOI moi phep gan `.innerHTML` bang chuoi
+thuong (ke ca chuoi rong), nem `TypeError` ngay lap tuc. Loi nay xay ra
+NGAY BEN TRONG ham xu ly su kien focus, nen khong bao gio lot ra ngoai de
+thay - ban phim am tham khong bao gio kip hien len
+(`kb.classList.add("on")` nam ngay sau doan bi loi). Da sua bang cach doi
+sang xoa tung phan tu con bang `removeChild` trong vong lap - la DOM API
+an toan, khong bi Trusted Types dong toi.
+
+Da kiem chung lai toan bo tren chinh trang youtube.com that (khong phai
+trang test cuc bo): bam o tim kiem -> ban phim hien len dung, go "lofi" ->
+gia tri o tim kiem dung "lofi", bam xoa -> con "lof". Hoat dong hoan toan
+binh thuong.
+
+(Van con dang dieu tra rieng van de am thanh khong nghe duoc - phan mem/
+ALSA/PipeWire da xac nhan hoat dong dung toi tan phan cung, dang cho kiem
+tra day cap loa vat ly ben trong vo RasPad.)
+
 ## 0.4.32
 
 **Ban phim ao GIO DA hien duoc tren chinh trang YouTube that** (o tim
