@@ -117,18 +117,29 @@ def scan_age():
     return int(time.time() - _SCAN_CACHE["at"])
 
 
-def load_saved_wifi():
+def load_saved_wifi_with_psk():
+    """
+    Nhu load_saved_wifi() nhung tra ve ca mat khau da luu (dang {ssid: psk}).
+    Dung rieng cho nut "Ket noi" bam thang tu danh sach da luu - khong bat
+    nguoi dung go lai mat khau ho da nhap tu truoc.
+    """
     try:
         with open(WPA_CONF) as f:
             content = f.read()
     except Exception:
-        return []
-    out = []
+        return {}
+    out = {}
     for block in NETWORK_BLOCK_RE.findall(content):
         m = re.search(r'ssid="([^"]*)"', block)
-        if m and m.group(1) not in out:
-            out.append(m.group(1))
+        if not m:
+            continue
+        p = re.search(r'psk="([^"]*)"', block)
+        out[m.group(1)] = p.group(1) if p else ""
     return out
+
+
+def load_saved_wifi():
+    return list(load_saved_wifi_with_psk().keys())
 
 
 def save_wifi_permanently(ssid, password):
@@ -828,9 +839,36 @@ def _wifi_page(msg="", ok=True):
       </form>
     </div>"""
 
+    # Danh sach mang WiFi "nhin thay duoc" tu lan quet gan nhat, dung de to
+    # mau nut Ket noi trong bang WiFi da luu (yeu cau thuc te: biet ngay
+    # WiFi da luu nao dang trong tam voi ma khong can bam quet/thu tay tung
+    # cai). KHONG tu quet moi khi dang khoa AP - phat song wlan0 dang ban lam
+    # AP, ep quet luc nay co the lam gian doan song ConsolePi dang phat.
+    scanned_ssids = scan_wifi() if not locked else list(_SCAN_CACHE["ssids"])
+    visible_ssids = set(scanned_ssids)
+
+    def _connect_cell(s):
+        if s == ssid:
+            return '<span style="color:#6ee7a0;font-size:13px;">● Dang dung</span>'
+        if locked:
+            return ('<button type="button" class="gray small" disabled '
+                     'title="AP dang khoa - go khoa AP truoc khi doi WiFi">'
+                     '⚪ Ket noi</button>')
+        if s in visible_ssids:
+            return (f'<form method="POST" action="/wifi-connect-saved" style="display:inline;"'
+                     f' onsubmit="return confirm(\'Chuyen sang WiFi {_esc(s)}? '
+                     f'Ket noi hien tai (neu co) se bi ngat trong luc chuyen.\');">'
+                     f'<input type="hidden" name="ssid" value="{_esc(s)}">'
+                     f'<button type="submit" data-busy="Dang ket noi...">'
+                     f'🟢 Ket noi</button></form>')
+        return ('<button type="button" class="gray small" disabled '
+                 'title="Khong thay mang nay trong lan quet gan nhat - co the dang '
+                 'ngoai vung phu song hoac dang tat">⚪ Ket noi</button>')
+
     saved_rows = "".join(f"""
       <tr>
-        <td>{_esc(s)}{' <span style="color:#4CAF50;font-size:12px;">● dang ket noi</span>' if s == ssid else ''}</td>
+        <td>{_esc(s)}</td>
+        <td>{_connect_cell(s)}</td>
         <td><form method="POST" action="/wifi-delete"
                   onsubmit="return confirm('Xoa WiFi {_esc(s)}?');">
               <input type="hidden" name="ssid" value="{_esc(s)}">
@@ -840,7 +878,7 @@ def _wifi_page(msg="", ok=True):
 
     scan_form = ""
     if not locked:
-        ssids = scan_wifi()
+        ssids = scanned_ssids
         age = scan_age()
         opts = "".join(f"<option>{_esc(s)}</option>" for s in ssids)
         if not ssids:
@@ -908,7 +946,10 @@ def _wifi_page(msg="", ok=True):
     {ap_card}
     {scan_form}
     <h2>WiFi da luu ({len(saved)})</h2>
-    <table><tr><th>SSID</th><th style="width:110px;">Thao tac</th></tr>{saved_rows}</table>
+    {'' if locked or not saved else '<p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">'
+     '🟢 xanh = dang trong tam song, bam la ket noi ngay. ⚪ xam = khong thay '
+     'trong lan quet gan nhat, khong bam duoc.</p>'}
+    <table><tr><th>SSID</th><th style="width:120px;">Ket noi</th><th style="width:90px;">Thao tac</th></tr>{saved_rows}</table>
     {'<p style="color:#8b93a1;">Chua luu WiFi nao. Pi se tu phat AP ConsolePi khi khong tim thay mang quen.</p>' if not saved else ''}
     <h2>Them WiFi thu cong</h2>
     <div class="card">
@@ -1202,6 +1243,21 @@ def _bt_page(msg="", ok=True, scanned=None):
                        subtitle="Ghep ban phim/chuot va ket noi mang du phong")
 
 
+def _switching_page(ssid):
+    """Trang bao dang chuyen WiFi - dung chung cho connect-wifi va
+    wifi-connect-saved (WiFi da luu, bam Ket noi thang khong can go lai
+    mat khau)."""
+    body = f"""
+    <div class="msg warn">
+      <h3 style="margin:0 0 8px;">Dang chuyen sang '{_esc(ssid)}'</h3>
+      <p>Sau 20-30 giay: noi may cua ban vao WiFi <strong>{_esc(ssid)}</strong>
+      roi mo lai <a href="http://server-console.local">http://server-console.local</a>.</p>
+      <p>Neu that bai, Pi tu bat lai AP <strong>ConsolePi</strong> sau khoang 30 giay.</p>
+    </div>
+    <p><a class="btn" href="/wifi">← Quay lai trang WiFi</a></p>"""
+    return render_page(body, active="/wifi", title="Dang chuyen mang")
+
+
 def register_network(app):
     @app.route("/wifi")
     def wifi_page():
@@ -1235,15 +1291,26 @@ def register_network(app):
         WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuan bi chuyen mang...")
         threading.Thread(target=_switch_worker, args=(ssid, password, do_save),
                          daemon=True).start()
-        body = f"""
-        <div class="msg warn">
-          <h3 style="margin:0 0 8px;">Dang chuyen sang '{_esc(ssid)}'</h3>
-          <p>Sau 20-30 giay: noi may cua ban vao WiFi <strong>{_esc(ssid)}</strong>
-          roi mo lai <a href="http://server-console.local">http://server-console.local</a>.</p>
-          <p>Neu that bai, Pi tu bat lai AP <strong>ConsolePi</strong> sau khoang 30 giay.</p>
-        </div>
-        <p><a class="btn" href="/wifi">← Quay lai trang WiFi</a></p>"""
-        return render_page(body, active="/wifi", title="Dang chuyen mang")
+        return _switching_page(ssid)
+
+    @app.route("/wifi-connect-saved", methods=["POST"])
+    def wifi_connect_saved():
+        """
+        Ket noi thang toi mot WiFi DA LUU tu bang danh sach - khong bat go
+        lai mat khau (Pi da co san tu luc luu). Yeu cau thuc te: dan network
+        di hien truong hay quay lai cac WiFi da dung truoc do, go lai mat
+        khau moi lan rat phien.
+        """
+        ssid = request.form.get("ssid", "")
+        if ap_locked():
+            return _wifi_page(msg="AP dang bi KHOA. Go khoa truoc khi doi WiFi.", ok=False)
+        creds = load_saved_wifi_with_psk()
+        if ssid not in creds:
+            return _wifi_page(msg=f"Khong tim thay '{ssid}' trong danh sach da luu.", ok=False)
+        WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuan bi chuyen mang...")
+        threading.Thread(target=_switch_worker, args=(ssid, creds[ssid], False),
+                         daemon=True).start()
+        return _switching_page(ssid)
 
     @app.route("/wifi-disconnect", methods=["POST"])
     def wifi_disconnect_route():

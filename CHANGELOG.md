@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.4.27
+
+**Tab YouTube moi** (`src/ui/youtube.py`) - giai tri luc ranh giua gio lam
+viec, theo yeu cau thuc te.
+
+- Dan duong link video (chia se tu dien thoai) hoac go tu khoa de tim -
+  video duoc phat NGAY TRONG mot iframe cua chinh trang nay.
+- **Co tinh: khong dieu huong thang sang youtube.com day du.** Da kiem tra
+  that bang `curl -I`: `www.youtube.com` tra ve header
+  `X-Frame-Options: SAMEORIGIN` nen khong nhung duoc; con man hinh cam ung
+  gan tren Pi chay trinh duyet o che do kiosk toan man hinh - khong co
+  thanh dia chi, khong nut Back, ca cu chi vuot lui cung bi tat
+  (`--overscroll-history-navigation=0` trong `kiosk-start.sh`). Neu bam
+  thang sang youtube.com se bi ket cung tren do khong co duong quay lai.
+  Vi vay video luon o dang nhung (`/embed/<id>`, khong bi chan iframe) ngay
+  trong khung dashboard, giu nguyen thanh dieu huong de bam sang tab khac
+  bat cu luc nao.
+- O tim kiem nhanh dung mot kieu nhung khong chinh thuc cua YouTube
+  (`listType=search`) - da ghi ro tren giao dien la co the ngung hoat dong
+  neu YouTube thay doi, va luon co duong dan link truc tiep lam phuong an
+  chac chan hoat dong.
+- Them muc tai lieu "📺 Tab YouTube (giai tri)" trong nhom moi "Giai tri".
+
+## 0.4.26
+
+**Nut "Ket noi" ngay tren bang WiFi da luu** (`src/ui/network.py`) - yeu cau
+thuc te: dan network di hien truong hay quay lai cac WiFi da dung qua roi,
+truoc day muon noi lai phai go lai SSID + mat khau tu dau trong khung "Ket
+noi WiFi moi" moi lan, du Pi da luu san.
+
+- Moi WiFi trong bang "WiFi da luu" gio co them cot **Ket noi**: **🟢 xanh**
+  va bam duoc ngay neu mang do co trong lan quet WiFi gan nhat (dang trong
+  tam song); **⚪ xam** va khoa lai (thuoc tinh `disabled`) neu khong thay -
+  tranh bam nham vao mot mang hien khong co that, gay cho vo ich 20-30 giay
+  roi Pi tu dong quay lai AP.
+- Bam nut xanh se ket noi thang bang mat khau DA LUU tu truoc, khong bat go
+  lai. Route moi `/wifi-connect-saved` doc mat khau tu chinh
+  `wpa_supplicant-wlan0.conf` (ham moi `load_saved_wifi_with_psk()`), dung
+  lai dung mot luong ket noi (`_switch_worker`) voi nut "Ket noi WiFi moi"
+  hien co - khong them logic ket noi moi, chi bot buoc go tay.
+- Mang dang ket noi hien "● Dang dung" thay vi nut Ket noi (khong can bam
+  lai mang minh dang dung). Khi AP dang bi khoa, tat ca nut Ket noi bi khoa
+  kem chu thich ly do - **khong tu dong quet WiFi khi dang khoa AP** de
+  tranh lam gian doan song ConsolePi dang phat (quet chu dong tren wlan0
+  luc no dang la AP co the gay gian doan song trong choc lat).
+
 ## 0.4.25
 
 **Dai tu giao dien cho man hinh cam ung RasPad** (khong doi cau truc/logic

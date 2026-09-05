@@ -33,6 +33,7 @@ NAV_ITEMS = [
     ("/docs", "Tai lieu", "📖"),
     ("/logs", "Nhat ky loi", "📋"),
     ("/power", "Nguon dien", "⚡"),
+    ("/youtube", "YouTube", "📺"),
     ("/settings", "Cai dat", "⚙️"),
 ]
 

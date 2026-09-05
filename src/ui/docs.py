@@ -488,6 +488,23 @@ la cach DUY NHAT hien tai de tat hoan toan: bam Tat may tren dashboard truoc (do
 ACT ngung nhap nhay), roi moi gat cong tac vat ly cua vo.</p>
 """),
 
+    ("youtube", "📺 Tab YouTube (giai tri)", """
+<p>Tab <a href="/youtube">YouTube</a> de xem video giai lao giua luc lam viec.
+Cach dung: mo YouTube tren dien thoai, bam <strong>Chia se &rarr; Sao chep duong
+dan</strong>, roi dan vao o "Duong dan hoac ID video" va bam Phat.</p>
+<p><strong>Vi sao khong go duoc thang vao YouTube tim video nhu binh thuong?</strong>
+Man hinh cam ung gan tren Pi chay trinh duyet o che do kiosk toan man hinh -
+khong co thanh dia chi, khong co nut Back, ca cu chi vuot lui cung bi tat.
+Neu bam thang sang trang youtube.com day du thi se bi <strong>ket cung</strong>
+tren do, khong con duong nao quay lai dashboard. Vi vay video luon duoc nhung
+(embed) NGAY TRONG khung giao dien chung, co san thanh dieu huong ben trai de
+luc nao cung bam sang tab khac duoc.</p>
+<p><strong>O "Tim kiem nhanh" co the khong ra ket qua</strong> - day la mot
+kieu nhung khong chinh thuc cua YouTube, co the ngung hoat dong bat cu luc
+nao neu YouTube thay doi. Khi do hay dung cach dan duong dan o tren, luon
+chac chan hoat dong.</p>
+"""),
+
     ("pin", "🔋 Hien % pin - can gan gi", """
 <p><strong>Tinh trang hien tai: may nay khong co pin nao Pi doc duoc.</strong>
 Da kiem chung bang ba cach doc lap:</p>
@@ -993,6 +1010,7 @@ NHOM = [
     ("Lam viec hang ngay", ["terminal", "console", "mau", "khofile", "manhinh"]),
     ("Cong cu mang", ["porttest", "congcumoi"]),
     ("Thiet bi & nguon", ["suckhoe", "pin"]),
+    ("Giai tri", ["youtube"]),
     ("Su co", ["suco"]),
 ]
 

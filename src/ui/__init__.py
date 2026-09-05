@@ -14,6 +14,7 @@ from .remote import register_remote                        # noqa: F401
 from .api import register_api                              # noqa: F401
 from .logs import register_logs                            # noqa: F401
 from .power import register_power                          # noqa: F401
+from .youtube import register_youtube                       # noqa: F401
 
 
 def register_all(app):
@@ -32,4 +33,5 @@ def register_all(app):
     register_api(app)
     register_logs(app)
     register_power(app)
+    register_youtube(app)
     return app
