@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.38
+
+**Tailscale: hien domain that + nut doi Auth key** (`ui/remote.py`) - phan
+hoi truc tiep sau khi anh Thoai ket noi Tailscale thanh cong lan dau.
+
+- Khi da ket noi, khoi Tailscale gio hien **ten mien MagicDNS that**
+  (vd `console-pi.tail3d2316.ts.net`) kem link bam vao duoc, giong cach
+  khoi Cloudflare da lam - khong can mo Tailscale admin console de tim
+  dia chi nua. Lay tu `Self.DNSName` trong `tailscale status --json` -
+  da kiem chung that tren chinh may (tailscale da duoc cai va ket noi that
+  trong luc lam tinh nang nay).
+- Xac nhan va ghi ro trong tai lieu: ten mien VA dia chi IP deu **KHONG
+  doi khi khoi dong lai Pi** - ten may (`console-pi`) dat co dinh trong
+  code, ten tailnet (`tail3d2316.ts.net`) gan co dinh voi tai khoan, dich
+  vu `tailscaled` da duoc bat tu dong luc khoi dong (`systemctl enable`)
+  nen tu noi lai dung danh tinh cu.
+- **Sua 1 lo hong giao dien**: truoc day khi da luu Auth key thi KHONG co
+  cach nao doi sang key khac ma khong bam "Quen thiet bi" truoc (dang xuat
+  han, mat ten/dia chi cu). Them khoi an "Authkey het han / muon doi sang
+  key khac?" - dan key moi vao la doi ngay, giu nguyen danh tinh thiet bi.
+
 ## 0.4.37
 
 **Them Tailscale lam lua chon truy cap tu xa PHU** (`ui/remote.py`) - theo

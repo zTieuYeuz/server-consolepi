@@ -201,26 +201,37 @@ def ts_co_authkey():
 def ts_trang_thai():
     """
     Doc trang thai qua `tailscale status --json`. Tra ve dict voi cac khoa:
-      dang_ket_noi (bool), ip (str, rong neu chua co), can_dang_nhap (bool)
+      dang_ket_noi (bool), ip (str, rong neu chua co),
+      ten_mien (str, ten MagicDNS rong neu chua co), can_dang_nhap (bool)
     Khong doan gia tri nao khi lenh loi hoac JSON thieu truong - tra ve
     trang thai "khong ro" trung thuc thay vi bia.
+
+    Ten mien lay tu `Self.DNSName` - da kiem chung that tren chinh may
+    (khong doan): Tailscale luon co san 1 ten MagicDNS dang
+    "<hostname>.<ten-tailnet>.ts.net." (co dau cham cuoi) ngay ca khi
+    chi dung dia chi IP de vao - khong can bat/cau hinh gi them.
     """
     import json as _json
+    RONG = {"dang_ket_noi": False, "ip": "", "ten_mien": "",
+            "can_dang_nhap": False, "ro": False}
     if not ts_da_cai():
-        return {"dang_ket_noi": False, "ip": "", "can_dang_nhap": False, "ro": False}
+        return RONG
     try:
         r = subprocess.run(["tailscale", "status", "--json"],
                            capture_output=True, text=True, timeout=10)
         d = _json.loads(r.stdout)
     except Exception:
-        return {"dang_ket_noi": False, "ip": "", "can_dang_nhap": False, "ro": False}
+        return RONG
 
     trang_thai = d.get("BackendState", "")
-    ip_list = (d.get("Self") or {}).get("TailscaleIPs") or []
+    ban_than = d.get("Self") or {}
+    ip_list = ban_than.get("TailscaleIPs") or []
     ip = ip_list[0] if ip_list else ""
+    ten_mien = (ban_than.get("DNSName") or "").rstrip(".")
     return {
         "dang_ket_noi": trang_thai == "Running" and bool(ip),
         "ip": ip,
+        "ten_mien": ten_mien,
         "can_dang_nhap": trang_thai == "NeedsLogin",
         "ro": True,
     }
@@ -344,7 +355,8 @@ def register_remote(app):
         ts_cai = ts_da_cai()
         ts_key = ts_co_authkey() if ts_cai else False
         ts_tt = ts_trang_thai() if ts_cai else {"dang_ket_noi": False, "ip": "",
-                                                "can_dang_nhap": False, "ro": False}
+                                                "ten_mien": "", "can_dang_nhap": False,
+                                                "ro": False}
 
         if not ts_cai:
             ts_khoi = """
@@ -374,9 +386,16 @@ def register_remote(app):
                 ts_trang = ('<span style="color:#8b93a1;">⚪ Khong doc duoc trang thai '
                            '(chay <code>tailscale status</code> tren Terminal de xem chi tiet)</span>')
             elif ts_tt["dang_ket_noi"]:
+                mien_html = (f'<p style="margin:9px 0 0;">Truy cap tai: '
+                            f'<a href="http://{_esc(ts_tt["ten_mien"])}" target="_blank" rel="noopener">'
+                            f'<code>http://{_esc(ts_tt["ten_mien"])}</code></a> '
+                            f'<span style="color:#8b93a1;">(hoac IP '
+                            f'<code>{_esc(ts_tt["ip"])}</code>)</span></p>'
+                            if ts_tt["ten_mien"] else
+                            f'<p style="margin:9px 0 0;">Dia chi trong tailnet: '
+                            f'<code>{_esc(ts_tt["ip"])}</code></p>')
                 ts_trang = (f'<span style="color:#6ee7a0;">🟢 Dang ket noi</span>'
-                           f'<p style="margin:9px 0 0;">Dia chi trong tailnet: '
-                           f'<code>{_esc(ts_tt["ip"])}</code></p>')
+                           f'{mien_html}')
             elif ts_tt["can_dang_nhap"]:
                 ts_trang = ('<span style="color:#ffb74d;">⚠️ Authkey da luu nhung chua '
                            'dang nhap duoc - co the authkey het han/da dung het luot. '
@@ -397,7 +416,23 @@ def register_remote(app):
                     onsubmit="return confirm('Dang xuat va xoa authkey? Thiet bi se bien mat khoi tailnet, phai dan authkey moi neu muon dung lai.');">
                 <button type="submit" class="gray">Quen thiet bi</button>
               </form>
-            </div>"""
+            </div>
+            <details style="margin-top:13px;">
+              <summary style="cursor:pointer;color:#8b93a1;font-size:13px;">
+                Authkey het han / muon doi sang key khac?</summary>
+              <p style="color:#8b93a1;font-size:13px;margin:9px 0 11px;">
+                Tao Auth key moi trong <strong>Tailscale admin console &rarr; Settings
+                &rarr; Keys</strong>, dan vao day - KHONG can bam "Quen thiet bi" truoc,
+                thiet bi van giu nguyen ten/dia chi cu.</p>
+              <form method="POST" action="/remote/ts/authkey">
+                <input type="password" name="authkey" required autocomplete="off"
+                       placeholder="tskey-auth-...">
+                <div class="row" style="margin-top:11px;">
+                  <button type="submit" class="gray" data-busy="Dang doi key...">
+                    Doi sang key nay</button>
+                </div>
+              </form>
+            </details>"""
 
         ts_card = f"""
         <div class="card" style="border-left:4px solid #5a6672;">
