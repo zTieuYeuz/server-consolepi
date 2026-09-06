@@ -287,7 +287,6 @@ def trang_thai_he_thong():
             "tai": h.get("load"),
             "ram_mb": h.get("mem"),
             "dia_gb": h.get("disk"),
-            "pin": h.get("battery"),
         },
         "bluetooth": bt,
         "kho_file": kho,

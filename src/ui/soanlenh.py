@@ -1,9 +1,14 @@
 """
-Console Pi - Khoi "o soan tap lenh" dung chung cho tab Terminal va tab SSH.
+Console Pi - Cac khoi dung chung quanh khung terminal (Terminal / SSH /
+Console serial).
 
-Ca 2 tab deu can y het nhau: chon tap lenh tu Thu vien -> sua lai cho dung ->
-Copy / Dan tu clipboard / Dan thang vao khung terminal. De o 1 cho de sua 1 lan
-la ca 2 tab cung duoc, khong bi lech nhau theo thoi gian.
+  1. khoi_soan_lenh()    - o soan tap lenh: chon tap lenh tu Thu vien -> sua
+                           lai cho dung -> Copy / Dan tu clipboard / Dan
+                           thang vao khung terminal.
+  2. khoi_copy_terminal() - copy chu TU trong khung terminal RA ngoai.
+
+De o 1 cho de sua 1 lan la moi tab cung duoc, khong bi lech nhau theo thoi
+gian.
 
 Cac nut deu gui bang fetch (khong tai lai trang) vi 2 ly do THAT:
   - Tai lai trang se nap lai khung terminal ben tren -> mat cai dang nhin
@@ -116,6 +121,119 @@ SOAN_JS = """
 })();
 </script>
 """
+
+
+# ---------------------------------------------------------------------------
+# Copy chu TU trong khung terminal RA ngoai
+#
+# LOI THAT DA TIM RA (nguoi dung bao "muon copy 1 dong lenh tu terminal ra ma
+# khong lam duoc, anh dung chuot"), da kiem chung bang thuc nghiem chu khong
+# doan - dung CDP mo phong keo chuot that tren chinh khung terminal dang chay:
+#     keo chuot BINH THUONG  -> term.getSelection() tra ve rong
+#     keo chuot GIU PHIM SHIFT -> tra ve dung doan chu da boi den
+#
+# Nguyen nhan: cac phien terminal deu chay trong tmux voi `mouse on` (bat co
+# chu dich tu truoc de banh xe chuot cuon dung lich su man hinh thay vi bi
+# dich thanh phim Mui ten - xem scripts/term-launch.sh). Khi tmux bat che do
+# chuot, no bao terminal "gui moi su kien chuot cho ung dung" - xterm.js
+# nhuong quyen xu ly chuot cho tmux nen khong con tu boi den chu nua. Giu
+# Shift la duong "vuot rao" tieu chuan cua xterm.js (giong gnome-terminal,
+# iTerm2, Windows Terminal) de ep no tu boi den lai.
+#
+# KHONG tat `mouse on` cua tmux de "sua" viec nay: lam vay se lam sai lai loi
+# banh xe chuot da sua truoc do. Thay vao do: (1) ghi ro huong dan giu Shift
+# ngay tren giao dien, (2) them nut Copy doc thang selection cua xterm.js qua
+# API `term.getSelection()` (ttyd co gan doi tuong Terminal vao window.term
+# cua khung iframe - da kiem chung that), (3) them nut copy CA MAN HINH bang
+# `term.selectAll()` cho truong hop can lay ca doan ket qua lenh dai.
+COPY_TERM_JS = """
+<script>
+(function () {
+  "use strict";
+  var bao = document.getElementById("bao_copyterm");
+  if (!bao) return;
+
+  function noi(chuoi, loai) {
+    bao.textContent = chuoi;
+    bao.className = "msg " + (loai || "info");
+    bao.style.display = chuoi ? "block" : "none";
+  }
+
+  function layTerm() {
+    var f = document.querySelector("iframe");
+    if (!f) return null;
+    try { return f.contentWindow && f.contentWindow.term ? f.contentWindow.term : null; }
+    catch (e) { return null; }   // khac nguon goc (khong xay ra o day, nhung cu chac)
+  }
+
+  // Trang vao bang IP LAN chay HTTP thuong -> navigator.clipboard khong ton
+  // tai (chi co o HTTPS/localhost). execCommand cu van chay tren HTTP.
+  function chepCachCu(chu) {
+    var o = document.createElement("textarea");
+    o.value = chu;
+    o.style.position = "fixed"; o.style.left = "-9999px";
+    document.body.appendChild(o);
+    o.focus(); o.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(o);
+    noi(ok ? "Da copy " + chu.length + " ky tu." :
+        "Trinh duyet khong cho copy tu dong. Giu Shift roi boi den bang chuot va copy tay giup em.",
+        ok ? "ok" : "warn");
+  }
+
+  function chep(chu) {
+    if (!chu) return;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(chu).then(
+        function () { noi("Da copy " + chu.length + " ky tu.", "ok"); },
+        function () { chepCachCu(chu); });
+    } else { chepCachCu(chu); }
+  }
+
+  document.getElementById("nut_copy_chon").addEventListener("click", function () {
+    var t = layTerm();
+    if (!t) { noi("Khung terminal chua san sang - doi no hien chu roi bam lai.", "warn"); return; }
+    var chu = t.getSelection();
+    if (!chu) {
+      noi("Chua boi den chu nao. GIU PHIM SHIFT trong luc keo chuot de boi den " +
+          "(khong giu Shift thi tmux giu chuot de cuon man hinh), roi bam lai nut nay.", "warn");
+      return;
+    }
+    chep(chu);
+  });
+
+  document.getElementById("nut_copy_all").addEventListener("click", function () {
+    var t = layTerm();
+    if (!t) { noi("Khung terminal chua san sang - doi no hien chu roi bam lai.", "warn"); return; }
+    t.selectAll();
+    var chu = t.getSelection();
+    t.clearSelection();
+    if (!chu) { noi("Khung terminal dang trong.", "warn"); return; }
+    chep(chu);
+  });
+})();
+</script>
+"""
+
+
+def khoi_copy_terminal():
+    """
+    Hang nut "copy chu tu terminal ra ngoai" - dat ngay duoi khung terminal.
+    Trang nao dung phai co dung 1 the <iframe> cua terminal.
+    """
+    return f"""
+    <div class="row" style="margin-bottom:10px;">
+      <button type="button" class="gray" id="nut_copy_chon">📋 Copy vung da chon</button>
+      <button type="button" class="gray" id="nut_copy_all">📄 Copy ca man hinh</button>
+    </div>
+    <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
+      Boi den bang chuot phai <strong>giu phim Shift</strong> (khong giu thi tmux
+      giu chuot de cuon man hinh). Khong co ban phim thi dung nut
+      <strong>Copy ca man hinh</strong>.
+    </p>
+    <div id="bao_copyterm" class="msg" style="display:none;"></div>
+    {COPY_TERM_JS}"""
 
 
 def khoi_soan_lenh(url_dan, khoa_luu, prefill=""):

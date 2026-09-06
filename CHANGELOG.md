@@ -1,5 +1,72 @@
 # Changelog
 
+## 0.4.36
+
+**Loat yeu cau thuc te tu anh Thoai: TFTP tai duoc file, copy/dan trong
+Terminal/SSH, sao luu qua cap console, bo Pin, toi uu tablet.**
+
+**1. TFTP - tai file va copy dong lenh** (`nettools/tftp_server.py`):
+- Nut **⬇ Tai ve** cho tung file da nhan (truoc day file nam tren dia
+  nhung khong co duong nao tai ve tu giao dien web).
+- Nut **📋 Copy** ngay canh 2 dong lenh mau (sao luu / nap firmware) - bam
+  la copy nguyen dong, khong phai tu bam giu chon chu.
+
+**2. Copy/dan trong khung Terminal va SSH bang chuot** (`ui/soanlenh.py`):
+- Nut **📋 Copy vung da chon**: doc lua chon THAT cua xterm.js
+  (`term.getSelection()`) - phai **giu phim Shift trong luc keo chuot boi
+  den** vi tmux dang bat che do chuot rieng (`mouse on`, giu de cuon lai
+  lich su man hinh) nen che di lua chon thong thuong cua trinh duyet; Shift
+  la cach xterm.js quy uoc de "vuot qua" ung dung dang giu chuot - da kiem
+  chung that bang cach gia lap ca hai truong hop (co Shift lay duoc chu, khong
+  Shift thi khong).
+- Nut **📄 Copy ca man hinh**: lay toan bo noi dung dang hien qua
+  `term.getSelection()` sau khi tu chon het pane (khong can bam giu Shift).
+- **LOI THAT DA TIM RA VA SUA CUNG DIP NAY**: `/api/send-keys` (dung boi
+  ban phim ao khi go vao Terminal/SSH/Console) goi ham `send_keys()`
+  **CHUA TUNG DUOC DINH NGHIA O DAU CA** trong toan bo ma nguon - moi lan
+  bam phim ao deu gay loi 500 (NameError) o server, va vkeyboard.js lai
+  nuot loi do bang `.catch(()=>{})` nen khong ai thay bao gi, chi thay "go
+  hoai khong an". Loi co san tu truoc, khong phai do thay doi gan day. Da
+  them ham `send_keys()` that su vao `ui/terminal.py`. Nhan tien phat hien
+  va sua them 1 loi bien: ky tu `;` bi chinh tmux hieu nham thanh dau tach
+  nhieu lenh (ke ca voi co `-l`), phai thoat thanh `\;` moi gui dung - da
+  test toan bo 68 ky tu tren ban phim ao, khong con ky tu nao loi.
+
+**3. Tab moi: Sao luu cau hinh qua cap console** (`nettools/console_backup.py`):
+  dung khi thiet bi **mat IP quan ly**, chi con cam duoc day console (TFTP
+  luc do vo dung vi can duong mang). Bao thiet bi in `show running-config`
+  ra man hinh roi hung lai thanh file, giong bat "session logging" trong
+  PuTTY nhung tu dong. Them nut **🔌 Sao luu cau hinh** ngay tren trang
+  Console dang mo (theo de nghi cua anh Thoai, thay vi 1 trang tach roi).
+  - **LOI THAT DA GAP LUC TEST VOI SWITCH THAT** (anh Thoai gui anh chup man
+    hinh): thiet bi con o che do nguoi dung (dau nhac `Switch>`, CHUA go
+    `enable`) nen `show running-config` bi tu choi - da them buoc kiem tra
+    dau nhac HIEN TAI truoc khi go bat ky lenh nao, bao ro va dung lai neu
+    thieu quyen thay vi cu go roi luu ca thong bao loi vao file.
+  - Nhan tien sua them 1 loi: `tmux clear-history` (dung o phien ban dau)
+    chi xoa BO DEM CUON, KHONG xoa noi dung DANG HIEN TREN MAN HINH - dan
+    toi chu cua buoc go lenh truoc bi lan/lap voi ket qua that. Doi sang
+    tim dung vi tri SAU lan go lenh cuoi cung, khong phu thuoc viec xoa
+    man hinh.
+
+**4. Bo tinh nang "Pin"** (`ui/health.py`, `ui/settings.py`, `ui/api.py`):
+  may nay xac nhan chac chan khong co phan cung pin nao doc duoc (da kiem
+  chung tu truoc: `i2cdetect` bao nhieu chu khong phai chip that, khong co
+  HAT/UPS nao) - de lai muc "Doc pin qua I2C" chi gay roi, da bo hoan toan
+  khoi Tong quan va Cai dat.
+
+**5. Toi uu giao dien cho tablet** (`ui/layout.py`):
+  menu ben trai dinh vi tri khi cuon trang (sticky), tang kich thuoc vung
+  bam cho nut/muc menu, bang du lieu rong tu cuon ngang trong khung rieng
+  thay vi day lech ca trang.
+
+**6. Ban phim ao qua lon, che mat man hinh Console** (`nettools/static/vkeyboard.js`):
+  da do that bang `wlr-randr` (man RasPad 1280x800, khong doan) va do truc
+  tiep tren dich vu that: kich thuoc cu chiem toi ~50% chieu cao man hinh,
+  tren trang Console (da bi thu hep san danh cho ban phim) thi cam giac
+  "che het". Giam clamp() cho chieu cao/chu tu (40-58px/16-21px) xuong con
+  (30-40px/12-16px) - do lai sau khi sua con ~35% man hinh (280px/800px).
+
 ## 0.4.35
 
 **Doi tab "YouTube" thanh "Giai tri", them TikTok, bo cach dan link/tim

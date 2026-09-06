@@ -242,17 +242,6 @@ def register_home(app):
         mem_u, mem_t, mem_p = h["mem"]
         dk_u, dk_t, dk_p = h["disk"]
 
-        # Dong Pin LUON hien - co phan cung thi hien so that, khong thi noi
-        # thang la khong doc duoc va can gan gi. Giau han di thi nguoi dung
-        # cu tuong dashboard thieu tinh nang.
-        if h["battery"]:
-            bat_row = (f'<tr><td>Pin</td><td><span style="color:#6ee7a0;font-weight:600;">'
-                       f'🔋 {_esc(str(h["battery"]))}</span></td></tr>')
-        else:
-            bat_row = ('<tr><td>Pin</td><td><span style="color:#8b93a1;">'
-                       'Khong co phan cung bao pin &mdash; '
-                       '<a href="/docs#pin">cach gan de hien duoc</a></span></td></tr>')
-
         health_html = f"""
         <table>
           <tr><td style="width:190px;">Nguon dien</td><td>{power_msg}</td></tr>
@@ -262,7 +251,6 @@ def register_home(app):
           <tr><td>Tai he thong</td><td><code>{h['load']}</code> <span style="color:#8b93a1;font-size:12px;">(1 / 5 / 15 phut)</span></td></tr>
           <tr><td>Bo nho</td><td>{mem_u} / {mem_t} MB &nbsp;({mem_p}%)</td></tr>
           <tr><td>Dia</td><td>{dk_u} / {dk_t} GB &nbsp;({dk_p}%)</td></tr>
-          {bat_row}
         </table>
         <p style="margin-top:10px;"><a class="btn" href="/power">⚡ Tat may / Khoi dong lai</a></p>"""
 
@@ -318,6 +306,8 @@ def register_home(app):
                 f'Co the cap da bi rut.</div><p><a class="btn" href="/">← Ve trang chu</a></p>',
                 active="/", title="Console")
 
+        from .soanlenh import khoi_copy_terminal
+
         names = load_names()
         label = names.get(devname, "") or devname
         base = f"/term-console/{devname}"
@@ -326,14 +316,16 @@ def register_home(app):
         <div class="row" style="margin-bottom:11px;">
           <a class="btn gray" href="/">← Ve trang chu</a>
           <a class="btn" href="{base}/">↗ Mo toan man hinh</a>
+          <a class="btn blue" href="/nettools/console-backup?dev={devname}">🔌 Sao luu cau hinh</a>
           <span style="color:#8b93a1;font-size:13px;align-self:center;">
             {devname} &middot; 9600 8N1
           </span>
         </div>
-        <div class="card" style="padding:0;overflow:hidden;">
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px;">
           <iframe src="{base}/" title="Console {devname}"
-                  style="width:100%;height:calc(100vh - 260px);min-height:420px;border:0;display:block;background:#000;"></iframe>
+                  style="width:100%;height:calc(100vh - 330px);min-height:380px;border:0;display:block;background:#000;"></iframe>
         </div>
+        {khoi_copy_terminal()}
         <div class="msg info">
           Cham vao khung den de go lenh. Neu dung man hinh cam ung, ban phim ao
           se hien khi cham vao o nhap lieu o cac trang khac - rieng khung console

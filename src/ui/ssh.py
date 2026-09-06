@@ -29,7 +29,7 @@ from flask import request
 
 from .layout import render_page
 from .commands import load_library, dan_thong_minh
-from .soanlenh import khoi_soan_lenh
+from .soanlenh import khoi_soan_lenh, khoi_copy_terminal
 from .terminal import SSH_SESSION, tmux_session_exists, service_active
 
 # Dau nhac mat khau cua ssh ("...'s password:", "Enter passphrase for key ...:")
@@ -235,6 +235,7 @@ def _render(msg="", ok=True, prefill=""):
               style="width:100%;height:calc(100vh - 330px);min-height:360px;border:0;display:block;background:#000;"></iframe>
     </div>
 
+    {khoi_copy_terminal()}
     {khoi_soan_lenh("/ssh/paste", "consolepi-ssh-o-lenh", prefill)}
     {SSH_JS}"""
 

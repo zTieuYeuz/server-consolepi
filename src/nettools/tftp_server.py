@@ -40,7 +40,7 @@ import re
 import subprocess
 import time
 
-from flask import request, render_template_string
+from flask import request, render_template_string, send_from_directory, abort
 
 from . import nettools_bp
 
@@ -114,24 +114,36 @@ def danh_sach_file():
     return sorted(ra, key=lambda x: x["thoi_gian"], reverse=True)
 
 
-def xoa_file(ten):
-    """Xoa 1 file da nhan. Kiem tra ky ten file - day la file THIET BI KHAC
-    tu ghi len, khong phai nguoi dung tu dat ten, nen phai canh giac hon ca
-    upload thong thuong."""
+def duong_dan_an_toan(ten):
+    """
+    Doi ten file nguoi dung gui len thanh duong dan that, hoac None neu
+    khong hop le. Dung CHUNG cho ca xoa lan tai ve - file trong thu muc nay
+    do THIET BI KHAC tu ghi len (khong phai nguoi dung tu dat ten), nen phai
+    canh giac hon ca upload thong thuong: chan moi kieu vuot thu muc
+    (../, duong dan tuyet doi, symlink tro ra ngoai).
+    """
     ten = os.path.basename((ten or "").strip())
     if not ten or ten in (".", ".."):
-        return False, "Ten file khong hop le."
+        return None
     duong = os.path.join(TFTP_ROOT, ten)
-    # Kiem tra lai duong dan that su sau khi giai (chan moi kieu vuot thu muc)
+    # Kiem tra lai duong dan that su sau khi giai symlink
     if os.path.realpath(duong) != os.path.join(os.path.realpath(TFTP_ROOT), ten):
-        return False, "Ten file khong hop le."
+        return None
     if not os.path.isfile(duong):
-        return False, "Khong tim thay file."
+        return None
+    return duong
+
+
+def xoa_file(ten):
+    """Xoa 1 file da nhan."""
+    duong = duong_dan_an_toan(ten)
+    if not duong:
+        return False, "Ten file khong hop le hoac khong tim thay file."
     try:
         os.remove(duong)
     except OSError as e:
         return False, f"Khong xoa duoc: {e}"
-    return True, f"Da xoa {ten}."
+    return True, f"Da xoa {os.path.basename(duong)}."
 
 
 def ip_theo_giao_dien():
@@ -168,6 +180,14 @@ TFTP_TEMPLATE = """
         .hint { color: #999; font-size: 13px; }
         pre { background:#111; padding:10px 12px; border-radius:6px; overflow-x:auto; font-size:13px; }
         code.small { font-size:12px; color:#aaa; }
+        /* Dong lenh + nut Copy: nut nam CUOI dong lenh, xuong hang duoc tren
+           man hinh hep de khong bao gio de len chu. */
+        .lenh { display:flex; gap:9px; align-items:flex-start; flex-wrap:wrap; margin-bottom:6px; }
+        .lenh pre { flex:1 1 320px; margin:0; }
+        .nut-copy { flex:0 0 auto; }
+        .nut-tai { display:inline-block; background:#2563eb; color:#fff !important; padding:11px 15px;
+                   border-radius:6px; text-decoration:none; margin-right:7px; min-height:44px;
+                   line-height:22px; box-sizing:border-box; }
     </style>
 </head>
 <body>
@@ -207,24 +227,35 @@ sudo systemctl disable --now tftpd-hpa   # tat dich vu mac dinh cua goi, Console
         {% for ip in danh_sach_ip %}<code>{{ ip.iface }}: {{ ip.ip }}</code><br>{% endfor %}
         {% if not danh_sach_ip %}<p class="hint">Chua co IP tren interface nao.</p>{% endif %}
         <p style="margin-top:11px;">Sao luu cau hinh len Pi:</p>
-        <pre>copy running-config tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-cua-Pi>' }}/backup.cfg</pre>
+        <div class="lenh">
+            <pre id="lenh_backup">copy running-config tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-cua-Pi>' }}/backup.cfg</pre>
+            <button type="button" class="nut-copy" data-dich="lenh_backup">📋 Copy</button>
+        </div>
         <p>Nap firmware/cau hinh tu Pi xuong switch (dat file vao thu muc <code>{{ tftp_root }}</code> truoc):</p>
-        <pre>copy tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-cua-Pi>' }}/firmware.bin flash:</pre>
+        <div class="lenh">
+            <pre id="lenh_firmware">copy tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-cua-Pi>' }}/firmware.bin flash:</pre>
+            <button type="button" class="nut-copy" data-dich="lenh_firmware">📋 Copy</button>
+        </div>
+        <div id="bao_copy" class="hint" style="margin-top:8px;"></div>
     </div>
 
     <h3>File da nhan ({{ files|length }})</h3>
+    <p class="hint">File switch day len nam trong <code>{{ tftp_root }}</code> - bam
+       <strong>Tai ve</strong> de lay ve may dang xem trang nay.</p>
     <table>
-        <tr><th>Ten file</th><th style="width:120px;">Kich thuoc</th><th style="width:150px;">Thoi gian</th><th style="width:100px;"></th></tr>
+        <tr><th>Ten file</th><th style="width:120px;">Kich thuoc</th><th style="width:150px;">Thoi gian</th><th style="width:210px;">Thao tac</th></tr>
         {% for f in files %}
         <tr>
             <td>{{ f.ten }}</td>
             <td>{{ (f.kich_thuoc / 1024) | round(1) }} KB</td>
             <td class="hint">{{ f.thoi_gian }}</td>
-            <td>
+            <td style="white-space:nowrap;">
+                <a class="nut-tai" href="/nettools/tftp/tai/{{ f.ten | urlencode }}"
+                   download>⬇ Tai ve</a>
                 <form method="POST" action="/nettools/tftp/xoa" style="display:inline;"
                       onsubmit="return confirm('Xoa {{ f.ten }}?');">
                     <input type="hidden" name="ten" value="{{ f.ten }}">
-                    <button type="submit" class="red" style="padding:4px 10px;">Xoa</button>
+                    <button type="submit" class="red">Xoa</button>
                 </form>
             </td>
         </tr>
@@ -232,6 +263,52 @@ sudo systemctl disable --now tftpd-hpa   # tat dich vu mac dinh cua goi, Console
     </table>
     {% if not files %}<p class="hint">Chua co file nao.</p>{% endif %}
     {% endif %}
+
+<script>
+(function () {
+  "use strict";
+  var bao = document.getElementById("bao_copy");
+  function noi(chuoi, mau) {
+    if (!bao) return;
+    bao.textContent = chuoi;
+    bao.style.color = mau || "#999";
+  }
+
+  // Vao bang IP LAN thi trang chay HTTP thuong, navigator.clipboard KHONG
+  // ton tai (trinh duyet chi cho dung Clipboard API o ngu canh bao mat:
+  // HTTPS hoac localhost). execCommand cu van chay duoc tren HTTP nen phai
+  // giu lam phuong an du phong - cung cach lam nhu ui/soanlenh.py.
+  function copyCachCu(chu) {
+    var o = document.createElement("textarea");
+    o.value = chu;
+    o.style.position = "fixed";
+    o.style.left = "-9999px";
+    document.body.appendChild(o);
+    o.focus(); o.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(o);
+    noi(ok ? "✅ Da copy dong lenh." : "⚠️ Trinh duyet khong cho copy tu dong - boi den dong lenh roi copy tay giup em.",
+        ok ? "#7ddc7d" : "#ffb74d");
+  }
+
+  var nut = document.querySelectorAll(".nut-copy");
+  for (var i = 0; i < nut.length; i++) {
+    nut[i].addEventListener("click", function () {
+      var dich = document.getElementById(this.getAttribute("data-dich"));
+      if (!dich) return;
+      var chu = dich.textContent.trim();
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(chu).then(
+          function () { noi("✅ Da copy dong lenh.", "#7ddc7d"); },
+          function () { copyCachCu(chu); });
+      } else {
+        copyCachCu(chu);
+      }
+    });
+  }
+})();
+</script>
 </body>
 </html>
 """
@@ -266,6 +343,27 @@ def tftp_tat_route():
 def tftp_xoa_route():
     ok, msg = xoa_file(request.form.get("ten", ""))
     return _render(msg=msg, ok=ok)
+
+
+@nettools_bp.route("/nettools/tftp/tai/<path:ten>")
+def tftp_tai_route(ten):
+    """
+    Tai file switch da day len ve may dang xem web.
+
+    Truoc day file nam tren dia ma khong co duong nao lay ve tu giao dien -
+    phai SSH vao Pi moi copy ra duoc, rat bat tien khi dang o hien truong
+    voi may tinh bang.
+
+    as_attachment=True: bat trinh duyet TAI XUONG thay vi mo trong tab. File
+    o day la cau hinh/firmware cua thiet bi mang (co the la .cfg, .bin, .txt)
+    - mo trong tab vua khong huu ich vua co the bi trinh duyet dien giai
+    nham thanh HTML.
+    """
+    duong = duong_dan_an_toan(ten)
+    if not duong:
+        abort(404)
+    return send_from_directory(TFTP_ROOT, os.path.basename(duong),
+                               as_attachment=True)
 
 
 if __name__ == "__main__":

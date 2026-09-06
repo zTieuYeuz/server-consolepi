@@ -65,6 +65,7 @@ TOOLS_READONLY = [
 
 TOOLS_WRITE = [
     ("/nettools/tftp", "📤 May chu TFTP", "Bat/tat TFTP de sao luu/phuc hoi config, firmware tu switch/router", True),
+    ("/nettools/console-backup", "🔌 Sao luu qua cap console", "Backup cau hinh khi thiet bi mat IP quan ly - chi can day console", True),
     ("/nettools/netmiko", "⚙️ Netmiko Config", "Tu dong SSH vao switch chay lenh cau hinh (co xem truoc)", True),
     ("/nettools/dot1x", "🔐 802.1X Testing", "Test xac thuc EAP voi RADIUS server (khong dung eth0)", True),
     ("/nettools/ifthen", "🧩 IF/THEN Automation", "Rule tu dong goi y cau hinh khi phat hien switch quen", True),
@@ -91,6 +92,7 @@ from . import dns_check  # noqa: E402,F401
 from . import tls_check  # noqa: E402,F401
 from . import topology  # noqa: E402,F401
 from . import tftp_server  # noqa: E402,F401
+from . import console_backup  # noqa: E402,F401
 from . import netmiko_tool  # noqa: E402,F401
 from . import dot1x  # noqa: E402,F401
 from . import ifthen  # noqa: E402,F401

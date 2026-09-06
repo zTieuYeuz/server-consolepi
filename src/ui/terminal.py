@@ -81,6 +81,62 @@ def service_active(name):
         return False
 
 
+# Ten phim dac biet ma vkeyboard.js gui khi bam phim chuc nang (Enter, Xoa,
+# Tab...) - PHAI khop dung chuoi ben JS. tmux hieu day la LENH DIEU KHIEN
+# (nhan phim tuong ung), khong phai chu can go.
+_PHIM_DAC_BIET = {"Enter", "BSpace", "Tab", "Escape", "Space",
+                  "Up", "Down", "Left", "Right", "C-c"}
+
+
+def send_keys(session_name, keys):
+    """
+    Gui 1 lan go phim (ky tu thuong hoac phim dac biet) vao phien tmux -
+    dung boi ban phim ao (vkeyboard.js) khi trang la Console/Terminal/SSH
+    (khung terminal khong phai o nhap <input> nen khong the go thang vao).
+
+    LOI THAT DA GAP (anh Thoai bao "go hoai khong an vao terminal", chup man
+    hinh ban phim qua lon che mat man hinh): ham nay duoc GOI o /api/send-keys
+    (ui/terminal.py) nhung CHUA TUNG DUOC DINH NGHIA O DAU CA trong toan bo
+    ma nguon - moi lan bam phim ao deu goi ham khong ton tai, Flask nem
+    NameError (loi 500), va vkeyboard.js lai NUOT LOI ay bang .catch(()=>{})
+    nen nguoi dung khong thay bao gi ca, chi thay go khong an. Day la loi co
+    san tu truoc, khong phai do thay doi gan day.
+
+    KHONG dung `-l` (literal) cho phim dac biet - can de tmux hieu la LENH
+    (vd "Enter" = nhan phim Enter that). Co dung `-l` cho ky tu thuong -
+    tranh tmux hieu nham mot so ky tu (vi du ';') thanh cu phap rieng cua
+    no thay vi ky tu can go.
+    """
+    session_name = (session_name or "").strip()
+    if not session_name:
+        return False, "Thieu ten phien tmux."
+    if keys is None or keys == "":
+        return False, "Thieu noi dung can gui."
+    if not tmux_session_exists(session_name):
+        return False, f"Chua co phien terminal '{session_name}'."
+
+    cmd = ["tmux", "send-keys", "-t", session_name]
+    if keys not in _PHIM_DAC_BIET:
+        cmd.append("-l")
+        # LOI THAT DA GAP: go dau ";" qua ban phim ao thi khong ra gi ca -
+        # tmux dung ";" DUNG THAN NO (ke ca sau -l) de TACH NHIEU LENH tmux
+        # trong 1 lan goi (vd `tmux new-window \; split-window`), nen mot
+        # doi so dung la ";" bi hieu thanh dau tach lenh rong thay vi ky tu
+        # can go. Phai thoat thanh "\;" de tmux hieu la ky tu that (da kiem
+        # chung: khong thoat thi man hinh khong nhan duoc gi, co thoat thi
+        # dung dau ";" hien ra).
+        if keys == ";":
+            keys = "\\;"
+    cmd.append(keys)
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        if r.returncode != 0:
+            return False, (r.stderr or "Gui phim that bai.").strip()
+        return True, "ok"
+    except Exception as e:
+        return False, str(e)
+
+
 def _terminal_body(kind, base_path, session_name, service_name, warn_html):
     running = service_active(service_name)
     has_session = tmux_session_exists(session_name)
@@ -97,7 +153,7 @@ def _terminal_body(kind, base_path, session_name, service_name, warn_html):
                  f'<code>{service_name}</code> chua chay. '
                  f'Chay: <code>sudo systemctl start {service_name}</code></div>')
 
-    from .soanlenh import khoi_soan_lenh
+    from .soanlenh import khoi_soan_lenh, khoi_copy_terminal
 
     return f"""
     {banner}
@@ -109,6 +165,7 @@ def _terminal_body(kind, base_path, session_name, service_name, warn_html):
     <div class="row" style="margin-bottom:12px;">
       <a class="btn gray" href="{base_path}/">↗ Mo terminal toan man hinh</a>
     </div>
+    {khoi_copy_terminal()}
     {khoi_soan_lenh("/terminal/paste", "consolepi-local-o-lenh")}"""
 
 
