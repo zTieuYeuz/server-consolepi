@@ -608,7 +608,7 @@ dashboard qua chinh cong do thi se mat ket noi - trang web co canh bao san. Bam
 <strong>Tat che do</strong> de tra cong LAN ve DHCP binh thuong.</p>
 """),
 
-    ("tuxa", "🌍 Truy cap tu xa (Cloudflare Tunnel)", """
+    ("tuxa", "🌍 Truy cap tu xa (Cloudflare Tunnel + Tailscale)", """
 <p>Kich ban: dua Pi cho nguoi khac mang toi diem xa, ho chi cam console va cam mang
 internet. Ban ngoi nha van vao cau hinh duoc.</p>
 <ol>
@@ -624,6 +624,31 @@ duong ham ra ngoai, nen chay duoc ca sau 4G va sau nhieu lop NAT.</p>
 da co lop dang nhap bang tai khoan Linux. Nen bat them <strong>Cloudflare Access</strong>
 de chan ngay tu bien. Token luu quyen 600, chi root doc duoc - ai co token deu dung
 lai duoc duong ham, dung gui qua chat hay email. Xong viec thi tat duong ham.</p>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Tailscale - lua chon phu (khong thay the Cloudflare)</h3>
+<p>Cung o tab <strong>Truy cap tu xa</strong>, ngay duoi khoi Cloudflare, co them khoi
+<strong>Tailscale</strong> - day la LUA CHON PHU, Cloudflare van la mac dinh.</p>
+<p><strong>Khac nhau o dau:</strong> Cloudflare cho ra 1 link web, ai co link deu vao duoc
+qua trinh duyet bat ky, khong can cai gi - hop de <em>chia se tam thoi</em> cho nguoi khac
+xem. Tailscale tao mang rieng ao (VPN mesh, nen tang WireGuard) GIUA CAC THIET BI CUA
+CHINH BAN - may nao muon vao PHAI CAI APP TAILSCALE va dang nhap CUNG TAI KHOAN truoc,
+khong vao duoc tu may la/trinh duyet bat ky. Doi lai, Tailscale cho vao duoc ca
+SSH/dich vu khac cua Pi qua dia chi IP rieng trong mang do, khong chi gioi han trong
+trang web qua nginx cong 80 nhu Cloudflare.</p>
+<p><strong>Cach dung:</strong></p>
+<ol>
+  <li>Bam <em>Cai Tailscale</em> (can internet - cai bang script chinh thuc cua
+      Tailscale, tu nhan dien dung phien ban Debian dang dung)</li>
+  <li>Vao <strong>Tailscale admin console &rarr; Settings &rarr; Keys</strong>, tao 1
+      <em>Auth key</em> (chon <em>Reusable</em> neu muon dung lai nhieu lan)</li>
+  <li>Dan authkey vao trang, bam <em>Luu va ket noi</em></li>
+  <li>Cai app Tailscale tren may/dien thoai ca nhan, dang nhap CUNG tai khoan, se
+      thay Pi xuat hien voi ten <code>console-pi</code> trong danh sach thiet bi</li>
+</ol>
+<p><strong>Authkey luu quyen 600</strong> tai <code>/etc/tailscale-console-pi-authkey</code>,
+chi root doc duoc. Bam <em>Quen thiet bi</em> se dang xuat han va xoa authkey - Pi bien
+mat khoi tailnet, phai dan authkey moi neu muon dung lai (khac voi <em>Tat</em>, chi ngat
+ket noi tam thoi, bat lai ngay khong can authkey moi).</p>
 
 <h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Dung qua hotspot 4G/5G tu dien thoai</h3>
 <div class="msg ok"><strong>Da sua va kiem chung that (v0.4.18).</strong> Kich ban: o cong ty

@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.37
+
+**Them Tailscale lam lua chon truy cap tu xa PHU** (`ui/remote.py`) - theo
+yeu cau: "them 1 lua chon nua, no la lua chon phu, mac dinh van la
+Cloudflare".
+
+- Khoi Tailscale hien ngay duoi khoi Cloudflare tren tab **Truy cap tu
+  xa**, ro rang danh nhan "lua chon phu" - Cloudflare khong doi gi, van la
+  mac dinh va hien truoc tien.
+- Luong dung: Cai (script chinh thuc cua Tailscale, tu nhan dien dung
+  phien ban Debian) &rarr; dan Auth key tu Tailscale admin console &rarr;
+  Bat/Tat/Quen thiet bi - cung mau giao dien voi khoi Cloudflare da co.
+- Khac biet ro voi Cloudflare (da ghi ro tren giao dien va tai lieu):
+  Cloudflare cho ra 1 link web ai co link cung vao duoc qua trinh duyet
+  bat ky; Tailscale tao mang rieng ao GIUA CAC THIET BI CUA CHINH NGUOI
+  DUNG, may nao muon vao cung phai cai app + dang nhap cung tai khoan
+  truoc, doi lai vao duoc ca SSH/dich vu khac cua Pi qua IP rieng trong
+  mang do, khong chi gioi han trong trang web.
+- Doc trang thai qua `tailscale status --json`, da kiem chung logic phan
+  tich JSON voi 4 tinh huong (dang chay, chua dang nhap, da tat, JSON
+  hong) - khong bia trang thai khi lenh loi hoac thieu truong.
+- Authkey luu quyen 600 tai `/etc/tailscale-console-pi-authkey`, cung muc
+  bao mat voi token Cloudflare.
+- Cap nhat tai lieu muc "Truy cap tu xa" giai thich ro khi nao dung
+  Cloudflare, khi nao dung Tailscale.
+
 ## 0.4.36
 
 **Loat yeu cau thuc te tu anh Thoai: TFTP tai duoc file, copy/dan trong

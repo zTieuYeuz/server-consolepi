@@ -1,17 +1,32 @@
 """
-Console Pi - Truy cap tu xa qua Cloudflare Tunnel.
+Console Pi - Truy cap tu xa qua Cloudflare Tunnel (mac dinh) hoac Tailscale
+(lua chon phu).
 
 Kich ban: dua Pi cho nguoi khac mang toi diem xa, ho chi can cam console va
 cam mang internet (ke ca 4G). Nguoi quan tri ngoi nha van vao cau hinh duoc.
 
-Vi sao chon Cloudflare Tunnel:
+Vi sao Cloudflare Tunnel la MAC DINH:
+  - Vao duoc tu BAT KY trinh duyet nao, khong can cai gi tren may dang xem -
+    hop voi kich ban "dua Pi cho nguoi khac, minh xem tu xa" o tren
   - KHONG can mo port tren router, khong can IP tinh, chay sau moi lop NAT
-  - Duong ham do cloudflared TU MO RA, nen mang o dau khong quan trong
 
-Bao mat:
-  - Duong ham chi tro vao 127.0.0.1:80, ma cong 80 da co lop dang nhap PAM
-  - Token duoc luu voi quyen 600, chi root doc duoc
-  - Nen bat them Cloudflare Access de chan ngay tu bien Cloudflare
+Vi sao them Tailscale la LUA CHON PHU (khong thay the Cloudflare):
+  - Tailscale tao mang rieng ao (VPN mesh) GIUA CAC THIET BI CUA CHINH
+    NGUOI DUNG - may nao muon vao cung phai CAI APP TAILSCALE va dang nhap
+    CUNG TAI KHOAN truoc, khong vao duoc tu trinh duyet/may la nhu
+    Cloudflare. Doi lai: vao duoc ca SSH/dich vu khac cua Pi qua dia chi IP
+    rieng trong mang do, khong chi trang web qua nginx cong 80.
+  - Hop khi CHINH nguoi dung (khong phai nguoi thu ba) muon truy cap day du
+    hon tu cac thiet bi ca nhan da cai san Tailscale.
+
+Bao mat (ca hai):
+  - Cloudflare: duong ham chi tro vao 127.0.0.1:80, ma cong do da co lop
+    dang nhap PAM. Token luu quyen 600, chi root doc duoc. Nen bat them
+    Cloudflare Access de chan ngay tu bien Cloudflare.
+  - Tailscale: authkey luu quyen 600. Ban than Tailscale da ma hoa
+    (WireGuard) toan bo duong truyen giua cac thiet bi trong tailnet -
+    khong can lop dang nhap PAM rieng vi chi thiet bi DA DUOC XAC THUC vao
+    dung tailnet do moi ket noi toi duoc Pi.
 """
 import os
 import re
@@ -23,6 +38,9 @@ TOKEN_FILE = os.path.join(CONF_DIR, "console-pi-token")
 SERVICE = "console-pi-tunnel"
 DEB_URL = ("https://github.com/cloudflare/cloudflared/releases/latest/"
            "download/cloudflared-linux-{arch}.deb")
+
+TS_AUTHKEY_FILE = "/etc/tailscale-console-pi-authkey"
+TS_HOSTNAME = "console-pi"
 
 
 def da_cai():
@@ -132,6 +150,124 @@ def ten_mien():
     return m[-1] if m else ""
 
 
+# =========================================================== Tailscale (phu)
+def ts_da_cai():
+    return shutil.which("tailscale") is not None
+
+
+def ts_cai_dat():
+    """
+    Cai bang script chinh thuc cua Tailscale - KHAC voi cach lam voi
+    cloudflared (tai thang file .deb roi dpkg -i). Ly do: Tailscale KHONG
+    co 1 duong dan .deb "ban moi nhat" don gian nhu Cloudflare - phai biet
+    dung ten ban Debian (vd "trixie") de lay dung goi, va tu ho da lam san
+    script chinh thuc de tu nhan dien dieu do dang tin cay hon minh tu doan.
+    Day la cach duoc chinh Tailscale khuyen dung cho cai dat khong tuong
+    tac (headless), khong phai chon curl|sh cho tien.
+    """
+    if ts_da_cai():
+        return True, "tailscale da co san."
+    try:
+        r = subprocess.run(
+            "curl -fsSL https://tailscale.com/install.sh | sh",
+            shell=True, capture_output=True, text=True, timeout=180)
+        if r.returncode != 0:
+            return False, ("Cai that bai. Kiem tra Pi co vao duoc internet khong. "
+                           f"Chi tiet: {(r.stderr or r.stdout).strip()[-300:]}")
+    except Exception as e:
+        return False, f"Loi khi cai: {e}"
+    if not ts_da_cai():
+        return False, "Script chay xong nhung khong thay lenh tailscale - cai that bai."
+    return True, "Da cai Tailscale."
+
+
+def ts_luu_authkey(authkey):
+    authkey = (authkey or "").strip()
+    if len(authkey) < 20:
+        return False, "Authkey khong dung dinh dang. Sao chep lai tu trang Tailscale admin."
+    try:
+        fd = os.open(TS_AUTHKEY_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(authkey + "\n")
+    except OSError as e:
+        return False, f"Khong luu duoc authkey: {e}"
+    return True, "Da luu authkey."
+
+
+def ts_co_authkey():
+    return os.path.exists(TS_AUTHKEY_FILE) and os.path.getsize(TS_AUTHKEY_FILE) > 20
+
+
+def ts_trang_thai():
+    """
+    Doc trang thai qua `tailscale status --json`. Tra ve dict voi cac khoa:
+      dang_ket_noi (bool), ip (str, rong neu chua co), can_dang_nhap (bool)
+    Khong doan gia tri nao khi lenh loi hoac JSON thieu truong - tra ve
+    trang thai "khong ro" trung thuc thay vi bia.
+    """
+    import json as _json
+    if not ts_da_cai():
+        return {"dang_ket_noi": False, "ip": "", "can_dang_nhap": False, "ro": False}
+    try:
+        r = subprocess.run(["tailscale", "status", "--json"],
+                           capture_output=True, text=True, timeout=10)
+        d = _json.loads(r.stdout)
+    except Exception:
+        return {"dang_ket_noi": False, "ip": "", "can_dang_nhap": False, "ro": False}
+
+    trang_thai = d.get("BackendState", "")
+    ip_list = (d.get("Self") or {}).get("TailscaleIPs") or []
+    ip = ip_list[0] if ip_list else ""
+    return {
+        "dang_ket_noi": trang_thai == "Running" and bool(ip),
+        "ip": ip,
+        "can_dang_nhap": trang_thai == "NeedsLogin",
+        "ro": True,
+    }
+
+
+def ts_bat():
+    """Dang nhap + bat ket noi bang authkey da luu."""
+    if not ts_da_cai():
+        return False, "Chua cai Tailscale."
+    if not ts_co_authkey():
+        return False, "Chua co authkey."
+    try:
+        with open(TS_AUTHKEY_FILE) as f:
+            authkey = f.read().strip()
+    except OSError as e:
+        return False, f"Khong doc duoc authkey da luu: {e}"
+
+    subprocess.run(["systemctl", "enable", "--now", "tailscaled"],
+                   capture_output=True, timeout=20)
+    r = subprocess.run(["tailscale", "up", f"--authkey={authkey}",
+                        f"--hostname={TS_HOSTNAME}", "--accept-dns=false"],
+                       capture_output=True, text=True, timeout=40)
+    if r.returncode != 0:
+        return False, f"Khong ket noi duoc: {(r.stderr or r.stdout).strip()[:250]}"
+    return True, "Da ket noi Tailscale."
+
+
+def ts_tat():
+    """Ngat ket noi nhung GIU LAI dang ky thiet bi trong tailnet - bat lai
+    nhanh, khong can authkey moi (khac voi 'quen thiet bi' o duoi)."""
+    r = subprocess.run(["tailscale", "down"], capture_output=True, text=True, timeout=20)
+    if r.returncode != 0:
+        return False, f"Khong tat duoc: {(r.stderr or r.stdout).strip()[:200]}"
+    return True, "Da ngat ket noi Tailscale."
+
+
+def ts_quen_thiet_bi():
+    """Dang xuat han + xoa authkey - thiet bi bien mat khoi tailnet, phai
+    dan authkey moi neu muon bat lai."""
+    subprocess.run(["tailscale", "logout"], capture_output=True, timeout=20)
+    try:
+        os.remove(TS_AUTHKEY_FILE)
+    except OSError:
+        pass
+    return True, "Da dang xuat va xoa authkey khoi Pi."
+
+
 # =============================================================== giao dien web
 def _goc_ngoai():
     """
@@ -203,6 +339,77 @@ def register_remote(app):
                 <button type="submit" class="gray">Xoa token</button>
               </form>
             </div>"""
+
+        # --- Tailscale (lua chon phu, KHONG thay the Cloudflare o tren) ---
+        ts_cai = ts_da_cai()
+        ts_key = ts_co_authkey() if ts_cai else False
+        ts_tt = ts_trang_thai() if ts_cai else {"dang_ket_noi": False, "ip": "",
+                                                "can_dang_nhap": False, "ro": False}
+
+        if not ts_cai:
+            ts_khoi = """
+            <div class="msg warn">Chua cai <code>tailscale</code>. Pi phai vao duoc
+            internet de tai goi cai chinh chu tu Tailscale.</div>
+            <form method="POST" action="/remote/ts/cai" style="margin-top:12px;">
+              <button type="submit" class="gray" data-busy="Dang tai va cai, toi 2 phut...">
+                ⬇ Cai Tailscale</button>
+            </form>"""
+        elif not ts_key:
+            ts_khoi = """
+            <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+              Vao <strong>Tailscale admin console &rarr; Settings &rarr; Keys</strong>,
+              tao mot <em>Auth key</em> (nen chon <em>Reusable</em> neu muon dung lai
+              nhieu lan, hoac dat han su dung phu hop).</p>
+            <form method="POST" action="/remote/ts/authkey">
+              <label>Auth key</label>
+              <input type="password" name="authkey" required autocomplete="off"
+                     placeholder="tskey-auth-...">
+              <div class="row" style="margin-top:13px;">
+                <button type="submit" class="gray" data-busy="Dang luu va ket noi...">
+                  Luu va ket noi</button>
+              </div>
+            </form>"""
+        else:
+            if not ts_tt["ro"]:
+                ts_trang = ('<span style="color:#8b93a1;">⚪ Khong doc duoc trang thai '
+                           '(chay <code>tailscale status</code> tren Terminal de xem chi tiet)</span>')
+            elif ts_tt["dang_ket_noi"]:
+                ts_trang = (f'<span style="color:#6ee7a0;">🟢 Dang ket noi</span>'
+                           f'<p style="margin:9px 0 0;">Dia chi trong tailnet: '
+                           f'<code>{_esc(ts_tt["ip"])}</code></p>')
+            elif ts_tt["can_dang_nhap"]:
+                ts_trang = ('<span style="color:#ffb74d;">⚠️ Authkey da luu nhung chua '
+                           'dang nhap duoc - co the authkey het han/da dung het luot. '
+                           'Xoa va dan authkey moi.</span>')
+            else:
+                ts_trang = '<span style="color:#8b93a1;">⚪ Dang tat</span>'
+
+            ts_nut = ('<form method="POST" action="/remote/ts/tat" style="display:inline;">'
+                     '<button type="submit" class="red" data-busy="Dang tat...">⏹ Tat</button></form>'
+                     if ts_tt["dang_ket_noi"] else
+                     '<form method="POST" action="/remote/ts/bat" style="display:inline;">'
+                     '<button type="submit" class="gray" data-busy="Dang ket noi...">▶ Bat</button></form>')
+            ts_khoi = f"""
+            <p style="margin:0;">{ts_trang}</p>
+            <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
+              {ts_nut}
+              <form method="POST" action="/remote/ts/quen" style="display:inline;"
+                    onsubmit="return confirm('Dang xuat va xoa authkey? Thiet bi se bien mat khoi tailnet, phai dan authkey moi neu muon dung lai.');">
+                <button type="submit" class="gray">Quen thiet bi</button>
+              </form>
+            </div>"""
+
+        ts_card = f"""
+        <div class="card" style="border-left:4px solid #5a6672;">
+          <h3>Tailscale <span style="color:#8b93a1;font-size:12px;font-weight:400;">
+              (lua chon phu - vao duoc SSH/dich vu khac cua Pi, khong chi trang web)</span></h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+            Tao mang rieng ao giua cac thiet bi CUA CHINH ANH - may nao muon vao cung
+            phai cai app Tailscale va dang nhap cung tai khoan truoc. Khac voi Cloudflare
+            o tren (ai co link cung vao duoc qua trinh duyet), Tailscale chi hop khi
+            chinh anh muon truy cap day du hon tu thiet bi ca nhan da cai san.</p>
+          {ts_khoi}
+        </div>"""
 
         # --- Duong vao danh cho may / AI ---
         from . import api as capi
@@ -300,6 +507,8 @@ Doc tai lieu do truoc, roi giup toi lam viec voi thiet bi mang dang cam vao no.<
           {khoi}
         </div>
 
+        {ts_card}
+
         {ai_card}
 
         <div class="card" style="border-left:4px solid #ffb74d;">
@@ -373,3 +582,32 @@ Doc tai lieu do truoc, roi giup toi lam viec voi thiet bi mang dang cam vao no.<
     def remote_clear():
         ok_x, msg = xoa_token()
         return page(msg=msg, ok=ok_x)
+
+    # --------------------------------------------------------- Tailscale
+    @app.route("/remote/ts/cai", methods=["POST"])
+    def remote_ts_cai():
+        ok_i, msg = ts_cai_dat()
+        return page(msg=msg, ok=ok_i)
+
+    @app.route("/remote/ts/authkey", methods=["POST"])
+    def remote_ts_authkey():
+        ok_k, msg = ts_luu_authkey(request.form.get("authkey", ""))
+        if ok_k:
+            ok_b, msg2 = ts_bat()
+            return page(msg=f"{msg} {msg2}", ok=ok_b)
+        return page(msg=msg, ok=False)
+
+    @app.route("/remote/ts/bat", methods=["POST"])
+    def remote_ts_on():
+        ok_b, msg = ts_bat()
+        return page(msg=msg, ok=ok_b)
+
+    @app.route("/remote/ts/tat", methods=["POST"])
+    def remote_ts_off():
+        ok_o, msg = ts_tat()
+        return page(msg=msg, ok=ok_o)
+
+    @app.route("/remote/ts/quen", methods=["POST"])
+    def remote_ts_forget():
+        ok_f, msg = ts_quen_thiet_bi()
+        return page(msg=msg, ok=ok_f)
