@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.40
+
+**Gia MAC WiFi** (`ui/network.py`, `scripts/wifi-fallback.sh`) - giai
+quyet dut diem su co tab 0.4.39: WiFi khach cong ty tu choi ket noi vi
+nhan ra MAC thuoc hang Raspberry Pi Foundation (khong phai sai mat khau).
+
+- Tab **WiFi** them khoi "Gia MAC WiFi": bam Bat la doi sang 1 MAC gia CO
+  DINH (kieu "locally administered", sinh ngau nhien 1 lan roi dung lai
+  moi lan - tranh mang danh gia "hang loat thiet bi la" neu MAC doi lien
+  tuc), bam Tat la tra ve MAC that NGAY LAP TUC (doc truc tiep tu EEPROM
+  qua `ethtool -P`, khong can tu luu MAC goc o dau ca).
+- `wifi-fallback.sh` tu ap dung MAC gia (neu da bat) truoc khi thu ket noi
+  WiFi da luu - co hieu luc cho ca lan ket noi dau tien tai diem den moi.
+- **Da kiem chung THAT truoc khi lam** (khong doan): doi MAC bang tay tren
+  chinh may, goi `networkctl reconfigure` (dung lenh fallback script goi
+  moi 2 phut) va cho carrier len/xuong - xac nhan MAC KHONG bi he thong tu
+  tra ve MAC goc du co san `MACAddressPolicy=persistent` trong cau hinh
+  systemd mac dinh (chinh sach nay chi ap dung luc udev tao interface, khong
+  can thiep sau khi da doi MAC bang tay). WiFi tu noi lai binh thuong sau
+  khi doi di doi lai.
+- Nhac ro tren giao dien: nen **tat lai khi ve nha** neu router nha co dat
+  rieng dia chi IP theo MAC that.
+- Cap nhat tai lieu muc WiFi giai thich day du su co that + cach dung.
+
 ## 0.4.39
 
 **Sua loi that: 2 lan chay wifi-fallback.sh chong lan nhau, lam log bao SAI

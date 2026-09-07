@@ -23,6 +23,10 @@ WLAN_IFACE="wlan0"
 WPA_CONF="/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
 LOGFILE="/var/log/console-pi-fallback.log"
 AP_IP="192.168.50.1"
+# PHAI khop dung duong dan MAC_SPOOF_FLAG trong ui/network.py (ham
+# bat_gia_mac()/tat_gia_mac()) - do la noi nguoi dung bat/tat tinh nang
+# tu dashboard, file nay chi doc lai de biet co ap dung MAC gia khong.
+MAC_SPOOF_FLAG="/opt/console-pi/wifi-mac-spoof.flag"
 
 FORCE_AP_FLAG="/opt/console-pi/force-ap.flag"
 # Danh dau da mat ket noi 1 lan - can 2 lan lien tiep moi ket noi lai
@@ -210,6 +214,25 @@ if [ -n "$FOUND_KNOWN" ]; then
     systemctl stop hostapd
     systemctl stop dnsmasq
     ngung_supplicant
+
+    # Gia MAC (neu nguoi dung da bat tu dashboard, xem ui/network.py) - PHAI
+    # doi TRUOC khi bat wpa_supplicant, khong thi lan lien ket dau tien van
+    # dung MAC that. Ha interface xuong truoc khi doi MAC - hau het driver
+    # WiFi tu choi doi MAC luc dang UP.
+    if [ -f "$MAC_SPOOF_FLAG" ]; then
+        MAC_GIA="$(cat "$MAC_SPOOF_FLAG" 2>/dev/null | tr -d '[:space:]')"
+        MAC_HIEN_TAI="$(cat "/sys/class/net/$WLAN_IFACE/address" 2>/dev/null)"
+        if [ -n "$MAC_GIA" ] && [ "$MAC_GIA" != "$MAC_HIEN_TAI" ]; then
+            ip link set "$WLAN_IFACE" down
+            if ip link set "$WLAN_IFACE" address "$MAC_GIA"; then
+                log "Da doi sang MAC gia: $MAC_GIA"
+            else
+                log "CANH BAO: doi MAC gia that bai, dung MAC that"
+            fi
+            ip link set "$WLAN_IFACE" up
+        fi
+    fi
+
     ip addr flush dev "$WLAN_IFACE"
     khoi_dong_supplicant
 

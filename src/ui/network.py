@@ -812,6 +812,129 @@ def client_via_wlan():
         return False
 
 
+# --------------------------------------------------- Gia MAC WiFi (phu)
+# LY DO THAT: anh Thoai dem may len cong ty, WiFi khach TU CHOI lien ket
+# ngay tu buoc dau (khong phai sai mat khau - xem wifi-fallback.sh). Da
+# kiem tra MAC that cua wlan0 (e4:5f:01:...) va xac nhan day la ma hang
+# (OUI) dang ky rieng cho Raspberry Pi Foundation - bat ky he thong mang
+# nao cung "doc" duoc day la mot Raspberry Pi chi tu MAC, va nhieu cong ty
+# chu dong chan cac thiet bi dang bo mach nhung/IoT tren WiFi khach vi ly
+# do bao mat. Doi MAC (gia dang mot thiet bi thong thuong) la cach vuot
+# qua kieu chan theo hang nay - CHI dung khi chinh chu (anh Thoai) xac
+# nhan cong ty khong cam viec nay, KHONG tu y bat mac dinh.
+MAC_SPOOF_FLAG = "/opt/console-pi/wifi-mac-spoof.flag"
+
+
+def mac_that(iface="wlan0"):
+    """
+    MAC GOC tu phan cung (doc thang tu EEPROM qua ethtool), KHONG phu
+    thuoc da tung doi bang phan mem hay chua - dung de biet chac chan
+    "MAC that" la gi bat ky luc nao, khong can tu luu/nho rieng.
+    """
+    try:
+        r = subprocess.run(["ethtool", "-P", iface],
+                           capture_output=True, text=True, timeout=5)
+        m = re.search(r"([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})", r.stdout)
+        return m.group(1).lower() if m else ""
+    except Exception:
+        return ""
+
+
+def mac_hien_tai(iface="wlan0"):
+    try:
+        with open(f"/sys/class/net/{iface}/address") as f:
+            return f.read().strip().lower()
+    except OSError:
+        return ""
+
+
+def dang_gia_mac():
+    return os.path.exists(MAC_SPOOF_FLAG)
+
+
+def _tao_mac_gia():
+    """
+    Sinh 1 MAC ngau nhien kieu "locally administered" (bit thu 2 cua byte
+    dau = 1, vd bat dau bang 02) - day la quy uoc chuan de bao "day la MAC
+    do phan mem gan, khong phai cua hang san xuat nao ca", tranh trung voi
+    MAC that cua thiet bi khac tren cung mang.
+    """
+    import random
+    phan_con_lai = [random.randint(0, 255) for _ in range(5)]
+    return "02:" + ":".join(f"{b:02x}" for b in phan_con_lai)
+
+
+def bat_gia_mac(iface="wlan0"):
+    """
+    Bat che do gia MAC - sinh 1 MAC gia CO DINH (luu lai, dung lai moi lan
+    chu khong doi ngau nhien moi lan ket noi) va ap dung ngay neu doi duoc.
+
+    Vi sao MAC gia phai CO DINH: neu moi lan doi 1 MAC khac, mang cong ty
+    se thay "hang loat thiet bi la lien tuc xuat hien" - de bi he thong an
+    ninh mang danh dau la bat thuong hon la mot thiet bi ON DINH quay lai
+    nhieu lan.
+    """
+    if dang_gia_mac():
+        return True, "Da bat san."
+    mac_moi = _tao_mac_gia()
+    try:
+        with open(MAC_SPOOF_FLAG, "w") as f:
+            f.write(mac_moi + "\n")
+    except OSError as e:
+        return False, f"Khong luu duoc: {e}"
+
+    ok, msg = _ap_dung_mac(iface, mac_moi)
+    if ok:
+        return True, f"Da bat gia MAC ({mac_moi}) va ap dung ngay."
+    return True, (f"Da bat gia MAC ({mac_moi}), nhung ap dung ngay khong thanh "
+                  f"cong ({msg}) - se tu ap dung o lan ket noi lai WiFi ke tiep "
+                  f"(toi da 2 phut).")
+
+
+def tat_gia_mac(iface="wlan0"):
+    """Tat va TRA VE NGAY MAC that - khong doi mac dinh phai doi WiFi thu cong."""
+    try:
+        os.remove(MAC_SPOOF_FLAG)
+    except OSError:
+        pass
+    that = mac_that(iface)
+    if not that:
+        return True, "Da tat gia MAC (khong doc duoc MAC goc de tra ve ngay - se dung MAC that o lan ket noi sau)."
+    ok, msg = _ap_dung_mac(iface, that)
+    if ok:
+        return True, f"Da tat gia MAC, tra lai MAC that ({that}) ngay."
+    return True, f"Da tat gia MAC, nhung tra ve ngay khong thanh cong ({msg}) - se tu dung MAC that o lan ket noi sau."
+
+
+def _ap_dung_mac(iface, mac):
+    """
+    Doi MAC that su tren interface. PHAI ha interface xuong truoc - hau het
+    driver WiFi (ke ca chip tren Pi) tu choi doi MAC luc interface dang UP.
+    Ngat wpa_supplicant truoc de tranh no giu interface o trang thai dang
+    dung du wifi (giong cach wifi_disconnect() da lam).
+    """
+    try:
+        subprocess.run(["systemctl", "stop", "wpa_supplicant@" + iface],
+                       capture_output=True, timeout=15)
+        subprocess.run(["pkill", "-f", f"wpa_supplicant -B -i {iface}"],
+                       capture_output=True, timeout=10)
+        subprocess.run(["ip", "link", "set", iface, "down"],
+                       capture_output=True, timeout=10, check=True)
+        r = subprocess.run(["ip", "link", "set", iface, "address", mac],
+                           capture_output=True, text=True, timeout=10)
+        subprocess.run(["ip", "link", "set", iface, "up"],
+                       capture_output=True, timeout=10)
+        if r.returncode != 0:
+            return False, (r.stderr or r.stdout).strip()[:200]
+        subprocess.run(["networkctl", "reconfigure", iface],
+                       capture_output=True, timeout=15)
+    except subprocess.CalledProcessError as e:
+        return False, str(e)
+    except Exception as e:
+        return False, str(e)
+    return True, "ok"
+
+
 # ------------------------------------------------------------- Trang
 def _wifi_page(msg="", ok=True):
     mode, ssid, ip = get_net_status()
@@ -837,6 +960,41 @@ def _wifi_page(msg="", ok=True):
           {'🔓 Go khoa AP' if locked else '🔒 Phat AP ConsolePi (khoa)'}
         </button>
       </form>
+    </div>"""
+
+    gia_mac = dang_gia_mac()
+    mac_goc = mac_that()
+    mac_dang_dung = mac_hien_tai()
+    if gia_mac:
+        mac_card_body = f"""
+        <p style="margin:0;"><span style="color:#6ee7a0;">🟢 Dang bat</span></p>
+        <table style="max-width:420px;margin-top:9px;">
+          <tr><td style="width:150px;">MAC dang dung</td><td><code>{_esc(mac_dang_dung)}</code></td></tr>
+          <tr><td>MAC that (phan cung)</td><td><code>{_esc(mac_goc)}</code></td></tr>
+        </table>
+        <form method="POST" action="/wifi-mac-tat" style="margin-top:13px;"
+              onsubmit="return confirm('Tat gia MAC va tra ve MAC that ngay?');">
+          <button type="submit" class="gray" data-busy="Dang tat...">Tat, tra ve MAC that</button>
+        </form>"""
+    else:
+        mac_card_body = f"""
+        <p style="margin:0;"><span style="color:#8b93a1;">⚪ Dang tat</span> - dang dung MAC
+          that: <code>{_esc(mac_goc)}</code></p>
+        <form method="POST" action="/wifi-mac-bat" style="margin-top:13px;">
+          <button type="submit" class="gray" data-busy="Dang bat...">🎭 Bat gia MAC</button>
+        </form>"""
+
+    mac_card = f"""
+    <div class="card">
+      <h3>Gia MAC WiFi <span style="color:#8b93a1;font-size:12px;font-weight:400;">
+          (dung khi mang chan thiet bi la)</span></h3>
+      <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+        Mot so mang cong ty tu choi ket noi ngay tu dau voi thiet bi co dia chi MAC
+        thuoc hang Raspberry Pi (nhu may nay) - khong lien quan mat khau. Bat muc nay
+        de gia dang mot thiet bi thong thuong. MAC gia CO DINH (khong doi moi lan) de
+        khong bi mang danh gia bat thuong. Nen TAT lai khi ve nha neu router nha co
+        dat rieng dia chi IP cho MAC that cua may nay.</p>
+      {mac_card_body}
     </div>"""
 
     # Danh sach mang WiFi "nhin thay duoc" tu lan quet gan nhat, dung de to
@@ -944,6 +1102,7 @@ def _wifi_page(msg="", ok=True):
       {disconnect_html}
     </div>
     {ap_card}
+    {mac_card}
     {scan_form}
     <h2>WiFi da luu ({len(saved)})</h2>
     {'' if locked or not saved else '<p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">'
@@ -1316,6 +1475,16 @@ def register_network(app):
     def wifi_disconnect_route():
         ok_d, msg = wifi_disconnect()
         return _wifi_page(msg=msg, ok=ok_d)
+
+    @app.route("/wifi-mac-bat", methods=["POST"])
+    def wifi_mac_bat_route():
+        ok_m, msg = bat_gia_mac()
+        return _wifi_page(msg=msg, ok=ok_m)
+
+    @app.route("/wifi-mac-tat", methods=["POST"])
+    def wifi_mac_tat_route():
+        ok_m, msg = tat_gia_mac()
+        return _wifi_page(msg=msg, ok=ok_m)
 
     @app.route("/wifi-rescan", methods=["POST"])
     def wifi_rescan():

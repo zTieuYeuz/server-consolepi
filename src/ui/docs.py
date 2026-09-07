@@ -103,7 +103,40 @@ sudo nano /etc/hostapd/hostapd.conf && sudo systemctl restart hostapd</pre>
 <div class="msg warn"><strong>Canh bao:</strong> file wpa_supplicant co
 <code>update_config=1</code> nghia la wpa_supplicant duoc phep TU GHI DE len no.
 Chay <code>wpa_supplicant</code> thu cong sai cach co the lam MAT het WiFi da luu.
-Khoi phuc khi dang ket noi: <code>sudo wpa_cli -i wlan0 save_config</code></div>"""),
+Khoi phuc khi dang ket noi: <code>sudo wpa_cli -i wlan0 save_config</code></div>
+
+<h3 style="color:#4CAF50;font-size:14px;margin-top:16px;">Gia MAC WiFi - khi mang cong ty tu choi ket noi</h3>
+<div class="msg err"><strong>Su co that:</strong> dem may len cong ty, WiFi khach
+<code>PHS-HO-GUEST</code> tu choi lien ket ngay tu buoc dau
+(<code>CTRL-EVENT-ASSOC-REJECT</code>) - KHONG lien quan mat khau (chua bao gio
+toi buoc kiem tra mat khau). Doc <code>journalctl</code> phat hien them 1 loi
+rieng: 2 lan chay <code>wifi-fallback.sh</code> chong len nhau (do timer 2
+phut/lan trong khi 1 lan chay co the mat gan 1 phut) lam log ghi SAI "da co
+IP" - da sua bang <code>flock</code> trong script.</div>
+<p><strong>Nguyen nhan that (da xac nhan):</strong> MAC cua wlan0
+(<code>e4:5f:01:...</code>) la ma hang (OUI) dang ky rieng cho Raspberry Pi
+Foundation - bat ky he thong mang nao cung nhan ra ngay day la Raspberry Pi
+chi tu MAC. Nhieu cong ty chu dong chan thiet bi dang bo mach nhung tren WiFi
+khach vi ly do bao mat - khong phai loi cua Console Pi hay sai mat khau.</p>
+<p><strong>Cach dung:</strong> vao tab <a href="/wifi">WiFi</a>, khoi "Gia MAC
+WiFi", bam <em>Bat gia MAC</em> - Pi se dung 1 MAC gia CO DINH (dang
+"locally administered", khong trung hang nao that) thay vi MAC that moi khi
+noi WiFi. Nho <strong>Tat lai khi ve nha</strong> neu router nha co dat
+rieng dia chi IP theo MAC that cua may.</p>
+<pre>* Xem MAC that (khong doi du da gia hay chua)
+ethtool -P wlan0
+
+* Xem MAC dang dung
+cat /sys/class/net/wlan0/address
+
+* File danh dau dang bat gia MAC (chua chinh MAC gia dang dung)
+cat /opt/console-pi/wifi-mac-spoof.flag</pre>
+<div class="msg ok"><strong>Da kiem chung that truoc khi lam tinh nang nay</strong> -
+doi MAC bang tay, goi <code>networkctl reconfigure wlan0</code> (dung lenh
+<code>wifi-fallback.sh</code> goi moi 2 phut) va cho mat/co song WiFi: MAC
+KHONG bi he thong tu tra ve MAC goc (<code>MACAddressPolicy=persistent</code>
+cua systemd chi ap dung luc udev tao interface, khong can thiep sau khi da
+doi bang tay). WiFi cung tu noi lai binh thuong sau khi doi MAC di doi lai.</div>"""),
 
     ("terminal", "⌨️ Terminal, SSH va Thu vien lenh", """
 <p>Ca 3 khung terminal deu chay trong <strong>tmux</strong>, nen:</p>
