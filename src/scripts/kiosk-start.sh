@@ -92,9 +92,18 @@ fi
 # MOI trang duoc tai - day la duong quay ve THAT SU dang tin cay (khong phu
 # thuoc cu chi cam ung nao), thay the cho --overscroll-history-navigation
 # da that bai o tren. Xem chi tiet trong scripts/kiosk-homebtn.py.
+#
+# --allow-file-access-from-files: LOI THAT DA GAP khi lam man hinh cho
+# co thanh tien trinh (scripts/kiosk-loading.html) - Chromium mac dinh
+# CHAN trang file:// fetch() 1 file cuc bo KHAC (ke ca cung thu muc), da
+# kiem chung that (fetch tra ve "Failed to fetch"). Co nay CHI noi long
+# cho trang file:// tu doc file file:// khac - KHONG anh huong gi toi bao
+# mat cua http/https (dashboard, YouTube, TikTok...), va trang file:// duy
+# nhat tung mo trong kiosk nay la kiosk-loading.html do chinh du an tao ra.
 exec chromium \
     --kiosk \
     --remote-debugging-port=9222 \
+    --allow-file-access-from-files \
     --user-data-dir="$PROFILE_DIR" \
     --no-first-run \
     --no-default-browser-check \

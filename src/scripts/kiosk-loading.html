@@ -16,6 +16,27 @@ luon mo duoc, khong phu thuoc Flask/nginx da chay hay chua) - chinh trang
 nay tu kiem tra dashboard da san sang chua bang JavaScript, hien thanh
 tien trinh trong luc cho, roi TU CHUYEN sang dashboard that ngay khi san
 sang. Nguoi dung khong bao gio thay trang loi "khong ket noi duoc" nua.
+
+LOI THAT DA GAP LAN 2 (anh Thoai bao thanh tien trinh "chay den 92% roi
+dung, bao lau hon binh thuong"): ban dau % chi DOAN theo THOI GIAN DA TROI
+QUA, khong biet gi ve viec Flask thuc su dang lam gi - khi khoi dong cham
+hon binh thuong, no dung ngay tai muc tran da dat san, nhin y het bi treo
+du Flask van dang nap binh thuong.
+
+Da sua: doc THEM file trang thai THAT (`/run/console-pi-boot-status.json`)
+do chinh app.py ghi lai tai tung moc that su trong luc nap (xem
+_bao_tien_do() trong app.py) - vd "dang nap cac cong cu chan doan mang"
+khi dang o dong import scapy/cryptography/netmiko. Neu doc duoc file nay
+thi dung % VA THONG DIEP THAT thay vi doan; chi doan theo thoi gian trong
+khoang ngan truoc khi Flask kip ghi moc dau tien.
+
+LOI KY THUAT RIENG DA GAP KHI LAM PHAN NAY: trang `file://` KHONG the
+`fetch()` MOT FILE CUC BO KHAC (ke ca file trong cung thu muc) theo mac
+dinh cua Chromium - da kiem chung that (fetch tra ve
+"TypeError: Failed to fetch"), khac han voi fetch sang dia chi http:// van
+chay binh thuong. Phai them co `--allow-file-access-from-files` cho
+Chromium (xem scripts/kiosk-start.sh) - da kiem chung lai voi co nay bang
+1 tien trinh Chromium rieng thi fetch file-to-file thanh cong.
 -->
 <html lang="vi">
 <head>
@@ -73,33 +94,74 @@ sang. Nguoi dung khong bao gio thay trang loi "khong ket noi duoc" nua.
   "use strict";
 
   var DASH_URL = "http://127.0.0.1:8880/";
-  // Uoc luong thoi gian khoi dong TYPICAL de tinh % - chi mang tinh hinh
-  // dung (khong co cach nao biet chinh xac con bao lau), dung de nguoi
-  // dung co cam giac dang tien trien thay vi nhin mot con so co dinh.
-  var GIAY_UOC_TINH = 25;
-  var GIAY_CANH_BAO = 45;
+  var STATUS_URL = "file:///run/console-pi-boot-status.json";
+
+  // Uoc luong thoi gian khoi dong TYPICAL - CHI dung khi CHUA doc duoc
+  // trang thai that (vd vai giay dau tien, truoc khi app.py kip ghi moc
+  // dau). Ngay khi co du lieu that, bo qua so nay hoan toan.
+  var GIAY_UOC_TINH = 12;
+  var GIAY_CANH_BAO_TONG = 75;     // an toan cuoi cung du co du lieu that hay khong
+  var GIAY_CANH_BAO_KET = 25;      // % that KHONG doi qua lau = that su ket o 1 buoc
+
   var bat_dau = Date.now();
   var thanh = document.getElementById("thanh");
   var phantram = document.getElementById("phantram");
+  var thongdiep = document.getElementById("thongdiep");
   var canhbao = document.getElementById("canhbao");
   var cham = document.getElementById("cham");
   var soCham = 0;
+
+  var tyLeThat = null;          // % doc duoc tu file trang thai, null = chua co
+  var tyLeThatLanCuoiDoi = 0;    // lan gan nhat % that THAY DOI (de phat hien ket)
 
   function capNhatCham() {
     soCham = (soCham + 1) % 4;
     cham.textContent = ".".repeat(soCham);
   }
 
-  function capNhatThanh() {
+  function ve(tyLe, diep) {
+    thanh.style.width = tyLe + "%";
+    phantram.textContent = tyLe + "%";
+    if (diep) thongdiep.textContent = diep;
+  }
+
+  function capNhatHienThi() {
     var giay = (Date.now() - bat_dau) / 1000;
-    // Tang dan toi da 92% theo thoi gian uoc tinh, KHONG bao gio tu dat
-    // 100% - chi nhay len 100% that su khi dashboard xac nhan da xong.
-    var ty_le = Math.min(92, Math.round((giay / GIAY_UOC_TINH) * 100));
-    thanh.style.width = ty_le + "%";
-    phantram.textContent = ty_le + "%";
-    if (giay >= GIAY_CANH_BAO) {
+
+    if (tyLeThat !== null) {
+      // Co du lieu THAT tu app.py - dung thang, khong doan nua.
+      ve(tyLeThat, null);
+    } else {
+      // Chua co du lieu that (thuong chi vai giay dau) - tam doan theo
+      // thoi gian, khong bao gio vuot 30% de khong lan voi so % THAT sau do.
+      var uocLuong = Math.min(30, Math.round((giay / GIAY_UOC_TINH) * 100));
+      ve(uocLuong, null);
+    }
+
+    var ket_qua_lau = tyLeThat !== null &&
+      (Date.now() - tyLeThatLanCuoiDoi) / 1000 >= GIAY_CANH_BAO_KET;
+    if (giay >= GIAY_CANH_BAO_TONG || ket_qua_lau) {
       canhbao.style.display = "block";
     }
+  }
+
+  function docTrangThaiThat() {
+    // file:// KHONG the fetch() 1 file cuc bo khac neu thieu co
+    // --allow-file-access-from-files (da kiem chung that, xem ghi chu
+    // dau file) - kiosk-start.sh da bat co nay. Neu vi ly do gi do co nay
+    // thieu, fetch se luon that bai va trang tu dong quay ve uoc luong
+    // theo thoi gian o tren - khong bi vo trang, chi mat phan chinh xac.
+    fetch(STATUS_URL, { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var tyLeMoi = Math.max(0, Math.min(99, parseInt(d.phan_tram, 10) || 0));
+        if (tyLeMoi !== tyLeThat) {
+          tyLeThat = tyLeMoi;
+          tyLeThatLanCuoiDoi = Date.now();
+          if (d.thong_diep) thongdiep.textContent = d.thong_diep;
+        }
+      })
+      .catch(function () { /* chua co file, hoac dang ghi do - thu lai vong sau */ });
   }
 
   function kiemTraSanSang() {
@@ -109,9 +171,7 @@ sang. Nguoi dung khong bao gio thay trang loi "khong ket noi duoc" nua.
     // van la tin hieu dang tin cay de biet server da lang nghe va tra loi.
     fetch(DASH_URL, { mode: "no-cors", cache: "no-store" })
       .then(function () {
-        thanh.style.width = "100%";
-        phantram.textContent = "100%";
-        document.getElementById("thongdiep").textContent = "Da xong, dang mo dashboard...";
+        ve(100, "Da xong, dang mo dashboard...");
         setTimeout(function () { window.location.href = DASH_URL; }, 300);
       })
       .catch(function () {
@@ -119,8 +179,10 @@ sang. Nguoi dung khong bao gio thay trang loi "khong ket noi duoc" nua.
       });
   }
 
-  setInterval(capNhatThanh, 300);
+  setInterval(capNhatHienThi, 300);
   setInterval(capNhatCham, 500);
+  setInterval(docTrangThaiThat, 800);
+  docTrangThaiThat();
   kiemTraSanSang();
 })();
 </script>

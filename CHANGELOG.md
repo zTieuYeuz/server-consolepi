@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.42
+
+**Thanh tien trinh kiosk bam sat he thong THAT, khong con doan theo thoi
+gian** (`app.py`, `scripts/kiosk-loading.html`, `scripts/kiosk-start.sh`) -
+phan hoi truc tiep: thanh tien trinh 0.4.41 chay den 92% roi dung, bao "mat
+nhieu thoi gian hon binh thuong" du dashboard van dang nap binh thuong -
+vi ban dau CHI doan % theo thoi gian troi qua, khong biet gi ve viec Flask
+that su dang lam gi.
+
+- `app.py` gio ghi **tien do THAT** ra `/run/console-pi-boot-status.json`
+  tai tung moc that su trong luc nap: nap khung giao dien (10%) -> nap cac
+  cong cu chan doan mang/scapy+cryptography+netmiko (25%, cham nhat) ->
+  nap giao dien cac tab (70%) -> khoi dong may chu web (90%). Trang cho tu
+  do biet CHINH XAC dang ket o buoc nao, khong con doan.
+- `kiosk-loading.html` doc file nay moi 0.8 giay, dung % VA thong diep
+  THAT khi co; chi doan theo thoi gian trong vai giay dau (truoc khi
+  app.py kip ghi moc dau tien), va gioi han uoc luong o 30% de khong lan
+  voi % that. Canh bao "cham hon binh thuong" gio thong minh hon: bao khi
+  % THAT khong doi qua 25 giay (thuc su ket o 1 buoc) HOAC qua 75 giay
+  tinh chung (an toan cuoi cung), thay vi 1 moc thoi gian co dinh.
+- **Loi ky thuat rieng da gap va sua khi lam phan nay**: trang `file://`
+  mac dinh KHONG the `fetch()` mot file cuc bo khac (ke ca cung thu muc) -
+  da kiem chung that (`TypeError: Failed to fetch`). Them co
+  `--allow-file-access-from-files` cho Chromium - da kiem chung lai bang 1
+  tien trinh Chromium rieng, fetch file-to-file thanh cong sau khi them
+  co. Co nay chi noi long quyen cho trang file:// (duy nhat
+  kiosk-loading.html), khong anh huong gi toi http/https.
+
 ## 0.4.41
 
 **Man hinh cho co thanh tien trinh luc khoi dong kiosk** (`scripts/kiosk-loading.html`,

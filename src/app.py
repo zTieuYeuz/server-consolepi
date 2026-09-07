@@ -19,16 +19,53 @@ terminal dung luon phien dang nhap cua dashboard.
 Chay duoi quyen root (systemd khong khai User=) vi can raw socket cho cac
 cong cu bat goi tin va quyen sua cau hinh mang.
 """
+import json
+import os
 import sys
 from urllib.parse import urlparse
 
 sys.path.insert(0, "/opt/console-pi")
 
+# ---------------------------------------------------------------------------
+# Bao tien do khoi dong THAT (khong phai doan theo thoi gian).
+#
+# LOI THAT DA GAP (anh Thoai bao thanh tien trinh cua man hinh cho kiosk
+# "chay den 92% roi dung, bao lau hon binh thuong" - xem scripts/kiosk-loading.html):
+# ban dau thanh do CHI doan % theo THOI GIAN DA TROI QUA (khong biet gi ve
+# viec Flask thuc su dang lam gi), nen khi khoi dong cham hon binh thuong no
+# dung ngay tai muc tran da dat san, nhin y het bi treo du Flask van dang
+# nap binh thuong.
+#
+# Sua bang cach ghi tien do THAT ngay tai day - phan cham nhat khi khoi dong
+# la nap cac thu vien nang (scapy, cryptography, netmiko va toan bo module
+# nettools) o dong "from nettools import..." ben duoi. Ghi 1 moc truoc va 1
+# moc sau dong do la biet duoc dang "ket" o buoc nao that su, khong doan.
+BOOT_STATUS_FILE = "/run/console-pi-boot-status.json"
+
+
+def _bao_tien_do(phan_tram, thong_diep):
+    try:
+        tmp = BOOT_STATUS_FILE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump({"phan_tram": phan_tram, "thong_diep": thong_diep}, f)
+        os.chmod(tmp, 0o644)   # kiosk-loading.html doc file nay voi quyen user thuong
+        os.replace(tmp, BOOT_STATUS_FILE)
+    except Exception:
+        pass   # khong duoc de loi ghi tien do lam hong ca dashboard
+
+
+_bao_tien_do(10, "Dang nap khung giao dien...")
+
 from flask import Flask, redirect, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+_bao_tien_do(25, "Dang nap cac cong cu chan doan mang (co the mat vai chuc giay)...")
 from nettools import nettools_bp, register_no_cache_json, register_vkeyboard
+
+_bao_tien_do(70, "Dang nap giao dien cac tab...")
 from ui import register_all
+
+_bao_tien_do(90, "Dang khoi dong may chu web...")
 
 app = Flask(__name__)
 
