@@ -12,7 +12,9 @@
 # Truoc day kiosk dung cong 80 va dieu kien mien dang nhap la "IP = 127.0.0.1".
 # Nhung cloudflared cung chay tren Pi va cung goi vao 127.0.0.1:80, nen moi
 # nguoi qua duong ham deu duoc mien dang nhap - lo hong nghiem trong da sua.
-DASH_URL="http://127.0.0.1:8880/"
+# Dia chi Flask that su - dung boi kiosk-loading.html (xem duoi), khong con
+# dung truc tiep trong script nay nua.
+LOADING_URL="file:///opt/console-pi/scripts/kiosk-loading.html"
 
 # --- Xoay man hinh ------------------------------------------------------
 # Huong lay tu config.json (tab Cai dat ghi vao day) - KHONG hardcode, de
@@ -34,14 +36,22 @@ if [ -n "$ROTATE" ] && [ "$ROTATE" != "normal" ]; then
 fi
 # -------------------------------------------------------------------------
 
-# Doi dashboard san sang truoc khi mo trinh duyet (tranh man hinh loi
-# "khong ket noi duoc" luc moi boot khi Flask chua kip khoi dong)
-for i in $(seq 1 30); do
-    if curl -s -o /dev/null --max-time 2 "$DASH_URL"; then
-        break
-    fi
-    sleep 2
-done
+# LOI THAT DA GAP (anh Thoai bao moi lan bat/khoi dong lai may deu thay
+# trang "127.0.0.1 khong ket noi duoc", phai doi roi tu bam Reload): truoc
+# day cho Chromium DUNG YEN trong shell (vong lap curl toi da 60 giay) roi
+# moi mo trinh duyet vao dung dashboard. Nhung luc moi khoi dong dia rat
+# ban (hang chuc dich vu cung chay, Flask phai nap scapy/cryptography/
+# netmiko/tat ca module nettools), doi khi CAN HON 60 GIAY - luc do Chromium
+# da mo va bao loi tu truoc khi kip xong. Va suot luc cho, man hinh khong co
+# gi bao hieu dang chay hay da treo.
+#
+# Da doi cach: KHONG doi trong shell nua - mo NGAY trang tinh
+# kiosk-loading.html (luon mo duoc, khong phu thuoc Flask/nginx da chay
+# hay chua). Chinh trang do tu kiem tra dashboard bang JavaScript, hien
+# thanh tien trinh %, va TU CHUYEN sang dashboard that ngay khi san sang -
+# khong bao gio con thay trang loi nua. Da kiem chung that ca 2 chieu: goi
+# fetch() tu file:// sang http://127.0.0.1:8880 thanh cong khong bi chan,
+# va thanh tien trinh tang dan dung khi dashboard chua san sang.
 
 # Thu muc profile rieng, tranh dinh trang thai cu / loi "profile in use"
 PROFILE_DIR=/tmp/console-pi-kiosk-profile
@@ -109,4 +119,4 @@ exec chromium \
     --metrics-recording-only \
     --disable-dev-shm-usage \
     $LOW_RAM_FLAGS \
-    "$DASH_URL"
+    "$LOADING_URL"

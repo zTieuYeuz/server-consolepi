@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!--
+Console Pi - Man hinh cho luc khoi dong kiosk
+
+LOI THAT DA GAP: kiosk-start.sh cu bat Chromium tro THANG vao dashboard va
+tu doi bang mot vong lap `curl` trong shell (toi da 60 giay) TRUOC KHI mo
+trinh duyet. Nhung tren Pi, luc moi khoi dong dia rat ban (hang chuc dich
+vu cung khoi dong, Flask phai nap scapy/cryptography/netmiko/tat ca module
+nettools) nen doi khi Flask can HON 60 GIAY moi san sang - luc do trinh
+duyet da mo san va hien loi "khong ket noi duoc", nguoi dung phai tu bam
+Reload. Va trong luc cho, man hinh khong co gi bao hieu dang chay hay da
+treo.
+
+Cach sua: KHONG doi trong shell nua. Mo TRANG NAY ngay lap tuc (file tinh,
+luon mo duoc, khong phu thuoc Flask/nginx da chay hay chua) - chinh trang
+nay tu kiem tra dashboard da san sang chua bang JavaScript, hien thanh
+tien trinh trong luc cho, roi TU CHUYEN sang dashboard that ngay khi san
+sang. Nguoi dung khong bao gio thay trang loi "khong ket noi duoc" nua.
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Console Pi - Dang khoi dong</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: #15171a; color: #e6e6e6;
+    font-family: system-ui, Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .khoi { text-align: center; max-width: 440px; padding: 20px; }
+  .logo { font-size: 22px; font-weight: 700; color: #4CAF50; letter-spacing: .5px; margin-bottom: 6px; }
+  .phu { color: #8b93a1; font-size: 13px; margin-bottom: 28px; }
+  .thanh-ngoai {
+    width: 100%; height: 10px; background: #22262b; border-radius: 6px;
+    overflow: hidden; border: 1px solid #2c3036;
+  }
+  .thanh-trong {
+    height: 100%; width: 4%; background: #4CAF50; border-radius: 6px;
+    transition: width .4s ease;
+  }
+  .phan-tram { margin-top: 12px; font-size: 13px; color: #a8b0bd; font-family: ui-monospace, monospace; }
+  .thong-diep { margin-top: 18px; font-size: 13px; color: #6b7280; min-height: 18px; }
+  .cham { display: inline-block; width: 10px; text-align: left; }
+  .canh-bao {
+    margin-top: 22px; padding: 12px 15px; background: #3a2f14; border-left: 4px solid #f59e0b;
+    border-radius: 6px; font-size: 13px; color: #e6e6e6; display: none; text-align: left;
+  }
+  .canh-bao button {
+    margin-top: 10px; padding: 9px 16px; background: #4CAF50; color: #fff; border: none;
+    border-radius: 6px; font-size: 13px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="khoi">
+    <div class="logo">CONSOLE PI</div>
+    <div class="phu">Dang khoi dong cac dich vu he thong...</div>
+    <div class="thanh-ngoai"><div class="thanh-trong" id="thanh"></div></div>
+    <div class="phan-tram" id="phantram">4%</div>
+    <div class="thong-diep" id="thongdiep">Dang cho dashboard san sang<span class="cham" id="cham"></span></div>
+    <div class="canh-bao" id="canhbao">
+      Dang mat nhieu thoi gian hon binh thuong. Dich vu co the dang gap
+      su co - thu tai lai trang, hoac kiem tra bang cach SSH/gan man hinh
+      HDMI khac vao xem nhat ky he thong.
+      <div><button onclick="location.reload()">Tai lai trang nay</button></div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DASH_URL = "http://127.0.0.1:8880/";
+  // Uoc luong thoi gian khoi dong TYPICAL de tinh % - chi mang tinh hinh
+  // dung (khong co cach nao biet chinh xac con bao lau), dung de nguoi
+  // dung co cam giac dang tien trien thay vi nhin mot con so co dinh.
+  var GIAY_UOC_TINH = 25;
+  var GIAY_CANH_BAO = 45;
+  var bat_dau = Date.now();
+  var thanh = document.getElementById("thanh");
+  var phantram = document.getElementById("phantram");
+  var canhbao = document.getElementById("canhbao");
+  var cham = document.getElementById("cham");
+  var soCham = 0;
+
+  function capNhatCham() {
+    soCham = (soCham + 1) % 4;
+    cham.textContent = ".".repeat(soCham);
+  }
+
+  function capNhatThanh() {
+    var giay = (Date.now() - bat_dau) / 1000;
+    // Tang dan toi da 92% theo thoi gian uoc tinh, KHONG bao gio tu dat
+    // 100% - chi nhay len 100% that su khi dashboard xac nhan da xong.
+    var ty_le = Math.min(92, Math.round((giay / GIAY_UOC_TINH) * 100));
+    thanh.style.width = ty_le + "%";
+    phantram.textContent = ty_le + "%";
+    if (giay >= GIAY_CANH_BAO) {
+      canhbao.style.display = "block";
+    }
+  }
+
+  function kiemTraSanSang() {
+    // no-cors: khong doc duoc noi dung/status that su (khac goc file:// so
+    // voi http://127.0.0.1:8880), nhung fetch CHI resolve() (khong throw)
+    // khi ket noi TCP+HTTP thanh cong - du la loai "opaque response" thi
+    // van la tin hieu dang tin cay de biet server da lang nghe va tra loi.
+    fetch(DASH_URL, { mode: "no-cors", cache: "no-store" })
+      .then(function () {
+        thanh.style.width = "100%";
+        phantram.textContent = "100%";
+        document.getElementById("thongdiep").textContent = "Da xong, dang mo dashboard...";
+        setTimeout(function () { window.location.href = DASH_URL; }, 300);
+      })
+      .catch(function () {
+        setTimeout(kiemTraSanSang, 1000);
+      });
+  }
+
+  setInterval(capNhatThanh, 300);
+  setInterval(capNhatCham, 500);
+  kiemTraSanSang();
+})();
+</script>
+</body>
+</html>

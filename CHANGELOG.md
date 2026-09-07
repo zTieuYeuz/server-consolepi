@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.41
+
+**Man hinh cho co thanh tien trinh luc khoi dong kiosk** (`scripts/kiosk-loading.html`,
+`scripts/kiosk-start.sh`) - phan hoi truc tiep: moi lan bat/khoi dong lai
+may deu thay trang "127.0.0.1 khong ket noi duoc", phai doi roi tu bam
+Reload.
+
+- **Nguyen nhan that**: truoc day script cho Chromium DUNG YEN trong shell
+  (vong lap `curl` toi da 60 giay) roi moi mo trinh duyet vao dung
+  dashboard. Nhung luc moi khoi dong dia rat ban (hang chuc dich vu cung
+  chay, Flask phai nap scapy/cryptography/netmiko/tat ca module nettools),
+  doi khi CAN HON 60 GIAY - Chromium da mo va bao loi tu truoc khi Flask
+  kip xong. Suot luc cho, man hinh khong co gi bao hieu dang chay hay da
+  treo.
+- **Da doi cach**: bo han vong lap cho trong shell. Chromium mo NGAY 1
+  trang tinh `kiosk-loading.html` (file cuc bo, luon mo duoc ngay lap tuc,
+  khong phu thuoc Flask/nginx da chay hay chua) co logo, thanh tien trinh
+  % (tang dan theo thoi gian, uoc luong hinh dung chu khong phai % that
+  su), va tu kiem tra dashboard bang `fetch()` moi giay. Ngay khi dashboard
+  tra loi, tu nhay len 100% va CHUYEN THANG sang dashboard that - khong
+  bao gio con thay trang loi nua. Qua 45 giay van chua xong thi hien them
+  canh bao + nut "Tai lai trang nay" phong khi that su co su co.
+- **Da kiem chung that** (khong doan): dung CDP dieu khien chinh Chromium
+  dang chay tren man hinh de kiem tra ca 2 chieu - `fetch()` tu ngu canh
+  `file://` sang `http://127.0.0.1:8880` chay duoc, khong bi Chromium chan
+  vi ly do bao mat khac-nguon; va thanh tien trinh tang dan dung khi tro
+  toi 1 cong khong ton tai (mo phong dashboard chua san sang).
+
 ## 0.4.40
 
 **Gia MAC WiFi** (`ui/network.py`, `scripts/wifi-fallback.sh`) - giai
