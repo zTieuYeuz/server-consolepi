@@ -29,6 +29,7 @@ NAV_ITEMS = [
     ("/ssh", "SSH", "🔑"),
     ("/commands", "Thu vien lenh", "📚"),
     ("/storage", "Kho file", "💾"),
+    ("/deployos", "Deployment OS", "💿"),
     ("/remote", "Truy cap tu xa", "🌍"),
     ("/docs", "Tai lieu", "📖"),
     ("/logs", "Nhat ky loi", "📋"),

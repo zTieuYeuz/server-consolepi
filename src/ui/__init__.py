@@ -15,6 +15,7 @@ from .api import register_api                              # noqa: F401
 from .logs import register_logs                            # noqa: F401
 from .power import register_power                          # noqa: F401
 from .entertainment import register_entertainment           # noqa: F401
+from .deployos import register_deployos                    # noqa: F401
 
 
 def register_all(app):
@@ -34,4 +35,5 @@ def register_all(app):
     register_logs(app)
     register_power(app)
     register_entertainment(app)
+    register_deployos(app)
     return app

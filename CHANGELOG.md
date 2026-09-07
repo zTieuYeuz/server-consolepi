@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.4.45
+
+**Tab moi "Deployment OS"** - trien khai he dieu hanh qua mang cho may can
+cai lai (theo ke hoach o `docs/ke-hoach-pxe-winpe-tu-dong-cai-windows.md`).
+
+Cau truc dung nhu anh Thoai yeu cau:
+
+- **1. Boot OS**
+  - **1.1 Tu lua chon**: trinh tu 7 buoc, moi buoc deu co nut *Tiep theo* va
+    *Quay lai* (quay lui khong mat lua chon da dien):
+    1. Kieu boot (truc tiep voi client / qua mang khong DHCP / qua mang co
+       DHCP - moi kieu deu ghi ro khi nao dung)
+    2. Chon OS (Windows 10/11, Ubuntu/Debian) + chon file boot da tai len
+    3. Thong tin OS (ten may, username, mat khau, mui gio; o **SSH chi hien
+       khi chon Linux**)
+    4. Phan chia o dia: tu dong (o so 0) hoac chia tay - bang phan vung sua
+       truc tiep, tu doi bo phan vung mac dinh theo OS (Windows GPT: EFI +
+       MSR + NTFS; Linux: EFI + swap + ext4), them/bot phan vung duoc
+    5. Phan mem (chon tu cac file da tai len o 2.2)
+    6. Chinh sua cai dat (chon script da tai len o 2.3 + o nhap lenh them)
+    7. Tong ket + **bang kiem tra san sang doc trang thai THAT** cua may
+  - **1.2 Kich ban**: chon 1 kich ban da tao san (tu 2.4) la co ngay toan bo
+    lua chon, khong phai chon lai tu dau
+- **2. Console boot**
+  - **2.1 File boot**: tai len .iso/.wim/.esd/.img/.vhd + bootloader iPXE
+  - **2.2 Phan mem**: tai len .msi/.exe, moi file dien duoc **tham so cai
+    im lang** rieng (vd `teamviewer.exe /S`) - vi moi hang mot kieu, khong
+    doan gium duoc
+  - **2.3 Script**: tai len .bat / .ps1 / .cmd
+  - **2.4 Kich ban**: chay dung trinh tu 7 buoc nhu 1.1 nhung buoc cuoi la
+    dat ten de luu lai
+
+**Trung thuc ve trang thai**: phan phuc vu boot that su (dnsmasq PXE, iPXE,
+WinPE) la giai doan ke tiep, CHUA dung. Vi vay buoc 7 khong "gia vo" boot -
+no doc trang thai that tren may (co file boot chua, co iPXE chua, dnsmasq da
+cau hinh PXE chua, co anh WinPE chua khi cai Windows) va noi ro con thieu
+gi, dung nguyen tac cua du an.
+
+**An toan**:
+- File .exe/.msi/.bat/.ps1/.cmd chi duoc LUU va PHUC VU cho may dich tai ve,
+  khong co duong nao chay chung tren chinh con Pi.
+- Kich ban co the chua mat khau cua tai khoan se tao tren may dich, nen thu
+  muc kich ban de quyen 700 va tung file 600 (tao bang `os.open` voi quyen
+  600 ngay tu dau - khong de co khe thoi gian nao file nam do voi quyen rong
+  hon).
+- O mat khau khong dien san gia tri cu ra HTML (dien san thi mat khau nam
+  thang trong ma nguon trang) nhung van giu duoc mat khau khi quay lui/tien
+  toi giua cac buoc.
+- Moi duong tai ve/xoa deu kiem tra duong dan that (`os.path.realpath`) de
+  chan vuot thu muc.
+
+**Da kiem chung that** bang bo kiem thu di het tung buoc nhu nguoi dung
+(65 phep thu, dat het): mo tung trang, tai len/xoa/tai ve tung loai file, tu
+choi dung duoi file la (.sh), luu tham so cai im lang, di het 7 buoc ca 2
+che do, quay lui giu nguyen lua chon, o SSH chi hien voi Linux, bo phan vung
+tu doi theo OS, luu/nap/xoa kich ban, quyen file 600/thu muc 700, mat khau
+khong lot ra ma nguon, va chan duong dan vuot thu muc.
+
 ## 0.4.44
 
 **Sua nguyen nhan THAT SU khien thanh tien trinh kiosk dung im o 90% rat
