@@ -94,6 +94,7 @@ Chromium (xem scripts/kiosk-start.sh) - da kiem chung lai voi co nay bang
   "use strict";
 
   var DASH_URL = "http://127.0.0.1:8880/";
+  var HEALTHZ_URL = "http://127.0.0.1:8880/healthz";
   var STATUS_URL = "file:///run/console-pi-boot-status.json";
 
   // Uoc luong thoi gian khoi dong TYPICAL - CHI dung khi CHUA doc duoc
@@ -165,12 +166,21 @@ Chromium (xem scripts/kiosk-start.sh) - da kiem chung lai voi co nay bang
   }
 
   function kiemTraSanSang() {
-    // no-cors: khong doc duoc noi dung/status that su (khac goc file:// so
-    // voi http://127.0.0.1:8880), nhung fetch CHI resolve() (khong throw)
-    // khi ket noi TCP+HTTP thanh cong - du la loai "opaque response" thi
-    // van la tin hieu dang tin cay de biet server da lang nghe va tra loi.
-    fetch(DASH_URL, { mode: "no-cors", cache: "no-store" })
-      .then(function () {
+    // LOI THAT DA GAP (kiem chung that, khong doan): ban dau dung che do
+    // "no-cors" toi DASH_URL - che do nay KHONG DOC DUOC ma trang thai
+    // that (response "opaque"), nen luc nginx da chay nhung Flask (backend
+    // that su) CHUA XONG (nginx tra ve 502), fetch() VAN resolve() BINH
+    // THUONG y het luc thanh cong that. Da tu tay mo phong dung tinh huong
+    // nay (tat Flask, giu nginx) va xac nhan trang chuyen som that, dung
+    // lai y het loi cu.
+    //
+    // Sua: goi /healthz (co CORS rieng, xem ui/auth.py) bang fetch() CHE
+    // DO THUONG - doc duoc response.ok that su, phan biet duoc 200 (Flask
+    // da song) voi 502/503 (nginx song nhung Flask chua xong). Da kiem
+    // chung lai: tat Flask thi cach nay KHONG con bao "san sang" nua.
+    fetch(HEALTHZ_URL, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("chua san sang: HTTP " + r.status);
         ve(100, "Da xong, dang mo dashboard...");
         setTimeout(function () { window.location.href = DASH_URL; }, 300);
       })

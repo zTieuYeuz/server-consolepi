@@ -251,7 +251,28 @@ def register_auth(app):
 
     @app.route("/healthz")
     def healthz():
-        return {"ok": True}
+        """
+        LOI THAT DA GAP khi lam man hinh cho cua kiosk
+        (scripts/kiosk-loading.html): trang do dung fetch() che do "no-cors"
+        de kiem tra dashboard san sang - nhung che do nay KHONG DOC DUOC ma
+        trang thai that su (response "opaque"), nen khi nginx da chay
+        nhung Flask (backend that su) CHUA XONG (nginx tra ve 502), fetch()
+        van resolve() BINH THUONG y het luc thanh cong that - trang cho
+        tuong nham la da xong va chuyen trang som, van thay trang loi y het
+        truoc khi sua.
+
+        Sua: route nay tra CORS header rieng (chi minh no) de trang
+        kiosk-loading.html doc duoc bang fetch() CHE DO THUONG (khong phai
+        no-cors) va kiem tra dung response.ok - phan biet duoc 200 that su
+        (Flask da song) voi 502/503 (nginx song nhung Flask chua xong).
+        An toan de mo CORS o day vi noi dung tra ve khong co gi nhay cam
+        (chi {"ok": true}), va route nay von da mien dang nhap
+        (PUBLIC_PATHS) tu truoc.
+        """
+        from flask import jsonify
+        resp = jsonify({"ok": True})
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        return resp
 
     @app.route("/_auth")
     def nginx_auth_check():

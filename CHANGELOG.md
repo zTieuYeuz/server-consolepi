@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.43
+
+**Sua loi nghiem trong vua tim ra khi tu tay test 0.4.42**: man hinh cho
+kiosk co the CHUYEN TRANG SOM khi nginx da chay nhung Flask (backend that
+su) CHUA XONG - dung y het trieu chung goc ("hien trang khong ket noi
+duoc") ma toan bo tinh nang nay duoc lam ra de sua.
+
+**Nguyen nhan that (da tu tay mo phong: tat Flask, giu nginx song, xac
+nhan nginx tra ve 502 - khong doan)**: `kiosk-loading.html` dung
+`fetch(DASH_URL, {mode:"no-cors"})` de kiem tra dashboard san sang. Che do
+"no-cors" tra ve response "opaque" - khong doc duoc ma trang thai that su.
+Ket qua: `fetch()` van `resolve()` BINH THUONG ke ca khi nhan duoc **502**
+(nginx song, Flask chet) y het luc thanh cong that (200) - trang cho
+chuyen sang dashboard som, van thay dung trang loi ma tinh nang nay duoc
+lam ra de tranh.
+
+**Da sua**: them CORS rieng cho route `/healthz` (`ui/auth.py`) de trang
+cho doc duoc bang `fetch()` CHE DO THUONG (khong phai no-cors) va kiem tra
+dung `response.ok` - phan biet dung 200 that su voi 502/503. Da kiem
+chung lai bang chinh kich ban that bai da tim ra: tat Flask giu nginx
+song, xac nhan trang cho **KHONG con chuyen trang som nua**; bat Flask lai
+thi tu chuyen dung ngay khi that su san sang (200).
+
 ## 0.4.42
 
 **Thanh tien trinh kiosk bam sat he thong THAT, khong con doan theo thoi
