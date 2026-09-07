@@ -2,6 +2,23 @@
 # Console Pi - WiFi fallback (AP <-> Client)
 # Ban va: them 2 chot chan de KHONG pha ket noi dang chay tot.
 
+# LOI THAT DA GAP (anh Thoai dem may len cong ty, khong vao duoc WiFi -
+# doc journalctl moi phat hien): script nay chay boi timer moi 2 phut, va
+# 1 lan chay co the mat GAN 1 PHUT (cho hang khop WiFi, cho DHCP). Neu
+# WiFi cong ty tu choi ket noi (nhu da xay ra that - xem duoi), lan chay
+# truoc con dang trong vong lap cho thi lan chay SAU da toi, VA CA HAI
+# CHAY CHONG LEN NHAU vi khong co khoa nao ca. Bang chung that trong log:
+# dung luc lan chay truoc dang doi wpa_supplicant ket noi, wpa_supplicant
+# bi giet bang SIGKILL va hostapd tu bat len giua chung - chi co the la do
+# MOT LAN CHAY KHAC goi ngung_supplicant()/bat_ap() dong thoi. Hau qua: lan
+# chay truoc doc nham dia chi AP (192.168.50.1, hostapd/dnsmasq vua bat)
+# tuong la da xin duoc IP tu WiFi cong ty, ghi log "Da co IP" SAI HOAN TOAN.
+# Sua bang flock: neu dang co 1 lan chay khac, THOAT NGAY (khong doi hang),
+# de lan chay dang do tu lam xong, tranh giam chan nhau.
+LOCK_FILE="/run/console-pi-wifi-fallback.lock"
+exec 9>"$LOCK_FILE"
+flock -n 9 || exit 0
+
 WLAN_IFACE="wlan0"
 WPA_CONF="/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
 LOGFILE="/var/log/console-pi-fallback.log"

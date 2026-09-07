@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.4.39
+
+**Sua loi that: 2 lan chay wifi-fallback.sh chong lan nhau, lam log bao SAI
+"da co IP"** - phat hien khi doc `journalctl` giup anh Thoai luc dem may len
+cong ty khong vao duoc WiFi.
+
+Bang chung that trong log: dung luc mot lan chay dang trong vong lap CHO
+ket noi WiFi cong ty ("PHS-HO-GUEST"), `wpa_supplicant` bi giet bang
+SIGKILL va `hostapd` tu bat len GIUA CHUNG - chi co the la do MOT LAN CHAY
+KHAC (do `wifi-fallback.timer` kich hoat moi 2 phut) goi
+`ngung_supplicant()`/`bat_ap()` cung luc, vi script goc KHONG CO KHOA nao
+ca. Hau qua: lan chay dang cho doc nham dia chi cua chinh vo AP
+(`192.168.50.1`, vua duoc `hostapd`/`dnsmasq` gan) tuong la da xin duoc IP
+tu WiFi cong ty that, ghi log "Da co IP" HOAN TOAN SAI - trong khi that ra
+`wpa_supplicant` chua bao gio ket noi duoc (lien tuc bi tu choi ngay o
+buoc lien ket, `CTRL-EVENT-ASSOC-REJECT`, chua tung toi buoc kiem tra mat
+khau).
+
+**Da sua**: them `flock` o dau `scripts/wifi-fallback.sh` - neu dang co 1
+lan chay khac, THOAT NGAY thay vi chay chong len. Da kiem chung that bang
+cach gia lap 2 tien trinh khoi dong cach nhau 1 giay: tien trinh sau tu
+nhan ra co khoa va thoat ngay, khong dam vao tien trinh truoc.
+
+**Van con dang dieu tra rieng**: tai sao AP cua cong ty tu choi lien ket
+ngay tu buoc dau (khong phai loi sai mat khau - do la mot loai that bai
+KHAC, xay ra SOM HON trong qua trinh ket noi). Nghi ngo nhieu nhat la
+mang "PHS-HO-GUEST" can dang nhap qua trang web (captive portal) hoac
+dang ky MAC truoc voi IT cong ty, hoac dung kieu xac thuc WPA2-Enterprise
+(can tai khoan rieng, khong phai 1 mat khau WiFi don gian) - ca hai kieu
+nay Console Pi hien CHUA ho tro duoc tu dong. Chua ket luan chac chan,
+dang cho them thong tin tu anh Thoai.
+
 ## 0.4.38
 
 **Tailscale: hien domain that + nut doi Auth key** (`ui/remote.py`) - phan
