@@ -1,0 +1,67 @@
+# Console Pi - GHI DE TOAN BO file goc cua goi Debian nginx
+# (/usr/lib/systemd/system/nginx.service), khong phai drop-in bo sung.
+#
+# LOI THAT DA GAP (anh Thoai bao thanh tien trinh kiosk dung im o 90% rat
+# lau sau khi da sua o ban 0.4.43): da kiem chung that qua journalctl 1
+# lan khoi dong that - Flask (dashboard) san sang chi sau ~2 GIAY, nhung
+# request /healthz DAU TIEN toi hon 2 PHUT sau do moi toi noi. Nguyen nhan:
+# file goc cua goi Debian co "After=network-online.target ..." va
+# "Wants=network-online.target", bat nginx PHAI DOI toi khi
+# systemd-networkd-wait-online.service xong (hoac HET GIO CHO, ~2 phut - da
+# xac nhan qua journalctl thay dong "Timeout occurred while waiting for
+# network connectivity") moi chiu khoi dong. Trong luc do cong 8880 (kiosk
+# goi vao) va cong 80 chua ai lang nghe - moi request cua trang cho deu bi
+# tu choi ket noi, thanh tien trinh dung im o % that cuoi cung da ghi
+# truoc do (khong phai treo that, chi la khong duoc bao ly do).
+#
+# nginx cua Console Pi (xem config/nginx-console-pi.conf) chi lang nghe
+# "0.0.0.0:80" (khong can dia chi IP cu the) va "127.0.0.1:8880" (loopback,
+# luon san sang tu som) - CA HAI kieu bind deu khong can bat ky interface
+# mang nao that su co IP truoc. Doi network-online.target la thua, chi lam
+# cham vo ich dung luc thiet bi can dung nhat (moi bat may len).
+#
+# LOI KY THUAT DA GAP KHI SUA (kiem chung that bang script test rieng,
+# khong doan): tung thu dung DROP-IN (/etc/systemd/system/nginx.service.d/)
+# de "reset" bang dong rong (After=<rong>, Wants=<rong>) roi khai bao lai -
+# day la cach chuan de doi ExecStart=/Environment=/Documentation=, nhung
+# KHONG hoat dong cho After=/Wants=/Requires= (da kiem chung: dong rong
+# khong xoa duoc gia tri cu, hai gia tri CONG DON lai voi nhau thay vi gia
+# tri moi thay the gia tri cu - khac voi tai lieu systemd.unit(5) chi xac
+# nhan reset-bang-rong cho Documentation=/ExecStart=/Condition*=, KHONG he
+# nhac toi Wants=/After=). Vi vay phai GHI DE TOAN BO file nay thay vi
+# dung drop-in - day la cach lam chinh thuc cua systemd khi can XOA (khong
+# phai them) mot dependency co san (tuong duong "systemctl edit --full").
+#
+# Phan con lai giu NGUYEN VAN theo file goc cua goi Debian (xem
+# /usr/lib/systemd/system/nginx.service) - chi doi 2 dong After=/Wants=.
+#
+# Stop dance for nginx
+# =======================
+#
+# ExecStop sends SIGQUIT (graceful stop) to the nginx process.
+# If, after 5s (--retry QUIT/5) nginx is still running, systemd takes control
+# and sends SIGTERM (fast shutdown) to the main process.
+# After another 5s (TimeoutStopSec=5), and if nginx is alive, systemd sends
+# SIGKILL to all the remaining processes in the process group (KillMode=mixed).
+#
+# nginx signals reference doc:
+# http://nginx.org/en/docs/control.html
+#
+[Unit]
+Description=A high performance web server and a reverse proxy server
+Documentation=man:nginx(8)
+After=network.target remote-fs.target nss-lookup.target
+ConditionFileIsExecutable=/usr/sbin/nginx
+
+[Service]
+Type=forking
+PIDFile=/run/nginx.pid
+ExecStartPre=/usr/sbin/nginx -t -q -g 'daemon on; master_process on;'
+ExecStart=/usr/sbin/nginx -g 'daemon on; master_process on;'
+ExecReload=/usr/sbin/nginx -g 'daemon on; master_process on;' -s reload
+ExecStop=-/sbin/start-stop-daemon --quiet --stop --retry QUIT/5 --pidfile /run/nginx.pid
+TimeoutStopSec=5
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

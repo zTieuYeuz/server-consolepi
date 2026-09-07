@@ -560,6 +560,7 @@ if [[ -f /etc/logrotate.d/nginx ]] && grep -q "rotate 14" /etc/logrotate.d/nginx
     ok "Da tang thoi gian giu nhat ky nginx len 60 ngay"
 fi
 
+
 # --- lldpd: bat tuong thich CDP (switch Cisco) ---
 if [[ -f /etc/default/lldpd ]] && ! grep -q '^DAEMON_ARGS=".*-c' /etc/default/lldpd; then
     sed -i 's/^#*DAEMON_ARGS=.*/DAEMON_ARGS="-c"/' /etc/default/lldpd

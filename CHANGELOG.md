@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.4.44
+
+**Sua nguyen nhan THAT SU khien thanh tien trinh kiosk dung im o 90% rat
+lau** (anh Thoai bao lai sau ban 0.4.43: "van chua bam sat"). Da kiem
+chung that qua journalctl 1 lan khoi dong that (khong doan):
+
+- Flask (dashboard) that su san sang chi sau **~2 giay** ke tu luc
+  systemd khoi dong service (ghi mo lai "Running on http://127.0.0.1:5000"
+  trong log rat som).
+- Nhung request `/healthz` DAU TIEN (tu trang cho kiosk) chi toi noi sau
+  **hon 2 PHUT** ke tu luc do.
+
+Nguyen nhan: goi `nginx` mac dinh cua Debian co san
+`After=network-online.target ...` va `Wants=network-online.target`, bat
+nginx PHAI DOI toi khi `systemd-networkd-wait-online.service` xong (hoac
+HET GIO CHO - da xac nhan qua journalctl dong chu "Timeout occurred while
+waiting for network connectivity", ~2 phut) moi chiu khoi dong. Trong
+suot 2 phut do, ca cong 80 va cong 8880 (kiosk goi vao) CHUA CO AI LANG
+NGHE CA - moi request cua trang cho deu bi tu choi ket noi va tu dong thu
+lai, thanh tien trinh dung im o % that cuoi cung da ghi truoc do (khong
+phai bi treo that, chi la khong ai bao cho no biet ly do that).
+
+nginx cua Console Pi chi lang nghe `0.0.0.0:80` va `127.0.0.1:8880` -
+CA HAI kieu bind nay deu khong can bat ky interface mang nao that su co
+IP truoc de bat dau chay. Doi network-online.target la thua, chi lam
+cham vo ich dung luc thiet bi can dung nhat (moi bat may len).
+
+**Sua**: ghi de `systemd/nginx.service` (toan bo file, khong phai
+drop-in bo sung - xem ghi chu chi tiet trong chinh file do ve viec da
+thu drop-in truoc va PHAT HIEN drop-in KHONG the xoa duoc `Wants=`/
+`After=` da co san tren systemd, chi cong don them chu khong thay the -
+kiem chung bang 3 phep thu doc lap tren cac unit rieng truoc khi ket
+luan, khong doan). nginx gio chi con `After=network.target
+remote-fs.target nss-lookup.target` (thu tu, khong phai cho ket noi
+that), khoi dong ngay tu som cung luc voi `console-pi-dashboard.service`.
+
+Da kiem chung lai: `systemctl show nginx -p After -p Wants` xac nhan
+khong con `network-online.target`; `nginx -t` hop le; nginx restart
+xong van tra dung 302 (cong 80, chua dang nhap) va 200 (cong 8880,
+`/healthz`); `selftest.sh` van 37 dat/3 luu y nhu truoc, khong hong gi
+them.
+
 ## 0.4.43
 
 **Sua loi nghiem trong vua tim ra khi tu tay test 0.4.42**: man hinh cho
