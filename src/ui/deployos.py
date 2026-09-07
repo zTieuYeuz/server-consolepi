@@ -477,7 +477,7 @@ def _phan_vung_mac_dinh(os_ho):
 
 # ==================================================================== giao dien
 def register_deployos(app):
-    from flask import request, redirect, url_for, send_from_directory, abort
+    from flask import request, redirect, send_from_directory, abort
     from .layout import render_page
     from .home import _esc
 
