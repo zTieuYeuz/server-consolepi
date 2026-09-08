@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.4.51
+
+**Sua loi "bam Bat PXE ma khong thay gi ca"** (anh Thoai bao thang sau khi
+bam nut). Kiem tra lai code (khong doan) phat hien 2 loi:
+
+1. Ca 3 route `/deployos/pxe/bat`, `/tat`, `/trich-bootmgr` VUT BO ket qua
+   `(ok, msg)` roi redirect thang ve `/deployos/boot` - nguoi dung khong
+   bao gio thay duoc thanh cong hay that bai, va con MAT LUON trinh tu
+   dang lam (quay ve man hinh chon tu buoc 1).
+2. Dong "PXE dang BAT (Pi la {PI_IP})" LUON hien dia chi tinh gia dinh
+   192.168.98.1, ke ca khi dang chay o kieu "mang co DHCP" (luc do Pi
+   that ra dung IP THAT do DHCP cap, vd 192.168.110.14) - thong tin sai,
+   de nham lan khi debug.
+
+**Sua**: dung `flash()` (session) mang thong diep qua redirect, quay VE
+DUNG buoc 7 cua chinh trinh tu (giu "ma" qua truong an trong 3 form) thay
+vi ve man hinh dau. Dong "dang BAT" gio doc dung dia chi theo kieu dang
+chay that (luu trong STATE_FLAG) thay vi gia dinh PI_IP.
+
+**Don don trang thai**: phien lam viec truoc do co chay tay
+`systemctl start dnsmasq-pxe` de chan doan (khong qua nut Bat, nen flag
+khong duoc ghi) - da dung lai dich vu do, dua he thong ve dung trang thai
+"PXE dang tat" nhu giao dien hien thi.
+
+Da kiem chung: 6 phep thu rieng cho loi nay (form co gan dung "ma", bam
+that bai hien dung ly do va quay dung ve buoc 7, bam thanh cong hien dung
+thong bao mau xanh, thong diep chi hien 1 lan roi tu xoa), dat het. Cong
+voi 21+6 phep thu cu van dat. selftest.sh 36 dat, 4 luu y.
+
 ## 0.4.50
 
 **Sua loi nghiem trong: kieu boot "mang co DHCP" (proxyDHCP) dung SAI dia

@@ -331,7 +331,7 @@ def tat_pxe():
 
 # ==================================================================== web
 def register_pxe(app):
-    from flask import request, redirect, send_from_directory, abort
+    from flask import request, redirect, send_from_directory, abort, flash
     from .layout import render_page
     from .home import _esc
 
@@ -358,20 +358,40 @@ def register_pxe(app):
             abort(404)
         return send_from_directory(_d.BOOT_DIR, ten_sach)
 
+    def _ve_lai(msg, ok):
+        """
+        LOI THAT DA GAP (anh Thoai bam "Bat PXE" xong khong thay gi ca -
+        khong biet thanh cong hay that bai): 3 route duoi day TRUOC KIA vut
+        bo het ket qua (ok, msg) roi redirect thang ve "/deployos/boot" -
+        mat luon ca trinh tu dang lam (quay ve man hinh chon tu dau) LAN
+        khong hien 1 chu nao cho biet vua xay ra chuyen gi. Dung nhat khi
+        that bai that su (vd chua cam day mang) - nguoi dung khong co cach
+        nao biet ly do.
+
+        Sua: dung flash() (session) mang thong diep qua redirect, VA quay
+        ve DUNG buoc 7 cua chinh trinh tu dang lam (giu "ma" qua truong an
+        trong form) thay vi ve trang dau - khong mat lua chon da chon.
+        """
+        flash(msg, "ok" if ok else "err")
+        ma = request.form.get("ma", "")
+        if ma:
+            return redirect(f"/deployos/wizard/{ma}/7")
+        return redirect("/deployos/boot")
+
     @app.route("/deployos/pxe/trich-bootmgr", methods=["POST"])
     def deployos_pxe_trich():
         ok, msg = trich_bootmgr_tu_winpe()
-        return redirect("/deployos/boot")
+        return _ve_lai(msg, ok)
 
     @app.route("/deployos/pxe/bat", methods=["POST"])
     def deployos_pxe_bat():
         kieu = request.form.get("kieu_boot", "truc_tiep")
         ok, msg = bat_pxe(kieu)
-        return redirect("/deployos/boot")
+        return _ve_lai(msg, ok)
 
     @app.route("/deployos/pxe/tat", methods=["POST"])
     def deployos_pxe_tat():
         ok, msg = tat_pxe()
-        return redirect("/deployos/boot")
+        return _ve_lai(msg, ok)
 
     return app

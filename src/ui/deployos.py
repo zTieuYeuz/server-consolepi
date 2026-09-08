@@ -1149,10 +1149,16 @@ def register_deployos(app):
         </div>"""
 
     def _ve_buoc(ma, d, buoc, loi=""):
+        from flask import get_flashed_messages
         chinh = "console" if d.get("che_do") == "luu" else "boot"
         phu = "kichban" if d.get("che_do") == "luu" else "tuchon"
+        # Thong diep tu cac hanh dong PXE that (Bat/Tat/Trich bootmgr) - xem
+        # ui/pxe.py: _ve_lai(). Dung flash() vi cac hanh dong do redirect
+        # ve day, khong render truc tiep duoc nhu cac form khac trong wizard.
+        flash_html = "".join(_msg(nd, cat == "ok")
+                             for cat, nd in get_flashed_messages(with_categories=True))
         than = (_tabs(chinh, phu) + _thanh_buoc(buoc) + _msg(loi, False) +
-                _noi_dung_buoc(ma, d, buoc))
+                flash_html + _noi_dung_buoc(ma, d, buoc))
         tieu_de = ("Tao kich ban" if d.get("che_do") == "luu"
                    else "Deployment OS")
         return _trang(than, tieu_de,
@@ -1533,7 +1539,7 @@ def register_deployos(app):
             muc con thieu o tren phai lam xong truoc. Lua chon cua anh khong
             mat: luu lai thanh kich ban de dung ngay khi da du dieu kien.</div>""")
 
-        khoi_pxe = _khoi_dieu_khien_pxe(d)
+        khoi_pxe = _khoi_dieu_khien_pxe(ma, d)
 
         return f"""
         {bang}
@@ -1556,7 +1562,7 @@ def register_deployos(app):
         </form>
         {sua_lai}"""
 
-    def _khoi_dieu_khien_pxe(d):
+    def _khoi_dieu_khien_pxe(ma, d):
         """
         Phan noi tiep bang kiem tra san sang: trang thai + nut dieu khien
         THAT cua tinh nang PXE (ui/pxe.py). Chi hien khi cac dieu kien co
@@ -1576,15 +1582,27 @@ def register_deployos(app):
         trich_can = not _pxe._co_bootmgr_pxe() and os.path.isfile(_pxe._duong("boot.wim"))
         nut_trich = f"""
         <form method="POST" action="/deployos/pxe/trich-bootmgr" style="margin-top:10px;">
+          <input type="hidden" name="ma" value="{_esc(ma)}">
           <button type="submit" class="gray" data-busy="Dang trich...">
             Trich bootmgr tu boot.wim</button>
         </form>""" if trich_can else ""
 
         if _pxe.dang_bat():
+            # LOI THAT DA GAP: dong nay tung LUON hien PI_IP tinh (192.168.98.1)
+            # ke ca khi dang chay o kieu "mang co DHCP" - luc do Pi that ra
+            # dung IP THAT do DHCP cap (vd 192.168.110.14), khong phai
+            # PI_IP. Doc dung dia chi theo kieu dang chay (luu trong
+            # STATE_FLAG) thay vi gia dinh.
+            try:
+                kieu_dang_chay = open(_pxe.STATE_FLAG).read().strip() or "truc_tiep"
+            except OSError:
+                kieu_dang_chay = "truc_tiep"
+            dia_chi_that = _pxe._dia_chi_pi_that(kieu_dang_chay)
             dieu_khien = f"""
             <div class="msg ok">PXE dang BAT tren cong {_pxe.IFACE}
-            (Pi la {_pxe.PI_IP}).</div>
+            (Pi la {_esc(dia_chi_that)}).</div>
             <form method="POST" action="/deployos/pxe/tat">
+              <input type="hidden" name="ma" value="{_esc(ma)}">
               <button type="submit" class="red" data-busy="Dang tat...">Tat PXE</button>
             </form>"""
         elif _pxe.san_sang_bat():
@@ -1594,6 +1612,7 @@ def register_deployos(app):
             cam day mang tu Pi sang dung may can cai (hoac qua chung 1
             switch neu chon kieu "mang co DHCP").</div>
             <form method="POST" action="/deployos/pxe/bat">
+              <input type="hidden" name="ma" value="{_esc(ma)}">
               <input type="hidden" name="kieu_boot" value="{_esc(d['kieu_boot'])}">
               <button type="submit" data-busy="Dang bat PXE...">Bat PXE ngay</button>
             </form>"""
