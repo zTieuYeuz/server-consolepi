@@ -147,14 +147,50 @@ def san_sang_bat():
     return all(dat for dat, _, _ in trang_thai_chuan_bi())
 
 
-def _sinh_menu_ipxe():
+def _dia_chi_pi_that(kieu_boot):
+    """
+    Dia chi IP THAT cua Pi tren eth0 ma may dang boot se dung de goi TFTP/
+    HTTP ve - KHONG duoc dung PI_IP (192.168.98.1) mot cach mu quang.
+
+    LOI THAT DA GAP (anh Thoai dinh test kieu "mang co DHCP" thi bat ra):
+    PI_IP la dia chi TINH Pi TU DAT cho chinh no, chi dung khi Pi lam DHCP
+    day du (kieu truc_tiep/mang_khong_dhcp). O kieu "mang co DHCP"
+    (proxyDHCP), Pi KHONG tu dat IP - no giu nguyen IP THAT do DHCP cua
+    mang khach cap (vd 192.168.110.14). Neu van nhung PI_IP vao day, may
+    dang boot se duoc chi toi mot dia chi khong ai lang nghe ca - hong tu
+    dau, khong lien quan gi den PXE.
+    """
+    if kieu_boot == "mang_co_dhcp":
+        from .layout import _ipv4_of
+        return _ipv4_of(IFACE) or PI_IP
+    return PI_IP
+
+
+def _mang_that(iface=IFACE):
+    """(dia_chi_mang, do_dai_prefix) THAT cua interface - dung cho proxyDHCP
+    can biet dung dai mang cua DHCP server that, khong doan."""
+    import ipaddress
+    ok, out = _sh(["ip", "-o", "-4", "addr", "show", iface])
+    if ok:
+        for tu in out.split():
+            if "/" in tu and tu[0].isdigit():
+                try:
+                    m = ipaddress.ip_interface(tu).network
+                    return str(m.network_address), m.prefixlen
+                except ValueError:
+                    continue
+    return None, None
+
+
+def _sinh_menu_ipxe(kieu_boot="truc_tiep"):
     """
     Script iPXE that su duoc iPXE tai qua HTTP o buoc 3 (xem docstring dau
-    file). Duong dan tro ve http://<PI_IP>/deployos/pxeboot/<file> - CONG
-    80 (qua nginx, khong phai 8880 loopback) vi may dang boot la may KHAC
-    tren mang, khong phai chinh Pi.
+    file). Duong dan tro ve http://<dia_chi_pi_that>/deployos/pxeboot/<file>
+    - CONG 80 (qua nginx, khong phai 8880 loopback) vi may dang boot la may
+    KHAC tren mang, khong phai chinh Pi. Dia chi Pi phai la dia chi THAT
+    (xem _dia_chi_pi_that) - khong duoc gia dinh la PI_IP cho moi kieu boot.
     """
-    goc = f"http://{PI_IP}/deployos/pxeboot"
+    goc = f"http://{_dia_chi_pi_that(kieu_boot)}/deployos/pxeboot"
     return f"""#!ipxe
 kernel {goc}/wimboot
 initrd {goc}/boot.wim    boot.wim
@@ -164,10 +200,10 @@ boot
 """
 
 
-def _ghi_menu_ipxe():
+def _ghi_menu_ipxe(kieu_boot="truc_tiep"):
     try:
         with open(_duong("menu.ipxe"), "w") as f:
-            f.write(_sinh_menu_ipxe())
+            f.write(_sinh_menu_ipxe(kieu_boot))
         return True
     except OSError:
         return False
@@ -181,11 +217,24 @@ def _ghi_dnsmasq_conf(kieu_boot):
         dung do neu ca 2 tinh nang deu duoc bat nham cung luc).
       mang_co_dhcp -> Pi CHI cham (proxyDHCP): khong cap IP, chi tra loi
         "file boot o dau" - de DHCP that cua mang khach lo phan cap IP.
+        QUAN TRONG (loi that da gap, da sua): dai mang proxy PHAI la dai
+        mang THAT cua eth0 luc do (vd 192.168.110.0/24, do DHCP cua mang
+        khach cap), KHONG duoc dung PI_IP gia dinh - proxyDHCP se khong
+        khop dung mang neu dai sai, hong tu dau khong lien quan gi PXE.
     """
-    dhcp_range = (f"dhcp-range={PI_IP.rsplit('.',1)[0]}.50,"
-                 f"{PI_IP.rsplit('.',1)[0]}.99,255.255.255.0,12h")
+    dia_chi_pi = _dia_chi_pi_that(kieu_boot)
+
     if kieu_boot == "mang_co_dhcp":
-        dhcp_range = f"dhcp-range={PI_IP.rsplit('.',1)[0]}.0,proxy"
+        mang, prefix = _mang_that(IFACE)
+        if not mang:
+            return False, (f"Khong doc duoc dia chi IP that cua {IFACE} - "
+                           f"kiem tra da cam day mang va co IP chua.")
+        dhcp_range = f"dhcp-range={mang},proxy"
+        dong_gateway = ""     # proxyDHCP khong cap IP nen khong can khai bao gateway
+    else:
+        dhcp_range = (f"dhcp-range={PI_IP.rsplit('.',1)[0]}.50,"
+                     f"{PI_IP.rsplit('.',1)[0]}.99,255.255.255.0,12h")
+        dong_gateway = f"dhcp-option=3,{PI_IP}"
 
     noi_dung = f"""# Console Pi - PXE cho tab Deployment OS. Sinh tu dong, dung sua tay -
 # sinh lai moi lan bat qua ui/pxe.py (_ghi_dnsmasq_conf).
@@ -193,7 +242,7 @@ interface={IFACE}
 bind-interfaces
 except-interface=lo
 {dhcp_range}
-dhcp-option=3,{PI_IP}
+{dong_gateway}
 port=0
 
 # --- Nhan dang kien truc may (RFC 4578) de tra dung bootloader ---
@@ -208,7 +257,7 @@ dhcp-match=set:efi-x64,option:client-arch,9
 dhcp-userclass=set:ipxe,iPXE
 dhcp-boot=tag:bios,undionly.kpxe
 dhcp-boot=tag:efi-x64,ipxe.efi
-dhcp-boot=tag:ipxe,http://{PI_IP}:80/deployos/pxeboot/menu.ipxe
+dhcp-boot=tag:ipxe,http://{dia_chi_pi}:80/deployos/pxeboot/menu.ipxe
 
 enable-tftp
 tftp-root={_d.BOOT_DIR}
@@ -228,7 +277,11 @@ def bat_pxe(kieu_boot="truc_tiep"):
     if not san_sang_bat():
         return False, "Chua du dieu kien (xem bang 'San sang PXE' ben tren)."
 
-    if not _ghi_menu_ipxe():
+    if kieu_boot == "mang_co_dhcp" and not _mang_that(IFACE)[0]:
+        return False, (f"Chua doc duoc dia chi IP that cua {IFACE} - kiem "
+                       f"tra da cam day mang vao mang co DHCP chua.")
+
+    if not _ghi_menu_ipxe(kieu_boot):
         return False, "Khong ghi duoc script iPXE."
 
     ok, err = _ghi_dnsmasq_conf(kieu_boot)

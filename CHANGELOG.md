@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.4.50
+
+**Sua loi nghiem trong: kieu boot "mang co DHCP" (proxyDHCP) dung SAI dia
+chi mang** - phat hien khi anh Thoai bao muon thu kieu nay truoc tien.
+
+**Loi that (kiem chung bang code, khong doan)**: `ui/pxe.py` dung cung 1
+hang so `PI_IP` (192.168.98.1 - dia chi TINH Pi tu dat cho kieu truc_tiep/
+mang_khong_dhcp) cho CA kieu "mang co DHCP" - nhung o kieu nay Pi KHONG tu
+dat IP, no giu nguyen IP THAT do DHCP cua mang khach cap (vd
+192.168.110.14). Hau qua neu khong sua:
+  - Dong `dhcp-range=192.168.98.0,proxy` sai hoan toan dai mang that
+    (192.168.110.0/24) - proxyDHCP se khong khop dung mang, khong hoat
+    dong tu dau.
+  - Script iPXE sinh ra tro may dang boot toi `http://192.168.98.1/...` -
+    dia chi khong ai lang nghe ca.
+  - Con gui ca dong `dhcp-option=3` (gateway gia) khong can thiet trong
+    che do proxy.
+
+**Sua**: them `_dia_chi_pi_that(kieu_boot)` va `_mang_that(iface)` doc
+THAT dia chi/dai mang hien tai cua eth0 qua `ip -o -4 addr show` khi o
+kieu "mang co DHCP", thay vi gia dinh PI_IP. Ca dnsmasq conf lan script
+iPXE deu dung ham nay. `bat_pxe()` gio kiem tra som (truoc khi ghi gi ca)
+neu doc IP that that bai thi bao ro ly do (chua cam day/chua co DHCP)
+thay vi ghi cau hinh sai roi that bai mo ho o buoc sau.
+
+Da kiem chung lai: sinh dung `dhcp-range=192.168.110.0,proxy` va URL
+`http://192.168.110.14/...` (dia chi that cua eth0 luc do), `dnsmasq
+--test` hop le cho ca 3 kieu boot, khong con dhcp-option=3 gia trong che
+do proxy. Bo kiem thu them 7 phep thu rieng cho loi nay, dat het (tong
+21 phep thu cho pxe.py). selftest.sh 36 dat, 4 luu y. eth0 khong bi dong
+cham trong qua trinh sua/test.
+
 ## 0.4.49
 
 **Da co du file BCD - PXE san sang bat that su (4/4 dieu kien)**.
