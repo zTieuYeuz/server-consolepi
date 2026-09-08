@@ -49,7 +49,7 @@ IFACE = "eth0"
 PI_IP = "192.168.98.1"
 PI_CIDR = f"{PI_IP}/24"
 NM_CONN = "netplan-eth0"
-DON_VI_SYSTEMD = "console-pi-pxe"
+DON_VI_SYSTEMD = "dnsmasq-pxe"
 
 TEN_BOOTMGR_BIOS = "bootmgr.exe"
 TEN_BOOTMGR_UEFI = "wdsmgfw.efi"

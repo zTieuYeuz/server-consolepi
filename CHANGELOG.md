@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.52
+
+**Sua loi that su khien "Bat PXE" luon that bai** - nho thong bao loi
+that (0.4.51 moi sua xong) anh Thoai bam lai va thay ro:
+`Failed to restart console-pi-pxe.service: Unit console-pi-pxe.service
+not found.`
+
+Nguyen nhan: `ui/pxe.py` khai bao `DON_VI_SYSTEMD = "console-pi-pxe"`
+nhung file don vi that su duoc tao ra la `dnsmasq-pxe.service` (xem
+`systemd/dnsmasq-pxe.service`) - 2 ten khac nhau, dat sai tu dau. Bo
+kiem thu truoc do khong bat duoc loi nay vi mock thang ham `bat_pxe()`
+thay vi that su goi `systemctl`.
+
+Sua: doi `DON_VI_SYSTEMD = "dnsmasq-pxe"` cho khop dung ten file.
+
+**Kiem chung that BANG DUNG THAO TAC anh Thoai lam** (khong chi doc
+code): di het 7 buoc qua HTTP, bam nut "Bat PXE" that su - lan nay thay
+`systemctl status dnsmasq-pxe` bao `active (running)`, giao dien hien
+dung thong bao xanh "Da bat PXE...", va `eth0` giu nguyen IP
+192.168.110.14 (kieu "mang co DHCP" khong dong cham IP cua Pi). Da tat
+lai sau khi kiem chung xong. selftest.sh 36 dat, 4 luu y.
+
 ## 0.4.51
 
 **Sua loi "bam Bat PXE ma khong thay gi ca"** (anh Thoai bao thang sau khi
