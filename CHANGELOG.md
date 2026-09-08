@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.4.48
+
+**Phat PXE that (giai doan ke tiep cua Deployment OS)** - tiep noi tab
+0.4.45, lam cho muc "Cau hinh PXE cua dnsmasq" trong bang kiem tra san
+sang thanh THAT thay vi chi bao "giai doan ke tiep".
+
+**Da lam va kiem chung that tren may:**
+- Cai `wimtools` (wimlib) - **dinh chinh so voi ke hoach ban dau**: KHONG
+  can may Windows + Windows ADK de xu ly file `.wim`/`.esd` nhu du doan -
+  wimlib tren Linux doc/tach/trich xuat truc tiep duoc, kiem chung that
+  bang `wiminfo`/`wimlib-imagex export`/`extract` chay that tren Pi.
+- Tach `install.wim` (Windows 10 Pro) tu `install.esd` gom 7 phien ban
+  trong ISO.
+- Tai `iPXE` (goi apt co san) va `wimboot` (du an chinh thuc cung tac gia
+  iPXE, qua GitHub API).
+- **Phat hien**: `\Windows\Boot\PXE\bootmgr.exe`/`wdsmgfw.efi` (bootmgr
+  CHUYEN DUNG cho boot-qua-mang) nam SAN trong `boot.wim`, khong can lay
+  tu ISO - da viet ham trich xuat truc tiep, kiem chung that.
+- `ui/pxe.py`: cau hinh dnsmasq cho ca 3 kieu boot (truc tiep / mang khong
+  DHCP dung DHCP day du; mang co DHCP dung proxyDHCP), nhan dien kien truc
+  may (RFC 4578) de phat dung bootloader BIOS/UEFI, chan vong lap vo tan
+  qua dhcp-userclass, sinh script iPXE nap wimboot+boot.wim+BCD+bootmgr.
+  Kiem chung cu phap ca 3 cau hinh bang `dnsmasq --test` (hop le).
+- Duong phuc vu file cho may dich qua HTTP KHONG dang nhap
+  (`/deployos/pxeboot/<file>`) - chi mo khi PXE dang that su BAT, kiem thu
+  chan vuot thu muc/duoi file la.
+- The "San sang PXE" + nut Bat/Tat that trong buoc 7 cua trinh tu.
+- Bo kiem thu rieng cho pxe.py: 14 phep thu, dat het.
+
+**Loi that da gap (ghi lai de khong lap lai):**
+- Da LO XOA file ISO goc truoc khi kip lay file `BCD` (2 file nho o
+  `boot/bcd` va `efi/microsoft/boot/bcd`) - phai nho anh Thoai tai lai ISO.
+  Bai hoc: xu ly ISO nguon phai liet ke DAY DU moi thu can trich TRUOC khi
+  xoa ban goc, khong xoa theo tung dot.
+- Ban dau dat dieu kien hien nut "Bat PXE" phu thuoc viec file
+  `/etc/dnsmasq-pxe.conf` da ton tai san - nhung file do CHI duoc tao ra
+  KHI bam chinh nut do, tao vong luan quan (nut can thiet bi chinh dieu
+  kien cua no khoa). Da sua: bo han kiem tra tinh do, thay bang
+  `pxe.trang_thai_chuan_bi()` la nguon su that duy nhat - kiem chung lai
+  bang HTTP that: truoc khi sua trang bao 500/khong hien gi, sau khi sua
+  hien dung bang trang thai + an dung nut khi chua du dieu kien.
+
+**Con thieu, chan viec bat PXE that**: file `BCD` (can ISO goc, anh Thoai
+se tai lai 1 lan nua). **Chua kiem chung duoc** (can phan cung that,
+khong gia lap tren Pi): toan bo chuoi boot that tu 1 may PC qua PXE toi
+man hinh cai Windows - moi thu o tren moi kiem chung "dung co che, dung
+cu phap, dung file", chua "da tan mat thay 1 may boot thanh cong". Chi
+tiet day du: docs/ke-hoach-pxe-winpe-tu-dong-cai-windows.md.
+
+selftest.sh: 36 dat, 4 luu y (1 luu y moi ve get_throttled - da xac nhan
+khong lien quan, do CPU chay 100% luc nen 15GB du lieu tach WIM truoc do).
+
 ## 0.4.47
 
 **Thanh tien trinh khi tai file len + bo duoc 2 lan chep thua** (anh Thoai

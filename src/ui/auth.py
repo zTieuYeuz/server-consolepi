@@ -142,6 +142,28 @@ def _is_local_screen():
     return request.headers.get("X-ConsolePi-Local") == "1"
 
 
+def _pxe_boot_cong_khai():
+    """
+    Duong /deployos/pxeboot/<file> phai KHONG can dang nhap - may dang boot
+    qua mang (PC hong dang duoc cai lai) chua co gi de dang nhap ca luc do.
+
+    An toan: CHI mo khi tinh nang PXE dang that su duoc bat (kiem tra qua
+    ui.pxe.dang_bat() - doc file co/khong /run/console-pi-pxe.flag), va
+    route pxe.py tu no cung kiem tra lai lan nua + gioi han duoi file +
+    chi phuc vu dung BOOT_DIR - hai lop kiem tra doc lap. Giong het mo hinh
+    rui ro cua TFTP/AP dnsmasq da co san (mac dinh tat, chi bat khi nguoi
+    dung chu dong yeu cau, khong xac thuc vi thiet bi dau xa chua dang nhap
+    duoc), khong phai mo rong dien rui ro moi.
+    """
+    if not request.path.startswith("/deployos/pxeboot/"):
+        return False
+    try:
+        from . import pxe as _pxe
+        return _pxe.dang_bat()
+    except Exception:
+        return False
+
+
 LOGIN_TEMPLATE = """<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -201,6 +223,8 @@ def register_auth(app):
             return None
         if _is_local_screen():
             return None          # man hinh gan trren Pi - xem muc dich o duoi
+        if _pxe_boot_cong_khai():
+            return None          # may dang boot qua PXE - xem muc dich o duoi
 
         # Duong vao thu ba: token API, danh cho may (vi du mot AI o dau xa
         # dieu khien giup). Phai kiem tra o day chu khong o rieng cac route

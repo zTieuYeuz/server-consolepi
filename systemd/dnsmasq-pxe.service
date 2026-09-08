@@ -1,0 +1,11 @@
+[Unit]
+Description=Console Pi - DHCP+TFTP cho tinh nang PXE boot (Deployment OS)
+# Khong Requires gi ca: che do nay bat/tat theo yeu cau nguoi dung tu
+# dashboard (tab Deployment OS), khong tu chay luc khoi dong - giong het
+# dnsmasq-direct.service.
+
+[Service]
+Type=exec
+ExecStart=/usr/sbin/dnsmasq -k -C /etc/dnsmasq-pxe.conf
+Restart=on-failure
+RestartSec=3

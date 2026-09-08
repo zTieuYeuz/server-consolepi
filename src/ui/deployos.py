@@ -494,17 +494,16 @@ def kiem_tra_san_sang(cauhinh):
          "UEFI - tai tu ipxe.org roi tai len o tab File boot)"),
     ))
 
-    # 3. dnsmasq da co cau hinh PXE chua
-    co_pxe_conf = os.path.isfile("/etc/dnsmasq-pxe.conf")
-    ra.append((
-        co_pxe_conf,
-        "Cau hinh PXE cua dnsmasq",
-        ("Da co /etc/dnsmasq-pxe.conf" if co_pxe_conf else
-         "Chua dung - day la GIAI DOAN KE TIEP cua ke hoach "
-         "(docs/ke-hoach-pxe-winpe-tu-dong-cai-windows.md)"),
-    ))
+    # Muc "cau hinh PXE cua dnsmasq" TUNG nam o day nhu 1 gach dau dong tinh
+    # ("chua dung, GIAI DOAN KE TIEP"). Da bo: ui/pxe.py gio TU SINH file
+    # /etc/dnsmasq-pxe.conf moi lan bam "Bat PXE" (xem bat_pxe()), nen kiem
+    # tra "da co san file do chua" o day la SAI Y NGHIA - no se luon bao
+    # "chua co" cho toi khi nguoi dung bam nut bat, tao vong luan quan (nut
+    # bat lai nam trong khoi chi hien khi kiem tra nay dat). Trang thai PXE
+    # that su gio xem o bang rieng cua ui/pxe.py (trang_thai_chuan_bi()),
+    # hien ngay duoi bang nay trong buoc 7 khi che_do la "chay".
 
-    # 4. Anh WinPE (chi can khi cai Windows)
+    # 3. Anh WinPE (chi can khi cai Windows)
     if (cauhinh or {}).get("os_ho") == "windows":
         co_winpe = any(
             n.lower() in ("boot.wim", "winpe.wim")
@@ -1528,17 +1527,13 @@ def register_deployos(app):
         du_dieu_kien = all(dat for dat, _, _ in kt)
 
         ket_luan = ("""
-            <div class="msg ok">Tat ca dieu kien deu dat. Buoc chay that su
-            (phat PXE + phuc vu file boot) se duoc noi vao o giai doan ke
-            tiep - hien tai chua co duong nao thuc thi, nen nut duoi day chi
-            luu lai lua chon chu chua khoi dong dich vu nao.</div>"""
+            <div class="msg ok">Tat ca dieu kien co ban da dat.</div>"""
             if du_dieu_kien else """
             <div class="msg warn"><strong>Chua the boot that.</strong> Nhung
-            muc con thieu o tren phai lam xong truoc - phan lon nam trong
-            giai doan ke tiep cua ke hoach
-            (docs/ke-hoach-pxe-winpe-tu-dong-cai-windows.md). Lua chon cua
-            anh khong mat: luu lai thanh kich ban de dung ngay khi phan boot
-            that duoc bat.</div>""")
+            muc con thieu o tren phai lam xong truoc. Lua chon cua anh khong
+            mat: luu lai thanh kich ban de dung ngay khi da du dieu kien.</div>""")
+
+        khoi_pxe = _khoi_dieu_khien_pxe(d)
 
         return f"""
         {bang}
@@ -1547,6 +1542,7 @@ def register_deployos(app):
           <table>{hang}</table>
         </div>
         {ket_luan}
+        {khoi_pxe}
         <form method="POST" action="/deployos/kichban/luu/{ma}">
           <div class="card">
             <h3>Luu lua chon nay thanh kich ban</h3>
@@ -1559,6 +1555,58 @@ def register_deployos(app):
           </div>
         </form>
         {sua_lai}"""
+
+    def _khoi_dieu_khien_pxe(d):
+        """
+        Phan noi tiep bang kiem tra san sang: trang thai + nut dieu khien
+        THAT cua tinh nang PXE (ui/pxe.py). Chi hien khi cac dieu kien co
+        ban (file boot, iPXE, WinPE) da dat - PXE co dieu kien rieng sau
+        do (bootmgr trich tu boot.wim, file BCD tu ISO).
+        """
+        from . import pxe as _pxe
+        kt = _pxe.trang_thai_chuan_bi()
+        hang = ""
+        for dat, nhan, chi_tiet in kt:
+            bieu = ('<span style="color:#4CAF50;">&#10004;</span>' if dat
+                    else '<span style="color:#f59e0b;">&#33;</span>')
+            hang += (f"<tr><td style='width:34px;'>{bieu}</td>"
+                     f"<td><strong>{_esc(nhan)}</strong><br>"
+                     f"<small style='color:#8b93a1;'>{_esc(chi_tiet)}</small></td></tr>")
+
+        trich_can = not _pxe._co_bootmgr_pxe() and os.path.isfile(_pxe._duong("boot.wim"))
+        nut_trich = f"""
+        <form method="POST" action="/deployos/pxe/trich-bootmgr" style="margin-top:10px;">
+          <button type="submit" class="gray" data-busy="Dang trich...">
+            Trich bootmgr tu boot.wim</button>
+        </form>""" if trich_can else ""
+
+        if _pxe.dang_bat():
+            dieu_khien = f"""
+            <div class="msg ok">PXE dang BAT tren cong {_pxe.IFACE}
+            (Pi la {_pxe.PI_IP}).</div>
+            <form method="POST" action="/deployos/pxe/tat">
+              <button type="submit" class="red" data-busy="Dang tat...">Tat PXE</button>
+            </form>"""
+        elif _pxe.san_sang_bat():
+            dieu_khien = f"""
+            <div class="msg warn">Bat PXE se CAT DHCP tren cong {_pxe.IFACE}
+            (giong het canh bao cua "Cam thang thiet bi"). Chi bat khi da
+            cam day mang tu Pi sang dung may can cai (hoac qua chung 1
+            switch neu chon kieu "mang co DHCP").</div>
+            <form method="POST" action="/deployos/pxe/bat">
+              <input type="hidden" name="kieu_boot" value="{_esc(d['kieu_boot'])}">
+              <button type="submit" data-busy="Dang bat PXE...">Bat PXE ngay</button>
+            </form>"""
+        else:
+            dieu_khien = '<div class="msg warn">Chua du dieu kien de bat (xem bang o tren).</div>'
+
+        return f"""
+        <div class="card">
+          <h3>San sang PXE (giai doan phuc vu boot that su)</h3>
+          <table>{hang}</table>
+          {nut_trich}
+          {dieu_khien}
+        </div>"""
 
     def _thieu_gi(d):
         thieu = []

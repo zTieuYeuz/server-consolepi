@@ -1,8 +1,68 @@
 # Kế hoạch: PXE Boot + WinPE + Tự động cài Windows (kiểu MDT) trên Console Pi
 
-> Đây là bản PHÁC THẢO để bàn bạc, CHƯA triển khai. Ghi lại đầy đủ để quyết
-> định trước khi bắt tay làm - đúng nguyên tắc của dự án (không đoán, không
-> làm nửa vời, xác nhận từng bước với anh Thoại trước khi code).
+> Bản phác thảo ban đầu đã được anh Thoại đồng ý triển khai. Mục "Tiến độ
+> thật" bên dưới ghi lại chính xác đã làm tới đâu, kiểm chứng được gì, và
+> đang thiếu gì - cập nhật theo từng phiên làm việc thật, không phải kế
+> hoạch tĩnh nữa.
+
+## Tiến độ thật (cập nhật 2026-09-08)
+
+**Đã xong và kiểm chứng thật trên máy:**
+- Cài `wimtools` (wimlib 1.14.4) - **đính chính so với bản phác thảo ban
+  đầu**: KHÔNG cần máy Windows + Windows ADK để xử lý file `.wim`/`.esd`
+  như dự đoán ban đầu. wimlib trên Linux đọc/tách/trích xuất được trực
+  tiếp, đã kiểm chứng thật (xem `wiminfo`, `wimlib-imagex export`,
+  `wimlib-imagex extract` chạy thành công trên chính Pi).
+- Tách `install.wim` (Windows 10 Pro, do anh Thoại chọn) từ `install.esd`
+  gộp 7 phiên bản trong ISO - dùng `wimlib-imagex export ... 6
+  --compress=LZX`.
+- Tải `iPXE` (gói apt `ipxe` có sẵn trong kho Debian, không cần internet
+  ngoài) - lấy `undionly.kpxe` (máy BIOS) và `ipxe.efi`/`snponly.efi`
+  (máy UEFI).
+- Tải `wimboot` (dự án chính thức của cùng tác giả iPXE, tải qua GitHub
+  API `ipxe/wimboot` - bản x86_64 cho máy đích, không phải bản ARM64 của
+  Pi).
+- **Phát hiện quan trọng**: `\Windows\Boot\PXE\bootmgr.exe` (máy BIOS) và
+  `\Windows\Boot\PXE\wdsmgfw.efi` (máy UEFI) - bộ bootmgr CHUYÊN DỤNG cho
+  boot-qua-mạng - nằm SẴN bên trong `boot.wim`, không cần lấy từ ISO. Đã
+  viết `ui/pxe.py: trich_bootmgr_tu_winpe()` dùng `wimlib-imagex extract`
+  để lấy trực tiếp, kiểm chứng thật (file trích ra đúng, đọc được).
+- Dựng `ui/pxe.py`: cấu hình `dnsmasq` cho cả 3 kiểu boot (trực tiếp/mạng
+  không DHCP dùng DHCP đầy đủ; mạng có DHCP dùng proxyDHCP), nhận diện
+  kiến trúc máy (RFC 4578 option 93) để phát đúng bootloader BIOS/UEFI,
+  chặn vòng lặp vô tận qua `dhcp-userclass=set:ipxe,iPXE`, sinh script
+  `menu.ipxe` chỉ định `wimboot` nạp `boot.wim`+`BCD`+`bootmgr.exe`. Đã
+  kiểm chứng cú pháp cả 3 cấu hình bằng `dnsmasq --test` (hợp lệ).
+- Đường phục vụ file cho máy đích qua HTTP mà KHÔNG cần đăng nhập
+  (`/deployos/pxeboot/<file>`) - chỉ mở khi PXE đang thật sự BẬT, chỉ phục
+  vụ đúng thư mục lưu trữ, đã kiểm thử chặn vượt thư mục/đuôi file lạ.
+- Thẻ "Sẵn sàng PXE" + nút Bật/Tắt thật trong bước 7 của trình tự - đọc
+  đúng trạng thái thật, không giả vờ.
+- Bộ kiểm thử riêng cho `pxe.py`: 14 phép thử, đạt hết.
+
+**Lỗi thật đã gặp trong quá trình làm (ghi lại để không lặp lại):**
+- Đã LỠ XOÁ file ISO gốc trước khi kịp lấy file `BCD` (2 file nhỏ ở
+  `boot/bcd` và `efi/microsoft/boot/bcd`) - phải nhờ anh Thoại tải lại ISO
+  một lần nữa. Bài học: khi xử lý ISO nguồn, phải liệt kê ĐẦY ĐỦ mọi thứ
+  cần trích trước khi xoá bản gốc, không xoá theo từng đợt.
+- Ban đầu đặt điều kiện hiện nút "Bật PXE" phụ thuộc vào việc file
+  `/etc/dnsmasq-pxe.conf` đã tồn tại sẵn - nhưng file đó chỉ được tạo ra
+  KHI bấm chính nút đó, tạo vòng luẩn quẩn (nút cần thiết bị chính điều
+  kiện của nó khoá). Đã sửa: bỏ hẳn kiểm tra tĩnh đó, thay bằng
+  `pxe.trang_thai_chuan_bi()` là nguồn sự thật duy nhất.
+
+**Đang thiếu, chặn việc bật PXE thật:**
+- File `BCD` (từ `boot/bcd` và `efi/microsoft/boot/bcd` của ISO gốc) - anh
+  Thoại cần tải lại ISO Windows 10 một lần nữa (tab 2.1 File boot) để em
+  lấy nốt 2 file này trước khi xoá ISO lần này.
+
+**Chưa kiểm chứng được (cần phần cứng thật, không giả lập được trên Pi):**
+- Toàn bộ chuỗi boot thật từ 1 máy PC/laptop thật qua PXE tới màn hình cài
+  đặt Windows - CHƯA có máy thật nào để thử. Mọi thứ ở trên mới kiểm chứng
+  được ở mức "đúng cơ chế, đúng cú pháp, đúng file" chứ chưa "đã tận mắt
+  thấy 1 máy boot thành công". Bước tiếp theo bắt buộc là anh Thoại thử
+  trên 1 máy thật (khuyến nghị máy test, không phải máy khách) sau khi có
+  đủ file BCD.
 
 ## 1. Bối cảnh và mục tiêu
 
