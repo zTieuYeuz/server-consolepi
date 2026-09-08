@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.49
+
+**Da co du file BCD - PXE san sang bat that su (4/4 dieu kien)**.
+
+Anh Thoai tai lai ISO Windows 10 (lan truoc bi lo xoa som), lan nay lay
+DAY DU 2 file `boot/bcd` (BIOS) va `efi/microsoft/boot/bcd` (UEFI) truoc
+khi xoa ISO. Da luu thanh `bcd-bios`/`bcd-uefi` trong thu muc boot.
+
+Kiem chung that: `pxe.trang_thai_chuan_bi()` bao du 4/4 (bootloader iPXE,
+wimboot, bootmgr trich tu boot.wim, file BCD) - `san_sang_bat() == True`
+lan dau tien. Di het 7 buoc qua HTTP that tren may song xac nhan nut
+"Bat PXE ngay" hien dung, kem canh bao cat DHCP tren eth0. selftest.sh
+36 dat, 4 luu y (khong doi).
+
+CHUA tu bam "Bat PXE": viec nay cat DHCP tren chinh cong eth0 dang la
+duong ket noi cua phien lam viec hien tai (192.168.110.14) - can anh
+Thoai tu bam cung luc cam 1 may PC that vao Pi de thu, khong the tu dong
+kiem chung buoc nay ma khong co phan cung that.
+
 ## 0.4.48
 
 **Phat PXE that (giai doan ke tiep cua Deployment OS)** - tiep noi tab

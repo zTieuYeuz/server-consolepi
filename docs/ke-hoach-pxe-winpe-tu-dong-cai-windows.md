@@ -51,10 +51,17 @@
   kiện của nó khoá). Đã sửa: bỏ hẳn kiểm tra tĩnh đó, thay bằng
   `pxe.trang_thai_chuan_bi()` là nguồn sự thật duy nhất.
 
-**Đang thiếu, chặn việc bật PXE thật:**
-- File `BCD` (từ `boot/bcd` và `efi/microsoft/boot/bcd` của ISO gốc) - anh
-  Thoại cần tải lại ISO Windows 10 một lần nữa (tab 2.1 File boot) để em
-  lấy nốt 2 file này trước khi xoá ISO lần này.
+**Cập nhật 2026-09-08 (lần 2) - đã lấy đủ file BCD:**
+- Anh Thoại tải lại ISO, lần này đã lấy đủ `boot/bcd` (BIOS) và
+  `efi/microsoft/boot/bcd` (UEFI) TRƯỚC khi xoá ISO - rút kinh nghiệm từ
+  lần trước.
+- **Bảng "Sẵn sàng PXE" giờ đủ 4/4 điều kiện (`san_sang_bat() == True`
+  - kiểm chứng thật)**. Nút "Bật PXE ngay" đã hiện đúng qua HTTP thật ở
+  bước 7, kèm cảnh báo cắt DHCP trên eth0.
+- **CHƯA tự bấm "Bật PXE"**: việc này cắt DHCP trên chính cổng eth0 của
+  Pi - cổng đang được dùng làm đường kết nối cho chính phiên làm việc này
+  (192.168.110.14). Bấm nhầm sẽ tự ngắt kết nối giữa chừng. Đây là bước
+  anh Thoại cần tự làm cùng lúc cắm 1 máy PC thật vào Pi để thử.
 
 **Chưa kiểm chứng được (cần phần cứng thật, không giả lập được trên Pi):**
 - Toàn bộ chuỗi boot thật từ 1 máy PC/laptop thật qua PXE tới màn hình cài
