@@ -179,10 +179,107 @@ def _liet_ke(thu_muc, duoi_cho_phep):
     return ra
 
 
+# ==================================================== ghi THANG ra dia dich
+#
+# LOI THAT DA GAP (anh Thoai bao: "task manager het bao dung luong ben tab
+# network ma trang os van quay hoai"): mot file tai len phai di qua BA lan
+# chep tren the nho truoc khi xong:
+#   1. nginx nhan tu trinh duyet -> ghi ra /var/lib/nginx/body
+#   2. nginx day sang Flask -> Werkzeug ghi ra file tam
+#   3. ma cua minh chep tu file tam sang cho luu that
+# The nho cua Pi chi ghi duoc ~13 MB/s (da do that), nen voi bo cai Windows
+# 5GB thi rieng viec chep di chep lai da ton ~19 phut, va HAI GIAI DOAN CUOI
+# xay ra SAU KHI trinh duyet da gui xong - dung luc nguoi dung thay mang im
+# lang ma trang van quay, khong biet may con dang lam gi.
+#
+# Sua tan goc: chan ngay o tang Werkzeug, cho no ghi THANG vao file dich
+# (duoi dang <ten>.part) thay vi ghi ra file tam. Cong voi
+# "proxy_request_buffering off" ben nginx (xem config/nginx-console-pi.conf),
+# du lieu chay THANG mot mach tu trinh duyet -> nginx -> Flask -> file dich:
+#   - chi con 1 lan ghi thay vi 3 (nhanh gap ~3 lan, do SD wear gap 3)
+#   - chi can dung bang kich thuoc file thay vi gap 3 lan dung luong trong
+#   - va quan trong nhat: % tren thanh tien trinh cua trinh duyet BAM SAT
+#     tien do that, vi byte nao trinh duyet gui di la byte do da nam tren dia
+THU_MUC_THEO_DUONG = {}          # {duong_dan_URL: (thu_muc, duoi_cho_phep)}
+
+
+def _mo_file_dich(duong_url, filename):
+    """
+    Mo san file dich de Werkzeug ghi thang vao. Tra ve (fileobj, duong_dan)
+    hoac (None, None) neu duong nay khong phai duong tai len cua tab nay.
+    """
+    cau_hinh = THU_MUC_THEO_DUONG.get(duong_url)
+    if cau_hinh is None:
+        return None, None
+    thu_muc, duoi_cho_phep = cau_hinh
+
+    ten = ten_an_toan(filename or "")
+    if not ten or os.path.splitext(ten)[1].lower() not in duoi_cho_phep:
+        # Duoi file khong hop le: van phai nuot het du lieu (khong thi trinh
+        # duyet bao loi mang kho hieu) nhung DO THANG VAO THUNG RAC, tuyet
+        # doi khong giu trong RAM - file la co the vai GB.
+        return open(os.devnull, "wb+"), None
+
+    _bao_dam_thu_muc()
+    tam = os.path.join(thu_muc, ten + ".part")
+    try:
+        return open(tam, "wb+"), tam
+    except OSError:
+        return None, None
+
+
+def _don_file_do_dang(thu_muc, qua_gio=6):
+    """
+    Xoa cac file .part con sot lai tu lan tai len bi dut giua chung (rut day
+    mang, dong trinh duyet...). Chi xoa cai da cu hon 6 tieng de khong bao
+    gio dung nham vao file dang duoc tai len that.
+    """
+    nay = time.time()
+    try:
+        for n in os.listdir(thu_muc):
+            if not n.endswith(".part"):
+                continue
+            p = os.path.join(thu_muc, n)
+            try:
+                if nay - os.stat(p).st_mtime > qua_gio * 3600:
+                    os.remove(p)
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+
+def _hoan_tat_ghi_thang(tam, thu_muc, ten_goc):
+    """Doi ten <ten>.part thanh ten that sau khi da ghi xong."""
+    try:
+        cd = os.path.getsize(tam)
+    except OSError:
+        return False, "Khong doc duoc file vua tai len."
+    if cd == 0:
+        try:
+            os.remove(tam)
+        except OSError:
+            pass
+        return False, "File tai len rong (0 byte)."
+
+    ten = ten_an_toan(ten_goc)
+    dich = os.path.join(thu_muc, ten)
+    if os.path.exists(dich):
+        goc, duoi = os.path.splitext(ten)
+        ten = f"{goc}_{time.strftime('%H%M%S')}{duoi}"
+        dich = os.path.join(thu_muc, ten)
+    try:
+        os.replace(tam, dich)
+    except OSError as e:
+        return False, f"Khong luu duoc: {e}"
+    return True, f"Da luu {ten} ({co_kich_thuoc(cd)})."
+
+
 def _luu_tai_len(fileobj, thu_muc, duoi_cho_phep, nhan):
     """
-    Ghi theo tung khoi 1MB ra dia (khong nap ca file vao RAM - file ISO/WIM
-    co the vai GB, Pi chi co 4GB RAM). Giong het cach ui/storage.py lam.
+    Duong DU PHONG: chep tu file tam cua Werkzeug sang cho luu that theo
+    tung khoi 1MB. Binh thuong khong chay toi day nua (da co duong ghi thang
+    o tren), chi dung khi vi ly do gi do Werkzeug khong dung duoc file dich.
     """
     _bao_dam_thu_muc()
     ten = ten_an_toan(getattr(fileobj, "filename", ""))
@@ -496,9 +593,121 @@ def _phan_vung_mac_dinh(os_ho):
 
 # ==================================================================== giao dien
 def register_deployos(app):
-    from flask import request, redirect, send_from_directory, abort
+    from flask import request, redirect, send_from_directory, abort, jsonify
     from .layout import render_page
     from .home import _esc
+
+    # --- Khai bao cac duong tai len duoc phep ghi THANG ra dia dich ---
+    THU_MUC_THEO_DUONG.update({
+        "/deployos/console/file/len": (BOOT_DIR, EXT_BOOT),
+        "/deployos/console/apps/len": (APPS_DIR, EXT_APP),
+        "/deployos/console/scripts/len": (SCRIPTS_DIR, EXT_SCRIPT),
+    })
+
+    # --- Chan tang Werkzeug: ghi thang file tai len ra dia dich ---
+    #
+    # Werkzeug goi _get_file_stream() de lay noi ghi du lieu tai len. Mac
+    # dinh no tra ve 1 file tam; o day tra ve THANG file dich. Xem giai
+    # thich day du (va loi that da gap) tai _mo_file_dich() o dau file.
+    lop_request_goc = app.request_class
+
+    class RequestTaiLenThang(lop_request_goc):
+        def _get_file_stream(self, total_content_length, content_type,
+                             filename=None, content_length=None):
+            f, duong = _mo_file_dich(self.path, filename)
+            if f is None:
+                return super()._get_file_stream(
+                    total_content_length, content_type, filename, content_length)
+            # Ghi nho duong dan de route biet file vua duoc ghi vao dau.
+            # Dat tren CHINH doi tuong file vi Werkzeug se boc no vao
+            # FileStorage va route lay lai duoc qua .stream
+            try:
+                f._cp_duong_dan = duong
+            except Exception:
+                pass
+            return f
+
+    app.request_class = RequestTaiLenThang
+
+    @app.before_request
+    def _chan_som_khi_khong_du_cho():
+        """
+        Tu choi NGAY khi vua nhan header, TRUOC khi doc du lieu.
+
+        LOI THAT DA GAP (anh Thoai gap that): truoc day phep kiem tra dung
+        luong nam o CUOI - sau khi da nhan het file. Anh tai 1 file 4.6GB
+        mat ~20 phut, den luc xong moi bao "can 10.1GB nhung chi con 10GB"
+        va vut het di. Cho kiem tra dung phai la NGAY DAU, luc chua ton mot
+        byte nao cua anh.
+        """
+        if request.path not in THU_MUC_THEO_DUONG:
+            return None
+        can = request.content_length or 0
+        if not can:
+            return None
+        # Ghi thang ra dia dich nen chi can DUNG BANG kich thuoc file
+        # (+1GB de he thong con cho tho), khong con can gap doi/gap ba nua.
+        can_gb = can / (1024 ** 3) + 1
+        if _con_trong_gb() < can_gb:
+            thu_muc = THU_MUC_THEO_DUONG[request.path][0]
+            return _trang(
+                _tabs("console", "file") +
+                f'<div class="msg err">File nay {co_kich_thuoc(can)} nen can '
+                f'khoang {can_gb:.1f} GB trong, nhung chi con '
+                f'{_con_trong_gb()} GB. Da dung lai NGAY, chua ton thoi gian '
+                f'tai len cua anh. Xoa bot file cu hoac cam USB roi thu lai.</div>',
+                "Deployment OS", "Khong du dung luong"), 413
+        return None
+
+    def _nhan_tai_len(thu_muc, duoi_cho_phep, nhan):
+        """
+        Nhan file vua tai len. Binh thuong du lieu DA nam san tren dia dich
+        (do RequestTaiLenThang ghi thang), chi con doi ten .part -> ten that.
+        Duong du phong (_luu_tai_len) chi chay khi vi ly do gi do khong ghi
+        thang duoc.
+        """
+        f = request.files.get("file")
+        if not f or not getattr(f, "filename", ""):
+            return False, "Chua chon file."
+        duong = getattr(getattr(f, "stream", None), "_cp_duong_dan", None)
+        if duong:
+            try:
+                f.stream.flush()
+                os.fsync(f.stream.fileno())
+            except Exception:
+                pass
+            return _hoan_tat_ghi_thang(duong, thu_muc, f.filename)
+        # Khong ghi thang duoc (vd duoi file khong hop le -> da do vao
+        # /dev/null): bao loi ro rang thay vi im lang
+        ten = ten_an_toan(f.filename)
+        if os.path.splitext(ten)[1].lower() not in duoi_cho_phep:
+            return False, (f"Khong nhan duoi file nay cho muc {nhan}. Chi nhan: "
+                           f"{', '.join(sorted(duoi_cho_phep))}")
+        return _luu_tai_len(f, thu_muc, duoi_cho_phep, nhan)
+
+    @app.route("/deployos/tien-do")
+    def deployos_tien_do():
+        """
+        Bao cho trang biet may DA GHI DUOC bao nhieu byte xuong dia that.
+
+        Doc thang kich thuoc file <ten>.part dang duoc ghi. Nho vay thanh
+        tien trinh bam theo tien do THAT tren dia, khong phai chi theo so
+        byte trinh duyet da gui di (hai so nay lech nhau khi mang nhanh hon
+        the nho - dung tinh huong lam anh Thoai tuong may bi treo).
+        """
+        loai = request.args.get("loai", "")
+        ten = ten_an_toan(request.args.get("ten", ""))
+        thu_muc = {"file": BOOT_DIR, "apps": APPS_DIR,
+                   "scripts": SCRIPTS_DIR}.get(loai)
+        if not thu_muc or not ten:
+            return jsonify({"da_ghi": 0, "xong": False})
+        p = os.path.join(thu_muc, ten + ".part")
+        try:
+            return jsonify({"da_ghi": os.path.getsize(p), "xong": False})
+        except OSError:
+            # Khong con .part: hoac chua bat dau, hoac da doi ten -> xong
+            xong = os.path.isfile(os.path.join(thu_muc, ten))
+            return jsonify({"da_ghi": 0, "xong": xong})
 
     # ------------------------------------------------------------ khung tab
     def _tabs(chinh, phu=""):
@@ -564,9 +773,146 @@ def register_deployos(app):
     .pv-hang input, .pv-hang select { max-width:none; width:auto; flex:1; min-width:110px; }
     .tt-bang td { vertical-align:top; }
     .tt-bang td:first-child { color:#8b93a1; width:190px; }
+
+    /* Thanh tien do tai len */
+    .tt-khung { margin-top:6px; }
+    .tt-ten { font-size:14px; color:#fff; margin-bottom:9px; word-break:break-all; }
+    .tt-thanh-ngoai { width:100%; height:22px; background:#22262b; border-radius:7px;
+      overflow:hidden; border:1px solid #2c3036; }
+    .tt-thanh { height:100%; width:0%; background:#4CAF50; border-radius:7px;
+      transition:width .3s ease; }
+    .tt-so { display:flex; justify-content:space-between; margin-top:9px;
+      font-size:14px; flex-wrap:wrap; gap:8px; }
+    .tt-phantram { font-weight:700; color:#4CAF50; font-family:ui-monospace,monospace;
+      font-size:17px; }
+    .tt-chitiet { color:#a8b0bd; font-family:ui-monospace,monospace; }
+    .tt-dia { margin-top:9px; font-size:13px; color:#8b93a1; min-height:19px; }
     """
 
+    # JS cua thanh tien trinh - chi chen vao cac trang co form tai len
+    JS_TIEN_DO = """
+<script>
+(function () {
+  "use strict";
+  function co(n) {
+    if (n < 1024) return n + " B";
+    var d = ["KB","MB","GB"], i = -1;
+    do { n /= 1024; i++; } while (n >= 1024 && i < 2);
+    return n.toFixed(1) + " " + d[i];
+  }
+  function thoiGian(giay) {
+    if (!isFinite(giay) || giay < 0) return "";
+    giay = Math.round(giay);
+    if (giay < 60) return giay + " giay";
+    var p = Math.floor(giay / 60), g = giay % 60;
+    return p + " phut " + (g < 10 ? "0" : "") + g + " giay";
+  }
+
+  Array.prototype.forEach.call(
+    document.querySelectorAll("form.form-tai-len"), function (form) {
+    var khung = form.parentNode.querySelector(".tt-khung");
+    if (!khung || !window.XMLHttpRequest || !window.FormData) return;  // de form thuong lo
+
+    var thanh = khung.querySelector(".tt-thanh");
+    var phantram = khung.querySelector(".tt-phantram");
+    var chitiet = khung.querySelector(".tt-chitiet");
+    var tenO = khung.querySelector(".tt-ten");
+    var diaO = khung.querySelector(".tt-dia");
+    var nutHuy = khung.querySelector(".tt-huy");
+    var loai = form.getAttribute("data-loai") || "";
+    var xhr = null, hen = null;
+
+    form.addEventListener("submit", function (e) {
+      var o = form.querySelector('input[type="file"]');
+      if (!o || !o.files || !o.files.length) return;   // khong co file: de form bao loi
+      e.preventDefault();
+
+      var file = o.files[0];
+      var batDau = Date.now();
+      form.style.display = "none";
+      khung.style.display = "block";
+      tenO.textContent = file.name + "  (" + co(file.size) + ")";
+
+      // Hoi may xem da ghi duoc bao nhieu XUONG DIA that. So nay moi la su
+      // that cuoi cung - so byte trinh duyet gui di co the chay truoc no.
+      function hoiDia() {
+        if (!loai) return;
+        var q = new XMLHttpRequest();
+        q.open("GET", "/deployos/tien-do?loai=" + encodeURIComponent(loai) +
+                      "&ten=" + encodeURIComponent(file.name), true);
+        q.onload = function () {
+          try {
+            var d = JSON.parse(q.responseText);
+            if (d.da_ghi > 0) {
+              diaO.textContent = "Da ghi xuong dia: " + co(d.da_ghi) +
+                " / " + co(file.size);
+            }
+          } catch (err) { /* bo qua, khong lam hong viec tai len */ }
+        };
+        q.send();
+      }
+      hen = setInterval(hoiDia, 2000);
+
+      xhr = new XMLHttpRequest();
+      xhr.open("POST", form.getAttribute("action"), true);
+
+      xhr.upload.onprogress = function (ev) {
+        if (!ev.lengthComputable) return;
+        var pt = Math.round(ev.loaded * 100 / ev.total);
+        thanh.style.width = pt + "%";
+        phantram.textContent = pt + "%";
+        var giay = (Date.now() - batDau) / 1000;
+        var tocDo = giay > 0 ? ev.loaded / giay : 0;
+        var conLai = tocDo > 0 ? (ev.total - ev.loaded) / tocDo : Infinity;
+        chitiet.textContent = co(ev.loaded) + " / " + co(ev.total) +
+          "  -  " + co(tocDo) + "/s  -  con " + thoiGian(conLai);
+      };
+
+      xhr.upload.onload = function () {
+        // Trinh duyet gui xong roi, nhung may co the con dang ghi not
+        phantram.textContent = "100%";
+        thanh.style.width = "100%";
+        chitiet.textContent = "Da gui xong, dang hoan tat luu tren may...";
+      };
+
+      xhr.onload = function () {
+        clearInterval(hen);
+        // May tra ve nguyen trang ket qua -> thay the trang hien tai
+        document.open();
+        document.write(xhr.responseText);
+        document.close();
+      };
+      xhr.onerror = function () {
+        clearInterval(hen);
+        diaO.innerHTML = '<span style="color:#ef4444;">Mat ket noi toi may. ' +
+          'File chua duoc luu - thu lai.</span>';
+      };
+      xhr.onabort = function () {
+        clearInterval(hen);
+        diaO.innerHTML = '<span style="color:#f59e0b;">Da huy tai len.</span>';
+      };
+
+      var fd = new FormData();
+      fd.append("file", file);
+      xhr.send(fd);
+    });
+
+    nutHuy.addEventListener("click", function () {
+      if (xhr) xhr.abort();
+      form.style.display = "";
+      khung.style.display = "none";
+      thanh.style.width = "0%";
+      phantram.textContent = "0%";
+      chitiet.textContent = "";
+      diaO.textContent = "";
+    });
+  });
+})();
+</script>"""
+
     def _trang(body, title, subtitle="", active="/deployos"):
+        if 'class="form-tai-len"' in body:
+            body += JS_TIEN_DO
         return render_page(body, active=active, title=title,
                            subtitle=subtitle, extra_css=CSS)
 
@@ -1245,21 +1591,51 @@ def register_deployos(app):
         return _trang(body, "Deployment OS", "Kich ban")
 
     # ================================================ 2. TAB "CONSOLE BOOT"
-    def _khoi_tai_len(hanh_dong, nhan, duoi, ghi_chu=""):
+    def _khoi_tai_len(hanh_dong, nhan, duoi, ghi_chu="", loai=""):
+        """
+        Khung tai len co THANH TIEN TRINH that.
+
+        LOI THAT DA GAP (anh Thoai bao: "task manager het bao dung luong ben
+        tab network ma trang os van quay hoai luon, ko biet no toi dau"):
+        truoc day day chi la 1 form thuong - bam xong la trang dung yen quay
+        vong tron hang chuc phut, khong biet dang o dau, con bao lau, hay da
+        treo. Voi file 5GB tren the nho cham thi cho nhu vay la khong the
+        chap nhan duoc.
+
+        Gio dung XMLHttpRequest de biet SO BYTE DA GUI, dong thoi hoi may
+        (/deployos/tien-do) xem DA GHI DUOC bao nhieu xuong dia that - hien
+        ca hai, kem toc do va thoi gian con lai. Neu trinh duyet khong chay
+        duoc JavaScript thi form van gui duoc nhu cu (chi la khong co thanh
+        tien trinh), khong bao gio mat duong tai len.
+        """
         return f"""
         <div class="card">
           <h3>Tai len {_esc(nhan)}</h3>
           {ghi_chu}
-          <form method="POST" action="{hanh_dong}" enctype="multipart/form-data">
+          <form method="POST" action="{hanh_dong}" enctype="multipart/form-data"
+                class="form-tai-len" data-loai="{_esc(loai)}">
             <label>Chon file ({', '.join(sorted(duoi))})</label>
             <input type="file" name="file" required>
             <div class="row" style="margin-top:13px;">
               <button type="submit" data-busy="Dang tai len, dung dong trang...">
                 Tai len</button>
               <span style="color:#8b93a1;font-size:13px;">
-                File lon mat vai phut, trang se dung yen cho den khi xong.</span>
+                File lon mat vai phut. Se co thanh tien trinh bao ro dang toi dau.</span>
             </div>
           </form>
+
+          <div class="tt-khung" style="display:none;">
+            <div class="tt-ten"></div>
+            <div class="tt-thanh-ngoai"><div class="tt-thanh"></div></div>
+            <div class="tt-so">
+              <span class="tt-phantram">0%</span>
+              <span class="tt-chitiet"></span>
+            </div>
+            <div class="tt-dia"></div>
+            <div style="margin-top:12px;">
+              <button type="button" class="red small tt-huy">Huy tai len</button>
+            </div>
+          </div>
         </div>"""
 
     def _bang_file(ds, duong_xoa, duong_tai):
@@ -1294,6 +1670,7 @@ def register_deployos(app):
         return _trang_file_boot()
 
     def _trang_file_boot(msg="", ok=True):
+        _don_file_do_dang(BOOT_DIR)
         ds = _liet_ke(BOOT_DIR, EXT_BOOT)
         ghi_chu = """
         <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
@@ -1302,7 +1679,7 @@ def register_deployos(app):
           <code>ipxe.org</code>). Anh WinPE (boot.wim) phai tao san tren 1 may
           Windows co Windows ADK - Pi khong tu tao duoc, chi luu va phuc vu.</p>"""
         body = (_tabs("console", "file") + _msg(msg, ok) +
-                _khoi_tai_len("/deployos/console/file/len", "file boot", EXT_BOOT, ghi_chu) +
+                _khoi_tai_len("/deployos/console/file/len", "file boot", EXT_BOOT, ghi_chu, "file") +
                 f"<h2>File boot dang co ({len(ds)})</h2>" +
                 _bang_file(ds, "/deployos/console/file/xoa", "/deployos/console/file/tai"))
         return _trang(body, "Deployment OS", "2.1 - File boot")
@@ -1312,7 +1689,7 @@ def register_deployos(app):
         f = request.files.get("file")
         if not f:
             return _trang_file_boot("Chua chon file.", False)
-        ok, msg = _luu_tai_len(f, BOOT_DIR, EXT_BOOT, "file boot")
+        ok, msg = _nhan_tai_len(BOOT_DIR, EXT_BOOT, "file boot")
         return _trang_file_boot(msg, ok)
 
     @app.route("/deployos/console/file/xoa", methods=["POST"])
@@ -1333,6 +1710,7 @@ def register_deployos(app):
         return _trang_apps()
 
     def _trang_apps(msg="", ok=True):
+        _don_file_do_dang(APPS_DIR)
         ds = danh_sach_app()
         ghi_chu = """
         <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
@@ -1378,7 +1756,7 @@ def register_deployos(app):
             bang = '<p style="color:#8b93a1;">Chua co phan mem nao.</p>'
 
         body = (_tabs("console", "apps") + _msg(msg, ok) +
-                _khoi_tai_len("/deployos/console/apps/len", "phan mem", EXT_APP, ghi_chu) +
+                _khoi_tai_len("/deployos/console/apps/len", "phan mem", EXT_APP, ghi_chu, "apps") +
                 f"<h2>Phan mem dang co ({len(ds)})</h2>" + bang +
                 """
                 <div class="msg info">Cac file nay KHONG bao gio duoc chay tren
@@ -1391,7 +1769,7 @@ def register_deployos(app):
         f = request.files.get("file")
         if not f:
             return _trang_apps("Chua chon file.", False)
-        ok, msg = _luu_tai_len(f, APPS_DIR, EXT_APP, "phan mem")
+        ok, msg = _nhan_tai_len(APPS_DIR, EXT_APP, "phan mem")
         return _trang_apps(msg, ok)
 
     @app.route("/deployos/console/apps/thamso", methods=["POST"])
@@ -1431,6 +1809,7 @@ def register_deployos(app):
         return _trang_scripts()
 
     def _trang_scripts(msg="", ok=True):
+        _don_file_do_dang(SCRIPTS_DIR)
         ds = _liet_ke(SCRIPTS_DIR, EXT_SCRIPT)
         ghi_chu = """
         <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
@@ -1438,7 +1817,7 @@ def register_deployos(app):
           chay TREN MAY DANG DUOC CAI sau khi cai xong OS va phan mem, khong
           chay tren Console Pi.</p>"""
         body = (_tabs("console", "scripts") + _msg(msg, ok) +
-                _khoi_tai_len("/deployos/console/scripts/len", "script", EXT_SCRIPT, ghi_chu) +
+                _khoi_tai_len("/deployos/console/scripts/len", "script", EXT_SCRIPT, ghi_chu, "scripts") +
                 f"<h2>Script dang co ({len(ds)})</h2>" +
                 _bang_file(ds, "/deployos/console/scripts/xoa",
                            "/deployos/console/scripts/tai"))
@@ -1449,7 +1828,7 @@ def register_deployos(app):
         f = request.files.get("file")
         if not f:
             return _trang_scripts("Chua chon file.", False)
-        ok, msg = _luu_tai_len(f, SCRIPTS_DIR, EXT_SCRIPT, "script")
+        ok, msg = _nhan_tai_len(SCRIPTS_DIR, EXT_SCRIPT, "script")
         return _trang_scripts(msg, ok)
 
     @app.route("/deployos/console/scripts/xoa", methods=["POST"])

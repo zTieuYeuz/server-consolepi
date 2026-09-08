@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.4.47
+
+**Thanh tien trinh khi tai file len + bo duoc 2 lan chep thua** (anh Thoai
+bao: "task manager het bao dung luong ben tab network ma trang os van quay
+hoai luon, ko biet no toi dau").
+
+**Loi that da gap (chinh anh Thoai gap, 2 loi lien quan nhau):**
+
+1. Tai 1 file 4.6GB mat ~20 phut, xong xuoi thi bi TU CHOI voi thong bao
+   "can khoang 10.1 GB trong nhung chi con 10 GB" - thieu dung 0.1GB, va
+   phep kiem tra do lai nam o CUOI, sau khi da nhan het file. Cong toi
+   cua canh bao dung luong them o ban 0.4.46: no doi GAP DOI dung luong.
+2. Suot qua trinh do man hinh chi quay vong tron, khong biet dang toi dau,
+   con bao lau. Nhat la doan SAU KHI trinh duyet da gui xong ma may van con
+   dang lam viec - nhin y het bi treo.
+
+**Nguyen nhan goc (do that, khong doan)**: moi file tai len phai di qua BA
+lan chep tren the nho: (1) nginx nhan tu trinh duyet, dem ra
+/var/lib/nginx/body; (2) nginx day sang Flask, Werkzeug ghi ra file tam;
+(3) ma cua minh chep tu file tam sang cho luu that. The nho Pi chi ghi
+~13 MB/s (da do), nen file 5GB ton ~19 phut chi de chep di chep lai, va
+HAI giai doan cuoi xay ra sau khi trinh duyet da gui xong.
+
+**Sua tan goc - du lieu chay THANG mot mach:**
+- nginx: `proxy_request_buffering off` cho cac duong tai len (bo lan chep 1)
+- Flask: chan tang Werkzeug (`_get_file_stream`) de ghi THANG vao file dich
+  duoi dang `<ten>.part`, xong doi ten (bo lan chep 2 va 3)
+- Phep kiem tra dung luong chuyen len `before_request` - tu choi NGAY o
+  giay dau khi vua nhan header, va chi con doi DUNG BANG kich thuoc file
+  (+1GB tho) thay vi gap doi
+
+**Thanh tien trinh that**: hien %, so MB da gui / tong, toc do, thoi gian
+con lai, VA so byte da thuc su ghi xuong dia (hoi may qua
+`/deployos/tien-do`, khong doan). Co nut Huy tai len. Neu trinh duyet khong
+chay JavaScript thi form thuong van gui duoc nhu cu.
+
+**Da kiem chung that tren may:**
+- Tai 1 file 3GB qua dung duong nginx: HTTP 200, 245 giay, 12.8 MB/s
+- **He so khuech dai dung luong = 1.00 lan** (dinh diem dia tang dung 3000MB
+  cho file 3000MB) - truoc khi sua la ~3 lan. Do bang cach theo doi song
+  song "dia tang bao nhieu" va "file dich lon bao nhieu": hai so bam sat
+  nhau tung giay, chung to khong con ban sao thua nao
+- Thanh tien trinh chay that tren man hinh cam ung: "96% - 673.2 MB /
+  700.0 MB - 30.6 MB/s - con 1 giay" kem dong "Da ghi xuong dia: 660.2 MB /
+  700.0 MB"
+- Bo kiem thu rieng cho co che tai len moi: 24 phep thu, dat het (ghi thang
+  ra dia dich, khong de lai file tam, tu choi duoi file la ma khong tao
+  file nao, trung ten thi doi ten chu khong ghi de, endpoint tien do, chan
+  duong dan la, tu choi som khi thieu cho, don file .part bo do nhung giu
+  lai cai dang tai)
+- selftest.sh: 37 dat, 3 luu y, 0 loi
+
+**Don dep**: xoa kho goi apt cu (thu hoi 500MB). Da kiem tra the nho: 29.72
+GB va DA duoc mo rong het co tu truoc (con trong chua chia: 0.01 GB) -
+khong con gi de mo rong them.
+
 ## 0.4.46
 
 **Sua loi khong tai len duoc file lon hon ~1.9GB** (phat hien khi chuan bi
