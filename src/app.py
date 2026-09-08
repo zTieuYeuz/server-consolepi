@@ -22,9 +22,36 @@ cong cu bat goi tin va quyen sua cau hinh mang.
 import json
 import os
 import sys
+import tempfile
 from urllib.parse import urlparse
 
 sys.path.insert(0, "/opt/console-pi")
+
+# ---------------------------------------------------------------------------
+# File tam PHAI nam tren THE NHO, KHONG duoc nam trong RAM
+#
+# LOI THAT DA GAP (kiem chung bang phep thu that, khong doan): tai 1 file
+# 2.2GB len qua tab Deployment OS thi nhan HTTP 500 sau khi da gui xong
+# 2.3GB. Nguyen nhan: Werkzeug (tang duoi Flask) doc file tai len bang
+# SpooledTemporaryFile - moi file lon hon 500KB deu bi do ra FILE TAM trong
+# thu muc tam cua Python, ma mac dinh thu muc do la /tmp. Tren Pi OS, /tmp
+# la tmpfs - tuc la NAM TRONG RAM, chi 1.9GB. Da nhin tan mat /tmp phinh
+# dan trong luc tai (35M -> 451M -> 563M -> ...) roi vo khi cham tran.
+#
+# Hau qua neu khong sua: moi file lon hon ~1.9GB deu KHONG tai len duoc -
+# dung cai co lon nhat ma tinh nang nay can (bo cai Windows ~5-6GB), va con
+# an het RAM cua may trong luc do. Tab "Kho file" (ui/storage.py) cung dinh
+# y het loi nay du no da can than ghi theo luong ra dia - vi cho nghen nam
+# o tang Werkzeug phia truoc, truoc khi ma cua minh duoc chay.
+#
+# Sua tan goc bang cach doi thu muc tam cua ca tien trinh sang /var/tmp
+# (nam tren the nho, con 20GB) - 1 dong nay chua duoc cho ca hai tab va moi
+# cho tai file len sau nay, khong phai sua tung noi.
+try:
+    os.makedirs("/var/tmp", exist_ok=True)
+    tempfile.tempdir = "/var/tmp"
+except Exception:
+    pass          # khong duoc de viec nay lam hong ca dashboard
 
 # ---------------------------------------------------------------------------
 # Bao tien do khoi dong THAT (khong phai doan theo thoi gian).

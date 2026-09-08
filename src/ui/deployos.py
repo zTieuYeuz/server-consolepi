@@ -195,6 +195,25 @@ def _luu_tai_len(fileobj, thu_muc, duoi_cho_phep, nhan):
         return False, (f"Chi con {_con_trong_gb()} GB trong - can it nhat "
                        f"{MIN_FREE_GB} GB. Xoa bot file truoc khi tai them.")
 
+    # Can GAP DOI kich thuoc file, khong phai 1 lan: Werkzeug do file tai len
+    # ra 1 file tam truoc (xem ghi chu ve /tmp trong app.py), roi ham nay moi
+    # chep tu file tam do sang cho luu that - hai ban ton tai cung luc. Voi bo
+    # cai Windows 6GB thi can ~12GB trong. Chan tu dau con hon de tai nua
+    # chung roi moi bao het cho (mat cong cho hang chuc phut).
+    try:
+        from flask import request as _rq
+        can = _rq.content_length or 0
+    except Exception:
+        can = 0
+    if can:
+        can_gb = (can * 2) / (1024 ** 3) + 1        # +1GB de du an toan
+        if _con_trong_gb() < can_gb:
+            return False, (
+                f"File nay {co_kich_thuoc(can)} nen can khoang "
+                f"{can_gb:.1f} GB trong (file tam + ban luu that), nhung chi "
+                f"con {_con_trong_gb()} GB. Xoa bot file cu, hoac cam USB va "
+                f"chuyen bot du lieu sang do truoc.")
+
     dich = os.path.join(thu_muc, ten)
     if os.path.exists(dich):
         goc, duoi = os.path.splitext(ten)

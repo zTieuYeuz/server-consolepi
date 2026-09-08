@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.4.46
+
+**Sua loi khong tai len duoc file lon hon ~1.9GB** (phat hien khi chuan bi
+cho anh Thoai tai bo cai Windows ~5-6GB len qua tab Deployment OS).
+
+**Kiem chung that, khong doan**: tai thu 1 file 2.2GB thi nhan **HTTP 500**
+sau khi da gui xong 2.3GB (mat hon 2 phut roi moi bao hong). Vua theo doi
+vua thay `/tmp` phinh dan trong luc tai: 35M -> 451M -> 563M -> ... cho toi
+khi cham tran.
+
+**Nguyen nhan**: Werkzeug (tang duoi Flask) doc file tai len bang
+`SpooledTemporaryFile` - moi file lon hon 500KB deu bi do ra file tam trong
+thu muc tam cua Python, mac dinh la `/tmp`. Tren Pi OS `/tmp` la **tmpfs -
+nam trong RAM**, chi 1.9GB. Nen file nao lon hon muc do deu chet, va con an
+het RAM cua may trong luc do.
+
+Diem dang chu y: tab **Kho file** (`ui/storage.py`) dinh y het loi nay tu
+truoc du no da rat can than ghi theo luong ra dia - vi cho nghen nam o tang
+Werkzeug PHIA TRUOC, truoc khi ma cua minh duoc chay. Ban sua nay chua luon
+cho ca tab do (cung 1 tien trinh).
+
+**Sua**: doi thu muc tam cua ca tien trinh dashboard sang `/var/tmp` (nam
+tren the nho, con 20GB) ngay trong `app.py`. Mot cho sua, chua cho moi tab
+co tai file len, ke ca tab lam sau nay.
+
+**Them canh bao dung luong thong minh hon** cho tab Deployment OS: file tai
+len can GAP DOI dung luong (file tam + ban luu that ton tai cung luc), nen
+gio kiem tra truoc theo dung kich thuoc file va bao ro can bao nhieu GB -
+thay vi de tai nua chung hang chuc phut roi moi bao het cho.
+
+**Da kiem chung lai bang dung phep thu da lam hong**: cung file 2.2GB do,
+truoc khi sua log ghi `POST /deployos/console/file/len 500`, sau khi sua ghi
+`POST /deployos/console/file/len 200`, file nam that tren dia, va `/tmp`
+dung yen o 32M suot ca qua trinh (khong con an vao RAM).
+
 ## 0.4.45
 
 **Tab moi "Deployment OS"** - trien khai he dieu hanh qua mang cho may can
