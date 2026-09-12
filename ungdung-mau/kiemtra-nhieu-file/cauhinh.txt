@@ -1,0 +1,4 @@
+Day la file cau hinh mau.
+Neu ban doc duoc dong nay trong ket qua, nghia la lenh cai
+da chay DUNG trong thu muc ung dung (giong Configuration.xml
+cua Office 365 nam canh setup.exe).

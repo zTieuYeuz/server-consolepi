@@ -8,7 +8,7 @@ vi tri file, lenh bao tri, va cac su co da tung gap kem cach sua.
 from .layout import render_page
 
 SECTIONS = [
-    ("kientruc", "🏗️ Kien truc he thong", """
+    ("kientruc", "🏗️ Kiến trúc hệ thống", """
 <pre>Trinh duyet ──> nginx :80 ──┬──> Flask 127.0.0.1:5000    (giao dien)
                             ├──> ttyd 127.0.0.1:8010     (Terminal local)
                             ├──> ttyd 127.0.0.1:8011     (Terminal SSH)
@@ -29,7 +29,7 @@ Moi duong vao deu qua nginx va bi kiem tra dang nhap truoc (<code>auth_request</
 <tr><td><code>/_auth</code></td><td>nginx hoi Flask: phien nay da dang nhap chua</td></tr>
 </table>"""),
 
-    ("dangnhap", "🔑 Dang nhap va bao mat", """
+    ("dangnhap", "🔑 Đăng nhập và bảo mật", """
 <p>Dang nhap bang <strong>tai khoan Linux cua chinh Pi</strong> (vi du
 <code>administrator</code>) qua PAM. Khong co tai khoan rieng, khong luu mat khau
 tren dashboard.</p>
@@ -47,7 +47,7 @@ Muon that chat: them <code>"local_screen_no_login": false</code> vao
 noi bo hoac qua AP ConsolePi thi chap nhan duoc. Neu mo ra internet thi mat khau Linux se
 truyen dang ro - luc do can them HTTPS hoac chi vao qua VPN.</div>"""),
 
-    ("vitri", "📁 Vi tri cac file quan trong", """
+    ("vitri", "📁 Vị trí các file quan trọng", """
 <table>
 <tr><th style="width:340px;">Duong dan</th><th>Noi dung</th></tr>
 <tr><td><code>/opt/console-pi/app.py</code></td><td>Diem khoi dong, chi lap rap cac phan</td></tr>
@@ -74,7 +74,7 @@ truyen dang ro - luc do can them HTTPS hoac chi vao qua VPN.</div>"""),
 </table>
 <div class="msg ok">Cac file <strong>in dam</strong> duoc GIU NGUYEN khi cai de ban moi.</div>"""),
 
-    ("wifi", "📶 Quan ly WiFi va AP", """
+    ("wifi", "📶 Quản lý WiFi và AP", """
 <pre>* Xem WiFi da luu
 sudo cat /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
 
@@ -211,7 +211,7 @@ lai lan cuoi roi tu chay. Buoc "xem truoc khi chay" nam o o soan tren web.</p>
 Neu tat di (<code>tmux set -g mouse off</code>) thi banh xe se bi dich thanh phim Mui ten,
 tuc la <strong>goi lai cac lenh cu</strong> chu khong phai cuon - day la loi that da gap.</p>"""),
 
-    ("console", "🔌 Cong console (RS232)", """
+    ("console", "🔌 Cổng console (RS232)", """
 <pre>* Xem cong dang cam
 ls -l /dev/ttyUSB*
 
@@ -363,7 +363,7 @@ ban phim (HID) va may ban (PAN) <strong>cung ket noi mot luc khong xung dot</str
 <code>br-connection-profile-unavailable</code>: xoa ghep cap o CA HAI phia roi ghep lai.
 Tren Windows nho tat/bat lai Bluetooth de giai phong trang thai ket.</div>"""),
 
-    ("manhinh", "🖥️ Man hinh cam ung", """
+    ("manhinh", "🖥️ Màn hình cảm ứng", """
 <pre>* Xoay man hinh: dung nut trong tab Cai dat (tu chinh ca toa do cham)
 
 * Xoay bang tay
@@ -431,7 +431,7 @@ hien dung mau, va ket qua chay qua Netmiko Config tren web thi luon co mau.</div
 <p>Sua bang mau: <code>/opt/console-pi/scripts/console-bashrc</code> (shell) va
 <code>/opt/console-pi/scripts/grc-cisco.conf</code> (output thiet bi).</p>"""),
 
-    ("porttest", "🔌🌐 Kiem tra toan dien cong mang", """
+    ("porttest", "🔌🌐 Kiểm tra toàn diện cổng mạng", """
 <p>Tab <strong>Network Tools → Kiem tra cong mang</strong> gop TAT CA thu can biet khi
 cam day RJ45 vao switch/router chua biet gi ve no, thanh <strong>MOT nut bam</strong>:
 doc thong tin cong vat ly, gui DHCP, va neu co IP thi kiem tra luon ra Internet + do
@@ -492,7 +492,7 @@ kiem tra o hien truong (mang la, cong ty) roi ve nha moi xem lai duoc, khong can
 xac may gio da test luc con o do.</p>
 """),
 
-    ("suckhoe", "🩺 Suc khoe thiet bi va nut nguon", """
+    ("suckhoe", "🩺 Sức khỏe thiết bị và nút nguồn", """
 <p>Tab <strong>Tong quan</strong> co khoi <em>Suc khoe thiet bi</em>:</p>
 <ul>
   <li><strong>Nguon dien</strong> - doc tu <code>vcgencmd get_throttled</code>. Day la
@@ -620,7 +620,7 @@ thoi gian cho len 900 giay. Mac dinh 64m thi ISO nao cung truot voi loi
 <em>413 Request Entity Too Large</em>.</p>
 """),
 
-    ("camthang", "🔌 Cam thang thiet bi (iLO / iDRAC)", """
+    ("camthang", "🔌 Cắm thẳng thiết bị (iLO / iDRAC)", """
 <p>Tinh huong: ra hien truong, may chu tat lim, chi con cong quan ly iLO. Khong co
 switch, khong co DHCP.</p>
 <p>Tab <strong>Cam thang thiet bi</strong> bien Pi thanh mot mang mini tren cong LAN:</p>
@@ -734,7 +734,7 @@ hotspot dien thoai.</strong> Kiem tra dang di ra bang duong nao:
 * Phai thay "dev wlan0" khi dung hotspot dien thoai</pre></div>
 """),
 
-    ("nhatky", "📋 Nhat ky loi - khi can check lai", """
+    ("nhatky", "📋 Nhật ký lỗi - khi cần xem lại", """
 <p>Tab <strong>Nhat ky loi</strong> tren thanh menu gom 2 phan, khong can nho lenh nao:</p>
 <ul>
 <li><strong>Loi ung dung</strong>: moi loi Python <em>khong duoc bat</em> trong dashboard,
@@ -784,7 +784,7 @@ sudo journalctl -u console-pi-dashboard -p warning --since "-60 days"
 sudo journalctl -u console-pi-tunnel --since "2026-09-03" --until "2026-09-04"</pre>
 """),
 
-    ("tukiemtra", "✅ Tu kiem tra sau khi khoi dong lai", """
+    ("tukiemtra", "✅ Tự kiểm tra sau khi khởi động lại", """
 <p>Chay mot lenh la biet moi thu con dung khong:</p>
 <pre>sudo /opt/console-pi/scripts/selftest.sh</pre>
 <p>No kiem tra: tat ca dich vu, tat ca trang web, tung cong console, va <strong>ba kich
@@ -801,7 +801,7 @@ ban</strong> quan trong nhat:</p>
 <p>Ma thoat 0 = tat ca dat. Chay sau moi lan reboot hoac moi lan cai lai.</p>
 """),
 
-    ("services", "⚙️ Dich vu he thong", """
+    ("services", "⚙️ Dịch vụ hệ thống", """
 <table>
 <tr><th style="width:250px;">Dich vu</th><th>Chuc nang</th></tr>
 <tr><td><code>nginx</code></td><td>Cong trung gian - moi truy cap deu qua day</td></tr>
@@ -831,7 +831,7 @@ sudo nginx -t
 sudo systemctl restart console-pi-dashboard
 sudo systemctl reload nginx</pre>"""),
 
-    ("update", "⬆️ Cap nhat / cai lai", """
+    ("update", "⬆️ Cập nhật / cài lại", """
 <pre>* Cai lai hoac cap nhat (chay lai duoc nhieu lan, khong mat cau hinh)
 curl -fsSL https://raw.githubusercontent.com/USER/consolepi-toolkit/main/install.sh | sudo bash
 
@@ -848,7 +848,7 @@ sudo /opt/console-pi/uninstall.sh --purge      (xoa sach)</pre>
 WiFi da luu, ten cong console, thu vien lenh, rule IF/THEN, cau hinh AP,
 huong man hinh.</div>"""),
 
-    ("congcumoi", "🧰 5 cong cu mang moi (v0.4.x)", """
+    ("congcumoi", "🧰 5 công cụ mạng mới (v0.4.x)", """
 <h3>📏 MTU Discovery</h3>
 <p>Tim MTU that cua duong truyen bang ping "khong phan manh" (DF), tang/giam kich thuoc theo
 kieu nhi phan (~10-14 lan thu). Neu mot router giua duong tra ve ICMP "Frag needed" kem MTU
@@ -857,7 +857,7 @@ that thi dung ngay ket qua do - dang tin cay nhat, khong can do them.</p>
 treo/cham - dau hieu kinh dien cua MTU bi giam giua duong (PPPoE thuong con 1492, VPN/GRE/IPsec
 thuong con 1400-1436).</p>
 
-<h3>🌐 Kiem tra DNS</h3>
+<h3>🌐 Kiểm tra DNS</h3>
 <p>Truy van 1 ten mien toi DNS he thong hien tai + 3 DNS cong khai (Google, Cloudflare, Quad9)
 cung luc, so sanh ket qua. Neu DNS he thong tra ve dia chi khac han cac DNS cong khai, day la
 dau hieu manh cua DNS bi can thiep (ISP chen quang cao, mang cong ty loc, captive portal).</p>
@@ -865,7 +865,7 @@ dau hieu manh cua DNS bi can thiep (ISP chen quang cao, mang cong ty loc, captiv
 tra ve IP khac nhau tuy vi tri dia ly cua tung DNS server - do la BINH THUONG, khong phai dau
 hieu xau. Dung mot domain rieng/it dung CDN de ket luan chac chan hon.</p>
 
-<h3>🔒 Kiem tra chung chi TLS</h3>
+<h3>🔒 Kiểm tra chứng chỉ TLS</h3>
 <p>Xem chi tiet chung chi HTTPS cua giao dien quan tri switch/router/iLO/iDRAC. Cac thiet bi nay
 GAN NHU LUON dung chung chi tu ky - do la BINH THUONG. Cong cu nay khong phai de bao "sai", ma
 de thay ro dang tin ai, va phat hien dung luc chung chi da het han that su.</p>
@@ -873,14 +873,14 @@ de thay ro dang tin ai, va phat hien dung luc chung chi da het han that su.</p>
 xac thuc. Moi truong hop khac (tu ky, het han, sai ten) deu hien ro ly do, khong bao gio im
 lang coi la an toan.</p>
 
-<h3>🗺️ So do mang 1 doan</h3>
+<h3>🗺️ Sơ đồ mạng 1 đoạn</h3>
 <p>Ghep ARP Scan + LLDP/CDP Discovery co san thanh 1 so do: Pi → switch dang cam vao (neu co
 quang ba LLDP/CDP) → cac thiet bi tren cung doan mang. <strong>Gioi han that:</strong> chi ve
 duoc 1 doan mang noi truc tiep vao cong dang quet - khong ve duoc nhieu switch noi tiep qua
 nhieu hop (can SNMP walk lien switch, ngoai pham vi cong cu nay). Neu khong phat hien switch
 qua LLDP, so do noi ro dieu do thay vi ve gia.</p>
 
-<h3>📤 May chu TFTP</h3>
+<h3>📤 Máy chủ TFTP</h3>
 <p>Bat/tat may chu TFTP de dung lenh Cisco kinh dien:</p>
 <pre>copy running-config tftp://&lt;IP-cua-Pi&gt;/backup.cfg   (sao luu cau hinh len Pi)
 copy tftp://&lt;IP-cua-Pi&gt;/firmware.bin flash:            (nap firmware tu Pi xuong switch)</pre>
@@ -1260,6 +1260,6 @@ def register_docs(app):
         {DOCS_JS}"""
 
         return render_page(body, active="/docs", title="Tai lieu",
-                           subtitle="Kien truc, vi tri file, lenh bao tri, su co thuong gap")
+                           subtitle="Kiến trúc, vị trí file, lệnh bảo trì, sự cố thường gặp")
 
     return app

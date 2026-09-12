@@ -54,7 +54,7 @@ SOAN_JS = """
 
   document.getElementById("nut_chep").addEventListener("click", function () {
     var i = chon.value;
-    if (i === "") { noi("Chon 1 tap lenh trong danh sach truoc.", "warn"); return; }
+    if (i === "") { noi("Chọn 1 tập lệnh trong danh sách trước.", "warn"); return; }
     o.value = THU_VIEN[i].lenh;
     luu();
     noi("Da chep \\"" + THU_VIEN[i].ten + "\\" vao o. Sua lai IP/ten cho dung roi dan.", "info");
@@ -67,7 +67,7 @@ SOAN_JS = """
     try {
       o.focus(); o.select();
       var ok = document.execCommand("copy");
-      noi(ok ? "Da copy noi dung o lenh."
+      noi(ok ? "Đã copy nội dung ô lệnh."
              : "Trinh duyet khong cho copy tu dong - noi dung da duoc boi den, copy tay giup em.",
           ok ? "ok" : "warn");
     } catch (e) {
@@ -78,7 +78,7 @@ SOAN_JS = """
   document.getElementById("nut_copy").addEventListener("click", function () {
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(o.value).then(
-        function () { noi("Da copy noi dung o lenh.", "ok"); },
+        function () { noi("Đã copy nội dung ô lệnh.", "ok"); },
         function () { copyCachCu(); });
     } else { copyCachCu(); }
   });
@@ -86,7 +86,7 @@ SOAN_JS = """
   document.getElementById("nut_dan_cb").addEventListener("click", function () {
     if (navigator.clipboard && navigator.clipboard.readText && window.isSecureContext) {
       navigator.clipboard.readText().then(function (t) {
-        o.value = t; luu(); noi("Da dan noi dung tu clipboard vao o.", "ok");
+        o.value = t; luu(); noi("Đã dán nội dung từ clipboard vào ô.", "ok");
       }, function () {
         noi("Trinh duyet chan doc clipboard. Cham vao o roi dan tay, hoac dung ban phim ao.", "warn");
       });
@@ -97,25 +97,25 @@ SOAN_JS = """
   });
 
   document.getElementById("nut_xoa").addEventListener("click", function () {
-    o.value = ""; luu(); noi("Da xoa o lenh.", "info");
+    o.value = ""; luu(); noi("Đã xóa ô lệnh.", "info");
   });
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     var nut = document.getElementById("nut_dan");
     var chuCu = nut.innerHTML;
-    nut.disabled = true; nut.innerHTML = "Dang dan...";
-    noi("Dang dan vao terminal, cho thiet bi phan hoi...", "info");
+    nut.disabled = true; nut.innerHTML = "Đang dán...";
+    noi("Đang dán vào terminal, chờ thiết bị phản hồi...", "info");
     fetch(form.action, {
       method: "POST", body: new FormData(form),
       headers: { "X-Console-Pi": "fetch" }, cache: "no-store"
     })
       .then(function (r) {
-        if (!r.ok) throw new Error("Server tra ve HTTP " + r.status);
+        if (!r.ok) throw new Error("Server trả về HTTP " + r.status);
         return r.json();
       })
       .then(function (d) { noi(d.msg, d.ok ? "ok" : "err"); })
-      .catch(function (err) { noi("Khong lien lac duoc voi server: " + err.message, "err"); })
+      .catch(function (err) { noi("Không liên lạc được với server: " + err.message, "err"); })
       .finally(function () { nut.disabled = false; nut.innerHTML = chuCu; });
   });
 })();
@@ -224,12 +224,12 @@ def khoi_copy_terminal():
     """
     return f"""
     <div class="row" style="margin-bottom:10px;">
-      <button type="button" class="gray" id="nut_copy_chon">📋 Copy vung da chon</button>
+      <button type="button" class="gray" id="nut_copy_chon">📋 Copy vùng đã chọn</button>
       <button type="button" class="gray" id="nut_copy_all">📄 Copy ca man hinh</button>
     </div>
     <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
-      Boi den bang chuot phai <strong>giu phim Shift</strong> (khong giu thi tmux
-      giu chuot de cuon man hinh). Khong co ban phim thi dung nut
+      Bôi đen bằng chuột phải <strong>giu phim Shift</strong> (khong giu thi tmux
+      giữ chuột để cuộn màn hình). Không có bàn phím thì dùng nút
       <strong>Copy ca man hinh</strong>.
     </p>
     <div id="bao_copyterm" class="msg" style="display:none;"></div>
@@ -283,9 +283,9 @@ def khoi_soan_lenh(url_dan, khoa_luu, prefill=""):
       </div>
       <div id="bao_dan" class="msg" style="display:none;"></div>
       <p style="color:#8b93a1;font-size:13px;margin:9px 0 0;">
-        Nut Dan tu chon dung cach: dang o <strong>shell cua Pi</strong> thi dan ca khoi va
-        <strong>khong dong nao chay</strong>; dang <strong>SSH/console vao thiet bi</strong> thi
-        gui tung dong, cho thiet bi in xong moi gui tiep (khoi roi mat chu), dong CUOI de anh
+        Nút Dán tự chọn đúng cách: đang ở <strong>shell cua Pi</strong> thì dán cả khối và
+        <strong>không dòng nào chạy</strong>; dang <strong>SSH/console vào thiết bị</strong> thi
+        gửi từng dòng, chờ thiết bị in xong mới gửi tiếp (khỏi rơi mất chữ), dòng CUỐI để anh
         tu bam Enter.
       </p>
     </form>

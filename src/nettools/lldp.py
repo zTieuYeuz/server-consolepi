@@ -87,9 +87,9 @@ def get_lldp_neighbors():
             capture_output=True, text=True, timeout=15
         )
     except FileNotFoundError:
-        return {"ok": False, "error": "Chua cai lldpd/lldpcli.", "raw": None, "neighbors": []}
+        return {"ok": False, "error": "Chưa cài lldpd/lldpcli.", "raw": None, "neighbors": []}
     except subprocess.TimeoutExpired:
-        return {"ok": False, "error": "Qua thoi gian cho lldpcli.", "raw": None, "neighbors": []}
+        return {"ok": False, "error": "Quá thời gian chờ lldpcli.", "raw": None, "neighbors": []}
 
     if result.returncode != 0:
         return {"ok": False, "error": result.stderr.strip() or "lldpcli loi.", "raw": None, "neighbors": []}
@@ -97,7 +97,7 @@ def get_lldp_neighbors():
     try:
         raw = json.loads(result.stdout or "{}")
     except json.JSONDecodeError:
-        return {"ok": False, "error": "Khong doc duoc JSON tu lldpcli.", "raw": result.stdout, "neighbors": []}
+        return {"ok": False, "error": "Không đọc được JSON từ lldpcli.", "raw": result.stdout, "neighbors": []}
 
     neighbors = []
     lldp_section = raw.get("lldp")
@@ -217,24 +217,24 @@ LLDP_TEMPLATE = """
     <p><a class="btn" href="/nettools/lldp">🔄 Quet lai</a></p>
 
     {% if result.error %}
-    <div class="err">Loi: {{ result.error }}</div>
+    <div class="err">Lỗi: {{ result.error }}</div>
     {% else %}
         {% if result.neighbors %}
             {% for n in result.neighbors %}
             <div class="card">
                 <h2>{{ n.remote_name }}<span class="badge-proto">{{ n.protocol }}</span></h2>
-                <p class="via-if">Thay qua cong <strong>{{ n.iface }}</strong> cua Pi
+                <p class="via-if">Thấy qua cổng <strong>{{ n.iface }}</strong> cua Pi
                     {% if n.age %}&middot; da thay {{ n.age }}{% endif %}</p>
                 <dl class="grid">
-                    <dt>Dia chi quan ly (Mgmt IP)</dt>
+                    <dt>Địa chỉ quản lý (Mgmt IP)</dt>
                     <dd>
                         {% if n.mgmt_ip %}
                             <code>{{ n.mgmt_ip }}</code>
-                            &nbsp;<a href="http://{{ n.mgmt_ip }}" target="_blank" rel="noopener">Mo web ↗</a>
-                        {% else %}<span class="none-val">Thiet bi khong quang ba IP quan ly</span>{% endif %}
+                            &nbsp;<a href="http://{{ n.mgmt_ip }}" target="_blank" rel="noopener">Mở web ↗</a>
+                        {% else %}<span class="none-val">Thiết bị không quảng bá IP quản lý</span>{% endif %}
                     </dd>
 
-                    <dt>Cong tren thiet bi do</dt>
+                    <dt>Cổng trên thiết bị đó</dt>
                     <dd>
                         {% if n.port_descr %}<strong>{{ n.port_descr }}</strong>{% endif %}
                         {% if n.port_id and n.port_id != n.port_descr %}
@@ -246,29 +246,29 @@ LLDP_TEMPLATE = """
                     <dt>Chassis ID</dt>
                     <dd>{{ n.chassis_id or '<span class="none-val">-</span>'|safe }}</dd>
 
-                    <dt>Nang luc thiet bi</dt>
+                    <dt>Năng lực thiết bị</dt>
                     <dd>
                         {% if n.capabilities %}
                         <div class="caps">
                             {% for c in n.capabilities %}<span class="cap-chip">{{ c }}</span>{% endfor %}
                         </div>
-                        {% else %}<span class="none-val">Khong quang ba</span>{% endif %}
+                        {% else %}<span class="none-val">Không quảng bá</span>{% endif %}
                     </dd>
 
                     <dt>PoE (LLDP-MED)</dt>
-                    <dd>{{ n.poe_info or '<span class="none-val">Khong co du lieu</span>'|safe }}</dd>
+                    <dd>{{ n.poe_info or '<span class="none-val">Không có dữ liệu</span>'|safe }}</dd>
 
                     {% if n.remote_descr %}
-                    <dt>Mo ta he thong</dt>
+                    <dt>Mô tả hệ thống</dt>
                     <dd><div class="descr-box">{{ n.remote_descr }}</div></dd>
                     {% endif %}
                 </dl>
             </div>
             {% endfor %}
         {% else %}
-        <p style="margin-top:16px;">Chua thay thiet bi lang gieng nao qua LLDP/CDP. Co the do:</p>
+        <p style="margin-top:16px;">Chưa thấy thiết bị láng giềng nào qua LLDP/CDP. Có thể do:</p>
         <ul>
-            <li>Switch dang cam khong bat LLDP/CDP</li>
+            <li>Switch đang cắm không bật LLDP/CDP</li>
             <li>Vua cam day, can doi 30-60s de trao doi TLV dau tien</li>
             <li>lldpd chua bat che do tuong thich CDP (kiem tra /etc/default/lldpd)</li>
         </ul>

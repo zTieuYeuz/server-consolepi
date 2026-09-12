@@ -50,7 +50,7 @@ def test_connection(host, device_type, username, password, test_cmd, port=22, ti
         from netmiko import ConnectHandler
         from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
     except ImportError as e:
-        return {"ok": False, "error": f"Loi import netmiko: {e}", "output": ""}
+        return {"ok": False, "error": f"Lỗi import netmiko: {e}", "output": ""}
 
     device = {
         "device_type": device_type, "host": host, "username": username,
@@ -62,10 +62,10 @@ def test_connection(host, device_type, username, password, test_cmd, port=22, ti
         conn.disconnect()
     except NetmikoAuthenticationException:
         _audit(host, device_type, "test", [test_cmd], "AUTH FAILED")
-        return {"ok": False, "error": "Sai username/password hoac bi tu choi dang nhap.", "output": ""}
+        return {"ok": False, "error": "Sai username/password hoặc bị từ chối đăng nhập.", "output": ""}
     except NetmikoTimeoutException:
         _audit(host, device_type, "test", [test_cmd], "TIMEOUT")
-        return {"ok": False, "error": f"Khong ket noi duoc toi {host} (timeout).", "output": ""}
+        return {"ok": False, "error": f"Không kết nối được tới {host} (timeout).", "output": ""}
     except Exception as e:
         _audit(host, device_type, "test", [test_cmd], f"ERROR: {e}")
         return {"ok": False, "error": str(e), "output": ""}
@@ -81,7 +81,7 @@ def run_config(host, device_type, username, password, commands, save=False, port
         from netmiko import ConnectHandler
         from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
     except ImportError as e:
-        return {"ok": False, "error": f"Loi import netmiko: {e}", "output": "", "saved": False}
+        return {"ok": False, "error": f"Lỗi import netmiko: {e}", "output": "", "saved": False}
 
     device = {
         "device_type": device_type, "host": host, "username": username,
@@ -98,10 +98,10 @@ def run_config(host, device_type, username, password, commands, save=False, port
         conn.disconnect()
     except NetmikoAuthenticationException:
         _audit(host, device_type, "run", commands, "AUTH FAILED")
-        return {"ok": False, "error": "Sai username/password hoac bi tu choi dang nhap.", "output": "", "saved": False}
+        return {"ok": False, "error": "Sai username/password hoặc bị từ chối đăng nhập.", "output": "", "saved": False}
     except NetmikoTimeoutException:
         _audit(host, device_type, "run", commands, "TIMEOUT")
-        return {"ok": False, "error": f"Khong ket noi duoc toi {host} (timeout).", "output": "", "saved": False}
+        return {"ok": False, "error": f"Không kết nối được tới {host} (timeout).", "output": "", "saved": False}
     except Exception as e:
         _audit(host, device_type, "run", commands, f"ERROR: {e}")
         return {"ok": False, "error": str(e), "output": "", "saved": False}
@@ -141,13 +141,13 @@ FORM_TEMPLATE = """
     <h1>⚙️ Netmiko Config</h1>
     <p><a href="/nettools">← Network Tools</a> &nbsp;|&nbsp;
     {% if mode == 'test' %}
-    <a href="/nettools/netmiko">Sang form Cau hinh (ghi)</a>
+    <a href="/nettools/netmiko">Sang form Cấu hình (ghi)</a>
     {% else %}
     <a href="/nettools/netmiko/test-form">🔍 Sang form Test ket noi (chi doc)</a>
     {% endif %}
     </p>
     <div class="warn">⚠️ Cong cu nay GHI thay doi len thiet bi that qua SSH.
-    Luon <strong>Test ket noi</strong> truoc, roi <strong>Xem truoc lenh</strong>,
+    Luon <strong>Test kết nối</strong> truoc, roi <strong>Xem trước lệnh</strong>,
     cuoi cung moi <strong>Xac nhan va chay</strong>. Khong tu dong luu vinh vien
     (write memory) tru khi ban tich rieng.</div>
 

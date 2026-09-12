@@ -78,7 +78,7 @@ PING_TEMPLATE = """
             <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
             <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
         </select>
-        <button type="submit" style="margin-left:10px;">Chay ca 2</button>
+        <button type="submit" style="margin-left:10px;">Chạy cả 2</button>
     </form>
 
     {% if ran %}

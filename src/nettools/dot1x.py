@@ -55,9 +55,9 @@ def run_eapol_test(radius_ip, radius_port, radius_secret, eap, identity, passwor
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 10)
         except FileNotFoundError:
-            return {"ok": False, "error": "Chua cai eapoltest (thieu eapol_test).", "success": None, "output": ""}
+            return {"ok": False, "error": "Chưa cài eapoltest (thiếu eapol_test).", "success": None, "output": ""}
         except subprocess.TimeoutExpired:
-            return {"ok": False, "error": "Qua thoi gian cho phan hoi RADIUS.", "success": None, "output": ""}
+            return {"ok": False, "error": "Quá thời gian chờ phản hồi RADIUS.", "success": None, "output": ""}
     finally:
         try:
             os.unlink(conf_path)
@@ -103,8 +103,8 @@ DOT1X_TEMPLATE = """
 <body>
     <h1>🔐 802.1X Testing</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Dung <code>eapol_test</code> - chi noi UDP truc tiep toi RADIUS server,
-    <strong>KHONG dung den eth0/wlan0</strong>, nen an toan khong lam gian doan ket noi hien tai.
+    <p class="hint">Dùng <code>eapol_test</code> - chi noi UDP truc tiep toi RADIUS server,
+    <strong>KHÔNG đụng đến eth0/wlan0</strong>, nen an toan khong lam gian doan ket noi hien tai.
     Neu khong co RADIUS server that, cong cu van chay duoc nhung se bao "khong ket luan duoc"
     thay vi thanh cong/that bai ro rang.</p>
 
@@ -124,7 +124,7 @@ DOT1X_TEMPLATE = """
         </select>
 
         <div id="phase2box">
-            <label>Phase 2 Auth (chi ap dung PEAP/TTLS):</label>
+            <label>Phase 2 Auth (chỉ áp dụng PEAP/TTLS):</label>
             <select name="phase2">
                 {% for p in phase2_methods %}
                 <option value="{{ p }}" {{ 'selected' if p==phase2 else '' }}>{{ p }}</option>

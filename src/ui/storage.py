@@ -124,15 +124,15 @@ def save_upload(fileobj):
     d, _ = storage_dir()
     name = safe_name(getattr(fileobj, "filename", ""))
     if not name:
-        return False, "Chua chon file."
+        return False, "Chưa chọn file."
     if not ext_ok(name):
-        return False, (f"Khong nhan duoi file nay. Cho phep: "
+        return False, (f"Không nhận đuôi file này. Cho phép: "
                        f"{', '.join(sorted(ALLOWED_EXT))}")
 
     _, _, free_gb, _ = disk_stats(d)
     if free_gb < MIN_FREE_GB:
-        return False, (f"Chi con {free_gb} GB trong - can it nhat {MIN_FREE_GB} GB. "
-                       "Xoa bot file hoac cam USB.")
+        return False, (f"Chỉ còn {free_gb} GB trống - cần ít nhất {MIN_FREE_GB} GB. "
+                       "Xóa bớt file hoặc cắm USB.")
 
     dest = os.path.join(d, name)
     if os.path.exists(dest):
@@ -155,14 +155,14 @@ def save_upload(fileobj):
                 # Kiem tra moi 200MB, khong phai moi khoi (goi statvfs ton kem)
                 if written % (200 * 1024 * 1024) < 1024 * 1024:
                     if disk_stats(d)[2] < 1:
-                        raise OSError("Het dung luong trong luc dang ghi")
+                        raise OSError("Hết dung lượng trong lúc đang ghi")
         os.replace(tmp, dest)
     except Exception as e:
         try:
             os.remove(tmp)
         except OSError:
             pass
-        return False, f"Loi khi luu: {e}"
+        return False, f"Lỗi khi lưu: {e}"
 
     try:
         with open(dest + ".sha256", "w") as f:
@@ -178,16 +178,16 @@ def delete_file(name):
     p = os.path.join(d, name)
     # Kiem tra lai sau khi giai duong dan that - chan moi kieu vuot thu muc
     if not name or os.path.realpath(p) != os.path.join(os.path.realpath(d), name):
-        return False, "Ten file khong hop le."
+        return False, "Tên file không hợp lệ."
     if not os.path.isfile(p):
-        return False, "Khong tim thay file."
+        return False, "Không tìm thấy file."
     try:
         os.remove(p)
         if os.path.exists(p + ".sha256"):
             os.remove(p + ".sha256")
     except OSError as e:
-        return False, f"Khong xoa duoc: {e}"
-    return True, f"Da xoa {name}."
+        return False, f"Không xóa được: {e}"
+    return True, f"Đã xóa {name}."
 
 
 # =============================================================== giao dien web
@@ -203,9 +203,9 @@ def register_storage(app):
         msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
 
         bar_color = "#4CAF50" if pct < 75 else ("#ffb74d" if pct < 90 else "#ff6b6b")
-        noi_luu = (f"USB dang cam &mdash; <code>{_esc(d)}</code>" if on_usb
-                   else f"The nho cua Pi &mdash; <code>{_esc(d)}</code>"
-                        " <span style='color:#8b93a1;'>(cam USB vao se tu chuyen sang ghi ra USB)</span>")
+        noi_luu = (f"USB đang cắm &mdash; <code>{_esc(d)}</code>" if on_usb
+                   else f"Thẻ nhớ của Pi &mdash; <code>{_esc(d)}</code>"
+                        " <span style='color:#8b93a1;'>(cắm USB vào sẽ tự chuyển sang ghi ra USB)</span>")
 
         rows = ""
         for f in files:
@@ -233,7 +233,7 @@ def register_storage(app):
           <div class="row" style="margin-top:13px;">
             <button type="submit" data-busy="Dang tai len, dung dong trang...">⬆ Tai len</button>
             <span style="color:#8b93a1;font-size:13px;margin-left:10px;">
-              File lon mat vai phut. Trang se dung yen cho den khi xong.</span>
+              File lớn mất vài phút. Trang sẽ đứng yên cho đến khi xong.</span>
           </div>
         </form>""" if du_cho else f"""
         <div class="msg err">Chi con {free} GB trong. Xoa bot file hoac cam USB
@@ -242,7 +242,7 @@ def register_storage(app):
         body = f"""
         {msg_html}
         <div class="card">
-          <h3>Noi dang luu</h3>
+          <h3>Nơi đang lưu</h3>
           <p style="margin:0 0 11px;">{noi_luu}</p>
           <div style="background:#20242c;border-radius:5px;height:19px;overflow:hidden;max-width:520px;">
             <div style="background:{bar_color};height:100%;width:{pct}%;"></div>
@@ -254,13 +254,13 @@ def register_storage(app):
         <h2>Tai file len</h2>
         <div class="card">{upload_html}</div>
 
-        <h2>File dang co ({len(files)})</h2>
+        <h2>File đang có ({len(files)})</h2>
         <table>
           <tr><th>Ten file</th><th style="width:110px;">Kich thuoc</th>
               <th style="width:140px;">Ngay luu</th><th style="width:170px;">Thao tac</th></tr>
           {rows}
         </table>
-        {'<p style="color:#8b93a1;">Chua co file nao. Tai bo cai OS, firmware switch, hay file cau hinh len de mang theo dung khi khong co internet.</p>' if not files else ''}"""
+        {'<p style="color:#8b93a1;">Chưa có file nào. Tải bộ cài OS, firmware switch, hay file cấu hình lên để mang theo dùng khi không có internet.</p>' if not files else ''}"""
 
         return render_page(body, active="/storage", title="Kho file",
                            subtitle="Mang theo bo cai OS, firmware, cau hinh")
@@ -273,7 +273,7 @@ def register_storage(app):
     def storage_upload():
         f = request.files.get("file")
         if not f:
-            return page(msg="Chua chon file.", ok=False)
+            return page(msg="Chưa chọn file.", ok=False)
         ok_u, msg = save_upload(f)
         return page(msg=msg, ok=ok_u)
 

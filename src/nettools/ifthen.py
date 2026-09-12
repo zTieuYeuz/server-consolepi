@@ -102,13 +102,13 @@ def import_rules_encrypted(passphrase, blob):
     try:
         data = Fernet(key).decrypt(blob)
     except InvalidToken:
-        return False, "Sai passphrase hoac file khong hop le."
+        return False, "Sai passphrase hoặc file không hợp lệ."
     try:
         rules = json.loads(data)
     except json.JSONDecodeError:
-        return False, "Noi dung sau giai ma khong phai JSON hop le."
+        return False, "Nội dung sau giải mã không phải JSON hợp lệ."
     save_rules(rules)
-    return True, f"Da nhap {len(rules)} rule."
+    return True, f"Đã nhập {len(rules)} rule."
 
 
 IFTHEN_TEMPLATE = """
@@ -153,7 +153,7 @@ IFTHEN_TEMPLATE = """
 
     <h3>▶ Quet va doi chieu rule</h3>
     <form method="POST" action="/nettools/ifthen/evaluate">
-        <button type="submit">Quet LLDP va kiem tra rule khop</button>
+        <button type="submit">Quét LLDP và kiểm tra rule khớp</button>
     </form>
 
     {% if suggestions is not none %}
@@ -164,16 +164,16 @@ IFTHEN_TEMPLATE = """
             <strong>{{ s.neighbor.remote_name }}</strong> ({{ s.neighbor.iface }}):</p>
             <pre>{{ s.rule.commands | join('\\n') }}</pre>
             <form method="GET" action="/nettools/netmiko" style="display:inline;">
-                <button type="submit">Mo Netmiko de xac nhan chay lenh nay</button>
+                <button type="submit">Mở Netmiko để xác nhận chạy lệnh này</button>
             </form>
         </div>
         {% endfor %}
-        {% else %}<p>Khong co rule nao khop voi thiet bi da phat hien.</p>{% endif %}
+        {% else %}<p>Không có rule nào khớp với thiết bị đã phát hiện.</p>{% endif %}
     {% endif %}
 
     <h3>📋 Danh sach rule da luu</h3>
     <table>
-        <tr><th>Ten</th><th>Dieu kien</th><th>Device type</th><th></th></tr>
+        <tr><th>Ten</th><th>Điều kiện</th><th>Device type</th><th></th></tr>
         {% for i, r in rules %}
         <tr>
             <td>{{ r.name }}</td>
@@ -189,13 +189,13 @@ IFTHEN_TEMPLATE = """
         </tr>
         {% endfor %}
     </table>
-    {% if not rules %}<p>Chua co rule nao.</p>{% endif %}
+    {% if not rules %}<p>Chưa có rule nào.</p>{% endif %}
 
     <h3>➕ Them rule moi</h3>
     <form method="POST" action="/nettools/ifthen/add">
-        <label>Ten rule:</label>
+        <label>Tên rule:</label>
         <input type="text" name="name" required placeholder="vd Switch tang 3">
-        <label>Truong LLDP can khop:</label>
+        <label>Trường LLDP cần khớp:</label>
         <select name="field">
             <option value="remote_name">remote_name (hostname switch)</option>
             <option value="mgmt_ip">mgmt_ip</option>
@@ -212,7 +212,7 @@ IFTHEN_TEMPLATE = """
             <option value="juniper_junos">juniper_junos</option>
             <option value="mikrotik_routeros">mikrotik_routeros</option>
         </select>
-        <label>Danh sach lenh (moi dong 1 lenh):</label>
+        <label>Danh sách lệnh (mỗi dòng 1 lệnh):</label>
         <textarea name="commands" placeholder="interface GigabitEthernet0/1&#10;switchport access vlan 10"></textarea>
         <button type="submit">Luu rule</button>
     </form>

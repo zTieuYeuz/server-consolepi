@@ -38,7 +38,7 @@ def _wlr(args, timeout=10):
         r = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
         return r.returncode == 0, (r.stdout + r.stderr)
     except FileNotFoundError:
-        return False, "Chua cai wlr-randr."
+        return False, "Chưa cài wlr-randr."
     except Exception as e:
         return False, str(e)
 
@@ -62,11 +62,11 @@ def get_display_info():
 def set_rotation(value):
     ok_info, name, _, _ = get_display_info()
     if not ok_info:
-        return False, ("Khong tim thay man hinh dang hoat dong. "
-                       "Thiet bi nay co the khong gan man hinh, hoac kiosk chua chay.")
+        return False, ("Không tìm thấy màn hình đang hoạt động. "
+                       "Thiết bị này có thể không gắn màn hình, hoặc kiosk chưa chạy.")
     ok, out = _wlr(["--output", name, "--transform", value])
     if not ok:
-        return False, f"Xoay that bai: {out.strip()[:200]}"
+        return False, f"Xoay thất bại: {out.strip()[:200]}"
 
     cfg = load_config()
     cfg["screen_rotation"] = value
@@ -88,7 +88,7 @@ def set_rotation(value):
     extra = (" Toa do cam ung da xoay theo, kiosk dang khoi dong lai."
              if touch_ok else
              " CANH BAO: khong cap nhat duoc toa do cam ung, cham se khong trung.")
-    return True, f"Da xoay man hinh sang {value}.{extra}"
+    return True, f"Đã xoay màn hình sang {value}.{extra}"
 
 
 
@@ -114,7 +114,7 @@ def sync_touch_matrix(rotation):
     rule = (
         "# Console Pi - tu sinh khi doi huong man hinh trong tab Cai dat.\n"
         "# cage/wlroots khong tu xoay toa do cam ung nen phai chinh o day.\n"
-        f"# Huong hien tai: {rotation}\n"
+        f"# Hướng hiện tại: {rotation}\n"
         f'ENV{{ID_INPUT_TOUCHSCREEN}}=="1", ENV{{LIBINPUT_CALIBRATION_MATRIX}}="{matrix}"\n'
     )
     try:
@@ -141,7 +141,7 @@ def register_settings(app):
     def settings_rotate():
         val = request.form.get("rotation", "normal")
         if val not in [r[0] for r in ROTATIONS]:
-            return _render_settings(msg="Gia tri xoay khong hop le.", ok=False)
+            return _render_settings(msg="Giá trị xoay không hợp lệ.", ok=False)
         ok, msg = set_rotation(val)
         return _render_settings(msg=msg, ok=ok)
 
@@ -153,7 +153,7 @@ def register_settings(app):
         save_config(cfg)
         for svc in ("console-pi-term-local", "console-pi-term-ssh"):
             subprocess.run(["systemctl", "restart", svc], capture_output=True, timeout=20)
-        return _render_settings(msg="Da doi mat khau terminal va khoi dong lai dich vu.", ok=True)
+        return _render_settings(msg="Đã đổi mật khẩu terminal và khởi động lại dịch vụ.", ok=True)
 
     return app
 
@@ -177,13 +177,13 @@ def _render_settings(msg="", ok=True):
           <h3>Xoay man hinh</h3>
           <table style="max-width:430px;margin-bottom:12px;">
             <tr><th style="width:150px;">Man hinh</th><td><code>{name}</code></td></tr>
-            <tr><th>Huong hien tai</th><td><code>{transform}</code></td></tr>
-            <tr><th>Da luu cho lan sau</th><td><code>{saved}</code></td></tr>
+            <tr><th>Hướng hiện tại</th><td><code>{transform}</code></td></tr>
+            <tr><th>Đã lưu cho lần sau</th><td><code>{saved}</code></td></tr>
           </table>
           <div class="row">{buttons}</div>
           <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
-            Ap dung ngay lap tuc, khong can khoi dong lai. Lua chon duoc ghi nho
-            va tu ap dung lai moi lan Pi khoi dong.
+            Áp dụng ngay lập tức, không cần khởi động lại. Lựa chọn được ghi nhớ
+            và tự áp dụng lại mỗi lần Pi khởi động.
           </p>
         </div>"""
     else:
@@ -208,26 +208,26 @@ def _render_settings(msg="", ok=True):
       </table>
       <form method="POST" action="/settings/regen-term-pass"
             onsubmit="return confirm('Doi mat khau terminal? Trinh duyet se hoi dang nhap lai.');">
-        <button type="submit" class="gray">🔄 Doi mat khau moi</button>
+        <button type="submit" class="gray">🔄 Đổi mật khẩu mới</button>
       </form>
       <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
-        Dung cho 2 khung terminal (Terminal local va SSH). Luu tai
+        Dùng cho 2 khung terminal (Terminal tại chỗ và SSH). Lưu tại
         <code>/opt/console-pi/config.json</code>.
       </p>
     </div>
 
     <div class="card">
-      <h3>Thong tin he thong</h3>
+      <h3>Thông tin hệ thống</h3>
       <table>
         <tr><th style="width:180px;">Phien ban toolkit</th><td><code>{_version()}</code></td></tr>
-        <tr><th>Thu muc cai dat</th><td><code>/opt/console-pi</code></td></tr>
+        <tr><th>Thư mục cài đặt</th><td><code>/opt/console-pi</code></td></tr>
         <tr><th>File cau hinh</th><td><code>/opt/console-pi/config.json</code></td></tr>
         <tr><th>Thu vien lenh</th><td><code>/opt/console-pi/command-library.json</code></td></tr>
       </table>
     </div>"""
 
     return render_page(body, active="/settings", title="Cai dat",
-                       subtitle="Man hinh, mat khau terminal, thong tin he thong")
+                       subtitle="Màn hình, mật khẩu terminal, thông tin hệ thống")
 
 
 def _version():

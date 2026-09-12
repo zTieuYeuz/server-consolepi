@@ -25,7 +25,7 @@ def run_l2_scan(iface="eth0", duration=15):
         from scapy.all import sniff, STP, Dot1Q
         from scapy.contrib.lacp import LACP
     except ImportError as e:
-        return {"ok": False, "error": f"Loi import scapy: {e}", "stp": [], "lacp": [], "vlans": {}}
+        return {"ok": False, "error": f"Lỗi import scapy: {e}", "stp": [], "lacp": [], "vlans": {}}
 
     stp_seen = {}
     lacp_seen = {}
@@ -65,9 +65,9 @@ def run_l2_scan(iface="eth0", duration=15):
     try:
         sniff(iface=iface, timeout=duration, prn=handler, store=False)
     except PermissionError:
-        return {"ok": False, "error": "Khong du quyen sniff (can chay duoi quyen root).", "stp": [], "lacp": [], "vlans": {}}
+        return {"ok": False, "error": "Không đủ quyền sniff (cần chạy dưới quyền root).", "stp": [], "lacp": [], "vlans": {}}
     except OSError as e:
-        return {"ok": False, "error": f"Loi khi sniff: {e}", "stp": [], "lacp": [], "vlans": {}}
+        return {"ok": False, "error": f"Lỗi khi sniff: {e}", "stp": [], "lacp": [], "vlans": {}}
 
     return {
         "ok": True, "error": None,
@@ -102,7 +102,7 @@ L2_TEMPLATE = """
 <body>
     <h1>🌲 STP / LACP / VLAN Scan</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Bat goi tin thu dong trong khoang thoi gian da chon, tren <strong>eth0</strong>
+    <p class="hint">Bắt gói tin thụ động trong khoảng thời gian đã chọn, trên <strong>eth0</strong>
     VLAN offload da duoc xac nhan tat san nen tag 802.1Q se tu hien ra neu co
     traffic tagged thuc su di qua day.</p>
 
@@ -112,14 +112,14 @@ L2_TEMPLATE = """
             <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
             <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
         </select>
-        <label style="margin-left:10px;">Thoi gian bat (giay):</label>
+        <label style="margin-left:10px;">Thời gian bắt (giây):</label>
         <input type="number" name="duration" value="{{ duration }}" min="5" max="60" style="width:70px;">
-        <button type="submit" style="margin-left:10px;">Bat dau quet</button>
+        <button type="submit" style="margin-left:10px;">Bắt đầu quét</button>
     </form>
 
     {% if ran %}
         {% if result.error %}
-        <div class="err">Loi: {{ result.error }}</div>
+        <div class="err">Lỗi: {{ result.error }}</div>
         {% else %}
         <h3>Spanning Tree (STP)</h3>
         {% if result.stp %}

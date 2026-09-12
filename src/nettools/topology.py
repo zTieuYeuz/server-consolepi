@@ -36,7 +36,7 @@ def xay_dung_topo(iface="eth0"):
     arp_kq = run_arp_scan(iface=iface)
 
     if not arp_kq.get("ok"):
-        return {"ok": False, "error": f"ARP scan loi: {arp_kq.get('error')}",
+        return {"ok": False, "error": f"ARP scan lỗi: {arp_kq.get('error')}",
                 "iface": iface, "switch": None, "hosts": [], "svg": "", "gioi_han": ""}
 
     switch = None
@@ -135,7 +135,7 @@ TOPOLOGY_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>So do mang - Console Pi</title>
+    <title>Sơ đồ mạng - Console Pi</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -157,7 +157,7 @@ TOPOLOGY_TEMPLATE = """
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Ghep ARP Scan + LLDP/CDP Discovery thanh 1 so do: Pi → switch dang cam vao
     (neu co quang ba LLDP/CDP) → cac thiet bi tren cung doan mang.</p>
-    <p class="hint">⚠️ <strong>Gioi han:</strong> chi ve duoc 1 doan mang noi truc tiep vao cong
+    <p class="hint">⚠️ <strong>Giới hạn:</strong> chi ve duoc 1 doan mang noi truc tiep vao cong
     nay - khong ve duoc nhieu switch noi tiep qua nhieu hop.</p>
 
     <form method="POST" style="margin-top:16px;">
@@ -166,7 +166,7 @@ TOPOLOGY_TEMPLATE = """
             <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
             <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
         </select>
-        <button type="submit" style="margin-left:10px;" data-busy="Dang quet ARP + LLDP...">Ve so do</button>
+        <button type="submit" style="margin-left:10px;" data-busy="Đang quét ARP + LLDP...">Ve so do</button>
     </form>
 
     {% if ran %}

@@ -1,0 +1,2 @@
+File nay nam sau 2 tang thu muc: dulieu\thumuc-con\
+Doc duoc dong nay = robocopy /E da chep het thu muc con.

@@ -45,10 +45,10 @@ MTU_TRAN_MAC_DINH = 1500
 # MTU tim duoc thap hon 1500 (chuan Ethernet) thi goi y nguyen nhan pho
 # bien nhat - giup nguoi dung khong phai tu doan.
 GOI_Y_NGUYEN_NHAN = [
-    (1492, 1500, "Co the do PPPoE (ISP dial-up qua Ethernet) - PPPoE tru di 8 byte."),
-    (1436, 1465, "Co the do VPN/GRE/IPsec - cac giao thuc dong goi nay thuong tru 20-64 byte."),
-    (1400, 1436, "Kha nang do VPN/tunnel voi overhead lon hon binh thuong."),
-    (0,    1400, "MTU rat thap - kiem tra ca cau hinh MTU tren chinh thiet bi mang gan Pi."),
+    (1492, 1500, "Có thể do PPPoE (ISP dial-up qua Ethernet) - PPPoE trừ đi 8 byte."),
+    (1436, 1465, "Có thể do VPN/GRE/IPsec - các giao thức đóng gói này thường trừ 20-64 byte."),
+    (1400, 1436, "Khả năng do VPN/tunnel với overhead lớn hơn bình thường."),
+    (0,    1400, "MTU rất thấp - kiểm tra cả cấu hình MTU trên chính thiết bị mạng gần Pi."),
 ]
 
 
@@ -116,7 +116,7 @@ def tim_mtu(host, iface="eth0", timeout=2):
     # (vd "--flood" - can quyen root, tien trinh nay chinh la root) thay vi
     # dia chi. Ra soat lai code phat hien, khong phai da gap that.
     if not host or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.\-:]{0,254}", host):
-        return {"ok": False, "error": "Dia chi/hostname khong hop le.", "mtu": None,
+        return {"ok": False, "error": "Địa chỉ/hostname không hợp lệ.", "mtu": None,
                 "chi_tiet": [], "canh_bao": None, "tu_router": False}
 
     mtu_iface = _mtu_cua_interface(iface)
@@ -124,12 +124,12 @@ def tim_mtu(host, iface="eth0", timeout=2):
 
     # Kiem tra co ket noi duoc toi dich khong (goi nho, khong DF) truoc khi
     # do MTU - neu host khong phan hoi gi ca thi do MTU vo nghia, va phai
-    # noi ro nguyen nhan la "khong toi duoc" chu khong phai "MTU rat thap".
+    # noi ro nguyen nhan la "khong toi duoc" chu khong phai "MTU rất thấp".
     rc, out, err = _chay(["ping", "-c", "2", "-W", str(timeout), "-I", iface, host],
                          timeout=timeout * 2 + 3)
     if "0 received" in (out + err) or rc != 0 and "received" not in out:
         return {"ok": False,
-                "error": f"Khong ping toi duoc {host} qua {iface} - kiem tra dia chi hoac "
+                "error": f"Không ping tới được {host} qua {iface} - kiểm tra địa chỉ hoặc "
                         "ket noi truoc khi do MTU.",
                 "mtu": None, "chi_tiet": [], "canh_bao": None, "tu_router": False}
 
@@ -175,7 +175,7 @@ def tim_mtu(host, iface="eth0", timeout=2):
     if mtu_cuoi < MTU_TRAN_MAC_DINH:
         for duoi, tren, mo_ta in GOI_Y_NGUYEN_NHAN:
             if duoi <= mtu_cuoi < tren:
-                canh_bao = (f"MTU {mtu_cuoi} thap hon chuan Ethernet (1500). {mo_ta}")
+                canh_bao = (f"MTU {mtu_cuoi} thấp hơn chuẩn Ethernet (1500). {mo_ta}")
                 break
 
     return {"ok": True, "error": None, "mtu": mtu_cuoi, "chi_tiet": chi_tiet,
@@ -216,14 +216,14 @@ MTU_TEMPLATE = """
     (VPN, PPPoE...).</p>
 
     <form method="POST" style="margin-top:16px;">
-        <label>Dia chi/hostname can do:</label>
+        <label>Địa chỉ/hostname cần đo:</label>
         <input type="text" name="host" value="{{ host or '' }}" placeholder="vd 8.8.8.8 hoac google.com" required>
         <label style="margin-left:10px;">Interface:</label>
         <select name="iface">
             <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
             <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
         </select>
-        <button type="submit" style="margin-left:10px;" data-busy="Dang do MTU...">Do MTU</button>
+        <button type="submit" style="margin-left:10px;" data-busy="Đang đo MTU...">Đo MTU</button>
     </form>
 
     {% if ran %}
@@ -231,7 +231,7 @@ MTU_TEMPLATE = """
         <div class="err">{{ result.error }}</div>
         {% else %}
         <div class="card">
-            <p style="margin:0;color:#8b93a1;">MTU thuc te toi <strong>{{ host }}</strong> qua {{ iface }}:</p>
+            <p style="margin:0;color:#8b93a1;">MTU thực tế tới <strong>{{ host }}</strong> qua {{ iface }}:</p>
             <p class="big" style="margin:6px 0;">{{ result.mtu }} bytes</p>
             {% if result.tu_router %}
             <p class="hint">Gia tri nay do mot router giua duong bao thang qua ICMP
@@ -242,9 +242,9 @@ MTU_TEMPLATE = """
         {% if result.canh_bao %}<div class="warn">⚠️ {{ result.canh_bao }}</div>{% endif %}
 
         <details>
-            <summary>Xem chi tiet cac buoc do ({{ result.chi_tiet|length }} lan thu)</summary>
+            <summary>Xem chi tiết các bước đo ({{ result.chi_tiet|length }} lần thử)</summary>
             <table>
-                <tr><th>Payload</th><th>MTU tuong ung</th><th>Ket qua</th></tr>
+                <tr><th>Payload</th><th>MTU tương ứng</th><th>Kết quả</th></tr>
                 {% for b in result.chi_tiet %}
                 <tr>
                     <td>{{ b.payload }}</td>

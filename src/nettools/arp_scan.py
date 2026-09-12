@@ -33,9 +33,9 @@ def run_arp_scan(iface="eth0", target=None, timeout=30):
             cmd, capture_output=True, text=True, timeout=timeout
         )
     except FileNotFoundError:
-        return {"ok": False, "error": "Chua cai arp-scan.", "hosts": []}
+        return {"ok": False, "error": "Chưa cài arp-scan.", "hosts": []}
     except subprocess.TimeoutExpired:
-        return {"ok": False, "error": "Qua thoi gian cho.", "hosts": []}
+        return {"ok": False, "error": "Quá thời gian chờ.", "hosts": []}
 
     if result.returncode != 0 and not result.stdout.strip():
         err = result.stderr.strip() or f"arp-scan tra ve loi (exit {result.returncode})"
@@ -84,7 +84,7 @@ ARP_SCAN_TEMPLATE = """
             <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0 (day mang)</option>
             <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0 (WiFi)</option>
         </select>
-        <label style="margin-left:12px;">Dai IP (tuy chon):</label>
+        <label style="margin-left:12px;">Dải IP (tùy chọn):</label>
         <input type="text" name="target" value="{{ target or '' }}" placeholder="vd 192.168.1.0/24 - de trong = tu localnet">
         <button type="submit" style="margin-left:12px;">Quet</button>
         <div class="hint">Neu interface chua co dia chi IP (cam vao trunk port khong DHCP), phai nhap tay dai CIDR.</div>
@@ -92,16 +92,16 @@ ARP_SCAN_TEMPLATE = """
 
     {% if ran %}
         {% if result.error %}
-        <div class="err">Loi: {{ result.error }}</div>
+        <div class="err">Lỗi: {{ result.error }}</div>
         {% else %}
-        <p style="margin-top:16px;">Tim thay <strong>{{ result.hosts|length }}</strong> thiet bi tren {{ iface }}:</p>
+        <p style="margin-top:16px;">Tìm thấy <strong>{{ result.hosts|length }}</strong> thiet bi tren {{ iface }}:</p>
         <table>
             <tr><th>IP</th><th>MAC</th><th>Vendor</th></tr>
             {% for h in result.hosts %}
             <tr><td>{{ h.ip }}</td><td>{{ h.mac }}</td><td>{{ h.vendor }}</td></tr>
             {% endfor %}
         </table>
-        {% if not result.hosts %}<p>Khong tim thay thiet bi nao.</p>{% endif %}
+        {% if not result.hosts %}<p>Không tìm thấy thiết bị nào.</p>{% endif %}
         {% endif %}
     {% endif %}
 </body>

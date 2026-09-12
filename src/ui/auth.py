@@ -50,7 +50,7 @@ def check_login(username, password):
     Uu tien cai nao co san, khong bat nguoi dung phai cai them.
     """
     if not username or not password:
-        return False, "Chua nhap day du."
+        return False, "Chưa nhập đầy đủ."
 
     # --- Cach 1: goi Debian python3-pam (module ten PAM) ---
     try:
@@ -75,9 +75,9 @@ def check_login(username, password):
             auth.acct_mgmt()
             return True, ""
         except _PAM.error:
-            return False, "Sai tai khoan hoac mat khau."
+            return False, "Sai tài khoản hoặc mật khẩu."
         except Exception as e:
-            return False, f"Loi xac thuc: {e}"
+            return False, f"Lỗi xác thực: {e}"
     except ImportError:
         pass
 
@@ -87,13 +87,13 @@ def check_login(username, password):
         p = _pam.pam()
         if p.authenticate(username, password, service="login"):
             return True, ""
-        return False, "Sai tai khoan hoac mat khau."
+        return False, "Sai tài khoản hoặc mật khẩu."
     except ImportError:
         pass
     except Exception as e:
-        return False, f"Loi xac thuc: {e}"
+        return False, f"Lỗi xác thực: {e}"
 
-    return False, ("May thieu thu vien PAM cho Python. Cai bang: "
+    return False, ("Máy thiếu thư viện PAM cho Python. Cài bằng: "
                    "sudo apt install python3-pam")
 
 def local_bypass_enabled():
@@ -169,7 +169,7 @@ LOGIN_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dang nhap - Console Pi</title>
+<title>Đăng nhập - Console Pi</title>
 <style>
 * { box-sizing:border-box; }
 body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
@@ -191,13 +191,13 @@ button { width:100%; margin-top:20px; padding:14px; background:#4CAF50; color:#f
 <body>
 <div class="box">
   <h1>🖥️ Console Pi</h1>
-  <p class="s">Dang nhap bang tai khoan Linux cua thiet bi</p>
+  <p class="s">Đăng nhập bằng tài khoản Linux của thiết bị</p>
   <form method="POST">
-    <label>Tai khoan</label>
+    <label>Tài khoản</label>
     <input type="text" name="username" value="{{ username or '' }}" autofocus autocapitalize="off" autocomplete="username">
-    <label>Mat khau</label>
+    <label>Mật khẩu</label>
     <input type="password" name="password" autocomplete="current-password">
-    <button type="submit">Dang nhap</button>
+    <button type="submit">Đăng nhập</button>
   </form>
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
   <div class="hint">Dung chinh tai khoan SSH cua Pi (vi du <code>administrator</code>).

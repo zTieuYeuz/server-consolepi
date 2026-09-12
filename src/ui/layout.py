@@ -20,22 +20,22 @@ import subprocess
 # nay - chi dung emoji thuoc khoi chuan (mat cuoi, con vat, do vat thong
 # thuong) da kiem chung la luon co san tren Pi OS.
 NAV_ITEMS = [
-    ("/", "Tong quan", "🏠"),
+    ("/", "Tổng quan", "🏠"),
     ("/wifi", "WiFi / AP", "📶"),
     ("/bluetooth", "Bluetooth", "🔵"),
     ("/nettools", "Network Tools", "🛠️"),
-    ("/direct", "Cam thang thiet bi", "🔌"),
+    ("/direct", "Cắm thẳng thiết bị", "🔌"),
     ("/terminal", "Terminal", "⌨️"),
     ("/ssh", "SSH", "🔑"),
-    ("/commands", "Thu vien lenh", "📚"),
+    ("/commands", "Thư viện lệnh", "📚"),
     ("/storage", "Kho file", "💾"),
     ("/deployos", "Deployment OS", "💿"),
-    ("/remote", "Truy cap tu xa", "🌍"),
-    ("/docs", "Tai lieu", "📖"),
-    ("/logs", "Nhat ky loi", "📋"),
-    ("/power", "Nguon dien", "⚡"),
-    ("/giaitri", "Giai tri", "📺"),
-    ("/settings", "Cai dat", "⚙️"),
+    ("/remote", "Truy cập từ xa", "🌍"),
+    ("/docs", "Tài liệu", "📖"),
+    ("/logs", "Nhật ký lỗi", "📋"),
+    ("/power", "Nguồn điện", "⚡"),
+    ("/giaitri", "Giải trí", "📺"),
+    ("/settings", "Cài đặt", "⚙️"),
 ]
 
 BASE_CSS = """
@@ -210,7 +210,7 @@ def get_status_chips(use_cache=True):
     up, ip, state = _iface_info("eth0")
     chips.append({
         "key": "LAN (eth0)",
-        "val": ip if ip else ("Da cam day" if state == "up" else "Chua cam day"),
+        "val": ip if ip else ("Đã cắm dây" if state == "up" else "Chưa cắm dây"),
         "extra": ("link " + state) if not ip else f"link {state}",
         "up": up,
     })
@@ -231,14 +231,14 @@ def get_status_chips(use_cache=True):
         pass
 
     if mode == "AP":
-        extra = "Dang phat AP: " + (ssid or "ConsolePi")
+        extra = "Đang phát AP: " + (ssid or "ConsolePi")
     elif ssid:
-        extra = "Da noi: " + ssid
+        extra = "Đã nối: " + ssid
     else:
-        extra = "Chua ket noi WiFi"
+        extra = "Chưa kết nối WiFi"
     chips.append({
         "key": "WiFi (wlan0)",
-        "val": ip_w if ip_w else "Khong co IP",
+        "val": ip_w if ip_w else "Không có IP",
         "extra": extra,
         "up": up_w,
     })
@@ -254,8 +254,8 @@ def get_status_chips(use_cache=True):
         pass
     chips.append({
         "key": "Bluetooth (pan0)",
-        "val": ip_b if ip_b else "Chua bat",
-        "extra": (f"{n_bt} thiet bi dang noi" if n_bt else "Chua co thiet bi"),
+        "val": ip_b if ip_b else "Chưa bật",
+        "extra": (f"{n_bt} thiết bị đang nối" if n_bt else "Chưa có thiết bị"),
         "up": up_b,
     })
 
@@ -271,13 +271,13 @@ def get_status_chips(use_cache=True):
     cf_tok = _remote.co_token() if cf_cai else False
     cf_chay = _remote.dang_chay() if (cf_cai and cf_tok) else False
     if not cf_cai:
-        cf_val, cf_extra = "Chua cai dat", "Xem tab Truy cap tu xa"
+        cf_val, cf_extra = "Chưa cài đặt", "Xem tab Truy cập từ xa"
     elif not cf_tok:
-        cf_val, cf_extra = "Chua cau hinh", "Thieu token duong ham"
+        cf_val, cf_extra = "Chưa cấu hình", "Thiếu token đường hầm"
     elif cf_chay:
-        cf_val, cf_extra = "Dang chay", "Ra Internet qua Cloudflare"
+        cf_val, cf_extra = "Đang chạy", "Ra Internet qua Cloudflare"
     else:
-        cf_val, cf_extra = "Da tat", "Duong ham dang khong bat"
+        cf_val, cf_extra = "Đã tắt", "Đường hầm đang không bật"
     chips.append({
         "key": "Cloudflare",
         "val": cf_val,
@@ -330,7 +330,7 @@ def render_page(body_html, active="/", title="Console Pi", subtitle="", extra_cs
     <div class="brand">CONSOLE PI<small>Network Toolkit</small></div>
     <div class="nav">{nav_html}</div>
     <div class="foot">
-      <a href="/logout">Dang xuat</a>
+      <a href="/logout">Đăng xuất</a>
     </div>
   </div>
   <div class="main">

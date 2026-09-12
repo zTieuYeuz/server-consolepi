@@ -68,10 +68,10 @@ def da_cai_dat():
 
 def bat_tftp():
     if not da_cai_dat():
-        return False, ("Chua cai tftpd-hpa. Chay: sudo apt install -y tftpd-hpa "
+        return False, ("Chưa cài tftpd-hpa. Chạy: sudo apt install -y tftpd-hpa "
                        "(chi can cai 1 lan, khong tu dong bat)")
     if dang_bat():
-        return True, "TFTP dang bat san."
+        return True, "TFTP đang bật sẵn."
 
     os.makedirs(TFTP_ROOT, exist_ok=True)
     # world-writable co chu dich: tftpd-hpa chay duoi user rieng "tftp",
@@ -80,21 +80,21 @@ def bat_tftp():
 
     ok, out = _sh(["systemctl", "start", DON_VI_SYSTEMD])
     if not ok:
-        return False, f"Khong bat duoc dich vu TFTP: {out[:200]}"
+        return False, f"Không bật được dịch vụ TFTP: {out[:200]}"
 
     open(STATE_FLAG, "w").close()
-    return True, f"Da bat TFTP tren {IFACE}. Thu muc nhan file: {TFTP_ROOT}"
+    return True, f"Đã bật TFTP trên {IFACE}. Thư mục nhận file: {TFTP_ROOT}"
 
 
 def tat_tftp():
     if not dang_bat():
-        return True, "TFTP von da tat."
+        return True, "TFTP vốn đã tắt."
     _sh(["systemctl", "stop", DON_VI_SYSTEMD])
     try:
         os.remove(STATE_FLAG)
     except OSError:
         pass
-    return True, "Da tat TFTP."
+    return True, "Đã tắt TFTP."
 
 
 def danh_sach_file():
@@ -138,12 +138,12 @@ def xoa_file(ten):
     """Xoa 1 file da nhan."""
     duong = duong_dan_an_toan(ten)
     if not duong:
-        return False, "Ten file khong hop le hoac khong tim thay file."
+        return False, "Tên file không hợp lệ hoặc không tìm thấy file."
     try:
         os.remove(duong)
     except OSError as e:
-        return False, f"Khong xoa duoc: {e}"
-    return True, f"Da xoa {os.path.basename(duong)}."
+        return False, f"Không xóa được: {e}"
+    return True, f"Đã xóa {os.path.basename(duong)}."
 
 
 def ip_theo_giao_dien():
@@ -162,7 +162,7 @@ TFTP_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>May chu TFTP - Console Pi</title>
+    <title>Máy chủ TFTP - Console Pi</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -202,7 +202,7 @@ TFTP_TEMPLATE = """
     </div>
 
     {% if not da_cai %}
-    <div class="err">Chua cai <code>tftpd-hpa</code> tren Console Pi. Chay lenh sau roi tai lai trang:
+    <div class="err">Chưa cài <code>tftpd-hpa</code> tren Console Pi. Chay lenh sau roi tai lai trang:
         <pre>sudo apt install -y tftpd-hpa
 sudo systemctl disable --now tftpd-hpa   # tat dich vu mac dinh cua goi, Console Pi tu quan ly rieng</pre>
     </div>
@@ -211,17 +211,17 @@ sudo systemctl disable --now tftpd-hpa   # tat dich vu mac dinh cua goi, Console
         {% if dang_bat %}
         <p>🟢 Dang bat tren <strong>{{ iface }}</strong>. Thu muc nhan file: <code>{{ tftp_root }}</code></p>
         <form method="POST" action="/nettools/tftp/tat">
-            <button type="submit" class="red" data-busy="Dang tat...">⏏ Tat TFTP</button>
+            <button type="submit" class="red" data-busy="Đang tắt...">⏏ Tat TFTP</button>
         </form>
         {% else %}
         <p>⚪ Dang tat.</p>
         <form method="POST" action="/nettools/tftp/bat">
-            <button type="submit" data-busy="Dang bat...">▶ Bat TFTP tren {{ iface }}</button>
+            <button type="submit" data-busy="Đang bật...">▶ Bat TFTP tren {{ iface }}</button>
         </form>
         {% endif %}
     </div>
 
-    <h3>Cach dung tren switch Cisco</h3>
+    <h3>Cách dùng trên switch Cisco</h3>
     <div class="card">
         <p class="hint">IP cua Pi de dien vao lenh:</p>
         {% for ip in danh_sach_ip %}<code>{{ ip.iface }}: {{ ip.ip }}</code><br>{% endfor %}

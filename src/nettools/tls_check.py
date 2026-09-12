@@ -77,13 +77,13 @@ def kiem_tra_tls(host, port=443, timeout=5):
     # khong co nguy co that ngay bay gio, nhung giu dong quy uoc kiem tra dau
     # vao NHAT QUAN voi cac cong cu khac trong du an la dieu nen lam.
     if not host or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.\-:]{0,254}", host):
-        return {"ok": False, "error": "Dia chi/hostname khong hop le."}
+        return {"ok": False, "error": "Địa chỉ/hostname không hợp lệ."}
     try:
         port = int(port)
         if not 1 <= port <= 65535:
             raise ValueError
     except (TypeError, ValueError):
-        return {"ok": False, "error": "Cong khong hop le."}
+        return {"ok": False, "error": "Cổng không hợp lệ."}
 
     xac_thuc_duoc = False
     loi_xac_thuc = None
@@ -99,13 +99,13 @@ def kiem_tra_tls(host, port=443, timeout=5):
     except ssl.SSLCertVerificationError as e:
         loi_xac_thuc = str(e)
     except (socket.timeout, TimeoutError):
-        return {"ok": False, "error": f"Qua thoi gian cho ket noi toi {host}:{port}."}
+        return {"ok": False, "error": f"Quá thời gian chờ kết nối tới {host}:{port}."}
     except ConnectionRefusedError:
-        return {"ok": False, "error": f"Cong {port} tu choi ket noi - co dung la cong HTTPS khong?"}
+        return {"ok": False, "error": f"Cổng {port} từ chối kết nối - có đúng là cổng HTTPS không?"}
     except socket.gaierror:
-        return {"ok": False, "error": f"Khong phan giai duoc dia chi '{host}'."}
+        return {"ok": False, "error": f"Không phân giải được địa chỉ '{host}'."}
     except OSError as e:
-        return {"ok": False, "error": f"Loi ket noi: {e}"}
+        return {"ok": False, "error": f"Lỗi kết nối: {e}"}
 
     # Buoc 2: neu buoc 1 that bai vi ly do XAC THUC (khong phai loi mang),
     # ket noi LAI chi de LAY chung chi ve xem - KHONG bao gio danh dau la
@@ -119,14 +119,14 @@ def kiem_tra_tls(host, port=443, timeout=5):
                 with ctx2.wrap_socket(sock, server_hostname=host) as ssock:
                     der = ssock.getpeercert(binary_form=True)
         except Exception as e:
-            return {"ok": False, "error": f"Khong lay duoc chung chi de xem: {e}"}
+            return {"ok": False, "error": f"Không lấy được chứng chỉ để xem: {e}"}
     elif der is None:
-        return {"ok": False, "error": "Khong lay duoc chung chi (ly do khong xac dinh)."}
+        return {"ok": False, "error": "Không lấy được chứng chỉ (lý do không xác định)."}
 
     try:
         cert = _phan_tich_cert_tho(der)
     except Exception as e:
-        return {"ok": False, "error": f"Khong doc duoc noi dung chung chi: {e}"}
+        return {"ok": False, "error": f"Không đọc được nội dung chứng chỉ: {e}"}
 
     subject = _lay_ten_chung(cert.subject)
     issuer = _lay_ten_chung(cert.issuer)
@@ -167,7 +167,7 @@ TLS_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Kiem tra chung chi TLS - Console Pi</title>
+    <title>Kiểm tra chứng chỉ TLS - Console Pi</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -200,7 +200,7 @@ TLS_TEMPLATE = """
         <input type="text" name="host" value="{{ host or '' }}" placeholder="vd 192.168.1.1" required>
         <label style="margin-left:10px;">Port:</label>
         <input type="number" name="port" value="{{ port or 443 }}" style="width:80px;">
-        <button type="submit" style="margin-left:10px;" data-busy="Dang ket noi...">Kiem tra</button>
+        <button type="submit" style="margin-left:10px;" data-busy="Đang kết nối...">Kiểm tra</button>
     </form>
 
     {% if ran %}
@@ -216,25 +216,25 @@ TLS_TEMPLATE = """
             {% if result.tu_ky %}Chung chi TU KY (rat pho bien voi thiet bi mang - khong nhat
             thiet la van de, nhung trinh duyet se luon canh bao).{% endif %}
             {% if not result.khop_ten %}Ten trong chung chi KHONG khop voi dia chi dang truy cap.{% endif %}
-            <br><span class="hint">Chi tiet loi xac thuc: {{ result.loi_xac_thuc }}</span>
+            <br><span class="hint">Chi tiết lỗi xác thực: {{ result.loi_xac_thuc }}</span>
         </div>
         {% endif %}
 
         <div class="card">
             <table style="margin:0;">
-                <tr><th>Subject (chu the)</th><td>{{ result.subject }}</td></tr>
-                <tr><th>Issuer (noi cap)</th><td>{{ result.issuer }}</td></tr>
-                <tr><th>Hieu luc</th><td>{{ result.not_before }} → {{ result.not_after }}</td></tr>
-                <tr><th>Con lai</th>
+                <tr><th>Subject (chủ thể)</th><td>{{ result.subject }}</td></tr>
+                <tr><th>Issuer (nơi cấp)</th><td>{{ result.issuer }}</td></tr>
+                <tr><th>Hiệu lực</th><td>{{ result.not_before }} → {{ result.not_after }}</td></tr>
+                <tr><th>Còn lại</th>
                     <td>
-                        {% if result.ngay_con_lai < 0 %}<span style="color:#ff8a8a;font-weight:600;">Da het han {{ -result.ngay_con_lai }} ngay truoc</span>
-                        {% elif result.ngay_con_lai < 30 %}<span style="color:#ffb74d;font-weight:600;">Con {{ result.ngay_con_lai }} ngay - sap het han</span>
-                        {% else %}<span style="color:#8fd99a;">Con {{ result.ngay_con_lai }} ngay</span>{% endif %}
+                        {% if result.ngay_con_lai < 0 %}<span style="color:#ff8a8a;font-weight:600;">Đã hết hạn {{ -result.ngay_con_lai }} ngày trước</span>
+                        {% elif result.ngay_con_lai < 30 %}<span style="color:#ffb74d;font-weight:600;">Còn {{ result.ngay_con_lai }} ngày - sắp hết hạn</span>
+                        {% else %}<span style="color:#8fd99a;">Còn {{ result.ngay_con_lai }} ngày</span>{% endif %}
                     </td></tr>
-                <tr><th>Tu ky</th><td>{{ "Co" if result.tu_ky else "Khong" }}</td></tr>
-                <tr><th>Khop ten mien</th><td>{{ "Co" if result.khop_ten else "Khong" }}</td></tr>
+                <tr><th>Tự ký</th><td>{{ "Co" if result.tu_ky else "Khong" }}</td></tr>
+                <tr><th>Khớp tên miền</th><td>{{ "Co" if result.khop_ten else "Khong" }}</td></tr>
                 {% if result.ten_thay_the %}
-                <tr><th>Ten thay the (SAN)</th><td>{% for t in result.ten_thay_the %}<span class="chip">{{ t }}</span>{% endfor %}</td></tr>
+                <tr><th>Tên thay thế (SAN)</th><td>{% for t in result.ten_thay_the %}<span class="chip">{{ t }}</span>{% endfor %}</td></tr>
                 {% endif %}
             </table>
         </div>

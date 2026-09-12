@@ -14,3 +14,13 @@ ifthen-rules.json
 captures/
 *.pcap
 *.log
+
+# Du lieu Deployment OS cua TUNG PI - phan mem/anh Windows/kich ban/tham
+# so tai len qua giao dien khong bao gio dua len repo (nang, co the co
+# ban quyen, doi khi co mat khau trong tham so cai dat). Cac thu muc nay
+# nam o /opt/console-pi/deploy/ (NGOAI repo nay) khi Console Pi da cai
+# that su, nen thuong khong bao gio xuat hien o day - liet ke phong khi
+# co ai vo tinh tao/copy nham vao trong thu muc nguon.
+deploy/
+samba-deploy.key
+tham-so-cai-dat.json

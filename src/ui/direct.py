@@ -65,7 +65,7 @@ def hang_cua_mac(mac):
 def bat_che_do():
     """eth0 -> IP tinh + DHCP server nho. Tra ve (ok, thong bao)."""
     if dang_bat():
-        return True, "Che do cam thang dang bat san."
+        return True, "Chế độ cắm thẳng đang bật sẵn."
 
     # Tach eth0 khoi NetworkManager de no khong doi lai DHCP ngay sau lung
     _sh(["nmcli", "device", "set", IFACE, "managed", "no"])
@@ -73,7 +73,7 @@ def bat_che_do():
     ok, out = _sh(["ip", "addr", "add", PI_CIDR, "dev", IFACE])
     if not ok and "File exists" not in out:
         _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
-        return False, f"Khong dat duoc IP tinh cho {IFACE}: {out[:120]}"
+        return False, f"Không đặt được IP tĩnh cho {IFACE}: {out[:120]}"
     _sh(["ip", "link", "set", IFACE, "up"])
 
     try:
@@ -91,21 +91,21 @@ def bat_che_do():
                 f"log-dhcp\n"
             )
     except OSError as e:
-        return False, f"Khong ghi duoc cau hinh DHCP: {e}"
+        return False, f"Không ghi được cấu hình DHCP: {e}"
 
     ok, out = _sh(["systemctl", "start", "dnsmasq-direct"])
     if not ok:
-        return False, f"Khong bat duoc DHCP: {out[:150]}"
+        return False, f"Không bật được DHCP: {out[:150]}"
 
     open(STATE_FLAG, "w").close()
-    return True, (f"Da bat che do cam thang. Pi la {PI_IP}, se cap IP "
+    return True, (f"Đã bật chế độ cắm thẳng. Pi là {PI_IP}, sẽ cấp IP "
                   f"192.168.99.50-99 cho thiet bi cam vao cong LAN. "
-                  f"Cam day roi bam Quet - thiet bi thuong mat 15-30 giay de len.")
+                  f"Cắm dây rồi bấm Quét - thiết bị thường mất 15-30 giây để lên.")
 
 
 def tat_che_do():
     if not dang_bat():
-        return True, "Che do cam thang von da tat."
+        return True, "Chế độ cắm thẳng vốn đã tắt."
     _sh(["systemctl", "stop", "dnsmasq-direct"])
     _sh(["ip", "addr", "flush", "dev", IFACE])
     _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
@@ -114,7 +114,7 @@ def tat_che_do():
         os.remove(STATE_FLAG)
     except OSError:
         pass
-    return True, f"Da tra {IFACE} ve che do DHCP binh thuong."
+    return True, f"Đã trả {IFACE} về chế độ DHCP bình thường."
 
 
 def quet_thiet_bi(them_dai_tinh=False, dai_tu_nhap=""):
@@ -159,7 +159,7 @@ def quet_thiet_bi(them_dai_tinh=False, dai_tu_nhap=""):
                     mac = p[1].lower()
                     thay.setdefault(mac, {"ip": p[2], "mac": mac,
                                           "hang": hang_cua_mac(mac),
-                                          "nguon": "DHCP cua Pi"})
+                                          "nguon": "DHCP của Pi"})
                     if p[3] != "*":
                         thay[mac]["ten"] = p[3]
     except OSError:
@@ -213,7 +213,7 @@ def register_direct(app):
         canh_bao = ""
         if not bat and khach_qua_eth0():
             canh_bao = ('<div class="msg warn">⚠️ Ban dang truy cap QUA chinh cong LAN nay. '
-                        'Bat che do cam thang se doi IP cua cong do va lam mat ket noi cua ban. '
+                        'Bật chế độ cắm thẳng se doi IP cua cong do va lam mat ket noi cua ban. '
                         'Hay vao bang WiFi hoac man hinh gan tren Pi truoc.</div>')
 
         # Khoi quet dung duoc o CA HAI che do: cam thang vao iLO, hay cam vao
@@ -222,20 +222,20 @@ def register_direct(app):
         <div class="card">
           <div class="row" style="gap:10px;flex-wrap:wrap;">
             <form method="POST" action="/direct/quet">
-              <button type="submit" data-busy="Dang quet, toi 30 giay...">🔍 Quet dai hien tai</button>
+              <button type="submit" data-busy="Đang quét, tới 30 giây...">🔍 Quét dải hiện tại</button>
             </form>
             <form method="POST" action="/direct/quet">
               <input type="hidden" name="rong" value="1">
-              <button type="submit" class="gray" data-busy="Dang quet rong, toi 2 phut...">
-                🔎 Quet rong (them dai IP tinh)</button>
+              <button type="submit" class="gray" data-busy="Đang quét rộng, tới 2 phút...">
+                🔎 Quét rộng (thêm dải IP tĩnh)</button>
             </form>
           </div>
           <form method="POST" action="/direct/quet" style="margin-top:13px;">
-            <label>Hoac quet mot dai cu the (khi biet truoc IP cua iLO)</label>
+            <label>Hoặc quét một dải cụ thể (khi biết trước IP của iLO)</label>
             <div class="row" style="gap:9px;">
               <input type="text" name="dai" placeholder="vi du 192.168.1.0/24"
                      style="max-width:250px;">
-              <button type="submit" class="gray" data-busy="Dang quet...">Quet dai nay</button>
+              <button type="submit" class="gray" data-busy="Đang quét...">Quet dai nay</button>
             </div>
           </form>
         </div>"""
@@ -271,11 +271,11 @@ def register_direct(app):
             dieu_khien = f"""
             {canh_bao}
             <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-              Cong LAN dang o che do binh thuong (xin DHCP). Neu noi day vao mang
-              da co san DHCP thi khong can bat che do nay - quet luon o duoi.</p>
+              Cổng LAN đang ở chế độ bình thường (xin DHCP). Nếu nối dây vào mạng
+              đã có sẵn DHCP thì không cần bật chế độ này - quét luôn ở dưới.</p>
             <form method="POST" action="/direct/bat"
-                  onsubmit="return confirm('Bat che do cam thang?\\n\\nCong LAN se doi sang {PI_IP} va ngung xin DHCP.');">
-              <button type="submit" data-busy="Dang chuyen cong LAN...">▶ Bat che do cam thang</button>
+                  onsubmit="return confirm('Bật chế độ cắm thẳng?\\n\\nCong LAN se doi sang {PI_IP} va ngung xin DHCP.');">
+              <button type="submit" data-busy="Dang chuyen cong LAN...">▶ Bật chế độ cắm thẳng</button>
             </form>"""
 
 
@@ -285,21 +285,21 @@ def register_direct(app):
         <div class="card">
           <h3>Cach dung</h3>
           <ol style="margin:0;padding-left:19px;line-height:1.75;">
-            <li>Cam day mang tu Pi thang sang cong quan ly (iLO / iDRAC / IPMI) hoac switch</li>
-            <li>Bam <strong>Bat che do cam thang</strong> - Pi tro thanh DHCP server nho</li>
-            <li>Doi 15-30 giay roi bam <strong>Quet thiet bi</strong></li>
-            <li>Bam nut <strong>Mo</strong> de vao giao dien web cua thiet bi</li>
+            <li>Cắm dây mạng từ Pi thẳng sang cổng quản lý (iLO / iDRAC / IPMI) hoặc switch</li>
+            <li>Bam <strong>Bật chế độ cắm thẳng</strong> - Pi tro thanh DHCP server nho</li>
+            <li>Doi 15-30 giay roi bam <strong>Quét thiết bị</strong></li>
+            <li>Bam nut <strong>Mo</strong> để vào giao diện web của thiết bị</li>
           </ol>
           <p style="color:#8b93a1;font-size:13px;margin:11px 0 0;">
-            Thiet bi dat IP tinh khong xin DHCP thi dung <strong>Quet rong</strong> -
-            no do them cac dai hay gap. Quet ARP o lop 2 nen van thay duoc thiet bi
+            Thiết bị đặt IP tĩnh không xin DHCP thì dùng <strong>Quet rong</strong> -
+            nó dò thêm các dải hay gặp. Quét ARP ở lớp 2 nên vẫn thấy được thiết bị
             khac dai IP.</p>
         </div>
 
         <h2>Dieu khien</h2>
         <div class="card">{dieu_khien}</div>
 
-        <h2>Tim thiet bi</h2>
+        <h2>Tìm thiết bị</h2>
         {quet_html}
 
         {'<h2>Thiet bi tim thay (' + str(len(ds)) + ')</h2>' if ds is not None else ''}
@@ -309,8 +309,8 @@ def register_direct(app):
               <th>Giao dien web</th></tr>''' + rows + '</table>' if ds else ''}
         {'<p style="color:#8b93a1;">Khong thay thiet bi nao. Kiem tra day da cam chua, den cong LAN co sang khong, va thiet bi da khoi dong xong chua (iLO mat 30-60 giay).</p>' if ds is not None and not ds else ''}"""
 
-        return render_page(body, active="/direct", title="Cam thang thiet bi",
-                           subtitle="Vao iLO / iDRAC / IPMI khi khong co mang san")
+        return render_page(body, active="/direct", title="Cắm thẳng thiết bị",
+                           subtitle="Vào iLO / iDRAC / IPMI khi không có mạng sẵn")
 
     @app.route("/direct")
     def direct_page():

@@ -82,7 +82,7 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
     host = (host or "").strip()
     user = (user or "").strip()
     if not host or not user:
-        return False, "Thieu dia chi hoac tai khoan."
+        return False, "Thiếu địa chỉ hoặc tài khoản."
 
     # Loc dau vao: host/user duoc ghep thanh 1 DONG LENH chay trong shell cua
     # terminal, khong loc thi mot gia tri kieu "1.1.1.1; rm -rf /" se chay
@@ -96,28 +96,28 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
     # bat buoc KY TU DAU TIEN phai la chu/so, khong duoc la dau "-" (hay bat
     # ky ky tu dac biet nao khac).
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:\-]{0,254}", host):
-        return False, ("Dia chi khong hop le (phai bat dau bang chu/so, sau do cho "
+        return False, ("Địa chỉ không hợp lệ (phải bắt đầu bằng chữ/số, sau đó cho "
                        "them cac dau . - _ :).")
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._\-\\]{0,63}", user):
-        return False, ("Tai khoan khong hop le (phai bat dau bang chu/so, sau do cho "
+        return False, ("Tài khoản không hợp lệ (phải bắt đầu bằng chữ/số, sau đó cho "
                        "them cac dau . - _ \\).")
     try:
         cong = int(port or 22)
     except (TypeError, ValueError):
-        return False, "Cong khong hop le."
+        return False, "Cổng không hợp lệ."
     if not 1 <= cong <= 65535:
-        return False, "Cong phai trong khoang 1-65535."
+        return False, "Cổng phải trong khoảng 1-65535."
 
     if not tmux_session_exists(SSH_SESSION):
-        return False, ("Chua co phien terminal SSH. Mo khung terminal ben duoi "
+        return False, ("Chưa có phiên terminal SSH. Mở khung terminal bên dưới "
                        "de tao phien truoc roi bam lai.")
 
     truoc = _chup_man_hinh(SSH_SESSION)
     # Terminal dang dung o 1 dau nhac mat khau cu: go lenh vao day thi ca dong
     # lenh se bi hieu la mat khau. Dung lai va noi ro, thay vi lam roi them.
     if _la_dau_nhac_mat_khau(_dong_cuoi(truoc)):
-        return False, ("Khung terminal dang dung o dau nhac mat khau cua lan truoc. "
-                       "Vao khung terminal xu ly xong (nhap mat khau hoac bam Ctrl+C) "
+        return False, ("Khung terminal đang dừng ở dấu nhắc mật khẩu của lần trước. "
+                       "Vào khung terminal xử lý xong (nhập mật khẩu hoặc bấm Ctrl+C) "
                        "roi bam Ket noi lai.")
 
     cmd = f"ssh -o StrictHostKeyChecking=accept-new -p {cong} {user}@{host}"
@@ -125,10 +125,10 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
         subprocess.run(["tmux", "send-keys", "-t", SSH_SESSION, cmd, "Enter"],
                        capture_output=True, timeout=5)
     except Exception as e:
-        return False, f"Loi: {e}"
+        return False, f"Lỗi: {e}"
 
     if not password:
-        return True, (f"Da gui lenh ket noi toi {host}. "
+        return True, (f"Đã gửi lệnh kết nối tới {host}. "
                       f"Nhap mat khau trong khung terminal ben duoi.")
 
     if not _cho_dau_nhac_mat_khau(SSH_SESSION, truoc, 12):

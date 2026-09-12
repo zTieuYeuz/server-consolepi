@@ -109,11 +109,11 @@ def send_keys(session_name, keys):
     """
     session_name = (session_name or "").strip()
     if not session_name:
-        return False, "Thieu ten phien tmux."
+        return False, "Thiếu tên phiên tmux."
     if keys is None or keys == "":
-        return False, "Thieu noi dung can gui."
+        return False, "Thiếu nội dung cần gửi."
     if not tmux_session_exists(session_name):
-        return False, f"Chua co phien terminal '{session_name}'."
+        return False, f"Chưa có phiên terminal '{session_name}'."
 
     cmd = ["tmux", "send-keys", "-t", session_name]
     if keys not in _PHIM_DAC_BIET:
@@ -131,7 +131,7 @@ def send_keys(session_name, keys):
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
         if r.returncode != 0:
-            return False, (r.stderr or "Gui phim that bai.").strip()
+            return False, (r.stderr or "Gửi phím thất bại.").strip()
         return True, "ok"
     except Exception as e:
         return False, str(e)
@@ -172,12 +172,12 @@ def _terminal_body(kind, base_path, session_name, service_name, warn_html):
 def register_terminal(app):
     @app.route("/terminal")
     def terminal_page():
-        warn = ('<strong>Luu y:</strong> Terminal cua chinh Pi voi <strong>quyen root</strong> '
+        warn = ('<strong>Lưu ý:</strong> Terminal của chính Pi với <strong>quyen root</strong> '
                '- go lenh can than')
-        body = _terminal_body("Terminal local", "/term-local", LOCAL_SESSION,
+        body = _terminal_body("Terminal tại chỗ", "/term-local", LOCAL_SESSION,
                               "console-pi-term-local.service", warn)
         html = render_page(body, active="/terminal", title="Terminal",
-                           subtitle="Dong lenh truc tiep tren Pi (phien tmux giu nguyen khi dong trinh duyet)")
+                           subtitle="Dòng lệnh trực tiếp trên Pi (phiên tmux giữ nguyên khi đóng trình duyệt)")
         # Bao cho ban phim ao biet go phim vao phien tmux nao
         return html.replace("<body>", f'<body data-tmux-session="{LOCAL_SESSION}">', 1)
 
@@ -193,7 +193,7 @@ def register_terminal(app):
         from .commands import dan_thong_minh
         noi_dung = request.form.get("noi_dung", "")
         if not noi_dung.strip():
-            ok, msg = False, "O lenh dang trong - chua co gi de dan."
+            ok, msg = False, "Ô lệnh đang trống - chưa có gì để dán."
         else:
             ok, msg = dan_thong_minh(LOCAL_SESSION, noi_dung)
 
@@ -201,9 +201,9 @@ def register_terminal(app):
             from flask import jsonify
             return jsonify({"ok": ok, "msg": msg})
 
-        warn = ('<strong>Luu y:</strong> Terminal cua chinh Pi voi <strong>quyen root</strong> '
+        warn = ('<strong>Lưu ý:</strong> Terminal của chính Pi với <strong>quyen root</strong> '
                 '- go lenh can than')
-        body = _terminal_body("Terminal local", "/term-local", LOCAL_SESSION,
+        body = _terminal_body("Terminal tại chỗ", "/term-local", LOCAL_SESSION,
                               "console-pi-term-local.service", warn)
         html = render_page(f'<div class="msg {"ok" if ok else "err"}">{msg}</div>' + body,
                            active="/terminal", title="Terminal", subtitle="")

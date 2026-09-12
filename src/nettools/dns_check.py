@@ -64,7 +64,7 @@ def _truy_van_mot_server(server, domain, timeout):
         s.sendto(bytes(pkt), (server, 53))
         data, _ = s.recvfrom(4096)
     except socket.timeout:
-        return None, [], f"Khong phan hoi trong {timeout}s"
+        return None, [], f"Không phản hồi trong {timeout}s"
     except OSError as e:
         return None, [], str(e)
     finally:
@@ -74,12 +74,12 @@ def _truy_van_mot_server(server, domain, timeout):
     try:
         resp = DNS(data)
     except Exception as e:
-        return thoi_gian_ms, [], f"Khong doc duoc phan hoi: {e}"
+        return thoi_gian_ms, [], f"Không đọc được phản hồi: {e}"
 
     if resp.rcode != 0:
         ten_loi = {1: "loi dinh dang", 2: "loi server", 3: "khong ton tai (NXDOMAIN)",
                   5: "bi tu choi (REFUSED)"}.get(int(resp.rcode), f"ma loi {resp.rcode}")
-        return thoi_gian_ms, [], f"DNS server tra ve: {ten_loi}"
+        return thoi_gian_ms, [], f"DNS server trả về: {ten_loi}"
 
     dia_chi = []
     for i in range(resp.ancount):
@@ -96,13 +96,13 @@ def kiem_tra_dns(domain, timeout=3):
     """
     domain = (domain or "").strip().rstrip(".")
     if not domain or not re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9\-.]{0,251}[A-Za-z0-9])?", domain):
-        return {"ok": False, "error": "Ten mien khong hop le.", "domain": domain,
+        return {"ok": False, "error": "Tên miền không hợp lệ.", "domain": domain,
                 "servers": [], "co_mau_thuan": False, "canh_bao": None}
 
     danh_sach = []
     dns_he_thong_ip = _dns_he_thong()
     if dns_he_thong_ip:
-        danh_sach.append((f"He thong hien tai", dns_he_thong_ip))
+        danh_sach.append((f"Hệ thống hiện tại", dns_he_thong_ip))
     danh_sach += MAY_CHU_CO_DINH
 
     ket_qua = []
@@ -136,7 +136,7 @@ DNS_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Kiem tra DNS - Console Pi</title>
+    <title>Kiểm tra DNS - Console Pi</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -164,9 +164,9 @@ DNS_TEMPLATE = """
     (ISP chen quang cao, mang cong ty loc, captive portal).</p>
 
     <form method="POST" style="margin-top:16px;">
-        <label>Ten mien:</label>
+        <label>Tên miền:</label>
         <input type="text" name="domain" value="{{ domain or '' }}" placeholder="vd google.com" required>
-        <button type="submit" style="margin-left:10px;" data-busy="Dang truy van...">Kiem tra</button>
+        <button type="submit" style="margin-left:10px;" data-busy="Đang truy vấn...">Kiểm tra</button>
     </form>
 
     {% if ran %}
@@ -176,7 +176,7 @@ DNS_TEMPLATE = """
         {% if result.canh_bao %}<div class="warn">⚠️ {{ result.canh_bao }}</div>{% endif %}
         <div class="card">
             <table style="margin:0;">
-                <tr><th>DNS Server</th><th>Thoi gian</th><th>Dia chi tra ve</th></tr>
+                <tr><th>DNS Server</th><th>Thời gian</th><th>Địa chỉ trả về</th></tr>
                 {% for s in result.servers %}
                 <tr>
                     <td>{{ s.ten }}<br><code class="small">{{ s.ip }}</code></td>

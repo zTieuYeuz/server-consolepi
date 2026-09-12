@@ -42,8 +42,8 @@ def register_entertainment(app):
         <div class="card" style="border-left:4px solid #4CAF50;">
           <h3>🌐 Mo YouTube</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 13px;">
-            Bam la vao thang YouTube that - duyet, tim kiem, dang nhap tai
-            khoan nhu tren dien thoai/tablet binh thuong.</p>
+            Bấm là vào thẳng YouTube thật - duyệt, tìm kiếm, đăng nhập tài
+            khoản như trên điện thoại/tablet bình thường.</p>
           <a class="btn" href="https://www.youtube.com" style="font-size:16px;">
             🌐 Mo YouTube</a>
         </div>
@@ -51,27 +51,27 @@ def register_entertainment(app):
         <div class="card" style="border-left:4px solid #4CAF50;">
           <h3>🎵 Mo TikTok</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 13px;">
-            Bam la vao thang TikTok that - luot video, tim kiem, dang nhap
-            tai khoan nhu tren dien thoai/tablet binh thuong.</p>
+            Bấm là vào thẳng TikTok thật - lướt video, tìm kiếm, đăng nhập
+            tai khoản như trên điện thoại/tablet bình thường.</p>
           <a class="btn" href="https://www.tiktok.com" style="font-size:16px;">
             🎵 Mo TikTok</a>
         </div>
 
         <div class="msg ok">
-          <strong>Luon co duong ve:</strong> se thay 1 nut nho
-          <strong>"🏠 Console Pi"</strong> noi o goc duoi ben trai man hinh,
-          o BAT KY trang nao dang mo - bam vao do la ve thang dashboard nay
-          ngay lap tuc, khong can vuot hay go gi ca.
+          <strong>Luôn có đường về:</strong> sẽ thấy 1 nút nhỏ
+          <strong>"🏠 Console Pi"</strong> nổi ở góc dưới bên trái màn hình,
+          ở BẤT KỲ trang nào đang mở - bấm vào đó là về thẳng dashboard này
+          ngay lập tức, không cần vuốt hay gõ gì cả.
         </div>
         <div class="msg ok">
-          <strong>Ban phim ao cung hien duoc</strong> khi cham vao o tim
-          kiem/binh luan/chat cua chinh trang dang mo - se thay ban phim
-          quen thuoc hien len duoi man hinh giong cac trang khac cua
-          Console Pi. Chi tiet ky thuat: xem <a href="/docs#giaitri">Tai lieu</a>.
+          <strong>Bàn phím ảo cũng hiện được</strong> khi chạm vào ô tìm
+          kiếm/bình luận/chat của chính trang đang mở - sẽ thấy bàn phím
+          quen thuộc hiện lên dưới màn hình giống các trang khác của
+          Console Pi. Chi tiet ky thuat: xem <a href="/docs#giaitri">Tài liệu</a>.
         </div>"""
 
         return render_page(
-            body, active="/giaitri", title="Giai tri",
-            subtitle="Giai lao luc ranh - luon co duong quay ve dashboard")
+            body, active="/giaitri", title="Giải trí",
+            subtitle="Giải lao lúc rảnh - luôn có đường quay về dashboard")
 
     return app

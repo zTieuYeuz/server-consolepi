@@ -21,26 +21,26 @@ LIB_FILE = "/opt/console-pi/command-library.json"
 # 5 tap lenh co ban hay dung nhat khi lam viec voi switch Cisco
 DEFAULT_LIBRARY = [
     {
-        "name": "Xem thong tin co ban switch",
-        "desc": "Kiem tra model, IOS version, uptime, so serial",
+        "name": "Xem thông tin cơ bản switch",
+        "desc": "Kiểm tra model, IOS version, uptime, số serial",
         "tags": "cisco, xem",
         "commands": "show version\nshow inventory\nshow env all",
     },
     {
-        "name": "Xem trang thai tat ca cong",
-        "desc": "Cong nao up/down, toc do, duplex, VLAN dang gan",
+        "name": "Xem trạng thái tất cả cổng",
+        "desc": "Cổng nào up/down, tốc độ, duplex, VLAN đang gán",
         "tags": "cisco, xem, port",
         "commands": "show ip interface brief\nshow interfaces status\nshow interfaces description",
     },
     {
-        "name": "Xem VLAN va bang MAC",
-        "desc": "Danh sach VLAN, cong nao thuoc VLAN nao, MAC dang hoc duoc",
+        "name": "Xem VLAN và bảng MAC",
+        "desc": "Danh sách VLAN, cổng nào thuộc VLAN nào, MAC đang học được",
         "tags": "cisco, xem, vlan",
         "commands": "show vlan brief\nshow mac address-table\nshow interfaces trunk",
     },
     {
-        "name": "Gan VLAN cho 1 cong (access)",
-        "desc": "SUA lai ten cong va so VLAN truoc khi chay",
+        "name": "Gán VLAN cho 1 cổng (access)",
+        "desc": "SỬA lại tên cổng và số VLAN trước khi chạy",
         "tags": "cisco, cau hinh, vlan",
         "commands": ("interface GigabitEthernet0/1\n"
                      " description Cau hinh boi Console Pi\n"
@@ -49,9 +49,9 @@ DEFAULT_LIBRARY = [
                      " no shutdown"),
     },
     {
-        "name": "Cau hinh IP quan ly + SSH",
-        "desc": "SUA lai IP/subnet/gateway/domain truoc khi chay",
-        "tags": "cisco, cau hinh, quan ly",
+        "name": "Cấu hình IP quản lý + SSH",
+        "desc": "SỬA lại IP/subnet/gateway/domain trước khi chạy",
+        "tags": "cisco, cấu hình, quản lý",
         "commands": ("interface Vlan1\n"
                      " ip address 192.168.1.10 255.255.255.0\n"
                      " no shutdown\n"
@@ -129,8 +129,8 @@ def send_to_tmux(session_name, text, press_enter=False):
         has = subprocess.run(["tmux", "has-session", "-t", session_name],
                              capture_output=True, timeout=5)
         if has.returncode != 0:
-            return False, (f"Chua co phien terminal '{session_name}'. "
-                           f"Mo tab Terminal truoc roi bam lai.")
+            return False, (f"Chưa có phiên terminal '{session_name}'. "
+                           f"Mở tab Terminal trước rồi bấm lại.")
 
         buf_name = "consolepi-lib"
         with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as f:
@@ -150,7 +150,7 @@ def send_to_tmux(session_name, text, press_enter=False):
 
         n = len([l for l in text.splitlines() if l.strip()])
         if press_enter:
-            return True, f"Da dan va chay {n} lenh trong terminal."
+            return True, f"Đã dán và chạy {n} lệnh trong terminal."
         # Loi nhan trung tinh: ham nay duoc goi ca tu trang Thu vien lenh lan
         # tu trang SSH (khung terminal nam ngay tren cung trang), nen khong
         # noi cung "mo tab Terminal" nua.
@@ -324,7 +324,7 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.25, toi_da_dong=120):
         has = subprocess.run(["tmux", "has-session", "-t", session_name],
                              capture_output=True, timeout=5)
         if has.returncode != 0:
-            return False, (f"Chua co phien terminal '{session_name}'. "
+            return False, (f"Chưa có phiên terminal '{session_name}'. "
                            f"Mo khung terminal truoc roi bam lai.")
 
         han_chot = time.time() + 180          # tran tong: khong treo mai mai
@@ -501,13 +501,13 @@ def render_library_page(msg="", ok=True, edit_index=None):
         <label>Mo ta ngan</label>
         <input type="text" name="desc" value="{_esc(cur.get('desc'))}"
                placeholder="Nho ghi ro cho nao can sua truoc khi chay">
-        <label>The (phan cach bang dau phay) - dung de loc nhanh o tren</label>
+        <label>Thẻ (phân cách bằng dấu phẩy) - dùng để lọc nhanh ở trên</label>
         <input type="text" name="tags" value="{_esc(cur.get('tags'))}"
                placeholder="cisco, vlan, cau hinh">
-        <label>Cac lenh (moi dong 1 lenh)</label>
+        <label>Các lệnh (mỗi dòng 1 lệnh)</label>
         <textarea name="commands" required style="max-width:100%;">{_esc(cur.get('commands'))}</textarea>
         <div class="row" style="margin-top:12px;">
-          <button type="submit">{'Luu thay doi' if editing else 'Them vao thu vien'}</button>
+          <button type="submit">{'Luu thay doi' if editing else 'Thêm vào thư viện'}</button>
           {'<a class="btn gray" href="/commands">Huy</a>' if editing else ''}
         </div>
       </form>"""
@@ -539,19 +539,19 @@ def render_library_page(msg="", ok=True, edit_index=None):
     </div>
     {the_khoi}
     <div id="khong_thay" class="msg info" style="display:none;">
-      Khong co tap lenh nao khop. Thu tu khoa ngan hon, hoac bam ✕ Xoa tim.
+      Không có tập lệnh nào khớp. Thử từ khóa ngắn hơn, hoặc bấm ✕ Xóa tìm.
     </div>
     <div class="lenh-luoi">{rows}</div>
     {form_html}
     <div class="msg info" style="margin-top:18px;">
-      <strong>Cach dung:</strong> <em>Gui vao Terminal</em> dan lenh vao terminal dang mo nhung
-      <strong>khong tu bam Enter</strong> - anh xem lai roi tu chay.
-      <em>Dung o tab SSH</em> chep tap lenh sang o soan o tab SSH de sua IP/ten truoc khi dan.
+      <strong>Cach dung:</strong> <em>Gui vao Terminal</em> dán lệnh vào terminal đang mở nhưng
+      <strong>không tự bấm Enter</strong> - anh xem lại rồi tự chạy.
+      <em>Dung o tab SSH</em> chép tập lệnh sang ô soạn ở tab SSH để sửa IP/tên trước khi dán.
     </div>
     {LIB_JS}"""
 
     return render_page(body, active="/commands", title="Thu vien lenh",
-                       subtitle="Luu san cac tap lenh hay dung, sua duoc truoc khi chay")
+                       subtitle="Lưu sẵn các tập lệnh hay dùng, sửa được trước khi chạy")
 
 
 def register_commands(app, tmux_session="consolepi-local"):

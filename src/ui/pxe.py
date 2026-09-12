@@ -9,7 +9,18 @@ CO CHE PXE (da kiem chung tung phan qua man dnsmasq + wimlib, khong doan):
   1. May can cai boot, gui broadcast DHCP.
   2. dnsmasq (file nay dieu khien) tra IP + noi lay bootloader qua TFTP:
      - May kien truc BIOS (client-arch=0)      -> undionly.kpxe
-     - May kien truc UEFI x64 (client-arch=7/9)-> ipxe.efi
+     - May kien truc UEFI x64 (client-arch=7/9)-> snponly.efi
+
+     LOI THAT DA GAP (kiem chung that tren 1 may ao VMware that, khong
+     doan): ban dau dung `ipxe.efi` (ban co san driver mang rieng cua
+     iPXE) - TAI DUOC qua TFTP binh thuong nhung CHAY THI CRASH ngay lap
+     tuc, khien firmware lien tuc quay lai xin boot lai tu dau (vong lap
+     vo han, giong het trieu chung "boot no chay xoay vong hoai"). Doi
+     sang `snponly.efi` (ban CHI dung driver mang co san cua UEFI qua
+     Simple Network Protocol, khong tu mang driver rieng) thi chay duoc
+     ngay - day la van de tuong thich pho bien giua iPXE va NIC ao cua
+     VMware, snponly.efi la giai phap chinh thuc cua du an iPXE cho dung
+     truong hop nay.
   3. Bootloader do (iPXE) tu no LAI gui 1 lan DHCP nua de tu nhan dang la
      "iPXE" (qua DHCP option 77 - "user class"). dnsmasq nhan ra qua
      dhcp-userclass, lan nay tra ve dia chi 1 SCRIPT iPXE qua HTTP thay vi
@@ -91,7 +102,7 @@ def trich_bootmgr_tu_winpe():
     """
     boot_wim = _duong("boot.wim")
     if not os.path.isfile(boot_wim):
-        return False, "Chua co boot.wim - tai len o tab 2.1 File boot truoc."
+        return False, "Chưa có boot.wim - tải lên ở tab Tài nguyên > Hệ điều hành trước."
 
     ket_qua = []
     for duong_wim, ten_luu in (
@@ -103,13 +114,13 @@ def trich_bootmgr_tu_winpe():
                        duong_wim, "--dest-dir=" + os.path.dirname(dich)],
                       timeout=60)
         if not ok:
-            return False, f"Khong trich duoc {ten_luu}: {out[-200:]}"
+            return False, f"Không trích được {ten_luu}: {out[-200:]}"
         # wimlib giu nguyen ten goc (bootmgr.exe/wdsmgfw.efi) - da dung ten
         # do lam TEN_LUU nen khong can doi ten. Chi kiem tra co that khong.
         if not os.path.isfile(dich):
-            return False, f"Trich xong nhung khong thay {ten_luu} tai {dich}."
+            return False, f"Trích xong nhưng không thấy {ten_luu} tại {dich}."
         ket_qua.append(ten_luu)
-    return True, f"Da trich {', '.join(ket_qua)} tu boot.wim."
+    return True, f"Đã trích {', '.join(ket_qua)} từ boot.wim."
 
 
 def _co_bcd():
@@ -122,24 +133,26 @@ def trang_thai_chuan_bi():
     deployos.py, kiem tra rieng cac dieu kien PXE THAT SU can de bat duoc.
     """
     ra = []
-    co_ipxe_tftp = os.path.isfile(_duong("undionly.kpxe")) and os.path.isfile(_duong("ipxe.efi"))
+    co_ipxe_tftp = os.path.isfile(_duong("undionly.kpxe")) and os.path.isfile(_duong("snponly.efi"))
     ra.append((co_ipxe_tftp, "Bootloader iPXE (BIOS + UEFI)",
-               "Da co ca undionly.kpxe va ipxe.efi" if co_ipxe_tftp else
-               "Thieu - tai len o tab 2.1 File boot"))
+               "Đã có cả undionly.kpxe và snponly.efi" if co_ipxe_tftp else
+               "Thiếu - tải lên ở tab Tài nguyên > File boot (cần cả "
+               "undionly.kpxe và snponly.efi - snponly.efi tương thích tốt "
+               "hơn với máy ảo/một số card mạng UEFI, đã kiểm chứng thật)"))
 
     co_wimboot = os.path.isfile(_duong("wimboot"))
     ra.append((co_wimboot, "wimboot",
-               "Da co" if co_wimboot else "Thieu - tai len o tab 2.1 File boot"))
+               "Đã có" if co_wimboot else "Thiếu - tải lên ở tab Tài nguyên > File boot"))
 
-    ra.append((_co_bootmgr_pxe(), "bootmgr.exe + wdsmgfw.efi (trich tu boot.wim)",
-               "Da trich" if _co_bootmgr_pxe() else
-               "Chua trich - bam nut 'Trich bootmgr tu boot.wim' ben duoi"))
+    ra.append((_co_bootmgr_pxe(), "bootmgr.exe + wdsmgfw.efi (trích từ boot.wim)",
+               "Đã trích" if _co_bootmgr_pxe() else
+               "Chưa trích - bấm nút 'Trích bootmgr từ boot.wim' bên dưới"))
 
-    ra.append((_co_bcd(), "File BCD (tu ISO goc)",
-               "Da co" if _co_bcd() else
-               "CHUA CO - can lay tu goc ISO (thu muc boot/bcd va "
-               "efi/microsoft/boot/bcd), khong nam san trong boot.wim. "
-               "Tai lai ISO va bam nut lay BCD."))
+    ra.append((_co_bcd(), "File BCD (từ ISO gốc)",
+               "Đã có" if _co_bcd() else
+               "CHƯA CÓ - cần lấy từ gốc ISO (thư mục boot/bcd và "
+               "efi/microsoft/boot/bcd), không nằm sẵn trong boot.wim. "
+               "Tải lại ISO và bấm nút lấy BCD."))
     return ra
 
 
@@ -191,9 +204,55 @@ def _sinh_menu_ipxe(kieu_boot="truc_tiep"):
     (xem _dia_chi_pi_that) - khong duoc gia dinh la PI_IP cho moi kieu boot.
     """
     goc = f"http://{_dia_chi_pi_that(kieu_boot)}/deployos/pxeboot"
+
+    # LOI THAT DA GAP (anh Thoai kiem chung that qua nhieu vong boot may
+    # ao that, ca bang wimlib LAN bang DISM chinh chu Microsoft): moi
+    # cach nhung autounattend.xml vao BEN TRONG boot.wim (wimlib update,
+    # mount FUSE+commit, DISM mount+commit qua console that) DEU lam
+    # boot.wim MAT KHA NANG BOOT qua wimboot ("Windows Boot Manager
+    # 0xc000000f") - du dung tool nao, du DISM bao "completed
+    # successfully". boot.wim GOC (khong qua sua gi) luon boot binh
+    # thuong - da doi chieu truc tiep nhieu lan. Nap autounattend.xml
+    # nhu 1 file/dia mem RIENG qua initrd phu cua wimboot cung KHONG
+    # duoc Setup nhan dien - vi tai lieu chinh thuc cua wimboot
+    # (ipxe.org/appnote/wimboot_architecture) xac nhan no chi phoi cac
+    # file phu ra 1 he thong file ao RIENG cho GIAI DOAN bootmgr.exe
+    # (truoc khi vao he dieu hanh), khong phai o dia X: that ma
+    # WinPE/Setup chay - Setup khong bao gio thay duoc file o do.
+    #
+    # SUA DUNG (lan 1): bo wimboot hoan toan cho Windows, dung `sanboot`
+    # cua iPXE - trinh dien CA MOT anh ISO nhu 1 o dia quang that su cho
+    # firmware, dung y het co che boot tu USB/DVD that (khop voi cach
+    # anh Thoai da tung lam thanh cong: "them file autounattend.xml vao
+    # file ISO la chay luon"). Windows Setup luc nay THAT SU quet duoc
+    # goc cua o dia rieng (khong phai X:) va tu ap dung autounattend.xml.
+    #
+    # LOI THAT DA GAP VOI ISO (da kiem chung, tra cuu duoc tai ipxe.org):
+    # sanboot mot ISO qua HTTP o che do UEFI tra ve loi iPXE
+    # (0x7f22208e roi 0x7f222091 sau khi sua 1 loi khac). Day la 1 LOI
+    # THAT DA BIET cua chinh iPXE (xem mailing list ipxe-devel, thang
+    # 12/2016, "Bug in UEFI Sanboot with iso9660"): code `efi_block.c`
+    # cua iPXE tu nhan dien chu ky ISO9660 tren dia va ap dat sai
+    # `blksize_shift`, doc sai du lieu FAT nam trong ISO - xay ra voi
+    # BAT KY dia nao vua co ISO9660 vua co cau truc UEFI phuc tap. Fix
+    # that su can sua ma nguon C cua iPXE (ngoai pham vi hop ly).
+    #
+    # SUA DUNG (lan 2, dang dung): bo ISO9660 hoan toan, dung anh dia
+    # GPT + 1 phan vung FAT32 (kieu USB cai Windows that) - KHONG co chu
+    # ky ISO9660 nao nen khong bao gio cham vao doan code loi do. Dung
+    # 100% bang cong cu Linux (wimlib-imagex split de chia install.wim
+    # vuot 4GB thanh install.swm/install2.swm, parted+mkfs.vfat de dung
+    # GPT+FAT32, cac file boot van trich thang tu boot.wim) - xem
+    # ui/unattend.py: dung_dia_gpt_tu_dong().
+    from . import unattend as _u
+    if _u.co_san_dia_gpt_tu_dong():
+        return f"""#!ipxe
+sanboot --no-describe {goc}/{_u.TEN_DIA_GPT_TU_DONG}
+"""
+
     return f"""#!ipxe
 kernel {goc}/wimboot
-initrd {goc}/boot.wim    boot.wim
+initrd {goc}/boot.wim            boot.wim
 initrd {goc}/{TEN_BCD_BIOS}      BCD
 initrd {goc}/{TEN_BOOTMGR_BIOS}  bootmgr.exe
 boot
@@ -224,6 +283,18 @@ def _ghi_dnsmasq_conf(kieu_boot):
     """
     dia_chi_pi = _dia_chi_pi_that(kieu_boot)
 
+    # LOI THAT DA GAP (kiem chung bang tcpdump that trong luc anh Thoai
+    # dang cho): o che do proxyDHCP, dnsmasq KHONG dung dhcp-boot de quyet
+    # dinh file boot - theo dung man dnsmasq: "--dhcp-range=...,proxy...
+    # dnsmasq don gian cung cap thong tin trong --pxe-prompt va
+    # --pxe-service de cho phep netboot" (dhcp-boot van khai bao duoc
+    # nhung KHONG co tac dung trong che do proxy). Da bat qua that: dnsmasq
+    # nhan dung goi tin DHCPDISCOVER cua may (thay trong log "vendor
+    # class: PXEClient..."), NHUNG khong bao gio gui goi tra loi nao ca
+    # (xac nhan bang tcpdump tren eth0 - khong co goi nao nguon tu Pi).
+    # Them pxe-service (co tag rieng cho BIOS/UEFI) moi la cach dung cho
+    # proxyDHCP theo tai lieu chinh thuc.
+    dong_pxe_service = ""
     if kieu_boot == "mang_co_dhcp":
         mang, prefix = _mang_that(IFACE)
         if not mang:
@@ -231,6 +302,10 @@ def _ghi_dnsmasq_conf(kieu_boot):
                            f"kiem tra da cam day mang va co IP chua.")
         dhcp_range = f"dhcp-range={mang},proxy"
         dong_gateway = ""     # proxyDHCP khong cap IP nen khong can khai bao gateway
+        dong_pxe_service = (
+            'pxe-service=tag:bios-that,x86PC,"Cai dat qua mang (Console Pi)",undionly.kpxe\n'
+            'pxe-service=tag:efi-that,x86-64_EFI,"Cai dat qua mang (Console Pi)",snponly.efi'
+        )
     else:
         dhcp_range = (f"dhcp-range={PI_IP.rsplit('.',1)[0]}.50,"
                      f"{PI_IP.rsplit('.',1)[0]}.99,255.255.255.0,12h")
@@ -252,13 +327,24 @@ dhcp-match=set:efi-x64,option:client-arch,9
 
 # May dang chay iPXE roi (tu nhan dang qua user-class "iPXE") thi chuyen
 # sang script iPXE qua HTTP - KHONG lam vay se vong lap vo tan (iPXE tu
-# tai lai chinh no). Dat SAU cac dong tag:bios/efi-x64 de dnsmasq uu tien
-# dong nay khi ca 2 dieu kien deu dung (may da chay iPXE VA la UEFI/BIOS).
+# tai lai chinh no).
+#
+# LOI THAT DA GAP (kiem chung bang tcpdump + --log-debug that, khong doan):
+# mot goi DHCPDISCOVER cua may co the mang CA HAI tag "bios"/"efi-x64" LAN
+# "ipxe" cung luc (may da chay iPXE VA la kien truc UEFI/BIOS). Da thu ca
+# 2 thu tu khai bao dhcp-boot (ipxe truoc, ipxe sau) - KHONG anh huong gi,
+# dnsmasq luon uu tien tag "efi-x64"/"bios" bat ke thu tu file, khien iPXE
+# TU TAI LAI CHINH NO mai mai (vong lap vo han - dung trieu chung "chay
+# xoay vong hoai" anh Thoai gap). Sua dung: dung `tag-if` de tao tag MOI
+# (vd "efi-that") CHI bat khi la UEFI VA CHUA chay iPXE - tach biet han 2
+# truong hop thay vi de chung de tag cung khop 1 request.
 dhcp-userclass=set:ipxe,iPXE
-dhcp-boot=tag:bios,undionly.kpxe
-dhcp-boot=tag:efi-x64,ipxe.efi
+tag-if=set:bios-that,tag:bios,tag:!ipxe
+tag-if=set:efi-that,tag:efi-x64,tag:!ipxe
+dhcp-boot=tag:bios-that,undionly.kpxe
+dhcp-boot=tag:efi-that,snponly.efi
 dhcp-boot=tag:ipxe,http://{dia_chi_pi}:80/deployos/pxeboot/menu.ipxe
-
+{dong_pxe_service}
 enable-tftp
 tftp-root={_d.BOOT_DIR}
 log-dhcp
@@ -271,22 +357,94 @@ log-dhcp
         return False, str(e)
 
 
-def bat_pxe(kieu_boot="truc_tiep"):
-    if dang_bat():
-        return True, "PXE dang bat san."
-    if not san_sang_bat():
-        return False, "Chua du dieu kien (xem bang 'San sang PXE' ben tren)."
+def _don_phien_smb_cu(dia_chi_may):
+    r"""
+    Ngat cac phien SMB CU con ket lai tren Pi cua dung may sap boot.
+
+    LOI THAT DA GAP - day la nguyen nhan GOC cua chuyen "luc duoc luc
+    khong" khi cai Windows (tim ra bang tcpdump tren chinh Pi, khong doan):
+
+        192.168.110.33.49668 > 192.168.110.14.445: Flags [S]        <- SYN
+        192.168.110.14.445 > 192.168.110.33.49668: Flags [.], ack 1 <- ACK tran
+
+    May cai gui SYN de mo ket noi SMB, nhung Pi tra ve ACK TRAN thay vi
+    SYN-ACK, nen bat tay TCP KHONG BAO GIO xong -> Windows bao "System
+    error 53 - The network path was not found". Kiem chung tiep bang
+    `ss -tan`:
+
+        ESTAB  192.168.110.14:445  192.168.110.33:49668
+
+    Tuc la Pi VAN dang giu ket noi cu tu lan boot TRUOC o trang thai
+    ESTABLISHED: may kia bi reset/khoi dong lai giua chung nen khong he
+    gui FIN/RST, Pi khong biet no da chet. Lan boot sau, WinPE lai cap
+    DUNG cung so cong nguon (49668 - WinPE luon cap cong tu cung mot
+    cho) va DHCP lai cap dung cung IP -> trung y het 4-tuple cu -> nhan
+    Linux coi SYN moi la goi lac cua ket noi dang co va tra "challenge
+    ACK" (RFC 5961) thay vi SYN-ACK.
+
+    Vi vay lan cai DAU tien sau khi Pi khoi dong thi chay ngon, cac lan
+    RESET may de cai lai thi hong - dung nhu hien tuong anh Thoai gap.
+    (Go tay bang Shift+F10 lai duoc, vi luc do Windows cap cong nguon
+    khac.)
+
+    Cach don: `smbcontrol smbd kill-client-ip <ip>` - chi ngat dung may
+    do, khong dung toi client nao khac dang dung Samba.
+    """
+    if not dia_chi_may:
+        return
+    _sh(["smbcontrol", "smbd", "kill-client-ip", dia_chi_may], timeout=10)
+
+
+def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
+    """
+    cauhinh: dict trang thai wizard (ten_may, username, password, o_dia...)
+    - neu co va la Windows, TU DONG dung lai anh dia GPT+FAT32 (boot.wim +
+    script trien khai + unattend rieng cho os_id/kich ban NAY - xem
+    ui/unattend.py: dung_dia_gpt_tu_dong()) truoc khi bat, de may can cai
+    tu chay het khong can go tay gi ca.
+
+    LOI THAT DA GAP (anh Thoai bao "lam sao biet chac no dung kich ban anh
+    muon"): ham nay TUNG (a) goi chuan_bi_autounattend() - ham CU da bi
+    thay the tu lau (dia mem ao, khong con dung nua) thay vi
+    dung_dia_gpt_tu_dong() la ham THAT SU dang duoc PXE su dung (xem
+    _sinh_menu_ipxe: sanboot thang vao file dung_dia_gpt_tu_dong() tao
+    ra); va (b) neu PXE DA dang bat san thi return SOM ngay dau ham,
+    KHONG BAO GIO dung lai anh dia - nghia la bam "Dung" 1 kich ban khac
+    trong khi PXE dang chay se KHONG co tac dung gi, may can cai van boot
+    vao anh dia CU. Sua lai: LUON dung lai anh dia truoc (khop dung
+    os_id/kich ban dang chon), roi moi kiem tra da bat san hay chua de
+    quyet dinh co can khoi dong lai dich vu dnsmasq hay khong (khong can
+    khoi dong lai neu da bat san - file anh dia se duoc doc lai tu dau
+    o lan sanboot TIEP THEO).
+    """
+    da_bat_san = dang_bat()
+    if not da_bat_san and not san_sang_bat():
+        return False, "Chưa đủ điều kiện (xem bảng 'Sẵn sàng PXE' bên trên)."
 
     if kieu_boot == "mang_co_dhcp" and not _mang_that(IFACE)[0]:
-        return False, (f"Chua doc duoc dia chi IP that cua {IFACE} - kiem "
-                       f"tra da cam day mang vao mang co DHCP chua.")
+        return False, (f"Chưa đọc được địa chỉ IP thật của {IFACE} - kiểm "
+                       f"tra đã cắm dây mạng vào mạng có DHCP chưa.")
+
+    da_dung_anh_dia = False
+    if cauhinh and cauhinh.get("os_ho") == "windows":
+        from . import unattend as _u
+        ok, msg = _u.dung_dia_gpt_tu_dong(cauhinh, _dia_chi_pi_that(kieu_boot))
+        if not ok:
+            return False, f"Không dựng được ảnh đĩa cài đặt: {msg}"
+        da_dung_anh_dia = True
+
+    if da_bat_san:
+        if da_dung_anh_dia:
+            return True, ("Đã cập nhật ảnh đĩa cài đặt theo kịch bản đang "
+                           "chọn. PXE vẫn đang bật, không cần khởi động lại.")
+        return True, "PXE đang bật sẵn."
 
     if not _ghi_menu_ipxe(kieu_boot):
-        return False, "Khong ghi duoc script iPXE."
+        return False, "Không ghi được script iPXE."
 
     ok, err = _ghi_dnsmasq_conf(kieu_boot)
     if not ok:
-        return False, f"Khong ghi duoc cau hinh dnsmasq: {err}"
+        return False, f"Không ghi được cấu hình dnsmasq: {err}"
 
     if kieu_boot != "mang_co_dhcp":
         # Che do tu cap IP: can chiem han eth0, giong het direct.py
@@ -295,25 +453,48 @@ def bat_pxe(kieu_boot="truc_tiep"):
         ok, out = _sh(["ip", "addr", "add", PI_CIDR, "dev", IFACE])
         if not ok and "File exists" not in out:
             _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
-            return False, f"Khong dat duoc IP tinh cho {IFACE}: {out[:150]}"
+            return False, f"Không đặt được IP tĩnh cho {IFACE}: {out[:150]}"
         _sh(["ip", "link", "set", IFACE, "up"])
 
     ok, out = _sh(["systemctl", "restart", DON_VI_SYSTEMD])
     if not ok:
         if kieu_boot != "mang_co_dhcp":
             _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
-        return False, f"Khong bat duoc dich vu PXE: {out[:200]}"
+        return False, f"Không bật được dịch vụ PXE: {out[:200]}"
+
+    # BAT LUON SAMBA - khong the thieu.
+    #
+    # LOI THAT DA GAP (11/09/2026): sau khi khoi dong lai Pi, bam "Dung"
+    # thi dnsmasq-pxe len binh thuong nen may VAN PXE boot duoc, nhung
+    # smbd thi khong (`smbd.service; disabled` - khong tu chay luc boot,
+    # va truoc day no chi chay vi da duoc bat bang tay tu truoc do).
+    # Ket qua: WinPE boot len roi dung o buoc [2/6] "khong ket noi duoc
+    # kho trien khai" - trong giong het loi mang, rat kho doan ra.
+    # PXE ma khong co kho Samba thi vo nghia, nen hai thu nay PHAI len
+    # cung nhau. Dung `start` (khong phai `restart`) de khong ngat cac
+    # may dang chep file do neu PXE duoc bat lai giua chung.
+    ok_smb, out_smb = _sh(["systemctl", "start", "smbd"])
+    if not ok_smb:
+        _sh(["systemctl", "stop", DON_VI_SYSTEMD])
+        if kieu_boot != "mang_co_dhcp":
+            _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
+        return False, ("Bật được PXE nhưng không bật được kho Samba "
+                       f"(smbd): {out_smb[:200]}")
 
     open(STATE_FLAG, "w").write(kieu_boot)
-    return True, ("Da bat PXE. Cam day mang tu Pi sang may can cai (hoac qua "
-                  "chung 1 switch neu dung kieu 'mang co DHCP'), vao BIOS/UEFI "
-                  "may do chon boot qua mang (Network Boot / PXE Boot).")
+    return True, ("Đã bật PXE. Cắm dây mạng từ Pi sang máy cần cài (hoặc qua "
+                  "chung 1 switch nếu dùng kiểu 'mạng có DHCP'), vào BIOS/UEFI "
+                  "máy đó chọn boot qua mạng (Network Boot / PXE Boot).")
 
 
 def tat_pxe():
     if not dang_bat():
-        return True, "PXE von da tat."
+        return True, "PXE vốn đã tắt."
     _sh(["systemctl", "stop", DON_VI_SYSTEMD])
+    # Tat luon Samba (xem ghi chu o bat_pxe): smb.conf chi co DUY NHAT
+    # share [deploy] phuc vu PXE, khong con viec gi khac dung toi, nen tat
+    # di de khong phoi SMB ra mang khi khong trien khai.
+    _sh(["systemctl", "stop", "smbd"])
     try:
         kieu = open(STATE_FLAG).read().strip()
     except OSError:
@@ -326,7 +507,7 @@ def tat_pxe():
         os.remove(STATE_FLAG)
     except OSError:
         pass
-    return True, f"Da tat PXE, tra {IFACE} ve binh thuong."
+    return True, f"Đã tắt PXE, trả {IFACE} về bình thường."
 
 
 # ==================================================================== web
@@ -335,7 +516,8 @@ def register_pxe(app):
     from .layout import render_page
     from .home import _esc
 
-    EXT_PHUC_VU = {".kpxe", ".efi", ".ipxe", ".wim", ".exe", "", }
+    EXT_PHUC_VU = {".kpxe", ".efi", ".ipxe", ".wim", ".exe", ".img", ".xml",
+                   ".iso", "", }
     TEN_PHUC_VU_RIENG = {"wimboot", TEN_BCD_BIOS, TEN_BCD_UEFI}
 
     @app.route("/deployos/pxeboot/<ten>")
@@ -356,13 +538,28 @@ def register_pxe(app):
         p = _d._duong_dan_trong(_d.BOOT_DIR, ten_sach)
         if not p or not os.path.isfile(p):
             abort(404)
+
+        # Don phien SMB cu cua may sap boot - xem _don_phien_smb_cu().
+        #
+        # PHAI gan vao "menu.ipxe" chu KHONG duoc gan vao file anh dia.
+        # LOI THAT DA GAP (anh Thoai: boot toi "Booting from SAN device
+        # 0x80" roi man hinh den thui): `sanboot` KHONG tai anh dia ve mot
+        # lan - no phuc vu anh dia nhu 1 O DIA QUA MANG, doc tung khoi
+        # theo yeu cau SUOT qua trinh boot, tuc la route nay bi goi RAT
+        # NHIEU lan. Gan lenh don (mot tien trinh smbcontrol rieng, cho
+        # toi 10 giay) vao do = moi lan doc 1 khoi lai de ra 1 tien trinh
+        # -> boot dung hinh. menu.ipxe thi chi duoc tai DUNG 1 LAN o dau
+        # moi lan boot, va tai TRUOC khi sanboot chay - dung cho can.
+        if ten_sach == "menu.ipxe":
+            _don_phien_smb_cu(request.remote_addr)
+
         return send_from_directory(_d.BOOT_DIR, ten_sach)
 
     def _ve_lai(msg, ok):
         """
         LOI THAT DA GAP (anh Thoai bam "Bat PXE" xong khong thay gi ca -
         khong biet thanh cong hay that bai): 3 route duoi day TRUOC KIA vut
-        bo het ket qua (ok, msg) roi redirect thang ve "/deployos/boot" -
+        bo het ket qua (ok, msg) roi redirect thang ve "/deployos/kichban" -
         mat luon ca trinh tu dang lam (quay ve man hinh chon tu dau) LAN
         khong hien 1 chu nao cho biet vua xay ra chuyen gi. Dung nhat khi
         that bai that su (vd chua cam day mang) - nguoi dung khong co cach
@@ -376,7 +573,7 @@ def register_pxe(app):
         ma = request.form.get("ma", "")
         if ma:
             return redirect(f"/deployos/wizard/{ma}/7")
-        return redirect("/deployos/boot")
+        return redirect("/deployos/kichban")
 
     @app.route("/deployos/pxe/trich-bootmgr", methods=["POST"])
     def deployos_pxe_trich():
@@ -386,7 +583,25 @@ def register_pxe(app):
     @app.route("/deployos/pxe/bat", methods=["POST"])
     def deployos_pxe_bat():
         kieu = request.form.get("kieu_boot", "truc_tiep")
-        ok, msg = bat_pxe(kieu)
+        # Doc lai toan bo cau hinh cua trinh tu (khong chi kieu_boot) de
+        # sinh dung autounattend.xml khop voi ten may/tai khoan/o dia anh
+        # Thoai da chon - xem bat_pxe() va ui/unattend.py.
+        ma = request.form.get("ma", "")
+        cauhinh = _d._wizard_lay(ma) if ma else None
+        # LOI THAT DA GAP (anh Thoai: cai xong nhung "mat khau khong dung,
+        # no chay kich ban nao ay"): trang thai trinh tu nam trong BO NHO
+        # (_WIZARD) nen se MAT khi dashboard khoi dong lai hoac qua han.
+        # Luc do cauhinh = None, bat_pxe() se BO QUA hoan toan buoc dung
+        # lai anh dia va bat PXE voi anh dia CU (cua lan chay truoc do,
+        # co the cua kich ban khac hoan toan) MA KHONG BAO GI CA. Phai
+        # bao loi ro rang thay vi im lang chay sai kich ban.
+        if ma and cauhinh is None:
+            return _ve_lai(
+                "Trình tự đã hết hạn (hoặc dashboard vừa khởi động lại) nên "
+                "không còn giữ được lựa chọn của anh. CHƯA bật PXE - vào lại "
+                "danh sách kịch bản và bấm \"Dùng\" lần nữa để chắc chắn máy "
+                "cài đúng kịch bản anh muốn.", False)
+        ok, msg = bat_pxe(kieu, cauhinh)
         return _ve_lai(msg, ok)
 
     @app.route("/deployos/pxe/tat", methods=["POST"])

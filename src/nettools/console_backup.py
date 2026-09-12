@@ -68,7 +68,7 @@ BACKUP_DIR = "/opt/console-pi/backups"
 # dang nhap xong la du quyen xem cau hinh ngay, nen khong can kiem tra.
 HO_THIET_BI = {
     "cisco": {
-        "ten": "Cisco IOS / IOS-XE (va cac dong tuong thich)",
+        "ten": "Cisco IOS / IOS-XE (và các dòng tương thích)",
         "can_enable": True,
         "tat_phan_trang": "terminal length 0",
         "lenh": "show running-config",
@@ -207,9 +207,9 @@ def chup_cau_hinh(dev, ho="cisco", ten_file=""):
     """
     dev = os.path.basename((dev or "").strip())
     if not re.fullmatch(r"tty(USB|ACM)\d+", dev):
-        return False, "Ten cong khong hop le.", ""
+        return False, "Tên cổng không hợp lệ.", ""
     if not os.path.exists(f"/dev/{dev}"):
-        return False, f"Khong thay /dev/{dev} - co the cap da bi rut.", ""
+        return False, f"Không thấy /dev/{dev} - có thể cáp đã bị rút.", ""
     if not phien_dang_chay(dev):
         return False, (f"Chua co phien console cho {dev}. Vao Tong quan bam "
                        f"'Mo Console' cho cong nay truoc roi quay lai."), ""

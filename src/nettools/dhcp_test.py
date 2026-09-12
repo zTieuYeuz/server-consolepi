@@ -3,7 +3,7 @@ Console Pi Network Tools - Kiem tra toan dien cong mang day (gop DHCP
 Testing + Kiem tra cong vat ly + Bang thong, theo yeu cau gop lam mot trang
 bam MOT NUT la test het).
 
-Mot lan bam "Kiem tra toan dien" se lam:
+Mot lan bam "Kiểm tra toàn diện" se lam:
   1. Doc thong tin cong vat ly (ethtool) - toc do/duplex that, loi duong
      truyen, PoE. KHONG can DHCP, luon hien duoc ngay ca khi cong chua
      co IP nao ca.
@@ -68,8 +68,8 @@ def doc_thong_tin_cong(iface):
     rc, out, err = _chay(["ethtool", iface])
     if rc != 0:
         if "khong-cai-dat" in err:
-            return {"ok": False, "loi": "Chua cai ethtool tren may."}
-        return {"ok": False, "loi": f"Khong doc duoc thong tin cong: {err.strip()[:150]}"}
+            return {"ok": False, "loi": "Chưa cài ethtool trên máy."}
+        return {"ok": False, "loi": f"Không đọc được thông tin cổng: {err.strip()[:150]}"}
 
     def _lay(nhan, van_ban):
         m = re.search(rf"{nhan}:\s*(.+)", van_ban)
@@ -116,11 +116,11 @@ def doc_thong_tin_cong(iface):
     if "1000baseT" in " ".join(ket_qua["nang_luc_minh"]) and \
        "1000baseT" in " ".join(ket_qua["nang_luc_doi_phuong"]) and \
        ket_qua["toc_do"] not in ("1000Mb/s", "?"):
-        ket_qua["canh_bao"] = (f"Ca hai ben deu ho tro Gigabit nhung chi thuong luong duoc "
+        ket_qua["canh_bao"] = (f"Cả hai bên đều hỗ trợ Gigabit nhưng chỉ thương lượng được "
                                f"{ket_qua['toc_do']} - kiem tra lai chat luong day cap hoac "
                                f"cai dat toc do co dinh (fixed speed) tren switch.")
     elif ket_qua["duplex"] == "Half":
-        ket_qua["canh_bao"] = ("Dang chay Half Duplex - hau nhu chac chan la loi cau hinh "
+        ket_qua["canh_bao"] = ("Đang chạy Half Duplex - hầu như chắc chắn là lỗi cấu hình "
                               "(duplex mismatch), gay mat goi va cham ro ret. Kiem tra cai dat "
                               "tren cong switch phia ben kia.")
     else:
@@ -132,7 +132,7 @@ def doc_thong_tin_cong(iface):
 def doc_thong_ke_loi(iface):
     rc, out, err = _chay(["ethtool", "-S", iface])
     if rc != 0:
-        return {"ok": False, "loi": "Card mang nay khong ho tro doc thong ke chi tiet."}
+        return {"ok": False, "loi": "Card mạng này không hỗ trợ đọc thống kê chi tiết."}
 
     muon_biet = ["rx_errors", "tx_errors", "rx_dropped", "tx_dropped",
                 "rx_crc_errors", "rx_length_errors", "rx_over_errors",
@@ -188,7 +188,7 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
             get_if_hwaddr, mac2str, conf,
         )
     except ImportError as e:
-        return {"ok": False, "error": f"Loi import scapy: {e}", "offers": [], "internet": None,
+        return {"ok": False, "error": f"Lỗi import scapy: {e}", "offers": [], "internet": None,
                 "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
 
     conf.verb = 0
@@ -197,7 +197,7 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
         hw_str = get_if_hwaddr(iface)
         hw = mac2str(hw_str)
     except Exception as e:
-        return {"ok": False, "error": f"Khong lay duoc MAC cua {iface}: {e}", "offers": [], "internet": None,
+        return {"ok": False, "error": f"Không lấy được MAC của {iface}: {e}", "offers": [], "internet": None,
                 "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
 
     xid = random.randint(1, 0xFFFFFFFF)
@@ -232,11 +232,11 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
             time.sleep(KHOANG_CACH)
     except PermissionError:
         sniffer.stop()
-        return {"ok": False, "error": "Khong du quyen mo raw socket (can chay duoi quyen root).",
+        return {"ok": False, "error": "Không đủ quyền mở raw socket (cần chạy dưới quyền root).",
                 "offers": [], "internet": None, "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
     except OSError as e:
         sniffer.stop()
-        return {"ok": False, "error": f"Loi khi gui goi tin: {e}", "offers": [], "internet": None,
+        return {"ok": False, "error": f"Lỗi khi gửi gói tin: {e}", "offers": [], "internet": None,
                 "cong": cong, "loi_truyen": loi_truyen, "poe": poe}
     else:
         sniffer.stop()
@@ -382,7 +382,7 @@ def _dhcp_request_ack(iface, xid, offer, hw, timeout=5):
                 ((o[0], o[1]) for o in recv[DHCP].options if isinstance(o, tuple))}
         mtype = opts.get("message-type")
         if mtype == 6:
-            return False, None, None, None, None, "DHCP server tu choi (NAK) - offer co the da het han."
+            return False, None, None, None, None, "DHCP server từ chối (NAK) - offer có thể đã hết hạn."
         if mtype != 5:
             continue
         ip = recv[BOOTP].yiaddr
@@ -396,7 +396,7 @@ def _dhcp_request_ack(iface, xid, offer, hw, timeout=5):
         dns = opts.get("name_server", offer.get("name_server"))
         return True, ip, mask, gw, dns, None
 
-    return False, None, None, None, None, "Khong nhan duoc DHCPACK trong thoi gian cho."
+    return False, None, None, None, None, "Không nhận được DHCPACK trong thời gian chờ."
 
 
 def _dia_chi_hien_co_tren_cong(iface):
@@ -418,10 +418,10 @@ def cloudflare_speedtest(so_byte, ip_nguon=None):
     cmd += ["-w", "%{speed_download} %{http_code} %{time_total}", url]
     rc, out, err = _chay(cmd, timeout=25)
     if rc != 0:
-        return {"ok": False, "loi": f"Khong tai duoc: {err.strip()[:150]}"}
+        return {"ok": False, "loi": f"Không tải được: {err.strip()[:150]}"}
     phan = out.split()
     if len(phan) < 2 or phan[1] != "200":
-        return {"ok": False, "loi": f"Cloudflare tra ve loi (HTTP {phan[1] if len(phan)>1 else '?'})."}
+        return {"ok": False, "loi": f"Cloudflare trả về lỗi (HTTP {phan[1] if len(phan)>1 else '?'})."}
     mbps = float(phan[0]) * 8 / 1_000_000
     return {"ok": True, "mbps": round(mbps, 1), "thoi_gian_s": phan[2], "so_mb": so_byte // 1_000_000}
 
@@ -451,7 +451,7 @@ def _test_internet_qua_dhcp(iface, xid, offer, hw):
 
     prefix = _mask_to_prefixlen(mask)
     if prefix is None or not gw or gw == "?":
-        ket_qua["loi"] = (f"Nhan duoc IP {ip} nhung thieu subnet mask hoac gateway hop le "
+        ket_qua["loi"] = (f"Nhận được IP {ip} nhưng thiếu subnet mask hoặc gateway hợp lệ "
                           f"(mask={mask}, gateway={gw}) - khong the dinh tuyen de test.")
         return ket_qua
 
@@ -465,7 +465,7 @@ def _test_internet_qua_dhcp(iface, xid, offer, hw):
                                capture_output=True, text=True, timeout=8)
             trung_dia_chi = ("File exists" in r.stderr or "already assigned" in r.stderr)
             if r.returncode != 0 and not trung_dia_chi:
-                ket_qua["loi"] = f"Khong gan duoc IP tam: {r.stderr.strip()[:150]}"
+                ket_qua["loi"] = f"Không gắn được IP tạm: {r.stderr.strip()[:150]}"
                 return ket_qua
             da_them_ip = not trung_dia_chi
 
@@ -504,7 +504,7 @@ def _test_internet_qua_dhcp(iface, xid, offer, hw):
         m2 = re.search(r"PING \S+ \(([\d.]+)\)", r.stdout)
         if m2:
             ip_phan_giai = m2.group(1)
-        loi_dns = "Khong phan giai duoc ten mien (loi DNS)" if "Name or service not known" in r.stderr else None
+        loi_dns = "Không phân giải được tên miền (lỗi DNS)" if "Name or service not known" in r.stderr else None
         ket_qua["ping_google"] = {"ok": mat < 100 and not loi_dns, "mat_goi_pct": mat,
                                   "ip_phan_giai": ip_phan_giai, "loi": loi_dns}
 
@@ -547,7 +547,7 @@ DHCP_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Kiem tra cong mang - Console Pi</title>
+    <title>Kiểm tra cổng mạng - Console Pi</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -575,7 +575,7 @@ DHCP_TEMPLATE = """
     <p class="hint">Mot nut bam duy nhat: doc toc do/duplex/loi duong truyen/PoE cua cong,
     gui DHCPDISCOVER, va neu co IP thi kiem tra luon ra Internet + do bang thong that
     (Cloudflare Speed Test) - tat ca trong 1 lan.</p>
-    <p class="hint">Khuyen nghi dung <strong>eth0</strong>. Tren <strong>wlan0</strong> cong cu van
+    <p class="hint">Khuyến nghị dùng <strong>eth0</strong>. Tren <strong>wlan0</strong> cong cu van
     hoat dong (tu dong gui lai 3 lan de vuot qua mat goi broadcast dac trung cua WiFi).</p>
 
     <form method="POST" style="margin-top:16px;">
@@ -584,7 +584,7 @@ DHCP_TEMPLATE = """
             <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
             <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
         </select>
-        <button type="submit" style="margin-left:10px;" data-busy="Dang kiem tra toan dien...">🔎 Kiem tra toan dien</button>
+        <button type="submit" style="margin-left:10px;" data-busy="Đang kiểm tra toàn diện...">🔎 Kiem tra toan dien</button>
     </form>
 
     {% if ran %}
@@ -592,19 +592,19 @@ DHCP_TEMPLATE = """
         <h3 style="margin-top:0;">🔌 Cong vat ly</h3>
         {% if result.cong.ok %}
         <table>
-            <tr><th>Toc do thuong luong</th><td class="big">{{ result.cong.toc_do }}</td></tr>
+            <tr><th>Tốc độ thương lượng</th><td class="big">{{ result.cong.toc_do }}</td></tr>
             <tr><th>Duplex</th><td>{{ result.cong.duplex }}</td></tr>
             <tr><th>Auto-negotiation</th><td>{{ result.cong.auto_neg }}</td></tr>
-            <tr><th>Lien ket (link)</th><td>{{ result.cong.lien_ket }}</td></tr>
+            <tr><th>Liên kết (link)</th><td>{{ result.cong.lien_ket }}</td></tr>
             <tr><th>Driver</th><td><code>{{ result.cong.driver }}</code></td></tr>
-            <tr><th>Nang luc cua Pi</th><td><div class="modes">{% for m in result.cong.nang_luc_minh %}<span class="mode-chip">{{ m }}</span>{% endfor %}</div></td></tr>
-            <tr><th>Nang luc phia ben kia</th><td><div class="modes">{% for m in result.cong.nang_luc_doi_phuong %}<span class="mode-chip">{{ m }}</span>{% endfor %}
-                {% if not result.cong.nang_luc_doi_phuong %}<span class="hint">Khong doc duoc (cong co the dang down)</span>{% endif %}</div></td></tr>
+            <tr><th>Năng lực của Pi</th><td><div class="modes">{% for m in result.cong.nang_luc_minh %}<span class="mode-chip">{{ m }}</span>{% endfor %}</div></td></tr>
+            <tr><th>Năng lực phía bên kia</th><td><div class="modes">{% for m in result.cong.nang_luc_doi_phuong %}<span class="mode-chip">{{ m }}</span>{% endfor %}
+                {% if not result.cong.nang_luc_doi_phuong %}<span class="hint">Không đọc được (cổng có thể đang down)</span>{% endif %}</div></td></tr>
         </table>
         {% if result.cong.canh_bao %}<div class="warn" style="margin-top:11px;">⚠️ {{ result.cong.canh_bao }}</div>{% endif %}
         {% else %}<div class="err">{{ result.cong.loi }}</div>{% endif %}
 
-        <h3>Thong ke loi duong truyen</h3>
+        <h3>Thống kê lỗi đường truyền</h3>
         {% if result.loi_truyen.ok %}
         <table>
             {% for khoa, gt in result.loi_truyen.so_lieu.items() %}
@@ -616,19 +616,19 @@ DHCP_TEMPLATE = """
             🔴 Tong {{ result.loi_truyen.tong_loi }} loi - day cap co the kem chat luong hoac bi nhieu{% endif %}</p>
         {% else %}<p class="hint">{{ result.loi_truyen.loi }}</p>{% endif %}
 
-        <h3>PoE (nguon qua cap mang)</h3>
+        <h3>PoE (nguồn qua cáp mạng)</h3>
         {% if result.poe.phat_hien %}<p>🟢 Phat hien PoE: {{ result.poe.gia_tri }}</p>
-        {% else %}<p class="hint">Khong phat hien mach do PoE tren phan cung nay.</p>{% endif %}
+        {% else %}<p class="hint">Không phát hiện mạch đo PoE trên phần cứng này.</p>{% endif %}
     </div>
 
     {% if result.error %}
-    <div class="err">Loi: {{ result.error }}</div>
+    <div class="err">Lỗi: {{ result.error }}</div>
     {% else %}
         <div class="card">
         <h3 style="margin-top:0;">📡 DHCP</h3>
-        <p>Nhan duoc <strong>{{ result.offers|length }}</strong> OFFER:</p>
+        <p>Nhận được <strong>{{ result.offers|length }}</strong> OFFER:</p>
         <table>
-            <tr><th>IP cap</th><th>DHCP Server</th><th>Subnet</th><th>Gateway</th><th>DNS</th><th>Lease (s)</th></tr>
+            <tr><th>IP cấp</th><th>DHCP Server</th><th>Subnet</th><th>Gateway</th><th>DNS</th><th>Lease (s)</th></tr>
             {% for o in result.offers %}
             <tr>
                 <td>{{ o.offered_ip }}</td><td>{{ o.server_id }}</td><td>{{ o.subnet_mask }}</td>
@@ -647,7 +647,7 @@ DHCP_TEMPLATE = """
         <div class="card">
         <h3 style="margin-top:0;">🌍 Internet + Bang thong (qua IP {{ result.internet.ip or '?' }})</h3>
         {% if not result.internet.lease_ok %}
-        <div class="err">Khong xin duoc lease that de test: {{ result.internet.loi }}</div>
+        <div class="err">Không xin được lease thật để test: {{ result.internet.loi }}</div>
         {% else %}
         <table style="margin:0;">
             <tr><th style="width:220px;">Ping 8.8.8.8 (Google DNS)</th>
@@ -658,7 +658,7 @@ DHCP_TEMPLATE = """
                     {% if result.internet.ping_google.ip_phan_giai %} - phan giai ra <code>{{ result.internet.ping_google.ip_phan_giai }}</code>{% endif %}
                     {% else %}<span class="bad-txt">✘ That bai</span>{% if result.internet.ping_google.loi %} - {{ result.internet.ping_google.loi }}{% endif %}{% endif %}</td></tr>
             {% for w in result.internet.web %}
-            <tr><th>Mo web {{ w.url }} (port {{ w.port }})</th>
+            <tr><th>Mở web {{ w.url }} (port {{ w.port }})</th>
                 <td>{% if w.ok %}<span class="ok-txt">✔ HTTP {{ w.http_code }}</span> - {{ w.thoi_gian_s }}s
                     {% else %}<span class="bad-txt">✘ Khong ket noi duoc</span>{% endif %}</td></tr>
             {% endfor %}

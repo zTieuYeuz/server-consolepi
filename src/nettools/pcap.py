@@ -72,13 +72,13 @@ def is_capturing():
 
 def start_capture(iface="eth0", bpf_filter="", duration=60):
     if is_capturing():
-        return {"ok": False, "error": "Da co 1 phien capture dang chay."}
+        return {"ok": False, "error": "Đã có 1 phiên capture đang chạy."}
 
     duration = max(5, min(int(duration or 60), MAX_DURATION_SEC))
     capture_dir = get_capture_dir()
 
     if free_space_mb(capture_dir) < MIN_FREE_MB:
-        return {"ok": False, "error": f"Khong du dung luong trong ({capture_dir})."}
+        return {"ok": False, "error": f"Không đủ dung lượng trống ({capture_dir})."}
 
     fname = f"capture_{iface}_{time.strftime('%Y%m%d_%H%M%S')}.pcap"
     fpath = os.path.join(capture_dir, fname)
@@ -90,7 +90,7 @@ def start_capture(iface="eth0", bpf_filter="", duration=60):
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     except FileNotFoundError:
-        return {"ok": False, "error": "Chua cai tcpdump."}
+        return {"ok": False, "error": "Chưa cài tcpdump."}
 
     CAPTURE_STATE.update(proc=proc, pid=proc.pid, file=fpath, started=time.time())
 
@@ -108,7 +108,7 @@ def start_capture(iface="eth0", bpf_filter="", duration=60):
 def stop_capture():
     proc = CAPTURE_STATE.get("proc")
     if proc is None or proc.poll() is not None:
-        return {"ok": False, "error": "Khong co phien capture nao dang chay."}
+        return {"ok": False, "error": "Không có phiên capture nào đang chạy."}
     try:
         proc.send_signal(signal.SIGTERM)
         proc.wait(timeout=5)
@@ -140,7 +140,7 @@ def convert_to_text(filename):
     capture_dir = get_capture_dir()
     fpath = os.path.join(capture_dir, filename)
     if not os.path.isfile(fpath) or not filename.endswith(".pcap"):
-        return {"ok": False, "error": "File khong hop le."}
+        return {"ok": False, "error": "File không hợp lệ."}
     txt_path = fpath + ".txt"
     try:
         result = subprocess.run(
@@ -151,7 +151,7 @@ def convert_to_text(filename):
             f.write(result.stdout)
         return {"ok": True, "file": os.path.basename(txt_path)}
     except FileNotFoundError:
-        return {"ok": False, "error": "Chua cai tshark."}
+        return {"ok": False, "error": "Chưa cài tshark."}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -181,7 +181,7 @@ PCAP_TEMPLATE = """
 <body>
     <h1>📼 PCAP Capture</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Thu muc dang dung: <code>{{ capture_dir }}</code>
+    <p class="hint">Thư mục đang dùng: <code>{{ capture_dir }}</code>
     {% if is_usb %}(USB drive){% else %}(dia cuc bo Pi - nen cam USB de an toan hon){% endif %}</p>
 
     {% if msg %}<div class="{{ 'ok' if ok else 'err' }}">{{ msg }}</div>{% endif %}
@@ -198,23 +198,23 @@ PCAP_TEMPLATE = """
             <option value="eth0">eth0</option>
             <option value="wlan0">wlan0</option>
         </select>
-        <label style="margin-left:10px;">BPF filter (tuy chon):</label>
+        <label style="margin-left:10px;">BPF filter (tùy chọn):</label>
         <input type="text" name="filter" placeholder="vd port 80">
-        <label style="margin-left:10px;">Thoi luong (giay):</label>
+        <label style="margin-left:10px;">Thời lượng (giây):</label>
         <input type="number" name="duration" value="60" min="5" max="600" style="width:80px;">
         <button type="submit" style="margin-left:10px;">⏺ Bat dau</button>
     </form>
     {% endif %}
 
-    <h3 style="color:#4CAF50; margin-top:24px;">File da capture</h3>
+    <h3 style="color:#4CAF50; margin-top:24px;">File đã capture</h3>
     <table>
-        <tr><th>Ten file</th><th>Kich thuoc</th><th>Hanh dong</th></tr>
+        <tr><th>Tên file</th><th>Kích thước</th><th>Hành động</th></tr>
         {% for f in files %}
         <tr>
             <td>{{ f.name }}</td>
             <td>{{ f.size_kb }} KB</td>
             <td>
-                <a href="/nettools/pcap/download/{{ f.name }}">Tai ve</a>
+                <a href="/nettools/pcap/download/{{ f.name }}">Tải về</a>
                 {% if f.has_text %}
                 | <a href="/nettools/pcap/download/{{ f.name }}.txt">Xem text</a>
                 {% else %}
@@ -227,7 +227,7 @@ PCAP_TEMPLATE = """
         </tr>
         {% endfor %}
     </table>
-    {% if not files %}<p>Chua co file capture nao.</p>{% endif %}
+    {% if not files %}<p>Chưa có file capture nào.</p>{% endif %}
 </body>
 </html>
 """

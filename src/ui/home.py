@@ -21,13 +21,13 @@ NAMES_FILE = "/opt/console-pi/port-names.json"
 
 SERVICES = [
     ("console-pi-dashboard", "Dashboard web"),
-    ("console-pi-term-local", "Terminal local"),
+    ("console-pi-term-local", "Terminal tại chỗ"),
     ("console-pi-term-ssh", "Terminal SSH"),
     ("lldpd", "LLDP/CDP discovery"),
     ("bluetooth", "Bluetooth"),
     ("bt-nap", "Bluetooth PAN"),
-    ("wifi-fallback.timer", "Tu chuyen WiFi/AP"),
-    ("console-pi-kiosk", "Man hinh cam ung"),
+    ("wifi-fallback.timer", "Tự chuyển WiFi/AP"),
+    ("console-pi-kiosk", "Màn hình cảm ứng"),
 ]
 
 
@@ -40,7 +40,7 @@ def power_msg_html(h):
     """Dung chung giua Tong quan va tab Nguon dien (dung 1 nguon logic)."""
     th = h["throttle"]
     if th is None:
-        return ('<span style="color:#8b93a1;">Khong doc duoc (may nay '
+        return ('<span style="color:#8b93a1;">Không đọc được (máy này '
                 'khong phai Raspberry Pi)</span>')
     if th["now"]:
         return ('<span style="color:#ff6b6b;">⛔ ' +
@@ -191,19 +191,19 @@ def register_home(app):
                     <form method="POST" action="/rename" class="row" style="gap:7px;">
                       <input type="hidden" name="devname" value="{p['devname']}">
                       <input type="text" name="name" value="{_esc(p['name'])}"
-                             placeholder="Vi du: Switch tang 3" style="max-width:260px;">
-                      <button type="submit" class="gray small">Luu ten</button>
+                             placeholder="Ví dụ: Switch tầng 3" style="max-width:260px;">
+                      <button type="submit" class="gray small">Lưu tên</button>
                     </form>
                   </td>
-                  <td><a class="btn" href="/console/{p['devname']}">Mo Console</a></td>
+                  <td><a class="btn" href="/console/{p['devname']}">Mở Console</a></td>
                 </tr>"""
             ports_html = f"""
             <table>
-              <tr><th style="width:120px;">Cong</th><th>Ten goi nho</th><th style="width:150px;">Thao tac</th></tr>
+              <tr><th style="width:120px;">Cổng</th><th>Tên gợi nhớ</th><th style="width:150px;">Thao tác</th></tr>
               {rows}
             </table>"""
         else:
-            ports_html = ('<div class="msg warn">Chua cam cap console nao. '
+            ports_html = ('<div class="msg warn">Chưa cắm cáp console nào. '
                           'Cam cap USB-serial (FTDI/Prolific) vao Pi, trang se tu nhan.</div>')
 
         # --- Mang chi tiet ---
@@ -244,37 +244,37 @@ def register_home(app):
 
         health_html = f"""
         <table>
-          <tr><td style="width:190px;">Nguon dien</td><td>{power_msg}</td></tr>
-          <tr><td>Nhiet do CPU</td>
+          <tr><td style="width:190px;">Nguồn điện</td><td>{power_msg}</td></tr>
+          <tr><td>Nhiệt độ CPU</td>
               <td><span style="color:{temp_color};font-weight:600;">{temp if temp is not None else '?'} &deg;C</span></td></tr>
-          <tr><td>Thoi gian chay</td><td>{h['uptime']}</td></tr>
-          <tr><td>Tai he thong</td><td><code>{h['load']}</code> <span style="color:#8b93a1;font-size:12px;">(1 / 5 / 15 phut)</span></td></tr>
-          <tr><td>Bo nho</td><td>{mem_u} / {mem_t} MB &nbsp;({mem_p}%)</td></tr>
-          <tr><td>Dia</td><td>{dk_u} / {dk_t} GB &nbsp;({dk_p}%)</td></tr>
+          <tr><td>Thời gian chạy</td><td>{h['uptime']}</td></tr>
+          <tr><td>Tải hệ thống</td><td><code>{h['load']}</code> <span style="color:#8b93a1;font-size:12px;">(1 / 5 / 15 phut)</span></td></tr>
+          <tr><td>Bộ nhớ</td><td>{mem_u} / {mem_t} MB &nbsp;({mem_p}%)</td></tr>
+          <tr><td>Đĩa</td><td>{dk_u} / {dk_t} GB &nbsp;({dk_p}%)</td></tr>
         </table>
-        <p style="margin-top:10px;"><a class="btn" href="/power">⚡ Tat may / Khoi dong lai</a></p>"""
+        <p style="margin-top:10px;"><a class="btn" href="/power">⚡ Tắt máy / Khởi động lại</a></p>"""
 
         body = f"""
-        <h2>Cong console dang cam</h2>
+        <h2>Cổng console đang cắm</h2>
         {ports_html}
 
-        <h2>Chi tiet mang</h2>
+        <h2>Chi tiết mạng</h2>
         <table>
-          <tr><th>Giao dien</th><th>Dia chi IP</th><th>MAC</th><th>Trang thai</th><th style="width:50px;"></th></tr>
+          <tr><th>Giao diện</th><th>Địa chỉ IP</th><th>MAC</th><th>Trạng thái</th><th style="width:50px;"></th></tr>
           {net_rows}
         </table>
 
-        <h2>Suc khoe thiet bi</h2>
+        <h2>Sức khỏe thiết bị</h2>
         {health_html}
 
-        <h2>Dich vu he thong</h2>
+        <h2>Dịch vụ hệ thống</h2>
         <table>
-          <tr><th style="width:220px;">Chuc nang</th><th>Dich vu</th><th style="width:160px;">Trang thai</th></tr>
+          <tr><th style="width:220px;">Chức năng</th><th>Dịch vụ</th><th style="width:160px;">Trạng thái</th></tr>
           {svc_rows}
         </table>"""
 
-        return render_page(body, active="/", title="Tong quan",
-                           subtitle="Trang thai thiet bi va cac cong console")
+        return render_page(body, active="/", title="Tổng quan",
+                           subtitle="Trạng thái thiết bị và các cổng console")
 
 
     @app.route("/api/status")
@@ -296,13 +296,13 @@ def register_home(app):
         import re as _re
         if not _re.fullmatch(r"tty(USB|ACM)\d+", devname or ""):
             return render_page(
-                '<div class="msg err">Ten cong khong hop le.</div>'
+                '<div class="msg err">Tên cổng không hợp lệ.</div>'
                 '<p><a class="btn" href="/">← Ve trang chu</a></p>',
                 active="/", title="Console")
 
         if not os.path.exists(f"/dev/{devname}"):
             return render_page(
-                f'<div class="msg err">Khong thay cong <code>{devname}</code>. '
+                f'<div class="msg err">Không thấy cổng <code>{devname}</code>. '
                 f'Co the cap da bi rut.</div><p><a class="btn" href="/">← Ve trang chu</a></p>',
                 active="/", title="Console")
 
@@ -333,7 +333,7 @@ def register_home(app):
         </div>"""
 
         html = render_page(body, active="/", title=f"Console: {label}",
-                           subtitle="Cong serial dang mo trong dashboard")
+                           subtitle="Cổng serial đang mở trong dashboard")
         # Bao cho ban phim ao biet go vao phien tmux nao (xem vkeyboard.js)
         return html.replace("<body>", f'<body data-tmux-session="console-{devname}">', 1)
 

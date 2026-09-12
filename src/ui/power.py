@@ -1,8 +1,8 @@
 """
-Console Pi - Tab rieng: Tat may / Khoi dong lai
+Console Pi - Tab rieng: Tắt máy / Khởi động lại
 
 Tach rieng khoi Tong quan theo yeu cau thuc te: may nay thuong duoc gan
-vao vo RasPad (SunFounder). Nut "Tat may" o day CHI tat duoc he dieu hanh
+vao vo RasPad (SunFounder). Nut "Tắt máy" o day CHI tat duoc he dieu hanh
 tren module Raspberry Pi - no khong the va se khong bao gio tat duoc
 man hinh/mach nguon rieng cua vo RasPad, vi hai ly do da kiem tra that
 tren chinh may nay (khong doan):
@@ -35,45 +35,45 @@ def register_power(app):
         power_msg = power_msg_html(h)
 
         body = f"""
-        <h2>Trang thai nguon</h2>
+        <h2>Trạng thái nguồn</h2>
         <table>
-          <tr><td style="width:190px;">Nguon dien (Pi)</td><td>{power_msg}</td></tr>
+          <tr><td style="width:190px;">Nguồn điện (Pi)</td><td>{power_msg}</td></tr>
         </table>
 
-        <h2>Tat may / Khoi dong lai (module Raspberry Pi)</h2>
+        <h2>Tắt máy / Khởi động lại (module Raspberry Pi)</h2>
         <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
           <form method="POST" action="/power/reboot"
                 onsubmit="return confirm('Khoi dong lai Console Pi ngay bay gio?\\n\\nMoi phien console dang mo se bi dong.');">
-            <button type="submit" class="gray" data-busy="Dang khoi dong lai...">🔄 Khoi dong lai</button>
+            <button type="submit" class="gray" data-busy="Đang khởi động lại...">🔄 Khoi dong lai</button>
           </form>
           <form method="POST" action="/power/poweroff"
                 onsubmit="return confirm('TAT HAN Console Pi?\\n\\nBat lai phai cam dien truc tiep - khong bat tu xa duoc.');">
-            <button type="submit" class="red" data-busy="Dang tat may...">🛑 Tat may</button>
+            <button type="submit" class="red" data-busy="Đang tắt máy...">🛑 Tat may</button>
           </form>
         </div>
         <p style="color:#8b93a1;font-size:13px;margin-top:10px;">
-          Luon tat may bang nut nay truoc khi rut dien, tranh hong the nho.
-          Doi den khi den xanh (ACT) tren board Pi ngung nhap nhay roi moi rut dien.
+          Luôn tắt máy bằng nút này trước khi rút điện, tránh hỏng thẻ nhớ.
+          Đợi đến khi đèn xanh (ACT) trên board Pi ngừng nhấp nháy rồi mới rút điện.
         </p>
 
-        <h2>Cam vo RasPad co tat "hoan toan" duoc khong?</h2>
+        <h2>Cắm vỏ RasPad có tắt "hoàn toàn" được không?</h2>
         <div class="msg warn" style="line-height:1.6;">
-          <strong>Khong the tat man hinh/mach nguon cua vo RasPad tu trang nay.</strong><br>
-          Da kiem tra that tren chinh may: I2C dang bi tat trong cau hinh boot
-          (khong co <code>/dev/i2c-1</code>), va khong tim thay driver/dich vu
-          nao cua RasPad/SunFounder tren he thong - nen khong co duong nao de
-          phan mem tren Pi noi chuyen voi mach nguon rieng cua vo.
+          <strong>Không thể tắt màn hình/mạch nguồn của vỏ RasPad từ trang này.</strong><br>
+          Đã kiểm tra thật trên chính máy: I2C đang bị tắt trong cấu hình boot
+          (không có <code>/dev/i2c-1</code>), và không tìm thấy driver/dịch vụ
+          nào của RasPad/SunFounder trên hệ thống - nên không có đường nào để
+          phần mềm trên Pi nói chuyện với mạch nguồn riêng của vỏ.
           <br><br>
-          Theo thiet ke cua RasPad, vo nay dung <strong>cong tac nguon vat ly</strong>
-          (thuong o canh vo) de cap/ngat dien cho toan bo cum man hinh + Pi -
-          day la cach DUY NHAT de tat hoan toan hien tai. Quy trinh dung:
+          Theo thiết kế của RasPad, vỏ này dùng <strong>công tắc nguồn vật lý</strong>
+          (thường ở cạnh vỏ) để cấp/ngắt điện cho toàn bộ cụm màn hình + Pi -
+          đây là cách DUY NHẤT để tắt hoàn toàn hiện tại. Quy trình đúng:
           <ol style="margin:8px 0 0 18px;">
-            <li>Bam "🛑 Tat may" o tren, doi den ACT tren Pi ngung nhap nhay (Pi da tat han).</li>
-            <li>Sau do gat cong tac nguon vat ly cua vo RasPad de cat dien man hinh.</li>
+            <li>Bam "🛑 Tat may" ở trên, đợi đèn ACT trên Pi ngừng nhấp nháy (Pi đã tắt hẳn).</li>
+            <li>Sau do gat công tắc nguồn vật lý cua vo RasPad de cat dien man hinh.</li>
           </ol>
         </div>"""
-        return render_page(body, active="/power", title="Nguon dien",
-                           subtitle="Tat may / khoi dong lai module Raspberry Pi")
+        return render_page(body, active="/power", title="Nguồn điện",
+                           subtitle="Tắt máy / khởi động lại module Raspberry Pi")
 
     @app.route("/power/<what>", methods=["POST"])
     def power_route(what):
@@ -83,6 +83,6 @@ def register_power(app):
         # moi request tiep theo se that bai va nguoi dung tuong co loi.
         body = f"""
         <div class="msg {color}" style="font-size:15px;">{_esc(msg)}</div>
-        <p style="margin-top:15px;"><a class="btn" href="/power">Ve trang Nguon dien</a></p>"""
+        <p style="margin-top:15px;"><a class="btn" href="/power">Về trang Nguồn điện</a></p>"""
         return render_page(body, active="/power", title="Nguon",
-                           subtitle="Lenh da duoc gui toi he thong"), (200 if ok else 400)
+                           subtitle="Lệnh đã được gửi tới hệ thống"), (200 if ok else 400)

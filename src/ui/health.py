@@ -28,14 +28,14 @@ CACHE_TTL = 3.0
 # Tung bit trong vcgencmd get_throttled. Bit 0-3 = dang xay ra NGAY BAY GIO,
 # bit 16-19 = da tung xay ra ke tu luc boot.
 THROTTLE_BITS = [
-    (0,  "Dien ap thap", "now"),
-    (1,  "Bi gioi han xung nhip do nhiet", "now"),
-    (2,  "Dang bi throttle", "now"),
-    (3,  "Cham nguong nhiet do", "now"),
-    (16, "Da tung sut ap", "past"),
-    (17, "Da tung gioi han xung nhip", "past"),
-    (18, "Da tung bi throttle", "past"),
-    (19, "Da tung cham nguong nhiet", "past"),
+    (0,  "Điện áp thấp", "now"),
+    (1,  "Bị giới hạn xung nhịp do nhiệt", "now"),
+    (2,  "Đang bị throttle", "now"),
+    (3,  "Chạm ngưỡng nhiệt độ", "now"),
+    (16, "Đã từng sụt áp", "past"),
+    (17, "Đã từng giới hạn xung nhịp", "past"),
+    (18, "Đã từng bị throttle", "past"),
+    (19, "Đã từng chạm ngưỡng nhiệt", "past"),
 ]
 
 

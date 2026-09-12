@@ -1,7 +1,7 @@
 """
 Console Pi - Quan ly WiFi / AP / Bluetooth
 
-Phan LOGIC ben duoi duoc chuyen nguyen ven tu app.py cu (da qua nhieu vong
+Phan LOGIC bên dưới duoc chuyen nguyen ven tu app.py cu (da qua nhieu vong
 debug thuc te: race condition voi systemd-networkd, vong doi D-Bus cua NAP,
 ngat ket noi truoc khi reset Bluetooth...). CHI thay doi phan hien thi de
 dung khung giao dien moi.
@@ -64,7 +64,7 @@ def get_net_status():
         return ("AP", ssid or "ConsolePi", ip or AP_IP)
     if ssid:
         return ("Client", ssid, ip)
-    return ("Chua ket noi", "", ip)
+    return ("Chưa kết nối", "", ip)
 
 
 # ---------------------------------------------------------------- WiFi
@@ -227,16 +227,16 @@ def _switch_worker(ssid, password, do_save):
     """Doi HTTP response bay ve trinh duyet XONG roi moi ha AP."""
     time.sleep(5)
     WIFI_STATUS.update(state="switching", ssid=ssid,
-                       msg=f"Dang chuyen sang '{ssid}'...", ip=None, saved=False)
+                       msg=f"Đang chuyển sang '{ssid}'...", ip=None, saved=False)
     if test_wifi_connection(ssid, password):
         saved = save_wifi_permanently(ssid, password) if do_save else False
         _, _, ip = get_net_status()
         WIFI_STATUS.update(state="connected", ssid=ssid, ip=ip, saved=saved,
-                           msg=f"Da ket noi '{ssid}'" + (" va da luu." if saved else " (khong luu)."))
+                           msg=f"Đã kết nối '{ssid}'" + (" va da luu." if saved else " (khong luu)."))
     else:
         restore_ap_mode()
         WIFI_STATUS.update(state="failed", ssid=ssid, ip=AP_IP, saved=False,
-                           msg=f"Ket noi '{ssid}' that bai. Da quay lai AP ConsolePi.")
+                           msg=f"Kết nối '{ssid}' thất bại. Đã quay lại AP ConsolePi.")
 
 
 # ---------------------------------------------------------- Bluetooth
@@ -277,7 +277,7 @@ def bt_reset(forget_devices=False):
 
 # --------------------------------------------- Ghep cap thiet bi Bluetooth
 def bt_scan(seconds=10):
-    """Quet thiet bi Bluetooth xung quanh. Tra ve [(mac, ten)]."""
+    """Quét thiết bị Bluetooth xung quanh. Tra ve [(mac, ten)]."""
     try:
         subprocess.run(["bluetoothctl", "--timeout", str(seconds), "scan", "on"],
                        capture_output=True, timeout=seconds + 8)
@@ -413,7 +413,7 @@ def bt_agent_state():
 
 
 def _thiet_bi_da_thay(mac):
-    """Kiem tra BlueZ co dang "biet" thiet bi nay khong (da tung discover)."""
+    """Kiểm tra BlueZ có đang "biet" thiet bi nay khong (da tung discover)."""
     try:
         out = subprocess.run(["bluetoothctl", "devices"],
                              capture_output=True, text=True, timeout=6).stdout
@@ -473,7 +473,7 @@ def _pair_worker(mac):
         # chay `pair` thi bao thang "Device ... not available" du vai giay
         # truoc con thay ro rang. Da tai hien duoc dung loi nay tren may that.
         # Vi vay dat thoi gian quet du dai (120s) de phu het ca buoc pair/
-        # trust/connect, va chi tat quet o khoi finally ben duoi.
+        # trust/connect, va chi tat quet o khoi finally bên dưới.
         # Cua so quet 150 GIAY, khong phai 20.
         #
         # DAY LA SO DO THAT, khong phai uoc luong: ghep ban phim Samsung cua
@@ -502,7 +502,7 @@ def _pair_worker(mac):
 
         if not thay:
             steps.append(("quet", False,
-                          f"Khong tim thay thiet bi sau {TONG_GIAY_QUET}s quet. Ban phim "
+                          f"Không tìm thấy thiết bị sau {TONG_GIAY_QUET}s quét. Bàn phím "
                           "gan nhu chac chan CHUA o che do ghep cap: giu nut Connect/"
                           "pairing tren ban phim cho den khi den nhap nhay NHANH (nhap "
                           "nhay cham la dang tim lai may cu, khong phai che do ghep cap), "
@@ -949,10 +949,10 @@ def _wifi_page(msg="", ok=True):
 
     ap_card = f"""
     <div class="card">
-      <h3>Che do phat song (AP ConsolePi)</h3>
+      <h3>Chế độ phát sóng (AP ConsolePi)</h3>
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
         {"Dang KHOA o che do AP - Pi se khong tu chuyen sang WiFi." if locked
-         else "Pi tu chuyen sang WiFi quen thuoc khi tim thay. Khoa AP de giu nguyen song ConsolePi."}
+         else "Pi tự chuyển sang WiFi quen thuộc khi tìm thấy. Khóa AP để giữ nguyên sóng ConsolePi."}
       </p>
       <form method="POST" action="{'/release-ap' if locked else '/force-ap'}"
             onsubmit="return confirm('{'Go khoa AP?' if locked else 'Bat va KHOA AP ConsolePi? Neu dang ket noi qua WiFi se bi dut - nen lam khi dang cam day LAN.'}');">
@@ -969,16 +969,16 @@ def _wifi_page(msg="", ok=True):
         mac_card_body = f"""
         <p style="margin:0;"><span style="color:#6ee7a0;">🟢 Dang bat</span></p>
         <table style="max-width:420px;margin-top:9px;">
-          <tr><td style="width:150px;">MAC dang dung</td><td><code>{_esc(mac_dang_dung)}</code></td></tr>
-          <tr><td>MAC that (phan cung)</td><td><code>{_esc(mac_goc)}</code></td></tr>
+          <tr><td style="width:150px;">MAC đang dùng</td><td><code>{_esc(mac_dang_dung)}</code></td></tr>
+          <tr><td>MAC thật (phần cứng)</td><td><code>{_esc(mac_goc)}</code></td></tr>
         </table>
         <form method="POST" action="/wifi-mac-tat" style="margin-top:13px;"
               onsubmit="return confirm('Tat gia MAC va tra ve MAC that ngay?');">
-          <button type="submit" class="gray" data-busy="Dang tat...">Tat, tra ve MAC that</button>
+          <button type="submit" class="gray" data-busy="Dang tat...">Tắt, trả về MAC thật</button>
         </form>"""
     else:
         mac_card_body = f"""
-        <p style="margin:0;"><span style="color:#8b93a1;">⚪ Dang tat</span> - dang dung MAC
+        <p style="margin:0;"><span style="color:#8b93a1;">⚪ Dang tat</span> - đang dùng MAC
           that: <code>{_esc(mac_goc)}</code></p>
         <form method="POST" action="/wifi-mac-bat" style="margin-top:13px;">
           <button type="submit" class="gray" data-busy="Dang bat...">🎭 Bat gia MAC</button>
@@ -987,18 +987,18 @@ def _wifi_page(msg="", ok=True):
     mac_card = f"""
     <div class="card">
       <h3>Gia MAC WiFi <span style="color:#8b93a1;font-size:12px;font-weight:400;">
-          (dung khi mang chan thiet bi la)</span></h3>
+          (dùng khi mạng chặn thiết bị lạ)</span></h3>
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-        Mot so mang cong ty tu choi ket noi ngay tu dau voi thiet bi co dia chi MAC
-        thuoc hang Raspberry Pi (nhu may nay) - khong lien quan mat khau. Bat muc nay
-        de gia dang mot thiet bi thong thuong. MAC gia CO DINH (khong doi moi lan) de
-        khong bi mang danh gia bat thuong. Nen TAT lai khi ve nha neu router nha co
-        dat rieng dia chi IP cho MAC that cua may nay.</p>
+        Một số mạng công ty từ chối kết nối ngay từ đầu với thiết bị có địa chỉ MAC
+        thuộc hãng Raspberry Pi (như máy này) - không liên quan mật khẩu. Bật mục này
+        để giả dạng một thiết bị thông thường. MAC giả CỐ ĐỊNH (không đổi mỗi lần) để
+        không bị mạng đánh giá bất thường. Nên TẮT lại khi về nhà nếu router nhà có
+        đặt riêng địa chỉ IP cho MAC thật của máy này.</p>
       {mac_card_body}
     </div>"""
 
     # Danh sach mang WiFi "nhin thay duoc" tu lan quet gan nhat, dung de to
-    # mau nut Ket noi trong bang WiFi da luu (yeu cau thuc te: biet ngay
+    # mau nut Ket noi trong bang WiFi đã lưu (yeu cau thuc te: biet ngay
     # WiFi da luu nao dang trong tam voi ma khong can bam quet/thu tay tung
     # cai). KHONG tu quet moi khi dang khoa AP - phat song wlan0 dang ban lam
     # AP, ep quet luc nay co the lam gian doan song ConsolePi dang phat.
@@ -1044,30 +1044,30 @@ def _wifi_page(msg="", ok=True):
         elif age is None:
             fresh = ""
         elif age < 60:
-            fresh = f"quet {age} giay truoc"
+            fresh = f"quét {age} giây trước"
         else:
             fresh = f"quet {age // 60} phut truoc"
         scan_form = f"""
-        <h2>Ket noi WiFi moi</h2>
+        <h2>Kết nối WiFi mới</h2>
         <div class="card">
           <form method="POST" action="/wifi-rescan" style="margin-bottom:12px;">
             <button type="submit" class="gray small" data-busy="Dang quet WiFi...">🔄 Quet lai</button>
             <span style="color:#8b93a1;font-size:13px;margin-left:9px;">{fresh}</span>
           </form>
           <form method="POST" action="/connect-wifi">
-            <label>Chon WiFi ({len(ssids)} mang tim thay)</label>
+            <label>Chọn WiFi ({len(ssids)} mạng tìm thấy)</label>
             <select name="ssid" required>{opts}</select>
-            <label>Mat khau</label>
+            <label>Mật khẩu</label>
             <input type="password" name="password" required>
             <label style="display:flex;align-items:center;gap:9px;margin-top:13px;">
               <input type="checkbox" name="save" value="1" checked style="width:20px;height:20px;">
-              <span>Luu de lan sau tu ket noi</span>
+              <span>Lưu để lần sau tự kết nối</span>
             </label>
-            <div class="row" style="margin-top:13px;"><button type="submit" data-busy="Dang ket noi, cho 20-30 giay...">Ket noi</button></div>
+            <div class="row" style="margin-top:13px;"><button type="submit" data-busy="Dang ket noi, cho 20-30 giay...">Kết nối</button></div>
           </form>
           <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
-            Neu dang xem qua WiFi, ket noi se dut khi Pi chuyen mang. Sau 20-30 giay
-            hay noi may vao mang moi roi vao lai <code>http://server-console.local</code>.
+            Nếu đang xem qua WiFi, kết nối sẽ đứt khi Pi chuyển mạng. Sau 20-30 giây
+            hãy nối máy vào mạng mới rồi vào lại <code>http://server-console.local</code>.
           </p>
         </div>"""
 
@@ -1081,48 +1081,48 @@ def _wifi_page(msg="", ok=True):
                     'hoac noi vao AP ConsolePi truoc.</div>')
         disconnect_html = f"""
         <form method="POST" action="/wifi-disconnect" style="margin-top:12px;"
-              onsubmit="return confirm('Ngat ket noi WiFi {_esc(ssid)}?');">
+              onsubmit="return confirm('Ngắt kết nối WiFi {_esc(ssid)}?');">
           <button type="submit" class="red" data-busy="Dang ngat...">
-            ⏏ Ngat ket noi WiFi
+            ⏏ Ngắt kết nối WiFi
           </button>
           <span style="color:#8b93a1;font-size:13px;margin-left:9px;">
-            Khong xoa WiFi da luu. Pi tu danh gia lai sau toi da 2 phut.
+            Không xóa WiFi đã lưu. Pi tự đánh giá lại sau tối đa 2 phút.
           </span>
         </form>{warn}"""
 
     body = f"""
     {msg_html}{last_html}
     <div class="card">
-      <h3>Trang thai hien tai</h3>
+      <h3>Trạng thái hiện tại</h3>
       <table style="max-width:470px;">
-        <tr><th style="width:150px;">Che do</th><td>{mode}</td></tr>
+        <tr><th style="width:150px;">Chế độ</th><td>{mode}</td></tr>
         <tr><th>Mang</th><td>{_esc(ssid) or '-'}</td></tr>
-        <tr><th>Dia chi IP</th><td><code>{ip or '-'}</code></td></tr>
+        <tr><th>Địa chỉ IP</th><td><code>{ip or '-'}</code></td></tr>
       </table>
       {disconnect_html}
     </div>
     {ap_card}
     {mac_card}
     {scan_form}
-    <h2>WiFi da luu ({len(saved)})</h2>
+    <h2>WiFi đã lưu ({len(saved)})</h2>
     {'' if locked or not saved else '<p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">'
-     '🟢 xanh = dang trong tam song, bam la ket noi ngay. ⚪ xam = khong thay '
-     'trong lan quet gan nhat, khong bam duoc.</p>'}
-    <table><tr><th>SSID</th><th style="width:120px;">Ket noi</th><th style="width:90px;">Thao tac</th></tr>{saved_rows}</table>
-    {'<p style="color:#8b93a1;">Chua luu WiFi nao. Pi se tu phat AP ConsolePi khi khong tim thay mang quen.</p>' if not saved else ''}
-    <h2>Them WiFi thu cong</h2>
+     '🟢 xanh = đang trong tầm sóng, bấm là kết nối ngay. ⚪ xám = không thấy '
+     'trong lần quét gần nhất, không bấm được.</p>'}
+    <table><tr><th>SSID</th><th style="width:120px;">Kết nối</th><th style="width:90px;">Thao tác</th></tr>{saved_rows}</table>
+    {'<p style="color:#8b93a1;">Chưa lưu WiFi nào. Pi sẽ tự phát AP ConsolePi khi không tìm thấy mạng quen.</p>' if not saved else ''}
+    <h2>Thêm WiFi thủ công</h2>
     <div class="card">
       <p style="color:#8b93a1;font-size:13px;margin:0 0 9px;">
-        Chi luu vao danh sach, khong ket noi ngay. Dung khi biet truoc WiFi noi sap den.</p>
+        Chỉ lưu vào danh sách, không kết nối ngay. Dùng khi biết trước WiFi nơi sắp đến.</p>
       <form method="POST" action="/wifi-add">
         <label>Ten WiFi (SSID)</label><input type="text" name="ssid" required>
-        <label>Mat khau</label><input type="password" name="password" required>
-        <div class="row" style="margin-top:13px;"><button type="submit">Luu vao danh sach</button></div>
+        <label>Mật khẩu</label><input type="password" name="password" required>
+        <div class="row" style="margin-top:13px;"><button type="submit">Lưu vào danh sách</button></div>
       </form>
     </div>"""
 
     return render_page(body, active="/wifi", title="WiFi",
-                       subtitle="Ket noi mang, quan ly WiFi da luu, che do phat song")
+                       subtitle="Kết nối mạng, quản lý WiFi đã lưu, chế độ phát sóng")
 
 
 def _bt_page(msg="", ok=True, scanned=None):
@@ -1142,7 +1142,7 @@ def _bt_page(msg="", ok=True, scanned=None):
         hong_bond = i["connected"] and not i.get("bonded", False)
         if hong_bond:
             state = ('<span style="color:#ff6b6b;">🔴 Noi duoc nhung KHONG dung duoc'
-                     '<br><small>Thieu khoa lien ket (Bonded: no) - phai ghep cap lai</small></span>')
+                     '<br><small>Thiếu khóa liên kết (Bonded: no) - phải ghép cặp lại</small></span>')
         elif i["connected"] and c["kind"] == "net":
             # May tinh/dien thoai: "Connected" MOI CHI la ket noi Bluetooth,
             # chua chac da vao mang. Phai noi ro 2 viec nay khac nhau.
@@ -1159,7 +1159,7 @@ def _bt_page(msg="", ok=True, scanned=None):
         elif i["connected"]:
             state = "🟢 dang ket noi"
         elif i["paired"]:
-            state = "⚪ da ghep, chua noi"
+            state = "⚪ đã ghép, chưa nối"
         else:
             state = "—"
 
@@ -1226,15 +1226,15 @@ def _bt_page(msg="", ok=True, scanned=None):
               <td>
                 <form method="POST" action="/bt-pair" style="display:inline;">
                   <input type="hidden" name="mac" value="{_esc(mac)}">
-                  <button type="submit" class="blue small" data-busy="Dang ghep...">Ghep cap</button>
+                  <button type="submit" class="blue small" data-busy="Dang ghep...">Ghép cặp</button>
                 </form>
               </td>
             </tr>"""
         scan_html = f"""
         <h2>Thiet bi tim thay ({len([1 for m,_ in scanned if m not in paired_macs])} chua ghep)</h2>
-        <table><tr><th>Thiet bi</th><th style="width:150px;">Loai</th>
-                   <th style="width:120px;">Thao tac</th></tr>{new_rows}</table>
-        {'<p style="color:#8b93a1;">Khong thay thiet bi moi nao. Nho bat che do ghep cap tren ban phim (thuong giu nut Connect vai giay den khi den nhap nhay).</p>' if not new_rows else ''}"""
+        <table><tr><th>Thiết bị</th><th style="width:150px;">Loai</th>
+                   <th style="width:120px;">Thao tác</th></tr>{new_rows}</table>
+        {'<p style="color:#8b93a1;">Khong thay thiet bi moi nao. Nho bật chế độ ghép cặp trên bàn phím (thuong giu nut Connect vai giay den khi den nhap nhay).</p>' if not new_rows else ''}"""
 
     # --- Khoi hien ma so / trang thai ghep cap ---
     ag = bt_agent_state()
@@ -1255,7 +1255,7 @@ def _bt_page(msg="", ok=True, scanned=None):
                       font-family:ui-monospace,monospace;color:#fff;
                       text-align:center;padding:14px 0;">{_esc(ag.get('value'))}</div>
           <p style="text-align:center;color:#c9ced6;margin:0;">
-            Go day so tren roi bam <strong>Enter</strong> ngay tren ban phim
+            Gõ dãy số trên rồi bấm <strong>Enter</strong> ngay trên bàn phím
             <strong>{_esc(ag.get('device'))}</strong>.
           </p>
           <p style="text-align:center;color:#8b93a1;font-size:13px;margin-top:9px;">
@@ -1274,7 +1274,7 @@ def _bt_page(msg="", ok=True, scanned=None):
         # nguoi dung go gi ca.
         pair_html = f"""
         <div class="card" style="border-left:4px solid #6cb6ff;">
-          <h3>Dang dung ma PIN <code style="font-size:20px;">{_esc(ag.get('value'))}</code></h3>
+          <h3>Đang dùng mã PIN <code style="font-size:20px;">{_esc(ag.get('value'))}</code></h3>
           <p style="color:#8b93a1;margin:0;">Thiet bi <strong>{_esc(ag.get('device'))}</strong>
           khong phai ban phim nen khong go duoc ma. Pi dung ma mac dinh cua nha san xuat.
           Neu that bai, tra cuu ma PIN in tren thiet bi (hay gap: 0000, 1234, 8888).</p>
@@ -1283,7 +1283,7 @@ def _bt_page(msg="", ok=True, scanned=None):
     elif ag and ag.get("kind") == "need-passkey":
         pair_html = f"""
         <div class="msg err">
-          <strong>Thiet bi nay doi Pi nhap ma do chinh no hien ra.</strong><br>
+          <strong>Thiết bị này đòi Pi nhập mã do chính nó hiện ra.</strong><br>
           <span style="font-size:13px;">
           <strong>{_esc(ag.get('device'))}</strong> dang cho mot ma so ma no hien tren man
           hinh cua no - Pi khong doc duoc ma do nen buoc nay se that bai. Ban phim/chuot
@@ -1300,76 +1300,76 @@ def _bt_page(msg="", ok=True, scanned=None):
     elif ag and ag.get("kind") == "confirm":
         pair_html = f"""
         <div class="card" style="border-left:4px solid #6cb6ff;">
-          <h3>Ma xac nhan: <code style="font-size:22px;">{_esc(ag.get('value'))}</code></h3>
-          <p style="color:#8b93a1;margin:0;">Doi chieu voi ma hien tren
-          <strong>{_esc(ag.get('device'))}</strong> roi bam dong y ben do.</p>
+          <h3>Mã xác nhận: <code style="font-size:22px;">{_esc(ag.get('value'))}</code></h3>
+          <p style="color:#8b93a1;margin:0;">Đối chiếu với mã hiện trên
+          <strong>{_esc(ag.get('device'))}</strong> rồi bấm đồng ý bên đó.</p>
         </div>
         <meta http-equiv="refresh" content="3">"""
     elif ps.get("running"):
         pair_html = f"""
         <div class="card" style="border-left:4px solid #6cb6ff;">
           <h3>⏳ Dang ghep cap {_esc(ps.get('mac'))}</h3>
-          <p style="color:#8b93a1;margin:0;">Buoc hien tai: <code>{_esc(ps.get('step'))}</code>.
-          Neu la ban phim, hay <strong>bat che do ghep cap tren ban phim</strong>
-          (thuong giu nut Connect den khi den nhap nhay) va cho ma so hien ra.</p>
+          <p style="color:#8b93a1;margin:0;">Bước hiện tại: <code>{_esc(ps.get('step'))}</code>.
+          Neu la ban phim, hay <strong>bật chế độ ghép cặp trên bàn phím</strong>
+          (thường giữ nút Connect đến khi đèn nhấp nháy) và chờ mã số hiện ra.</p>
         </div>
         <meta http-equiv="refresh" content="3">"""
     elif ps.get("ok") is False and ps.get("detail"):
         pair_html = f"""
-        <div class="msg err">Ghep cap that bai.<br>
+        <div class="msg err">Ghép cặp thất bại.<br>
         <span style="font-size:13px;">{_esc(ps.get('detail'))}</span></div>"""
     elif ps.get("ok") is True:
-        pair_html = '<div class="msg ok">Da ghep cap va ket noi thanh cong.</div>'
+        pair_html = '<div class="msg ok">Đã ghép cặp và kết nối thành công.</div>'
 
     body = f"""
     {msg_html}
     {pair_html}
 
-    <h2>Ghep ban phim / chuot Bluetooth</h2>
+    <h2>Ghép bàn phím / chuột Bluetooth</h2>
     <div class="card">
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-        Dung khi man hinh cam ung khong tien go chu.
+        Dùng khi màn hình cảm ứng không tiện gõ chữ.
       </p>
       <ol style="color:#8b93a1;font-size:13px;margin:0 0 12px;padding-left:19px;line-height:1.75;">
-        <li>Bat che do ghep cap tren ban phim (thuong giu nut Connect den khi den nhap nhay)</li>
-        <li>Bam <strong>Quet thiet bi</strong> ben duoi</li>
-        <li>Bam <strong>Ghep cap</strong> o dong ban phim</li>
-        <li>Man hinh se hien <strong>6 chu so</strong> - go day so do <strong>tren chinh ban phim
-            Bluetooth</strong> roi bam Enter</li>
+        <li>Bật chế độ ghép cặp trên bàn phím (thường giữ nút Connect đến khi đèn nhấp nháy)</li>
+        <li>Bam <strong>Quét thiết bị</strong> bên dưới</li>
+        <li>Bam <strong>Ghép cặp</strong> ở dòng bàn phím</li>
+        <li>Màn hình sẽ hiện <strong>6 chữ số</strong> - gõ dãy số đó <strong>tren chinh ban phim
+            Bluetooth</strong> rồi bấm Enter</li>
       </ol>
       <form method="POST" action="/bt-scan">
-        <button type="submit" data-busy="Dang quet 10 giay...">🔍 Quet thiet bi</button>
+        <button type="submit" data-busy="Dang quet 10 giay...">🔍 Quét thiết bị</button>
       </form>
     </div>
     {scan_html}
 
-    <h2>Thiet bi da ghep cap ({len(devs)})</h2>
-    <table><tr><th>Thiet bi</th><th style="width:150px;">Loai</th>
-               <th style="width:160px;">Trang thai</th>
-               <th style="width:230px;">Thao tac</th></tr>{rows}</table>
-    {'<p style="color:#8b93a1;">Chua ghep cap thiet bi nao.</p>' if not devs else ''}
+    <h2>Thiết bị đã ghép cặp ({len(devs)})</h2>
+    <table><tr><th>Thiết bị</th><th style="width:150px;">Loai</th>
+               <th style="width:160px;">Trạng thái</th>
+               <th style="width:230px;">Thao tác</th></tr>{rows}</table>
+    {'<p style="color:#8b93a1;">Chưa ghép cặp thiết bị nào.</p>' if not devs else ''}
 
-    <h2>Ket noi mang qua Bluetooth (PAN)</h2>
+    <h2>Kết nối mạng qua Bluetooth (PAN)</h2>
     <div class="card">
       <p style="color:#8b93a1;font-size:13px;margin:0;">
-        Ghep may tinh/dien thoai voi ten <strong>ConsolePi</strong>, sau do vao
+        Ghép máy tính/điện thoại với tên <strong>ConsolePi</strong>, sau đó vào
         <code>http://192.168.60.1</code>. Tren Windows: mo
-        <code>devicesandprinters</code> &rarr; chuot phai ConsolePi &rarr;
+        <code>devicesandprinters</code> &rarr; chuột phải ConsolePi &rarr;
         <em>Connect using</em> &rarr; <em>Access point</em>.
       </p>
     </div>
 
-    <h2>Khoi dong lai Bluetooth</h2>
+    <h2>Khởi động lại Bluetooth</h2>
     <div class="card">
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-        Dung khi khong ghep cap hoac khong ket noi lai duoc.
+        Dùng khi không ghép cặp hoặc không kết nối lại được.
       </p>
       <form method="POST" action="/bt-reset" id="form_bt_reset"
             onsubmit="return xacNhanBtReset(this);">
         <label style="display:flex;align-items:center;gap:9px;">
           <input type="checkbox" name="forget" value="1" id="chk_quen_thiet_bi" style="width:20px;height:20px;">
-          <span style="color:#ff6b6b;font-weight:600;">Quen tat ca thiet bi da ghep cap
-            (ban phim/chuot/dien thoai deu phai ghep lai tu dau)</span>
+          <span style="color:#ff6b6b;font-weight:600;">Quên tất cả thiết bị đã ghép cặp
+            (bàn phím/chuột/điện thoại đều phải ghép lại từ đầu)</span>
         </label>
         <div class="row" style="margin-top:13px;">
           <button type="submit" class="gray" data-busy="Dang khoi dong lai...">🔄 Reset Bluetooth</button>
@@ -1399,7 +1399,7 @@ def _bt_page(msg="", ok=True, scanned=None):
     </div>"""
 
     return render_page(body, active="/bluetooth", title="Bluetooth",
-                       subtitle="Ghep ban phim/chuot va ket noi mang du phong")
+                       subtitle="Ghép bàn phím/chuột và kết nối mạng dự phòng")
 
 
 def _switching_page(ssid):
@@ -1409,9 +1409,9 @@ def _switching_page(ssid):
     body = f"""
     <div class="msg warn">
       <h3 style="margin:0 0 8px;">Dang chuyen sang '{_esc(ssid)}'</h3>
-      <p>Sau 20-30 giay: noi may cua ban vao WiFi <strong>{_esc(ssid)}</strong>
+      <p>Sau 20-30 giây: nối máy của anh vào WiFi <strong>{_esc(ssid)}</strong>
       roi mo lai <a href="http://server-console.local">http://server-console.local</a>.</p>
-      <p>Neu that bai, Pi tu bat lai AP <strong>ConsolePi</strong> sau khoang 30 giay.</p>
+      <p>Nếu thất bại, Pi tự bật lại AP <strong>ConsolePi</strong> sau khoang 30 giay.</p>
     </div>
     <p><a class="btn" href="/wifi">← Quay lai trang WiFi</a></p>"""
     return render_page(body, active="/wifi", title="Dang chuyen mang")
@@ -1528,9 +1528,9 @@ def register_network(app):
         body = f"""
         <div class="msg warn">
           <h3 style="margin:0 0 8px;">Dang bat va KHOA AP "ConsolePi"</h3>
-          <p>Sau 15-20 giay, noi vao WiFi <strong>ConsolePi</strong> roi mo
+          <p>Sau 15-20 giây, nối vào WiFi <strong>ConsolePi</strong> roi mo
           <a href="http://{AP_IP}">http://{AP_IP}</a>.</p>
-          <p>Neu dang xem qua WiFi, ket noi se dut. Qua day LAN thi khong anh huong.</p>
+          <p>Nếu đang xem qua WiFi, kết nối sẽ đứt. Qua dây LAN thì không ảnh hưởng.</p>
         </div>
         <p><a class="btn" href="/wifi">← Trang WiFi</a></p>"""
         return render_page(body, active="/wifi", title="Dang bat AP")
@@ -1561,7 +1561,7 @@ def register_network(app):
         if not started:
             return _bt_page(msg=err, ok=False)
         time.sleep(2)      # cho agent kip sinh ma so de hien ngay
-        return _bt_page(msg="Dang ghep cap - lam theo huong dan ben duoi.", ok=True)
+        return _bt_page(msg="Dang ghep cap - lam theo huong dan bên dưới.", ok=True)
 
     @app.route("/bt-ghep-lai", methods=["POST"])
     def bt_repair_route():
@@ -1579,8 +1579,8 @@ def register_network(app):
         time.sleep(2)
         return _bt_page(
             msg=("Da xoa ban ghi cu va dang ghep cap lai. Neu la ban phim, hay "
-                 "bat che do ghep cap tren ban phim (thuong giu nut Connect vai "
-                 "giay den khi den nhap nhay) roi go ma so hien ben duoi."),
+                 "bật chế độ ghép cặp trên bàn phím (thuong giu nut Connect vai "
+                 "giay den khi den nhap nhay) roi go ma so hien bên dưới."),
             ok=True)
 
     @app.route("/bt-connect", methods=["POST"])

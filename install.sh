@@ -89,6 +89,7 @@ PKGS_CORE=(
     lldpd arp-scan tcpdump tshark traceroute nmap eapoltest
     ethtool usbutils lsof
     tftpd-hpa
+    samba
     grc
 )
 # fonts-noto-color-emoji: KHONG the thieu. Pi OS Lite khong co font emoji,
@@ -565,6 +566,48 @@ fi
 if [[ -f /etc/default/lldpd ]] && ! grep -q '^DAEMON_ARGS=".*-c' /etc/default/lldpd; then
     sed -i 's/^#*DAEMON_ARGS=.*/DAEMON_ARGS="-c"/' /etc/default/lldpd
     ok "Da bat CDP cho lldpd"
+fi
+
+# --- Samba: kho trien khai Windows qua PXE (tinh nang Deployment OS) ---
+#
+# Chi 1 tai khoan he thong RIENG "consolepi-deploy" (nologin, khong dang
+# nhap SSH/local duoc) dung de Windows Setup tu xac thuc khi tu no mo
+# phien SMB doc file - xem chi tiet ly do trong config/smb.conf va
+# ui/unattend.py.
+#
+# MAT KHAU: KHONG BAO GIO viet cung trong code/file cau hinh (repo nay la
+# PUBLIC tren GitHub) - tu sinh ngau nhien 1 lan duy nhat, luu vao
+# /opt/console-pi/samba-deploy.key (quyen 600, chi root doc duoc), giu
+# nguyen qua cac lan chay lai install.sh sau nay (khong sinh lai neu da
+# co). ui/unattend.py doc dung file nay luc sinh unattend.xml.
+if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
+    install -m 644 "$SRC_DIR/config/smb.conf" /etc/samba/smb.conf
+    if testparm -s >/dev/null 2>&1; then
+        ok "Cau hinh Samba hop le"
+    else
+        warn "Cau hinh Samba co loi - chay 'sudo testparm' de xem"
+    fi
+
+    id consolepi-deploy >/dev/null 2>&1 || \
+        useradd --system --no-create-home --shell /usr/sbin/nologin consolepi-deploy
+    KHOA_SAMBA=/opt/console-pi/samba-deploy.key
+    if [[ ! -s "$KHOA_SAMBA" ]]; then
+        MAT_KHAU_MOI=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)
+        old_umask=$(umask); umask 077
+        printf '%s' "$MAT_KHAU_MOI" > "$KHOA_SAMBA"
+        umask "$old_umask"
+        printf '%s\n%s\n' "$MAT_KHAU_MOI" "$MAT_KHAU_MOI" | smbpasswd -s -a consolepi-deploy >/dev/null
+        smbpasswd -e consolepi-deploy >/dev/null
+        ok "Da tao tai khoan Samba rieng cho PXE deploy (mat khau tu sinh, luu tai $KHOA_SAMBA)"
+    else
+        # File khoa da co tu truoc (vd cai lai install.sh tren Pi cu) -
+        # dam bao dong bo lai voi CSDL Samba, phong truong hop CSDL bi
+        # xoa/hong nhung file khoa van con.
+        printf '%s\n%s\n' "$(cat "$KHOA_SAMBA")" "$(cat "$KHOA_SAMBA")" | \
+            smbpasswd -s -a consolepi-deploy >/dev/null 2>&1 || true
+        smbpasswd -e consolepi-deploy >/dev/null 2>&1 || true
+        ok "Tai khoan Samba PXE deploy da co san, giu nguyen mat khau cu"
+    fi
 fi
 
 # ------------------------------------------------- 6. Dich vu systemd

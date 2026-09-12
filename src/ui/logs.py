@@ -30,7 +30,7 @@ def register_logs(app):
         noi_dung_loi = doc_nhat_ky(300)
         khoi_loi = f"""
         <div class="card" style="padding:0;overflow:hidden;">
-          <pre style="margin:0;max-height:65vh;overflow:auto;padding:14px;">{_esc(noi_dung_loi) or '(chua co loi nao duoc ghi lai - tot!)'}</pre>
+          <pre style="margin:0;max-height:65vh;overflow:auto;padding:14px;">{_esc(noi_dung_loi) or '(chưa có lỗi nào được ghi lại - tốt!)'}</pre>
         </div>"""
 
         # Tab dich vu: 1 nut cho moi dich vu, bam vao moi tai du lieu (thay vi
@@ -59,14 +59,14 @@ def register_logs(app):
           <a class="btn gray" href="/logs?tab={tab}&dv={dv_chon}">🔄 Lam moi</a>
         </div>
 
-        {'<div class="msg info">File: <code>' + _esc(LOG_FILE) + '</code> - tu dong xoay vong, khong lam day the nho. '
-         'Chi ghi loi THAT SU (unhandled exception), khong ghi cac loi da duoc cong cu tu bao (vd "khong ket noi duoc") - '
-         'nhung loi do da hien ngay tren man hinh luc do roi.</div>' if dang_loi else ''}
+        {'<div class="msg info">File: <code>' + _esc(LOG_FILE) + '</code> - tự động xoay vòng, không làm đầy thẻ nhớ. '
+         'Chỉ ghi lỗi THẬT SỰ (unhandled exception), không ghi các lỗi đã được công cụ tự báo (vd "không kết nối được") - '
+         'những lỗi đó đã hiện ngay trên màn hình lúc đó rồi.</div>' if dang_loi else ''}
 
         {khoi_loi if dang_loi else khoi_dv}
         """
 
-        return render_page(body, active="/logs", title="Nhat ky loi",
-                           subtitle="Xem lai loi da xay ra - khong can nho lenh journalctl")
+        return render_page(body, active="/logs", title="Nhật ký lỗi",
+                           subtitle="Xem lại lỗi đã xảy ra - không cần nhớ lệnh journalctl")
 
     return app

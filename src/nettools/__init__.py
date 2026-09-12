@@ -32,14 +32,14 @@ HUB_TEMPLATE = """
     <h1>🛠️ Network Tools</h1>
     <p><a href="/" class="back">← Quay lai Dashboard</a></p>
 
-    <h2>Chan doan mang (chi doc)</h2>
+    <h2>Chẩn đoán mạng (chỉ đọc)</h2>
     {% for href, label, desc, ready in tools_readonly %}
     <a class="tool{{ '' if ready else ' disabled' }}" href="{{ href if ready else '#' }}">
         {{ label }}<small>{{ desc }}</small>
     </a>
     {% endfor %}
 
-    <h2>Tu dong hoa (ghi cau hinh thiet bi that)</h2>
+    <h2>Tự động hóa (ghi cấu hình thiết bị thật)</h2>
     {% for href, label, desc, ready in tools_write %}
     <a class="tool{{ '' if ready else ' disabled' }}" href="{{ href if ready else '#' }}">
         {{ label }}<small>{{ desc }}</small>
@@ -51,24 +51,24 @@ HUB_TEMPLATE = """
 
 # ready=False = placeholder, se bat len tung phan khi lam xong giai doan tuong ung
 TOOLS_READONLY = [
-    ("/nettools/arp-scan", "🔍 ARP Scan", "Quet toan bo thiet bi dang online trong subnet", True),
-    ("/nettools/ping", "📶 Ping / Traceroute", "Kiem tra ket noi toi 1 dia chi/hostname", True),
-    ("/nettools/pcap", "📼 PCAP Capture", "Bat goi tin, luu ra USB, xem lai bang tshark", True),
-    ("/nettools/lldp", "🔗 LLDP/CDP Discovery", "Tim switch hostname, port, VLAN, PoE quang ba", True),
-    ("/nettools/dhcp-test", "🔌🌐 Kiem tra cong mang", "Toc do/duplex, loi duong truyen, PoE, DHCP, Internet, bang thong - tat ca trong 1 nut", True),
-    ("/nettools/l2-scan", "🌲 STP/LACP/VLAN Scan", "Bat goi BPDU/LACP/802.1Q tren day dang cam", True),
-    ("/nettools/mtu", "📏 MTU Discovery", "Do MTU thuc te toi 1 dia chi (phat hien VPN/PPPoE lam giam MTU)", True),
-    ("/nettools/dns-check", "🌐 Kiem tra DNS", "Doi chieu ket qua phan giai ten mien qua nhieu DNS server", True),
-    ("/nettools/tls-check", "🔒 Kiem tra chung chi TLS", "Xem chi tiet + tinh trang tin cay cua chung chi HTTPS quan ly", True),
-    ("/nettools/topology", "🗺️ So do mang 1 doan", "Ve Pi - switch - cac host tren cung 1 segment (ARP+LLDP)", True),
+    ("/nettools/arp-scan", "🔍 ARP Scan", "Quét toàn bộ thiết bị đang online trong subnet", True),
+    ("/nettools/ping", "📶 Ping / Traceroute", "Kiểm tra kết nối tới 1 địa chỉ/hostname", True),
+    ("/nettools/pcap", "📼 PCAP Capture", "Bắt gói tin, lưu ra USB, xem lại bằng tshark", True),
+    ("/nettools/lldp", "🔗 LLDP/CDP Discovery", "Tìm switch hostname, port, VLAN, PoE quảng bá", True),
+    ("/nettools/dhcp-test", "🔌🌐 Kiểm tra cổng mạng", "Tốc độ/duplex, lỗi đường truyền, PoE, DHCP, Internet, băng thông - tất cả trong 1 nút", True),
+    ("/nettools/l2-scan", "🌲 STP/LACP/VLAN Scan", "Bắt gói BPDU/LACP/802.1Q trên dây đang cắm", True),
+    ("/nettools/mtu", "📏 MTU Discovery", "Đo MTU thực tế tới 1 địa chỉ (phát hiện VPN/PPPoE làm giảm MTU)", True),
+    ("/nettools/dns-check", "🌐 Kiểm tra DNS", "Đối chiếu kết quả phân giải tên miền qua nhiều DNS server", True),
+    ("/nettools/tls-check", "🔒 Kiểm tra chứng chỉ TLS", "Xem chi tiết và tình trạng tin cậy của chứng chỉ HTTPS quản lý", True),
+    ("/nettools/topology", "🗺️ Sơ đồ mạng 1 đoạn", "Vẽ Pi - switch - các host trên cùng 1 segment (ARP+LLDP)", True),
 ]
 
 TOOLS_WRITE = [
-    ("/nettools/tftp", "📤 May chu TFTP", "Bat/tat TFTP de sao luu/phuc hoi config, firmware tu switch/router", True),
-    ("/nettools/console-backup", "🔌 Sao luu qua cap console", "Backup cau hinh khi thiet bi mat IP quan ly - chi can day console", True),
-    ("/nettools/netmiko", "⚙️ Netmiko Config", "Tu dong SSH vao switch chay lenh cau hinh (co xem truoc)", True),
-    ("/nettools/dot1x", "🔐 802.1X Testing", "Test xac thuc EAP voi RADIUS server (khong dung eth0)", True),
-    ("/nettools/ifthen", "🧩 IF/THEN Automation", "Rule tu dong goi y cau hinh khi phat hien switch quen", True),
+    ("/nettools/tftp", "📤 Máy chủ TFTP", "Bật/tắt TFTP để sao lưu/phục hồi config, firmware từ switch/router", True),
+    ("/nettools/console-backup", "🔌 Sao lưu qua cáp console", "Backup cấu hình khi thiết bị mất IP quản lý - chỉ cần dây console", True),
+    ("/nettools/netmiko", "⚙️ Netmiko Config", "Tự động SSH vào switch chạy lệnh cấu hình (có xem trước)", True),
+    ("/nettools/dot1x", "🔐 802.1X Testing", "Test xác thực EAP với RADIUS server (không đụng eth0)", True),
+    ("/nettools/ifthen", "🧩 IF/THEN Automation", "Rule tự động gợi ý cấu hình khi phát hiện switch quen", True),
 ]
 
 
