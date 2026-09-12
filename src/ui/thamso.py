@@ -16,7 +16,7 @@ import os
 import time
 import unicodedata
 
-FILE_DU_LIEU = "/opt/console-pi/tham-so-cai-dat.json"
+from .duongdan import FILE_THAM_SO as FILE_DU_LIEU
 
 # Ten cot - dung chung giua du lieu, giao dien va tim kiem
 CAC_COT = [

@@ -570,6 +570,12 @@ def register_pxe(app):
         trong form) thay vi ve trang dau - khong mat lua chon da chon.
         """
         flash(msg, "ok" if ok else "err")
+        # Nut bat/tat PXE nay gio nam o tab "Cai dat" cua Deployment OS -
+        # form o do gui kem truong an `ve` de quay lai DUNG trang vua bam,
+        # khong nhay ve danh sach kich ban (mat ngu canh dang lam).
+        ve = request.form.get("ve", "")
+        if ve.startswith("/deployos/"):
+            return redirect(ve)
         ma = request.form.get("ma", "")
         if ma:
             return redirect(f"/deployos/wizard/{ma}/7")

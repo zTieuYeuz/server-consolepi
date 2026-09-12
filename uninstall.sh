@@ -49,6 +49,23 @@ if [[ "$PURGE" == "yes" ]]; then
     rm -rf /opt/console-pi
     rm -f /etc/dnsmasq-bt.conf /etc/dnsmasq-direct.conf
 
+    # DU LIEU NGUOI DUNG (/var/lib/console-pi): phan mem tai len, anh
+    # Windows vai GB, kich ban, thu vien lenh, kho file.
+    #
+    # TUYET DOI KHONG xoa cung voi ma nguon. Truoc day toan bo thu nay nam
+    # trong /opt/console-pi nen dong `rm -rf` o tren XOA SACH luon - mat bo
+    # cai Office 3.6GB va moi kich ban da dung nhieu cong suc tao ra, khong
+    # co canh bao nao. Day la thu KHONG TAI TAO LAI DUOC tu GitHub.
+    #
+    # Chi nhac cho nguoi dung biet no nam o dau de tu quyet dinh.
+    if [[ -d /var/lib/console-pi ]]; then
+        echo
+        echo "  LUU Y: du lieu cua ban KHONG bi xoa, van nam o:"
+        echo "     /var/lib/console-pi   ($(du -sh /var/lib/console-pi 2>/dev/null | cut -f1))"
+        echo "  Muon xoa han thi tu chay:  sudo rm -rf /var/lib/console-pi"
+        echo
+    fi
+
     # Token Cloudflare Tunnel: PHAI xoa khi purge - de lai la de lo mot token
     # con hieu luc co the dung lai duong ham cu tu xa, du dich vu da tat.
     rm -rf /etc/cloudflared

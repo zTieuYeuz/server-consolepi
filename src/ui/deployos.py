@@ -50,7 +50,10 @@ import secrets
 import time
 
 # ---------------------------------------------------------------- duong dan
-DEPLOY_DIR = "/opt/console-pi/deploy"
+# Duong dan du lieu khai bao tap trung o duongdan.py (xem ly do that o do:
+# du lieu tung nam chung voi ma nguon nen `uninstall.sh` xoa sach ca bo cai
+# Office 3.6GB lan toan bo kich ban).
+from .duongdan import DEPLOY_DIR
 BOOT_DIR = os.path.join(DEPLOY_DIR, "boot")
 APPS_DIR = os.path.join(DEPLOY_DIR, "apps")
 SCRIPTS_DIR = os.path.join(DEPLOY_DIR, "scripts")
@@ -1417,6 +1420,7 @@ def register_deployos(app):
             ("kichban", "Kịch bản", "/deployos/kichban"),
             ("tainguyen", "Tài nguyên", "/deployos/os"),
             ("thamso", "Tham số cài đặt", "/deployos/thamso"),
+            ("caidat", "Cài đặt", "/deployos/caidat"),
         ]
         phu_theo_chinh = {
             "tainguyen": [
@@ -1426,6 +1430,10 @@ def register_deployos(app):
                 ("drivers", "Driver", "/deployos/drivers"),
                 ("scripts", "Script", "/deployos/console/scripts"),
                 ("file", "File boot", "/deployos/console"),
+            ],
+            "caidat": [
+                ("pxe", "Bật / Tắt PXE", "/deployos/caidat"),
+                ("hatang", "Kiểm tra hạ tầng", "/deployos/caidat/hatang"),
             ],
         }
         h = '<div class="dep-tabs">'
@@ -1752,7 +1760,7 @@ def register_deployos(app):
         flash_html = "".join(
             _msg(nd, cat == "ok")
             for cat, nd in get_flashed_messages(with_categories=True))
-        body = _tabs("kichban") + flash_html + _khoi_dang_phuc_vu() + _khoi_pxe_toan_cuc() + f"""
+        body = _tabs("kichban") + flash_html + _khoi_dang_phuc_vu() + f"""
         <div class="card">
           <h3>Tạo kịch bản mới</h3>
           <p style="color:#8b93a1;font-size:13.5px;margin:0 0 13px;">
@@ -2224,11 +2232,13 @@ def register_deployos(app):
 
                 <label class="chon" style="margin-top:14px;">
                   <input type="checkbox" name="tu_dang_nhap" value="1"{tdn_ch}>
-                  <span class="t">Tự động đăng nhập, không hỏi mật khẩu</span>
-                  <div class="d">Bật máy là vào thẳng desktop bằng tài khoản ở
-                  trên. Tiện cho máy kiosk, máy trưng bày, máy đo đạc tại chỗ -
-                  nhưng ai chạm vào máy cũng dùng được, đừng bật cho máy có dữ
-                  liệu quan trọng.</div>
+                  <span class="t">Giữ tự động đăng nhập MÃI MÃI</span>
+                  <div class="d">Lần đầu sau khi cài xong thì máy <strong>luôn
+                  tự đăng nhập</strong> (giống MDT) — để phần mềm cài nốt và
+                  hiện được bảng báo cáo. Tích ô này nghĩa là những lần bật máy
+                  sau <em>cũng</em> không hỏi mật khẩu: tiện cho máy kiosk, máy
+                  trưng bày, nhưng ai chạm vào máy cũng dùng được. Không tích
+                  thì từ lần thứ hai trở đi máy hỏi mật khẩu bình thường.</div>
                 </label>
                 <script>
                 (function() {{
@@ -2784,64 +2794,131 @@ def register_deployos(app):
         {form_luu}
         {sua_lai}"""
 
-    def _khoi_pxe_toan_cuc():
-        """
-        Khoi bat/tat PXE THAT (ui/pxe.py) - dat o TRANG DANH SACH kich ban
-        (deployos_boot), KHONG con nam trong tung kich ban nua. PXE la
-        trang thai HA TANG DUNG CHUNG cho ca he thong (1 cong eth0, 1 dich
-        vu dnsmasq-pxe) - khong phai thuoc tinh cua rieng 1 kich ban, nen
-        dat toan cuc moi dung cho (xem ly do that trong ghi chu tai
-        _ve_tongket() - da bo doan nay khoi do).
-
-        Viec DUNG (dung anh dia + bat PXE theo dung 1 kich ban) van lam qua
-        nut "Dùng" tren tung hang cua danh sach - khoi nay chi con lo phan
-        TAT va kiem tra ha tang (bootloader/wimboot/bootmgr/BCD).
-        """
+    # ======================================= TAB "CAI DAT" cua Deployment OS
+    #
+    # LOI THAT DA GAP (anh Thoai: "nut pxe anh ma bam tat tu nhien dau mat
+    # tieu luon khong hien lai sao anh bat len duoc"): khoi dieu khien cu
+    # CHI co nut "Tat PXE" khi dang bat, con khi da tat thi KHONG co nut
+    # "Bat PXE" nao ca - chi hien 1 dong chu bao vao kich ban bam "Dung".
+    # Tuc la bam tat 1 cai la ket, khong co duong quay lai tu chinh trang
+    # do. Sua: LUON co nut cua trang thai nguoc lai, o ngay day.
+    #
+    # Bat PXE o day phuc vu ANH DIA DANG CO SAN (lan dung gan nhat), khong
+    # dung lai anh moi - dung cho truong hop "lo bam tat, bat lai de chay
+    # tiep". Muon doi sang kich ban KHAC thi van phai bam "Dung" o kich ban
+    # do (vi phai dung lai anh dia theo cau hinh cua no).
+    def _trang_caidat_pxe(msg="", ok=True):
         from . import pxe as _pxe
-        kt = _pxe.trang_thai_chuan_bi()
+        from . import unattend as _u
+        dang_bat = _pxe.dang_bat()
+        dau_kb = _u.doc_dau_kichban()
+
+        if dang_bat:
+            try:
+                kieu_dang_chay = open(_pxe.STATE_FLAG).read().strip() or "truc_tiep"
+            except OSError:
+                kieu_dang_chay = "truc_tiep"
+            dia_chi_that = _pxe._dia_chi_pi_that(kieu_dang_chay)
+            trang_thai = f"""
+            <div class="msg ok">PXE đang <strong>BẬT</strong> trên cổng
+              {_pxe.IFACE} &mdash; Pi là {_esc(dia_chi_that)}.</div>"""
+            nut = """
+            <form method="POST" action="/deployos/pxe/tat">
+              <input type="hidden" name="ve" value="/deployos/caidat">
+              <button type="submit" class="red" data-busy="Đang tắt...">
+                Tắt PXE</button>
+            </form>"""
+        else:
+            trang_thai = f"""
+            <div class="msg warn">PXE đang <strong>TẮT</strong>. Bật lên sẽ
+              CẮT DHCP trên cổng {_pxe.IFACE} (giống hệt cảnh báo của
+              &quot;Cắm thẳng thiết bị&quot;) &mdash; chỉ bật khi đã cắm dây
+              mạng từ Pi sang đúng máy cần cài.</div>"""
+            if _pxe.san_sang_bat():
+                kieu = (dau_kb or {}).get("kieu_boot", "truc_tiep")
+                nut = f"""
+                <form method="POST" action="/deployos/pxe/bat">
+                  <input type="hidden" name="ve" value="/deployos/caidat">
+                  <input type="hidden" name="kieu_boot" value="{_esc(kieu)}">
+                  <button type="submit" data-busy="Đang bật...">
+                    Bật PXE lại (dùng ảnh đĩa đang có)</button>
+                </form>"""
+            else:
+                nut = ('<div class="msg err">Chưa đủ điều kiện để bật &mdash; '
+                       'xem tab <a href="/deployos/caidat/hatang">Kiểm tra '
+                       'hạ tầng</a>.</div>')
+
+        if dau_kb:
+            dang_phuc_vu = f"""
+            <table style="margin-top:6px;">
+              <tr><td>Kịch bản của ảnh đĩa</td>
+                  <td><strong>{_esc(dau_kb.get('ten_kichban') or '?')}</strong></td></tr>
+              <tr><td>Tên máy sẽ đặt</td><td>{_esc(dau_kb.get('ten_may') or '?')}</td></tr>
+              <tr><td>Tài khoản</td><td>{_esc(dau_kb.get('username') or '?')}</td></tr>
+              <tr><td>Dựng lúc</td><td>{_esc(dau_kb.get('dung_luc') or '?')}</td></tr>
+            </table>"""
+        else:
+            dang_phuc_vu = ('<p style="color:#8b93a1;font-size:13px;">Chưa dựng '
+                            'ảnh đĩa lần nào &mdash; bấm <em>Dùng</em> ở một '
+                            'kịch bản để dựng.</p>')
+
+        body = _tabs("caidat", "pxe") + _msg(msg, ok) + f"""
+        <div class="card">
+          <h3>Bật / Tắt PXE</h3>
+          {trang_thai}
+          {nut}
+        </div>
+        <div class="card">
+          <h3>Ảnh đĩa đang phục vụ</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 4px;">
+            Bật PXE ở trang này phục vụ đúng ảnh đĩa dưới đây. Muốn chạy kịch
+            bản khác thì bấm <em>Dùng</em> ở kịch bản đó (phải dựng lại ảnh).</p>
+          {dang_phuc_vu}
+        </div>"""
+        return _trang(body, "Cài đặt Deployment OS",
+                      "Bật/tắt PXE và kiểm tra hạ tầng", active="/deployos")
+
+    def _trang_caidat_hatang(msg="", ok=True):
+        """Bang kiem tra ha tang PXE (bootloader/wimboot/bootmgr/BCD) - tach
+        khoi trang danh sach kich ban vi day la thu chi xem khi co su co,
+        khong phai thu nhin moi ngay."""
+        from . import pxe as _pxe
         hang = ""
-        for dat, nhan, chi_tiet in kt:
+        for dat, nhan, chi_tiet in _pxe.trang_thai_chuan_bi():
             bieu = ('<span style="color:#4CAF50;">&#10004;</span>' if dat
                     else '<span style="color:#f59e0b;">&#33;</span>')
             hang += (f"<tr><td style='width:34px;'>{bieu}</td>"
                      f"<td><strong>{_esc(nhan)}</strong><br>"
                      f"<small style='color:#8b93a1;'>{_esc(chi_tiet)}</small></td></tr>")
 
-        trich_can = not _pxe._co_bootmgr_pxe() and os.path.isfile(_pxe._duong("boot.wim"))
+        trich_can = (not _pxe._co_bootmgr_pxe()
+                     and os.path.isfile(_pxe._duong("boot.wim")))
         nut_trich = """
         <form method="POST" action="/deployos/pxe/trich-bootmgr" style="margin-top:10px;">
+          <input type="hidden" name="ve" value="/deployos/caidat/hatang">
           <button type="submit" class="gray" data-busy="Đang trích...">
             Trích bootmgr từ boot.wim</button>
         </form>""" if trich_can else ""
 
-        if _pxe.dang_bat():
-            try:
-                kieu_dang_chay = open(_pxe.STATE_FLAG).read().strip() or "truc_tiep"
-            except OSError:
-                kieu_dang_chay = "truc_tiep"
-            dia_chi_that = _pxe._dia_chi_pi_that(kieu_dang_chay)
-            dieu_khien = f"""
-            <div class="msg ok">PXE đang BẬT trên cổng {_pxe.IFACE}
-            (Pi là {_esc(dia_chi_that)}).</div>
-            <form method="POST" action="/deployos/pxe/tat">
-              <button type="submit" class="red" data-busy="Đang tắt...">Tắt PXE</button>
-            </form>"""
-        elif _pxe.san_sang_bat():
-            dieu_khien = f"""
-            <div class="msg warn">Bật PXE sẽ CẮT DHCP trên cổng {_pxe.IFACE}
-            (giống hệt cảnh báo của "Cắm thẳng thiết bị"). Chỉ bật khi đã
-            cắm dây mạng từ Pi sang đúng máy cần cài. Bấm <em>Dùng</em> ở
-            1 kịch bản bên dưới để dựng ảnh đĩa và bật PXE cùng lúc.</div>"""
-        else:
-            dieu_khien = '<div class="msg warn">Chưa đủ điều kiện để bật (xem bảng dưới đây).</div>'
-
-        return f"""
+        body = _tabs("caidat", "hatang") + _msg(msg, ok) + f"""
         <div class="card">
           <h3>Sẵn sàng PXE (giai đoạn phục vụ boot thật sự)</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
+            Các thành phần hạ tầng cần có để máy khác boot được qua mạng.
+            Dấu <span style="color:#f59e0b;">!</span> nghĩa là còn thiếu.</p>
           <table>{hang}</table>
           {nut_trich}
-          {dieu_khien}
         </div>"""
+        return _trang(body, "Kiểm tra hạ tầng PXE",
+                      "Bootloader, wimboot, bootmgr, BCD", active="/deployos")
+
+    @app.route("/deployos/caidat")
+    def deployos_caidat():
+        return _trang_caidat_pxe()
+
+    @app.route("/deployos/caidat/hatang")
+    def deployos_caidat_hatang():
+        return _trang_caidat_hatang()
 
     def _thieu_gi(d):
         thieu = []

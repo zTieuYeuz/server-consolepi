@@ -53,7 +53,7 @@ TEN_TAI_KHOAN_SAMBA = "consolepi-deploy"
 # GitHub, code se bi doc boi bat ky ai - hang chuc nghin nguoi. Mat khau
 # tung bi viet cung o day (da phat hien va sua truoc khi commit lan dau,
 # chua tung bi day len GitHub).
-_FILE_KHOA_SAMBA = "/opt/console-pi/samba-deploy.key"
+from .duongdan import FILE_KHOA_SAMBA as _FILE_KHOA_SAMBA
 
 
 def _doc_mat_khau_samba():
@@ -1854,16 +1854,33 @@ def sinh_unattend_offline_xml(d):
     # dung so lan do roi thoi, rat de gay hieu nham "sao dung may hom nay
     # lai bat nhap mat khau". Khong co thi tu dang nhap mai cho toi khi
     # tat di.
-    khoi_autologon = ""
-    if d.get("tu_dang_nhap"):
-        khoi_autologon = f"""
+    # ---- Tu dong dang nhap ----
+    #
+    # LUON tu dang nhap LAN DAU, giong het cach MDT lam. LY DO THAT: moi
+    # thu chay sau khi cai xong (phan mem "cai cho Nguoi dung", script,
+    # go app rac, bang bao cao cuoi) deu nam trong FirstLogonCommands -
+    # ma FirstLogonCommands CHI chay khi that su co nguoi dang nhap. Neu
+    # may dung o man hinh nhap mat khau cho nguoi den go tay thi khong co
+    # gi chay ca, va nguoi di cai may cung khong bao gio thay duoc bang
+    # bao cao ket qua. Khong tu dang nhap = mat nua chuoi trien khai.
+    #
+    # KHAC NHAU giua 2 truong hop:
+    #   - Khong tich "tu dang nhap": <LogonCount>1</LogonCount> - Windows
+    #     tu dang nhap DUNG 1 LAN de chay cho xong, cac lan bat may sau
+    #     deu hoi mat khau binh thuong (may van an toan khi giao cho
+    #     nguoi dung).
+    #   - Co tich: bo <LogonCount> - tu dang nhap mai mai (may kiosk,
+    #     may trung bay).
+    lan_dang_nhap = "" if d.get("tu_dang_nhap") else """
+        <LogonCount>1</LogonCount>"""
+    khoi_autologon = f"""
       <AutoLogon>
         <Username>{_esc(username)}</Username>
         <Password>
           <Value>{_esc(password)}</Value>
           <PlainText>true</PlainText>
         </Password>
-        <Enabled>true</Enabled>
+        <Enabled>true</Enabled>{lan_dang_nhap}
       </AutoLogon>"""
 
     khoi_ngon_ngu = f"""

@@ -184,6 +184,39 @@ say "Trien khai vao $INSTALL_DIR"
 
 mkdir -p "$INSTALL_DIR"/{scripts,captures}
 
+# --- Tach DU LIEU ra khoi MA NGUON (xem src/ui/duongdan.py) ---
+#
+# LY DO THAT: truoc day du lieu nguoi dung (phan mem tai len, anh Windows
+# vai GB, kich ban, thu vien lenh, kho file) nam TRON trong /opt/console-pi
+# - tuc la chung cho voi ma nguon. `uninstall.sh` co dong
+# `rm -rf /opt/console-pi` nen go cai dat 1 lan la mat sach (bo cai Office
+# 3.6GB, toan bo kich ban...). Nay du lieu chuyen han sang
+# /var/lib/console-pi - ban cai dat khong bao gio dung toi nua.
+#
+# Doan duoi tu di chuyen du lieu cu sang cho moi, chay lai bao nhieu lan
+# cung khong sao (chi lam khi con thu muc cu). Dung `mv` chu khong `cp`:
+# hai cho nam cung phan vung nen di chuyen la TUC THI, khong ton them
+# dung luong the nho - rat quan trong voi anh Windows vai GB.
+DATA_DIR=/var/lib/console-pi
+mkdir -p "$DATA_DIR"
+chmod 755 "$DATA_DIR"
+
+for muc in deploy storage tham-so-cai-dat.json command-library.json \
+           samba-deploy.key; do
+    cu="$INSTALL_DIR/$muc"
+    moi="$DATA_DIR/$muc"
+    [[ -e "$cu" ]] || continue
+    if [[ -e "$moi" ]]; then
+        # Cho moi DA co du lieu -> khong ghi de. Doi ten cho cu de lai de
+        # nguoi dung tu doi chieu roi xoa, tuyet doi khong tu xoa ho.
+        mv "$cu" "$cu.cu-$(date +%Y%m%d-%H%M%S)"
+        warn "Da co $moi - giu ban cu lai de doi chieu: $cu.cu-*"
+    else
+        mv "$cu" "$moi"
+        ok "Da chuyen du lieu '$muc' sang $DATA_DIR (khong con bi ban cai dat dung toi)"
+    fi
+done
+
 # Cac file cau hinh cua NGUOI DUNG - khong bao gio ghi de
 PRESERVE=( config.json command-library.json port-names.json
            flask-secret.key force-ap.flag nettools/ifthen-rules.json )
@@ -590,7 +623,7 @@ if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
 
     id consolepi-deploy >/dev/null 2>&1 || \
         useradd --system --no-create-home --shell /usr/sbin/nologin consolepi-deploy
-    KHOA_SAMBA=/opt/console-pi/samba-deploy.key
+    KHOA_SAMBA="$DATA_DIR/samba-deploy.key"
     if [[ ! -s "$KHOA_SAMBA" ]]; then
         MAT_KHAU_MOI=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)
         old_umask=$(umask); umask 077

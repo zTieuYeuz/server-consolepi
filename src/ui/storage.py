@@ -19,7 +19,8 @@ import shutil
 import subprocess
 import time
 
-LOCAL_DIR = "/opt/console-pi/storage"
+# Duong dan du lieu tap trung - xem ui/duongdan.py
+from .duongdan import STORAGE_DIR as LOCAL_DIR
 # Con lai duoi muc nay thi khong cho tai len nua
 MIN_FREE_GB = 3
 

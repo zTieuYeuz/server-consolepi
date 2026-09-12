@@ -16,7 +16,8 @@ from flask import request
 
 from .layout import render_page
 
-LIB_FILE = "/opt/console-pi/command-library.json"
+# Duong dan du lieu tap trung - xem ui/duongdan.py
+from .duongdan import FILE_THU_VIEN_LENH as LIB_FILE
 
 # 5 tap lenh co ban hay dung nhat khi lam viec voi switch Cisco
 DEFAULT_LIBRARY = [
