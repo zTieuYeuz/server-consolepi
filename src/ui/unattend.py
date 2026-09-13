@@ -682,26 +682,35 @@ def _nhan_tuy_chon(d, pha):
 
 def sinh_script_tien_trinh(d, dia_chi_pi):
     r"""
-    Sinh script PowerShell DIEU PHOI toan bo viec cai dat sau khi dang nhap.
+    Sinh script PowerShell DIEU PHOI toan bo viec cai dat sau khi dang nhap,
+    kem CUA SO TIEN TRINH hien ngay tren man hinh may dich.
 
     VI SAO GOP LAI MOT SCRIPT thay vi de Windows chay tung
     FirstLogonCommand rieng le nhu truoc:
 
-    1. BAO NGUOC VE PI. Nguoi dung dung nhin may dich (hoac dang o phong
-       khac) khong the biet dang cai toi dau. Nay moi buoc deu POST ve
-       /api/tiendo, bang tren Pi tu tich xanh - xem ui/tiendo.py.
+    1. HIEN TIEN TRINH NGAY TREN MAY DICH. Nguoi dung dung ngay truoc may
+       phai nhin thay dang cai cai gi, con bao nhieu cai nua. Cua so cmd
+       cua FirstLogonCommand thi chu chay vut qua roi TU DONG DONG, khong
+       ai kip doc (anh Thoai da gap dung viec nay voi ca bao cao cuoi).
 
-    2. CO GIOI HAN THOI GIAN CHO TUNG BUOC. Day la thu quan trong nhat.
+    2. BAO NGUOC VE PI de xem tu xa - xem ui/tiendo.py.
+
+    3. CO GIOI HAN THOI GIAN CHO TUNG BUOC. Day la thu quan trong nhat.
        LOI THAT DA GAP: Office 365 goi ra may chu Microsoft xin token,
        khong duoc, roi TU THU LAI voi khoang cho tang gap doi moi lan
        (3 -> 7 -> 14 -> 28 phut...). Windows khong co timeout nao cho
        FirstLogonCommand, nen ca qua trinh cai dung im 45 phut ma man
        hinh khong khac gi luc chay binh thuong. Nay moi buoc co han gio
-       rieng, qua han thi GIET tien trinh do, ghi "Qua gio" va DI TIEP -
-       may van cai xong nhung thu con lai.
+       rieng, qua han thi GIET tien trinh do, ghi "Qua gio" va DI TIEP.
 
-    3. MOT BUOC HONG KHONG KEO SAP CA CHUOI: chay tiep va ghi ro buoc nao
-       hong, thay vi dung ca loat mot cach im lang.
+    4. MOT BUOC HONG KHONG KEO SAP CA CHUOI.
+
+    KY THUAT GIU CUA SO SONG: PowerShell chi co 1 luong. Trong luc cho
+    mot buoc cai xong (co the ca chuc phut) ma khong lam gi thi Windows
+    danh dau cua so la "Not Responding" va lam mo di - nhin nhu treo may.
+    Nen thay vi WaitForExit() mot mach, phai vong lap ngan: cu 300ms lai
+    goi DoEvents() de cua so ve lai, cap nhat dong ho dem giay, roi kiem
+    tra tien trinh xong chua.
     """
     buoc = _danh_sach_buoc_nguoi_dung(d)
     dong = []
@@ -709,18 +718,16 @@ def sinh_script_tien_trinh(d, dia_chi_pi):
         dong.append(f"  @{{ Ten={_ps_chuoi(ten)}; Lenh={_ps_chuoi(lenh)} }}")
     mang_buoc = ",\n".join(dong) if dong else ""
 
-    ten_kb = d.get("tu_kichban") or d.get("ten_kichban") or "(không tên)"
+    ten_kb = d.get("tu_kichban") or d.get("ten_kichban") or "(khong ten)"
 
     return f"""# ============================================================
 #  Console Pi - dieu phoi cai dat sau khi dang nhap
 #  Tu sinh theo kich ban, KHONG sua bang tay (se bi ghi de lan cai sau).
 # ============================================================
 $ErrorActionPreference = 'Continue'
-$Pi        = '{dia_chi_pi}'
-$TenMay    = $env:COMPUTERNAME
-$KichBan   = {_ps_chuoi(ten_kb)}
-# Han gio cho MOI buoc. Het gio thi giet tien trinh do roi di tiep - xem
-# ly do that (Office 365 tu thu lai vo han) trong docstring ben Python.
+$Pi         = '{dia_chi_pi}'
+$TenMay     = $env:COMPUTERNAME
+$KichBan    = {_ps_chuoi(ten_kb)}
 $HanGioGiay = {GIAY_TOI_DA_MOI_BUOC}
 
 $Buoc = @(
@@ -732,63 +739,194 @@ if (-not (Test-Path $ThuMuc)) {{ New-Item -ItemType Directory -Path $ThuMuc -For
 $Log = Join-Path $ThuMuc 'tien-trinh.log'
 
 function Ghi($t) {{
-    $d = (Get-Date -Format 'HH:mm:ss') + '  ' + $t
-    Write-Host $d
-    Add-Content -Path $Log -Value $d -Encoding UTF8 -EA SilentlyContinue
+    Add-Content -Path $Log -Value ((Get-Date -Format 'HH:mm:ss') + '  ' + $t) `
+        -Encoding UTF8 -EA SilentlyContinue
 }}
 
-# Bao ve Pi. TUYET DOI khong duoc lam dung qua trinh cai: bao loi thi bo
-# qua, han gio ngan (4 giay) vi Pi co the da bi rut day mang tu luc nao.
+# Bao ve Pi. TUYET DOI khong duoc lam dung qua trinh cai: loi thi bo qua,
+# han gio ngan (4 giay) vi Pi co the da bi rut day mang tu luc nao.
 function BaoPi($duong, $goi) {{
     try {{
-        $json = $goi | ConvertTo-Json -Compress
         Invoke-RestMethod -Uri "http://$Pi/api/tiendo/$duong" -Method Post `
-            -Body $json -ContentType 'application/json' -TimeoutSec 4 | Out-Null
+            -Body ($goi | ConvertTo-Json -Compress) -ContentType 'application/json' `
+            -TimeoutSec 4 | Out-Null
     }} catch {{ }}
 }}
+
+# ------------------------------------------------------------ cua so
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
+$frm = New-Object System.Windows.Forms.Form
+$frm.Text = "Console Pi - Đang cài đặt phần mềm"
+$frm.Size = New-Object System.Drawing.Size(720, 520)
+$frm.StartPosition = 'CenterScreen'
+$frm.BackColor = [System.Drawing.Color]::FromArgb(24, 26, 30)
+$frm.TopMost = $true
+# Khong cho dong giua chung: dong cua so KHONG dung duoc viec cai dang
+# chay ngam, chi lam mat cho theo doi - de lai nguoi dung tuong da xong.
+$frm.FormBorderStyle = 'FixedSingle'
+$frm.MaximizeBox = $false
+$frm.ControlBox = $false
+
+$lblTo = New-Object System.Windows.Forms.Label
+$lblTo.Text = "Đang cài đặt phần mềm cho máy này"
+$lblTo.ForeColor = [System.Drawing.Color]::White
+$lblTo.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
+$lblTo.Location = New-Object System.Drawing.Point(18, 14)
+$lblTo.Size = New-Object System.Drawing.Size(660, 30)
+$frm.Controls.Add($lblTo)
+
+$lblPhu = New-Object System.Windows.Forms.Label
+$lblPhu.Text = "Kịch bản: $KichBan   —   Xin đừng tắt máy trong lúc đang cài."
+$lblPhu.ForeColor = [System.Drawing.Color]::FromArgb(150, 158, 170)
+$lblPhu.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+$lblPhu.Location = New-Object System.Drawing.Point(20, 46)
+$lblPhu.Size = New-Object System.Drawing.Size(660, 20)
+$frm.Controls.Add($lblPhu)
+
+$thanh = New-Object System.Windows.Forms.ProgressBar
+$thanh.Location = New-Object System.Drawing.Point(20, 74)
+$thanh.Size = New-Object System.Drawing.Size(660, 16)
+$thanh.Minimum = 0
+$thanh.Maximum = [Math]::Max(1, $Buoc.Count)
+$frm.Controls.Add($thanh)
+
+$lv = New-Object System.Windows.Forms.ListView
+$lv.Location = New-Object System.Drawing.Point(20, 102)
+$lv.Size = New-Object System.Drawing.Size(660, 330)
+$lv.View = 'Details'
+$lv.FullRowSelect = $true
+$lv.GridLines = $false
+$lv.BackColor = [System.Drawing.Color]::FromArgb(31, 34, 39)
+$lv.ForeColor = [System.Drawing.Color]::White
+$lv.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+$lv.Columns.Add("", 40) | Out-Null
+$lv.Columns.Add("Bước", 400) | Out-Null
+$lv.Columns.Add("Trạng thái", 130) | Out-Null
+$lv.Columns.Add("Giây", 70) | Out-Null
+$frm.Controls.Add($lv)
+
+foreach ($b in $Buoc) {{
+    $it = New-Object System.Windows.Forms.ListViewItem("")
+    $it.SubItems.Add($b.Ten) | Out-Null
+    $it.SubItems.Add("chờ...") | Out-Null
+    $it.SubItems.Add("") | Out-Null
+    $it.ForeColor = [System.Drawing.Color]::FromArgb(130, 138, 150)
+    $lv.Items.Add($it) | Out-Null
+}}
+
+$lblDay = New-Object System.Windows.Forms.Label
+$lblDay.Text = ""
+$lblDay.ForeColor = [System.Drawing.Color]::FromArgb(150, 158, 170)
+$lblDay.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+$lblDay.Location = New-Object System.Drawing.Point(20, 442)
+$lblDay.Size = New-Object System.Drawing.Size(520, 22)
+$frm.Controls.Add($lblDay)
+
+$btnDong = New-Object System.Windows.Forms.Button
+$btnDong.Text = "Đóng"
+$btnDong.Location = New-Object System.Drawing.Point(580, 438)
+$btnDong.Size = New-Object System.Drawing.Size(100, 32)
+$btnDong.Enabled = $false          # chi bat khi da cai xong het
+$btnDong.Add_Click({{ $frm.Close() }})
+$frm.Controls.Add($btnDong)
+
+$frm.Show()
+[System.Windows.Forms.Application]::DoEvents()
+
+function DatDong($i, $bieu, $tt, $giay, $mau) {{
+    $lv.Items[$i].Text = $bieu
+    $lv.Items[$i].SubItems[2].Text = $tt
+    $lv.Items[$i].SubItems[3].Text = $giay
+    $lv.Items[$i].ForeColor = $mau
+    $lv.EnsureVisible($i)
+    [System.Windows.Forms.Application]::DoEvents()
+}}
+
+$XANH  = [System.Drawing.Color]::FromArgb(110, 231, 160)
+$VANG  = [System.Drawing.Color]::FromArgb(245, 158, 11)
+$DO    = [System.Drawing.Color]::FromArgb(255, 107, 107)
+$XAM   = [System.Drawing.Color]::FromArgb(130, 138, 150)
 
 Ghi "===== Bat dau cai dat: $KichBan ====="
 BaoPi 'batdau' @{{ may = $TenMay; kichban = $KichBan;
                    buoc = @($Buoc | ForEach-Object {{ $_.Ten }}) }}
 
 $i = 0
+$soLoi = 0
 foreach ($b in $Buoc) {{
+    $lblDay.Text = "Đang làm bước $($i + 1) / $($Buoc.Count)..."
+    DatDong $i ">" "đang chạy..." "" $VANG
     Ghi ("[{{0}}/{{1}}] {{2}}" -f ($i + 1), $Buoc.Count, $b.Ten)
     BaoPi 'buoc' @{{ may = $TenMay; chi_so = $i; trang_thai = 'dang' }}
+
     $t0 = Get-Date
     $tt = 'xong'; $ghiChu = ''
-
     try {{
-        # Chay qua cmd.exe de dong lenh giu nguyen y het cach Windows
-        # chay FirstLogonCommand truoc day (co && , duong dan co dau
-        # cach, tham so /qn ...) - khong phai viet lai cu phap.
         $p = Start-Process -FilePath 'cmd.exe' `
              -ArgumentList '/c', $b.Lenh -PassThru -WindowStyle Hidden
-        if (-not $p.WaitForExit($HanGioGiay * 1000)) {{
-            # Giet ca cay tien trinh con: bo cai thuong de ra tien trinh
-            # con rieng (setup.exe -> OfficeClickToRun.exe), giet moi tien
-            # trinh cha thi con van chay tiep va van giu may.
-            try {{ & taskkill /PID $p.Id /T /F 2>&1 | Out-Null }} catch {{ }}
-            $tt = 'qua_gio'
-            $ghiChu = "Qua $HanGioGiay giay - da dung buoc nay de di tiep"
-        }} elseif ($p.ExitCode -ne 0) {{
-            $tt = 'loi'
-            $ghiChu = "Ma loi: $($p.ExitCode)"
+        # Vong cho NGAN + DoEvents: giu cua so song va dem giay. Neu dung
+        # WaitForExit() mot mach thi Windows bao "Not Responding" va lam
+        # mo cua so - nhin y het treo may.
+        while (-not $p.HasExited) {{
+            Start-Sleep -Milliseconds 300
+            $gi = [int]((Get-Date) - $t0).TotalSeconds
+            $lv.Items[$i].SubItems[3].Text = "$gi"
+            [System.Windows.Forms.Application]::DoEvents()
+            if ($gi -ge $HanGioGiay) {{
+                try {{ & taskkill /PID $p.Id /T /F 2>&1 | Out-Null }} catch {{ }}
+                $tt = 'qua_gio'
+                $ghiChu = "Quá $HanGioGiay giây — đã dừng bước này để đi tiếp"
+                break
+            }}
+        }}
+        if ($tt -eq 'xong' -and $p.ExitCode -ne 0) {{
+            $tt = 'loi'; $ghiChu = "Mã lỗi: $($p.ExitCode)"
         }}
     }} catch {{
-        $tt = 'loi'
-        $ghiChu = $_.Exception.Message
+        $tt = 'loi'; $ghiChu = $_.Exception.Message
     }}
 
     $giay = [int]((Get-Date) - $t0).TotalSeconds
+    if ($tt -eq 'xong') {{
+        DatDong $i ([char]0x2714) "xong" "$giay" $XANH
+    }} elseif ($tt -eq 'qua_gio') {{
+        $soLoi++
+        DatDong $i ([char]0x2718) "quá giờ" "$giay" $DO
+    }} else {{
+        $soLoi++
+        DatDong $i ([char]0x2718) "lỗi" "$giay" $DO
+    }}
     Ghi ("      -> {{0}} ({{1}}s) {{2}}" -f $tt, $giay, $ghiChu)
     BaoPi 'buoc' @{{ may = $TenMay; chi_so = $i; trang_thai = $tt;
                      giay = $giay; ghi_chu = $ghiChu }}
+
+    $thanh.Value = [Math]::Min($thanh.Maximum, $i + 1)
+    [System.Windows.Forms.Application]::DoEvents()
     $i++
 }}
 
 Ghi "===== Xong ====="
 BaoPi 'ketthuc' @{{ may = $TenMay }}
+
+if ($soLoi -eq 0) {{
+    $lblDay.Text = "Xong tất cả $($Buoc.Count) bước. Không có lỗi."
+    $lblDay.ForeColor = $XANH
+}} else {{
+    $lblDay.Text = "Xong, nhưng có $soLoi bước không đạt — xem dòng màu đỏ."
+    $lblDay.ForeColor = $DO
+}}
+$lblTo.Text = "Đã cài đặt xong"
+$btnDong.Enabled = $true
+$frm.ControlBox = $true
+[System.Windows.Forms.Application]::DoEvents()
+
+# Dung yen cho toi khi bam Dong. Khong tu dong dong: nguoi di cai may
+# phai co co hoi doc xem buoc nao hong - day la ly do cua ca cua so nay.
+$frm.TopMost = $false
+[void]$frm.ShowDialog()
 """
 
 
