@@ -19,23 +19,53 @@ import subprocess
 # ky tu trong khoi U+2300-23FF (⏯ ⏸ ⏹ ⏻ ⏼ ⏽...) cho icon hien tren man hinh
 # nay - chi dung emoji thuoc khoi chuan (mat cuoi, con vat, do vat thong
 # thuong) da kiem chung la luon co san tren Pi OS.
+# Thanh menu ben trai.
+#
+# GOM NHOM thay vi 16 muc phang nhu truoc: 16 dong lam thanh menu dai hon
+# man hinh RasPad, phai cuon moi thay het - va cac muc lien quan nhau
+# (WiFi/Bluetooth/Truy cap tu xa deu la "duong vao Pi") lai nam rai rac
+# xen ke voi thu khong lien quan.
+#
+# Cau truc: ("href", "ten", "icon")                     -> muc don
+#           ("nhom", "ten", "icon", [cac muc con...])   -> nhom mo/dong
+#
+# Nhom nao chua trang dang mo thi TU DONG bung ra (xem render_page) - de
+# nguoi dung luon nhin thay minh dang o dau, khong phai tu mo lai.
 NAV_ITEMS = [
     ("/", "Tổng quan", "🏠"),
-    ("/wifi", "WiFi / AP", "📶"),
-    ("/bluetooth", "Bluetooth", "🔵"),
+
+    # Cac duong ket noi VAO chinh con Pi nay
+    ("nhom", "Kết nối server", "📡", [
+        ("/wifi", "WiFi / AP", "📶"),
+        ("/bluetooth", "Bluetooth", "🔵"),
+        ("/remote", "Truy cập từ xa", "🌍"),
+    ]),
+
+    # Cac duong tu Pi ket noi RA thiet bi mang can lam viec
+    ("nhom", "Kết nối thiết bị", "🔌", [
+        ("/console", "Console", "🖥️"),
+        ("/terminal", "Terminal server", "⌨️"),
+        ("/ssh", "SSH", "🔑"),
+        ("/direct", "Cắm thẳng thiết bị", "🔗"),
+    ]),
+
     ("/nettools", "Network Tools", "🛠️"),
-    ("/direct", "Cắm thẳng thiết bị", "🔌"),
-    ("/terminal", "Terminal", "⌨️"),
-    ("/ssh", "SSH", "🔑"),
-    ("/commands", "Thư viện lệnh", "📚"),
-    ("/storage", "Kho file", "💾"),
     ("/deployos", "Deployment OS", "💿"),
-    ("/remote", "Truy cập từ xa", "🌍"),
-    ("/docs", "Tài liệu", "📖"),
+
+    # Noi cat du lieu de dung lai
+    ("nhom", "Kho lưu trữ", "📦", [
+        ("/storage", "Kho file", "💾"),
+        ("/commands", "Thư viện lệnh", "📚"),
+    ]),
+
     ("/logs", "Nhật ký lỗi", "📋"),
     ("/power", "Nguồn điện", "⚡"),
     ("/giaitri", "Giải trí", "📺"),
-    ("/settings", "Cài đặt", "⚙️"),
+
+    ("nhom", "Cài đặt", "⚙️", [
+        ("/settings", "Cài đặt chung", "⚙️"),
+        ("/docs", "Tài liệu", "📖"),
+    ]),
 ]
 
 BASE_CSS = """
@@ -54,8 +84,45 @@ a { color:#4CAF50; text-decoration:none; }
         display:flex; flex-direction:column; position:sticky; top:0;
         height:100vh; overflow-y:auto; }
 .brand { padding:14px 16px; font-size:15px; font-weight:700; color:#4CAF50;
-         border-bottom:1px solid #2c3036; letter-spacing:.5px; }
+         border-bottom:1px solid #2c3036; letter-spacing:.5px;
+         display:flex; align-items:center; gap:8px; }
 .brand small { display:block; color:#6b7280; font-weight:400; font-size:11px; margin-top:2px; }
+.brand .bten { flex:1; min-width:0; }
+/* Nut thu gon: 40px de ngon tay bam trung tren man hinh cam ung */
+.brand .thu { flex:none; width:40px; height:40px; border-radius:8px; cursor:pointer;
+              background:#22262b; border:1px solid #2c3036; color:#8b93a1;
+              font-size:16px; line-height:1; }
+.brand .thu:active { background:#2c3036; }
+
+/* ---- Nhom muc menu (the <details> chinh chu cua trinh duyet - khong
+   can JS, bung/thu chay duoc ngay ca khi JS loi) ---- */
+.nav .nhom > summary { display:flex; align-items:center; gap:11px;
+    padding:14px 15px; min-height:50px; color:#c9ced6; font-size:15px;
+    cursor:pointer; white-space:nowrap; list-style:none;
+    -webkit-user-select:none; user-select:none; }
+.nav .nhom > summary::-webkit-details-marker { display:none; }
+/* Mui ten chi huong mo/dong - xoay khi bung ra */
+.nav .nhom > summary::after { content:"\\25B8"; margin-left:auto; font-size:12px;
+    color:#6b7280; transition:transform .15s; }
+.nav .nhom[open] > summary::after { transform:rotate(90deg); }
+.nav .nhom > summary:active { background:#2c3036; }
+.nav .nhom .con a { padding-left:34px; font-size:14.5px; min-height:46px; }
+.nav .nhom .con a .ic { font-size:16px; width:20px; }
+
+/* ---- Che do THU GON: chi con day icon ----
+   Dat class tren <body> (khong phai tren .side) de CSS o day doi duoc ca
+   be rong cot ben trai lan hien thi cua tung muc con. */
+body.thu-gon .side { width:62px; flex:0 0 62px; }
+body.thu-gon .side .nl,
+body.thu-gon .side .brand .bten,
+body.thu-gon .side .foot { display:none; }
+body.thu-gon .side .brand { justify-content:center; padding:14px 8px; }
+body.thu-gon .side .nav a,
+body.thu-gon .side .nav .nhom > summary { justify-content:center; padding:14px 6px; }
+body.thu-gon .side .nav .nhom > summary::after { display:none; }
+/* Khi thu gon thi luon bung cac nhom ra (chi con icon nen khong chiem cho),
+   neu khong cac muc con se bi giau han, khong bam vao dau duoc. */
+body.thu-gon .side .nav .nhom .con a { padding-left:6px; }
 /* Muc menu toi thieu 48px chieu cao (khuyen nghi cho man hinh cam ung la
    >=44px) va co hieu ung bam :active - :hover khong bao gio kich hoat tren
    cam ung nen thieu no nguoi dung khong biet minh vua cham trung hay chua.
@@ -306,13 +373,31 @@ def render_page(body_html, active="/", title="Console Pi", subtitle="", extra_cs
             f'<div class="v">{c["val"]}</div><div class="x">{c["extra"]}</div></div>'
         )
 
+    def _dang_mo(href):
+        """'/' chi sang khi khop tuyet doi; cac muc khac sang khi la tien to."""
+        return (active == href) if href == "/" else active.startswith(href)
+
+    def _ve_muc(href, label, icon):
+        return (f'<a href="{href}" class="{"active" if _dang_mo(href) else ""}" '
+                f'title="{label}">'
+                f'<span class="ic">{icon}</span><span class="nl">{label}</span></a>')
+
     nav_html = ""
-    for href, label, icon in NAV_ITEMS:
-        # "/" chi active khi khop tuyet doi; cac muc khac active khi la tien to
-        is_active = (active == href) if href == "/" else active.startswith(href)
+    for muc in NAV_ITEMS:
+        if muc[0] != "nhom":
+            nav_html += _ve_muc(*muc)
+            continue
+        _, ten_nhom, icon_nhom, cac_con = muc
+        # Nhom chua trang dang mo thi bung san - nguoi dung luon thay minh
+        # dang dung o dau ma khong phai tu mo lai sau moi lan chuyen trang.
+        mo = any(_dang_mo(h) for h, _l, _i in cac_con)
+        con_html = "".join(_ve_muc(*c) for c in cac_con)
         nav_html += (
-            f'<a href="{href}" class="{"active" if is_active else ""}">'
-            f'<span class="ic">{icon}</span><span>{label}</span></a>'
+            f'<details class="nhom"{" open" if mo else ""}>'
+            f'<summary title="{ten_nhom}">'
+            f'<span class="ic">{icon_nhom}</span>'
+            f'<span class="nl">{ten_nhom}</span></summary>'
+            f'<div class="con">{con_html}</div></details>'
         )
 
     return f"""<!DOCTYPE html>
@@ -327,7 +412,11 @@ def render_page(body_html, active="/", title="Console Pi", subtitle="", extra_cs
 <body>
 <div class="wrap">
   <div class="side">
-    <div class="brand">CONSOLE PI<small>Network Toolkit</small></div>
+    <div class="brand">
+      <span class="bten">CONSOLE PI<small>Network Toolkit</small></span>
+      <button type="button" id="nut-thu" class="thu"
+              title="Thu gọn / mở rộng thanh menu">&raquo;</button>
+    </div>
     <div class="nav">{nav_html}</div>
     <div class="foot">
       <a href="/logout">Đăng xuất</a>
@@ -346,6 +435,36 @@ def render_page(body_html, active="/", title="Console Pi", subtitle="", extra_cs
     </div>
   </div>
 </div>
+<script>
+/* Thu gon / mo rong thanh menu ben trai.
+   Nho lua chon vao localStorage de giu nguyen khi chuyen trang - neu
+   khong thi moi lan bam sang trang khac menu lai bung ra nhu cu, rat
+   kho chiu. Ap dung NGAY (khong doi DOMContentLoaded) de trang khong
+   bi "nhay" tu rong sang hep truoc mat nguoi dung. */
+(function() {{
+  var K = 'consolepi-menu-thu-gon';
+  try {{
+    if (localStorage.getItem(K) === '1') document.body.classList.add('thu-gon');
+  }} catch (e) {{}}
+  var n = document.getElementById('nut-thu');
+  if (!n) return;
+  function veLai() {{
+    var gon = document.body.classList.contains('thu-gon');
+    n.innerHTML = gon ? '&laquo;' : '&raquo;';
+  }}
+  veLai();
+  n.addEventListener('click', function() {{
+    var gon = document.body.classList.toggle('thu-gon');
+    try {{ localStorage.setItem(K, gon ? '1' : '0'); }} catch (e) {{}}
+    // Thu gon thi bung het cac nhom (chi con icon, khong ton cho) de moi
+    // muc con van bam vao duoc.
+    document.querySelectorAll('.nav .nhom').forEach(function(d) {{
+      if (gon) d.open = true;
+    }});
+    veLai();
+  }});
+}})();
+</script>
 <script src="/dashboard.js"></script>
 </body>
 </html>"""

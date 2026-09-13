@@ -104,6 +104,49 @@ def load_avg():
         return "?"
 
 
+# Lan doc /proc/stat truoc do, de tinh % CPU theo HIEU hai lan doc.
+_CPU_TRUOC = {"lam_viec": 0, "tong": 0}
+
+
+def cpu_percent():
+    """
+    % CPU dang dung, tinh theo HIEU giua lan doc nay va lan doc truoc.
+
+    VI SAO KHONG DUNG load average: load average la SO TIEN TRINH dang cho
+    chay, khong phai phan tram. Tren Pi 4 (4 nhan) load = 2.0 nghia la may
+    moi dung ~50%, nhung nguoi nhin tuong la "2%" hoac "200%" - khong ai
+    doc duoc. Con dung `top`/`vmstat` thi phai CHO 1 giay moi lay duoc mau
+    thu hai, tuc la moi lan mo trang deu treo 1 giay.
+
+    Cach nay khong cho gi ca: chi doc /proc/stat (tuc thi) roi so voi lan
+    doc truoc. Voi nhip lam moi 10 giay cua trang Tong quan, con so hien ra
+    chinh la trung binh cua 10 giay vua qua - dung thu nguoi dung can.
+
+    Lan goi DAU TIEN chua co moc so sanh nen tra ve None (giao dien hien
+    "đang đo"), tu lan thu hai tro di moi co so that.
+    """
+    try:
+        with open("/proc/stat") as f:
+            phan = f.readline().split()
+        if not phan or phan[0] != "cpu":
+            return None
+        so = [int(x) for x in phan[1:]]
+        # user nice system idle iowait irq softirq steal ...
+        tong = sum(so)
+        nhan_roi = so[3] + (so[4] if len(so) > 4 else 0)   # idle + iowait
+        lam_viec = tong - nhan_roi
+
+        d_tong = tong - _CPU_TRUOC["tong"]
+        d_lam = lam_viec - _CPU_TRUOC["lam_viec"]
+        _CPU_TRUOC.update(tong=tong, lam_viec=lam_viec)
+
+        if d_tong <= 0:
+            return None
+        return max(0, min(100, round(d_lam * 100 / d_tong)))
+    except Exception:
+        return None
+
+
 def mem_info():
     """Tra ve (da_dung_MB, tong_MB, phan_tram). Dung 'available' cho dung thuc te."""
     try:
@@ -145,6 +188,7 @@ def snapshot():
         "volts": core_voltage(),
         "uptime": uptime_text(),
         "load": load_avg(),
+        "cpu": cpu_percent(),
         "mem": (mem_used, mem_total, mem_pct),
         "disk": (disk_used, disk_total, disk_pct),
     }

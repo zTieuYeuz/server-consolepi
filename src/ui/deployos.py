@@ -1450,6 +1450,23 @@ def register_deployos(app):
         return h
 
     CSS = """
+    /* ---- O "Tom tat" trong bang danh sach kich ban ----
+       Cat dung 2 DONG roi them "..." bang -webkit-line-clamp, khong cat
+       theo so KY TU: cat theo ky tu thi tren man hinh rong se thua cho
+       trong, tren man hinh hep (RasPad doc) lai van tran 3-4 dong. */
+    .tt-gon { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+              overflow:hidden; color:#c9ced6; font-size:13px; line-height:1.45; }
+    .tt-nut { margin-top:6px; min-height:34px; padding:4px 12px; font-size:12.5px;
+              background:#22262b; border:1px solid #2c3036; color:#c9ced6;
+              border-radius:6px; }
+    .tt-hop { border:1px solid #2c3036; border-radius:10px; background:#1b1e22;
+              color:#e6e9ee; max-width:min(640px, 92vw); width:100%; padding:18px; }
+    .tt-hop::backdrop { background:rgba(0,0,0,.6); }
+    .tt-hop h3 { margin:0 0 12px; color:#4CAF50; }
+    .tt-bang { width:100%; border-collapse:collapse; font-size:13.5px; }
+    .tt-bang td { padding:7px 9px; border-bottom:1px solid #2c3036;
+                  vertical-align:top; }
+
     /* ---- Bang tra tham so cai dat ---- */
     .hang-tim { display:flex; gap:8px; margin-bottom:8px; }
     .hang-tim input[type=search] { flex:1; min-height:48px; font-size:15px; }
@@ -1725,7 +1742,7 @@ def register_deployos(app):
                 hang += f"""
                 <tr>
                   <td><strong>{_esc(k.get('ten_kichban', k['_file']))}</strong></td>
-                  <td>{_esc(_mo_ta_ngan(k))}</td>
+                  <td>{_o_tom_tat(k, _esc)}</td>
                   <td style="color:#8b93a1;">{_esc(k.get('_ngay', ''))}</td>
                   <td>
                     <form method="POST"
@@ -4023,7 +4040,7 @@ def register_deployos(app):
             hang += f"""
             <tr>
               <td><strong>{esc(k.get('ten_kichban', k['_file']))}</strong></td>
-              <td>{esc(_mo_ta_ngan(k))}</td>
+              <td>{_o_tom_tat(k, esc)}</td>
               <td style="color:#8b93a1;">{esc(k.get('_ngay', ''))}</td>
               <td>
                 <a class="btn small gray" href="/deployos/kichban/sua/{esc(k['_file'])}">Chinh sua</a>
@@ -4047,6 +4064,106 @@ def register_deployos(app):
 def _ten_os(d):
     o = lay_os(d.get("os_id", ""))
     return o["ten_hien_thi"] if o else "Chưa chọn"
+
+
+def _tom_tat_day_du(k, esc):
+    """
+    Bang tom tat DAY DU cua 1 kich ban - hien trong hop thoai khi bam nut
+    "Tóm tắt" o danh sach.
+
+    VI SAO TACH RA (anh Thoai: "phan tom tat khong can dai du vay dau"):
+    truoc day toan bo noi dung nay bi nhoi vao 1 o cua bang danh sach, lam
+    moi hang cao nghen ngang, nhin ca danh sach rat kho. Nay o do chi con
+    2 dong (cat bang CSS), muon xem het thi bam nut - khong mat thong tin
+    nao ca, chi doi cho hien.
+    """
+    from . import unattend as _u
+    dong = []
+
+    def them(nhan, gt):
+        if gt:
+            dong.append(f"<tr><td style='color:#8b93a1;white-space:nowrap;'>"
+                        f"{esc(nhan)}</td><td>{gt}</td></tr>")
+
+    them("Hệ điều hành", esc(_ten_os(k)))
+    them("Tên máy", esc(k.get("ten_may") or ""))
+    them("Tài khoản", esc(k.get("username") or ""))
+    them("Múi giờ", esc(k.get("mui_gio") or ""))
+
+    if k.get("os_ho") != "linux":
+        ten_nn = dict(NGON_NGU).get(k.get("ngon_ngu"), k.get("ngon_ngu") or "")
+        ten_bp = dict(BAN_PHIM).get(k.get("ban_phim"), k.get("ban_phim") or "")
+        them("Ngôn ngữ", esc(ten_nn))
+        them("Bàn phím", esc(ten_bp))
+        them("Key Windows", "đã nhập" if k.get("product_key")
+             else "<span style='color:#8b93a1;'>key KMS mặc định</span>")
+        them("Administrator", "<span style='color:#f59e0b;'>đã mở</span>"
+             if k.get("bat_admin") else "khoá (mặc định)")
+        them("Tự đăng nhập", "mãi mãi" if k.get("tu_dang_nhap")
+             else "chỉ lần đầu (sau đó hỏi mật khẩu)")
+
+    if k.get("domain"):
+        mo = esc(k["domain"])
+        if k.get("domain_ou"):
+            mo += f" &mdash; OU: {esc(k['domain_ou'])}"
+        them("Gia nhập domain", mo)
+
+    ds_app = chuan_hoa_apps(k.get("apps"))
+    if ds_app:
+        them("Phần mềm", "<br>".join(
+            f"{esc(a['ten'])} <small style='color:#8b93a1;'>"
+            f"({'máy' if a.get('dich') == 'may' else 'người dùng'})</small>"
+            for a in ds_app))
+
+    ds_ud = chuan_hoa_ungdung(k.get("ungdung"))
+    if ds_ud:
+        them("Ứng dụng nhiều file", "<br>".join(
+            f"{esc(u['id'])} <small style='color:#8b93a1;'>"
+            f"({'máy' if u.get('dich') == 'may' else 'người dùng'})</small>"
+            for u in ds_ud))
+
+    if k.get("scripts"):
+        them("Script", "<br>".join(esc(s) for s in k["scripts"]))
+
+    da_chon = set(k.get("tuy_chon") or [])
+    if da_chon:
+        them("Tùy chọn Windows", "<br>".join(
+            esc(nhan) for ma, nhan, _m, _p, _l in _u.TUY_CHON_WINDOWS
+            if ma in da_chon))
+
+    go = k.get("go_app") or []
+    if go:
+        ten_theo_ma = {ma: ten for ma, ten, _n in _u.APP_RAC}
+        them("Gỡ ứng dụng kèm sẵn",
+             f"{len(go)} ứng dụng: "
+             + ", ".join(esc(ten_theo_ma.get(m, m)) for m in go))
+
+    if (k.get("lenh_them") or "").strip():
+        them("Lệnh thêm",
+             f"<pre style='margin:0;white-space:pre-wrap;'>"
+             f"{esc(k['lenh_them'])}</pre>")
+
+    od = k.get("o_dia_che_do")
+    them("Ổ đĩa", ("tự động (ổ %s, %s)" % (k.get("o_dia_so", "0"),
+                                           (k.get("o_dia_bang") or "gpt").upper())
+                   if od == "tu_dong" else "chia tay"))
+    return "<table class='tt-bang'>" + "".join(dong) + "</table>"
+
+
+def _o_tom_tat(k, esc):
+    """1 o bang: tom tat 2 dong + nut mo hop thoai xem day du."""
+    ma = "tt-" + re.sub(r"[^A-Za-z0-9_-]", "_", k.get("_file", ""))
+    return f"""
+      <div class="tt-gon">{esc(_mo_ta_ngan(k))}</div>
+      <button type="button" class="tt-nut"
+              onclick="document.getElementById('{ma}').showModal()">Tóm tắt</button>
+      <dialog id="{ma}" class="tt-hop">
+        <h3>{esc(k.get('ten_kichban', k.get('_file', '')))}</h3>
+        {_tom_tat_day_du(k, esc)}
+        <form method="dialog" style="margin-top:14px;">
+          <button class="gray">Đóng</button>
+        </form>
+      </dialog>"""
 
 
 def _mo_ta_ngan(k):

@@ -173,6 +173,62 @@ def iface_detail(name):
     return info
 
 
+def _thanh(phan_tram, nguong_vang=75, nguong_do=90):
+    """
+    Thanh mau truc quan cho mot chi so phan tram.
+
+    Nhin con so "78%" thi phai doc va nghi; nhin thanh mau thi biet ngay
+    dang o muc nao - quan trong khi dang cam may giua hien truong va chi
+    liec nhanh mot cai.
+    """
+    p = max(0, min(100, int(phan_tram or 0)))
+    mau = "#6ee7a0" if p < nguong_vang else ("#ffb74d" if p < nguong_do else "#ff6b6b")
+    return (f'<div style="background:#2c3036;border-radius:5px;height:8px;'
+            f'overflow:hidden;margin-top:5px;max-width:230px;">'
+            f'<div style="width:{p}%;height:100%;background:{mau};"></div></div>')
+
+
+def _bang_suc_khoe(h, power_msg):
+    """
+    Bang "Suc khoe thiet bi" - dung RIENG mot ham (khong viet thang trong
+    trang) vi duoc dung o HAI cho: luc dung trang lan dau, va moi 10 giay
+    khi /api/suckhoe tra ve de cap nhat tai cho. Viet 2 ban se lech nhau.
+    """
+    temp = h.get("temp")
+    temp_color = ("#6ee7a0" if (temp or 0) < 65
+                  else ("#ffb74d" if (temp or 0) < 80 else "#ff6b6b"))
+    mem_u, mem_t, mem_p = h.get("mem", (0, 0, 0))
+    dk_u, dk_t, dk_p = h.get("disk", (0, 0, 0))
+    cpu = h.get("cpu")
+
+    if cpu is None:
+        # Lan do dau tien chua co moc so sanh - xem cpu_percent() trong
+        # ui/health.py. Sau 10 giay se co so that.
+        o_cpu = '<span style="color:#8b93a1;">đang đo...</span>'
+    else:
+        mau = "#6ee7a0" if cpu < 75 else ("#ffb74d" if cpu < 90 else "#ff6b6b")
+        o_cpu = (f'<span style="color:{mau};font-weight:600;">{cpu}%</span>'
+                 + _thanh(cpu))
+
+    return f"""
+        <table>
+          <tr><td style="width:190px;">Nguồn điện</td><td>{power_msg}</td></tr>
+          <tr><td>CPU đang dùng</td><td>{o_cpu}</td></tr>
+          <tr><td>Bộ nhớ (RAM)</td>
+              <td>{mem_u} / {mem_t} MB &nbsp;<strong>{mem_p}%</strong>
+                  {_thanh(mem_p)}</td></tr>
+          <tr><td>Nhiệt độ CPU</td>
+              <td><span style="color:{temp_color};font-weight:600;">
+                  {temp if temp is not None else '?'} &deg;C</span></td></tr>
+          <tr><td>Thời gian chạy</td><td>{h.get('uptime', '?')}</td></tr>
+          <tr><td>Tải hệ thống</td>
+              <td><code>{h.get('load', '?')}</code>
+                  <span style="color:#8b93a1;font-size:12px;">(1 / 5 / 15 phút)</span></td></tr>
+          <tr><td>Đĩa</td><td>{dk_u} / {dk_t} GB &nbsp;<strong>{dk_p}%</strong>
+                  {_thanh(dk_p, 80, 92)}</td></tr>
+        </table>"""
+
+
 def register_home(app):
     @app.route("/")
     def home():
@@ -242,17 +298,31 @@ def register_home(app):
         mem_u, mem_t, mem_p = h["mem"]
         dk_u, dk_t, dk_p = h["disk"]
 
+        # Khoi suc khoe TU CAP NHAT moi 10 giay (xem /api/suckhoe + doan JS
+        # cuoi trang). Chi thay so trong khoi nay, KHONG tai lai ca trang:
+        # tai lai ca trang se cuon vot len dau va dong cac bang dang xem -
+        # rat kho chiu khi dang theo doi mot chi so.
         health_html = f"""
-        <table>
-          <tr><td style="width:190px;">Nguồn điện</td><td>{power_msg}</td></tr>
-          <tr><td>Nhiệt độ CPU</td>
-              <td><span style="color:{temp_color};font-weight:600;">{temp if temp is not None else '?'} &deg;C</span></td></tr>
-          <tr><td>Thời gian chạy</td><td>{h['uptime']}</td></tr>
-          <tr><td>Tải hệ thống</td><td><code>{h['load']}</code> <span style="color:#8b93a1;font-size:12px;">(1 / 5 / 15 phut)</span></td></tr>
-          <tr><td>Bộ nhớ</td><td>{mem_u} / {mem_t} MB &nbsp;({mem_p}%)</td></tr>
-          <tr><td>Đĩa</td><td>{dk_u} / {dk_t} GB &nbsp;({dk_p}%)</td></tr>
-        </table>
-        <p style="margin-top:10px;"><a class="btn" href="/power">⚡ Tắt máy / Khởi động lại</a></p>"""
+        <div id="suc-khoe">{_bang_suc_khoe(h, power_msg)}</div>
+        <p style="margin-top:10px;"><a class="btn" href="/power">⚡ Tắt máy / Khởi động lại</a></p>
+        <script>
+        (function() {{
+          var o = document.getElementById('suc-khoe');
+          if (!o) return;
+          function lamMoi() {{
+            fetch('/api/suckhoe', {{cache: 'no-store'}})
+              .then(function(r) {{ return r.json(); }})
+              .then(function(d) {{ if (d && d.html) o.innerHTML = d.html; }})
+              .catch(function() {{}});   /* mat mang thi giu so cu, khong bao loi */
+          }}
+          setInterval(lamMoi, 10000);
+          /* Tab bi an (chuyen sang tab khac) thi KHONG do nua - do tiep chi
+             ton CPU cua chinh con Pi ma khong ai nhin. Quay lai thi do ngay. */
+          document.addEventListener('visibilitychange', function() {{
+            if (!document.hidden) lamMoi();
+          }});
+        }})();
+        </script>"""
 
         body = f"""
         <h2>Cổng console đang cắm</h2>
@@ -283,6 +353,66 @@ def register_home(app):
         from flask import jsonify
         from .layout import get_status_chips
         return jsonify({"chips": get_status_chips()})
+
+    @app.route("/api/suckhoe")
+    def api_suc_khoe():
+        """Bang suc khoe da render san - trang Tong quan goi moi 10 giay."""
+        from flask import jsonify
+        h = health.snapshot()
+        return jsonify({"html": _bang_suc_khoe(h, power_msg_html(h))})
+
+    @app.route("/console")
+    def console_danh_sach():
+        """
+        Trang RIENG liet ke cac cong console dang cam.
+
+        VI SAO TACH KHOI "Tong quan": cong console la thu dung NHIEU NHAT
+        khi di hien truong (cam cap vao switch/router roi mo console), nhung
+        truoc day no nam lot giua trang Tong quan - phai vao Tong quan roi
+        cuon qua thanh trang thai, bang dich vu... moi toi. Nay co muc rieng
+        trong nhom "Ket noi thiet bi", bam 1 phat la toi.
+        """
+        ports = get_ports()
+        if ports:
+            rows = ""
+            for p in ports:
+                chip = (f'<br><small style="color:#8b93a1;">{_esc(p["chip"])}</small>'
+                        if p.get("chip") else "")
+                rows += f"""
+                <tr>
+                  <td><code>{p['devname']}</code>{chip}</td>
+                  <td>
+                    <form method="POST" action="/rename" class="row" style="gap:7px;">
+                      <input type="hidden" name="devname" value="{p['devname']}">
+                      <input type="text" name="name" value="{_esc(p['name'])}"
+                             placeholder="Ví dụ: Switch tầng 3" style="max-width:260px;">
+                      <button type="submit" class="gray small">Lưu tên</button>
+                    </form>
+                  </td>
+                  <td><a class="btn" href="/console/{p['devname']}">Mở Console</a></td>
+                </tr>"""
+            noi_dung = f"""
+            <div class="card">
+              <h3>Cổng console đang cắm</h3>
+              <table>
+                <tr><th style="width:150px;">Cổng</th><th>Tên gợi nhớ</th>
+                    <th style="width:150px;">Thao tác</th></tr>
+                {rows}
+              </table>
+              <p style="color:#8b93a1;font-size:13px;margin:12px 0 0;">
+                Đặt tên gợi nhớ để lần sau cắm nhiều cáp cùng lúc còn biết cáp
+                nào vào thiết bị nào. Tên được nhớ theo cổng.</p>
+            </div>"""
+        else:
+            noi_dung = """
+            <div class="card">
+              <h3>Cổng console đang cắm</h3>
+              <div class="msg warn">Chưa cắm cáp console nào. Cắm cáp USB-serial
+                (FTDI / Prolific / CH340) hoặc cáp console micro-USB của Cisco
+                vào Pi &mdash; trang này tự nhận, không cần khởi động lại.</div>
+            </div>"""
+        return render_page(noi_dung, active="/console", title="Console",
+                           subtitle="Cổng serial nối tới switch / router")
 
     @app.route("/console/<devname>")
     def console_view(devname):
