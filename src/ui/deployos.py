@@ -1420,6 +1420,7 @@ def register_deployos(app):
             ("kichban", "Kịch bản", "/deployos/kichban"),
             ("tainguyen", "Tài nguyên", "/deployos/os"),
             ("thamso", "Tham số cài đặt", "/deployos/thamso"),
+            ("tiendo", "Tiến trình", "/deployos/tiendo"),
             ("caidat", "Cài đặt", "/deployos/caidat"),
         ]
         phu_theo_chinh = {

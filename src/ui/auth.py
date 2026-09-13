@@ -164,6 +164,33 @@ def _pxe_boot_cong_khai():
         return False
 
 
+def _bao_tien_trinh_cong_khai():
+    """
+    /api/tiendo/* phai KHONG can dang nhap: may vua duoc cai xong tu bao
+    tien trinh ve (xem ui/tiendo.py) - no la may Windows moi tinh, khong
+    co tai khoan nao cua dashboard de dang nhap.
+
+    Vi sao chap nhan duoc:
+      - CHI cho POST ghi tien trinh, KHONG doc duoc bat ky du lieu nao cua
+        Pi qua duong nay (cac route deu tra ve {"ok": true}).
+      - CHI mo khi PXE dang bat, tuc la dang trong mot dot trien khai that
+        su - het dot thi tat PXE la duong nay dong lai.
+      - Du lieu ghi vao bi cat ngan (ten may 64 ky tu, toi da 60 buoc) nen
+        khong the nhoi cho day dia.
+    Rieng /api/tiendo/data (doc, de trang tu lam moi) KHONG nam trong day -
+    van phai dang nhap nhu moi trang khac.
+    """
+    if not request.path.startswith("/api/tiendo/"):
+        return False
+    if request.path == "/api/tiendo/data":
+        return False
+    try:
+        from . import pxe as _pxe
+        return _pxe.dang_bat()
+    except Exception:
+        return False
+
+
 LOGIN_TEMPLATE = """<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -225,6 +252,8 @@ def register_auth(app):
             return None          # man hinh gan trren Pi - xem muc dich o duoi
         if _pxe_boot_cong_khai():
             return None          # may dang boot qua PXE - xem muc dich o duoi
+        if _bao_tien_trinh_cong_khai():
+            return None          # may vua cai xong bao tien trinh - xem duoi
 
         # Duong vao thu ba: token API, danh cho may (vi du mot AI o dau xa
         # dieu khien giup). Phai kiem tra o day chu khong o rieng cac route

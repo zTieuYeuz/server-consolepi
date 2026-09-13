@@ -17,6 +17,7 @@ from .power import register_power                          # noqa: F401
 from .entertainment import register_entertainment           # noqa: F401
 from .deployos import register_deployos                    # noqa: F401
 from .pxe import register_pxe                              # noqa: F401
+from .tiendo import register_tiendo                        # noqa: F401
 
 
 def register_all(app):
@@ -38,4 +39,5 @@ def register_all(app):
     register_entertainment(app)
     register_deployos(app)
     register_pxe(app)
+    register_tiendo(app)
     return app

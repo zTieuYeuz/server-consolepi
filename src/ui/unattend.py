@@ -503,6 +503,17 @@ def _ps_chuoi(s):
     return "'" + str(s).replace("'", "''") + "'"
 
 
+# Han gio cho MOI buoc cai dat sau khi dang nhap (giay).
+#
+# VI SAO 45 PHUT: phai du rong cho thu cai lau THAT SU - Office 365 tu
+# nguon cuc bo mat 15-25 phut tren may cau hinh thap. Nhung phai co GIOI
+# HAN, vi khong co thi mot buoc hong se treo vinh vien: Office tung dung
+# im 45 phut (goi may chu Microsoft that bai roi tu thu lai voi khoang
+# cho tang gap doi: 3 -> 7 -> 14 -> 28 phut...) ma khong cach nao biet.
+# Tha dung 1 buoc, ghi ro "Qua gio" roi cai tiep nhung thu con lai.
+GIAY_TOI_DA_MOI_BUOC = 2700
+
+
 def _muc_kiem_tra(d):
     """
     Dung danh sach cac muc CAN KIEM TRA cho dung kich ban nay.
@@ -611,6 +622,174 @@ def _muc_kiem_tra(d):
     """)
 
     return muc
+
+
+def _danh_sach_buoc_nguoi_dung(d):
+    """
+    Danh sach cac buoc se chay SAU KHI dang nhap, dang (ten_hien_thi, lenh).
+
+    Ten hien thi la thu nguoi dung doc tren bang tien trinh, nen phai la
+    tieng Viet de hieu ("Cài Google Chrome") chu khong phai dong lenh tho.
+    """
+    ra = []
+
+    for nhan, lenh in zip(_nhan_tuy_chon(d, "nguoi_dung"),
+                          _lenh_theo_pha(d, "nguoi_dung")):
+        ra.append((nhan, lenh))
+
+    if d.get("go_app"):
+        for lenh in _lenh_go_app(d):
+            ra.append((f"Gỡ {len(d['go_app'])} ứng dụng kèm sẵn", lenh))
+
+    for a in _d.chuan_hoa_apps(d.get("apps")):
+        if a.get("dich") == "nguoi_dung":
+            ra.append((f"Cài {a['ten']}", _lenh_cai_app(a)))
+
+    for u in _d.chuan_hoa_ungdung(d.get("ungdung")):
+        if u.get("dich") != "nguoi_dung":
+            continue
+        lenh = _lenh_cai_ungdung(u)
+        if lenh:
+            o = _d.lay_ungdung(u["id"]) or {}
+            ra.append((f"Cài {o.get('ten_hien_thi') or u['id']}", lenh))
+
+    for ten in (d.get("scripts") or []):
+        ra.append((f"Chạy script {ten}",
+                   f'"{THU_MUC_TREN_MAY}\\scripts\\{ten}"'))
+
+    for dong in (d.get("lenh_them") or "").splitlines():
+        dong = dong.strip()
+        if dong and not dong.startswith("#"):
+            ra.append(("Lệnh thêm", dong))
+
+    return ra
+
+
+def _nhan_tuy_chon(d, pha):
+    """Ten de hieu cua tung LENH trong cac tuy chon da tich, dung pha.
+
+    1 tuy chon co the sinh ra NHIEU lenh (vd "Bat Remote Desktop" = 1 lenh
+    reg + 1 lenh mo tuong lua), nen phai tra ve 1 nhan cho MOI lenh thi
+    moi ghep 1-1 voi _lenh_theo_pha() duoc.
+    """
+    da_chon = set(d.get("tuy_chon") or [])
+    ra = []
+    for ma, nhan, _mo, pha_muc, cac_lenh in TUY_CHON_WINDOWS:
+        if ma in da_chon and pha_muc == pha:
+            ra.extend([nhan] * len(cac_lenh))
+    return ra
+
+
+def sinh_script_tien_trinh(d, dia_chi_pi):
+    r"""
+    Sinh script PowerShell DIEU PHOI toan bo viec cai dat sau khi dang nhap.
+
+    VI SAO GOP LAI MOT SCRIPT thay vi de Windows chay tung
+    FirstLogonCommand rieng le nhu truoc:
+
+    1. BAO NGUOC VE PI. Nguoi dung dung nhin may dich (hoac dang o phong
+       khac) khong the biet dang cai toi dau. Nay moi buoc deu POST ve
+       /api/tiendo, bang tren Pi tu tich xanh - xem ui/tiendo.py.
+
+    2. CO GIOI HAN THOI GIAN CHO TUNG BUOC. Day la thu quan trong nhat.
+       LOI THAT DA GAP: Office 365 goi ra may chu Microsoft xin token,
+       khong duoc, roi TU THU LAI voi khoang cho tang gap doi moi lan
+       (3 -> 7 -> 14 -> 28 phut...). Windows khong co timeout nao cho
+       FirstLogonCommand, nen ca qua trinh cai dung im 45 phut ma man
+       hinh khong khac gi luc chay binh thuong. Nay moi buoc co han gio
+       rieng, qua han thi GIET tien trinh do, ghi "Qua gio" va DI TIEP -
+       may van cai xong nhung thu con lai.
+
+    3. MOT BUOC HONG KHONG KEO SAP CA CHUOI: chay tiep va ghi ro buoc nao
+       hong, thay vi dung ca loat mot cach im lang.
+    """
+    buoc = _danh_sach_buoc_nguoi_dung(d)
+    dong = []
+    for ten, lenh in buoc:
+        dong.append(f"  @{{ Ten={_ps_chuoi(ten)}; Lenh={_ps_chuoi(lenh)} }}")
+    mang_buoc = ",\n".join(dong) if dong else ""
+
+    ten_kb = d.get("tu_kichban") or d.get("ten_kichban") or "(không tên)"
+
+    return f"""# ============================================================
+#  Console Pi - dieu phoi cai dat sau khi dang nhap
+#  Tu sinh theo kich ban, KHONG sua bang tay (se bi ghi de lan cai sau).
+# ============================================================
+$ErrorActionPreference = 'Continue'
+$Pi        = '{dia_chi_pi}'
+$TenMay    = $env:COMPUTERNAME
+$KichBan   = {_ps_chuoi(ten_kb)}
+# Han gio cho MOI buoc. Het gio thi giet tien trinh do roi di tiep - xem
+# ly do that (Office 365 tu thu lai vo han) trong docstring ben Python.
+$HanGioGiay = {GIAY_TOI_DA_MOI_BUOC}
+
+$Buoc = @(
+{mang_buoc}
+)
+
+$ThuMuc = 'C:\\ConsolePi'
+if (-not (Test-Path $ThuMuc)) {{ New-Item -ItemType Directory -Path $ThuMuc -Force | Out-Null }}
+$Log = Join-Path $ThuMuc 'tien-trinh.log'
+
+function Ghi($t) {{
+    $d = (Get-Date -Format 'HH:mm:ss') + '  ' + $t
+    Write-Host $d
+    Add-Content -Path $Log -Value $d -Encoding UTF8 -EA SilentlyContinue
+}}
+
+# Bao ve Pi. TUYET DOI khong duoc lam dung qua trinh cai: bao loi thi bo
+# qua, han gio ngan (4 giay) vi Pi co the da bi rut day mang tu luc nao.
+function BaoPi($duong, $goi) {{
+    try {{
+        $json = $goi | ConvertTo-Json -Compress
+        Invoke-RestMethod -Uri "http://$Pi/api/tiendo/$duong" -Method Post `
+            -Body $json -ContentType 'application/json' -TimeoutSec 4 | Out-Null
+    }} catch {{ }}
+}}
+
+Ghi "===== Bat dau cai dat: $KichBan ====="
+BaoPi 'batdau' @{{ may = $TenMay; kichban = $KichBan;
+                   buoc = @($Buoc | ForEach-Object {{ $_.Ten }}) }}
+
+$i = 0
+foreach ($b in $Buoc) {{
+    Ghi ("[{{0}}/{{1}}] {{2}}" -f ($i + 1), $Buoc.Count, $b.Ten)
+    BaoPi 'buoc' @{{ may = $TenMay; chi_so = $i; trang_thai = 'dang' }}
+    $t0 = Get-Date
+    $tt = 'xong'; $ghiChu = ''
+
+    try {{
+        # Chay qua cmd.exe de dong lenh giu nguyen y het cach Windows
+        # chay FirstLogonCommand truoc day (co && , duong dan co dau
+        # cach, tham so /qn ...) - khong phai viet lai cu phap.
+        $p = Start-Process -FilePath 'cmd.exe' `
+             -ArgumentList '/c', $b.Lenh -PassThru -WindowStyle Hidden
+        if (-not $p.WaitForExit($HanGioGiay * 1000)) {{
+            # Giet ca cay tien trinh con: bo cai thuong de ra tien trinh
+            # con rieng (setup.exe -> OfficeClickToRun.exe), giet moi tien
+            # trinh cha thi con van chay tiep va van giu may.
+            try {{ & taskkill /PID $p.Id /T /F 2>&1 | Out-Null }} catch {{ }}
+            $tt = 'qua_gio'
+            $ghiChu = "Qua $HanGioGiay giay - da dung buoc nay de di tiep"
+        }} elseif ($p.ExitCode -ne 0) {{
+            $tt = 'loi'
+            $ghiChu = "Ma loi: $($p.ExitCode)"
+        }}
+    }} catch {{
+        $tt = 'loi'
+        $ghiChu = $_.Exception.Message
+    }}
+
+    $giay = [int]((Get-Date) - $t0).TotalSeconds
+    Ghi ("      -> {{0}} ({{1}}s) {{2}}" -f $tt, $giay, $ghiChu)
+    BaoPi 'buoc' @{{ may = $TenMay; chi_so = $i; trang_thai = $tt;
+                     giay = $giay; ghi_chu = $ghiChu }}
+    $i++
+}}
+
+Ghi "===== Xong ====="
+BaoPi 'ketthuc' @{{ may = $TenMay }}
+"""
 
 
 def sinh_script_bao_cao(d):
@@ -1167,6 +1346,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         # kho Samba con ket noi duoc hay khong.
         "if not exist W:\\ConsolePi mkdir W:\\ConsolePi",
         "copy /y X:\\bao-cao.ps1 W:\\ConsolePi\\bao-cao.ps1 >> %LOG% 2>&1",
+        "copy /y X:\\tien-trinh.ps1 W:\\ConsolePi\\tien-trinh.ps1 >> %LOG% 2>&1",
         "",
         "echo  [6/6] Tao boot loader UEFI...",
         "bcdboot W:\\Windows /s S: /f UEFI >> %LOG% 2>&1",
@@ -1760,18 +1940,19 @@ def _khoi_firstlogon(d):
     (Truoc day ca 4 nhom nay deu duoc LUU nhung KHONG he duoc dung -
     day la lan dau chung thuc su chay.)
     """
-    lenh = (list(_lenh_theo_pha(d, "nguoi_dung"))
-            # Go app rac DAU TIEN: go xong roi moi cai phan mem cua minh,
-            # tranh truong hop app rac va phan mem moi tranh nhau phan mo
-            # file mac dinh (vd Groove Music van giu .mp3 neu go sau).
-            + _lenh_go_app(d)
-            + _lenh_app_theo_dich(d, "nguoi_dung")
-            + _lenh_ungdung_theo_dich(d, "nguoi_dung")
-            + _lenh_script(d))
-    for dong in (d.get("lenh_them") or "").splitlines():
-        dong = dong.strip()
-        if dong and not dong.startswith("#"):
-            lenh.append(dong)
+    # TOAN BO cac buoc tren gio chay trong MOT script dieu phoi
+    # (tien-trinh.ps1) thay vi tung SynchronousCommand rieng le.
+    #
+    # LY DO THAT (2 thu Windows khong lam duoc, xem sinh_script_tien_trinh):
+    #   - Khong co GIOI HAN THOI GIAN cho tung lenh: Office 365 tung treo
+    #     45 phut ma man hinh khong khac gi luc chay binh thuong, khong
+    #     cach nao biet ngoai viec mo Task Manager doan.
+    #   - Khong bao duoc tien do ra ngoai: nguoi dung khong biet dang cai
+    #     toi cai nao trong so 10 cai.
+    # Script dieu phoi lo ca hai, va van chay dung nhung dong lenh cu
+    # (qua cmd /c) nen khong phai viet lai cu phap cai dat nao.
+    lenh = ["powershell -NoProfile -ExecutionPolicy Bypass -File "
+            f"{THU_MUC_TREN_MAY}\\tien-trinh.ps1"]
 
     # BAO CAO TONG KET - LUON LUON la lenh CUOI CUNG, khong phai tuy chon,
     # khong phu thuoc kich ban / he dieu hanh / phan mem da chon.
@@ -2395,6 +2576,10 @@ def dung_dia_gpt_tu_dong(d, dia_chi_pi="192.168.98.1"):
             # trong chinh anh boot nen co mat o MOI lan cai, khong phu
             # thuoc Samba hay viec anh Thoai co chon gi hay khong.
             "bao-cao.ps1": sinh_script_bao_cao(d),
+            # Script dieu phoi cai dat + bao tien trinh ve Pi. Nhung vao
+            # anh boot (khong qua Samba) de no co mat ke ca khi mang chap
+            # chon - day la thu duy nhat biet dang cai toi dau.
+            "tien-trinh.ps1": sinh_script_tien_trinh(d, dia_chi_pi),
         }
         lenh_update = []
         duong_tam_da_tao = []
