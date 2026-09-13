@@ -1197,13 +1197,17 @@ def _khoi_go_app(d, esc):
     return f"""
               <div class="card">
                 <h3>Gỡ ứng dụng kèm sẵn của Windows</h3>
-                <p style="color:#8b93a1;font-size:13px;margin:0 0 9px;">
+                <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
                   Gỡ cả bản đang cài lẫn "mầm" trong ảnh hệ điều hành, nên tài
                   khoản tạo mới sau này cũng không bị cài lại. Danh sách này đã
                   lọc sẵn - Microsoft Store, Máy tính, Ảnh, Paint, Notepad,
                   Snipping Tool đều được giữ lại vì gỡ đi sẽ gây khó chịu hoặc
                   hỏng chức năng.</p>
-                {o}
+                <details class="gap">
+                  <summary>Chọn ứng dụng cần gỡ
+                    <span class="dem">{len(da_chon)} / {len(_u.APP_RAC)} đã chọn</span></summary>
+                  <div class="gap-trong">{o}</div>
+                </details>
               </div>"""
 
 
@@ -1451,6 +1455,25 @@ def register_deployos(app):
         return h
 
     CSS = """
+    /* ---- Khoi bam-de-mo (gap lai cho do dai) ----
+       Dung <details> chinh chu cua trinh duyet: bung/thu chay duoc ngay
+       ca khi JS loi, va trinh duyet tu lo phan tro nang tiep can. */
+    .gap { border:1px solid #2c3036; border-radius:8px; margin-bottom:10px;
+           background:#1d2025; }
+    .gap > summary { padding:14px 15px; min-height:52px; cursor:pointer;
+        display:flex; align-items:center; gap:10px; font-size:14.5px;
+        font-weight:600; color:#e6e9ee; list-style:none;
+        -webkit-user-select:none; user-select:none; }
+    .gap > summary::-webkit-details-marker { display:none; }
+    .gap > summary::before { content:"\\25B8"; color:#6b7280; font-size:12px;
+        transition:transform .15s; flex:none; }
+    .gap[open] > summary::before { transform:rotate(90deg); }
+    .gap > summary:active { background:#22262b; }
+    .gap .dem { margin-left:auto; font-weight:400; font-size:12.5px;
+        color:#8b93a1; background:#22262b; border:1px solid #2c3036;
+        padding:3px 10px; border-radius:20px; white-space:nowrap; }
+    .gap-trong { padding:0 12px 12px; }
+
     /* ---- O "Tom tat" trong bang danh sach kich ban ----
        Cat dung 2 DONG roi them "..." bang -webkit-line-clamp, khong cat
        theo so KY TU: cat theo ky tu thi tren man hinh rong se thua cho
@@ -2537,17 +2560,35 @@ def register_deployos(app):
                         o_may += o
                     else:
                         o_nd += o
+                # Gap lai thanh 2 khoi bam-de-mo. LY DO THAT (anh Thoai:
+                # "nhieu cai no dai qua nguoi chon keo xuong duoi kha la
+                # met"): 44 tuy chon + 30 ung dung go = hon 70 o tich xep
+                # thang mot cot, phai keo man hinh rat lau moi qua duoc
+                # buoc nay - ma phan lon lan cai deu khong dung toi chung.
+                # Dem san so da chon ngay tren tieu de de khong phai mo ra
+                # mới biết minh da chon gi.
+                so_may = sum(1 for m, *_x in _u_tuychon()
+                             if m in da_chon and _x[2] == "may")
+                so_nd = len(da_chon) - so_may
                 khoi_tuychon = f"""
               <div class="card">
                 <h3>Tùy chọn Windows sau khi cài</h3>
-                <p style="color:#8b93a1;font-size:13px;margin:0 0 9px;">
+                <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
                   Các mục này Windows làm sẵn bằng lệnh hệ thống - không cần
                   viết script. Thứ gì đặc thù hơn thì dùng ô "Lệnh thêm" bên
                   dưới hoặc tải script riêng lên.</p>
-                {o_may}
-                <div style="color:#8b93a1;font-size:12.5px;margin:12px 0 6px;">
-                  Áp dụng cho người dùng đăng nhập đầu tiên:</div>
-                {o_nd}
+
+                <details class="gap"{' open' if so_may else ''}>
+                  <summary>Áp dụng cho MÁY &mdash; mọi người dùng
+                    <span class="dem">{so_may} đã chọn</span></summary>
+                  <div class="gap-trong">{o_may}</div>
+                </details>
+
+                <details class="gap"{' open' if so_nd else ''}>
+                  <summary>Áp dụng cho NGƯỜI DÙNG đăng nhập đầu tiên
+                    <span class="dem">{so_nd} đã chọn</span></summary>
+                  <div class="gap-trong">{o_nd}</div>
+                </details>
               </div>
               {_khoi_go_app(d, _esc)}"""
 

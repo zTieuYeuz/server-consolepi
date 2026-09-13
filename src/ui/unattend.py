@@ -1052,7 +1052,7 @@ foreach ($m in $MUC) {
         Nhom = $m.Nhom; Nhan = $m.Nhan
         Dat = $dat
         ChiTiet = $ct
-        TrangThai = $(if ($dat -eq $true) { 'DAT' } elseif ($dat -eq $false) { 'CHUA DAT' } else { 'khong ro' })
+        TrangThai = $(if ($dat -eq $true) { 'ĐÃ LÀM' } elseif ($dat -eq $false) { 'chưa được' } else { 'không rõ' })
     }
 }
 
@@ -1063,18 +1063,27 @@ $soKhong = @($ketQua | Where-Object { $_.Dat -eq $null }).Count
 # ---------- Ghi ra file (luon ghi, du co ai doc popup hay khong) ----------
 $txt = New-Object System.Collections.Generic.List[string]
 $txt.Add('================================================================')
-$txt.Add('   CONSOLE PI - BAO CAO TONG KET SAU KHI CAI')
+$txt.Add('   CONSOLE PI - BÁO CÁO NHỮNG VIỆC ĐÃ LÀM TRÊN MÁY NÀY')
 $txt.Add('   Kich ban : ' + $TEN_KICHBAN)
 $txt.Add('   May      : ' + $env:COMPUTERNAME + '   |   Nguoi dung: ' + $env:USERNAME)
 $txt.Add('   Thoi diem: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
 $txt.Add('================================================================')
 $txt.Add('')
-$txt.Add("   DAT: $soDat     CHUA DAT: $soHong     khong ro: $soKhong")
+$txt.Add("   ĐÃ LÀM XONG: $soDat việc")
+if ($soHong -gt 0)  { $txt.Add("   Cần xem lại : $soHong việc") }
+if ($soKhong -gt 0) { $txt.Add("   Không tự kiểm được: $soKhong việc") }
 $txt.Add('')
-foreach ($nhom in ($ketQua | Select-Object -ExpandProperty Nhom -Unique)) {
-    $txt.Add('--- ' + $nhom + ' ' + ('-' * [Math]::Max(0, 50 - $nhom.Length)))
-    foreach ($r in ($ketQua | Where-Object { $_.Nhom -eq $nhom })) {
-        $txt.Add(('  [{0,-9}] {1,-44} {2}' -f $r.TrangThai, $r.Nhan, $r.ChiTiet))
+# File van ban do theo dung thu tu nhu tren cua so: viec DA LAM truoc.
+foreach ($phan in @(
+        @{ Ten = 'ĐÃ LÀM XONG';        Loc = $true  },
+        @{ Ten = 'CẦN XEM LẠI';        Loc = $false },
+        @{ Ten = 'KHÔNG TỰ KIỂM ĐƯỢC'; Loc = $null  })) {
+    $cac = @($ketQua | Where-Object { $_.Dat -eq $phan.Loc })
+    if ($cac.Count -eq 0) { continue }
+    $td = $phan.Ten + " ($($cac.Count))"
+    $txt.Add('--- ' + $td + ' ' + ('-' * [Math]::Max(0, 50 - $td.Length)))
+    foreach ($r in $cac) {
+        $txt.Add(('  [{0}] {1,-42} {2}' -f $r.Nhom, $r.Nhan, $r.ChiTiet))
     }
     $txt.Add('')
 }
@@ -1100,7 +1109,7 @@ Add-Type -AssemblyName System.Drawing
 # dung bien $f (vd Get-WindowsOptionalFeature), de trung ten thi rat kho
 # lan ra khi hong.
 $frm = New-Object System.Windows.Forms.Form
-$frm.Text = 'Console Pi - Bao cao tong ket sau khi cai'
+$frm.Text = 'Console Pi - Những việc đã làm trên máy này'
 $frm.Size = New-Object System.Drawing.Size(940, 720)
 $frm.StartPosition = 'CenterScreen'
 $frm.BackColor = [System.Drawing.Color]::FromArgb(248, 249, 251)
@@ -1114,7 +1123,11 @@ $head.Dock = 'Top'; $head.Height = 96; $head.BackColor = $mauNen
 $frm.Controls.Add($head)
 
 $lblTo = New-Object System.Windows.Forms.Label
-$lblTo.Text = if ($soHong -eq 0) { "HOAN TAT - tat ca $soDat muc deu DAT" } else { "HOAN TAT - co $soHong muc CHUA DAT" }
+$lblTo.Text = if ($soHong -eq 0) {
+    "Đã làm xong $soDat việc — không có việc nào lỗi"
+} else {
+    "Đã làm xong $soDat việc — còn $soHong việc cần xem lại"
+}
 $lblTo.Font = New-Object System.Drawing.Font('Segoe UI', 19, [System.Drawing.FontStyle]::Bold)
 $lblTo.ForeColor = [System.Drawing.Color]::White
 $lblTo.AutoSize = $true; $lblTo.Location = New-Object System.Drawing.Point(22, 16)
@@ -1173,14 +1186,23 @@ $xanh = [System.Drawing.Color]::FromArgb(20, 115, 62)
 $do   = [System.Drawing.Color]::FromArgb(178, 40, 40)
 $xam  = [System.Drawing.Color]::FromArgb(130, 130, 140)
 
-foreach ($nhom in ($ketQua | Select-Object -ExpandProperty Nhom -Unique)) {
+# DO THEO 3 PHAN, PHAN "DA LAM" LEN DAU TIEN.
+#
+# LY DO THAT (anh Thoai: "anh muon bao cao la nhung gi no DA LAM chu
+# khong phai show nhung cai con lai"): truoc day cac muc do theo NHOM
+# chuc nang, ma nhom dau tien lai la danh sach app go bo - neu go khong
+# duoc thi mo bao cao ra la thay kin mot man hinh chu do "chua dat",
+# phai keo mai moi thay nhung viec da lam duoc. Nhin vao tuong ca buoi
+# cai hong, trong khi thuc te phan lon deu xong.
+function DoNhom($tieuDe, $mau, $cacMuc) {
+    if ($cacMuc.Count -eq 0) { return }
     $g = New-Object System.Windows.Forms.ListViewItem('')
-    $g.SubItems.Add($nhom) | Out-Null
+    $g.SubItems.Add($tieuDe + "  ($($cacMuc.Count))") | Out-Null
     $g.SubItems.Add('') | Out-Null
-    $g.Font = New-Object System.Drawing.Font('Segoe UI', 10, [System.Drawing.FontStyle]::Bold)
-    $g.BackColor = [System.Drawing.Color]::FromArgb(238, 240, 244)
+    $g.Font = New-Object System.Drawing.Font('Segoe UI', 11, [System.Drawing.FontStyle]::Bold)
+    $g.BackColor = $mau
     $lv.Items.Add($g) | Out-Null
-    foreach ($r in ($ketQua | Where-Object { $_.Nhom -eq $nhom })) {
+    foreach ($r in $cacMuc) {
         $it = New-Object System.Windows.Forms.ListViewItem($r.TrangThai)
         $it.SubItems.Add('     ' + $r.Nhan) | Out-Null
         $it.SubItems.Add($r.ChiTiet) | Out-Null
@@ -1190,6 +1212,13 @@ foreach ($nhom in ($ketQua | Select-Object -ExpandProperty Nhom -Unique)) {
         $lv.Items.Add($it) | Out-Null
     }
 }
+
+DoNhom 'ĐÃ LÀM XONG' ([System.Drawing.Color]::FromArgb(214, 240, 222)) `
+       @($ketQua | Where-Object { $_.Dat -eq $true })
+DoNhom 'CẦN XEM LẠI' ([System.Drawing.Color]::FromArgb(250, 220, 220)) `
+       @($ketQua | Where-Object { $_.Dat -eq $false })
+DoNhom 'KHÔNG TỰ KIỂM ĐƯỢC' ([System.Drawing.Color]::FromArgb(236, 238, 242)) `
+       @($ketQua | Where-Object { $_.Dat -eq $null })
 $frm.Controls.Add($lv)
 
 $frm.AcceptButton = $btnDong
@@ -1809,28 +1838,30 @@ TUY_CHON_WINDOWS = [
          r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"'
          r' /v NoAutoRebootWithLoggedOnUsers /t REG_DWORD /d 1 /f',
      ]),
-    ("bat_net_framework35", "Bật .NET Framework 3.5",
+    ("bat_net_framework35", "Bật .NET Framework 3.5 (tải qua mạng)",
      "Nhiều phần mềm kế toán, phần mềm quản lý cũ bắt buộc phải có. "
-     "CHỈ bật được nếu máy có sẵn bộ nguồn ở C:\\ConsolePi\\sxs "
-     "(tải thư mục sources\\sxs của đĩa Windows lên mục Ứng dụng, đặt tên "
-     "\"sxs\"). Không có nguồn thì bước này báo lỗi rồi đi tiếp, không "
-     "làm dừng quá trình cài", "may", [
-         # BAT BUOC co /limitaccess - DAY LA CHO DA GAY LOI THAT.
+     "Máy TỰ TẢI gói này từ Windows Update nên cần Internet — chỉ chạy "
+     "sau khi đã vào Windows, không làm chậm lúc cài. Không có mạng thì "
+     "bước này báo lỗi rồi đi tiếp, không làm hỏng các bước sau",
+     "nguoi_dung", [
+         # CHAY O PHA NGUOI DUNG, KHONG PHAI PHA MAY - day la diem mau chot.
          #
          # LOI THAT DA GAP (12/09/2026, anh Thoai chup man hinh): lenh nay
-         # luc dau viet KHONG co /limitaccess. Khi do neu may khong co
-         # nguon cai san, DISM tu dong di hoi Windows Update qua mang de
-         # tai goi ve. Mang hien truong cham/chap chon -> DISM dung im o
-         # "Enabling feature(s) 5.9%" HANG GIO (CPU 2%, dia 0%, mang 0
-         # Kbps - khong lam gi ca). Vi lenh nay chay o pha specialize
-         # (RunSynchronousCommand chay DONG BO) nen ca qua trinh cai
-         # Windows treo cung luon o man hinh "Getting ready".
+         # truoc day chay o pha `specialize`. DISM di hoi Windows Update de
+         # tai goi ve, mang cham -> dung im o "Enabling feature(s) 5.9%"
+         # HANG GIO (CPU 2%, dia 0%, mang 0 Kbps). Vi specialize chay DONG
+         # BO nen ca qua trinh cai Windows treo cung o man "Getting ready",
+         # khong co cach nao biet chuyen gi dang xay ra.
          #
-         # /limitaccess = CAM DISM ra Windows Update. Khong co nguon thi
-         # no bao loi 0x800f081f trong vai giay roi thoi - Windows di tiep
-         # binh thuong. Tha bao loi nhanh con hon treo im lang.
-         "dism /online /enable-feature /featurename:NetFx3 /all /norestart"
-         " /limitaccess /source:C:\\ConsolePi\\ungdung\\sxs",
+         # Hai thu da doi han tinh chat cua no:
+         #   1. Chuyen sang pha nguoi_dung: luc do Windows da vao desktop,
+         #      mang that su hoat dong (day chinh la ly do anh Thoai muon
+         #      doi sang ban "online"), va treo cung khong chan viec boot.
+         #   2. Chay trong tien-trinh.ps1 nen co GIOI HAN THOI GIAN va
+         #      hien ro tren cua so tien trinh - qua gio thi bi dung va
+         #      di tiep, khong con treo vo han duoc nua.
+         # Vi vay KHONG con /limitaccess: gio cho phep no tai that.
+         "dism /online /enable-feature /featurename:NetFx3 /all /norestart",
      ]),
     ("tat_ipv6", "Tắt IPv6 trên mọi card mạng",
      "CHỈ dùng khi hệ thống mạng của anh chưa chạy IPv6 và IPv6 gây chậm "
@@ -1860,6 +1891,118 @@ TUY_CHON_WINDOWS = [
      "mà không phải gõ lệnh mở khoá mỗi lần", "may", [
          "powershell -NoProfile -Command "
          "\"Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force\"",
+     ]),
+
+    # ---- Bo sung dot 4: doi chieu voi schneegans.de/windows/unattend-
+    # generator, lay nhung muc CON THIEU ma thuc su co ich khi cai may tai
+    # hien truong. Van bo qua cac muc trang tri (mau nhan, hinh nen, 15
+    # hieu ung dong rieng le) va cac muc pha an toan (tat han Defender,
+    # siet ACL o dia C:).
+
+    ("bat_numlock", "Bật sẵn Num Lock khi khởi động",
+     "Khỏi phải bấm Num Lock mỗi lần bật máy mới gõ được số ở bàn phím "
+     "phải. Thứ nhỏ nhưng ngày nào cũng gặp", "nguoi_dung", [
+         # 2 = Num Lock bat. Dat o .DEFAULT nen ap dung ca man hinh dang
+         # nhap, khong chi sau khi vao desktop.
+         r'reg add "HKU\.DEFAULT\Control Panel\Keyboard"'
+         r' /v InitialKeyboardIndicators /t REG_SZ /d 2 /f',
+         r'reg add "HKCU\Control Panel\Keyboard"'
+         r' /v InitialKeyboardIndicators /t REG_SZ /d 2 /f',
+     ]),
+    ("tat_edge_lan_dau", "Bỏ màn hình chào của Edge lần đầu mở",
+     "Mở Edge là vào thẳng, không phải bấm qua 4-5 trang giới thiệu và "
+     "hỏi đồng bộ. Rất được việc khi giao máy cho người dùng", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge"'
+         r' /v HideFirstRunExperience /t REG_DWORD /d 1 /f',
+     ]),
+    ("tat_edge_chay_ngam", "Không cho Edge chạy ngầm khi đã đóng",
+     "Tắt Startup Boost và chạy nền - Edge không còn ngốn RAM khi anh "
+     "không dùng tới. Hợp với máy cấu hình thấp", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge"'
+         r' /v StartupBoostEnabled /t REG_DWORD /d 0 /f',
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge"'
+         r' /v BackgroundModeEnabled /t REG_DWORD /d 0 /f',
+     ]),
+    ("xoa_loi_tat_edge", "Xoá lối tắt Edge trên desktop",
+     "Windows tự tạo lối tắt Edge ngoài desktop dù người dùng không xin. "
+     "Xoá đi cho desktop sạch", "nguoi_dung", [
+         r'cmd /c del /q "%PUBLIC%\Desktop\Microsoft Edge.lnk"'
+         r' "%USERPROFILE%\Desktop\Microsoft Edge.lnk" 2>nul',
+     ]),
+    ("tat_smartscreen", "Tắt SmartScreen",
+     "Bỏ hộp thoại chặn \"Windows protected your PC\" khi chạy phần mềm "
+     "tải về. GIẢM AN TOÀN - chỉ nên bật cho máy thử nghiệm hoặc máy chỉ "
+     "chạy phần mềm nội bộ đã tin cậy", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"'
+         r' /v EnableSmartScreen /t REG_DWORD /d 0 /f',
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge"'
+         r' /v SmartScreenEnabled /t REG_DWORD /d 0 /f',
+     ]),
+    ("tat_am_thanh", "Tắt âm thanh hệ thống",
+     "Máy không kêu \"beng\" mỗi lần có thông báo hay cắm/rút USB. Hợp "
+     "cho máy đặt ở quầy, phòng họp, phòng máy", "nguoi_dung", [
+         r'reg add "HKCU\AppEvents\Schemes" /ve /t REG_SZ /d ".None" /f',
+     ]),
+    ("hien_het_khay", "Luôn hiện mọi biểu tượng khay hệ thống",
+     "Không giấu biểu tượng vào mũi tên nữa - thấy ngay phần mềm nào "
+     "đang chạy. Rất cần khi đi kiểm tra máy cho người khác",
+     "nguoi_dung", [
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer"'
+         r' /v EnableAutoTray /t REG_DWORD /d 0 /f',
+     ]),
+    ("an_nut_taskview", "Ẩn nút Task View trên thanh tác vụ",
+     "Bớt một nút ít dùng, thanh tác vụ gọn hơn", "nguoi_dung", [
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
+         r' /v ShowTaskViewButton /t REG_DWORD /d 0 /f',
+     ]),
+    ("thu_o_tim_kiem", "Thu nhỏ ô tìm kiếm thành biểu tượng",
+     "Ô tìm kiếm dài chiếm gần nửa thanh tác vụ - thu lại thành một biểu "
+     "tượng nhỏ, còn chỗ cho cửa sổ đang mở", "nguoi_dung", [
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"'
+         r' /v SearchboxTaskbarMode /t REG_DWORD /d 1 /f',
+     ]),
+    ("tat_mo_ta_thu_muc", "Tắt bảng chú thích khi rê chuột vào thư mục",
+     "Bỏ ô vàng hiện ra che mất tên file khi rê chuột", "nguoi_dung", [
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
+         r' /v ShowInfoTip /t REG_DWORD /d 0 /f',
+     ]),
+    ("tat_last_access", "Không ghi thời điểm mở file lần cuối",
+     "Mỗi lần MỞ file Windows đều ghi lại một dấu thời gian xuống ổ - tắt "
+     "đi thì ổ đỡ phải ghi, máy nhanh hơn, ổ SSD/thẻ nhớ bền hơn", "may", [
+         "fsutil behavior set disableLastAccess 1",
+     ]),
+    ("chan_app_theo_thiet_bi", "Không tự cài app kèm theo thiết bị",
+     "Cắm chuột/máy in vào là Windows tự tải app của hãng về cài - tắt đi "
+     "để máy giao cho người dùng giữ nguyên như lúc bàn giao", "may", [
+         r'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Device Metadata"'
+         r' /v PreventDeviceMetadataFromNetwork /t REG_DWORD /d 1 /f',
+     ]),
+    ("tat_wpbt", "Chặn hãng máy tự nhét phần mềm qua BIOS (WPBT)",
+     "Một số hãng nhét sẵn file chạy trong BIOS, Windows tự lấy ra chạy "
+     "mỗi lần cài lại - kể cả khi vừa format sạch. Tắt để máy cài lại là "
+     "thật sự sạch", "may", [
+         r'reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager"'
+         r' /v DisableWpbtExecution /t REG_DWORD /d 1 /f',
+     ]),
+    ("tat_tang_toc_chuot", "Tắt tăng tốc con trỏ chuột",
+     "Chuột đi đúng quãng tay di, không bị nhanh chậm theo tốc độ vẩy. "
+     "Người quen dùng chuột chính xác sẽ thấy dễ chịu hơn", "nguoi_dung", [
+         r'reg add "HKCU\Control Panel\Mouse" /v MouseSpeed /t REG_SZ /d 0 /f',
+         r'reg add "HKCU\Control Panel\Mouse" /v MouseThreshold1 /t REG_SZ /d 0 /f',
+         r'reg add "HKCU\Control Panel\Mouse" /v MouseThreshold2 /t REG_SZ /d 0 /f',
+     ]),
+    ("giao_dien_toi", "Dùng giao diện Tối (Dark mode)",
+     "Nền tối cho cả Windows và ứng dụng - đỡ chói khi làm việc trong "
+     "phòng thiếu sáng hoặc ban đêm", "nguoi_dung", [
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes'
+         r'\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f',
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes'
+         r'\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f',
+     ]),
+    ("xoa_windows_old", "Xoá thư mục Windows.old nếu còn sót",
+     "Bản Windows cũ để lại có thể chiếm hàng chục GB. Chỉ xoá nếu có, "
+     "không có thì bỏ qua", "may", [
+         r'cmd /c if exist C:\Windows.old rd /s /q C:\Windows.old',
      ]),
 ]
 
