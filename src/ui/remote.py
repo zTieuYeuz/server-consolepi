@@ -49,7 +49,7 @@ def da_cai():
 
 def kien_truc():
     m = subprocess.run(["dpkg", "--print-architecture"],
-                       capture_output=True, text=True).stdout.strip()
+                       capture_output=True, text=True, timeout=15).stdout.strip()
     return m or "arm64"
 
 

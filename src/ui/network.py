@@ -17,6 +17,41 @@ from flask import request, redirect
 
 from .layout import render_page
 
+
+class _KetQuaRong:
+    """Ket qua gia khi lenh khong chay duoc - de noi goi cu dung `.stdout`
+    / `.returncode` binh thuong, khong phai kiem tra None o khap noi."""
+    returncode = 1
+    stdout = ""
+    stderr = ""
+
+
+def _lenh(cmd, timeout=15, **kw):
+    """
+    Chay lenh he thong, KHONG BAO GIO nem ngoai le ra ngoai.
+
+    VI SAO CAN (day la loi that suyt tao ra khi them timeout):
+    cac ham doi WiFi chay trong LUONG NEN (_switch_worker). Neu chi them
+    `timeout=` khong thoi ma lenh qua gio, Python nem TimeoutExpired ->
+    luong nen chet AM THAM -> WIFI_STATUS ket vinh vien o "Dang chuyen..."
+    trong khi AP da bi ha xuong roi. Nguoi dung mat ca duong vao Pi ma
+    man hinh khong bao gi ca - te hon han truoc khi co timeout.
+
+    Vay nen: het gio thi tra ve ket qua rong (returncode=1) de phia goi
+    xu ly nhu mot lan that bai binh thuong - va no da biet xu ly that bai.
+    """
+    try:
+        return subprocess.run(cmd, timeout=timeout, **kw)
+    except subprocess.TimeoutExpired:
+        try:
+            from .errlog import ghi_loi
+            ghi_loi("network", f"Lệnh quá {timeout}s, đã bỏ qua: {' '.join(map(str, cmd))}")
+        except Exception:
+            pass
+        return _KetQuaRong()
+    except (FileNotFoundError, OSError):
+        return _KetQuaRong()
+
 AP_IP = "192.168.50.1"
 FORCE_AP_FLAG = "/opt/console-pi/force-ap.flag"
 NAMES_FILE = "/opt/console-pi/port-names.json"
@@ -183,44 +218,44 @@ def test_wifi_connection(ssid, password):
     with open(path, "w") as f:
         f.write(conf)
 
-    subprocess.run(["systemctl", "stop", "hostapd"])
-    subprocess.run(["systemctl", "stop", "dnsmasq"])
-    subprocess.run(["pkill", "-9", "wpa_supplicant"])
+    _lenh(["systemctl", "stop", "hostapd"], timeout=20)
+    _lenh(["systemctl", "stop", "dnsmasq"], timeout=20)
+    _lenh(["pkill", "-9", "wpa_supplicant"], timeout=10)
     time.sleep(1)
-    subprocess.run(["ip", "addr", "flush", "dev", "wlan0"])
-    subprocess.run(["ip", "link", "set", "wlan0", "down"])
+    _lenh(["ip", "addr", "flush", "dev", "wlan0"], timeout=10)
+    _lenh(["ip", "link", "set", "wlan0", "down"], timeout=10)
     time.sleep(1)
-    subprocess.run(["ip", "addr", "flush", "dev", "wlan0"])
-    subprocess.run(["ip", "link", "set", "wlan0", "up"])
+    _lenh(["ip", "addr", "flush", "dev", "wlan0"], timeout=10)
+    _lenh(["ip", "link", "set", "wlan0", "up"], timeout=10)
     time.sleep(2)
-    subprocess.run(["wpa_supplicant", "-B", "-i", "wlan0", "-c", path])
+    _lenh(["wpa_supplicant", "-B", "-i", "wlan0", "-c", path], timeout=15)
 
     for _ in range(25):
         time.sleep(1)
-        r = subprocess.run(["wpa_cli", "-i", "wlan0", "status"],
-                           capture_output=True, text=True)
+        r = _lenh(["wpa_cli", "-i", "wlan0", "status"],
+                           capture_output=True, text=True, timeout=10)
         if "wpa_state=COMPLETED" in r.stdout:
-            subprocess.run(["networkctl", "reconfigure", "wlan0"])
+            _lenh(["networkctl", "reconfigure", "wlan0"], timeout=15)
             time.sleep(5)
             return True
     return False
 
 
 def restore_ap_mode():
-    subprocess.run(["pkill", "-9", "wpa_supplicant"])
-    subprocess.run(["ip", "addr", "flush", "dev", "wlan0"])
-    subprocess.run(["ip", "addr", "add", f"{AP_IP}/24", "dev", "wlan0"])
-    subprocess.run(["ip", "link", "set", "wlan0", "up"])
-    subprocess.run(["systemctl", "start", "hostapd"])
-    subprocess.run(["systemctl", "start", "dnsmasq"])
+    _lenh(["pkill", "-9", "wpa_supplicant"], timeout=10)
+    _lenh(["ip", "addr", "flush", "dev", "wlan0"], timeout=10)
+    _lenh(["ip", "addr", "add", f"{AP_IP}/24", "dev", "wlan0"], timeout=10)
+    _lenh(["ip", "link", "set", "wlan0", "up"], timeout=10)
+    _lenh(["systemctl", "start", "hostapd"], timeout=20)
+    _lenh(["systemctl", "start", "dnsmasq"], timeout=20)
     # Luoi an toan: systemd-networkd tung xoa mat IP nay ngay sau khi carrier len
     for _ in range(4):
         time.sleep(1)
-        out = subprocess.run(["ip", "-4", "-o", "addr", "show", "wlan0"],
+        out = _lenh(["ip", "-4", "-o", "addr", "show", "wlan0"],
                              capture_output=True, text=True, timeout=5).stdout
         if AP_IP in out:
             return
-    subprocess.run(["ip", "addr", "add", f"{AP_IP}/24", "dev", "wlan0"])
+    _lenh(["ip", "addr", "add", f"{AP_IP}/24", "dev", "wlan0"], timeout=10)
 
 
 def _switch_worker(ssid, password, do_save):
@@ -263,7 +298,7 @@ def bt_reset(forget_devices=False):
     removed = []
     if forget_devices:
         for mac, name in get_bt_paired_devices():
-            subprocess.run(["bluetoothctl", "remove", mac], capture_output=True)
+            subprocess.run(["bluetoothctl", "remove", mac], capture_output=True, timeout=15)
             removed.append(name)
     subprocess.run(["systemctl", "restart", "bluetooth"], timeout=20)
     time.sleep(3)
@@ -1544,7 +1579,7 @@ def register_network(app):
 
         def worker():
             time.sleep(3)
-            subprocess.run(["/opt/console-pi/scripts/wifi-fallback.sh"])
+            _lenh(["/opt/console-pi/scripts/wifi-fallback.sh"], timeout=120)
         threading.Thread(target=worker, daemon=True).start()
         return _wifi_page(msg="Da go khoa AP. Pi se quet lai va tu chon WiFi quen thuoc.", ok=True)
 
