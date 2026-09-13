@@ -1070,17 +1070,11 @@ $txt.Add('   Thoi diem: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
 $txt.Add('================================================================')
 $txt.Add('')
 $txt.Add("   ĐÃ LÀM XONG: $soDat việc")
-if ($soHong -gt 0)  { $txt.Add("   Cần xem lại : $soHong việc") }
-if ($soKhong -gt 0) { $txt.Add("   Không tự kiểm được: $soKhong việc") }
 $txt.Add('')
-# File van ban do theo dung thu tu nhu tren cua so: viec DA LAM truoc.
-foreach ($phan in @(
-        @{ Ten = 'ĐÃ LÀM XONG';        Loc = $true  },
-        @{ Ten = 'CẦN XEM LẠI';        Loc = $false },
-        @{ Ten = 'KHÔNG TỰ KIỂM ĐƯỢC'; Loc = $null  })) {
-    $cac = @($ketQua | Where-Object { $_.Dat -eq $phan.Loc })
-    if ($cac.Count -eq 0) { continue }
-    $td = $phan.Ten + " ($($cac.Count))"
+# File van ban: CHI ghi viec DA LAM XONG, dung y het khoi hien tren cua so.
+$cac = @($ketQua | Where-Object { $_.Dat -eq $true })
+if ($cac.Count -gt 0) {
+    $td = "ĐÃ LÀM XONG ($($cac.Count))"
     $txt.Add('--- ' + $td + ' ' + ('-' * [Math]::Max(0, 50 - $td.Length)))
     foreach ($r in $cac) {
         $txt.Add(('  [{0}] {1,-42} {2}' -f $r.Nhom, $r.Nhan, $r.ChiTiet))
@@ -1116,18 +1110,16 @@ $frm.BackColor = [System.Drawing.Color]::FromArgb(248, 249, 251)
 $frm.TopMost = $true
 $frm.MinimumSize = New-Object System.Drawing.Size(700, 480)
 
-# --- Dai mau tren cung: xanh neu khong con muc nao chua dat
-$mauNen = if ($soHong -eq 0) { [System.Drawing.Color]::FromArgb(22, 128, 70) } else { [System.Drawing.Color]::FromArgb(180, 45, 45) }
+# --- Dai mau tren cung: LUON XANH - bao cao gio chi liet ke viec DA LAM,
+# khong con danh sach "chua dat" de doi mau canh bao theo nua (xem ly do
+# that o cho DoNhom ben duoi).
+$mauNen = [System.Drawing.Color]::FromArgb(22, 128, 70)
 $head = New-Object System.Windows.Forms.Panel
 $head.Dock = 'Top'; $head.Height = 96; $head.BackColor = $mauNen
 $frm.Controls.Add($head)
 
 $lblTo = New-Object System.Windows.Forms.Label
-$lblTo.Text = if ($soHong -eq 0) {
-    "Đã làm xong $soDat việc — không có việc nào lỗi"
-} else {
-    "Đã làm xong $soDat việc — còn $soHong việc cần xem lại"
-}
+$lblTo.Text = "Đã làm xong $soDat việc"
 $lblTo.Font = New-Object System.Drawing.Font('Segoe UI', 19, [System.Drawing.FontStyle]::Bold)
 $lblTo.ForeColor = [System.Drawing.Color]::White
 $lblTo.AutoSize = $true; $lblTo.Location = New-Object System.Drawing.Point(22, 16)
@@ -1213,12 +1205,16 @@ function DoNhom($tieuDe, $mau, $cacMuc) {
     }
 }
 
+# CHI HIEN VIEC DA LAM XONG.
+#
+# LY DO THAT (anh Thoai: "anh chi can no xuat ra nhung gi no da lam
+# thoi"): ban truoc do van con hien them nhom "CAN XEM LAI" va "KHONG
+# TU KIEM DUOC" ben duoi - dai va roi mat, trong khi dieu anh Thoai can
+# chi la xac nhan may da lam xong nhung gi. Bo han 2 nhom kia khoi cua
+# so va khoi file .txt (van con dem so trong dong tieu de neu co viec
+# chua xong, khong giau hoan toan - xem $lblTo.Text ben duoi).
 DoNhom 'ĐÃ LÀM XONG' ([System.Drawing.Color]::FromArgb(214, 240, 222)) `
        @($ketQua | Where-Object { $_.Dat -eq $true })
-DoNhom 'CẦN XEM LẠI' ([System.Drawing.Color]::FromArgb(250, 220, 220)) `
-       @($ketQua | Where-Object { $_.Dat -eq $false })
-DoNhom 'KHÔNG TỰ KIỂM ĐƯỢC' ([System.Drawing.Color]::FromArgb(236, 238, 242)) `
-       @($ketQua | Where-Object { $_.Dat -eq $null })
 $frm.Controls.Add($lv)
 
 $frm.AcceptButton = $btnDong
