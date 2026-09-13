@@ -921,12 +921,48 @@ if ($soLoi -eq 0) {{
 $lblTo.Text = "Đã cài đặt xong"
 $btnDong.Enabled = $true
 $frm.ControlBox = $true
+$frm.TopMost = $false
 [System.Windows.Forms.Application]::DoEvents()
+
+# ------------------------------------------------- bao cao tong ket
+#
+# CHAY BAO CAO NGAY TRONG SCRIPT NAY, khong de Windows goi rieng.
+#
+# LOI THAT DA GAP (anh Thoai chup man hinh 13/09): bao-cao.ps1 tung la
+# mot FirstLogonCommand RIENG dat sau tien-trinh.ps1. Tren ly thuyet
+# Windows chay lan luot va cho tung cai xong, nhung thuc te bang bao cao
+# HIEN RA khi tien trinh moi chay toi buoc 6/11 - hai cua so cmd cung
+# song mot luc. Khong kiem chung duoc ben trong Windows vi sao, nen cach
+# chac chan la KHONG PHU THUOC vao no nua: goi bao cao tu chinh day, sau
+# khi vong lap cac buoc da chay xong han. Thu tu do chinh script nay
+# quyet dinh, Windows khong xen vao duoc.
+$baoCao = Join-Path $ThuMuc 'bao-cao.ps1'
+if (Test-Path $baoCao) {{
+    $lblDay.Text = "Đang mở bảng báo cáo tổng kết..."
+    [System.Windows.Forms.Application]::DoEvents()
+    try {{
+        Start-Process -FilePath 'powershell.exe' -Wait -ArgumentList `
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $baoCao
+    }} catch {{ Ghi "Khong mo duoc bao cao: $($_.Exception.Message)" }}
+    if ($soLoi -eq 0) {{
+        $lblDay.Text = "Xong tất cả $($Buoc.Count) bước. Không có lỗi."
+    }} else {{
+        $lblDay.Text = "Xong, nhưng có $soLoi bước không đạt — xem dòng màu đỏ."
+    }}
+}}
 
 # Dung yen cho toi khi bam Dong. Khong tu dong dong: nguoi di cai may
 # phai co co hoi doc xem buoc nao hong - day la ly do cua ca cua so nay.
-$frm.TopMost = $false
-[void]$frm.ShowDialog()
+#
+# KHONG duoc dung ShowDialog() o day! Cua so nay DA hien bang Show() o
+# tren, ma .NET nem loi "Form that is already visible cannot be displayed
+# as a modal dialog box" neu goi ShowDialog() len mot form dang hien.
+# Loi do lam script chet ngay, cua so bien mat. Dung vong lap bom thong
+# diep la cach dung cho form da Show().
+while (-not $frm.IsDisposed) {{
+    [System.Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Milliseconds 120
+}}
 """
 
 
@@ -2092,20 +2128,19 @@ def _khoi_firstlogon(d):
     lenh = ["powershell -NoProfile -ExecutionPolicy Bypass -File "
             f"{THU_MUC_TREN_MAY}\\tien-trinh.ps1"]
 
-    # BAO CAO TONG KET - LUON LUON la lenh CUOI CUNG, khong phai tuy chon,
-    # khong phu thuoc kich ban / he dieu hanh / phan mem da chon.
+    # BAO CAO TONG KET: KHONG dat o day nua.
     #
-    # Vi sao cho vao day thay vi de anh Thoai tu them vao o "Lenh them":
-    # thu gi phai nho lam bang tay thi som muon cung co lan quen, dung
-    # luc can doi chieu nhat lai khong co. Day la bao cao cuoi cung cua
-    # ca qua trinh cai - phai co mat vo dieu kien.
+    # LOI THAT DA GAP (anh Thoai chup man hinh 13/09): bao-cao.ps1 tung la
+    # mot SynchronousCommand RIENG dat ngay sau tien-trinh.ps1. Tren ly
+    # thuyet Windows chay lan luot va cho tung cai xong han, nhung THUC TE
+    # bang bao cao hien ra khi tien trinh moi chay toi buoc 6/11 - hai cua
+    # so cmd cung song mot luc, bao cao doc trang thai may LUC PHAN MEM CON
+    # DANG CAI DO nen bao sai hang loat.
     #
-    # Hien bang cua so do hoa va DUNG YEN cho toi khi bam Dong: cua so
-    # cmd cua FirstLogonCommands tu dong dong ngay khi chay xong, khong
-    # ai kip doc (anh Thoai da gap dung viec nay).
-    lenh.append("powershell -NoProfile -ExecutionPolicy Bypass -File "
-                f"{THU_MUC_TREN_MAY}\\bao-cao.ps1")
-
+    # Khong kiem chung duoc ben trong Windows vi sao lai vay, nen cach chac
+    # chan la khong phu thuoc vao no nua: chinh tien-trinh.ps1 tu goi bao
+    # cao o cuoi, sau khi vong lap cac buoc da xong han (xem
+    # sinh_script_tien_trinh). Thu tu do script cua minh quyet dinh.
     if not lenh:
         return ""
     muc = "".join(f"""
