@@ -245,6 +245,7 @@ THU_MUC_THEO_DUONG = {}          # {duong_dan_URL: (thu_muc, duoi_cho_phep)}
 
 
 EXT_OS_WIM = {".wim"}
+EXT_OS_ISO = {".iso"}
 EXT_DRIVER = {".inf", ".sys", ".cat", ".zip", ".dll"}
 
 
@@ -259,6 +260,13 @@ def _thu_muc_os_theo_duong(duong_url):
         os_id = ten_an_toan(phan[2])
         if os_id:
             return os.path.join(OS_DIR, os_id), EXT_OS_WIM
+    # Tai len ca file ISO Windows (Pi tu tach boot.wim/install.wim ra - xem
+    # ui/isotach.py). File ISO 5-6GB nen BAT BUOC phai ghi thang ra dia y
+    # nhu .wim, khong duoc di duong mac dinh cua Werkzeug.
+    if len(phan) == 4 and phan[0] == "deployos" and phan[1] == "os" and phan[3] == "len-iso":
+        os_id = ten_an_toan(phan[2])
+        if os_id:
+            return os.path.join(OS_DIR, os_id), EXT_OS_ISO
     if len(phan) == 4 and phan[0] == "deployos" and phan[1] == "drivers" and phan[3] == "len":
         driver_id = ten_an_toan(phan[2])
         if driver_id:
@@ -3179,17 +3187,72 @@ def register_deployos(app):
           {hang}
         </table></div>
         <div class="card" style="margin-top:14px;">
-          <h3>Tải lên file (dùng TÊN GỐC từ ISO Windows - boot.wim / install.wim)</h3>
-          <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-            Lấy 2 file này từ thư mục <code>sources\\</code> của ISO Windows
-            thật (mount ISO trên 1 máy Windows rồi copy ra). Tải lên từng
-            file một - install.wim thường vài GB, sẽ mất vài phút.</p>
-          <form method="POST" action="/deployos/os/{_esc(os_id)}/len"
-                enctype="multipart/form-data" data-busy="Đang tải lên...">
-            <input type="file" name="file" required>
-            <button type="submit">Tải lên</button>
-          </form>
-        </div>""")
+          <h3>Thêm ảnh hệ điều hành</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
+            Chọn cách anh đang có sẵn file trong tay:</p>
+          <label for="kieu-tai">Kiểu file anh có</label>
+          <select id="kieu-tai" style="max-width:420px;">
+            <option value="iso">Tôi có file ISO Windows (Pi tự tách ra) — dễ nhất</option>
+            <option value="wim">Tôi đã có sẵn boot.wim / install.wim</option>
+          </select>
+
+          <!-- ===== Cach 1: tai thang file ISO ===== -->
+          <div id="khoi-iso" style="margin-top:16px;">
+            <div class="msg info" style="margin-top:0;">
+              <strong>Cách này đơn giản nhất:</strong> anh chỉ cần tải nguyên
+              file ISO Windows tải từ Microsoft lên đây. Pi sẽ tự:
+              <br>1. Đọc mục lục ISO tìm 2 file cần
+              <br>2. Tách riêng <code>boot.wim</code> và <code>install.wim</code> ra
+              <br>3. Kiểm chứng kỹ 2 file đó (đúng dung lượng + đọc được ruột)
+              <br>4. Chỉ khi kiểm chứng ĐẠT mới xoá file ISO để lấy lại dung lượng
+              <br><span style="color:#8A94A6;">Nếu kiểm chứng trượt, ISO được giữ
+              nguyên để tách lại — không bao giờ mất công tải lại.</span>
+            </div>
+            <form method="POST" action="/deployos/os/{_esc(os_id)}/len-iso"
+                  enctype="multipart/form-data" class="form-tai-len"
+                  data-loai="os-iso" data-busy="Đang tải ISO lên...">
+              <input type="file" name="file" accept=".iso" required>
+              <button type="submit">Tải ISO lên rồi tách tự động</button>
+            </form>
+            <p class="hint" style="margin-top:9px;">
+              File ISO thường 4–6 GB. Tải xong Pi tách thêm khoảng 5–15 phút
+              nữa (có thanh tiến trình từng bước). Cần trống khoảng
+              <strong>gấp đôi</strong> dung lượng ISO trong lúc tách.</p>
+          </div>
+
+          <!-- ===== Cach 2: tai san 2 file wim ===== -->
+          <div id="khoi-wim" hidden style="margin-top:16px;">
+            <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+              Dùng khi anh đã tự tách sẵn 2 file từ ISO (mở ISO trên máy
+              Windows, vào thư mục <code>sources\\</code> copy ra). Tên file
+              phải để <strong>đúng nguyên gốc</strong>:
+              <code>boot.wim</code> và <code>install.wim</code>.
+              Tải lên <strong>từng file một</strong> — install.wim vài GB nên
+              sẽ mất vài phút.</p>
+            <form method="POST" action="/deployos/os/{_esc(os_id)}/len"
+                  enctype="multipart/form-data" class="form-tai-len"
+                  data-loai="os" data-busy="Đang tải lên...">
+              <input type="file" name="file" accept=".wim" required>
+              <button type="submit">Tải lên</button>
+            </form>
+          </div>
+        </div>
+
+        <script>
+        (function() {{
+          var sel = document.getElementById('kieu-tai');
+          var kIso = document.getElementById('khoi-iso');
+          var kWim = document.getElementById('khoi-wim');
+          if (!sel || !kIso || !kWim) return;
+          function doi() {{
+            var iso = sel.value === 'iso';
+            kIso.hidden = !iso;
+            kWim.hidden = iso;
+          }}
+          sel.addEventListener('change', doi);
+          doi();
+        }})();
+        </script>""")
         return _trang(body, "Deployment OS", f"Hệ điều hành - {o['ten_hien_thi']}")
 
     @app.route("/deployos/os/<os_id>/len", methods=["POST"])
@@ -3217,6 +3280,125 @@ def register_deployos(app):
         if ok:
             return redirect(f"/deployos/os/{os_id}")
         return _trang_os(msg, ok)
+
+    # ------------------------------------------- tai len ISO + tu dong tach
+    @app.route("/deployos/os/<os_id>/len-iso", methods=["POST"])
+    def deployos_os_len_iso(os_id):
+        """
+        Nhan file ISO Windows roi giao cho ui/isotach.py tach nen.
+
+        File ISO da duoc ghi THANG ra dia trong luc tai len (xem
+        _thu_muc_os_theo_duong + RequestTaiLenThang), o day chi con viec doi
+        ten .part -> ten that roi bat luong tach.
+        """
+        from . import isotach as _it
+        f = request.files.get("file")
+        if not f or not getattr(f, "filename", ""):
+            return redirect(f"/deployos/os/{os_id}")
+        ten_goc = ten_an_toan(f.filename)
+        if not ten_goc.lower().endswith(".iso"):
+            return _trang_os(f'Cần file .iso (file anh chọn là "{ten_goc}").', False)
+        if _it.dang_chay():
+            return _trang_os("Đang tách một file ISO khác - đợi xong rồi làm tiếp.", False)
+
+        duong = getattr(getattr(f, "stream", None), "_cp_duong_dan", None)
+        if not duong:
+            return _trang_os("Không ghi thẳng được file ISO - thử lại.", False)
+        try:
+            f.stream.flush()
+            os.fsync(f.stream.fileno())
+        except Exception:
+            pass
+        thu_muc = os.path.join(OS_DIR, ten_an_toan(os_id))
+        ok, msg, duong_dich = _hoan_tat_ghi_thang(duong, thu_muc, ten_goc)
+        if not ok:
+            return _trang_os(msg, False)
+
+        ok, msg = _it.bat_dau_tach(ten_an_toan(os_id), duong_dich)
+        if not ok:
+            return _trang_os(msg, False)
+        return redirect(f"/deployos/os/{os_id}/tach")
+
+    @app.route("/deployos/os/<os_id>/tach")
+    def deployos_os_tach(os_id):
+        """Trang theo doi tien trinh tach ISO - tu lam moi bang JS."""
+        o = lay_os(os_id)
+        if o is None:
+            return _trang_os("Không tìm thấy hệ điều hành.", False)
+        body = _tabs("tainguyen", "os") + f"""
+        <p><a href="/deployos/os/{_esc(os_id)}">&larr; Về {_esc(o['ten_hien_thi'])}</a></p>
+        <div class="card">
+          <h3>Đang tách file ISO</h3>
+          <p class="hint" style="margin:0 0 14px;">Anh có thể rời trang này,
+            việc tách vẫn chạy tiếp ở máy. Quay lại đây bất cứ lúc nào để xem.</p>
+          <div style="background:#0B0E14;border:1px solid #1F2733;border-radius:8px;
+                      height:14px;overflow:hidden;margin-bottom:6px;">
+            <div id="thanh" style="height:100%;width:0%;background:#38BDF8;
+                 transition:width .4s;"></div>
+          </div>
+          <div class="row" style="justify-content:space-between;">
+            <span id="nhan-buoc" style="color:#8A94A6;font-size:13.5px;">Đang bắt đầu...</span>
+            <span id="nhan-phan-tram" style="font-family:ui-monospace,monospace;
+                  font-weight:600;">0%</span>
+          </div>
+          <div id="ket-qua"></div>
+          <div id="nhat-ky" style="margin-top:14px;"></div>
+        </div>
+        <script>
+        (function() {{
+          var thanh = document.getElementById('thanh');
+          var nBuoc = document.getElementById('nhan-buoc');
+          var nPt = document.getElementById('nhan-phan-tram');
+          var kq = document.getElementById('ket-qua');
+          var nk = document.getElementById('nhat-ky');
+          var BIEU = {{ok: '\u2714', loi: '\u2716', dang: '\u22EF'}};
+          var MAU = {{ok: '#4ADE80', loi: '#F87171', dang: '#38BDF8'}};
+
+          function ve(t) {{
+            thanh.style.width = t.phan_tram + '%';
+            nPt.textContent = t.phan_tram + '%';
+            nBuoc.textContent = t.ten_buoc
+              ? ('Bước ' + t.buoc + '/' + t.tong_buoc + ': ' + t.ten_buoc)
+              : 'Đang bắt đầu...';
+            var h = '';
+            for (var i = 0; i < t.nhat_ky.length; i++) {{
+              var d = t.nhat_ky[i];
+              h += '<div style="display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #1F2733;">'
+                 + '<span style="color:' + (MAU[d[1]] || '#8A94A6') + ';flex:none;">'
+                 + (BIEU[d[1]] || '') + '</span><div><div>' + d[0] + '</div>'
+                 + (d[2] ? '<div style="color:#8A94A6;font-size:12.5px;margin-top:2px;">'
+                           + d[2] + '</div>' : '') + '</div></div>';
+            }}
+            nk.innerHTML = h;
+            if (!t.chay && t.xong === true) {{
+              thanh.style.background = '#4ADE80';
+              kq.innerHTML = '<div class="msg ok">Tách xong! Hệ điều hành đã sẵn sàng '
+                + '(mất ' + t.giay + ' giây). '
+                + '<a href="/deployos/os/{_esc(os_id)}">Xem lại &rarr;</a></div>';
+            }} else if (!t.chay && t.xong === false) {{
+              thanh.style.background = '#F87171';
+              kq.innerHTML = '<div class="msg err">' + (t.loi || 'Tách thất bại.') + '</div>';
+            }}
+          }}
+
+          function hoi() {{
+            fetch('/deployos/os/tach/tien-do', {{cache: 'no-store'}})
+              .then(function(r) {{ return r.json(); }})
+              .then(function(t) {{
+                ve(t);
+                if (t.chay) setTimeout(hoi, 1200);
+              }})
+              .catch(function() {{ setTimeout(hoi, 3000); }});
+          }}
+          hoi();
+        }})();
+        </script>"""
+        return _trang(body, "Deployment OS", f"Tách ISO - {o['ten_hien_thi']}")
+
+    @app.route("/deployos/os/tach/tien-do")
+    def deployos_os_tach_tien_do():
+        from . import isotach as _it
+        return jsonify(_it.trang_thai())
 
     # ----------------------------- driver (mo hinh MDT: "Out-of-Box Drivers")
     @app.route("/deployos/drivers")
