@@ -145,6 +145,29 @@ def register_settings(app):
         ok, msg = set_rotation(val)
         return _render_settings(msg=msg, ok=ok)
 
+    @app.route("/settings/don-rac", methods=["POST"])
+    def settings_don_rac():
+        from . import baotri as bt
+        ok, msg = bt.don_rac(request.form.get("ma", ""))
+        return _render_settings(msg=msg, ok=ok)
+
+    @app.route("/settings/sao-luu")
+    def settings_sao_luu():
+        from flask import Response
+        from . import baotri as bt
+        du, ten = bt.tao_ban_sao_luu()
+        return Response(du, mimetype="application/gzip", headers={
+            "Content-Disposition": f'attachment; filename="{ten}"'})
+
+    @app.route("/settings/nap-sao-luu", methods=["POST"])
+    def settings_nap_sao_luu():
+        from . import baotri as bt
+        f = request.files.get("file")
+        if not f or not getattr(f, "filename", ""):
+            return _render_settings(msg="Chưa chọn file sao lưu.", ok=False)
+        ok, msg = bt.nap_ban_sao_luu(f.read())
+        return _render_settings(msg=msg, ok=ok)
+
     @app.route("/settings/regen-term-pass", methods=["POST"])
     def regen_term_pass():
         import secrets
@@ -216,6 +239,8 @@ def _render_settings(msg="", ok=True):
       </p>
     </div>
 
+    {_khoi_baotri()}
+
     <div class="card">
       <h3>Thông tin hệ thống</h3>
       <table>
@@ -228,6 +253,89 @@ def _render_settings(msg="", ok=True):
 
     return render_page(body, active="/settings", title="Cai dat",
                        subtitle="Màn hình, mật khẩu terminal, thông tin hệ thống")
+
+
+def _khoi_baotri():
+    """
+    Hai cong cu bao tri (xem ui/baotri.py cho phan xu ly). De o trang Cai
+    dat vi day la viec "cham vao may" chu khong phai viec mang.
+    """
+    from . import baotri as bt
+    from .home import _esc
+
+    dia, muc = bt.tinh_dung_luong()
+    mau = "#F87171" if dia["phan_tram"] >= 90 else (
+          "#FBBF24" if dia["phan_tram"] >= 80 else "#4ADE80")
+    hang_muc = "".join(
+        f'''<tr><td><a href="{m["lien_ket"]}">{_esc(m["nhan"])}</a></td>
+             <td style="text-align:right;font-family:ui-monospace,monospace;">
+             {bt.co_kich_thuoc(m["byte"])}</td></tr>'''
+        for m in muc)
+
+    rac = bt.tim_rac()
+    tong_rac = sum(r[2] for r in rac)
+    hang_rac = "".join(
+        f'''<tr>
+             <td>{_esc(nhan)}<br><small style="color:#8A94A6;">{_esc(gt)}</small></td>
+             <td style="text-align:right;font-family:ui-monospace,monospace;">
+               {bt.co_kich_thuoc(byte)}</td>
+             <td style="width:110px;">
+               <form method="POST" action="/settings/don-rac">
+                 <input type="hidden" name="ma" value="{ma}">
+                 <button type="submit" class="gray small"{" disabled" if byte <= 0 else ""}
+                         data-busy="Đang dọn...">Dọn</button>
+               </form></td>
+           </tr>'''
+        for ma, nhan, byte, gt in rac)
+
+    return f'''
+    <div class="card">
+      <h3>Dung lượng thẻ nhớ</h3>
+      <div style="background:#0B0E14;border:1px solid #1F2733;border-radius:8px;
+                  height:16px;overflow:hidden;margin-bottom:8px;">
+        <div style="height:100%;width:{dia["phan_tram"]}%;background:{mau};"></div>
+      </div>
+      <p style="margin:0 0 14px;color:#8A94A6;font-size:13.5px;">
+        Đã dùng <strong style="color:#E3E8EF;">{bt.co_kich_thuoc(dia["dung"])}</strong>
+        / {bt.co_kich_thuoc(dia["tong"])} ({dia["phan_tram"]}%) &mdash;
+        còn trống <strong style="color:{mau};">{bt.co_kich_thuoc(dia["trong"])}</strong>.
+      </p>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Dữ liệu của anh</th><th style="text-align:right;width:120px;">Chiếm</th></tr></thead>
+        <tbody>{hang_muc}</tbody>
+      </table></div>
+      <h3 style="margin-top:18px;">Dọn rác an toàn ({bt.co_kich_thuoc(tong_rac)})</h3>
+      <p class="hint" style="margin:0 0 10px;">Ba mục dưới đây xoá đi KHÔNG mất
+        dữ liệu nào của anh - hệ thống tự tạo lại khi cần.</p>
+      <div class="tbl-scroll"><table><tbody>{hang_rac}</tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3>Sao lưu cấu hình</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">
+        Toàn bộ công sức cấu hình (kịch bản cài đặt, bảng tra tham số, thư
+        viện lệnh, kết nối kho trung tâm) chỉ nằm trên <strong>một thẻ nhớ</strong>
+        - mà thẻ nhớ là thứ hỏng vặt nhất trên Pi. Tải file này về cất ở máy
+        khác, mất thẻ thì nạp lại là xong.
+        <br>Ảnh Windows và bộ cài phần mềm <strong>không</strong> nằm trong đây
+        (tải lại được từ nguồn gốc, mà nhét vào thì file to không ai tải nổi).
+      </p>
+      <div class="msg warn" style="margin-top:0;">
+        File sao lưu có chứa <strong>mật khẩu</strong> trong kịch bản cài đặt
+        và token kho trung tâm - cất nơi kín đáo, đừng gửi lung tung.
+      </div>
+      <div class="row">
+        <a class="btn" href="/settings/sao-luu">Tải file sao lưu về</a>
+      </div>
+      <form method="POST" action="/settings/nap-sao-luu" enctype="multipart/form-data"
+            style="margin-top:16px;"
+            onsubmit="return confirm('Nạp lại cấu hình sẽ GHI ĐÈ kịch bản và bảng tham số hiện tại. Tiếp tục?');">
+        <label>Nạp lại từ file sao lưu (.tar.gz)</label>
+        <input type="file" name="file" accept=".gz,.tar.gz" required>
+        <button type="submit" class="gray" style="margin-top:10px;"
+                data-busy="Đang nạp...">Nạp lại cấu hình</button>
+      </form>
+    </div>'''
 
 
 def _version():
