@@ -60,6 +60,11 @@ FILE_THU_VIEN_LENH = _duong("command-library.json")
 # nhau -> WinPE khong ket noi duoc kho nua).
 FILE_KHOA_SAMBA = _duong("samba-deploy.key")
 
+# Cau hinh ket noi Kho luu tru trung tam (URL + token rieng cua Pi nay) -
+# xem ui/khotrungtam.py. Token la bi mat, de ben DU LIEU (khong phai ma
+# nguon) vi cung ly do voi FILE_KHOA_SAMBA o tren.
+FILE_KHO_TRUNGTAM = _duong("kho-trungtam.json")
+
 
 def bao_dam_thu_muc_du_lieu():
     """

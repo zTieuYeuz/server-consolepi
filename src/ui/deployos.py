@@ -1424,6 +1424,7 @@ def register_deployos(app):
             ("kichban", "Kịch bản", "/deployos/kichban"),
             ("tainguyen", "Tài nguyên", "/deployos/os"),
             ("thamso", "Tham số cài đặt", "/deployos/thamso"),
+            ("kho", "Kho trung tâm", "/deployos/kho"),
             ("tiendo", "Tiến trình", "/deployos/tiendo"),
             ("caidat", "Cài đặt", "/deployos/caidat"),
         ]
@@ -3582,6 +3583,227 @@ def register_deployos(app):
         from . import thamso as _ts
         ok, msg = _ts.xoa(request.form.get("id", ""))
         return _trang_thamso(msg, ok)
+
+    # ==================================== TAB "KHO TRUNG TÂM"
+    # Xem ui/khotrungtam.py cho phan goi HTTP thuc su. O day chi la giao
+    # dien: cau hinh ket noi, tim/liet ke, va tai ve vao dung thu muc cuc
+    # bo (APPS_DIR cho "phanmem", SCRIPTS_DIR cho "script").
+    TEN_LOAI_KHO = {"script": "Script", "phanmem": "Phần mềm"}
+
+    def _trang_kho(msg="", ok=True):
+        from . import khotrungtam as _kt
+
+        cauhinh = _kt.doc_cauhinh()
+        if not cauhinh:
+            body = _tabs("kho") + _msg(msg, ok) + """
+            <div class="card">
+              <h3>Kết nối tới Kho lưu trữ trung tâm</h3>
+              <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
+                Kho trung tâm là nơi lưu sẵn phần mềm/script dùng chung cho
+                mọi Console Pi hiện trường. Cần địa chỉ trang kho (URL) và
+                1 token riêng cho máy này - vào trang quản trị kho, mục
+                "Token", tạo token mới đặt tên là máy Console Pi này.</p>
+              <form method="POST" action="/deployos/kho/cauhinh">
+                <label>Địa chỉ kho (URL)</label>
+                <input type="text" name="url" placeholder="https://kho-console.home-server.id.vn"
+                       autocapitalize="off">
+                <label style="margin-top:10px;display:block;">Token của máy này</label>
+                <input type="text" name="token" placeholder="Dán token vừa tạo trên trang kho"
+                       autocapitalize="off">
+                <button type="submit" style="margin-top:12px;">Kết nối</button>
+              </form>
+            </div>"""
+            return _trang(body, "Deployment OS", "Kho trung tâm - chưa kết nối")
+
+        ok_ds, ket_qua = _kt.danh_sach(cauhinh)
+        if not ok_ds:
+            body = _tabs("kho") + _msg(msg, ok) + f"""
+            <div class="msg err">Không lấy được danh sách từ kho: {_esc(ket_qua)}</div>
+            <div class="card">
+              <p style="color:#8b93a1;font-size:13px;">Đang kết nối tới
+                 <code>{_esc(cauhinh['url'])}</code>.</p>
+              <form method="POST" action="/deployos/kho/xoa-cauhinh"
+                    onsubmit="return confirm('Xoá kết nối hiện tại?');">
+                <button type="submit" class="gray">Đổi kết nối khác</button>
+              </form>
+            </div>"""
+            return _trang(body, "Deployment OS", "Kho trung tâm - lỗi kết nối")
+
+        ds = ket_qua
+        # Chuoi tim kiem: dung lai ham bo_dau() da kiem chung tu tab
+        # "Tham so cai dat" - khong viet lai logic tim kiem lan thu 3.
+        from . import thamso as _ts
+        du_lieu_js = json.dumps([
+            {"id": m.get("id", ""),
+             "tim": _ts.bo_dau(m.get("ten", "")) + "  " + _ts.bo_dau(m.get("mo_ta", ""))}
+            for m in ds], ensure_ascii=False)
+
+        hang = ""
+        for m in ds:
+            ext = os.path.splitext(m.get("ten_file", ""))[1].lower()
+            loai = m.get("loai", "")
+            hop_le = ((loai == "phanmem" and ext in EXT_APP) or
+                      (loai == "script" and ext in EXT_SCRIPT))
+            nhan_loai = TEN_LOAI_KHO.get(loai, loai)
+            cap_nhat = m.get("cap_nhat_luc") or 0
+            luc = time.strftime("%d/%m/%Y %H:%M", time.localtime(cap_nhat)) if cap_nhat else ""
+            if hop_le:
+                nut = f"""
+                <form method="POST" action="/deployos/kho/tai" style="display:inline;">
+                  <input type="hidden" name="id" value="{_esc(m.get('id',''))}">
+                  <input type="hidden" name="loai" value="{_esc(loai)}">
+                  <input type="hidden" name="ten_file" value="{_esc(m.get('ten_file',''))}">
+                  <input type="hidden" name="du_lieu" value="{_esc(m.get('du_lieu',''))}">
+                  <input type="hidden" name="ten" value="{_esc(m.get('ten',''))}">
+                  <button type="submit" class="small">Tải về</button>
+                </form>"""
+            else:
+                nut = (f'<span class="hint" title="Console Pi chỉ nhận '
+                       f'{"/".join(sorted(EXT_APP if loai == "phanmem" else EXT_SCRIPT))} '
+                       f'cho mục {nhan_loai}">Không hỗ trợ ({_esc(ext or "?")})</span>')
+            hang += f"""
+            <tr data-id="{_esc(m.get('id',''))}">
+              <td>{nhan_loai}</td>
+              <td><strong>{_esc(m.get('ten',''))}</strong><br>
+                  <small style="color:#8b93a1;">{_esc(m.get('mo_ta',''))}</small></td>
+              <td>{co_kich_thuoc(m.get('kich_thuoc') or 0)}</td>
+              <td>{_esc(luc)}</td>
+              <td>{nut}</td>
+            </tr>"""
+
+        bang = (f'<div class="tbl-scroll"><table><thead><tr>'
+                f'<th>Loại</th><th>Tên</th><th>Kích thước</th><th>Cập nhật</th>'
+                f'<th class="cot-nut">&nbsp;</th></tr></thead>'
+                f'<tbody>{hang}</tbody></table></div>'
+                if ds else '<p style="color:#8b93a1;">Kho chưa có mục nào.</p>')
+
+        body = _tabs("kho") + _msg(msg, ok) + f"""
+        <div class="card">
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
+            Đang kết nối <code>{_esc(cauhinh['url'])}</code> &middot;
+            {len(ds)} mục. Tải về sẽ lưu thẳng vào
+            <a href="/deployos/console/apps">Phần mềm</a> hoặc
+            <a href="/deployos/console/scripts">Script</a> của Console Pi
+            này, kèm sẵn tham số cài đặt nếu có.
+            <form method="POST" action="/deployos/kho/xoa-cauhinh"
+                  style="display:inline;margin-left:8px;"
+                  onsubmit="return confirm('Xoá kết nối hiện tại?');">
+              <button type="submit" class="small gray">Đổi kết nối</button>
+            </form>
+          </p>
+          <div class="hang-tim">
+            <input type="search" id="o-tim-kho" autocomplete="off"
+                   placeholder="Tìm trong kho: tên, mô tả... (gõ không dấu cũng được)">
+            <button type="button" id="nut-xoa-tim-kho" class="gray">Xoá</button>
+          </div>
+          <div id="ket-qua-tim-kho" class="ket-qua"></div>
+          {bang}
+        </div>
+
+        <script>
+        (function() {{
+          var DU_LIEU = {du_lieu_js};
+          var oTim = document.getElementById('o-tim-kho');
+          var bang = document.querySelector('[data-id]') ? document.querySelector('table') : null;
+          var kq = document.getElementById('ket-qua-tim-kho');
+          var tong = DU_LIEU.length;
+          if (!oTim || !bang) return;
+
+          function boDau(s) {{
+            return (s || '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+              .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+              .toLowerCase().trim();
+          }}
+
+          function loc() {{
+            var q = boDau(oTim.value);
+            var hang = bang.tBodies[0].rows;
+            if (!q) {{
+              for (var i = 0; i < hang.length; i++) hang[i].hidden = false;
+              kq.textContent = tong + ' mục';
+              return;
+            }}
+            var tuKhoa = q.split(/\\s+/).filter(Boolean);
+            var hienId = {{}}, soHien = 0;
+            for (var k = 0; k < DU_LIEU.length; k++) {{
+              var m = DU_LIEU[k], hop = true;
+              for (var t = 0; t < tuKhoa.length; t++) {{
+                if (m.tim.indexOf(tuKhoa[t]) === -1) {{ hop = false; break; }}
+              }}
+              if (hop) {{ hienId[m.id] = true; soHien++; }}
+            }}
+            for (var i = 0; i < hang.length; i++) {{
+              var id = hang[i].getAttribute('data-id');
+              hang[i].hidden = !(id && hienId[id]);
+            }}
+            kq.textContent = soHien + ' / ' + tong + ' mục khớp';
+          }}
+
+          oTim.addEventListener('input', loc);
+          document.getElementById('nut-xoa-tim-kho').addEventListener('click',
+            function() {{ oTim.value = ''; loc(); oTim.focus(); }});
+          loc();
+        }})();
+        </script>"""
+        return _trang(body, "Deployment OS", "Kho trung tâm")
+
+    @app.route("/deployos/kho")
+    def deployos_kho():
+        return _trang_kho()
+
+    @app.route("/deployos/kho/cauhinh", methods=["POST"])
+    def deployos_kho_cauhinh():
+        from . import khotrungtam as _kt
+        ok, msg = _kt.luu_cauhinh(request.form.get("url", ""),
+                                  request.form.get("token", ""))
+        return _trang_kho(msg, ok)
+
+    @app.route("/deployos/kho/xoa-cauhinh", methods=["POST"])
+    def deployos_kho_xoa_cauhinh():
+        from . import khotrungtam as _kt
+        _kt.xoa_cauhinh()
+        return _trang_kho("Đã xoá kết nối. Điền lại địa chỉ và token khác.", True)
+
+    @app.route("/deployos/kho/tai", methods=["POST"])
+    def deployos_kho_tai():
+        from . import khotrungtam as _kt
+        cauhinh = _kt.doc_cauhinh()
+        if not cauhinh:
+            return _trang_kho("Chưa kết nối tới kho.", False)
+
+        muc_id = (request.form.get("id") or "").strip()
+        loai = request.form.get("loai", "")
+        ten_file = request.form.get("ten_file", "")
+        du_lieu = request.form.get("du_lieu", "")
+        ten_hien_thi = request.form.get("ten", ten_file)
+
+        thu_muc_dich = {"phanmem": APPS_DIR, "script": SCRIPTS_DIR}.get(loai)
+        duoi_cho_phep = {"phanmem": EXT_APP, "script": EXT_SCRIPT}.get(loai)
+        if not muc_id or not thu_muc_dich:
+            return _trang_kho("Mục không hợp lệ.", False)
+
+        ten_an = ten_an_toan(ten_file)
+        ext = os.path.splitext(ten_an)[1].lower()
+        if not ten_an or ext not in duoi_cho_phep:
+            return _trang_kho(
+                f"Console Pi chỉ nhận {'/'.join(sorted(duoi_cho_phep))} cho "
+                f"mục {TEN_LOAI_KHO.get(loai, loai)} - không tải \"{ten_hien_thi}\".", False)
+
+        _bao_dam_thu_muc()
+        duong_dich = os.path.join(thu_muc_dich, ten_an)
+        ok, msg = _kt.tai_ve(cauhinh, muc_id, duong_dich)
+        if not ok:
+            return _trang_kho(f'Không tải được "{ten_hien_thi}": {msg}', False)
+
+        # Phan mem: gan luon tham so cai im lang di kem (neu kho co) - dung
+        # y anh Thoai: tai ve 1 phat la dung duoc ngay, khong phai qua tab
+        # "Tham so cai dat" roi tu go tay lai.
+        if loai == "phanmem" and du_lieu.strip():
+            meta = doc_thongtin_app()
+            meta[ten_an] = du_lieu.strip()[:200]
+            ghi_thongtin_app(meta)
+
+        return _trang_kho(f'Đã tải "{ten_hien_thi}" về {TEN_LOAI_KHO.get(loai, loai)}.', True)
 
     # ------------------------- ung dung thu muc (mo hinh MDT: "Application
     # with source files" - xem chi tiet trong docstring cua danh_sach_ungdung()
