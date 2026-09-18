@@ -445,7 +445,7 @@ def register_home(app):
         body = f"""
         <div class="row" style="margin-bottom:11px;">
           <a class="btn gray" href="/">← Ve trang chu</a>
-          <a class="btn" href="{base}/">↗ Mo toan man hinh</a>
+          <a class="btn" href="{base}/" target="_blank" rel="noopener">↗ Mo toan man hinh</a>
           <a class="btn blue" href="/nettools/console-backup?dev={devname}">🔌 Sao luu cau hinh</a>
           <span style="color:#8b93a1;font-size:13px;align-self:center;">
             {devname} &middot; 9600 8N1
