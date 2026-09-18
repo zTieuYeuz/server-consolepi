@@ -80,6 +80,19 @@ def dang_bat():
     return os.path.exists(STATE_FLAG)
 
 
+def kieu_dang_bat():
+    """
+    Kieu boot cua phien PXE DANG chay ("" neu dang tat). Doc tu STATE_FLAG -
+    day la nguon su that duy nhat ve che do dang phuc vu, vi cau hinh
+    dnsmasq va IP cua eth0 deu duoc dat theo no.
+    """
+    try:
+        with open(STATE_FLAG) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
 def _duong(ten):
     return os.path.join(_d.BOOT_DIR, ten)
 
@@ -450,33 +463,58 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
     o lan sanboot TIEP THEO).
     """
     da_bat_san = dang_bat()
+    kieu_dang_chay = kieu_dang_bat()
     if not da_bat_san and not san_sang_bat():
         return False, "Chưa đủ điều kiện (xem bảng 'Sẵn sàng PXE' bên trên)."
 
-    if kieu_boot == "mang_co_dhcp" and not _mang_that(IFACE)[0]:
-        return False, (f"Chưa đọc được địa chỉ IP thật của {IFACE} - kiểm "
-                       f"tra đã cắm dây mạng vào mạng có DHCP chưa.")
-
-    da_dung_anh_dia = False
-    if cauhinh and cauhinh.get("os_ho") == "windows":
-        from . import unattend as _u
-        ok, msg = _u.dung_dia_gpt_tu_dong(cauhinh, _dia_chi_pi_that(kieu_boot))
-        if not ok:
-            return False, f"Không dựng được ảnh đĩa cài đặt: {msg}"
-        da_dung_anh_dia = True
-
-    if da_bat_san:
-        if da_dung_anh_dia:
+    # ---- 1. Dang chay DUNG kieu cua kich ban nay: chi can dung lai anh dia
+    # (eth0 va dnsmasq da o dung trang thai cua kieu do roi, khong dung vao).
+    if da_bat_san and kieu_dang_chay == kieu_boot:
+        if cauhinh and cauhinh.get("os_ho") == "windows":
+            from . import unattend as _u
+            ok, msg = _u.dung_dia_gpt_tu_dong(cauhinh, _dia_chi_pi_that(kieu_boot))
+            if not ok:
+                return False, f"Không dựng được ảnh đĩa cài đặt: {msg}"
             return True, ("Đã cập nhật ảnh đĩa cài đặt theo kịch bản đang "
-                           "chọn. PXE vẫn đang bật, không cần khởi động lại.")
-        return True, "PXE đang bật sẵn."
+                           "chọn. PXE vẫn đang bật đúng kiểu, không cần "
+                           "khởi động lại.")
+        return True, "PXE đang bật sẵn đúng kiểu của kịch bản này."
 
-    if not _ghi_menu_ipxe(kieu_boot):
-        return False, "Không ghi được script iPXE."
-
-    ok, err = _ghi_dnsmasq_conf(kieu_boot)
-    if not ok:
-        return False, f"Không ghi được cấu hình dnsmasq: {err}"
+    # ---- 2. Khac kieu (hoac dang tat): dua eth0 ve dung trang thai cua kieu
+    # MOI TRUOC, roi moi lam nhung viec phu thuoc vao dia chi Pi.
+    #
+    # HAI LOI THAT DA GAP, ca hai deu tu cung mot goc "khong theo dung kich
+    # ban da chon" (18/09/2026, phat hien tai cho khi anh Thoai chay that):
+    #
+    # (a) Doi kieu boot ma KHONG doi gi ca: ham nay truoc day chi hoi "PXE
+    #     bat chua", bat roi la thoat som. Anh Thoai dang chay
+    #     "mang_co_dhcp" (proxyDHCP dai 192.168.110.0 cua cong ty), rut day
+    #     cam thang sang may can cai roi bam "Dung" kich ban
+    #     "mang_khong_dhcp" -> anh dia dung LAI DUNG, nhung dnsmasq VAN cau
+    #     hinh proxy tren dai cu va eth0 thi mat sach IP. Log dnsmasq:
+    #         DHCP packet received on eth0 which has no address
+    #         no address range available for DHCP request via eth0
+    #     May can cai CO hoi, Pi CO nghe, nhung khong tra loi duoc cau nao
+    #     -> treo vinh vien o "Start PXE over IPv4". Ham con bao "PXE van
+    #     dang bat, khong can khoi dong lai" = nghe nhu moi thu on.
+    #
+    # (b) Nang hon va am hon, dung o CHIEU NGUOC LAI (anh Thoai chi ra
+    #     truoc khi no kip xay ra that): anh dia TUNG duoc dung TRUOC khi
+    #     doi che do mang. Dia chi Pi nhet vao anh dia lay tu eth0 NGAY LUC
+    #     DO - tuc la dia chi cua che do CU. Doi tu "mang_khong_dhcp" sang
+    #     "mang_co_dhcp" thi anh dia se mang dia chi tinh cu 192.168.98.1,
+    #     sau do eth0 moi tra ve DHCP that (vd 192.168.110.14). dnsmasq thi
+    #     dung dia chi moi, nhung WinPE boot len lai di tim kho trien khai
+    #     o 192.168.98.1 -> "khong ket noi duoc kho trien khai", trong y
+    #     het loi mang, rat kho lan ra.
+    #
+    # SUA (cho ca hai): thu tu BAT BUOC la doi che do mang -> co dia chi Pi
+    # THAT cua che do moi -> moi dung anh dia va ghi cau hinh. Nho vay moi
+    # thu (anh dia, menu.ipxe, dnsmasq) luon cung mot dia chi, va luon dung
+    # kieu boot cua kich ban nguoi dung chon.
+    doi_kieu = da_bat_san
+    if doi_kieu:
+        tat_pxe()
 
     if kieu_boot != "mang_co_dhcp":
         # Che do tu cap IP: can chiem han eth0, giong het direct.py
@@ -487,6 +525,38 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
             _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
             return False, f"Không đặt được IP tĩnh cho {IFACE}: {out[:150]}"
         _sh(["ip", "link", "set", IFACE, "up"])
+    elif not _mang_that(IFACE)[0]:
+        # proxyDHCP bat buoc phai co IP THAT do mang khach cap. Kiem tra SAU
+        # khi da tra eth0 ve cho NetworkManager (tat_pxe o tren), khong phai
+        # truoc - neu kiem tra truoc, IP tinh con sot lai cua che do cu se
+        # lam phep kiem tra nay do nham.
+        return False, (f"Chưa đọc được địa chỉ IP thật của {IFACE} - kiểm "
+                       f"tra đã cắm dây mạng vào mạng có DHCP chưa.")
+
+    # ---- 3. Gio eth0 da dung dia chi cua kieu MOI -> dung anh dia + ghi
+    # cau hinh, tat ca deu dung chung dia chi nay.
+    dia_chi_pi = _dia_chi_pi_that(kieu_boot)
+
+    def _tra_lai_eth0():
+        if kieu_boot != "mang_co_dhcp":
+            _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
+            _sh(["nmcli", "connection", "up", NM_CONN], timeout=30)
+
+    if cauhinh and cauhinh.get("os_ho") == "windows":
+        from . import unattend as _u
+        ok, msg = _u.dung_dia_gpt_tu_dong(cauhinh, dia_chi_pi)
+        if not ok:
+            _tra_lai_eth0()
+            return False, f"Không dựng được ảnh đĩa cài đặt: {msg}"
+
+    if not _ghi_menu_ipxe(kieu_boot):
+        _tra_lai_eth0()
+        return False, "Không ghi được script iPXE."
+
+    ok, err = _ghi_dnsmasq_conf(kieu_boot)
+    if not ok:
+        _tra_lai_eth0()
+        return False, f"Không ghi được cấu hình dnsmasq: {err}"
 
     ok, out = _sh(["systemctl", "restart", DON_VI_SYSTEMD])
     if not ok:
@@ -514,7 +584,9 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
                        f"(smbd): {out_smb[:200]}")
 
     open(STATE_FLAG, "w").write(kieu_boot)
-    return True, (f"Đã bật PXE. {mo_ta_ket_noi(kieu_boot)} Vào BIOS/UEFI máy "
+    dau = ("Đã ĐỔI chế độ PXE sang kiểu mới (tắt kiểu cũ rồi bật lại)."
+           if doi_kieu else "Đã bật PXE.")
+    return True, (f"{dau} {mo_ta_ket_noi(kieu_boot)} Vào BIOS/UEFI máy "
                   "đó chọn boot qua mạng (Network Boot / PXE Boot).")
 
 
