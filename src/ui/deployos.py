@@ -4350,6 +4350,14 @@ def _tom_tat_day_du(k, esc):
             dong.append(f"<tr><td style='color:#8b93a1;white-space:nowrap;'>"
                         f"{esc(nhan)}</td><td>{gt}</td></tr>")
 
+    # Kieu boot phai la dong DAU TIEN: hai kich ban co the giong nhau y het
+    # moi thu (cung OS, cung phan mem, cung tuy chon) ma CHI khac kieu boot -
+    # dung truong hop anh Thoai dang co ("Install windows 10 - DHCP" va
+    # "Install windows 10 - khong DHCP"). Thieu dong nay thi mo tom tat ra
+    # khong the phan biet duoc 2 cai, ma chon nham kieu boot la hong ca buoi
+    # (Pi cap IP nham tren mang khach, hoac nguoc lai khong ai cap IP ca).
+    them("Kiểu boot", esc(dict((ma, t) for ma, t, _m in KIEU_BOOT).get(
+        k.get("kieu_boot"), k.get("kieu_boot") or "")))
     them("Hệ điều hành", esc(_ten_os(k)))
     them("Tên máy", esc(k.get("ten_may") or ""))
     them("Tài khoản", esc(k.get("username") or ""))
