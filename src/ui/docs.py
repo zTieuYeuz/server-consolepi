@@ -620,6 +620,152 @@ thoi gian cho len 900 giay. Mac dinh 64m thi ISO nao cung truot voi loi
 <em>413 Request Entity Too Large</em>.</p>
 """),
 
+    ("deployos", "💿 Deployment OS - cài Windows qua mạng", """
+<p>Phan LON NHAT cua Console Pi: cam day mang vao 1 may PC trong, boot qua mang
+(PXE) roi tu dong cai lai Windows + phan mem + cau hinh, khong can USB cai dat,
+khong phai go tay tung buoc. Mo hinh tham khao la <strong>MDT</strong> cua
+Microsoft, nhung dung cong cu Linux co san.</p>
+
+<h4>Ba kiểu boot - chọn đúng kiểu là xong một nửa</h4>
+<table>
+  <tr><th style="width:190px;">Kiểu</th><th>Khi nào dùng &amp; Pi làm gì</th></tr>
+  <tr><td><strong>Cắm thẳng thiết bị</strong><br><code>truc_tiep</code></td>
+      <td>Day mang cam THANG tu Pi sang may can cai. Pi tu dat IP tinh
+      <code>192.168.98.1</code> va lam DHCP day du. Chac an nhat vi khong dung
+      cham gi toi mang cua khach.</td></tr>
+  <tr><td><strong>Mạng không có DHCP</strong><br><code>mang_khong_dhcp</code></td>
+      <td>Pi va may can cai cung cam vao 1 switch RIENG. Pi cung lam DHCP day du
+      nhu tren. <strong>Canh bao:</strong> Pi se cap IP cho MOI may hoi DHCP tren
+      switch do - chi dung switch tach han khoi mang that cua khach.</td></tr>
+  <tr><td><strong>Mạng có sẵn DHCP</strong><br><code>mang_co_dhcp</code></td>
+      <td>Cam Pi vao mang cua khach da co DHCP. Pi CHI chay proxyDHCP: khong cap
+      IP, chi tra loi "file boot o dau" - khong tranh gianh voi DHCP that.</td></tr>
+</table>
+<p><strong>Doi kieu boot thi bam "Dung" lai o kich ban co kieu do</strong> - he
+thong tu tat che do cu, doi IP cua <code>eth0</code>, dung lai anh dia theo dia
+chi moi roi bat lai. Khong duoc sua tay file cau hinh dnsmasq.</p>
+
+<h4>Luồng chạy bên trong (đã kiểm chứng thật)</h4>
+<pre>May can cai bat len, chon Network Boot
+   -> dnsmasq cua Pi tra loi: BIOS lay undionly.kpxe / UEFI lay snponly.efi
+   -> iPXE chay, tu bao danh la "iPXE" qua DHCP option 77
+   -> dnsmasq tra ve dia chi script menu.ipxe qua HTTP  (khong lam buoc nay
+      se bi VONG LAP VO TAN - iPXE tu tai lai chinh no mai mai)
+   -> menu.ipxe goi `sanboot` anh dia GPT+FAT32 do Pi tu dung san
+   -> Windows Setup doc autounattend.xml trong anh dia do, cai tu dong
+   -> WinPE noi lai ve Pi qua SMB (Samba) de lay install.wim + phan mem
+   -> Sau khi vao Windows: script chay tiep, cai phan mem, bao tien do ve Pi</pre>
+
+<h4>Những chỗ hay hỏng và lý do thật</h4>
+<ul>
+  <li><strong>Treo o "Start PXE over IPv4"</strong>: Pi khong tra loi DHCP.
+      Hay gap nhat la dang chay SAI kieu boot (vd dang o <code>mang_co_dhcp</code>
+      nhung da rut day khoi mang khach nen <code>eth0</code> mat IP). Xem
+      <em>Deployment OS &gt; Cai dat</em> co bao dung kieu khong.</li>
+  <li><strong>UEFI dung <code>snponly.efi</code>, KHONG dung <code>ipxe.efi</code></strong>:
+      ban ipxe.efi mang driver mang rieng, tai duoc qua TFTP nhung chay la crash
+      ngay roi boot vong tron (da kiem chung tren VMware that).</li>
+  <li><strong>Khong duoc nhet autounattend.xml vao trong boot.wim</strong>: moi
+      cach (wimlib, DISM mount/commit) deu lam boot.wim mat kha nang boot
+      (<em>0xc000000f</em>) du cong cu bao thanh cong. Vi vay dung anh dia
+      GPT+FAT32 rieng.</li>
+  <li><strong>Loi SMB "System error 53" luc cai lai lan 2</strong>: Pi con giu
+      phien SMB cu cua chinh may do o trang thai ESTABLISHED. He thong tu goi
+      <code>smbcontrol smbd kill-client-ip</code> truoc moi lan bat PXE.</li>
+</ul>
+"""),
+
+    ("tachiso", "📀 Tải ISO lên, Pi tự tách boot.wim / install.wim", """
+<p>Truoc day muon them 1 he dieu hanh phai TU tay mount ISO tren mot may Windows,
+vao thu muc <code>sources\\</code> chep rieng 2 file ra roi tai len tung file.
+Ngoai hien truong khong phai luc nao cung co may Windows - ma ISO thi luon co.</p>
+<p>Nay vao <strong>Tai nguyen &gt; He dieu hanh</strong>, tao ten may roi chon
+<em>"Toi co file ISO Windows"</em> va tai thang ISO len. Pi lam 6 buoc, co thanh
+tien trinh theo % THAT:</p>
+<ol>
+  <li>Doc muc luc ISO bang <code>7z l -slt</code> - biet chinh xac 2 file can nam
+      dau va nang bao nhieu byte (KHONG mount, khong can quyen dac biet).</li>
+  <li>Kiem tra du dung luong trong (can bang tong 2 file + 1GB tho).</li>
+  <li>Tach <code>boot.wim</code>.</li>
+  <li>Tach <code>install.wim</code> - lau nhat. % bam theo kich thuoc file dang
+      duoc ghi so voi so trong muc luc, khong doan theo thoi gian.</li>
+  <li><strong>Kiem chung 3 lop</strong> truoc khi dam xoa gi: file khac rong;
+      kich thuoc khop TUNG BYTE voi muc luc ISO; va <code>wiminfo</code> doc duoc
+      muc luc ben trong (chung minh la WIM that chu khong phai dong byte dung
+      kich thuoc nhung hong ruot).</li>
+  <li>Chi khi CA BA dat moi xoa ISO de lay lai dia.</li>
+</ol>
+<p><strong>Neu kiem chung truot</strong>: ISO duoc GIU NGUYEN de tach lai, dong
+thoi 2 file tach hong bi XOA di. Ly do phai xoa: cac cho khac trong du an chi
+kiem tra "file co ton tai khong", de lai thi giao dien bao xanh "Da co" trong khi
+thuc te khong boot duoc - va chi vo ra luc dang cai that cho khach.</p>
+<p>Chi tach dung 2 file can, khong bung ca ISO (bung het ton them vai GB vo ich).</p>
+"""),
+
+    ("khotrungtam", "🏬 Kho lưu trữ trung tâm", """
+<p>May chu rieng (du an <code>kho-console-pi</code>) luu san phan mem/script dung
+chung cho MOI Console Pi ngoai hien truong - khong phai mang USB di khap noi nua.</p>
+<ul>
+  <li>Vao <strong>Deployment OS &gt; Kho trung tam</strong>, dien dia chi kho va
+      <strong>token rieng cua may nay</strong> (sinh o trang quan tri kho, muc
+      Token). Token khac han mat khau dang nhap web cua kho - may goi API dung
+      token, nguoi dung web dung mat khau.</li>
+  <li>Tim kiem go khong dau va sai chinh ta van ra (dung chung thuat toan voi
+      bang tra tham so).</li>
+  <li>Bam <em>Tai ve</em>: file ve thang kho cuc bo cua Pi -
+      <code>deploy/apps</code> (phan mem) hoac <code>deploy/scripts</code>.</li>
+  <li><strong>Phan mem tai ve keo theo luon tham so cai im lang</strong> - ghi
+      thang vao <code>_thongtin.json</code>, dung duoc ngay trong kich ban ma
+      khong phai go tay lai.</li>
+  <li>Chi nhan dung duoi file ma Console Pi dung duoc (.msi/.exe cho phan mem,
+      .bat/.ps1/.cmd cho script) - tu choi ro rang thay vi tao file mo coi.</li>
+  <li>Cau hinh (dia chi + token) nam o <code>/var/lib/console-pi/kho-trungtam.json</code>,
+      quyen 600, khong nam trong ma nguon.</li>
+</ul>
+"""),
+
+    ("baotri", "🧹 Dung lượng thẻ nhớ và sao lưu cấu hình", """
+<p>Hai cong cu o trang <strong>Cai dat chung</strong>.</p>
+<h4>Dung lượng thẻ nhớ</h4>
+<ul>
+  <li>Thanh do doi mau theo muc do day: vang tu 80%, do tu 90%.</li>
+  <li>Bang liet ke tung muc du lieu dang chiem bao nhieu, bam vao la sang thang
+      trang de xoa bot.</li>
+  <li>Don duoc 3 loai rac AN TOAN (xoa khong mat du lieu nao cua nguoi dung):
+      goi cai dat apt da tai, nhat ky journald cu (giu 50MB gan nhat), va
+      <strong>file <code>.part</code> bo do</strong> - sinh ra moi lan tai file
+      lon bi dut giua chung, co the nang vai GB ma khong bao gio dung lai.</li>
+</ul>
+<h4>Sao lưu cấu hình</h4>
+<ul>
+  <li>Tai ve 1 file <code>.tar.gz</code> nho (vai KB) chua: kich ban cai dat,
+      bang tra tham so, thu vien lenh, ket noi kho trung tam, tham so cai im lang
+      cua tung phan mem.</li>
+  <li><strong>Khong</strong> chua anh Windows / bo cai phan mem (15GB) - chung tai
+      lai duoc tu nguon goc, con kich ban thi khong.</li>
+  <li>File nay CO chua mat khau trong kich ban va token kho - cat noi kin dao.</li>
+  <li>Khi nap lai, moi duong dan trong goi deu bi kiem tra chong "zip slip"
+      (chan duong tuyet doi, chan <code>..</code>, chan muc la) - da thu tan cong
+      that bang goi doc hai va bi chan sach.</li>
+</ul>
+"""),
+
+    ("tiendocai", "📊 Theo dõi tiến trình cài đặt", """
+<p>May dang duoc cai tu BAO NGUOC ve Pi sau moi buoc, thay vi phai dung nhin man
+hinh may do doan xem toi dau. Xem o <strong>Deployment OS &gt; Tien trinh</strong>,
+bang tu cap nhat moi 3 giay.</p>
+<ul>
+  <li>May dich goi <code>POST /api/tiendo/*</code> - cac duong nay KHONG can dang
+      nhap (may dang cai chua co gi de dang nhap), nhung chi nhan du lieu bao cao,
+      khong lam duoc gi khac.</li>
+  <li>Toan bo lenh sau khi dang nhap Windows gom trong 1 script duy nhat
+      (<code>tien-trinh.ps1</code>) co cua so tien trinh that, va co
+      <strong>gioi han thoi gian moi buoc 45 phut</strong> - buoc nao treo thi bi
+      cat va di tiep, khong lam ket ca lan cai (bai hoc tu vu Office 365 treo
+      45 phut o man hinh "Getting ready").</li>
+</ul>
+"""),
+
     ("camthang", "🔌 Cắm thẳng thiết bị (iLO / iDRAC)", """
 <p>Tinh huong: ra hien truong, may chu tat lim, chi con cong quan ly iLO. Khong co
 switch, khong co DHCP.</p>

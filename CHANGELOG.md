@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.5.0
+
+Vong lam viec dem 18-19/09/2026 theo danh sach anh Thoai giao.
+
+**Giao dien lam lai toan bo** (anh Thoai chon tone "hien dai ky thuat"):
+chuyen tu xanh la sang nen toi + cyan, khai bao mot cho bang bien CSS.
+Mau gio CO Y NGHIA thay vi trang tri: cyan = thao tac/dang chon, xanh la
+= CHI danh cho trang thai tot, vang = canh bao, do = loi hoac hanh dong
+pha huy. Nut chia 3 cap ro rang (chinh: nen dac; phu: vien mo - dung o 57
+cho nen day la thay doi lam trang do roi nhat; nguy hiem: vien do). Man
+PC tu dong gon lai, man cam ung van giu nut >=44px.
+*Chung minh khong vo logic:* tach toan bo phan Python ngoai chuoi CSS o
+ban cu va ban moi ra so - giong het 364/364 dong; tai lai 12 trang that
+va doi chieu HTML - 10 trang giong tung byte, 2 trang chi lech o so lieu
+song (CPU/RAM) va log vua xoay vong.
+
+**Tai thang file ISO Windows len, Pi tu tach** boot.wim/install.wim
+(truoc day phai muon mot may Windows de mount ISO chep tay 2 file). Sau
+khi tach co BA lop kiem chung truoc khi dam xoa ISO: file khac rong,
+kich thuoc khop tung byte voi muc luc ISO, va wimlib doc duoc ruot file.
+Truot bat ky lop nao thi giu nguyen ISO va xoa 2 file hong di (de lai se
+lam giao dien bao xanh "Da co" trong khi thuc te khong boot duoc).
+
+**bat_pxe() luon di dung kieu boot cua kich ban duoc chon.** Truoc day
+doi kieu boot trong khi PXE dang bat thi khong doi gi ca - dung nguyen
+nhan lam may can cai treo o "Start PXE over IPv4". Nang hon: anh dia tung
+duoc dung TRUOC khi doi che do mang nen nhet nham dia chi Pi cu vao, di
+sang che do khac la WinPE khong tim thay kho trien khai.
+
+**Popup thay cho khoi chu dai**: bang tra tham so cai im lang va phan
+giai thich "ung dung nhieu file" gio nam trong hop thoai co nut Dong,
+khong con chan mat danh sach that. Them o tim phan mem. Trang "Tien
+trinh" gio co thanh tab Deployment OS (truoc day vao la cut duong).
+
+**Hai cong cu bao tri moi** o trang Cai dat: xem dung luong the nho theo
+tung muc kem don 3 loai rac an toan (ke ca file .part bo do - loai rac it
+ai nghi toi ma co the nang vai GB), va sao luu/nap lai cau hinh qua file
+.tar.gz nho vai KB (co chong zip slip, da thu tan cong that).
+
+**Sua loi nginx lam tai file lon len bao 502 Bad Gateway**: khoi tat dem
+bo sot dung duong /deployos/os/<id>/len nen anh Windows 5GB bi dem 5GB ra
+dia truoc roi het gio 5 phut. Da phu ca os/drivers/ungdung va duong tai
+ISO moi.
+
+**Tai lieu**: them 5 muc con thieu - Deployment OS (phan lon nhat cua du
+an ma truoc gio khong he co tai lieu), tach ISO, kho luu tru trung tam,
+bao tri dung luong/sao luu, va theo doi tien trinh cai dat.
+
 ## 0.4.52
 
 **Sua loi that su khien "Bat PXE" luon that bai** - nho thong bao loi
