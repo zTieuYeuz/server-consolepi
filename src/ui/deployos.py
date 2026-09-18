@@ -157,6 +157,17 @@ def _bao_dam_thu_muc():
         pass
 
 
+def _bo_dau_py(s):
+    """
+    Bo dau tieng Viet de tim kiem khong phu thuoc dau. Goi thang ham da
+    kiem chung tu ui/thamso.py thay vi viet lai lan hai - go tieng Viet co
+    dau tren man hinh cam ung rat cham, nen moi o tim trong du an deu phai
+    tim duoc bang chu khong dau.
+    """
+    from . import thamso as _ts
+    return _ts.bo_dau(s)
+
+
 def ten_an_toan(name):
     """
     Chi giu ten file tran, bo moi thanh phan duong dan (chan '..' va duong
@@ -1293,6 +1304,57 @@ def _phan_vung_mac_dinh(os_ho):
 
 
 # ==================================================================== giao dien
+# ------------------------------------------------------------ khung tab
+def tabs_deployos(chinh, phu=""):
+    """
+    Thanh tab chinh + tab phu, dung chung cho moi trang cua muc nay.
+
+    CAU TRUC CU (anh Thoai chi ra la SAI): "Kich ban" nam AN duoi 2 noi
+    khac nhau ("Boot OS > Kich ban" VA "Console boot > 2.4 Kich ban")
+    - kiem chung that: ca 2 cung doc/ghi CHUNG 1 du lieu
+    (danh_sach_kichban()), chi la trung lap gay roi, khong phai hong du
+    lieu. SUA (mo hinh MDT - "Task Sequences" la 1 nut GOC rieng, ngang
+    hang voi "Operating Systems"/"Applications", khong nam lot duoi
+    muc nao ca): dua "Kich ban" thanh 1 TAB GOC rieng, gop moi "tai
+    nguyen" (He dieu hanh, Phan mem, Driver, Script, File boot) vao 1
+    tab GOC khac.
+    """
+    tab_chinh = [
+        ("kichban", "Kịch bản", "/deployos/kichban"),
+        ("tainguyen", "Tài nguyên", "/deployos/os"),
+        ("thamso", "Tham số cài đặt", "/deployos/thamso"),
+        ("kho", "Kho trung tâm", "/deployos/kho"),
+        ("tiendo", "Tiến trình", "/deployos/tiendo"),
+        ("caidat", "Cài đặt", "/deployos/caidat"),
+    ]
+    phu_theo_chinh = {
+        "tainguyen": [
+            ("os", "Hệ điều hành", "/deployos/os"),
+            ("apps", "Phần mềm", "/deployos/console/apps"),
+            ("ungdung", "Ứng dụng (nhiều file)", "/deployos/ungdung"),
+            ("drivers", "Driver", "/deployos/drivers"),
+            ("scripts", "Script", "/deployos/console/scripts"),
+            ("file", "File boot", "/deployos/console"),
+        ],
+        "caidat": [
+            ("pxe", "Bật / Tắt PXE", "/deployos/caidat"),
+            ("hatang", "Kiểm tra hạ tầng", "/deployos/caidat/hatang"),
+        ],
+    }
+    h = '<div class="dep-tabs">'
+    for ma, nhan, href in tab_chinh:
+        h += (f'<a href="{href}" class="dep-tab{" on" if ma == chinh else ""}">'
+              f'{nhan}</a>')
+    h += "</div>"
+    if phu:
+        h += '<div class="dep-tabs sub">'
+        for ma, nhan, href in phu_theo_chinh.get(chinh, []):
+            h += (f'<a href="{href}" class="dep-tab{" on" if ma == phu else ""}">'
+                  f'{nhan}</a>')
+        h += "</div>"
+    return h
+
+
 def register_deployos(app):
     from flask import (request, redirect, send_from_directory, abort, jsonify,
                        flash, get_flashed_messages)
@@ -1401,8 +1463,17 @@ def register_deployos(app):
         """
         loai = request.args.get("loai", "")
         ten = ten_an_toan(request.args.get("ten", ""))
-        thu_muc = {"file": BOOT_DIR, "apps": APPS_DIR,
-                   "scripts": SCRIPTS_DIR}.get(loai)
+        # Thu muc he dieu hanh la DONG (moi os_id mot thu muc) nen khong nam
+        # trong bang tra co dinh ben duoi - form gui kem "os_id" rieng.
+        # Thieu nhanh nay thi thanh tien trinh cua trang He dieu hanh (ke ca
+        # duong tai ISO 5GB moi them) luon bao "da ghi 0" du may dang ghi
+        # binh thuong - nhin y het bi treo.
+        if loai in ("os", "os-iso"):
+            os_id = ten_an_toan(request.args.get("os_id", ""))
+            thu_muc = os.path.join(OS_DIR, os_id) if os_id else None
+        else:
+            thu_muc = {"file": BOOT_DIR, "apps": APPS_DIR,
+                       "scripts": SCRIPTS_DIR}.get(loai)
         if not thu_muc or not ten:
             return jsonify({"da_ghi": 0, "xong": False})
         p = os.path.join(thu_muc, ten + ".part")
@@ -1413,55 +1484,7 @@ def register_deployos(app):
             xong = os.path.isfile(os.path.join(thu_muc, ten))
             return jsonify({"da_ghi": 0, "xong": xong})
 
-    # ------------------------------------------------------------ khung tab
-    def _tabs(chinh, phu=""):
-        """
-        Thanh tab chinh + tab phu, dung chung cho moi trang cua muc nay.
-
-        CAU TRUC CU (anh Thoai chi ra la SAI): "Kich ban" nam AN duoi 2 noi
-        khac nhau ("Boot OS > Kich ban" VA "Console boot > 2.4 Kich ban")
-        - kiem chung that: ca 2 cung doc/ghi CHUNG 1 du lieu
-        (danh_sach_kichban()), chi la trung lap gay roi, khong phai hong du
-        lieu. SUA (mo hinh MDT - "Task Sequences" la 1 nut GOC rieng, ngang
-        hang voi "Operating Systems"/"Applications", khong nam lot duoi
-        muc nao ca): dua "Kich ban" thanh 1 TAB GOC rieng, gop moi "tai
-        nguyen" (He dieu hanh, Phan mem, Driver, Script, File boot) vao 1
-        tab GOC khac.
-        """
-        tab_chinh = [
-            ("kichban", "Kịch bản", "/deployos/kichban"),
-            ("tainguyen", "Tài nguyên", "/deployos/os"),
-            ("thamso", "Tham số cài đặt", "/deployos/thamso"),
-            ("kho", "Kho trung tâm", "/deployos/kho"),
-            ("tiendo", "Tiến trình", "/deployos/tiendo"),
-            ("caidat", "Cài đặt", "/deployos/caidat"),
-        ]
-        phu_theo_chinh = {
-            "tainguyen": [
-                ("os", "Hệ điều hành", "/deployos/os"),
-                ("apps", "Phần mềm", "/deployos/console/apps"),
-                ("ungdung", "Ứng dụng (nhiều file)", "/deployos/ungdung"),
-                ("drivers", "Driver", "/deployos/drivers"),
-                ("scripts", "Script", "/deployos/console/scripts"),
-                ("file", "File boot", "/deployos/console"),
-            ],
-            "caidat": [
-                ("pxe", "Bật / Tắt PXE", "/deployos/caidat"),
-                ("hatang", "Kiểm tra hạ tầng", "/deployos/caidat/hatang"),
-            ],
-        }
-        h = '<div class="dep-tabs">'
-        for ma, nhan, href in tab_chinh:
-            h += (f'<a href="{href}" class="dep-tab{" on" if ma == chinh else ""}">'
-                  f'{nhan}</a>')
-        h += "</div>"
-        if phu:
-            h += '<div class="dep-tabs sub">'
-            for ma, nhan, href in phu_theo_chinh.get(chinh, []):
-                h += (f'<a href="{href}" class="dep-tab{" on" if ma == phu else ""}">'
-                      f'{nhan}</a>')
-            h += "</div>"
-        return h
+    _tabs = tabs_deployos      # dung lai ten cu cho ~40 cho da goi
 
     CSS = """
     /* ---- Khoi bam-de-mo (gap lai cho do dai) ----
@@ -1633,6 +1656,7 @@ def register_deployos(app):
         if (!loai) return;
         var q = new XMLHttpRequest();
         q.open("GET", "/deployos/tien-do?loai=" + encodeURIComponent(loai) +
+                      "&os_id=" + encodeURIComponent(form.getAttribute("data-os") || "") +
                       "&ten=" + encodeURIComponent(file.name), true);
         q.onload = function () {
           try {
@@ -3210,7 +3234,8 @@ def register_deployos(app):
             </div>
             <form method="POST" action="/deployos/os/{_esc(os_id)}/len-iso"
                   enctype="multipart/form-data" class="form-tai-len"
-                  data-loai="os-iso" data-busy="Đang tải ISO lên...">
+                  data-loai="os-iso" data-os="{_esc(os_id)}"
+                  data-busy="Đang tải ISO lên...">
               <input type="file" name="file" accept=".iso" required>
               <button type="submit">Tải ISO lên rồi tách tự động</button>
             </form>
@@ -3231,7 +3256,8 @@ def register_deployos(app):
               sẽ mất vài phút.</p>
             <form method="POST" action="/deployos/os/{_esc(os_id)}/len"
                   enctype="multipart/form-data" class="form-tai-len"
-                  data-loai="os" data-busy="Đang tải lên...">
+                  data-loai="os" data-os="{_esc(os_id)}"
+                  data-busy="Đang tải lên...">
               <input type="file" name="file" accept=".wim" required>
               <button type="submit">Tải lên</button>
             </form>
@@ -4022,22 +4048,43 @@ def register_deployos(app):
             </table></div>""" if ds else
             '<p style="color:#8b93a1;">Chưa có ứng dụng nào.</p>')
         body = (_tabs("tainguyen", "ungdung") + _msg(msg, ok) + f"""
-        <div class="card">
-          <h3>Khác gì với "Phần mềm"?</h3>
-          <table class="tt-bang">
-            <tr><td style="width:150px;">Phần mềm</td>
-                <td>1 file .msi/.exe duy nhất, tự suy tham số cài theo đuôi
-                file. Hợp cho bộ cài đơn giản (7-Zip, TeamViewer...).</td></tr>
-            <tr><td>Ứng dụng (đây)</td>
-                <td>1 <strong>thư mục</strong> - chứa bao nhiêu file/thư mục
-                con cũng được - kèm 1 <strong>dòng lệnh cài tự do</strong> do
-                anh tự gõ. Đúng mô hình "Application with source files" của
-                MDT. Dùng cho bộ cài nhiều file như <strong>Office 365</strong>
-                (Office Deployment Tool): tải bộ Office đã tải sẵn bằng
-                <code>setup.exe /download</code> lên đây (nén .zip), đặt lệnh
-                cài là <code>setup.exe /configure configuration.xml</code>.</td></tr>
-          </table>
+        <!-- Phan giai thich chuyen vao HOP THOAI: no dai gan nua man hinh ma
+             chi can doc DUNG MOT LAN luc dau lam quen, nhung lai nam chan
+             ngay tren danh sach ung dung that - moi lan vao trang deu phai
+             cuon qua no. Nay thanh 1 nut, ai can thi bam. -->
+        <div class="row" style="margin:0 0 14px;align-items:center;">
+          <button type="button" class="gray" data-mo-hop="hop-giai-thich">
+            Khác gì với mục &quot;Phần mềm&quot;?</button>
+          <span class="hint">Bấm để xem giải thích và ví dụ Office 365.</span>
         </div>
+        <dialog id="hop-giai-thich" style="border:1px solid #2B3746;border-radius:12px;
+                background:#141A23;color:#E3E8EF;padding:0;max-width:720px;width:94vw;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;
+                      border-bottom:1px solid #1F2733;">
+            <strong style="flex:1;font-size:16px;">&quot;Ứng dụng&quot; khác &quot;Phần mềm&quot; chỗ nào?</strong>
+            <button type="button" class="gray small" data-dong-hop>Đóng</button>
+          </div>
+          <div style="padding:16px 20px;max-height:66vh;overflow:auto;">
+            <table class="tt-bang">
+              <tr><td style="width:150px;">Phần mềm</td>
+                  <td>1 file .msi/.exe duy nhất, tự suy tham số cài theo đuôi
+                  file. Hợp cho bộ cài đơn giản (7-Zip, TeamViewer...).</td></tr>
+              <tr><td>Ứng dụng (đây)</td>
+                  <td>1 <strong>thư mục</strong> - chứa bao nhiêu file/thư mục
+                  con cũng được - kèm 1 <strong>dòng lệnh cài tự do</strong> do
+                  anh tự gõ. Đúng mô hình &quot;Application with source files&quot; của
+                  MDT.</td></tr>
+            </table>
+            <div class="msg info" style="margin-bottom:0;">
+              <strong>Ví dụ hay dùng nhất - Office 365:</strong> trên một máy
+              Windows, dùng Office Deployment Tool chạy
+              <code>setup.exe /download configuration.xml</code> để tải sẵn bộ
+              cài về. Nén cả thư mục đó thành <code>.zip</code>, tải lên đây,
+              rồi đặt lệnh cài là
+              <code>setup.exe /configure configuration.xml</code>.
+            </div>
+          </div>
+        </dialog>
         <div class="card">
           <h3>Tạo ứng dụng mới</h3>
           <form method="POST" action="/deployos/ungdung/tao">
@@ -4334,24 +4381,38 @@ def register_deployos(app):
             f'<option value="{_esc(gt)}">{_esc(mo_ta)}</option>'
             for gt, mo_ta in GOI_Y_THAM_SO) + """</datalist>
 
-        <div class="card">
-          <h3>Tra cứu nhanh: tham số cài im lặng theo từng loại bộ cài</h3>
-          <p style="color:#8b93a1;font-size:12.5px;margin:0 0 10px;">
-            Mỗi hãng phần mềm dùng một bộ đóng gói khác nhau nên tham số
-            khác nhau - KHÔNG có tham số nào dùng cho tất cả. Cách nhận
-            biết nhanh: bấm chuột phải file .exe &rarr; Properties &rarr;
-            tab Details, xem mục "Original filename"/"Product name". Nếu
-            không rõ, chạy thử file với tham số <code>/?</code> trên 1 máy
-            bất kỳ - phần lớn bộ cài sẽ hiện danh sách tham số.</p>
-          <div class="tbl-scroll"><table>
-            <tr><th style="width:210px;">Tham số</th><th>Dùng cho</th></tr>""" + "".join(
+        <!-- Bang tra cuu nam trong HOP THOAI (the <dialog> chinh chu cua
+             trinh duyet: tu co lop phu mo, bam Esc la dong, khong can thu
+             vien ngoai - Pi mang di hien truong co the khong co mang).
+             Truoc day bang nay trai thang ra trang, chiem gan nua man hinh
+             va day danh sach phan mem that xuong duoi - anh Thoai phai cuon
+             qua no moi lan vao trang du chi thinh thoang can tra. -->
+        <dialog id="hop-tra-cuu" style="border:1px solid #2B3746;border-radius:12px;
+                background:#141A23;color:#E3E8EF;padding:0;max-width:760px;width:94vw;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;
+                      border-bottom:1px solid #1F2733;position:sticky;top:0;
+                      background:#141A23;">
+            <strong style="flex:1;font-size:16px;">Tra tham số cài im lặng theo loại bộ cài</strong>
+            <button type="button" class="gray small" data-dong-hop>Đóng</button>
+          </div>
+          <div style="padding:16px 20px;max-height:66vh;overflow:auto;">
+            <p class="hint" style="margin:0 0 12px;">
+              Mỗi hãng dùng một bộ đóng gói khác nhau nên tham số khác nhau -
+              KHÔNG có tham số nào dùng chung cho tất cả. Cách nhận biết
+              nhanh: bấm chuột phải file .exe &rarr; Properties &rarr; tab
+              Details, xem "Original filename"/"Product name". Nếu không rõ,
+              chạy file với tham số <code>/?</code> trên một máy bất kỳ -
+              phần lớn bộ cài sẽ hiện danh sách tham số.</p>
+            <div class="tbl-scroll"><table>
+              <tr><th style="width:230px;">Tham số</th><th>Dùng cho</th></tr>""" + "".join(
             f'<tr><td><code>{_esc(gt)}</code></td><td>{_esc(mo_ta)}</td></tr>'
             for gt, mo_ta in GOI_Y_THAM_SO) + """
-          </table></div>
-          <p style="color:#8b93a1;font-size:12.5px;margin:10px 0 0;">
-            Ô điền tham số bên dưới có sẵn gợi ý - bấm vào ô đó sẽ hiện
-            danh sách này để chọn, không phải gõ tay.</p>
-        </div>"""
+            </table></div>
+            <p class="hint" style="margin:12px 0 0;">
+              Ô điền tham số ở bảng phần mềm cũng có sẵn gợi ý này - bấm vào
+              ô đó là hiện ra chọn, không phải gõ tay.</p>
+          </div>
+        </dialog>"""
 
         if ds:
             hang = ""
@@ -4359,7 +4420,7 @@ def register_deployos(app):
                 goi_y = ("msiexec /i ... /quiet /norestart (mac dinh)"
                          if a["la_msi"] else "vd: /S hoac /verysilent")
                 hang += f"""
-                <tr>
+                <tr data-ten="{_esc(_bo_dau_py(a['ten']))}">
                   <td><strong>{_esc(a['ten'])}</strong><br>
                       <small style="color:#8b93a1;">{co_kich_thuoc(a['cd'])} &middot; {_esc(a['ngay'])}</small></td>
                   <td>
@@ -4381,21 +4442,69 @@ def register_deployos(app):
                   </td>
                 </tr>"""
             bang = f"""
-            <div class="tbl-scroll"><table>
-              <tr><th>Phần mềm</th><th style="width:340px;">Tham số cài im lặng</th>
-                  <th style="width:180px;">Thao tác</th></tr>
-              {hang}
-            </table></div>"""
+            <div class="tbl-scroll"><table id="bang-apps">
+              <thead><tr><th>Phần mềm</th><th style="width:340px;">Tham số cài im lặng</th>
+                  <th style="width:180px;">Thao tác</th></tr></thead>
+              <tbody>{hang}</tbody>
+            </table></div>
+            <div id="apps-khong-thay" class="hint" hidden
+                 style="padding:12px 2px;"></div>"""
         else:
             bang = '<p style="color:#8b93a1;">Chưa có phần mềm nào.</p>'
 
+        thanh_cong_cu = f"""
+        <div class="row" style="margin:0 0 12px;align-items:center;">
+          <input type="search" id="tim-app" autocomplete="off"
+                 placeholder="Tìm phần mềm... (gõ không dấu cũng được)"
+                 style="flex:1;min-width:220px;max-width:420px;">
+          <button type="button" class="gray" data-mo-hop="hop-tra-cuu">
+            Tra cứu tham số cài im lặng</button>
+          <span id="dem-app" class="hint"></span>
+        </div>"""
+
         body = (_tabs("tainguyen", "apps") + _msg(msg, ok) +
                 _khoi_tai_len("/deployos/console/apps/len", "phan mem", EXT_APP, ghi_chu, "apps") +
-                f"<h2>Phần mềm đang có ({len(ds)})</h2>" + bang +
+                f"<h2>Phần mềm đang có ({len(ds)})</h2>" + thanh_cong_cu + bang +
                 """
                 <div class="msg info">Các file này KHÔNG bao giờ được chạy trên
                 chính Console Pi - Pi chỉ lưu và gửi chúng cho máy đang được
-                cài lại tải về.</div>""")
+                cài lại tải về.</div>
+                <script>
+                (function() {
+                  // Hop thoai tra cuu do bo xu ly dung chung trong
+                  // dashboard.js lo (data-mo-hop / data-dong-hop) - o day
+                  // chi con viec loc danh sach.
+                  // --- O tim phan mem ---
+                  var o = document.getElementById('tim-app');
+                  var bang = document.getElementById('bang-apps');
+                  var dem = document.getElementById('dem-app');
+                  var trong = document.getElementById('apps-khong-thay');
+                  if (!o || !bang) return;
+                  function boDau(s) {
+                    return (s || '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+                      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                      .toLowerCase().trim();
+                  }
+                  function loc() {
+                    var q = boDau(o.value);
+                    var hang = bang.tBodies[0].rows, hien = 0;
+                    for (var i = 0; i < hang.length; i++) {
+                      var t = hang[i].getAttribute('data-ten') || '';
+                      var khop = !q || t.indexOf(q) !== -1;
+                      hang[i].hidden = !khop;
+                      if (khop) hien++;
+                    }
+                    if (dem) dem.textContent = q ? (hien + '/' + hang.length + ' phần mềm')
+                                                 : (hang.length + ' phần mềm');
+                    if (trong) {
+                      trong.hidden = hien > 0;
+                      trong.textContent = 'Không có phần mềm nào khớp "' + o.value + '".';
+                    }
+                  }
+                  o.addEventListener('input', loc);
+                  loc();
+                })();
+                </script>""")
         return _trang(body, "Deployment OS", "2.2 - Phan mem")
 
     @app.route("/deployos/console/apps/len", methods=["POST"])

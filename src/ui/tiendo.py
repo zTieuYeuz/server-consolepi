@@ -282,7 +282,17 @@ def register_tiendo(app):
 
     @app.route("/deployos/tiendo")
     def deployos_tiendo():
-        body = f"""
+        # Thanh tab cua muc Deployment OS.
+        #
+        # LOI THAT (anh Thoai bao 19/09/2026: "phan tien trinh nhan vo thi
+        # khong co nut quay ve trang chu deployment os"): trang nay dung
+        # render_page THANG chu khong qua _trang() cua ui/deployos.py, nen
+        # no khong he co thanh tab - vao roi la cut duong, phai bam menu
+        # ben trai moi ra duoc. Nay dung chung ham tabs_deployos() nen no
+        # giong het moi trang khac cua muc nay: khong chi quay ve duoc ma
+        # con nhay thang sang bat ky tab nao.
+        from .deployos import tabs_deployos
+        body = tabs_deployos("tiendo") + f"""
         <p style="color:#8b93a1;font-size:13.5px;margin:0 0 14px;">
           Máy đang cài tự báo về đây sau mỗi bước. Bảng tự cập nhật, không
           cần bấm làm mới.</p>

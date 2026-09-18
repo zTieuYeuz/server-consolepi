@@ -356,6 +356,23 @@ code { font-family:ui-monospace, monospace; background:rgba(56,189,248,.09);
 .row { display:flex; gap:11px; flex-wrap:wrap; align-items:flex-end; }
 .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(255px,1fr)); gap:14px; }
 
+/* ---- Thanh tab cua muc Deployment OS ----
+   De o day (khung chung) thay vi trong rieng ui/deployos.py: trang "Tien
+   trinh" (ui/tiendo.py) la mot trang RIENG nhung van thuoc muc Deployment
+   OS - truoc day no khong lay duoc CSS nay nen KHONG CO thanh tab nao ca,
+   vao roi khong co duong quay lai (anh Thoai bao dung cho nay). */
+.dep-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.dep-tabs.sub { margin-top:-4px; margin-bottom:18px; }
+.dep-tab { padding:10px 16px; min-height:44px; display:inline-flex;
+  align-items:center; background:var(--the); border:1px solid var(--vien);
+  border-radius:8px; color:var(--chu-mo); font-size:14px;
+  transition:background .12s, color .12s, border-color .12s; }
+.dep-tab:hover { background:var(--the-noi); color:var(--chu); }
+.dep-tab:active { transform:scale(.97); }
+.dep-tab.on { background:var(--nhan-mo); border-color:var(--nhan);
+  color:var(--nhan); font-weight:600; }
+.dep-tabs.sub .dep-tab { padding:8px 13px; min-height:38px; font-size:13px; }
+
 /* ---- Cac lop chu dung rai rac trong cac trang cong cu mang ---- */
 .hint { color:var(--chu-mo); font-size:13px; }
 .ok-txt  { color:var(--xanh); font-weight:600; }

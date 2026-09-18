@@ -124,3 +124,53 @@
     }
   });
 })();
+
+/* ===================================================================
+   HOP THOAI DUNG CHUNG (popup)
+   ===================================================================
+   Anh Thoai yeu cau 19/09/2026: nhung khoi giai thich / bang tra cuu dai
+   khong nen trai thang ra trang (chan mat danh sach that, moi lan vao deu
+   phai cuon qua), ma nen thanh 1 nut - bam moi hien, co nut Dong.
+
+   Dat o day thay vi viet lai JS trong tung trang: moi trang chi can khai
+   bao HTML, khong can mang theo doan script rieng - them popup moi sau nay
+   la mien phi.
+
+   Cach dung trong HTML:
+       <button data-mo-hop="id-cua-dialog">Mo</button>
+       <dialog id="id-cua-dialog">
+         <button data-dong-hop>Dong</button>
+       </dialog>
+
+   Dung the <dialog> chinh chu cua trinh duyet: tu co lop phu mo, tu bat
+   phim Esc, tu khoa tieu diem ben trong - khong can thu vien ngoai (Pi
+   mang di hien truong co the khong co mang). */
+(function () {
+  function mo(hop) {
+    if (!hop) return;
+    if (hop.showModal) hop.showModal(); else hop.setAttribute("open", "");
+  }
+  function dong(hop) {
+    if (!hop) return;
+    if (hop.close) hop.close(); else hop.removeAttribute("open");
+  }
+
+  document.addEventListener("click", function (e) {
+    var nutMo = e.target.closest ? e.target.closest("[data-mo-hop]") : null;
+    if (nutMo) {
+      e.preventDefault();
+      mo(document.getElementById(nutMo.getAttribute("data-mo-hop")));
+      return;
+    }
+    var nutDong = e.target.closest ? e.target.closest("[data-dong-hop]") : null;
+    if (nutDong) {
+      e.preventDefault();
+      dong(nutDong.closest("dialog"));
+      return;
+    }
+    /* Bam ra vung toi ben ngoai cung dong - thoi quen nguoi dung mong doi.
+       Bam TRUNG chinh the <dialog> nghia la bam vao lop phu, vi noi dung
+       that nam trong cac the con ben trong no. */
+    if (e.target && e.target.tagName === "DIALOG") dong(e.target);
+  });
+})();
