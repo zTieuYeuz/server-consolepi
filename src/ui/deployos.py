@@ -2881,7 +2881,8 @@ def register_deployos(app):
             dia_chi_that = _pxe._dia_chi_pi_that(kieu_dang_chay)
             trang_thai = f"""
             <div class="msg ok">PXE đang <strong>BẬT</strong> trên cổng
-              {_pxe.IFACE} &mdash; Pi là {_esc(dia_chi_that)}.</div>"""
+              {_pxe.IFACE} &mdash; Pi là {_esc(dia_chi_that)}.
+              {_esc(_pxe.mo_ta_ket_noi(kieu_dang_chay))}</div>"""
             nut = """
             <form method="POST" action="/deployos/pxe/tat">
               <input type="hidden" name="ve" value="/deployos/caidat">
@@ -2889,13 +2890,13 @@ def register_deployos(app):
                 Tắt PXE</button>
             </form>"""
         else:
+            kieu_se_bat = (dau_kb or {}).get("kieu_boot", "truc_tiep")
             trang_thai = f"""
             <div class="msg warn">PXE đang <strong>TẮT</strong>. Bật lên sẽ
               CẮT DHCP trên cổng {_pxe.IFACE} (giống hệt cảnh báo của
-              &quot;Cắm thẳng thiết bị&quot;) &mdash; chỉ bật khi đã cắm dây
-              mạng từ Pi sang đúng máy cần cài.</div>"""
+              &quot;Cắm thẳng thiết bị&quot;). {_esc(_pxe.mo_ta_ket_noi(kieu_se_bat))}</div>"""
             if _pxe.san_sang_bat():
-                kieu = (dau_kb or {}).get("kieu_boot", "truc_tiep")
+                kieu = kieu_se_bat
                 nut = f"""
                 <form method="POST" action="/deployos/pxe/bat">
                   <input type="hidden" name="ve" value="/deployos/caidat">

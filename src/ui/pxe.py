@@ -160,6 +160,38 @@ def san_sang_bat():
     return all(dat for dat, _, _ in trang_thai_chuan_bi())
 
 
+def mo_ta_ket_noi(kieu_boot):
+    """
+    Huong dan ket noi + canh bao rieng cho tung kieu boot - dung chung cho
+    ca thong bao "Da bat PXE" (bat_pxe) lan trang "Bat/Tat PXE" cua
+    ui/deployos.py.
+
+    LOI THAT DA GAP (tu kiem tra lai, chua ai bao nhung sai that): thong
+    bao cu chi noi "cam day thang... (hoac qua switch neu dung kieu 'mang
+    co DHCP')" - GAN NHAM switch cho kieu proxyDHCP, trong khi kieu THAT
+    su dung switch la "mang_khong_dhcp" (Pi tu lam DHCP DAY DU tren ca
+    switch do). Kieu "mang_co_dhcp" (proxyDHCP) khong he cap IP nen di
+    switch hay day thang deu duoc, khong lien quan gi den viec co switch
+    hay khong.
+    """
+    if kieu_boot == "mang_khong_dhcp":
+        return (
+            "Cắm Pi và máy cần cài vào CHUNG 1 switch (mạng đó KHÔNG được "
+            "có DHCP server nào khác). Pi sẽ tự cấp IP cho MỌI thiết bị "
+            "hỏi DHCP trên switch đó, không riêng gì máy cần cài - nếu "
+            "switch còn cắm thêm máy khác không liên quan, máy đó cũng sẽ "
+            "nhận nhầm IP từ Pi. Chỉ dùng switch RIÊNG, tách biệt hẳn khỏi "
+            "mạng thật của khách."
+        )
+    if kieu_boot == "mang_co_dhcp":
+        return (
+            "Cắm Pi vào mạng đã có sẵn DHCP (switch của khách). Pi CHỈ trả "
+            "lời \"file boot ở đâu\" (proxyDHCP) - không tự cấp IP, không "
+            "tranh giành gì với DHCP thật của khách."
+        )
+    return "Cắm dây mạng THẲNG từ Pi sang đúng máy cần cài - không qua switch nào cả."
+
+
 def _dia_chi_pi_that(kieu_boot):
     """
     Dia chi IP THAT cua Pi tren eth0 ma may dang boot se dung de goi TFTP/
@@ -482,9 +514,8 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
                        f"(smbd): {out_smb[:200]}")
 
     open(STATE_FLAG, "w").write(kieu_boot)
-    return True, ("Đã bật PXE. Cắm dây mạng từ Pi sang máy cần cài (hoặc qua "
-                  "chung 1 switch nếu dùng kiểu 'mạng có DHCP'), vào BIOS/UEFI "
-                  "máy đó chọn boot qua mạng (Network Boot / PXE Boot).")
+    return True, (f"Đã bật PXE. {mo_ta_ket_noi(kieu_boot)} Vào BIOS/UEFI máy "
+                  "đó chọn boot qua mạng (Network Boot / PXE Boot).")
 
 
 def tat_pxe():
