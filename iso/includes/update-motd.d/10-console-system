@@ -1,0 +1,27 @@
+#!/bin/sh
+# Man hinh chao: viec DUY NHAT nguoi dung can biet khi nhin vao may nay la
+# "mo trinh duyet vao dia chi nao". Vi day la he thong khong co giao dien
+# do hoa - moi thao tac deu qua web tu may khac.
+C="\033[38;5;39m"; X="\033[38;5;245m"; T="\033[0m"; S="\033[38;5;46m"
+printf "\n${C}   ____                      _        ${T}\n"
+printf "${C}  / ___|___  _ __  ___  ___ | | ___   ${T}\n"
+printf "${C} | |   / _ \\| '_ \\/ __|/ _ \\| |/ _ \\  ${T}\n"
+printf "${C} | |__| (_) | | | \\__ \\ (_) | |  __/  ${T}${X}SYSTEM${T}\n"
+printf "${C}  \\____\\___/|_| |_|___/\\___/|_|\\___|  ${T}\n\n"
+printf " ${X}Bo cong cu ky thuat mang - khong co giao dien do hoa.${T}\n"
+printf " ${X}Moi thao tac lam qua trinh duyet tu may khac.${T}\n\n"
+
+co=0
+for i in $(ls /sys/class/net 2>/dev/null); do
+    [ "$i" = "lo" ] && continue
+    [ -e "/sys/class/net/$i/device" ] || continue
+    ip=$(ip -4 -o addr show "$i" 2>/dev/null | awk "{print \$4}" | cut -d/ -f1 | head -1)
+    if [ -n "$ip" ]; then
+        printf "   ${S}http://%s${T}   ${X}(cong %s)${T}\n" "$ip" "$i"
+        co=1
+    else
+        printf "   ${X}%s: chua co dia chi IP${T}\n" "$i"
+    fi
+done
+[ "$co" = "0" ] && printf "   ${X}Chua co cong mang nao co IP - cam day mang vao.${T}\n"
+printf "\n ${X}Dang nhap web bang chinh tai khoan Linux cua may nay.${T}\n\n"

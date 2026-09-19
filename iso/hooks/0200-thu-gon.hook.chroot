@@ -1,0 +1,22 @@
+#!/bin/sh
+# Thu gon he thong - anh Thoai yeu cau "gon nhe toi uu".
+# CHI bo nhung thu KHONG anh huong chuc nang:
+#   - tai lieu goi (/usr/share/doc)  : doc tren mang duoc, may nay khong can
+#   - trang man                      : giu lai, ky su mang can tra lenh offline
+#   - ngon ngu khac tieng Anh/Viet   : 54MB cho ~100 thu tieng khong ai dung
+set -e
+echo "[thu-gon] bat dau"
+
+rm -rf /usr/share/doc/* 2>/dev/null || true
+rm -rf /usr/share/info/* 2>/dev/null || true
+
+# Giu lai tieng Anh + tieng Viet, xoa cac thu tieng con lai
+if [ -d /usr/share/locale ]; then
+    find /usr/share/locale -mindepth 1 -maxdepth 1 -type d \
+         ! -name "en*" ! -name "vi*" -exec rm -rf {} + 2>/dev/null || true
+fi
+
+# Cache apt trong anh dia - khong ai dung toi khi may da chay
+rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb 2>/dev/null || true
+
+echo "[thu-gon] xong"

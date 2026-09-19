@@ -1,0 +1,85 @@
+#!/bin/sh
+# ===================================================================
+# Console System - thiet lap ben trong anh dia ISO
+# ===================================================================
+# Chay MOT LAN luc build, ben trong chroot cua live-build. O day KHONG co
+# systemd dang chay, nen chi duoc dung `systemctl enable` (chi tao lien ket
+# trong /etc/systemd/system/*.wants/) - tuyet doi khong goi start/restart.
+set -e
+
+echo "[console-system] bat dau thiet lap"
+
+# --- 1. Thu muc du lieu (tach khoi ma nguon - xem ui/duongdan.py) ---
+mkdir -p /var/lib/console-pi/deploy /var/lib/console-pi/storage
+chmod 755 /var/lib/console-pi
+
+# --- 2. Cac don vi systemd ---
+for f in /usr/local/share/console-system/systemd/*.service /usr/local/share/console-system/systemd/*.timer; do
+    [ -f "$f" ] || continue
+    install -m 644 "$f" /etc/systemd/system/
+done
+
+# CHI bat nhung dich vu co y nghia tren may x86. CO Y BO:
+#   - console-pi-kiosk*    : can man hinh cam ung + cage, may ban khong co
+#   - bt-*, dnsmasq-bt     : Bluetooth PAN cua RasPad
+#   - wifi-fallback        : gan chat cach Pi quan ly wlan0
+#   - dnsmasq-pxe/direct   : dich vu mang KHONG xac thuc, khong bao gio
+#                            duoc tu bat luc khoi dong (nguyen tac an toan
+#                            xuyen suot du an) - nguoi dung tu bat khi can
+for s in console-pi-dashboard console-pi-term-local console-pi-term-ssh \
+         nginx lldpd avahi-daemon ssh NetworkManager \
+         console-system-lan-dau; do
+    systemctl enable "$s" >/dev/null 2>&1 || echo "[console-system] khong bat duoc $s"
+done
+
+# --- 2b. TAT cac dich vu MANG tu bat theo goi ---
+#
+# LOI THAT BAT DUOC KHI KIEM TRA RUOT ISO (19/09/2026, truoc khi giao cho
+# anh Thoai): tren Debian, cai goi la goi TU BAT dich vu. Ket qua la anh
+# dia vua dung xong co san dnsmasq (DHCP server), hostapd (phat WiFi),
+# tftpd-hpa va samba deu o trang thai enabled - tuc la may cai tu ISO nay
+# BOOT LEN LA PHAT DHCP RA MANG. Cam vao mang cong ty la thanh DHCP lau,
+# may khac nhan IP sai, sap mang khach.
+#
+# Day dung la dieu install.sh tren Pi da lo tu lau; ban ISO thi chua. Tat
+# tuong minh o day. Chung KHONG bi go bo - van cai san de nguoi dung bat
+# khi that su can (bat qua giao dien, co canh bao ro rang).
+for s in dnsmasq hostapd tftpd-hpa smbd nmbd winbind samba-ad-dc \
+         wpa_supplicant; do
+    systemctl disable "$s" >/dev/null 2>&1 || true
+    systemctl mask "$s" >/dev/null 2>&1 || true
+done
+# Bo mask rieng cho smbd/dnsmasq: chung duoc dieu khien tu giao dien (PXE,
+# cam thang thiet bi) nen phai bat len duoc luc can - chi khong tu chay.
+for s in dnsmasq smbd nmbd hostapd tftpd-hpa wpa_supplicant; do
+    systemctl unmask "$s" >/dev/null 2>&1 || true
+    systemctl disable "$s" >/dev/null 2>&1 || true
+done
+
+# --- 3. nginx ---
+if [ -f /usr/local/share/console-system/config/nginx-console-pi.conf ]; then
+    install -m 644 /usr/local/share/console-system/config/nginx-console-pi.conf \
+        /etc/nginx/sites-available/console-pi.conf
+    ln -sf /etc/nginx/sites-available/console-pi.conf /etc/nginx/sites-enabled/console-pi.conf
+    rm -f /etc/nginx/sites-enabled/default
+fi
+
+# --- 4. Cac cau hinh phu ---
+[ -f /usr/local/share/console-system/config/99-consolepi-serial.rules ] && \
+    install -m 644 /usr/local/share/console-system/config/99-consolepi-serial.rules /etc/udev/rules.d/
+[ -f /usr/local/share/console-system/config/smb.conf ] && \
+    install -m 644 /usr/local/share/console-system/config/smb.conf /etc/samba/smb.conf
+
+# --- 5. Mat khau kho Samba: SINH NGAU NHIEN o lan khoi dong DAU TIEN ---
+#
+# LOI THAT (20/09/2026, bat duoc khi SSH vao ISO dang chay va kiem tra
+# `systemctl is-enabled`): unit console-system-lan-dau.service CO trong
+# anh dia nhung o trang thai "disabled" - da tao file ma QUEN BAT. Ket
+# qua: mat khau kho Samba khong bao gio duoc sinh, va khi nguoi dung bat
+# PXE thi may can cai khong ket noi duoc kho trien khai - loi chi hien ra
+# dung luc dang cai cho khach. Da them vao danh sach bat o tren.
+# TUYET DOI khong sinh o day: ISO la file cong khai ai cung tai duoc, nhet
+# mat khau vao la moi ban cai deu dung chung mot mat khau.
+mkdir -p /usr/local/share/console-system
+
+echo "[console-system] xong"

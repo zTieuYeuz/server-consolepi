@@ -1,5 +1,48 @@
 # Changelog
 
+## 1.0.0 - Console System OS
+
+Ban cai Linux (.iso) cai duoc len laptop/may ban bat ky, cung mot bo cong
+cu voi ban chay tren Raspberry Pi. Doi ten hien thi thanh **Console
+System**. Toan bo cau hinh dung ISO nam trong thu muc `iso/`.
+
+**Qua 6 vong dung-thu-sua.** Moi vong deu boot that trong QEMU roi goi
+thang vao dashboard ben trong, khong chi kiem tra "co file ISO". Cac loi
+bat duoc - deu la loai KHONG THE thay bang cach doc code:
+
+1. **ISO boot len la tu chay DHCP server, phat WiFi, TFTP va Samba.** Debian
+   tu bat dich vu khi cai goi. Cam may vao mang cong ty la thanh DHCP lau,
+   sap mang khach. Da tat tuong minh (van cai san de bat khi can).
+2. **Khong ai dang nhap duoc vao may**: `Authentication failure` ngay luc tu
+   dang nhap. Do bat `--apt-recommends false` cho nhe nen loai nham
+   `user-setup` va `sudo` (chung la Recommends cua live-config).
+3. **Thieu `nmcli`** - cung ly do tren. ui/pxe.py va ui/direct.py dung no de
+   chiem va TRA LAI cong mang; thieu thi bat PXE xong may mat mang.
+4. **De quy vo han o `cong_wifi()`** - chi lo ra tren may KHONG CO card
+   WiFi. Doan thay the hang loat da thay ca chuoi "wlan0" trong chinh ve du
+   phong cua ham. Tren Pi khong bao gio lo vi Pi co WiFi.
+5. **Thieu `python3-requests`** -> trang Kho trung tam loi 500.
+6. **SSH bat nhung khong ai vao duoc** - anh dia chi nhan khoa cong khai,
+   trong khi nguoi vua cai may chi co tai khoan/mat khau.
+7. **Menu boot cho bam phim mai mai** (`timeout 0` mac dinh) - may khong cam
+   man hinh se dung im vinh vien.
+8. **Dich vu thiet lap lan dau co file nhung quen bat** -> mat khau kho
+   Samba khong duoc sinh, bat PXE thi may can cai khong noi duoc kho.
+
+**Ket qua nghiem thu cuoi** (chay trong ISO that dang boot): 24/24 trang
+khong loi; dang nhap web va SSH bang mat khau deu duoc; chi mo dung 2 cong
+ra mang (22, 80); cac dich vu nguy hiem deu inactive; ping va kiem tra DNS
+chay that; va quan trong nhat - **he thong tu nhan cong mang `ens3`** cua
+may ao x86 thay vi `eth0` viet cung.
+
+**Toi uu:** 1492 MB -> **1136 MB**. Bo firmware do hoa (nvidia/amdgpu/i915,
+224MB) vi may khong co desktop; GIU NGUYEN 94 thu muc firmware mang de chay
+duoc moi laptop. Bo tai lieu goi va ~100 thu tieng khong dung.
+
+**Secure Boot**: `bootx64.efi` tren ISO chinh la `shimx64.efi.signed` (doi
+chieu ma bam MD5 trung khit) - laptop bat san Secure Boot khong phai vao
+BIOS tat di.
+
 ## 0.5.0
 
 Vong lam viec dem 18-19/09/2026 theo danh sach anh Thoai giao.

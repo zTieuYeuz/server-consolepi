@@ -1,0 +1,12 @@
+[Unit]
+Description=Console System - thiet lap lan dau (sinh bi mat rieng cho may nay)
+Before=console-pi-dashboard.service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/console-system-lan-dau
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

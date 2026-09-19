@@ -1,0 +1,12 @@
+label live-@FLAVOUR@
+	menu label ^Chay thu Console System (khong cai gi vao may)
+	menu default
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@
+
+label live-@FLAVOUR@-failsafe
+	menu label Chay thu - che do an toan (may kho tinh)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE_FAILSAFE@

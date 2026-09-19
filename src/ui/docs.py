@@ -620,6 +620,78 @@ thoi gian cho len 900 giay. Mac dinh 64m thi ISO nao cung truot voi loi
 <em>413 Request Entity Too Large</em>.</p>
 """),
 
+    ("bancai", "📀 Console System OS - bản cài cho laptop/máy bàn", """
+<p>Ngoài bản chạy trên Raspberry Pi, Console System con co <strong>ban cai
+Linux rieng</strong> (file <code>.iso</code>) de cai len laptop hoac may ban
+bat ky. Cung mot bo cong cu, chi khac phan cung ben duoi.</p>
+
+<h4>Cách dùng</h4>
+<ol>
+  <li>Ghi file <code>.iso</code> ra USB bang <strong>Rufus</strong> (Windows)
+      hoac <strong>balenaEtcher</strong>. Chon che do ghi <em>DD/anh dia</em>
+      neu duoc hoi - file nay la anh dia lai (hybrid).</li>
+  <li>Cam USB, vao BIOS chon boot tu USB.</li>
+  <li>Menu boot <strong>tu chay sau 5 giay</strong> neu khong bam gi:
+      <ul>
+        <li><em>Chay thu Console System</em> - chay thang tu USB, KHONG dung
+            gi toi o cung. Hop de thu nhanh ngoai hien truong.</li>
+        <li><em>CAI Console System len o cung</em> - cai han vao may.</li>
+      </ul></li>
+  <li>May len xong, <strong>man hinh hien san dia chi</strong> dang
+      <code>http://192.168.x.x</code> kem ten cong mang. Mo trinh duyet tu
+      may khac vao dia chi do.</li>
+  <li>Dang nhap bang <strong>chinh tai khoan Linux</strong> cua may (tai
+      khoan vua tao luc cai; ban chay thu tu USB dung <code>user</code> /
+      <code>live</code>).</li>
+</ol>
+
+<h4>Vì sao không có giao diện đồ hoạ</h4>
+<p>Day la thiet ke co y, khong phai thieu sot. May nay la <strong>thiet bi
+mang</strong>: moi thao tac lam qua trinh duyet tu may khac, nen desktop chi
+ton RAM va dung luong ma khong dung toi. Nho vay ban cai chi khoang
+<strong>1.1 GB</strong> va chay duoc tren may cu RAM thap.</p>
+
+<h4>Chạy được trên máy nào</h4>
+<ul>
+  <li><strong>May doi cu (BIOS)</strong> va <strong>may doi moi (UEFI)</strong>
+      - anh dia co ca hai duong boot.</li>
+  <li><strong>May bat san Secure Boot</strong> (phan lon laptop hang) - anh
+      dia dung <code>shim</code> da duoc Microsoft ky, khong phai vao BIOS
+      tat Secure Boot.</li>
+  <li><strong>Card mang la</strong> - kem firmware cho Intel, Realtek,
+      Atheros, Broadcom, MediaTek, Qualcomm va cac card mang may chu
+      (bnx2, qlogic, myricom...). CO Y bo firmware do hoa (nvidia/amdgpu,
+      ~224MB) vi may khong co desktop nen khong dung toi.</li>
+</ul>
+
+<h4>Khác gì bản chạy trên Raspberry Pi</h4>
+<table>
+  <tr><th style="width:190px;">Muc</th><th>Khac biet</th></tr>
+  <tr><td>Ten cong mang</td>
+      <td>Pi la <code>eth0</code>/<code>wlan0</code>; may ban co the la
+      <code>enp3s0</code>, <code>ens192</code>, <code>wlp2s0</code>...
+      He thong <strong>tu nhan</strong>, va chon lai duoc trong Cai dat.</td></tr>
+  <tr><td>Bluetooth PAN, man hinh cam ung</td>
+      <td>Chi co tren ban Pi (gan voi phan cung RasPad) - ban x86 an di.</td></tr>
+  <tr><td>Phat WiFi (AP)</td>
+      <td>Phu thuoc card WiFi cua may co ho tro che do AP hay khong. Rat
+      nhieu card Intel tren laptop KHONG ho tro - kiem tra bang
+      <code>iw list</code>.</td></tr>
+</table>
+
+<h4>An toàn - điều cần biết trước khi cắm vào mạng khách</h4>
+<ul>
+  <li>May chi mo <strong>dung 2 cong</strong> ra mang: 22 (SSH) va 80 (web).</li>
+  <li><code>dnsmasq</code> (DHCP), <code>hostapd</code> (phat WiFi),
+      <code>tftpd</code>, <code>samba</code> deu duoc cai san nhung
+      <strong>TAT</strong> - chi bat khi nguoi dung chu dong yeu cau qua giao
+      dien. Cam may vao mang cong ty khong gay ra DHCP lau.</li>
+  <li>Moi bi mat (mat khau kho Samba...) duoc <strong>sinh ngau nhien o lan
+      khoi dong dau tien cua tung may</strong>, khong nhung san trong file
+      ISO - vi ISO la file cong khai ai cung tai duoc.</li>
+</ul>
+"""),
+
     ("deployos", "💿 Deployment OS - cài Windows qua mạng", """
 <p>Phan LON NHAT cua Console Pi: cam day mang vao 1 may PC trong, boot qua mang
 (PXE) roi tu dong cai lai Windows + phan mem + cau hinh, khong can USB cai dat,

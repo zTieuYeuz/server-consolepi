@@ -1,0 +1,23 @@
+#!/bin/bash
+# Thiet lap chay MOT LAN o lan khoi dong dau tien cua may nay.
+#
+# VI SAO khong lam san trong ISO: file ISO la cong khai, ai cung tai duoc.
+# Moi bi mat nhet san trong do se GIONG HET NHAU tren moi may cai tu no -
+# tuc la khong con la bi mat. Nguyen tac nay da ap dung cho mat khau Samba
+# va tai khoan kho trung tam tu truoc; day la lan ap dung thu ba.
+set -e
+DAU="/var/lib/console-pi/.da-thiet-lap"
+[ -f "$DAU" ] && exit 0
+mkdir -p /var/lib/console-pi
+
+# 1. Mat khau kho Samba - rieng cho tung may
+KHOA=/var/lib/console-pi/samba-deploy.key
+if [ ! -f "$KHOA" ]; then
+    head -c 18 /dev/urandom | base64 | tr -d "/+=" | head -c 20 > "$KHOA"
+    chmod 600 "$KHOA"
+    if id -u deploy >/dev/null 2>&1 || useradd -r -s /usr/sbin/nologin deploy 2>/dev/null; then
+        printf "%s\n%s\n" "$(cat $KHOA)" "$(cat $KHOA)" | smbpasswd -s -a deploy >/dev/null 2>&1 || true
+    fi
+fi
+
+touch "$DAU"

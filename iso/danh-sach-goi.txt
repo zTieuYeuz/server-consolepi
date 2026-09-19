@@ -1,0 +1,103 @@
+# ============ Console System - danh sach goi ============
+# Nguyen tac: du de lam VIEC MANG tren moi may, khong mot goi thua.
+# Khong co desktop, khong do hoa, khong am thanh.
+
+# --- Loi Console System ---
+python3
+python3-flask
+python3-cryptography
+python3-netmiko
+python3-pam
+python3-scapy
+# LOI THAT (20/09/2026, bat duoc khi mo trang Kho trung tam TRONG ISO dang
+# chay): "ModuleNotFoundError: No module named requests". Tren Pi goi nay
+# co san vi mot goi khac keo theo; ISO thi khong, nhat la sau khi bat
+# --apt-recommends false. ui/khotrungtam.py dung requests de goi API kho.
+python3-requests
+nginx
+tmux
+git
+curl
+
+# --- Cong cu mang ---
+arp-scan
+dnsmasq
+ethtool
+hostapd
+iw
+lldpd
+lsof
+nmap
+samba
+tcpdump
+tftpd-hpa
+traceroute
+tshark
+usbutils
+wireless-tools
+wpasupplicant
+eapoltest
+grc
+avahi-daemon
+bluez
+openssh-server
+
+# --- Trien khai Windows (Deployment OS) ---
+wimtools
+7zip
+genisoimage
+
+# --- FIRMWARE MANG: giu DAY DU de chay duoc moi laptop/may ban ---
+# CO Y khong dung goi gop "firmware-linux": no keo theo ca firmware do
+# hoa (nvidia 123MB, amdgpu 85MB, i915 13MB) va am thanh - may nay khong
+# co desktop nen tuyet doi khong dung toi, chi lam ISO nang them ~250MB.
+firmware-iwlwifi
+firmware-realtek
+firmware-atheros
+firmware-brcm80211
+firmware-libertas
+firmware-ti-connectivity
+firmware-zd1211
+firmware-mediatek
+firmware-misc-nonfree
+firmware-bnx2
+firmware-bnx2x
+firmware-cavium
+firmware-qlogic
+firmware-myricom
+firmware-netxen
+firmware-ath9k-htc
+firmware-carl9170
+
+# --- SECURE BOOT: bat buoc cho laptop doi moi ---
+# Thieu 2 goi nay thi may co Secure Boot BAT SAN (phan lon laptop hang)
+# se tu choi boot USB - nguoi dung phai vao BIOS tat di, ma nhieu may
+# doanh nghiep khoa BIOS nen khong tat duoc.
+shim-signed
+grub-efi-amd64-signed
+mokutil
+
+# --- BAT BUOC: cac goi vua bi --apt-recommends false loai nham ---
+#
+# LOI THAT DA GAP (19/09/2026, bat duoc khi boot thu ISO trong QEMU va NHIN
+# MAN HINH console): may boot len bao
+#     console-system login: user (automatic login)
+#     Authentication failure
+# tuc la KHONG AI DANG NHAP DUOC VAO MAY. Keo theo: man hinh chao khong
+# hien (chi hien sau khi dang nhap) nen nguoi dung khong biet vao dia chi
+# nao, va dang nhap web cung hong vi dashboard xac thuc qua tai khoan
+# Linux.
+#
+# Nguyen nhan: live-config khai "Recommends: ... sudo, user-setup" - bat
+# --apt-recommends false de cho nhe da loai ca hai. Khong co user-setup
+# thi script 0030-user-setup cua live-config khong tao noi tai khoan.
+#
+# nmcli (network-manager) cung bi loai nham va cung nghiem trong: ui/pxe.py
+# va ui/direct.py goi `nmcli device set <cong> managed no` de chiem cong,
+# roi `nmcli device connect <cong>` de TRA LAI. Thieu nmcli thi bat PXE
+# xong khong tra duoc cong ve, may mat mang cho toi khi khoi dong lai.
+user-setup
+sudo
+network-manager
+live-tools
+keyboard-configuration
