@@ -11,6 +11,19 @@ from flask import request, render_template_string
 
 from . import nettools_bp
 
+
+def _cong_mac_dinh():
+    """Cong mac dinh cho o chon - cong co day that cua may nay (xem
+    ui/phancung.py). Truoc day viet cung "eth0" nen chi dung tren Pi."""
+    from ui.phancung import cong_mac_dinh
+    return cong_mac_dinh()
+
+
+def _o_chon_cong(dang_chon=""):
+    """Cac the <option> liet ke dung cac cong THAT dang co tren may."""
+    from ui.phancung import o_chon_cong
+    return o_chon_cong(dang_chon)
+
 # Dinh dang chuan cua arp-scan --localnet (moi dong 1 thiet bi):
 # 192.168.1.1<TAB>aa:bb:cc:dd:ee:ff<TAB>Vendor Name Here
 ARP_LINE_RE = re.compile(
@@ -18,13 +31,15 @@ ARP_LINE_RE = re.compile(
 )
 
 
-def run_arp_scan(iface="eth0", target=None, timeout=30):
+def run_arp_scan(iface=None, target=None, timeout=30):
     """
     Chay arp-scan tren 1 interface. Neu target (CIDR/IP) duoc chi dinh thi
     quet dai do, khong thi dung --localnet (doi hoi interface phai co IP).
 
     Tra ve: {"ok": bool, "error": str|None, "hosts": [{"ip","mac","vendor"}]}
     """
+    if iface is None:
+        iface = _cong_mac_dinh()
     cmd = ["arp-scan", f"--interface={iface}"]
     cmd += [target] if target else ["--localnet"]
 
@@ -81,8 +96,7 @@ ARP_SCAN_TEMPLATE = """
     <form method="POST" style="margin-top:16px;">
         <label>Interface:</label>
         <select name="iface">
-            <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0 (day mang)</option>
-            <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0 (WiFi)</option>
+            {{ o_chon_cong|safe }}
         </select>
         <label style="margin-left:12px;">Dải IP (tùy chọn):</label>
         <input type="text" name="target" value="{{ target or '' }}" placeholder="vd 192.168.1.0/24 - de trong = tu localnet">
@@ -111,14 +125,14 @@ ARP_SCAN_TEMPLATE = """
 
 @nettools_bp.route("/nettools/arp-scan", methods=["GET", "POST"])
 def arp_scan_route():
-    iface = request.form.get("iface", "eth0")
+    iface = request.form.get("iface") or _cong_mac_dinh()
     target = (request.form.get("target") or "").strip() or None
     ran = request.method == "POST"
 
     result = run_arp_scan(iface=iface, target=target) if ran else None
 
     return render_template_string(
-        ARP_SCAN_TEMPLATE, iface=iface, target=target, ran=ran, result=result
+        ARP_SCAN_TEMPLATE, o_chon_cong=_o_chon_cong(iface), iface=iface, target=target, ran=ran, result=result
     )
 
 
@@ -126,6 +140,6 @@ if __name__ == "__main__":
     import sys
     import json
 
-    iface = sys.argv[1] if len(sys.argv) > 1 else "eth0"
+    iface = sys.argv[1] if len(sys.argv) > 1 else _cong_mac_dinh()
     target = sys.argv[2] if len(sys.argv) > 2 else None
     print(json.dumps(run_arp_scan(iface=iface, target=target), indent=2, ensure_ascii=False))

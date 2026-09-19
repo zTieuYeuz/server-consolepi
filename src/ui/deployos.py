@@ -2913,7 +2913,7 @@ def register_deployos(app):
             dia_chi_that = _pxe._dia_chi_pi_that(kieu_dang_chay)
             trang_thai = f"""
             <div class="msg ok">PXE đang <strong>BẬT</strong> trên cổng
-              {_pxe.IFACE} &mdash; Pi là {_esc(dia_chi_that)}.
+              {_pxe.cong()} &mdash; Pi là {_esc(dia_chi_that)}.
               {_esc(_pxe.mo_ta_ket_noi(kieu_dang_chay))}</div>"""
             nut = """
             <form method="POST" action="/deployos/pxe/tat">
@@ -2925,7 +2925,7 @@ def register_deployos(app):
             kieu_se_bat = (dau_kb or {}).get("kieu_boot", "truc_tiep")
             trang_thai = f"""
             <div class="msg warn">PXE đang <strong>TẮT</strong>. Bật lên sẽ
-              CẮT DHCP trên cổng {_pxe.IFACE} (giống hệt cảnh báo của
+              CẮT DHCP trên cổng {_pxe.cong()} (giống hệt cảnh báo của
               &quot;Cắm thẳng thiết bị&quot;). {_esc(_pxe.mo_ta_ket_noi(kieu_se_bat))}</div>"""
             if _pxe.san_sang_bat():
                 kieu = kieu_se_bat

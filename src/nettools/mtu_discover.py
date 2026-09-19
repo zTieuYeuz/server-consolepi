@@ -36,6 +36,19 @@ from flask import request, render_template_string
 
 from . import nettools_bp
 
+
+def _cong_mac_dinh():
+    """Cong mac dinh cho o chon - cong co day that cua may nay (xem
+    ui/phancung.py). Truoc day viet cung "eth0" nen chi dung tren Pi."""
+    from ui.phancung import cong_mac_dinh
+    return cong_mac_dinh()
+
+
+def _o_chon_cong(dang_chon=""):
+    """Cac the <option> liet ke dung cac cong THAT dang co tren may."""
+    from ui.phancung import o_chon_cong
+    return o_chon_cong(dang_chon)
+
 # Nguong duoi day - bat cu MTU nao duoi day deu coi la hong nang, khong con
 # y nghia thuc te (chuan Ethernet toi thieu la 68, nhung thap hon 576 la
 # gan nhu chac chan co van de nghiem trong o dau do).
@@ -101,7 +114,7 @@ def _thu_mot_kich_thuoc(iface, host, payload, timeout):
     return "khong_ro", None
 
 
-def tim_mtu(host, iface="eth0", timeout=2):
+def tim_mtu(host, iface=None, timeout=2):
     """
     Tra ve {"ok", "error", "mtu": int|None, "chi_tiet": [...], "canh_bao": str|None,
             "tu_router": bool}
@@ -220,8 +233,7 @@ MTU_TEMPLATE = """
         <input type="text" name="host" value="{{ host or '' }}" placeholder="vd 8.8.8.8 hoac google.com" required>
         <label style="margin-left:10px;">Interface:</label>
         <select name="iface">
-            <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
-            <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
+            {{ o_chon_cong|safe }}
         </select>
         <button type="submit" style="margin-left:10px;" data-busy="Đang đo MTU...">Đo MTU</button>
     </form>
@@ -266,15 +278,15 @@ MTU_TEMPLATE = """
 @nettools_bp.route("/nettools/mtu", methods=["GET", "POST"])
 def mtu_route():
     host = request.form.get("host", "").strip()
-    iface = request.form.get("iface", "eth0")
+    iface = request.form.get("iface") or _cong_mac_dinh()
     ran = request.method == "POST"
     result = tim_mtu(host, iface=iface) if ran else None
-    return render_template_string(MTU_TEMPLATE, host=host, iface=iface, ran=ran, result=result)
+    return render_template_string(MTU_TEMPLATE, o_chon_cong=_o_chon_cong(iface), host=host, iface=iface, ran=ran, result=result)
 
 
 if __name__ == "__main__":
     import sys
     import json
-    iface = sys.argv[1] if len(sys.argv) > 1 else "eth0"
+    iface = sys.argv[1] if len(sys.argv) > 1 else _cong_mac_dinh()
     host = sys.argv[2] if len(sys.argv) > 2 else "8.8.8.8"
     print(json.dumps(tim_mtu(host, iface=iface), indent=2, ensure_ascii=False))

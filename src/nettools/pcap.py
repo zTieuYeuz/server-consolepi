@@ -15,6 +15,19 @@ from flask import request, render_template_string, send_from_directory, abort
 
 from . import nettools_bp
 
+
+def _cong_mac_dinh():
+    """Cong mac dinh cho o chon - cong co day that cua may nay (xem
+    ui/phancung.py). Truoc day viet cung "eth0" nen chi dung tren Pi."""
+    from ui.phancung import cong_mac_dinh
+    return cong_mac_dinh()
+
+
+def _o_chon_cong(dang_chon=""):
+    """Cac the <option> liet ke dung cac cong THAT dang co tren may."""
+    from ui.phancung import o_chon_cong
+    return o_chon_cong(dang_chon)
+
 LOCAL_CAPTURE_DIR = "/opt/console-pi/captures"
 MAX_DURATION_SEC = 600  # 10 phut, chan runaway capture lam day dia
 MIN_FREE_MB = 200
@@ -70,7 +83,9 @@ def is_capturing():
     return proc is not None and proc.poll() is None
 
 
-def start_capture(iface="eth0", bpf_filter="", duration=60):
+def start_capture(iface=None, bpf_filter="", duration=60):
+    if iface is None:
+        iface = _cong_mac_dinh()
     if is_capturing():
         return {"ok": False, "error": "Đã có 1 phiên capture đang chạy."}
 
@@ -195,8 +210,7 @@ PCAP_TEMPLATE = """
     <form method="POST" action="/nettools/pcap/start">
         <label>Interface:</label>
         <select name="iface">
-            <option value="eth0">eth0</option>
-            <option value="wlan0">wlan0</option>
+            {{ o_chon_cong|safe }}
         </select>
         <label style="margin-left:10px;">BPF filter (tùy chọn):</label>
         <input type="text" name="filter" placeholder="vd port 80">
@@ -236,7 +250,7 @@ PCAP_TEMPLATE = """
 def _render(msg="", ok=True):
     capture_dir, files = list_captures()
     return render_template_string(
-        PCAP_TEMPLATE, capture_dir=capture_dir, is_usb=("console-pi-captures" in capture_dir and capture_dir != LOCAL_CAPTURE_DIR),
+        PCAP_TEMPLATE, o_chon_cong=_o_chon_cong(), capture_dir=capture_dir, is_usb=("console-pi-captures" in capture_dir and capture_dir != LOCAL_CAPTURE_DIR),
         files=files, capturing=is_capturing(), current_file=CAPTURE_STATE.get("file"),
         msg=msg, ok=ok,
     )
@@ -249,7 +263,7 @@ def pcap_route():
 
 @nettools_bp.route("/nettools/pcap/start", methods=["POST"])
 def pcap_start_route():
-    iface = request.form.get("iface", "eth0")
+    iface = request.form.get("iface") or _cong_mac_dinh()
     bpf_filter = (request.form.get("filter") or "").strip()
     duration = request.form.get("duration", 60)
     res = start_capture(iface=iface, bpf_filter=bpf_filter, duration=duration)
@@ -287,6 +301,6 @@ def pcap_download_route(filename):
 if __name__ == "__main__":
     import sys
     print("Capture dir:", get_capture_dir())
-    print(start_capture(iface=sys.argv[1] if len(sys.argv) > 1 else "eth0", duration=5))
+    print(start_capture(iface=sys.argv[1] if len(sys.argv) > 1 else _cong_mac_dinh(), duration=5))
     time.sleep(6)
     print("Files:", list_captures())

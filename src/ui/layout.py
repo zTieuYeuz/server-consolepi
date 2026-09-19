@@ -722,6 +722,35 @@ _H1_RE = _re.compile(r"<h1[^>]*>.*?</h1>", _re.S | _re.I)
 _BACKLINK_RE = _re.compile(r"<p>\s*<a href=\"/(?:nettools)?\"[^>]*>←[^<]*</a>\s*</p>", _re.I)
 
 
+def _nut_quay_ve():
+    """
+    Nut "Quay lai Network Tools" cho cac trang cong cu.
+
+    LY DO THAT (anh Thoai 19/09/2026: "khi anh nhap vao 1 chuc nang nao do
+    anh muon quay ve thi no thieu nut quay ve"): truoc day khung chung XOA
+    dong quay lai cua tung trang di, voi ly do "da co thanh menu ben trai
+    nen thua". Nhung thanh menu trai chi co muc "Network Tools" chung -
+    dang o trong 1 cong cu (vd Kiem tra DNS) muon ve danh sach cong cu thi
+    phai bam vao muc do roi no nap lai trang, hoac bam Back cua trinh
+    duyet. Tren man hinh cam ung khong co phim Back, va thanh menu co the
+    dang bi thu gon - luc do that su khong co duong ve.
+
+    Nay chen mot nut CHUAN o dau moi trang cong cu, thay cho cac dong quay
+    lai viet tay moi trang mot kieu truoc day. Trang danh sach cong cu thi
+    khong chen (khong ai can nut quay ve chinh no).
+    """
+    try:
+        from flask import request
+        duong = (request.path or "").rstrip("/")
+    except Exception:
+        return ""                      # ngoai ngu canh request thi bo qua
+    if duong in ("", "/nettools"):
+        return ""
+    return ('<p style="margin:0 0 14px;">'
+            '<a class="btn gray small" href="/nettools">'
+            '&larr; Tất cả công cụ mạng</a></p>')
+
+
 def wrap_legacy_html(html, active="/nettools"):
     """Boc 1 trang HTML hoan chinh (kieu cu) vao khung giao dien chung."""
     m = _BODY_RE.search(html)
@@ -737,7 +766,11 @@ def wrap_legacy_html(html, active="/nettools"):
 
     # Bo <h1> va link quay lai cu (khung moi da co tieu de + thanh dieu huong)
     body = _H1_RE.sub("", body, count=1)
+    # Bo dong "<- Network Tools" cu cua tung trang (moi trang viet mot kieu,
+    # cho tren cho duoi khong dong nhat) roi CHEN LAI mot nut chuan o ngay
+    # dau trang - xem _nut_quay_ve() ben duoi.
     body = _BACKLINK_RE.sub("", body, count=1)
+    body = _nut_quay_ve() + body
 
     # Giu lai CSS rieng cua trang do (vd bang mau, pre...), nhung bo phan
     # dinh dang body/nen vi khung chung da lo

@@ -201,3 +201,42 @@ if __name__ == "__main__":
     for c in danh_sach_cong():
         print(f"   {c['ten']:12} {'WiFi' if c['wifi'] else 'day '} "
               f"{'[co tin hieu]' if c['co_day'] else ''} {c['mac']}")
+
+
+def o_chon_cong(dang_chon="", chi_day=False):
+    """
+    Sinh cac the <option> cho o chon cong mang trong cac cong cu.
+
+    VI SAO CAN (anh Thoai 19/09/2026 - chuan bi ban cai chay tren may ban):
+    9 cong cu mang deu liet ke CUNG hai dong "eth0" va "wlan0" trong o chon.
+    Tren may khac hai ten do khong ton tai -> nguoi dung chi chon duoc cong
+    khong co that, cong cu nao cung bao loi. Nay liet ke dung cac cong THAT
+    dang co tren may.
+
+    Loi ich them: con Pi cam USB-LAN (thanh eth1) thi cong do gio hien ra
+    va chon duoc - truoc day khong co cach nao dung.
+    """
+    from html import escape
+    cac = danh_sach_cong()
+    if chi_day:
+        cac = [c for c in cac if not c["wifi"]]
+    if not cac:
+        return '<option value="">(máy không có cổng mạng nào)</option>'
+    if not dang_chon:
+        dang_chon = cong_day() or (cac[0]["ten"] if cac else "")
+    ra = []
+    for c in cac:
+        mo_ta = "WiFi" if c["wifi"] else "dây"
+        if c["co_day"]:
+            mo_ta += ", đang có tín hiệu"
+        chon = " selected" if c["ten"] == dang_chon else ""
+        ra.append(f'<option value="{escape(c["ten"])}"{chon}>'
+                  f'{escape(c["ten"])} ({mo_ta})</option>')
+    return "".join(ra)
+
+
+def cong_mac_dinh(uu_tien_day=True):
+    """Cong dung lam gia tri mac dinh cho cac o chon trong cong cu mang."""
+    if uu_tien_day:
+        return cong_day() or cong_wifi() or ""
+    return cong_wifi() or cong_day() or ""

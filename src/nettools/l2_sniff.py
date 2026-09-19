@@ -13,7 +13,20 @@ from flask import request, render_template_string
 from . import nettools_bp
 
 
-def run_l2_scan(iface="eth0", duration=15):
+def _cong_mac_dinh():
+    """Cong mac dinh cho o chon - cong co day that cua may nay (xem
+    ui/phancung.py). Truoc day viet cung "eth0" nen chi dung tren Pi."""
+    from ui.phancung import cong_mac_dinh
+    return cong_mac_dinh()
+
+
+def _o_chon_cong(dang_chon=""):
+    """Cac the <option> liet ke dung cac cong THAT dang co tren may."""
+    from ui.phancung import o_chon_cong
+    return o_chon_cong(dang_chon)
+
+
+def run_l2_scan(iface=None, duration=15):
     """
     Sniff 1 lan tren iface trong `duration` giay, phan loai goi theo STP
     (BPDU, dst MAC 01:80:c2:00:00:00), LACP (ethertype 0x8809), va VLAN
@@ -21,6 +34,8 @@ def run_l2_scan(iface="eth0", duration=15):
 
     Tra ve: {"ok", "error", "stp": [...], "lacp": [...], "vlans": {vid: count}}
     """
+    if iface is None:
+        iface = _cong_mac_dinh()
     try:
         from scapy.all import sniff, STP, Dot1Q
         from scapy.contrib.lacp import LACP
@@ -109,8 +124,7 @@ L2_TEMPLATE = """
     <form method="POST" style="margin-top:16px;">
         <label>Interface:</label>
         <select name="iface">
-            <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
-            <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
+            {{ o_chon_cong|safe }}
         </select>
         <label style="margin-left:10px;">Thời gian bắt (giây):</label>
         <input type="number" name="duration" value="{{ duration }}" min="5" max="60" style="width:70px;">
@@ -168,16 +182,16 @@ L2_TEMPLATE = """
 
 @nettools_bp.route("/nettools/l2-scan", methods=["GET", "POST"])
 def l2_scan_route():
-    iface = request.form.get("iface", "eth0")
+    iface = request.form.get("iface") or _cong_mac_dinh()
     duration = int(request.form.get("duration", 15) or 15)
     ran = request.method == "POST"
     result = run_l2_scan(iface=iface, duration=duration) if ran else None
-    return render_template_string(L2_TEMPLATE, iface=iface, duration=duration, ran=ran, result=result)
+    return render_template_string(L2_TEMPLATE, o_chon_cong=_o_chon_cong(iface), iface=iface, duration=duration, ran=ran, result=result)
 
 
 if __name__ == "__main__":
     import sys
     import json
-    iface = sys.argv[1] if len(sys.argv) > 1 else "eth0"
+    iface = sys.argv[1] if len(sys.argv) > 1 else _cong_mac_dinh()
     duration = int(sys.argv[2]) if len(sys.argv) > 2 else 10
     print(json.dumps(run_l2_scan(iface=iface, duration=duration), indent=2, ensure_ascii=False))

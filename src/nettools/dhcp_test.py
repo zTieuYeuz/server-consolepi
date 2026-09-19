@@ -25,6 +25,19 @@ from flask import request, render_template_string
 
 from . import nettools_bp
 
+
+def _cong_mac_dinh():
+    """Cong mac dinh cho o chon - cong co day that cua may nay (xem
+    ui/phancung.py). Truoc day viet cung "eth0" nen chi dung tren Pi."""
+    from ui.phancung import cong_mac_dinh
+    return cong_mac_dinh()
+
+
+def _o_chon_cong(dang_chon=""):
+    """Cac the <option> liet ke dung cac cong THAT dang co tren may."""
+    from ui.phancung import o_chon_cong
+    return o_chon_cong(dang_chon)
+
 _TEST_TABLE = 199
 _TEST_RULE_PRIO = 199
 WEB_CHECKS = [("http://example.com", 80), ("https://www.google.com", 443)]
@@ -163,7 +176,7 @@ def doc_poe(iface):
 
 
 # =========================================================== DHCP DISCOVER
-def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
+def run_dhcp_test(iface=None, timeout=5, test_internet=True):
     """
     Tra ve {"ok", "error", "offers": [...], "internet": {...}|None,
             "cong": {...}, "loi_truyen": {...}, "poe": {...}}
@@ -178,6 +191,8 @@ def run_dhcp_test(iface="eth0", timeout=5, test_internet=True):
     co the mat hoan toan mot lan gui du moi thu deu dung - dung RFC 2131
     khuyen nghi client tu gui lai.
     """
+    if iface is None:
+        iface = _cong_mac_dinh()
     cong = doc_thong_tin_cong(iface)
     loi_truyen = doc_thong_ke_loi(iface)
     poe = doc_poe(iface)
@@ -581,8 +596,7 @@ DHCP_TEMPLATE = """
     <form method="POST" style="margin-top:16px;">
         <label>Interface:</label>
         <select name="iface">
-            <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
-            <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
+            {{ o_chon_cong|safe }}
         </select>
         <button type="submit" style="margin-left:10px;" data-busy="Đang kiểm tra toàn diện...">🔎 Kiem tra toan dien</button>
     </form>
@@ -682,14 +696,14 @@ DHCP_TEMPLATE = """
 
 @nettools_bp.route("/nettools/dhcp-test", methods=["GET", "POST"])
 def dhcp_test_route():
-    iface = request.form.get("iface", "eth0")
+    iface = request.form.get("iface") or _cong_mac_dinh()
     ran = request.method == "POST"
     result = run_dhcp_test(iface=iface, test_internet=True) if ran else None
-    return render_template_string(DHCP_TEMPLATE, iface=iface, ran=ran, result=result)
+    return render_template_string(DHCP_TEMPLATE, o_chon_cong=_o_chon_cong(iface), iface=iface, ran=ran, result=result)
 
 
 if __name__ == "__main__":
     import sys
     import json
-    iface = sys.argv[1] if len(sys.argv) > 1 else "eth0"
+    iface = sys.argv[1] if len(sys.argv) > 1 else _cong_mac_dinh()
     print(json.dumps(run_dhcp_test(iface=iface), indent=2, ensure_ascii=False))

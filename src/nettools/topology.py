@@ -19,6 +19,19 @@ import re
 from flask import request, render_template_string
 
 from . import nettools_bp
+
+
+def _cong_mac_dinh():
+    """Cong mac dinh cho o chon - cong co day that cua may nay (xem
+    ui/phancung.py). Truoc day viet cung "eth0" nen chi dung tren Pi."""
+    from ui.phancung import cong_mac_dinh
+    return cong_mac_dinh()
+
+
+def _o_chon_cong(dang_chon=""):
+    """Cac the <option> liet ke dung cac cong THAT dang co tren may."""
+    from ui.phancung import o_chon_cong
+    return o_chon_cong(dang_chon)
 from .arp_scan import run_arp_scan
 from .lldp import get_lldp_neighbors
 
@@ -27,11 +40,13 @@ from .lldp import get_lldp_neighbors
 SO_HOST_TOI_DA_TREN_HINH = 20
 
 
-def xay_dung_topo(iface="eth0"):
+def xay_dung_topo(iface=None):
     """
     Tra ve {"ok", "error", "iface", "switch": {...}|None, "hosts": [...],
             "svg": str, "gioi_han": str}
     """
+    if iface is None:
+        iface = _cong_mac_dinh()
     lldp_kq = get_lldp_neighbors()
     arp_kq = run_arp_scan(iface=iface)
 
@@ -163,8 +178,7 @@ TOPOLOGY_TEMPLATE = """
     <form method="POST" style="margin-top:16px;">
         <label>Interface:</label>
         <select name="iface">
-            <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
-            <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
+            {{ o_chon_cong|safe }}
         </select>
         <button type="submit" style="margin-left:10px;" data-busy="Đang quét ARP + LLDP...">Ve so do</button>
     </form>
@@ -192,16 +206,16 @@ TOPOLOGY_TEMPLATE = """
 
 @nettools_bp.route("/nettools/topology", methods=["GET", "POST"])
 def topology_route():
-    iface = request.form.get("iface", "eth0")
+    iface = request.form.get("iface") or _cong_mac_dinh()
     ran = request.method == "POST"
     result = xay_dung_topo(iface=iface) if ran else None
-    return render_template_string(TOPOLOGY_TEMPLATE, iface=iface, ran=ran, result=result)
+    return render_template_string(TOPOLOGY_TEMPLATE, o_chon_cong=_o_chon_cong(iface), iface=iface, ran=ran, result=result)
 
 
 if __name__ == "__main__":
     import sys
     import json
-    iface = sys.argv[1] if len(sys.argv) > 1 else "eth0"
+    iface = sys.argv[1] if len(sys.argv) > 1 else _cong_mac_dinh()
     kq = xay_dung_topo(iface=iface)
     kq_gon = {k: v for k, v in kq.items() if k != "svg"}
     kq_gon["svg_do_dai"] = len(kq.get("svg", ""))

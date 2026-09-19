@@ -21,10 +21,15 @@ import subprocess
 
 STATE_FLAG = "/run/console-pi-direct.flag"
 DNSMASQ_CONF = "/etc/dnsmasq-direct.conf"
-IFACE = "eth0"
+def cong():
+    """Cong co day cua may nay - xem ui/phancung.py. Truoc day viet cung
+    "eth0" nen chi dung tren Raspberry Pi."""
+    from . import phancung as _pc
+    return _pc.cong_day() or "eth0"
 PI_IP = "192.168.99.1"
 PI_CIDR = f"{PI_IP}/24"
-NM_CONN = "netplan-eth0"
+# Tra cong ve cho NetworkManager theo TEN THIET BI (nmcli device connect)
+# thay vi ten ket noi co dinh "netplan-eth0" - ten do chi dung tren Pi nay.
 
 # Dai IP tinh hay gap khi iLO/iDRAC duoc dat cung, khong xin DHCP.
 # Quet them cac dai nay de khong bo sot.
@@ -68,20 +73,20 @@ def bat_che_do():
         return True, "Chế độ cắm thẳng đang bật sẵn."
 
     # Tach eth0 khoi NetworkManager de no khong doi lai DHCP ngay sau lung
-    _sh(["nmcli", "device", "set", IFACE, "managed", "no"])
-    _sh(["ip", "addr", "flush", "dev", IFACE])
-    ok, out = _sh(["ip", "addr", "add", PI_CIDR, "dev", IFACE])
+    _sh(["nmcli", "device", "set", cong(), "managed", "no"])
+    _sh(["ip", "addr", "flush", "dev", cong()])
+    ok, out = _sh(["ip", "addr", "add", PI_CIDR, "dev", cong()])
     if not ok and "File exists" not in out:
-        _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
-        return False, f"Không đặt được IP tĩnh cho {IFACE}: {out[:120]}"
-    _sh(["ip", "link", "set", IFACE, "up"])
+        _sh(["nmcli", "device", "set", cong(), "managed", "yes"])
+        return False, f"Không đặt được IP tĩnh cho {cong()}: {out[:120]}"
+    _sh(["ip", "link", "set", cong(), "up"])
 
     try:
         with open(DNSMASQ_CONF, "w") as f:
             f.write(
                 f"# Console Pi - DHCP cho che do cam thang thiet bi.\n"
-                f"# Chi phuc vu {IFACE}, khong dung chung voi dnsmasq cua AP hay PAN.\n"
-                f"interface={IFACE}\n"
+                f"# Chi phuc vu {cong()}, khong dung chung voi dnsmasq cua AP hay PAN.\n"
+                f"interface={cong()}\n"
                 f"bind-interfaces\n"
                 f"except-interface=lo\n"
                 f"dhcp-range=192.168.99.50,192.168.99.99,255.255.255.0,12h\n"
@@ -107,14 +112,14 @@ def tat_che_do():
     if not dang_bat():
         return True, "Chế độ cắm thẳng vốn đã tắt."
     _sh(["systemctl", "stop", "dnsmasq-direct"])
-    _sh(["ip", "addr", "flush", "dev", IFACE])
-    _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
-    _sh(["nmcli", "connection", "up", NM_CONN], timeout=30)
+    _sh(["ip", "addr", "flush", "dev", cong()])
+    _sh(["nmcli", "device", "set", cong(), "managed", "yes"])
+    _sh(["nmcli", "device", "connect", cong()], timeout=30)
     try:
         os.remove(STATE_FLAG)
     except OSError:
         pass
-    return True, f"Đã trả {IFACE} về chế độ DHCP bình thường."
+    return True, f"Đã trả {cong()} về chế độ DHCP bình thường."
 
 
 def quet_thiet_bi(them_dai_tinh=False, dai_tu_nhap=""):
@@ -125,7 +130,7 @@ def quet_thiet_bi(them_dai_tinh=False, dai_tu_nhap=""):
     thay = {}
 
     def _quet(args, nguon):
-        ok, out = _sh(["arp-scan", "--interface", IFACE, "--retry=2"] + args, timeout=90)
+        ok, out = _sh(["arp-scan", "--interface", cong(), "--retry=2"] + args, timeout=90)
         if not ok:
             return
         for line in out.splitlines():
@@ -196,7 +201,7 @@ def register_direct(app):
         """Nguoi dung co dang truy cap qua chinh cong LAN sap bi doi khong?"""
         ip = request.headers.get("X-Forwarded-For",
                                  request.remote_addr or "").split(",")[0].strip()
-        ok, out = _sh(["ip", "-4", "-o", "addr", "show", IFACE], timeout=5)
+        ok, out = _sh(["ip", "-4", "-o", "addr", "show", cong()], timeout=5)
         m = re.search(r"inet (\d+\.\d+\.\d+\.\d+)/(\d+)", out or "")
         if not m or not ip:
             return False

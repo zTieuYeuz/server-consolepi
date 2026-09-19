@@ -55,7 +55,26 @@ def _lenh(cmd, timeout=15, **kw):
 AP_IP = "192.168.50.1"
 FORCE_AP_FLAG = "/opt/console-pi/force-ap.flag"
 NAMES_FILE = "/opt/console-pi/port-names.json"
-WPA_CONF = "/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
+def cong_wifi():
+    """
+    Ten cong WiFi cua may nay - xem ui/phancung.py. Truoc day viet cung
+    cong_wifi() (dung tren Pi, sai tren laptop: wlp2s0, wlx00c0ca...).
+
+    Tra cong_wifi() lam nuoc cuoi khi may khong co card WiFi, de cac lenh ben
+    duoi bao loi ro rang thay vi nhan chuoi rong roi sinh lenh vo nghia.
+    """
+    from . import phancung as _pc
+    return _pc.cong_wifi() or cong_wifi()
+
+
+def wpa_conf():
+    """
+    File cau hinh wpa_supplicant GAN LIEN voi ten cong (Debian/Pi OS dung
+    quy uoc wpa_supplicant-<cong>.conf). Doi cong thi doi luon file - neu
+    giu nguyen ten cu, wpa_supplicant cua cong moi se doc nham file rong
+    va khong bao gio noi duoc WiFi.
+    """
+    return f"/etc/wpa_supplicant/wpa_supplicant-{cong_wifi()}.conf"
 NETWORK_BLOCK_RE = re.compile(r"network=\{.*?\}", re.S)
 
 WIFI_STATUS = {"state": "idle", "ssid": None, "msg": "", "ip": None, "saved": False}
@@ -73,7 +92,7 @@ def ap_locked():
 def get_net_status():
     ip = ""
     try:
-        out = subprocess.run(["ip", "-4", "-o", "addr", "show", "wlan0"],
+        out = subprocess.run(["ip", "-4", "-o", "addr", "show", cong_wifi()],
                              capture_output=True, text=True, timeout=5).stdout
         for tok in out.split():
             if "/" in tok and tok.count(".") == 3:
@@ -84,7 +103,7 @@ def get_net_status():
 
     ssid, mode = "", "?"
     try:
-        info = subprocess.run(["iw", "dev", "wlan0", "info"],
+        info = subprocess.run(["iw", "dev", cong_wifi(), "info"],
                               capture_output=True, text=True, timeout=5).stdout
         for line in info.splitlines():
             line = line.strip()
@@ -119,7 +138,7 @@ def scan_wifi(force=False):
 
 def _do_scan():
     try:
-        r = subprocess.run(["iw", "dev", "wlan0", "scan"],
+        r = subprocess.run(["iw", "dev", cong_wifi(), "scan"],
                            capture_output=True, text=True, timeout=25)
         ssids = []
         for line in r.stdout.split("\n"):
@@ -159,7 +178,7 @@ def load_saved_wifi_with_psk():
     nguoi dung go lai mat khau ho da nhap tu truoc.
     """
     try:
-        with open(WPA_CONF) as f:
+        with open(wpa_conf()) as f:
             content = f.read()
     except Exception:
         return {}
@@ -179,20 +198,20 @@ def load_saved_wifi():
 
 def save_wifi_permanently(ssid, password):
     try:
-        with open(WPA_CONF) as f:
+        with open(wpa_conf()) as f:
             content = f.read()
     except Exception:
         return False
     if f'ssid="{ssid}"' in content:
         return False
-    with open(WPA_CONF, "a") as f:
+    with open(wpa_conf(), "a") as f:
         f.write(f'\nnetwork={{\n    ssid="{ssid}"\n    psk="{password}"\n}}\n')
     return True
 
 
 def delete_saved_wifi(ssid):
     try:
-        with open(WPA_CONF) as f:
+        with open(wpa_conf()) as f:
             content = f.read()
     except Exception:
         return False
@@ -206,7 +225,7 @@ def delete_saved_wifi(ssid):
     if not removed:
         return False
     header = NETWORK_BLOCK_RE.sub("", content).strip()
-    with open(WPA_CONF, "w") as f:
+    with open(wpa_conf(), "w") as f:
         f.write("\n\n".join(p for p in ([header] + keep) if p).rstrip() + "\n")
     return True
 
@@ -222,20 +241,20 @@ def test_wifi_connection(ssid, password):
     _lenh(["systemctl", "stop", "dnsmasq"], timeout=20)
     _lenh(["pkill", "-9", "wpa_supplicant"], timeout=10)
     time.sleep(1)
-    _lenh(["ip", "addr", "flush", "dev", "wlan0"], timeout=10)
-    _lenh(["ip", "link", "set", "wlan0", "down"], timeout=10)
+    _lenh(["ip", "addr", "flush", "dev", cong_wifi()], timeout=10)
+    _lenh(["ip", "link", "set", cong_wifi(), "down"], timeout=10)
     time.sleep(1)
-    _lenh(["ip", "addr", "flush", "dev", "wlan0"], timeout=10)
-    _lenh(["ip", "link", "set", "wlan0", "up"], timeout=10)
+    _lenh(["ip", "addr", "flush", "dev", cong_wifi()], timeout=10)
+    _lenh(["ip", "link", "set", cong_wifi(), "up"], timeout=10)
     time.sleep(2)
-    _lenh(["wpa_supplicant", "-B", "-i", "wlan0", "-c", path], timeout=15)
+    _lenh(["wpa_supplicant", "-B", "-i", cong_wifi(), "-c", path], timeout=15)
 
     for _ in range(25):
         time.sleep(1)
-        r = _lenh(["wpa_cli", "-i", "wlan0", "status"],
+        r = _lenh(["wpa_cli", "-i", cong_wifi(), "status"],
                            capture_output=True, text=True, timeout=10)
         if "wpa_state=COMPLETED" in r.stdout:
-            _lenh(["networkctl", "reconfigure", "wlan0"], timeout=15)
+            _lenh(["networkctl", "reconfigure", cong_wifi()], timeout=15)
             time.sleep(5)
             return True
     return False
@@ -243,19 +262,19 @@ def test_wifi_connection(ssid, password):
 
 def restore_ap_mode():
     _lenh(["pkill", "-9", "wpa_supplicant"], timeout=10)
-    _lenh(["ip", "addr", "flush", "dev", "wlan0"], timeout=10)
-    _lenh(["ip", "addr", "add", f"{AP_IP}/24", "dev", "wlan0"], timeout=10)
-    _lenh(["ip", "link", "set", "wlan0", "up"], timeout=10)
+    _lenh(["ip", "addr", "flush", "dev", cong_wifi()], timeout=10)
+    _lenh(["ip", "addr", "add", f"{AP_IP}/24", "dev", cong_wifi()], timeout=10)
+    _lenh(["ip", "link", "set", cong_wifi(), "up"], timeout=10)
     _lenh(["systemctl", "start", "hostapd"], timeout=20)
     _lenh(["systemctl", "start", "dnsmasq"], timeout=20)
     # Luoi an toan: systemd-networkd tung xoa mat IP nay ngay sau khi carrier len
     for _ in range(4):
         time.sleep(1)
-        out = _lenh(["ip", "-4", "-o", "addr", "show", "wlan0"],
+        out = _lenh(["ip", "-4", "-o", "addr", "show", cong_wifi()],
                              capture_output=True, text=True, timeout=5).stdout
         if AP_IP in out:
             return
-    _lenh(["ip", "addr", "add", f"{AP_IP}/24", "dev", "wlan0"], timeout=10)
+    _lenh(["ip", "addr", "add", f"{AP_IP}/24", "dev", cong_wifi()], timeout=10)
 
 
 def _switch_worker(ssid, password, do_save):
@@ -819,12 +838,12 @@ def wifi_disconnect():
     wpa_supplicant (ca dang unit lan dang -B do wifi-fallback.sh chay), roi bao
     networkd cau hinh lai - mat carrier thi networkd tu bo dia chi.
     """
-    subprocess.run(["systemctl", "stop", "wpa_supplicant@wlan0"],
+    subprocess.run(["systemctl", "stop", f"wpa_supplicant@{cong_wifi()}"],
                    capture_output=True, timeout=15)
-    subprocess.run(["pkill", "-f", "wpa_supplicant -B -i wlan0"],
+    subprocess.run(["pkill", "-f", f"wpa_supplicant -B -i {cong_wifi()}"],
                    capture_output=True, timeout=10)
     time.sleep(1)
-    subprocess.run(["networkctl", "reconfigure", "wlan0"],
+    subprocess.run(["networkctl", "reconfigure", cong_wifi()],
                    capture_output=True, timeout=15)
     return True, ("Da ngat WiFi. Pi se tu danh gia lai trong vong 2 phut: "
                   "thay mang quen thi noi lai, khong thay thi bat AP ConsolePi.")
@@ -860,12 +879,14 @@ def client_via_wlan():
 MAC_SPOOF_FLAG = "/opt/console-pi/wifi-mac-spoof.flag"
 
 
-def mac_that(iface="wlan0"):
+def mac_that(iface=None):
     """
     MAC GOC tu phan cung (doc thang tu EEPROM qua ethtool), KHONG phu
     thuoc da tung doi bang phan mem hay chua - dung de biet chac chan
     "MAC that" la gi bat ky luc nao, khong can tu luu/nho rieng.
     """
+    if iface is None:
+        iface = cong_wifi()
     try:
         r = subprocess.run(["ethtool", "-P", iface],
                            capture_output=True, text=True, timeout=5)
@@ -875,7 +896,9 @@ def mac_that(iface="wlan0"):
         return ""
 
 
-def mac_hien_tai(iface="wlan0"):
+def mac_hien_tai(iface=None):
+    if iface is None:
+        iface = cong_wifi()
     try:
         with open(f"/sys/class/net/{iface}/address") as f:
             return f.read().strip().lower()
@@ -899,7 +922,7 @@ def _tao_mac_gia():
     return "02:" + ":".join(f"{b:02x}" for b in phan_con_lai)
 
 
-def bat_gia_mac(iface="wlan0"):
+def bat_gia_mac(iface=None):
     """
     Bat che do gia MAC - sinh 1 MAC gia CO DINH (luu lai, dung lai moi lan
     chu khong doi ngau nhien moi lan ket noi) va ap dung ngay neu doi duoc.
@@ -909,6 +932,8 @@ def bat_gia_mac(iface="wlan0"):
     ninh mang danh dau la bat thuong hon la mot thiet bi ON DINH quay lai
     nhieu lan.
     """
+    if iface is None:
+        iface = cong_wifi()
     if dang_gia_mac():
         return True, "Da bat san."
     mac_moi = _tao_mac_gia()
@@ -926,8 +951,10 @@ def bat_gia_mac(iface="wlan0"):
                   f"(toi da 2 phut).")
 
 
-def tat_gia_mac(iface="wlan0"):
+def tat_gia_mac(iface=None):
     """Tat va TRA VE NGAY MAC that - khong doi mac dinh phai doi WiFi thu cong."""
+    if iface is None:
+        iface = cong_wifi()
     try:
         os.remove(MAC_SPOOF_FLAG)
     except OSError:

@@ -8,6 +8,19 @@ from flask import request, render_template_string
 
 from . import nettools_bp
 
+
+def _cong_mac_dinh():
+    """Cong mac dinh cho o chon - cong co day that cua may nay (xem
+    ui/phancung.py). Truoc day viet cung "eth0" nen chi dung tren Pi."""
+    from ui.phancung import cong_mac_dinh
+    return cong_mac_dinh()
+
+
+def _o_chon_cong(dang_chon=""):
+    """Cac the <option> liet ke dung cac cong THAT dang co tren may."""
+    from ui.phancung import o_chon_cong
+    return o_chon_cong(dang_chon)
+
 # LO HONG DA VA (ra soat lai code, khong phai da gap that): truoc day
 # khong kiem tra gi ca truoc khi dua "host" thang vao subprocess.run(). Vi
 # goi dang list (khong shell=True) nen KHONG the chen lenh shell duoc, NHUNG
@@ -25,7 +38,7 @@ def _host_hop_le(host):
     return bool(host) and bool(_MAU_HOST_HOP_LE.fullmatch(host))
 
 
-def run_ping(host, iface="eth0", count=4, timeout=2):
+def run_ping(host, iface=None, count=4, timeout=2):
     cmd = ["ping", "-c", str(count), "-W", str(timeout), "-I", iface, host]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=count * timeout + 10)
@@ -36,7 +49,7 @@ def run_ping(host, iface="eth0", count=4, timeout=2):
         return f"(loi: {e})"
 
 
-def run_traceroute(host, iface="eth0", max_hops=20, timeout=2):
+def run_traceroute(host, iface=None, max_hops=20, timeout=2):
     cmd = ["traceroute", "-n", "-w", str(timeout), "-m", str(max_hops), "-i", iface, host]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=max_hops * timeout + 15)
@@ -75,8 +88,7 @@ PING_TEMPLATE = """
         <input type="text" name="host" value="{{ host or '' }}" placeholder="vd 8.8.8.8 hoac google.com" required>
         <label style="margin-left:10px;">Interface:</label>
         <select name="iface">
-            <option value="eth0" {{ 'selected' if iface=='eth0' else '' }}>eth0</option>
-            <option value="wlan0" {{ 'selected' if iface=='wlan0' else '' }}>wlan0</option>
+            {{ o_chon_cong|safe }}
         </select>
         <button type="submit" style="margin-left:10px;">Chạy cả 2</button>
     </form>
@@ -95,7 +107,7 @@ PING_TEMPLATE = """
 @nettools_bp.route("/nettools/ping", methods=["GET", "POST"])
 def ping_route():
     host = (request.form.get("host") or "").strip()
-    iface = request.form.get("iface", "eth0")
+    iface = request.form.get("iface") or _cong_mac_dinh()
     ran = request.method == "POST" and bool(host)
 
     ping_out = trace_out = ""
@@ -108,7 +120,7 @@ def ping_route():
             trace_out = run_traceroute(host, iface=iface)
 
     return render_template_string(
-        PING_TEMPLATE, host=host, iface=iface, ran=ran,
+        PING_TEMPLATE, o_chon_cong=_o_chon_cong(iface), host=host, iface=iface, ran=ran,
         ping_out=ping_out, trace_out=trace_out,
     )
 

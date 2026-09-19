@@ -56,16 +56,35 @@ from . import deployos as _d
 
 STATE_FLAG = "/run/console-pi-pxe.flag"
 DNSMASQ_CONF = "/etc/dnsmasq-pxe.conf"
-IFACE = "eth0"
 PI_IP = "192.168.98.1"
 PI_CIDR = f"{PI_IP}/24"
-NM_CONN = "netplan-eth0"
+# Tra eth0 ve cho NetworkManager: dung `nmcli device connect <cong>` thay
+# vi goi ten ket noi co dinh "netplan-eth0" - ten do chi dung tren Pi nay,
+# may khac dat ten khac han ("Wired connection 1", "ens192"...). Goi theo
+# THIET BI thi may nao cung dung.
 DON_VI_SYSTEMD = "dnsmasq-pxe"
 
 TEN_BOOTMGR_BIOS = "bootmgr.exe"
 TEN_BOOTMGR_UEFI = "wdsmgfw.efi"
 TEN_BCD_BIOS = "bcd-bios"
 TEN_BCD_UEFI = "bcd-uefi"
+
+
+def cong():
+    """
+    Cong co day dung cho PXE. Truoc day viet cung "eth0".
+
+    VI SAO PHAI HOI MOI LAN thay vi tinh mot lan luc nap module: cong co
+    the doi GIUA CHUNG - cam them USB-LAN, hoac tren may ban thi ten cong
+    la enp3s0/ens192 tuy may. Tinh san 1 lan roi giu mai se ket vao gia
+    tri sai ngay khi nguoi dung doi cong trong Cai dat.
+
+    Neu may khong co cong day nao, tra ve "eth0" lam nuoc cuoi de cac lenh
+    ben duoi con bao loi ro rang ("khong tim thay thiet bi eth0") thay vi
+    nhan chuoi rong roi sinh ra lenh `ip addr add ... dev ` kho hieu.
+    """
+    from . import phancung as _pc
+    return _pc.cong_day() or "eth0"
 
 
 def _sh(cmd, timeout=20):
@@ -220,11 +239,13 @@ def _dia_chi_pi_that(kieu_boot):
     """
     if kieu_boot == "mang_co_dhcp":
         from .layout import _ipv4_of
-        return _ipv4_of(IFACE) or PI_IP
+        return _ipv4_of(cong()) or PI_IP
     return PI_IP
 
 
-def _mang_that(iface=IFACE):
+def _mang_that(iface=None):
+    if iface is None:
+        iface = cong()
     """(dia_chi_mang, do_dai_prefix) THAT cua interface - dung cho proxyDHCP
     can biet dung dai mang cua DHCP server that, khong doan."""
     import ipaddress
@@ -341,9 +362,9 @@ def _ghi_dnsmasq_conf(kieu_boot):
     # proxyDHCP theo tai lieu chinh thuc.
     dong_pxe_service = ""
     if kieu_boot == "mang_co_dhcp":
-        mang, prefix = _mang_that(IFACE)
+        mang, prefix = _mang_that(cong())
         if not mang:
-            return False, (f"Khong doc duoc dia chi IP that cua {IFACE} - "
+            return False, (f"Khong doc duoc dia chi IP that cua {cong()} - "
                            f"kiem tra da cam day mang va co IP chua.")
         dhcp_range = f"dhcp-range={mang},proxy"
         dong_gateway = ""     # proxyDHCP khong cap IP nen khong can khai bao gateway
@@ -358,7 +379,7 @@ def _ghi_dnsmasq_conf(kieu_boot):
 
     noi_dung = f"""# Console Pi - PXE cho tab Deployment OS. Sinh tu dong, dung sua tay -
 # sinh lai moi lan bat qua ui/pxe.py (_ghi_dnsmasq_conf).
-interface={IFACE}
+interface={cong()}
 bind-interfaces
 except-interface=lo
 {dhcp_range}
@@ -518,19 +539,19 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
 
     if kieu_boot != "mang_co_dhcp":
         # Che do tu cap IP: can chiem han eth0, giong het direct.py
-        _sh(["nmcli", "device", "set", IFACE, "managed", "no"])
-        _sh(["ip", "addr", "flush", "dev", IFACE])
-        ok, out = _sh(["ip", "addr", "add", PI_CIDR, "dev", IFACE])
+        _sh(["nmcli", "device", "set", cong(), "managed", "no"])
+        _sh(["ip", "addr", "flush", "dev", cong()])
+        ok, out = _sh(["ip", "addr", "add", PI_CIDR, "dev", cong()])
         if not ok and "File exists" not in out:
-            _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
-            return False, f"Không đặt được IP tĩnh cho {IFACE}: {out[:150]}"
-        _sh(["ip", "link", "set", IFACE, "up"])
-    elif not _mang_that(IFACE)[0]:
+            _sh(["nmcli", "device", "set", cong(), "managed", "yes"])
+            return False, f"Không đặt được IP tĩnh cho {cong()}: {out[:150]}"
+        _sh(["ip", "link", "set", cong(), "up"])
+    elif not _mang_that(cong())[0]:
         # proxyDHCP bat buoc phai co IP THAT do mang khach cap. Kiem tra SAU
         # khi da tra eth0 ve cho NetworkManager (tat_pxe o tren), khong phai
         # truoc - neu kiem tra truoc, IP tinh con sot lai cua che do cu se
         # lam phep kiem tra nay do nham.
-        return False, (f"Chưa đọc được địa chỉ IP thật của {IFACE} - kiểm "
+        return False, (f"Chưa đọc được địa chỉ IP thật của {cong()} - kiểm "
                        f"tra đã cắm dây mạng vào mạng có DHCP chưa.")
 
     # ---- 3. Gio eth0 da dung dia chi cua kieu MOI -> dung anh dia + ghi
@@ -539,8 +560,8 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
 
     def _tra_lai_eth0():
         if kieu_boot != "mang_co_dhcp":
-            _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
-            _sh(["nmcli", "connection", "up", NM_CONN], timeout=30)
+            _sh(["nmcli", "device", "set", cong(), "managed", "yes"])
+            _sh(["nmcli", "device", "connect", cong()], timeout=30)
 
     if cauhinh and cauhinh.get("os_ho") == "windows":
         from . import unattend as _u
@@ -561,7 +582,7 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
     ok, out = _sh(["systemctl", "restart", DON_VI_SYSTEMD])
     if not ok:
         if kieu_boot != "mang_co_dhcp":
-            _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
+            _sh(["nmcli", "device", "set", cong(), "managed", "yes"])
         return False, f"Không bật được dịch vụ PXE: {out[:200]}"
 
     # BAT LUON SAMBA - khong the thieu.
@@ -579,7 +600,7 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
     if not ok_smb:
         _sh(["systemctl", "stop", DON_VI_SYSTEMD])
         if kieu_boot != "mang_co_dhcp":
-            _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
+            _sh(["nmcli", "device", "set", cong(), "managed", "yes"])
         return False, ("Bật được PXE nhưng không bật được kho Samba "
                        f"(smbd): {out_smb[:200]}")
 
@@ -603,14 +624,14 @@ def tat_pxe():
     except OSError:
         kieu = "truc_tiep"
     if kieu != "mang_co_dhcp":
-        _sh(["ip", "addr", "flush", "dev", IFACE])
-        _sh(["nmcli", "device", "set", IFACE, "managed", "yes"])
-        _sh(["nmcli", "connection", "up", NM_CONN], timeout=30)
+        _sh(["ip", "addr", "flush", "dev", cong()])
+        _sh(["nmcli", "device", "set", cong(), "managed", "yes"])
+        _sh(["nmcli", "device", "connect", cong()], timeout=30)
     try:
         os.remove(STATE_FLAG)
     except OSError:
         pass
-    return True, f"Đã tắt PXE, trả {IFACE} về bình thường."
+    return True, f"Đã tắt PXE, trả {cong()} về bình thường."
 
 
 # ==================================================================== web
