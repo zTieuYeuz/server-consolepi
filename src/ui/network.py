@@ -58,13 +58,23 @@ NAMES_FILE = "/opt/console-pi/port-names.json"
 def cong_wifi():
     """
     Ten cong WiFi cua may nay - xem ui/phancung.py. Truoc day viet cung
-    cong_wifi() (dung tren Pi, sai tren laptop: wlp2s0, wlx00c0ca...).
+    ten "wlan0" (dung tren Pi, sai tren laptop: wlp2s0, wlx00c0ca...).
 
-    Tra cong_wifi() lam nuoc cuoi khi may khong co card WiFi, de cac lenh ben
-    duoi bao loi ro rang thay vi nhan chuoi rong roi sinh lenh vo nghia.
+    May khong co card WiFi thi tra ve ten mac dinh de cac lenh ben duoi bao
+    loi ro rang, thay vi nhan chuoi rong roi sinh ra lenh vo nghia.
     """
     from . import phancung as _pc
-    return _pc.cong_wifi() or cong_wifi()
+    # "wlan0" o day la CHUOI co dinh lam nuoc cuoi, KHONG duoc goi lai
+    # chinh ham nay.
+    #
+    # LOI THAT DA GAP (20/09/2026, chi lo ra khi chay ISO tren may ao
+    # KHONG CO card WiFi): doan thay the hang loat luc go ten cong viet
+    # cung da thay ca chuoi "wlan0" nam trong chinh ve du phong nay, thanh
+    # `return _pc.cong_wifi() or cong_wifi()` - tu goi chinh no vo han.
+    # Tren Pi khong bao gio lo vi Pi CO WiFi nen ve dau luon dung; chi may
+    # khong co card WiFi moi roi xuong ve sau va vo trang /wifi voi
+    # RecursionError. Dung loai loi chi hien ra dung tren may dich.
+    return _pc.cong_wifi() or "wlan0"
 
 
 def wpa_conf():
