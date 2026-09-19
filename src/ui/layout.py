@@ -7,6 +7,7 @@ tu viet lai <html> tu dau. Thiet ke cho man hinh cam ung 1280x800:
   - Thanh trang thai mang luon hien tren cung (yeu cau so 2)
   - Khong dung thu vien ngoai / CDN (Pi mang di hien truong co the khong co net)
 """
+import os
 import subprocess
 
 # (duong dan, nhan, icon)
@@ -31,6 +32,20 @@ import subprocess
 #
 # Nhom nao chua trang dang mo thi TU DONG bung ra (xem render_page) - de
 # nguoi dung luon nhin thay minh dang o dau, khong phai tu mo lai.
+# ---------------------------------------------------------------- thuong hieu
+#
+# Ten HIEN THI cho nguoi dung. Khai o day mot cho de doi ten la doi mot lan
+# (anh Thoai 19/09/2026: "chuyen thanh ten console system").
+#
+# CO Y KHONG doi cac ten NOI BO: duong dan /opt/console-pi, ten dich vu
+# console-pi-dashboard, ten kho ma nguon... Doi chung phai sua 15 file, 7
+# don vi systemd, cau hinh nginx va ca ban da cai tren may dang chay - rui
+# ro cao ma nguoi dung khong nhin thay mot chut loi ich nao. Ten hien thi
+# la thu duy nhat nguoi dung thay.
+TEN_HE_THONG = "CONSOLE SYSTEM"
+TEN_NGAN = "Console System"
+KHAU_HIEU = "Network Engineer Toolkit"
+
 NAV_ITEMS = [
     ("/", "Tổng quan", "🏠"),
 
@@ -461,44 +476,69 @@ def get_status_chips(use_cache=True):
 
     chips = []
 
-    # --- eth0 (card LAN) ---
-    up, ip, state = _iface_info("eth0")
-    chips.append({
-        "key": "LAN (eth0)",
-        "val": ip if ip else ("Đã cắm dây" if state == "up" else "Chưa cắm dây"),
-        "extra": ("link " + state) if not ip else f"link {state}",
-        "up": up,
-    })
+    # Ten cong KHONG con viet cung "eth0"/"wlan0" nua - hoi ui/phancung.py.
+    # Tren Pi van ra dung eth0/wlan0 nhu cu; tren laptop/may ban ra
+    # enp3s0/wlp2s0, tren may ao VMware ra ens192. Nhan cua o trang thai
+    # cung hien dung ten that de nguoi dung biet may minh dang dung cong nao.
+    from . import phancung as _pc
+    ten_day = _pc.cong_day()
+    ten_wifi = _pc.cong_wifi()
 
-    # --- wlan0 (card WiFi) ---
-    up_w, ip_w, state_w = _iface_info("wlan0")
-    ssid, mode = "", ""
-    try:
-        info = subprocess.run(["iw", "dev", "wlan0", "info"],
-                              capture_output=True, text=True, timeout=4).stdout
-        for line in info.splitlines():
-            line = line.strip()
-            if line.startswith("ssid "):
-                ssid = line[5:].strip()
-            elif line.startswith("type "):
-                mode = line[5:].strip()
-    except Exception:
-        pass
-
-    if mode == "AP":
-        extra = "Đang phát AP: " + (ssid or "ConsolePi")
-    elif ssid:
-        extra = "Đã nối: " + ssid
+    # --- Cong co day (LAN) ---
+    if ten_day:
+        up, ip, state = _iface_info(ten_day)
+        chips.append({
+            "key": f"LAN ({ten_day})",
+            "val": ip if ip else ("Đã cắm dây" if state == "up" else "Chưa cắm dây"),
+            "extra": ("link " + state) if not ip else f"link {state}",
+            "up": up,
+        })
     else:
-        extra = "Chưa kết nối WiFi"
-    chips.append({
-        "key": "WiFi (wlan0)",
-        "val": ip_w if ip_w else "Không có IP",
-        "extra": extra,
-        "up": up_w,
-    })
+        # Noi that la may khong co cong day, thay vi hien 1 o "eth0" trong
+        # ma nguoi dung khong hieu vi sao no khong bao gio len.
+        chips.append({"key": "LAN", "val": "Không có cổng dây",
+                      "extra": "máy này không có card mạng có dây", "up": False})
+
+    # --- Cong WiFi ---
+    # KHONG duoc thoat som o day du may khong co WiFi: phia duoi con chip
+    # Bluetooth va Cloudflare, thoat som la mat ca hai.
+    if not ten_wifi:
+        chips.append({"key": "WiFi", "val": "Không có card WiFi",
+                      "extra": "máy này không có card WiFi", "up": False})
+    else:
+        up_w, ip_w, state_w = _iface_info(ten_wifi)
+        ssid, mode = "", ""
+        try:
+            info = subprocess.run(["iw", "dev", ten_wifi, "info"],
+                                  capture_output=True, text=True, timeout=4).stdout
+            for line in info.splitlines():
+                line = line.strip()
+                if line.startswith("ssid "):
+                    ssid = line[5:].strip()
+                elif line.startswith("type "):
+                    mode = line[5:].strip()
+        except Exception:
+            pass
+
+        if mode == "AP":
+            extra = "Đang phát AP: " + (ssid or "ConsolePi")
+        elif ssid:
+            extra = "Đã nối: " + ssid
+        else:
+            extra = "Chưa kết nối WiFi"
+        chips.append({
+            "key": f"WiFi ({ten_wifi})",
+            "val": ip_w if ip_w else "Không có IP",
+            "extra": extra,
+            "up": up_w,
+        })
 
     # --- pan0 (Bluetooth) ---
+    # pan0 do chinh du an tao ra (bt-pan0.service) va chi dung tren Pi. Tren
+    # may khong co no thi bo han chip nay di, thay vi hien "Chua bat" mai
+    # mai lam nguoi dung tuong minh cau hinh thieu.
+    if not os.path.exists("/sys/class/net/pan0"):
+        return _xong_chips(chips)
     up_b, ip_b, _ = _iface_info("pan0")
     n_bt = 0
     try:
@@ -540,12 +580,18 @@ def get_status_chips(use_cache=True):
         "up": cf_chay,
     })
 
+    return _xong_chips(chips)
+
+
+def _xong_chips(chips):
+    """Luu cache roi tra ve - tach rieng de cho nao thoat som cung dung
+    duoc, khong bi quen cap nhat cache."""
     _STATUS_CACHE["data"] = chips
     _STATUS_CACHE["at"] = time.time()
     return chips
 
 
-def render_page(body_html, active="/", title="Console Pi", subtitle="", extra_css=""):
+def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""):
     """
     Dung 1 trang hoan chinh voi khung chung.
       body_html : phan noi dung rieng cua trang (chuoi HTML da render xong)
@@ -593,7 +639,7 @@ def render_page(body_html, active="/", title="Console Pi", subtitle="", extra_cs
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title} - Console Pi</title>
+<title>{title} - {TEN_NGAN}</title>
 <style>{BASE_CSS}
 {extra_css}</style>
 </head>
@@ -601,7 +647,7 @@ def render_page(body_html, active="/", title="Console Pi", subtitle="", extra_cs
 <div class="wrap">
   <div class="side">
     <div class="brand">
-      <span class="bten">CONSOLE PI<small>Network Toolkit</small></span>
+      <span class="bten">{TEN_HE_THONG}<small>{KHAU_HIEU}</small></span>
       <button type="button" id="nut-thu" class="thu"
               title="Thu gọn / mở rộng thanh menu">&raquo;</button>
     </div>

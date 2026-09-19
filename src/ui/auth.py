@@ -196,7 +196,7 @@ LOGIN_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Đăng nhập - Console Pi</title>
+<title>Đăng nhập - Console System</title>
 <style>
 * { box-sizing:border-box; }
 body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
@@ -217,7 +217,7 @@ button { width:100%; margin-top:20px; padding:14px; background:#4CAF50; color:#f
 </head>
 <body>
 <div class="box">
-  <h1>🖥️ Console Pi</h1>
+  <h1>🖥️ Console System</h1>
   <p class="s">Đăng nhập bằng tài khoản Linux của thiết bị</p>
   <form method="POST">
     <label>Tài khoản</label>
