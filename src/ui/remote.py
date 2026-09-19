@@ -345,11 +345,60 @@ def register_remote(app):
             {mien_html}
             <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
               {nut}
-              <form method="POST" action="/remote/xoa-token" style="display:inline;"
-                    onsubmit="return confirm('Xoa token va tat duong ham?');">
-                <button type="submit" class="gray">Xoa token</button>
-              </form>
-            </div>"""
+              <button type="button" class="red" data-mo-hop="hop-xoa-token">
+                Xoá token</button>
+            </div>
+
+            <!-- Hop thoai xac nhan.
+                 VI SAO KHONG DUNG confirm() cua trinh duyet nua (anh Thoai
+                 yeu cau 19/09/2026 "phai hoi xac nhan de dam bao chac an"):
+                 tren man hinh cam ung, hop confirm() hien ra voi nut OK
+                 nam ngay duoi ngon tay dang bam - rat de cham trung lan
+                 hai ma khong kip doc. Ma day la thao tac CO THE TU KHOA
+                 CHINH MINH RA NGOAI: neu dang vao dashboard QUA duong ham
+                 Cloudflare, xoa token la mat ket noi NGAY LAP TUC, khong
+                 con duong nao vao lai tu xa - phai co mat tai cho.
+                 Hop thoai nay bat tich vao o dong y truoc, va nut xac nhan
+                 nam XA nut mo, nen khong the bam nham. -->
+            <dialog id="hop-xoa-token" style="border:1px solid #2B3746;border-radius:12px;
+                    background:#141A23;color:#E3E8EF;padding:0;max-width:560px;width:94vw;">
+              <div style="padding:18px 20px;border-bottom:1px solid #1F2733;">
+                <strong style="font-size:16px;color:#F87171;">Xoá token Cloudflare?</strong>
+              </div>
+              <div style="padding:18px 20px;">
+                <p style="margin:0 0 12px;">Sau khi xoá:</p>
+                <ul style="margin:0 0 14px;padding-left:20px;line-height:1.7;">
+                  <li>Đường hầm <strong>tắt ngay</strong>, tên miền hiện tại không vào được nữa.</li>
+                  <li>Muốn dùng lại phải <strong>tạo token mới</strong> trên trang Cloudflare
+                      Zero Trust rồi dán vào đây.</li>
+                </ul>
+                <div class="msg err" style="margin:0 0 14px;">
+                  <strong>Cẩn thận:</strong> nếu anh đang mở trang này
+                  <em>qua chính đường hầm Cloudflare</em> thì xoá xong là
+                  <strong>mất kết nối ngay lập tức</strong> — phải có mặt tại chỗ
+                  (hoặc vào bằng WiFi/LAN nội bộ) mới làm tiếp được.
+                </div>
+                <label style="display:flex;gap:10px;align-items:flex-start;margin:0;">
+                  <input type="checkbox" id="dong-y-xoa-token"
+                         style="width:20px;height:20px;min-height:20px;margin-top:2px;flex:none;">
+                  <span>Tôi hiểu và vẫn muốn xoá token.</span>
+                </label>
+              </div>
+              <div class="row" style="padding:0 20px 18px;justify-content:flex-end;">
+                <button type="button" class="gray" data-dong-hop>Huỷ</button>
+                <form method="POST" action="/remote/xoa-token" style="display:inline;">
+                  <button type="submit" class="red" id="nut-xoa-token" disabled
+                          data-busy="Đang xoá...">Xoá token</button>
+                </form>
+              </div>
+            </dialog>
+            <script>
+            (function() {{
+              var o = document.getElementById('dong-y-xoa-token');
+              var n = document.getElementById('nut-xoa-token');
+              if (o && n) o.addEventListener('change', function() {{ n.disabled = !o.checked; }});
+            }})();
+            </script>"""
 
         # --- Tailscale (lua chon phu, KHONG thay the Cloudflare o tren) ---
         ts_cai = ts_da_cai()
@@ -412,11 +461,51 @@ def register_remote(app):
             <p style="margin:0;">{ts_trang}</p>
             <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
               {ts_nut}
-              <form method="POST" action="/remote/ts/quen" style="display:inline;"
-                    onsubmit="return confirm('Dang xuat va xoa authkey? Thiet bi se bien mat khoi tailnet, phai dan authkey moi neu muon dung lai.');">
-                <button type="submit" class="gray">Quên thiết bị</button>
-              </form>
+              <button type="button" class="red" data-mo-hop="hop-quen-ts">
+                Quên thiết bị</button>
             </div>
+
+            <!-- Xac nhan giong het ly do o hop xoa token Cloudflare: day
+                 cung la thao tac tu cat duong vao tu xa cua chinh minh. -->
+            <dialog id="hop-quen-ts" style="border:1px solid #2B3746;border-radius:12px;
+                    background:#141A23;color:#E3E8EF;padding:0;max-width:560px;width:94vw;">
+              <div style="padding:18px 20px;border-bottom:1px solid #1F2733;">
+                <strong style="font-size:16px;color:#F87171;">Quên thiết bị Tailscale?</strong>
+              </div>
+              <div style="padding:18px 20px;">
+                <p style="margin:0 0 12px;">Sau khi quên:</p>
+                <ul style="margin:0 0 14px;padding-left:20px;line-height:1.7;">
+                  <li>Pi <strong>đăng xuất khỏi tailnet</strong> và biến mất khỏi
+                      danh sách máy.</li>
+                  <li>Authkey đang lưu bị <strong>xoá khỏi máy</strong>.</li>
+                  <li>Muốn dùng lại phải lấy <strong>authkey mới</strong> từ trang
+                      Tailscale rồi dán vào đây.</li>
+                </ul>
+                <div class="msg err" style="margin:0 0 14px;">
+                  <strong>Cẩn thận:</strong> nếu anh đang vào Pi
+                  <em>qua chính Tailscale</em> thì quên xong là mất kết nối ngay.
+                </div>
+                <label style="display:flex;gap:10px;align-items:flex-start;margin:0;">
+                  <input type="checkbox" id="dong-y-quen-ts"
+                         style="width:20px;height:20px;min-height:20px;margin-top:2px;flex:none;">
+                  <span>Tôi hiểu và vẫn muốn quên thiết bị này.</span>
+                </label>
+              </div>
+              <div class="row" style="padding:0 20px 18px;justify-content:flex-end;">
+                <button type="button" class="gray" data-dong-hop>Huỷ</button>
+                <form method="POST" action="/remote/ts/quen" style="display:inline;">
+                  <button type="submit" class="red" id="nut-quen-ts" disabled
+                          data-busy="Đang quên...">Quên thiết bị</button>
+                </form>
+              </div>
+            </dialog>
+            <script>
+            (function() {{
+              var o = document.getElementById('dong-y-quen-ts');
+              var n = document.getElementById('nut-quen-ts');
+              if (o && n) o.addEventListener('change', function() {{ n.disabled = !o.checked; }});
+            }})();
+            </script>
             <details style="margin-top:13px;">
               <summary style="cursor:pointer;color:#8b93a1;font-size:13px;">
                 Authkey het han / muon doi sang key khac?</summary>
