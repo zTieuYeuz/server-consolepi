@@ -384,7 +384,13 @@ cat /sys/class/drm/card*-HDMI*/status
 sudo libinput debug-events</pre>
 <p><strong>Ban phim ao:</strong> chi hien khi mo tu <strong>chinh man hinh Pi</strong>
 (127.0.0.1). Vao tu laptop/iPad thi khong hien - vi may do da co ban phim rieng.
-Nut tron goc phai duoi de bat/tat.</p>"""),
+Nut tron goc phai duoi de bat/tat.</p>
+<p><strong>Nut ve trang chu:</strong> qua bong tron nho o goc phai duoi, nam
+NGAY TREN nut ban phim ao khi ca hai cung hien - de tranh de len nhau tren man
+hinh cam ung (truoc day tung dat o goc trai va de thang len link "Dang xuat"
+o cuoi thanh menu, da doi cho). Co tren MOI trang ke ca trang cong cu mang va
+2 trang terminal (Local/SSH); rieng trang chu thi khong hien (ve chinh no thi
+vo ich).</p>"""),
 
     ("mau", "🎨 Mau sac trong terminal", """
 <p>Ca 3 khung terminal dung chung bang mau tuong phan cao. Quy uoc mau theo
@@ -631,10 +637,15 @@ bat ky. Cung mot bo cong cu, chi khac phan cung ben duoi.</p>
       hoac <strong>balenaEtcher</strong>. Chon che do ghi <em>DD/anh dia</em>
       neu duoc hoi - file nay la anh dia lai (hybrid).</li>
   <li>Cam USB, vao BIOS chon boot tu USB.</li>
-  <li>Menu boot <strong>tu chay sau 5 giay</strong> neu khong bam gi:
+  <li>Menu boot <strong>tu chay sau 5 giay</strong> neu khong bam gi, chi con
+      dung 3 muc (da bo "Tuy chon cai dat nang cao" 8 muc long nhau va muc
+      "Utilities" - rac roi khong can thiet cho da so truong hop):
       <ul>
         <li><em>Chay thu Console System</em> - chay thang tu USB, KHONG dung
             gi toi o cung. Hop de thu nhanh ngoai hien truong.</li>
+        <li><em>Chay thu - che do an toan</em> - giong muc tren nhung tat bot
+            driver do hoa/ACPI, dung khi may la doi chay thu binh thuong bi
+            treo man hinh den.</li>
         <li><em>CAI Console System len o cung</em> - cai han vao may.</li>
       </ul></li>
   <li>May len xong, <strong>man hinh hien san dia chi</strong> dang
@@ -681,8 +692,29 @@ Chi may mua truoc 2006 moi thuc su chi chay duoc 32-bit.</p>
       tat Secure Boot.</li>
   <li><strong>Card mang la</strong> - kem firmware cho Intel, Realtek,
       Atheros, Broadcom, MediaTek, Qualcomm va cac card mang may chu
-      (bnx2, qlogic, myricom...). CO Y bo firmware do hoa (nvidia/amdgpu,
-      ~224MB) vi may khong co desktop nen khong dung toi.</li>
+      (bnx2, qlogic, myricom...).</li>
+  <li><strong>Card do hoa Intel/AMD</strong> - can cho che do man hinh/kiosk
+      ben duoi. CO Y van khong dua firmware nvidia (~123MB) va am thanh vao
+      vi that su khong dung toi tren may khong desktop.</li>
+</ul>
+
+<h4>Giao dien tren man hinh - danh cho laptop/may co man hinh gan lien</h4>
+<p>Ban Pi (RasPad) da co man hinh cham gan san. Ban ISO x86 cung lam duoc
+y het cho <strong>laptop hoac may ban co man hinh cam vao</strong>: dashboard
+hien thang len man hinh do, khong can may thu hai mo trinh duyet.</p>
+<ul>
+  <li><strong>Tu nhan dien</strong>: luc khoi dong lan dau, may doc
+      <code>/sys/class/drm/*/status</code> - thay co cong man hinh dang cam
+      thi TU BAT giao dien; may cam trong rack khong man hinh thi bo qua,
+      khong bao gio bat nham roi lap loi vo han.</li>
+  <li><strong>Bat/tat tay</strong>: o tab <strong>Cai dat chung</strong>, muc
+      man hinh/kiosk - dung khi cam man hinh vao SAU luc cai, hoac muon tat
+      di de nhuong lai dong lenh <code>tty1</code>.</li>
+  <li>Dung <code>cage</code> (trinh quan ly cua so Wayland toi gian, chi
+      chay dung mot ung dung) + Chromium toan man hinh - cung mot co che voi
+      ban Pi, chi khac cach xac dinh tai khoan chay (Pi dung san
+      <code>administrator</code>, ban ISO tu do theo ten tai khoan nguoi cai
+      dat luc thiet lap lan dau).</li>
 </ul>
 
 <h4>Khác gì bản chạy trên Raspberry Pi</h4>
@@ -710,6 +742,21 @@ Chi may mua truoc 2006 moi thuc su chi chay duoc 32-bit.</p>
   <li>Moi bi mat (mat khau kho Samba...) duoc <strong>sinh ngau nhien o lan
       khoi dong dau tien cua tung may</strong>, khong nhung san trong file
       ISO - vi ISO la file cong khai ai cung tai duoc.</li>
+</ul>
+
+<h4>Nhung cho hay hong va ly do that</h4>
+<ul>
+  <li><strong>May co man hinh boot xong dung im, khong thay dashboard dau</strong>:
+      script thiet lap lan dau tung goi <code>systemctl enable --now</code> cho
+      dich vu man hinh - <code>--now</code> nghia la bat XONG PHAI CHAY VA DOI
+      CHAY XONG, ma dich vu do lai xep hang SAU buoc "may san sang dang nhap".
+      Hai ben doi nhau vinh vien, ca dashboard lan terminal khong lam sao len
+      duoc. Da sua: tach bat va chay lam hai buoc rieng, buoc chay khong doi
+      ket qua.</li>
+  <li><strong>Vao trang Terminal bao loi 502</strong>: dich vu terminal
+      (<code>ttyd</code>) khong nam trong kho goi Debian, phai tai rieng luc
+      dung anh dia - thieu buoc do la terminal chet lap vo han va nginx tra ve
+      502 cho moi lan mo, du dashboard van chay binh thuong.</li>
 </ul>
 """),
 

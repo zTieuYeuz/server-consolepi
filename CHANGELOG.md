@@ -1,5 +1,85 @@
 # Changelog
 
+## 1.1.0
+
+Bon viec anh Thoai giao 20/09/2026, roi mot vong tu kiem tra rieng phat hien
+them 6 loi lam ban cai x86 khong dung duoc that su - tat ca deu bat duoc
+bang cach boot THAT trong QEMU roi goi vao dashboard ben trong, khong chi
+nhin "co file ISO hay khong".
+
+**Nut ve trang chu tren MOI trang** (yeu cau: "tat ca cac trang du co mo
+trang khac thi cung phai co nut home, nhu 1 cai bong bong nho phia duoi
+goc"). Ap dung ca cho 2 trang terminal (Local/SSH) - hai trang nay la ttyd,
+nginx chuyen thang toi khong qua Flask nen phai chen bang `sub_filter` cua
+nginx, gan vao `<html>` chu khong phai `<body>` (ttyd dung preact quan ly
+con cua `<body>`, gan vao do se bi xoa mat).
+- *Sua lai vi tri sau khi giao*: dat ban dau o goc trai duoi thi de thang
+  len link "Dang xuat" cuoi thanh menu. Doi sang goc phai, xep ngay tren nut
+  ban phim ao (`clamp(46px,7vh,58px)` - dung cong thuc chieu cao cua no de
+  hai nut luon cach nhau dung 10px). Noi them dem cuoi trang 96px -> 150px.
+
+**Giao dien tren man hinh cho ban ISO x86** (yeu cau: "thieu option cai khi
+co man hinh, vi du laptop... giong nhu rasberry hien tai cua anh do co man
+hinh"). Tu doc `/sys/class/drm/*/status` luc khoi dong lan dau - thay man
+hinh dang cam thi tu bat kiosk (`cage` + Chromium), khong thay thi bo qua.
+Them nut bat/tat tay trong tab Cai dat.
+
+**Menu boot con 3 muc** (truoc la 8 muc long nhau kieu "Tuy chon cai dat
+nang cao", trong do co "Automated install" chay `auto=true priority=critical`
+KHONG HOI GI ke ca khong hoi chon o dia - nguy co xoa nham may co du lieu
+khach): Chay thu - Chay thu che do an toan - Cai len o cung.
+
+**Sau khi giao, tu kiem tra lai va bat duoc 6 loi that su, deu da sua**:
+
+1. **May co man hinh treo boot vinh vien**: script thiet lap lan dau goi
+   `systemctl enable --now console-pi-kiosk`. `--now` = bat roi CHAY VA DOI
+   CHAY XONG, nhung dich vu kiosk lai xep hang SAU multi-user.target - trong
+   khi chinh script nay chay TRUOC no. Hai ben doi nhau vinh vien, ca
+   dashboard/terminal/kiosk deu ket cung ("waiting" trong
+   `systemctl list-jobs` sau 9 phut). Sua: tach `enable` va
+   `start --no-block`.
+2. **Trang Terminal trong ISO bao 502 Bad Gateway**: `ttyd` khong nam trong
+   kho goi Debian (kiem tra that: ca trixie lan bookworm deu
+   "Candidate: (none)") nen khong the khai trong danh sach goi nhu binh
+   thuong. Danh sach goi thieu han buoc tai no rieng (ban chay tren Pi co
+   lam trong install.sh, ban ISO thi quen) -> dich vu terminal chet lap vo
+   han voi ma loi 127. Sua: hook tai `ttyd` dung theo kien truc ngay trong
+   chroot luc build, that bai la do vo ban build thay vi giao ISO co
+   terminal chet.
+3. **Ban amd64 thieu sach firmware man hinh Intel (i915)**: Debian 13 da
+   tach i915 ra khoi `firmware-misc-nonfree` sang goi rieng
+   `firmware-intel-graphics`; danh sach goi cu chi khai goi cu nen mat
+   trang firmware cho dung loai GPU pho bien nhat tren laptop. Them
+   `firmware-amd-graphics` + `firmware-intel-graphics` (amd64) va
+   `firmware-amd-graphics` (i386, vi Debian 12 van de i915 chung trong goi
+   cu). Gia ~2% kich thuoc ISO.
+4. **Mot dau phan tram trong CHINH chu thich cua muc 3 lam mat 5 goi khoi
+   ISO ma khong bao loi**: `lb build` cho file danh sach goi di qua
+   `printf`; chuoi "2% k" bi hieu la ma dinh dang, in bo ngang va nuot sach
+   moi dong con lai (2 dong firmware vua them, roi `cage`, `chromium`,
+   `sudo`, `user-setup`) - may boot len khong ai dang nhap duoc, ma
+   `lb build` van bao thanh cong. Dau hieu duy nhat la mot dong lap giua
+   4600 dong `build.log`. Sua: bo dau phan tram (viet bang chu), them chan
+   dau `dung-iso.sh` - thay dau phan tram trong danh sach goi la dung ngay.
+5. **Kich ban tu test bao oan "ISO hong"**: `pkill -x qemu-system-x86_64`
+   khong bao gio giet duoc gi - ten tien trinh bi kernel cat con 15 ky tu
+   ("qemu-system-x86"), `-x` doi khop chinh xac nen luon that bai trong im
+   lang. May ao cu con song giu mat cong chuyen tiep, may ao moi bi QEMU tu
+   choi ngay roi chet, vong kiem tra thi cu goi vao may ao CU 600 giay roi
+   ket luan sai la ISO khong boot duoc. Sua: giet theo PID, kiem tra cong da
+   nha truoc khi test (khong dung `pkill -f` - da giet nham chinh phien SSH
+   hai lan truoc day).
+6. **Loi doc sai manifest goi (lai mot lan nua)**: dung `grep -c` voi `\b`
+   qua SSH bi nuot escape, ket luan sai la thieu ca `chromium`/`cage`/
+   `sudo`... trong khi thuc te co du. Sua bang `awk` so dung cot, khong doan
+   qua regex.
+
+**Nghiem thu cuoi cung** (boot that ca hai ban tren nen QEMU sach): amd64
+1401MB boot 1 phut 37; i386 1030MB boot 3 phut 20. Ca hai: khong con viec
+nao treo, 4 dich vu dashboard/nginx/ttyd-local/ttyd-ssh deu active, `/`,
+`/nettools`, `/term-local/` deu HTTP 200 voi nut Home dung cho, terminal la
+ttyd that (khong con trang loi 502 bi nham la "co nut nen dat"), kiosk
+active tren may co man hinh.
 ## 1.0.0 - Console System OS
 
 Ban cai Linux (.iso) cai duoc len laptop/may ban bat ky, cung mot bo cong
