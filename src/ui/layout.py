@@ -253,9 +253,11 @@ body.thu-gon .side .nav .nhom .con a { padding-left:6px; }
 .status .act .btn { min-height:40px; }
 
 /* ---- Vung noi dung ----
-   Dem duoi 96px (khong phai 40px): nut ban phim ao noi o goc phai duoi cao
-   58px - dem mong lam no de len dung hang/nut cuoi trang, bam khong trung. */
-.content { padding:22px 24px 96px; flex:1; max-width:1500px; width:100%; }
+   Dem duoi 150px (khong phai 40px): goc phai duoi gio co HAI nut xep
+   chong nhau - nut ban phim ao (cao toi 58px) va nut ve trang chu nam
+   tren no (them 58px + khe 10px). Tong vung bi che tu day len la ~138px;
+   dem mong hon la chung de len dung hang/nut cuoi trang, bam khong trung. */
+.content { padding:22px 24px 150px; flex:1; max-width:1500px; width:100%; }
 h1 { font-size:24px; color:var(--chu); margin:0 0 5px; font-weight:650;
      letter-spacing:-.3px; }
 /* Tieu de muc co vach cyan ben trai - mat luot qua la biet trang chia lam
@@ -388,19 +390,26 @@ code { font-family:ui-monospace, monospace; background:rgba(56,189,248,.09);
   color:var(--nhan); font-weight:600; }
 .dep-tabs.sub .dep-tab { padding:8px 13px; min-height:38px; font-size:13px; }
 
-/* ---- Nut ve trang chu, noi o goc trai duoi ----
+/* ---- Nut ve trang chu, noi o goc phai duoi ----
    Anh Thoai yeu cau: "tat ca cac trang du co mo trang khac thi cung phai
    co nut home de ve man hinh chinh, nhu 1 cai bong bong nho phia duoi goc".
 
-   VI SAO GOC TRAI (khong phai goc phai): nut ban phim ao da chiem san goc
-   PHAI duoi (right:14px, bottom:14px, rong toi 58px - xem vkeyboard.js).
-   De chung mot goc la hai nut de len nhau, tren man hinh cam ung se bam
-   nham lien tuc.
+   VI TRI PHAI TINH KY - CA HAI GOC DUOI DEU DA CO NUT:
+     - goc TRAI duoi : link "Dang xuat" o cuoi thanh menu (.side .foot)
+     - goc PHAI duoi : nut ban phim ao (#cpvktoggle, right:14px bottom:14px,
+                       rong/cao clamp(46px,7vh,58px) - xem vkeyboard.js)
 
-   z-index thap hon ban phim ao mot bac de neu ban phim bung len thi no
+   LOI THAT DA GAP: ban dau dat o goc TRAI duoi thi no DE THANG LEN nut
+   "Dang xuat" (anh Thoai bao ngay khi vua nap len). Sua: xep nut Home
+   NAM TREN nut ban phim ao o goc phai, dung DUNG cong thuc chieu cao cua
+   no - clamp(46px,7vh,58px) - de hai nut luon khit nhau o moi co man
+   hinh, khong bao gio chong len nhau hay ho khe.
+
+   z-index thap hon ban phim ao mot bac de khi ban phim bung len thi no
    nam tren, khong bi nut nay che mat phim. */
-.nut-home { position:fixed; left:14px; bottom:14px; z-index:2147482998;
-  width:clamp(46px,7vh,56px); height:clamp(46px,7vh,56px); border-radius:50%;
+.nut-home { position:fixed; right:14px; bottom:calc(24px + clamp(46px,7vh,58px));
+  z-index:2147482998;
+  width:clamp(46px,7vh,58px); height:clamp(46px,7vh,58px); border-radius:50%;
   display:flex; align-items:center; justify-content:center;
   background:var(--the); border:1px solid var(--vien-ro); color:var(--nhan);
   font-size:21px; box-shadow:0 4px 14px rgba(0,0,0,.5);
