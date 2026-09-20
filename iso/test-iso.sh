@@ -11,7 +11,21 @@ RAM="${2:-2048}"        # 2GB - mo phong may cu, kiem luon tieu chi may yeu
 CHO="${3:-420}"         # giay cho toi da (khong co KVM nen gia lap cham)
 
 [ -f "$ISO" ] || { echo "KHONG THAY ISO: $ISO"; exit 1; }
-pkill -x qemu-system-x86_64 2>/dev/null; sleep 1
+# Don may ao cu. KHONG dung `pkill -x qemu-system-x86_64`: nhan tien trinh
+# (comm) bi kernel cat con 15 ky tu -> that ra la "qemu-system-x86", con -x
+# doi khop CHINH XAC nen khong bao gio trung, pkill im lang khong giet gi.
+# Hau qua that: may ao cu van song va giu cong 18080/18022, may ao moi bat
+# len bi QEMU tu choi ("Could not set up host forwarding rule") roi chet
+# ngay, con vong kiem tra thi cu goi vao may ao CU suot 10 phut roi ket
+# luan "ISO khong boot duoc" - oan cho ban ISO.
+# Cung KHONG dung `pkill -f qemu-system...`: -f khop ca dong lenh nen no
+# giet luon chinh phien SSH dang chay lenh nay (da bi hai lan).
+ps -eo pid,comm | awk '/qemu-system/{print $1}' | xargs -r kill -9 2>/dev/null
+sleep 2
+if ss -lnt 2>/dev/null | grep -qE ":18080|:18022"; then
+    echo "DUNG LAI: cong 18080/18022 van con bi giu, khong the test sach"
+    exit 1
+fi
 rm -f /tmp/qtest.log /tmp/qtest-mon.sock /tmp/qtest*.ppm
 
 qemu-system-x86_64 \
