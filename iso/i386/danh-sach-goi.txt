@@ -106,6 +106,21 @@ network-manager
 live-tools
 keyboard-configuration
 
+# --- CAI GRUB LEN O CUNG: os-prober khong ai keo theo ---
+#
+# Ban i386 KHONG dinh loi "Install the GRUB boot loader" ma anh Thoai gap
+# tren ban amd64, vi hai nguyen nhan ben do deu khong co o day:
+#   - khong co goi grub-efi nao de grub-installer phai go ra (ban amd64 ket
+#     o cho go goi duoc bao ve grub-efi-amd64-signed)
+#   - may 32-bit khong co UEFI nen khong dung toi efibootmgr; kho Debian 12
+#     i386 cung khong co goi do (da tra kho)
+# Goi grub-pc thi lay tu kho tren dia duoc (da kiem tra co trong pool).
+#
+# Nhung os-prober thi KHONG CO trong chi muc apt cua dia, ma cung khong goi
+# nao keo theo - thieu no la GRUB khong thay Windows tren cung o ma them vao
+# menu boot, khach hang tuong bi xoa mat Windows. Phai cai san.
+os-prober
+
 # --- Rieng ban 32-bit (Debian 12) ---
 # Bo shim-signed/grub-efi-amd64-signed: chung danh cho may 64-bit UEFI.
 # May chi chay 32-bit deu la doi truoc 2006, dung BIOS - khong co UEFI,

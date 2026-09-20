@@ -97,13 +97,64 @@ firmware-carl9170
 firmware-amd-graphics
 firmware-intel-graphics
 
-# --- SECURE BOOT: bat buoc cho laptop doi moi ---
-# Thieu 2 goi nay thi may co Secure Boot BAT SAN (phan lon laptop hang)
-# se tu choi boot USB - nguoi dung phai vao BIOS tat di, ma nhieu may
-# doanh nghiep khoa BIOS nen khong tat duoc.
-shim-signed
-grub-efi-amd64-signed
+# --- SECURE BOOT ---
+# Anh dia van ho tro Secure Boot day du, nhung CO Y KHONG khai shim-signed
+# va grub-efi-amd64-signed o day nua. Ly do (doc /usr/lib/live/build/binary
+# va binary_grub-efi cua chinh live-build tren may build):
+#   - binary_rootfs (dong 48) dung squashfs = he thong live, chay TRUOC
+#   - binary_grub-efi (dong 64) moi TU cai shim-signed +
+#     grub-efi-amd64-signed vao chroot de lam file EFI cho dia, roi
+#     Remove_packages go ra ngay sau (dong 312, con phai them
+#     --allow-remove-essential vi chung la goi duoc bao ve)
+# Tuc la khai o day chi lam chung DINH VAO he thong live - khong giup gi
+# cho Secure Boot cua dia ca.
+#
+# Ma dinh vao he thong live thi HONG BUOC CAI tren may BIOS: grub-installer
+# (dong 529-533) go het goi grub-efi ra truoc khi cai GRUB cho BIOS, ma
+# grub-efi-amd64-signed la goi "Protected: yes" - dpkg TU CHOI go:
+#     dpkg: error processing package grub-efi-amd64-signed (--purge):
+#      this is a protected package; it should not be removed
+#     main-menu: WARNING **: Menu item 'grub-installer' failed
+# grub-installer co "set -e" nen dung ngay -> hop thoai "Install the GRUB
+# boot loader - Installation step failed". Da tai hien nguyen van trong may
+# ao va doc duoc dong log tren (20/09/2026).
+#
+# May cai xong van co Secure Boot: grub-installer tu chay
+# `apt-install --allow-remove shim-signed` (dong 649), lay tu kho tren dia.
 mokutil
+
+# --- CAI GRUB LEN O CUNG: 2 goi khong ai keo theo ho ---
+#
+# LOI THAT (20/09/2026, anh Thoai cai len may that, may UEFI khong co mang):
+#     [!!] Install the GRUB boot loader - Installation step failed
+#
+# Doc thang ma nguon /usr/bin/grub-installer lay tu chinh dia ISO
+# (grub-installer_1.212_amd64.udeb) chu khong doan:
+#   - dong 305 : may UEFI 64-bit thi grub_package="grub-efi-amd64"
+#   - dong 639 : `apt-install grub-efi-amd64` - lay tu kho tren dia duoc,
+#                vi goi nay CO trong chi muc apt cua dia (da kiem tra:
+#                dists/trixie/main/binary-amd64/Packages.gz)
+#   - dong 912 : grub-install chi them --no-nvram khi
+#                grub-installer/update-nvram = false. Mac dinh la true, tuc
+#                LUON ghi muc khoi dong vao NVRAM -> LUON can efibootmgr.
+#   - dong 545 : `apt-install --allow-remove os-prober` (co "|| true")
+#
+# Hai goi duoi day khac cac goi grub o cho: KHONG CO AI keo chung theo ca.
+#   - efibootmgr : grub-efi-amd64 khong khai Recommends nao het (da tra chi
+#                  muc tren dia), nen cai grub-efi-amd64 cung khong ra
+#                  efibootmgr. Thieu no thi grub-install khong ghi noi muc
+#                  khoi dong -> do vo dung buoc cai GRUB tren may UEFI.
+#   - os-prober  : KHONG CO trong chi muc apt cua dia (da dem: 0 ket qua,
+#                  trong khi grub-efi-amd64/efibootmgr/shim-signed deu co).
+#                  Nghia la may khong mang thi khong the co no bang duong
+#                  nao khac ngoai cai san. Thieu no thi GRUB khong thay
+#                  Windows tren cung o ma them vao menu - khach hang tuong
+#                  bi xoa mat Windows.
+#
+# Ton them ~3MB. Deu la Recommends chu khong phai Depends nen bi
+# --apt-recommends false loai nham - CUNG MOT HO LOI voi user-setup/sudo.
+efibootmgr
+os-prober
 
 # --- BAT BUOC: cac goi vua bi --apt-recommends false loai nham ---
 #
