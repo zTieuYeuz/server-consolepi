@@ -644,12 +644,33 @@ bat ky. Cung mot bo cong cu, chi khac phan cung ben duoi.</p>
       khoan vua tao luc cai; ban chay thu tu USB dung <code>user</code> /
       <code>live</code>).</li>
 </ol>
+<p>Trinh cai dat da <strong>dien san</strong> ngon ngu, ban phim, mui gio
+(Asia/Ho_Chi_Minh) va ten may nen bot phai tra loi. Rieng phan
+<strong>chon o dia va chia phan vung thi CO Y de nguoi cai tu bam</strong> -
+dien san may cau do la co ngay xoa nham o chua du lieu cua khach.</p>
 
 <h4>Vì sao không có giao diện đồ hoạ</h4>
 <p>Day la thiet ke co y, khong phai thieu sot. May nay la <strong>thiet bi
 mang</strong>: moi thao tac lam qua trinh duyet tu may khac, nen desktop chi
 ton RAM va dung luong ma khong dung toi. Nho vay ban cai chi khoang
 <strong>1.1 GB</strong> va chay duoc tren may cu RAM thap.</p>
+
+<h4>Hai bản - chọn đúng bản cho máy</h4>
+<table>
+  <tr><th style="width:150px;">Ban</th><th>Dung khi nao</th></tr>
+  <tr><td><strong>64-bit</strong><br>(amd64)</td>
+      <td>Dung cho <strong>gan nhu moi may</strong>. May tu 2007 tro di deu
+      co CPU 64-bit, ke ca may dang cai Windows 32-bit. Ban nay co Secure
+      Boot nen laptop hang boot thang khong phai vao BIOS tat.</td></tr>
+  <tr><td><strong>32-bit</strong><br>(i386)</td>
+      <td>CHI dung khi may <strong>khong chay noi 64-bit</strong> - loai
+      truoc ~2006 (truoc Core 2 Duo), vai netbook Atom doi dau. Ban nay
+      dung nen Debian 12 vi <strong>Debian 13 da bo han kernel 32-bit</strong>
+      (da tra kho: 0 goi kernel i386 trong Debian 13, 4 goi trong Debian 12).
+      Khong co Secure Boot - may doi do cung khong co.</td></tr>
+</table>
+<p class="hint">Khong biet may minh 64-bit hay khong? Gan nhu chac chan la co.
+Chi may mua truoc 2006 moi thuc su chi chay duoc 32-bit.</p>
 
 <h4>Chạy được trên máy nào</h4>
 <ul>
