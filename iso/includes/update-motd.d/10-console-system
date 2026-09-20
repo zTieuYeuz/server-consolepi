@@ -2,6 +2,20 @@
 # Man hinh chao: viec DUY NHAT nguoi dung can biet khi nhin vao may nay la
 # "mo trinh duyet vao dia chi nao". Vi day la he thong khong co giao dien
 # do hoa - moi thao tac deu qua web tu may khac.
+#
+# LOI THAT DA GAP (20/09/2026, anh Thoai boot thu tren may that): man hinh
+# bao "ens33: chua co dia chi IP" nhung ngay sau do go `ip a` thi thay IP
+# co that (192.168.93.128, thue tu DHCP). Khong phai loi doc sai - script
+# nay CHI chay DUNG MOT LAN dung luc tu dang nhap, ma tu dang nhap lai xay
+# ra NGAY KHI VUA BOOT XONG - truoc khi DHCP kip cap IP cho ens33. Script
+# doc dung su that tai dung khoanh khac do (chua co IP that), nhung vai
+# giay sau DHCP moi xong thi man hinh chao da in xong roi, khong tu cap
+# nhat lai duoc nua.
+#
+# SUA: cho toi da 8 giay (16 lan, moi lan 0.5s) truoc khi ket luan "chua co
+# IP" - DHCP binh thuong xong trong 1-2 giay nen da so truong hop se thoat
+# vong lap som, khong phai cho du 8 giay. Day la danh doi CO Y: cham boot
+# vai giay de doi dung viec DUY NHAT ma man hinh nay ton tai de lam.
 C="\033[38;5;39m"; X="\033[38;5;245m"; T="\033[0m"; S="\033[38;5;46m"
 printf "\n${C}   ____                      _        ${T}\n"
 printf "${C}  / ___|___  _ __  ___  ___ | | ___   ${T}\n"
@@ -11,10 +25,31 @@ printf "${C}  \\____\\___/|_| |_|___/\\___/|_|\\___|  ${T}\n\n"
 printf " ${X}Bo cong cu ky thuat mang - khong co giao dien do hoa.${T}\n"
 printf " ${X}Moi thao tac lam qua trinh duyet tu may khac.${T}\n\n"
 
+_co_cong_that() {
+    for i in $(ls /sys/class/net 2>/dev/null); do
+        [ "$i" = "lo" ] && continue
+        [ -e "/sys/class/net/$i/device" ] || continue
+        echo "$i"
+    done
+}
+
+_co_ip_nao_chua() {
+    for i in $(_co_cong_that); do
+        ip=$(ip -4 -o addr show "$i" 2>/dev/null | awk "{print \$4}" | cut -d/ -f1 | head -1)
+        [ -n "$ip" ] && return 0
+    done
+    return 1
+}
+
+# Doi toi da 8 giay cho DHCP kip xong, thoat som ngay khi co IP dau tien.
+_lan=0
+while [ "$_lan" -lt 16 ] && ! _co_ip_nao_chua; do
+    sleep 0.5
+    _lan=$((_lan + 1))
+done
+
 co=0
-for i in $(ls /sys/class/net 2>/dev/null); do
-    [ "$i" = "lo" ] && continue
-    [ -e "/sys/class/net/$i/device" ] || continue
+for i in $(_co_cong_that); do
     ip=$(ip -4 -o addr show "$i" 2>/dev/null | awk "{print \$4}" | cut -d/ -f1 | head -1)
     if [ -n "$ip" ]; then
         printf "   ${S}http://%s${T}   ${X}(cong %s)${T}\n" "$ip" "$i"
