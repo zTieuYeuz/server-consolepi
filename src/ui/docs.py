@@ -746,6 +746,24 @@ hien thang len man hinh do, khong can may thu hai mo trinh duyet.</p>
 
 <h4>Nhung cho hay hong va ly do that</h4>
 <ul>
+  <li><strong>"Install the GRUB boot loader - Installation step failed"</strong>
+      (da sua o ban 1.1.1): buoc cuoi cua trinh cai dat bao do. Co HAI nguyen
+      nhan khac nhau, deu do thieu goi trong he thong live chu khong phai do
+      may hay o cung:
+      <ul>
+        <li><em>May UEFI</em>: <code>grub-install</code> luon ghi muc khoi
+            dong vao NVRAM, viec do can <code>efibootmgr</code> - ma khong
+            goi nao keo goi do theo.</li>
+        <li><em>May BIOS</em>: trinh cai dat phai go het goi GRUB cua UEFI ra
+            truoc khi cai GRUB cho BIOS, nhung
+            <code>grub-efi-amd64-signed</code> la goi
+            <strong>Protected</strong> - dpkg tu choi go vinh vien.</li>
+      </ul>
+      Neu dang dung ban ISO cu: bam <em>Continue</em>, chon
+      <em>Execute a shell</em> roi chay
+      <code>in-target dpkg -i /cdrom/pool/main/e/efibootmgr/efibootmgr_*.deb</code>
+      (goi nay co san tren dia), <code>exit</code>, roi chon lai muc cai
+      GRUB trong menu.</li>
   <li><strong>May co man hinh boot xong dung im, khong thay dashboard dau</strong>:
       script thiet lap lan dau tung goi <code>systemctl enable --now</code> cho
       dich vu man hinh - <code>--now</code> nghia la bat XONG PHAI CHAY VA DOI

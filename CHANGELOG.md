@@ -1,5 +1,58 @@
 # Changelog
 
+## 1.1.1
+
+**Sua loi "Install the GRUB boot loader - Installation step failed"** - anh
+Thoai cai ban amd64 len may that (UEFI, khong cam mang, chia o kieu Guided)
+thi dung o buoc cuoi. Da TAI HIEN nguyen van trong may ao roi doc log that,
+tim ra HAI loi khac nhau chu khong phai mot.
+
+*Gia thuyet dau tien da bo*: khong phai "khong co mang nen khong tai duoc
+goi". Dia ISO co chi muc apt day du va apt trong trinh cai dat chay binh
+thuong du khong mang - log co "Reading package lists... grub-common is
+already the newest version".
+
+**Loi 1 - may UEFI** (dung truong hop anh Thoai gap). Doc ma nguon
+`/usr/bin/grub-installer` lay tu chinh dia: dong 912 cho thay
+`grub-install` chi bo qua NVRAM khi duoc khai bao truoc, mac dinh la LUON
+ghi muc khoi dong vao NVRAM - viec do can `efibootmgr`. Ma `grub-efi-amd64`
+khong khai Recommends nao ca nen khong duong nao keo goi do ve.
+SUA: cai san `efibootmgr`.
+
+**Loi 2 - may BIOS** (chua ai bao cao, tu tai hien ra khi test).
+grub-installer go het goi grub-efi ra truoc khi cai GRUB cho BIOS, nhung he
+thong live co san `grub-efi-amd64-signed` - goi "Protected: yes" ma dpkg tu
+choi go vinh vien. grub-installer co `set -e` nen dung ngay. Loi nay khong
+lien quan gi toi mang.
+SUA: bo khai `shim-signed` + `grub-efi-amd64-signed` khoi danh sach goi.
+Doc `/usr/lib/live/build/binary` moi biet: binary_rootfs dong squashfs
+TRUOC, binary_grub-efi moi TU cai hai goi do de lam file EFI cho dia roi go
+ra ngay - tuc khai trong danh sach goi khong giup gi cho Secure Boot cua
+dia, chi lam chung dinh vao he thong live.
+
+**Kem theo - `os-prober`** (ca hai kien truc): khong co trong chi muc apt
+cua dia va khong goi nao keo theo. Thieu no thi GRUB khong thay Windows
+tren cung o ma them vao menu boot - khach hang tuong bi xoa mat Windows.
+
+Ca ba goi deu la Recommends nen bi `--apt-recommends false` loai nham -
+cung mot ho loi voi user-setup/sudo/nmcli truoc day.
+
+**Nghiem thu** (cai that trong may ao, deu NGAT MANG):
+- May UEFI: qua duoc buoc GRUB; boot lai tu o cung thi may len trong 43
+  giay, khong viec treo, dashboard/nginx/ttyd deu active, ba trang web deu
+  HTTP 200. Muc khoi dong UEFI co that trong NVRAM:
+  `Boot0001* console ... \EFI\console\grubx64.efi`. Ba goi
+  efibootmgr/grub-efi-amd64/shim-signed deu "install ok installed" tren may
+  vua cai du khong he co mang.
+- May BIOS: cai chay het den buoc cuoi va tu khoi dong lai.
+- Secure Boot cua dia van nguyen: `bootx64.efi` trung MD5 tung byte voi
+  `shimx64.efi.signed` (887305fc4744...) trong khi chroot khong con
+  shim-signed.
+
+**Con thieu, chua lam**: menu boot tieng Viet 3 muc chi ap dung cho may boot
+kieu BIOS (isolinux). May boot UEFI van thay menu GRUB mac dinh cua Debian
+(tieng Anh: "Live system", "Utilities"). Khong gay loi gi nhung khong dong
+nhat.
 ## 1.1.0
 
 Bon viec anh Thoai giao 20/09/2026, roi mot vong tu kiem tra rieng phat hien
