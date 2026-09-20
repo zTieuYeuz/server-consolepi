@@ -6,6 +6,18 @@
 # goi trong bookworm). Muon chay duoc may 32-bit thi bat buoc dung ban 12.
 set -e
 cd "$(dirname "$0")"
+# --- Chan truoc: danh sach goi khong duoc chua dau phan tram ---
+# live-build cho file danh sach di qua printf. Mot dau phan tram dung truoc
+# chu cai se bi hieu la ma dinh dang, printf bo ngang, va MOI DONG CON LAI
+# trong danh sach bi nuot mat. `lb build` van bao thanh cong, van sinh ra
+# ISO - chi la ISO thieu goi (lan dau gap tren ban amd64: mat firmware,
+# cage, chromium, user-setup, sudo -> khong dang nhap duoc).
+if grep -l "%" config/package-lists/*.list.chroot 2>/dev/null | grep -q .; then
+    echo "DUNG LAI: co dau phan tram trong danh sach goi:"
+    grep -n "%" config/package-lists/*.list.chroot
+    exit 1
+fi
+
 echo "[1/3] don..."; lb clean >/dev/null 2>&1 || true
 echo "[2/3] cau hinh..."
 lb config \

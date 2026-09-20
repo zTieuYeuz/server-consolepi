@@ -80,7 +80,20 @@ firmware-carl9170
 # firmware-misc-nonfree) co 119 file. Tuc la ban amd64 dang thieu han
 # firmware cho dung loai GPU pho bien nhat tren laptop.
 #
-# Gia: ~118MB tren dia (~21MB nen trong ISO) - khoang 2% kich thuoc ISO.
+# Gia: ~118MB tren dia (~21MB nen trong ISO) - khoang 2 phan tram
+# kich thuoc ISO.
+#
+# TUYET DOI KHONG VIET DAU PHAN TRAM TRONG FILE NAY - KE CA TRONG
+# CHU THICH (nen chu thich nay phai viet bang chu, khong dam go dau
+# do ra). Da mat mot ban build vi no: live-build cho ca file di qua
+# printf, gap dau do dung truoc mot chu cai thi hieu la ma dinh dang
+# roi BO NGANG, nuot sach moi dong con lai - lan do la firmware,
+# cage, chromium, user-setup, sudo deu bien mat.
+# Dau hieu duy nhat la mot dong lap loe giua build.log:
+#     chroot_package-lists: 43: printf: invalid directive
+# con `lb build` van bao thanh cong va van sinh ra file ISO - chi la
+# ISO thieu goi, khong dang nhap duoc, khong co kiosk. Muon ghi phan
+# tram thi viet bang chu nhu dong tren.
 firmware-amd-graphics
 firmware-intel-graphics
 
