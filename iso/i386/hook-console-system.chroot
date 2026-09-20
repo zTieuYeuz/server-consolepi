@@ -100,10 +100,10 @@ echo "[console-system] xong"
 # NAME/PRETTY_NAME la thu nguoi dung NHIN THAY.
 rm -f /etc/os-release
 cat > /etc/os-release << 'OSR'
-PRETTY_NAME="Console System 1.0"
+PRETTY_NAME="Console System 1.0 (32-bit)"
 NAME="Console System"
-VERSION_ID="13"
-VERSION="1.0 (tren Debian 13 trixie)"
+VERSION_ID="12"
+VERSION="1.0 32-bit (tren Debian 12 bookworm)"
 ID=debian
 HOME_URL="https://github.com/zTieuYeuz/server-consolepi"
 OSR

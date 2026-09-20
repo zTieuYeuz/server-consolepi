@@ -66,3 +66,43 @@ sự phục vụ được**.
   vì ISO là file công khai ai cũng tải được.
 - **Menu boot tự chạy sau 5 giây.** Mặc định của live-build là chờ bấm phím
   mãi mãi; máy không cắm màn hình sẽ đứng im vĩnh viễn.
+
+## Hai bản — 64-bit và 32-bit
+
+| | 64-bit (amd64) | 32-bit (i386) |
+|---|---|---|
+| File | `console-system-1.0.0-amd64.iso` | `console-system-1.0.0-i386.iso` |
+| Kích thước | 1136 MB | 804 MB |
+| Nền | Debian 13 (trixie) | Debian 12 (bookworm) |
+| Python | 3.13 | 3.11 |
+| Secure Boot | Có (`shim-signed`) | Không (máy đời đó không có UEFI) |
+| Thư mục build | `iso/` | `iso/i386/` |
+
+**Vì sao bản 32-bit phải dùng Debian 12:** Debian **đã bỏ hẳn** kernel và
+trình cài đặt 32-bit từ bản 13. Đã tra kho để chắc chắn, không đoán:
+
+```
+Debian 13 (trixie)   -> 0 gói linux-image-686
+Debian 12 (bookworm) -> 4 gói linux-image-686
+```
+
+**Lưu ý về tuổi thọ:** Debian 12 sắp hết hạn hỗ trợ, nghĩa là bản 32-bit sẽ
+không còn nhận cập nhật bảo mật trong khi bản 64-bit còn dài. Máy **chỉ**
+chạy được 32-bit là loại trước ~2006 — máy từ 2007 trở đi đều có CPU 64-bit
+kể cả khi đang chạy Windows 32-bit, nên dùng bản 64-bit được.
+
+## Đặt thương hiệu — phải viết trong hook, không đặt file
+
+Phần đổi tên hệ thống (`/etc/os-release`) đã qua **ba lần thử** mới đúng:
+
+1. Đặt file trong `config/includes.chroot/etc/os-release` → bị gói
+   `base-files` **ghi đè âm thầm**, ISO vẫn tự khai là Debian
+2. Chuyển sang `config/includes.chroot_after_packages/` → live-build **từ
+   chối build**: *"You have files in includes.chroot and
+   includes.chroot_after_packages. Only one directory is allowed."*
+3. **Viết trong hook** (`hooks/0100-console-system.hook.chroot`) → đúng, vì
+   hook chạy sau khi cài gói xong và không xung đột thư mục
+
+Giữ nguyên `ID=debian` trong `os-release`: rất nhiều công cụ đọc trường này
+để biết đang chạy trên họ Debian nào. Chỉ đổi `NAME`/`PRETTY_NAME` là thứ
+người dùng nhìn thấy.
