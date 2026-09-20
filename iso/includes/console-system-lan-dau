@@ -69,7 +69,17 @@ if [ -n "$_nd" ]; then
 
     if [ "$_co_man_hinh" = "1" ] && [ -e /dev/dri/card0 ]; then
         systemctl daemon-reload >/dev/null 2>&1 || true
-        if systemctl enable --now console-pi-kiosk console-pi-kiosk-helper >/dev/null 2>&1; then
+        # KHONG DUOC DUNG `enable --now` O DAY - DA LAM TREO BOOT THAT.
+        # `--now` = enable roi START VA DOI cho start xong. Nhung dich vu nay
+        # chay TRONG luc boot, truoc multi-user.target; kiosk lai xep hang sau
+        # multi-user.target -> no doi kiosk, kiosk doi no: ket cung vinh vien.
+        # Kiem chung 20/09/2026 tren may ao: sau 9 phut van "activating", keo
+        # theo dashboard/ttyd/kiosk deu ket o trang thai "waiting", nginx song
+        # nhung moi trang deu 502 - coi nhu ca he thong chet.
+        # SUA: enable (ghi dau moc, khong sinh viec) roi start --no-block
+        # (xep hang xong tra ve ngay), de systemd tu chay kiosk khi den luot.
+        systemctl enable console-pi-kiosk console-pi-kiosk-helper >/dev/null 2>&1 || true
+        if systemctl start --no-block console-pi-kiosk console-pi-kiosk-helper >/dev/null 2>&1; then
             echo "[console-system] co man hinh - da bat giao dien kiosk"
         else
             echo "[console-system] co man hinh nhung khong bat duoc kiosk"

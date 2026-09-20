@@ -13,6 +13,33 @@ echo "[console-system] bat dau thiet lap"
 mkdir -p /var/lib/console-pi/deploy /var/lib/console-pi/storage
 chmod 755 /var/lib/console-pi
 
+# --- 1b. ttyd (KHONG co trong kho Debian - phai tai ban binary) ---
+#
+# LOI THAT (20/09/2026, boot thu ISO trong may ao): moi trang terminal
+# (/term-local/, /term-ssh/, /term-console/ttyUSBx/) deu tra 502 Bad Gateway.
+# Nguyen nhan: danh-sach-goi.txt co tmux nhung KHONG co ttyd - ma ttyd
+# khong nam trong kho Debian (kiem tra that: ca trixie lan bookworm deu
+# "Candidate: (none)"), nen khong the them vao danh sach goi duoc. Ban cai
+# len Pi lay ttyd tu GitHub (xem install.sh) con ban ISO thi tu truoc den
+# gio quen han buoc do -> console-pi-term-local chay roi chet lap vo han
+# voi ma 127 (khong tim thay lenh), nginx thi van song nen nguoi dung chi
+# thay 502 chu khong biet thieu cai gi.
+#
+# Tai ngay tai day, trong chroot, theo dung kien truc dang dung. De `set -e`
+# lam do vo ban build neu tai that bai: tha hong luc build con hon giao ra
+# ban ISO co terminal chet.
+case "$(dpkg --print-architecture)" in
+    amd64) TTYD_ARCH=x86_64 ;;
+    i386)  TTYD_ARCH=i686 ;;
+    *) echo "[console-system] kien truc la, khong biet lay ttyd nao"; exit 1 ;;
+esac
+curl -fsSL "https://github.com/tsl0922/ttyd/releases/latest/download/ttyd.${TTYD_ARCH}" \
+     -o /usr/local/bin/ttyd
+chmod 755 /usr/local/bin/ttyd
+/usr/local/bin/ttyd --version >/dev/null 2>&1 || {
+    echo "[console-system] ttyd tai ve nhung khong chay duoc"; exit 1; }
+echo "[console-system] da cai ttyd: $(/usr/local/bin/ttyd --version 2>&1 | head -1)"
+
 # --- 2. Cac don vi systemd ---
 for f in /usr/local/share/console-system/systemd/*.service /usr/local/share/console-system/systemd/*.timer; do
     [ -f "$f" ] || continue

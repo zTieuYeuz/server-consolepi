@@ -147,6 +147,9 @@ if ! command -v ttyd >/dev/null 2>&1; then
         aarch64) TTYD_ARCH="aarch64" ;;
         armv7l)  TTYD_ARCH="armhf" ;;
         x86_64)  TTYD_ARCH="x86_64" ;;
+        # May x86 32-bit (laptop cu) - ban ISO i386 chay tren chinh nhom may
+        # nay, thieu dong duoi thi chay install.sh tren do se "die" ngay.
+        i686|i586|i386) TTYD_ARCH="i686" ;;
         *)       die "Khong ho tro kien truc $ARCH cho ttyd" ;;
     esac
     TTYD_URL="https://github.com/tsl0922/ttyd/releases/latest/download/ttyd.${TTYD_ARCH}"
