@@ -48,9 +48,8 @@ wimtools
 genisoimage
 
 # --- FIRMWARE MANG: giu DAY DU de chay duoc moi laptop/may ban ---
-# CO Y khong dung goi gop "firmware-linux": no keo theo ca firmware do
-# hoa (nvidia 123MB, amdgpu 85MB, i915 13MB) va am thanh - may nay khong
-# co desktop nen tuyet doi khong dung toi, chi lam ISO nang them ~250MB.
+# CO Y khong dung goi gop "firmware-linux": no keo theo ca firmware am
+# thanh va nvidia (123MB) ma may nay khong dung toi.
 firmware-iwlwifi
 firmware-realtek
 firmware-atheros
@@ -68,6 +67,22 @@ firmware-myricom
 firmware-netxen
 firmware-ath9k-htc
 firmware-carl9170
+
+# --- FIRMWARE DO HOA: can cho che do kiosk tren may CO man hinh ---
+#
+# Truoc day co chu thich "may nay khong co desktop nen khong dung firmware
+# do hoa". Chu thich do DA HET DUNG tu khi them che do kiosk (anh Thoai yeu
+# cau 20/09/2026: laptop co man hinh thi phai hien giao dien ngay tren may).
+#
+# Debian 13 tach i915 RA KHOI firmware-misc-nonfree sang goi rieng
+# firmware-intel-graphics - kiem tra that trong chroot: /lib/firmware/i915
+# co 0 file, trong khi ban i386 (Debian 12, i915 van nam trong
+# firmware-misc-nonfree) co 119 file. Tuc la ban amd64 dang thieu han
+# firmware cho dung loai GPU pho bien nhat tren laptop.
+#
+# Gia: ~118MB tren dia (~21MB nen trong ISO) - khoang 2% kich thuoc ISO.
+firmware-amd-graphics
+firmware-intel-graphics
 
 # --- SECURE BOOT: bat buoc cho laptop doi moi ---
 # Thieu 2 goi nay thi may co Secure Boot BAT SAN (phan lon laptop hang)

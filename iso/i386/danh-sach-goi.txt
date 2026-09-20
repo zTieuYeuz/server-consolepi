@@ -67,6 +67,15 @@ firmware-myricom
 firmware-netxen
 firmware-ath9k-htc
 
+# --- FIRMWARE DO HOA: can cho che do kiosk tren may CO man hinh ---
+#
+# Chi them AMD chu khong them Intel: Debian 12 van de i915 trong
+# firmware-misc-nonfree (da co o tren - kiem tra that trong chroot i386:
+# /lib/firmware/i915 co 119 file) va khong he co goi
+# firmware-intel-graphics. Khac han ban amd64 chay Debian 13, o do i915 bi
+# tach ra goi rieng nen phai khai them.
+firmware-amd-graphics
+
 # --- SECURE BOOT: bat buoc cho laptop doi moi ---
 # Thieu 2 goi nay thi may co Secure Boot BAT SAN (phan lon laptop hang)
 # se tu choi boot USB - nguoi dung phai vao BIOS tat di, ma nhieu may
