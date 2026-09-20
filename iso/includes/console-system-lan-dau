@@ -21,3 +21,60 @@ if [ ! -f "$KHOA" ]; then
 fi
 
 touch "$DAU"
+
+# --- 7. MAN HINH: tu bat giao dien kiosk neu may CO man hinh that ---
+#
+# Anh Thoai yeu cau (20/09/2026): may co man hinh nhu laptop thi phai hien
+# giao dien len ngay tren may do, giong con Pi RasPad dang chay.
+#
+# HAI VAN DE PHAI XU LY, ca hai deu chi lo ra tren may x86 chu khong phai
+# tren Pi:
+#
+# (a) TEN NGUOI DUNG VIET CUNG. File console-pi-kiosk.service ghi thang
+#     "User=administrator" va "XDG_RUNTIME_DIR=/run/user/1000" - dung tren
+#     con Pi (tai khoan ten administrator) nhung SAI tren ban ISO: ban
+#     chay thu tu USB dung tai khoan "user", con ban cai len o cung thi
+#     dung ten ma nguoi cai tu dat. Sai ten la cage khong co quyen truy
+#     cap man hinh, dich vu chet lien tuc. Sua bang drop-in systemd sinh
+#     tai day theo tai khoan uid 1000 THAT cua may - khong sua file .service
+#     goc de con Pi khong bi anh huong.
+#
+# (b) KHONG PHAI MAY NAO CUNG CO MAN HINH. May chu cam trong rack, hoac
+#     may ao chay headless, bat kiosk len la no that bai roi khoi dong lai
+#     vo han (Restart=always) lam day nhat ky. Vi vay chi bat khi THAT SU
+#     co man hinh dang cam: doc /sys/class/drm/*/status tim cong nao bao
+#     "connected". Them ConditionPathExists=/dev/dri/card0 de ngay ca khi
+#     doan tren doan nham, systemd cung bo qua mot cach im lang thay vi
+#     lap vo han.
+_nd="$(getent passwd 1000 2>/dev/null | cut -d: -f1 || true)"
+if [ -n "$_nd" ]; then
+    _uid="$(id -u "$_nd" 2>/dev/null || echo 1000)"
+    for _u in console-pi-kiosk console-pi-kiosk-helper; do
+        mkdir -p "/etc/systemd/system/${_u}.service.d"
+        {
+            echo "[Unit]"
+            echo "ConditionPathExists=/dev/dri/card0"
+            echo "[Service]"
+            echo "User=${_nd}"
+            echo "Group=${_nd}"
+            echo "Environment=XDG_RUNTIME_DIR=/run/user/${_uid}"
+        } > "/etc/systemd/system/${_u}.service.d/10-nguoi-dung.conf"
+    done
+
+    _co_man_hinh=0
+    for _s in /sys/class/drm/*/status; do
+        [ -e "$_s" ] || continue
+        if grep -qx "connected" "$_s" 2>/dev/null; then _co_man_hinh=1; fi
+    done
+
+    if [ "$_co_man_hinh" = "1" ] && [ -e /dev/dri/card0 ]; then
+        systemctl daemon-reload >/dev/null 2>&1 || true
+        if systemctl enable --now console-pi-kiosk console-pi-kiosk-helper >/dev/null 2>&1; then
+            echo "[console-system] co man hinh - da bat giao dien kiosk"
+        else
+            echo "[console-system] co man hinh nhung khong bat duoc kiosk"
+        fi
+    else
+        echo "[console-system] khong thay man hinh - bo qua kiosk (bat tay o tab Cai dat neu can)"
+    fi
+fi

@@ -104,3 +104,22 @@ keyboard-configuration
 #
 # Bo firmware-mediatek va firmware-carl9170: hai goi nay moi co tu Debian
 # 13, kho Debian 12 khong co. Cac firmware mang con lai van du.
+
+# --- GIAO DIEN TREN MAN HINH (kiosk) ---
+#
+# Anh Thoai yeu cau 20/09/2026: "thieu option cai khi co man hinh (vi du
+# laptop)... giong nhu rasberry hien tai cua anh do co man hinh".
+#
+# cage = trinh quan ly cua so Wayland toi gian: no CHI chay dung mot ung
+# dung toan man hinh, khong desktop/thanh tac vu/menu gi ca. Nho vay may
+# co man hinh se hien thang dashboard len, dung y het con Pi RasPad, ma
+# khong phai cai ca mot bo desktop nang hang GB.
+#
+# Chromium la phan nang nhat (~374MB). Da can nhac tach thanh ISO rieng
+# nhung anh Thoai chon MOT ban duy nhat tu nhan man hinh - de nguoi dung
+# khong phai chon nham ban luc tai ve.
+cage
+chromium
+wlr-randr
+fonts-noto-color-emoji
+python3-websocket

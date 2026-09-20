@@ -145,6 +145,39 @@ def register_settings(app):
         ok, msg = set_rotation(val)
         return _render_settings(msg=msg, ok=ok)
 
+    @app.route("/settings/kiosk/bat", methods=["POST"])
+    def settings_kiosk_bat():
+        import subprocess
+        try:
+            r = subprocess.run(
+                ["systemctl", "enable", "--now",
+                 "console-pi-kiosk", "console-pi-kiosk-helper"],
+                capture_output=True, text=True, timeout=30)
+            if r.returncode == 0:
+                return _render_settings(
+                    msg="Đã bật giao diện màn hình. Nhìn vào màn hình của máy "
+                        "này sẽ thấy dashboard sau vài giây.", ok=True)
+            return _render_settings(
+                msg=f"Không bật được: {(r.stderr or r.stdout)[:200]}", ok=False)
+        except Exception as e:
+            return _render_settings(msg=f"Không bật được: {e}", ok=False)
+
+    @app.route("/settings/kiosk/tat", methods=["POST"])
+    def settings_kiosk_tat():
+        import subprocess
+        try:
+            r = subprocess.run(
+                ["systemctl", "disable", "--now",
+                 "console-pi-kiosk", "console-pi-kiosk-helper"],
+                capture_output=True, text=True, timeout=30)
+            if r.returncode == 0:
+                return _render_settings(
+                    msg="Đã tắt giao diện màn hình, lấy lại RAM cho máy.", ok=True)
+            return _render_settings(
+                msg=f"Không tắt được: {(r.stderr or r.stdout)[:200]}", ok=False)
+        except Exception as e:
+            return _render_settings(msg=f"Không tắt được: {e}", ok=False)
+
     @app.route("/settings/don-rac", methods=["POST"])
     def settings_don_rac():
         from . import baotri as bt
@@ -239,6 +272,8 @@ def _render_settings(msg="", ok=True):
       </p>
     </div>
 
+    {_khoi_man_hinh()}
+
     {_khoi_baotri()}
 
     <div class="card">
@@ -253,6 +288,93 @@ def _render_settings(msg="", ok=True):
 
     return render_page(body, active="/settings", title="Cai dat",
                        subtitle="Màn hình, mật khẩu terminal, thông tin hệ thống")
+
+
+def _trang_thai_kiosk():
+    """
+    Tra (da_cai, dang_bat, dang_chay, co_man_hinh) cua giao dien kiosk.
+
+    Dung `systemctl is-enabled/is-active` thay vi doan theo file: day la
+    nguon su that duy nhat ve trang thai dich vu.
+    """
+    import subprocess, glob
+
+    def _ht(*lenh):
+        try:
+            r = subprocess.run(lenh, capture_output=True, text=True, timeout=5)
+            return r.stdout.strip()
+        except Exception:
+            return ""
+
+    da_cai = bool(_ht("systemctl", "list-unit-files", "console-pi-kiosk.service"))
+    dang_bat = _ht("systemctl", "is-enabled", "console-pi-kiosk") == "enabled"
+    dang_chay = _ht("systemctl", "is-active", "console-pi-kiosk") == "active"
+
+    # Man hinh THAT dang cam: doc /sys/class/drm/*/status - cach nay dung
+    # cho ca man hinh that lan man hinh ao cua may ao (VMware/QEMU deu bao
+    # "connected" khi cua so console dang mo).
+    co_man_hinh = False
+    for f in glob.glob("/sys/class/drm/*/status"):
+        try:
+            with open(f) as fh:
+                if fh.read().strip() == "connected":
+                    co_man_hinh = True
+                    break
+        except OSError:
+            continue
+    return da_cai, dang_bat, dang_chay, co_man_hinh
+
+
+def _khoi_man_hinh():
+    """
+    Bat/tat giao dien hien thang tren man hinh cua chinh may nay (kiosk).
+
+    VI SAO CAN NUT NAY (anh Thoai 20/09/2026): ban cai x86 tu nhan man hinh
+    luc khoi dong lan dau, nhung "tu nhan" khong bao gio dung 100%: may ao
+    luon bao co man hinh du khong ai nhin, con may chu cam trong rack thi
+    co the co cong VGA nhung khong ai cam day. Chromium ton ~300MB RAM -
+    dang ke tren may 2GB - nen phai cho nguoi dung tu quyet.
+    """
+    da_cai, dang_bat, dang_chay, co_man_hinh = _trang_thai_kiosk()
+
+    if not da_cai:
+        return '''
+    <div class="card">
+      <h3>Giao diện trên màn hình máy này</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0;">
+        Máy này chưa cài sẵn phần giao diện màn hình (cage + Chromium).
+        Tính năng này có sẵn trong bản cài Console System OS.</p>
+    </div>'''
+
+    if dang_chay:
+        trang_thai = ('<div class="msg ok" style="margin-top:0;">Đang <strong>BẬT</strong> '
+                      '&mdash; màn hình của máy này đang hiện dashboard.</div>')
+        nut = ('<form method="POST" action="/settings/kiosk/tat">'
+               '<button type="submit" class="red" data-busy="Đang tắt...">'
+               'Tắt giao diện màn hình</button></form>')
+    else:
+        canh = ("" if co_man_hinh else
+                '<div class="msg warn">Không phát hiện màn hình nào đang cắm. '
+                'Bật lên vẫn được nhưng sẽ không thấy gì.</div>')
+        trang_thai = ('<div class="msg warn" style="margin-top:0;">Đang <strong>TẮT</strong> '
+                      '&mdash; máy chỉ phục vụ qua trình duyệt từ máy khác.</div>' + canh)
+        nut = ('<form method="POST" action="/settings/kiosk/bat">'
+               '<button type="submit" data-busy="Đang bật...">'
+               'Bật giao diện màn hình</button></form>')
+
+    return f'''
+    <div class="card">
+      <h3>Giao diện trên màn hình máy này</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">
+        Bật lên thì màn hình gắn vào máy này sẽ hiện thẳng dashboard toàn
+        màn hình (như màn cảm ứng của Raspberry Pi), không cần máy khác.
+        Tắt đi thì máy chỉ phục vụ qua mạng.
+        <br>Tốn khoảng <strong>300 MB RAM</strong> cho trình duyệt &mdash;
+        đáng cân nhắc trên máy ít RAM nếu không ai nhìn màn hình.
+      </p>
+      {trang_thai}
+      {nut}
+    </div>'''
 
 
 def _khoi_baotri():

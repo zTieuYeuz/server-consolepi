@@ -388,6 +388,26 @@ code { font-family:ui-monospace, monospace; background:rgba(56,189,248,.09);
   color:var(--nhan); font-weight:600; }
 .dep-tabs.sub .dep-tab { padding:8px 13px; min-height:38px; font-size:13px; }
 
+/* ---- Nut ve trang chu, noi o goc trai duoi ----
+   Anh Thoai yeu cau: "tat ca cac trang du co mo trang khac thi cung phai
+   co nut home de ve man hinh chinh, nhu 1 cai bong bong nho phia duoi goc".
+
+   VI SAO GOC TRAI (khong phai goc phai): nut ban phim ao da chiem san goc
+   PHAI duoi (right:14px, bottom:14px, rong toi 58px - xem vkeyboard.js).
+   De chung mot goc la hai nut de len nhau, tren man hinh cam ung se bam
+   nham lien tuc.
+
+   z-index thap hon ban phim ao mot bac de neu ban phim bung len thi no
+   nam tren, khong bi nut nay che mat phim. */
+.nut-home { position:fixed; left:14px; bottom:14px; z-index:2147482998;
+  width:clamp(46px,7vh,56px); height:clamp(46px,7vh,56px); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--the); border:1px solid var(--vien-ro); color:var(--nhan);
+  font-size:21px; box-shadow:0 4px 14px rgba(0,0,0,.5);
+  transition:background .12s, transform .08s, border-color .12s; }
+.nut-home:hover { background:var(--the-noi); border-color:var(--nhan); color:var(--nhan); }
+.nut-home:active { transform:scale(.92); }
+
 /* ---- Cac lop chu dung rai rac trong cac trang cong cu mang ---- */
 .hint { color:var(--chu-mo); font-size:13px; }
 .ok-txt  { color:var(--xanh); font-weight:600; }
@@ -634,6 +654,11 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
             f'<div class="con">{con_html}</div></details>'
         )
 
+    # Nut ve trang chu - khong hien khi dang O trang chu (ve chinh no thi vo ich)
+    nut_home = ("" if active == "/" else
+                '<a href="/" class="nut-home" title="Về trang chủ" '
+                'aria-label="Về trang chủ">&#127968;</a>')
+
     return f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -669,6 +694,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     </div>
   </div>
 </div>
+{nut_home}
 <script>
 /* Thu gon / mo rong thanh menu ben trai.
    Nho lua chon vao localStorage de giu nguyen khi chuyen trang - neu
