@@ -43,6 +43,14 @@ lb config \
   --bootappend-live "boot=live components quiet splash hostname=console-system" \
   >/tmp/lb-config.log 2>&1
 
+# --- CO Y KHONG chep anh nen sang thu muc grub-pc ---
+# Neu co config/bootloaders/grub-pc/splash.svg thi live-build se sinh
+# splash.png cho GRUB, va theme do hoa se tu bat len - ma theme do dang
+# BI LOI: no ve mot o den dac che kin danh sach muc chon, nguoi dung
+# khong bam duoc vao dau. Da kiem chung ca voi theme goc chua sua gi.
+# Xem giai thich day du trong config/bootloaders/grub-pc/theme.cfg.
+# Menu BIOS (isolinux) van co anh nen binh thuong - duong do khong dinh loi.
+
 echo "[3/3] dung anh dia (20-40 phut)..."
 lb build > build.log 2>&1 || true
 

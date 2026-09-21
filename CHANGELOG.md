@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.1.2
+
+**Menu boot UEFI gio khop voi menu BIOS.** Menu tieng Viet 3 muc lam o ban
+1.1.0 chi ap dung cho may boot kieu BIOS (isolinux); may boot UEFI di duong
+GRUB hoan toan khac nen van hien menu mac dinh cua live-build. Da chup man
+hinh xac nhan truoc khi sua: 5 muc tieng Anh "Live system (amd64)" /
+"Live system (amd64 fail-safe mode)" / "Start installer" /
+"Advanced install options ..." / "Utilities...".
+
+Them `config/bootloaders/grub-pc/` (nguon o `iso/bootloader-grub/`):
+- 3 muc tieng Viet giong het ban BIOS, bo 2 muc long nhau
+- Mau xanh cyan tren nen den cho hop tong Console System
+
+**Loi kem theo da sua - menu UEFI doi mai khong tu chay.** live-build
+khong dat timeout cho GRUB. Do that: boot trong may ao, chup man hinh luc
+dau va sau 2 phut - trung MD5 tung byte, khong he dem lui. May cam trong
+rack khong ban phim se dung im vinh vien. Ban BIOS da sua bang
+"timeout 50" tu truoc, ban UEFI thi chua ai sua. Nay dat `set timeout=5`.
+
+**CHO KHONG LAM DUOC - anh nen cho menu UEFI.** Bat anh nen len thi GRUB ve
+mot O DEN DAC che kin giua man hinh (do duoc: trai 10%, tren 18%, rong 81%,
+cao 73%) - dung vung hien danh sach, nen chi thay anh nen va thanh dem lui
+chu KHONG THAY MUC NAO de bam. Da loai tru tung kha nang:
+  - bo chu thich tu them vao theme  -> anh chup trung MD5, y nguyen
+  - them `insmod gfxmenu`           -> trung MD5, y nguyen
+  - chen mot dong chu thu mau do    -> HIEN RA, tuc file theme cua minh
+                                       that su duoc dung
+  - thu nho cua so terminal         -> o den bien mat, 3 muc hien du,
+                                       nhung mat luon anh nen
+  - **dung theme GOC cua live-build, khong sua mot chu nao -> VAN BI Y HET**
+Thu cuoi la quyet dinh: loi nam trong theme cua live-build / GRUB 2.12.
+Sua tan goc phai dung vao ruot GRUB - khong dang danh doi cho mot thu chi
+la trang tri, trong khi de nguyen thi nguoi dung khong bam duoc vao dau.
+Nen bo anh nen o menu UEFI, chi doi mau. Menu BIOS van co anh nen day du.
+
+Ban i386 khong bi anh huong: no chi dung syslinux, khong co duong UEFI.
 ## 1.1.1
 
 **Sua loi "Install the GRUB boot loader - Installation step failed"** - anh

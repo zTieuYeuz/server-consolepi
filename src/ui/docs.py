@@ -647,7 +647,12 @@ bat ky. Cung mot bo cong cu, chi khac phan cung ben duoi.</p>
             driver do hoa/ACPI, dung khi may la doi chay thu binh thuong bi
             treo man hinh den.</li>
         <li><em>CAI Console System len o cung</em> - cai han vao may.</li>
-      </ul></li>
+      </ul>
+      <p class="hint">Ba muc nay giong nhau o ca hai kieu boot. Rieng
+      <strong>anh nen</strong> thi chi co o may boot kieu BIOS: may boot UEFI
+      hien menu chu mau xanh cyan tren nen den, vi bo hien anh nen cua GRUB
+      bi loi san - no ve mot o den che kin danh sach lam khong bam duoc vao
+      dau (da kiem chung ca voi cau hinh goc chua sua gi).</p></li>
   <li>May len xong, <strong>man hinh hien san dia chi</strong> dang
       <code>http://192.168.x.x</code> kem ten cong mang. Mo trinh duyet tu
       may khac vao dia chi do.</li>
