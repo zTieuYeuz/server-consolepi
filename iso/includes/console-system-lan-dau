@@ -61,11 +61,55 @@ if [ -n "$_nd" ]; then
         } > "/etc/systemd/system/${_u}.service.d/10-nguoi-dung.conf"
     done
 
+    # --- Kiosk loi thi TRA tty1 ve cho dong lenh ---
+    # Kiosk chiem tty1 va tat getty (Conflicts=getty@tty1). Neu cage/Chromium
+    # khong khoi dong duoc (may khong co tang toc do hoa, driver loi...) thi
+    # Restart=always cu lap lai mai, tty1 den vinh vien, nguoi dung khong con
+    # dau nhac dang nhap lan dia chi IP de vao web. Gioi han: loi 5 lan trong
+    # 5 phut thi dung han va bat lai getty@tty1 - man hinh quay ve dong lenh
+    # co logo + dia chi IP nhu may khong co man hinh.
+    mkdir -p /etc/systemd/system/console-pi-kiosk.service.d
+    {
+        echo "[Unit]"
+        echo "StartLimitIntervalSec=300"
+        echo "StartLimitBurst=5"
+        echo "OnFailure=getty@tty1.service"
+    } > /etc/systemd/system/console-pi-kiosk.service.d/20-tra-man-hinh.conf
+    # Bo gioi han khoi dong lai cua getty tren tty1. Ly do - da do that:
+    # OnFailure bat getty moi lan kiosk loi, roi kiosk thu lai thi lai tat
+    # getty (Conflicts). Qua lai 5 lan trong vai giay thi CHINH getty bi
+    # systemd chan "Start request repeated too quickly" (start-limit-hit) ->
+    # kiosk da dung ma tty1 van den. getty khoi dong lai bao nhieu lan cung
+    # vo hai, nen bo gioi han cho rieng no.
+    mkdir -p /etc/systemd/system/getty@tty1.service.d
+    {
+        echo "[Unit]"
+        echo "StartLimitIntervalSec=0"
+    } > /etc/systemd/system/getty@tty1.service.d/20-khong-gioi-han.conf
+
     _co_man_hinh=0
     for _s in /sys/class/drm/*/status; do
         [ -e "$_s" ] || continue
         if grep -qx "connected" "$_s" 2>/dev/null; then _co_man_hinh=1; fi
     done
+
+    # --- May ao: KHONG tu bat kiosk ---
+    # LOI THAT (21/09/2026, anh Thoai cai len VMware Workstation): cai xong
+    # man hinh DEN THUI, khong hien gi. Nguyen nhan: card do hoa AO luc nao
+    # cung bao man hinh "connected" (VMware: Virtual-1, QEMU: Virtual-1...),
+    # nen doan kiem tra o tren tuong co man hinh that va bat kiosk. Kiosk
+    # chiem tty1, ma VMware cua anh Thoai chay tren Hyper-V nen KHONG co tang
+    # toc 3D (vmware.log: "SVGA3dCaps: Disabling 3d support") - Chromium khong
+    # ve duoc gi, man hinh den vinh vien, mat luon dau nhac dang nhap lan dia
+    # chi IP. Da do tren may ao co card do hoa thuong: kiosk van hien duoc
+    # nhung mat ~3 phut, suot luc do den hoan toan.
+    # May ao thi luon vao web tu trinh duyet may that - kiosk khong co ich gi
+    # ma chi them rui ro. Can thi van bat tay duoc o tab Cai dat.
+    _may_ao="$(systemd-detect-virt --vm 2>/dev/null || true)"
+    if [ -n "$_may_ao" ] && [ "$_may_ao" != "none" ]; then
+        _co_man_hinh=0
+        echo "[console-system] dang chay tren may ao ($_may_ao) - khong tu bat kiosk"
+    fi
 
     if [ "$_co_man_hinh" = "1" ] && [ -e /dev/dri/card0 ]; then
         systemctl daemon-reload >/dev/null 2>&1 || true

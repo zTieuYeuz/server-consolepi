@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.1.3
+
+**Cai xong tren may ao thi man hinh den thui - da sua.** Anh Thoai cai len
+VMware Workstation, xong khoi dong lai thi man hinh den hoan toan. Nguyen
+nhan: card do hoa ao luon bao man hinh "connected" nen lan khoi dong dau tu
+bat kiosk; kiosk chiem tty1, ma VMware chay tren Hyper-V khong co tang toc
+3D (vmware.log: "Disabling 3d support") nen Chromium khong ve duoc gi.
+
+- May ao (`systemd-detect-virt --vm`) khong tu bat kiosk nua. May that
+  van tu bat nhu cu; may ao can thi bat tay trong Cai dat.
+- Kiosk loi 5 lan trong 5 phut thi dung han va bat lai `getty@tty1`
+  (OnFailure) - man hinh quay ve dong lenh co logo + IP.
+- Bo gioi han khoi dong lai cua `getty@tty1`: lan thu dau, getty bi bat/tat
+  qua lai theo kiosk qua nhanh nen bi systemd chan (start-limit-hit),
+  kiosk da dung ma tty1 van den.
+
+Kiem chung: boot ca 2 ISO (amd64, i386) trong QEMU - `detect-virt` = qemu,
+kiosk disabled/inactive, getty@tty1 active, chup man hinh thay logo va
+`http://10.0.2.15`. Rieng co che tra man hinh da thu bang cach co y lam
+kiosk hong tren may ao: dung sau 5 lan, man hinh hien lai dong lenh.
+
 ## 1.1.2
 
 **Menu boot UEFI gio khop voi menu BIOS.** Menu tieng Viet 3 muc lam o ban

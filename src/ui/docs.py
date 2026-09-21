@@ -712,6 +712,19 @@ hien thang len man hinh do, khong can may thu hai mo trinh duyet.</p>
       <code>/sys/class/drm/*/status</code> - thay co cong man hinh dang cam
       thi TU BAT giao dien; may cam trong rack khong man hinh thi bo qua,
       khong bao gio bat nham roi lap loi vo han.</li>
+  <li><strong>May ao (VMware, VirtualBox, Hyper-V, QEMU...) KHONG tu bat</strong>:
+      card do hoa ao luc nao cung bao "co man hinh", va nhieu may ao khong co
+      tang toc 3D nen Chromium ve ra man hinh den thui. May ao thi mo web tu
+      trinh duyet may that; can kiosk thi bat tay.</li>
+  <li><strong>Kiosk loi thi tu tra man hinh</strong>: Chromium khong khoi dong
+      duoc 5 lan trong 5 phut thi tu dung, <code>tty1</code> quay ve dong lenh
+      co logo + dia chi IP - khong bao gio den vinh vien.</li>
+  <li><strong>Da cai ban cu va bi man hinh den</strong>: bam
+      <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F2</kbd> (trong VMware:
+      giu <kbd>Ctrl</kbd>+<kbd>Alt</kbd>, bam <kbd>Space</kbd>, roi
+      <kbd>F2</kbd>), dang nhap, chay
+      <code>sudo systemctl disable --now console-pi-kiosk console-pi-kiosk-helper</code>
+      roi <code>sudo systemctl start getty@tty1</code>.</li>
   <li><strong>Bat/tat tay</strong>: o tab <strong>Cai dat chung</strong>, muc
       man hinh/kiosk - dung khi cam man hinh vao SAU luc cai, hoac muon tat
       di de nhuong lai dong lenh <code>tty1</code>.</li>
