@@ -138,3 +138,22 @@ OSR
 printf 'Console System 1.0  \\n \\l\n\n' > /etc/issue
 
 echo "[console-system] da dat thuong hieu"
+
+# --- 7. Tra lai mac dinh "cai ca goi khuyen nghi" cho may DA CAI ---
+#
+# LOI THAT (22/09/2026, anh Thoai cai len mini PC that): cai xong khong boot
+# duoc. Do lai trong may ao UEFI bat Secure Boot thi dung la khong boot:
+# o dia chi co GRUB CHUA KY. Nhat ky cai (/var/log/installer/syslog) ghi ro:
+#     Recommended packages: grub-efi-amd64-signed
+# tuc bo cai CO muon cai ban GRUB da ky, nhung chi o dang "khuyen nghi" -
+# ma live-build (--apt-recommends false) de lai file 00recommends tat han
+# goi khuyen nghi, va trinh cai dung dung cau hinh apt cua he thong dich.
+# May ban kem Windows gan nhu luon bat san Secure Boot -> tu choi GRUB chua
+# ky -> "khong boot vao duoc".
+#
+# Xoa file o day (hook chay SAU khi da cai xong goi cho ISO, nen ISO khong
+# phinh them). He thong ve dung mac dinh cua Debian. KHONG sua bang cach
+# them grub-efi-amd64-signed vao danh sach goi: goi do bi danh dau
+# Protected, duong cai BIOS se go no va that bai (loi da gap o ban 1.1.x).
+rm -f /etc/apt/apt.conf.d/00recommends
+echo "[console-system] da tra lai mac dinh cai goi khuyen nghi"

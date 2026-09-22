@@ -634,8 +634,10 @@ bat ky. Cung mot bo cong cu, chi khac phan cung ben duoi.</p>
 <h4>Cách dùng</h4>
 <ol>
   <li>Ghi file <code>.iso</code> ra USB bang <strong>Rufus</strong> (Windows)
-      hoac <strong>balenaEtcher</strong>. Chon che do ghi <em>DD/anh dia</em>
-      neu duoc hoi - file nay la anh dia lai (hybrid).</li>
+      hoac <strong>balenaEtcher</strong>. Rufus se hoi "ISOHybrid image
+      detected" - chon <strong>Write in DD Image mode</strong> (khong chon ISO
+      Image mode mac dinh). Che do DD chep nguyen anh dia, giong het cach
+      Debian khuyen dung.</li>
   <li>Cam USB, vao BIOS chon boot tu USB.</li>
   <li>Menu boot <strong>tu chay sau 5 giay</strong> neu khong bam gi, chi con
       dung 3 muc (da bo "Tuy chon cai dat nang cao" 8 muc long nhau va muc
@@ -692,12 +694,20 @@ Chi may mua truoc 2006 moi thuc su chi chay duoc 32-bit.</p>
 <ul>
   <li><strong>May doi cu (BIOS)</strong> va <strong>may doi moi (UEFI)</strong>
       - anh dia co ca hai duong boot.</li>
-  <li><strong>May bat san Secure Boot</strong> (phan lon laptop hang) - anh
-      dia dung <code>shim</code> da duoc Microsoft ky, khong phai vao BIOS
-      tat Secure Boot.</li>
+  <li><strong>May bat san Secure Boot</strong> (phan lon laptop hang, mini PC
+      ban kem Windows) - ca USB cai dat LAN may da cai xong deu dung
+      <code>shim</code> da duoc Microsoft ky, khong phai vao BIOS tat Secure
+      Boot. (Truoc ban 1.1.5 chi USB co ky, may cai xong lai dung GRUB chua
+      ky nen bat Secure Boot la khong boot duoc.)</li>
+  <li><strong>Mini PC bo qua muc boot trong NVRAM</strong> - GRUB duoc cai
+      them vao duong du phong <code>/EFI/BOOT/BOOTX64.EFI</code>, rut USB
+      ra van boot duoc.</li>
   <li><strong>Card mang la</strong> - kem firmware cho Intel, Realtek,
       Atheros, Broadcom, MediaTek, Qualcomm va cac card mang may chu
-      (bnx2, qlogic, myricom...).</li>
+      (bnx2, qlogic, myricom...). Rieng firmware card Realtek (loai hay gap
+      nhat tren mini PC) duoc nhung san vao ca trinh cai dat, nen trinh cai
+      khong con dung lai hoi "Load missing firmware from removable
+      media?".</li>
   <li><strong>Card do hoa Intel/AMD</strong> - can cho che do man hinh/kiosk
       ben duoi. CO Y van khong dua firmware nvidia (~123MB) va am thanh vao
       vi that su khong dung toi tren may khong desktop.</li>

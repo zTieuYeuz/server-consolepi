@@ -25,6 +25,34 @@ if grep -l "%" config/package-lists/*.list.chroot 2>/dev/null | grep -q .; then
     exit 1
 fi
 
+# --- Nhung san firmware card mang Realtek vao BO CAI (initrd) ---
+# LOI THAT (22/09/2026, anh Thoai cai len mini PC that bang USB Rufus):
+# bo cai dung lai hoi "Load missing firmware from removable media?
+# rtl_nic/rtl8168h-2.fw" - bat cam USB/dia mem chua firmware. File do CO
+# SAN trong /firmware cua ISO, nhung bo cai chi tim o do dung MOT lan
+# (va phai mount duoc dung o USB tai dung thoi diem); truot la hoi. Mini PC
+# gia re gan nhu cai nao cung dung card Realtek (r8169/r8125), nen nhet
+# thang cac file rtl_nic (~140KB) vao initrd cua bo cai: driver nap la
+# thay firmware ngay, khong con gi de hoi. Card Intel (e1000e/igc) khong
+# can firmware. May da cai xong van co du firmware tu goi firmware-realtek.
+_fw=config/includes.installer/usr/lib/firmware
+rm -rf "$_fw/rtl_nic"
+_tmp="$(mktemp -d)"
+( cd "$_tmp" && apt-get download firmware-realtek >/dev/null 2>&1 ) || true
+_deb="$(ls cache/packages.chroot/firmware-realtek_*.deb "$_tmp"/firmware-realtek_*.deb 2>/dev/null | head -1)"
+if [ -z "$_deb" ]; then
+    echo "DUNG LAI: khong lay duoc goi firmware-realtek de nhung vao bo cai"
+    rm -rf "$_tmp"; exit 1
+fi
+dpkg-deb -x "$_deb" "$_tmp/x"
+mkdir -p "$_fw"
+# Goi Debian 12 de o /lib/firmware, Debian 13 o /usr/lib/firmware
+_src="$(find "$_tmp/x" -type d -name rtl_nic | head -1)"
+[ -n "$_src" ] || { echo "DUNG LAI: goi firmware-realtek khong co rtl_nic"; exit 1; }
+cp -a "$_src" "$_fw/"
+rm -rf "$_tmp"
+echo "[0/3] da nhung $(ls "$_fw/rtl_nic" | wc -l) file firmware Realtek vao bo cai"
+
 echo "[1/3] don ban build cu..."
 lb clean >/dev/null 2>&1 || true
 

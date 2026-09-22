@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.1.5
+
+**Cai len mini PC that: hoi firmware + cai xong khong boot - da sua.** Anh
+Thoai ghi USB bang Rufus, cai len mini PC: trinh cai dung lai hoi "Load
+missing firmware from removable media? rtl_nic/rtl8168h-2.fw", va cai xong
+thi khong boot vao duoc.
+
+- **Firmware Realtek nhung san vao trinh cai** (`dung-iso.sh`, ~140KB):
+  mini PC gia re gan nhu luon dung card Realtek. Trinh cai chi tim firmware
+  trong `/firmware` cua USB dung mot lan, truot la hoi USB/dia mem. Them
+  `hw-detect/load_firmware=false` de khong con hop thoai do.
+- **May bat Secure Boot cai xong khong boot.** Nhat ky cai ghi ro
+  `Recommended packages: grub-efi-amd64-signed` - trinh cai muon cai GRUB
+  da ky nhung chi la goi "khuyen nghi", ma live-build de lai file
+  `/etc/apt/apt.conf.d/00recommends` tat han goi khuyen nghi. Ket qua: o
+  dia chi co GRUB CHUA KY, khong co `shimx64.efi`. Mini PC ban kem Windows
+  bat san Secure Boot nen tu choi. Da xoa file do trong hook (sau khi cai
+  goi cho ISO, nen ISO khong phinh them).
+- **Mini PC bo qua muc boot trong NVRAM**: preseed
+  `grub-installer/force-efi-extra-removable=true`, GRUB co them o
+  `/EFI/BOOT/BOOTX64.EFI`.
+- Tai lieu: huong dan Rufus chon **DD Image mode**.
+
+Kiem chung that - cai tu dong qua `d-i` len o trang, ISO gan dang USB:
+  - UEFI, bat Secure Boot, NVRAM trong: boot duoc, `SecureBoot enabled`,
+    o co `shimx64.efi` ca o `EFI/console` lan `EFI/BOOT`
+  - UEFI khong Secure Boot, NVRAM trong: boot duoc
+  - BIOS: boot duoc, sudo chay, dashboard tra 302
+  - Initrd amd64 co 36 file `rtl_nic` o `/usr/lib/firmware`, i386 co 31
+    file o `/lib/firmware` (Debian 12 chua gop /usr)
+Chua kiem chung duoc: card Realtek that (QEMU khong gia lap duoc r8168).
+
 ## 1.1.4
 
 **Cai xong khong dung duoc sudo - da sua.** Anh Thoai cai len VMware, dang
