@@ -49,6 +49,21 @@ touch "$DAU"
 _nd="$(getent passwd 1000 2>/dev/null | cut -d: -f1 || true)"
 if [ -n "$_nd" ]; then
     _uid="$(id -u "$_nd" 2>/dev/null || echo 1000)"
+
+    # --- Bao ho: tai khoan cai dat PHAI co quyen sudo ---
+    # LOI THAT DA GAP (22/09/2026, anh Thoai cai xong khong sudo duoc):
+    # "administrator is not in the sudoers file". Nguyen nhan da xac dinh:
+    # d-i chi tu them "sudo" vao nhom mac dinh cua tai khoan moi NEU goi
+    # sudo da co san luc no hoi tao tai khoan - nhung goi sudo cua du an
+    # nam trong danh sach rieng, cai o buoc sau, nen bi bo sot. Da dien
+    # san "d-i passwd/user-default-groups" trong preseed.cfg de sua tan
+    # goc, nhung van kiem tra lai o day mot lan nua cho chac (khong hai gi
+    # neu da dung san - lenh idempotent) - phong khi ban ISO cu (chua co
+    # preseed moi) van con luu hanh, hoac co duong cai nao khac bo qua.
+    if ! id -nG "$_nd" 2>/dev/null | tr ' ' '\n' | grep -qx sudo; then
+        usermod -aG sudo "$_nd" 2>/dev/null \
+            && echo "[console-system] da them $_nd vao nhom sudo (thieu tu luc cai)"
+    fi
     for _u in console-pi-kiosk console-pi-kiosk-helper; do
         mkdir -p "/etc/systemd/system/${_u}.service.d"
         {

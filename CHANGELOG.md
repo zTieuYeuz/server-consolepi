@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.4
+
+**Cai xong khong dung duoc sudo - da sua.** Anh Thoai cai len VMware, dang
+nhap duoc nhung MOI lenh `sudo` deu bao "administrator is not in the
+sudoers file. This incident will be reported." - tai khoan tao luc cai
+khong duoc them vao nhom `sudo`.
+
+Nguyen nhan: bo cai Debian (`user-setup`) chi tu them tai khoan moi vao
+nhom `sudo` NEU goi `sudo` da co san dung luc no hoi tao tai khoan. Goi
+`sudo` cua du an lai nam trong danh sach goi rieng, duoc cai o buoc SAU,
+nen bi bo sot moi lan.
+
+- `iso/preseed.cfg`: dien san `d-i passwd/user-default-groups` co san
+  `sudo`, khong con phu thuoc thoi diem phat hien goi nua.
+- `iso/includes/console-system-lan-dau`: them buoc tu kiem tra/tu vao lai
+  nhom sudo o lan khoi dong dau (phong ban ISO cu hoac duong cai khac).
+
+Kiem chung THAT (khong chi chay thu): dung QEMU tu dong cai HOAN TOAN qua
+`d-i` (phan vung, tao tai khoan, cai GRUB) len o dia trang, sau do boot
+dia da cai va SSH vao kiem `id administrator` + chay `sudo whoami` that
+su - co nhom `sudo`, lenh chay duoc ngay tu lan dau, dashboard van hoat
+dong binh thuong.
+
 ## 1.1.3
 
 **Cai xong tren may ao thi man hinh den thui - da sua.** Anh Thoai cai len
