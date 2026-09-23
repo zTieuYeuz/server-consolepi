@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.2.2
+
+**May cai bang TRINH CAI CHU khong cai them duoc goi nao - da sua.** Sau
+khi sua loi `VERSION_CODENAME` (1.2.1), bam "Cai Tailscale" tren may cai
+bang trinh cai chu van that bai: *"Depends: iptables but it is not
+installable"*. Nguyen nhan: may cai bang trinh cai chu co
+`/etc/apt/sources.list` TRONG TRON (chi co dong cdrom da bi comment), nen
+`apt install` bat ky goi nao cung hong. May cai bang trinh cai do hoa khong
+bi.
+
+- Cuoi qua trinh cai, trinh cai chu tu ghi nguon goi Debian chinh thuc
+  (`deb.debian.org` + `security.debian.org`) dung ten ban (trixie/bookworm).
+  Chay duoc ca khi cai khong co mang; chi ghi khi chua co nguon nao - khong
+  de len mirror rieng nguoi cai da chon.
+- Sua dong preseed `popularity-contest` thieu truong nen bi trinh cai bo qua.
+
+Kiem chung: cai tu dong bang trinh cai chu trong may ao, boot len - web bam
+"Cai Tailscale" thanh cong (Tailscale 1.102.4, dich vu dang chay).
+
+**May DA CAI tu ban cu** sua tay (chay 1 lan, qua SSH hoac terminal):
+
+```bash
+grep -q ^VERSION_CODENAME /etc/os-release || echo "VERSION_CODENAME=$(. /usr/lib/os-release; echo $VERSION_CODENAME)" | sudo tee -a /etc/os-release
+grep -v cdrom: /etc/apt/sources.list | grep -q '^deb ' || printf 'deb http://deb.debian.org/debian %s main contrib non-free non-free-firmware\ndeb http://deb.debian.org/debian %s-updates main contrib non-free non-free-firmware\ndeb http://security.debian.org/debian-security %s-security main contrib non-free non-free-firmware\n' $(. /usr/lib/os-release; echo $VERSION_CODENAME $VERSION_CODENAME $VERSION_CODENAME) | sudo tee /etc/apt/sources.list
+sudo apt update
+```
+
 ## 1.2.1
 
 **Cai Tailscale bao "VERSION_CODENAME: parameter not set" du may vao duoc
@@ -19,7 +46,7 @@ dong do de chon dung kho goi.
 Kiem chung: chay dung script `curl -fsSL https://tailscale.com/install.sh
 | sh` trong chroot cua ban amd64 - cai thanh cong Tailscale 1.102.4.
 
-May DA CAI tu ban 1.2.0 tro ve truoc sua tay bang 1 lenh (xem tai lieu).
+May DA CAI tu ban 1.2.0 tro ve truoc: xem lenh sua tay o muc 1.2.2.
 
 ## 1.2.0
 

@@ -30,7 +30,7 @@ lỗi ở bước dọn dẹp cuối và vẫn trả về 0; đã mất công ha
 ## Kiểm thử tự động
 
 ```bash
-./test-iso.sh /build/console-system-1.0.0-amd64.iso
+./test-iso.sh /build/console-system/live-image-amd64.hybrid.iso
 ```
 
 Boot ISO trong QEMU có **chuyển tiếp cổng** (`18080→80`, `18022→22`) rồi gọi
@@ -46,6 +46,7 @@ sự phục vụ được**.
 | `includes/console-system-lan-dau` | `/usr/local/sbin/` |
 | `includes/console-system-lan-dau.service` | `/etc/systemd/system/` |
 | `includes/10-console-system.conf` | `/etc/ssh/sshd_config.d/` |
+| `includes-installer/console-system-nguon-apt.sh` | goc initrd cua trinh cai chu (`config/includes.installer/`), goi tu `preseed/late_command` |
 | `includes/apt.conf.d/00-toc-do-build` | `/etc/apt/apt.conf.d/` (bi hook xoa khoi may da cai) |
 | `calamares/settings.conf`, `calamares/modules/`, `calamares/branding/` | `/etc/calamares/` |
 | `calamares/lang/calamares_vi.qm` (sinh bang `calamares/lang/sua-ban-dich-vi.py`) | `/usr/share/calamares/lang/` |
@@ -96,8 +97,8 @@ Những chỗ đã phải xử lý riêng (đều kiểm chứng bằng cài th�
 
 | | 64-bit (amd64) | 32-bit (i386) |
 |---|---|---|
-| File | `console-system-1.0.0-amd64.iso` | `console-system-1.0.0-i386.iso` |
-| Kích thước | 1136 MB | 804 MB |
+| File (trên máy build) | `/build/console-system/live-image-amd64.hybrid.iso` | `/build/console-system-i386/live-image-i386.hybrid.iso` |
+| Kích thước | ~1440 MB | ~1040 MB |
 | Nền | Debian 13 (trixie) | Debian 12 (bookworm) |
 | Python | 3.13 | 3.11 |
 | Secure Boot | Có (`shim-signed`) | Không (máy đời đó không có UEFI) |
@@ -118,15 +119,20 @@ kể cả khi đang chạy Windows 32-bit, nên dùng bản 64-bit được.
 
 ## Đặt thương hiệu — phải viết trong hook, không đặt file
 
-Phần đổi tên hệ thống (`/etc/os-release`) đã qua **ba lần thử** mới đúng:
+Phần đổi tên hệ thống (`/etc/os-release`) đã qua **bốn lần thử** mới đúng:
 
 1. Đặt file trong `config/includes.chroot/etc/os-release` → bị gói
    `base-files` **ghi đè âm thầm**, ISO vẫn tự khai là Debian
 2. Chuyển sang `config/includes.chroot_after_packages/` → live-build **từ
    chối build**: *"You have files in includes.chroot and
    includes.chroot_after_packages. Only one directory is allowed."*
-3. **Viết trong hook** (`hooks/0100-console-system.hook.chroot`) → đúng, vì
-   hook chạy sau khi cài gói xong và không xung đột thư mục
+3. **Viết trong hook** (`hooks/0100-console-system.hook.chroot`) → đúng chỗ,
+   vì hook chạy sau khi cài gói xong và không xung đột thư mục
+4. Nhưng lần 3 **viết lại cả file bằng tay** nên mất dòng `VERSION_CODENAME`
+   → script cài Tailscale (và Docker, Grafana...) báo *"VERSION_CODENAME:
+   parameter not set"*. Nay hook **lấy nguyên file gốc** `/usr/lib/os-release`
+   của Debian và chỉ đổi `NAME`/`PRETTY_NAME`/`VERSION`/`HOME_URL`; thiếu
+   `VERSION_CODENAME` thì bản build tự dừng.
 
 Giữ nguyên `ID=debian` trong `os-release`: rất nhiều công cụ đọc trường này
 để biết đang chạy trên họ Debian nào. Chỉ đổi `NAME`/`PRETTY_NAME` là thứ
