@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.1
+
+**Cai Tailscale bao "VERSION_CODENAME: parameter not set" du may vao duoc
+internet - da sua.** Anh Thoai bam "Cai Tailscale" tren may cai tu ISO:
+`ping 8.8.8.8` van duoc nhung trang bao cai that bai. Nguyen nhan: luc doi
+ten he thong thanh "Console System", hook viet lai `/etc/os-release` bang
+tay va lam mat dong `VERSION_CODENAME` (trixie/bookworm) - script cai chinh
+thuc cua Tailscale (va cua nhieu phan mem khac: Docker, Grafana...) doc
+dong do de chon dung kho goi.
+
+- Nay lay nguyen file goc cua Debian va chi doi ten hien thi; thieu
+  `VERSION_CODENAME` thi ban build tu dung lai bao loi.
+- Ban i386 truoc do bi dung nham hook cua ban amd64 (tu nhan "Debian 13"
+  trong khi la Debian 12) - da dung lai dung hook, va them buoc xoa file
+  tang toc build khoi may i386 da cai.
+
+Kiem chung: chay dung script `curl -fsSL https://tailscale.com/install.sh
+| sh` trong chroot cua ban amd64 - cai thanh cong Tailscale 1.102.4.
+
+May DA CAI tu ban 1.2.0 tro ve truoc sua tay bang 1 lenh (xem tai lieu).
+
 ## 1.2.0
 
 **Trinh cai dat do hoa (Calamares) + ban ISO ra dung duoc cho khach.** Anh

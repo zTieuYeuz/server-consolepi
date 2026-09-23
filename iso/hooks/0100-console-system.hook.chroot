@@ -127,15 +127,26 @@ echo "[console-system] xong"
 # hanh, goi cua ben thu ba) doc truong nay de biet dang chay tren ho Debian
 # nao. Doi ten cho dep ma lam hong viec cai goi thi khong dang. Chi doi
 # NAME/PRETTY_NAME la thu nguoi dung NHIN THAY.
+#
+# LOI THAT (23/09/2026, anh Thoai bam "Cai Tailscale" tren may cai tu ISO,
+# ping 8.8.8.8 van duoc ma bao "sh: 76: VERSION_CODENAME: parameter not
+# set"): ban cu VIET LAI file nay bang tay va lam MAT dong VERSION_CODENAME
+# (trixie/bookworm) - script cai chinh thuc cua Tailscale (va nhieu script
+# cai cua ben thu ba khac: Docker, Grafana...) doc dong do de chon dung kho
+# goi. Nay LAY NGUYEN file goc cua Debian (/usr/lib/os-release, do goi
+# base-files cai) va CHI thay NAME/PRETTY_NAME/VERSION/HOME_URL - moi truong
+# con lai (VERSION_CODENAME, VERSION_ID, DEBIAN_VERSION_FULL, ID...) giu y
+# nguyen. Kiem tra cuoi cung: thieu VERSION_CODENAME thi lam do ban build.
+sed -e 's/^PRETTY_NAME=.*/PRETTY_NAME="Console System 1.0"/' \
+    -e 's/^NAME=.*/NAME="Console System"/' \
+    -e 's/^VERSION=.*/VERSION="1.0 (tren Debian 13 trixie)"/' \
+    -e 's#^HOME_URL=.*#HOME_URL="https://github.com/zTieuYeuz/server-consolepi"#' \
+    /usr/lib/os-release > /etc/os-release.moi
 rm -f /etc/os-release
-cat > /etc/os-release << 'OSR'
-PRETTY_NAME="Console System 1.0"
-NAME="Console System"
-VERSION_ID="13"
-VERSION="1.0 (tren Debian 13 trixie)"
-ID=debian
-HOME_URL="https://github.com/zTieuYeuz/server-consolepi"
-OSR
+mv /etc/os-release.moi /etc/os-release
+chmod 644 /etc/os-release
+grep -q '^VERSION_CODENAME=[a-z]' /etc/os-release || {
+    echo "[console-system] os-release thieu VERSION_CODENAME"; exit 1; }
 
 printf 'Console System 1.0  \\n \\l\n\n' > /etc/issue
 
