@@ -147,3 +147,16 @@ chromium
 wlr-randr
 fonts-noto-color-emoji
 python3-websocket
+# pipewire: server am thanh. Thieu thi tab Giai tri chay video MA KHONG CO
+# TIENG, khong bao loi gi (install.sh tren Pi cai san, ban ISO thi quen).
+pipewire
+pipewire-audio
+pipewire-pulse
+wireplumber
+
+# --- CONG CONSOLE (cap USB-serial) ---
+# LOI THAT (23/09/2026, cam cap USB-serial gia lap vao may ao cai tu ISO):
+# thieu microcom thi scripts/ttyd-one.sh khong mo duoc cong serial - dich vu
+# van "active", trang Console van hien cong, nhung khong co phien nao ("Khong
+# tao duoc phien console"). Tuc la chuc nang chinh cua san pham hong.
+microcom

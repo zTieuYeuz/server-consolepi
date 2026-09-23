@@ -304,7 +304,22 @@ def _switch_worker(ssid, password, do_save):
 
 
 # ---------------------------------------------------------- Bluetooth
+def co_bluetooth():
+    """May co bo Bluetooth (hci0...) khong.
+
+    LOI THAT (thu ban ISO tren may x86, 23/09/2026): may khong co Bluetooth
+    thi bluetoothd khong chay, `bluetoothctl devices` ngoi cho den het 5 giay
+    moi bo - trang Bluetooth mat 5 giay moi lan mo ma van trong tron, khong
+    noi vi sao. Hoi thang kernel truoc, khong co thi bo qua luon."""
+    try:
+        return any(t.startswith("hci") for t in os.listdir("/sys/class/bluetooth"))
+    except OSError:
+        return False
+
+
 def get_bt_paired_devices():
+    if not co_bluetooth():
+        return []
     try:
         out = subprocess.run(["bluetoothctl", "devices"],
                              capture_output=True, text=True, timeout=5).stdout
@@ -1201,6 +1216,10 @@ def _bt_page(msg="", ok=True, scanned=None):
     devs = get_bt_paired_devices()
     infos = [(m, bt_device_info(m)) for m, _ in devs]
     msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
+    if not co_bluetooth():
+        msg_html = ('<div class="msg warn">Máy này không có bộ Bluetooth (hoặc chưa bật '
+                    'trong BIOS/driver) - các chức năng trên trang này sẽ không dùng được.'
+                    '</div>') + msg_html
 
     # --- Thiet bi da ghep cap ---
     rows = ""

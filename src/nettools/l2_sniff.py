@@ -117,9 +117,9 @@ L2_TEMPLATE = """
 <body>
     <h1>🌲 STP / LACP / VLAN Scan</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Bắt gói tin thụ động trong khoảng thời gian đã chọn, trên <strong>eth0</strong>
-    VLAN offload da duoc xac nhan tat san nen tag 802.1Q se tu hien ra neu co
-    traffic tagged thuc su di qua day.</p>
+    <p class="hint">Bắt gói tin thụ động trong khoảng thời gian đã chọn, trên cổng
+    chọn bên dưới. Tag 802.1Q chi hien ra neu co traffic tagged thuc su di
+    qua day.</p>
 
     <form method="POST" style="margin-top:16px;">
         <label>Interface:</label>

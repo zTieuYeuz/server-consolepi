@@ -114,13 +114,20 @@ def kiem_tra_dns(domain, timeout=3):
     # So sanh cac tap ket qua KHONG RONG voi nhau - mot server loi/timeout
     # khong tinh vao so sanh (khong the noi la "mau thuan" khi mot ben
     # khong tra loi gi ca).
-    cac_tap = {frozenset(r["dia_chi"]) for r in ket_qua if r["dia_chi"]}
-    co_mau_thuan = len(cac_tap) > 1
+    #
+    # Chi coi la mau thuan khi co mot cap server tra ve hai tap IP KHONG CO
+    # IP NAO CHUNG. LOI THAT (thu ban ISO 23/09/2026): debian.org - DNS he
+    # thong tra 1 IP, Google/Cloudflare/Quad9 tra 4 IP trong do CO CHINH IP
+    # do (resolver cat bot/xoay vong) -> cong cu van hien canh bao do "DNS
+    # bi can thiep". DNS bi chen/chan that thi tra IP khac han, khong trung.
+    cac_tap = [frozenset(r["dia_chi"]) for r in ket_qua if r["dia_chi"]]
+    co_mau_thuan = any(not (a & b) for i, a in enumerate(cac_tap)
+                       for b in cac_tap[i + 1:])
 
     canh_bao = None
     if co_mau_thuan:
         canh_bao = (
-            "Cac DNS server tra ve DIA CHI KHAC NHAU cho cung 1 ten mien. Voi domain rieng/noi "
+            "Co DNS server tra ve DIA CHI KHAC HAN (khong trung IP nao) cho cung 1 ten mien. Voi domain rieng/noi "
             "bo, day la dau hieu manh cua DNS bi can thiep (ISP chen quang cao, mang cong ty "
             "loc/chan, hoac captive portal). Luu y: voi cac trang lon dung CDN toan cau (Google, "
             "Facebook, Cloudflare...) thi lech ket qua theo VI TRI DIA LY la BINH THUONG, khong "

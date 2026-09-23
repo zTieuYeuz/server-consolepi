@@ -46,7 +46,10 @@ from . import nettools_bp
 
 TFTP_ROOT = "/opt/console-pi/tftp"
 STATE_FLAG = "/run/console-pi-tftp.flag"
-IFACE = "eth0"
+# Chi la nhan hien thi: in.tftpd chay voi --address 0.0.0.0:69 (xem
+# systemd/console-pi-tftp.service) nen nghe tren MOI cong. Truoc day ghi
+# "eth0" - sai ca tren Pi lan may x86 (cong ten ens3/enp1s0...).
+IFACE = "mọi cổng mạng"
 DON_VI_SYSTEMD = "console-pi-tftp"
 
 
@@ -147,10 +150,14 @@ def xoa_file(ten):
 
 
 def ip_theo_giao_dien():
-    """IP hien tai cua Pi tren eth0/wlan0 - de hien cho nguoi dung go vao lenh switch."""
+    """IP hien tai cua may tren tung cong that - de nguoi dung go vao lenh switch.
+
+    Khong viet cung eth0/wlan0: tren may x86 cong ten ens3/enp1s0... nen
+    phan huong dan tung khong hien IP nao (bat duoc khi thu ban ISO)."""
     from ui.layout import _ipv4_of
+    from ui.phancung import danh_sach_cong
     ra = []
-    for ten in ("eth0", "wlan0"):
+    for ten in [c["ten"] for c in danh_sach_cong()]:
         ip = _ipv4_of(ten)
         if ip:
             ra.append({"iface": ten, "ip": ip})

@@ -95,10 +95,11 @@ def _ve_svg(iface, switch, hosts):
         '.ten{font-size:13px;font-weight:600;}</style>'
     )
 
-    # --- Nut Pi (luon co) ---
+    # --- Nut may nay (luon co) - ten san pham, khong ghi cung "Console Pi" ---
+    from ui.layout import TEN_NGAN
     x_pi = RONG / 2
     phan.append(f'<rect class="hop" x="{x_pi-70}" y="{Y_PI-22}" width="140" height="44" rx="8"/>')
-    phan.append(f'<text class="ten" x="{x_pi}" y="{Y_PI+5}" text-anchor="middle">🖥 Console Pi</text>')
+    phan.append(f'<text class="ten" x="{x_pi}" y="{Y_PI+5}" text-anchor="middle">🖥 {TEN_NGAN}</text>')
 
     # --- Nut switch ---
     x_switch = RONG / 2
@@ -150,7 +151,7 @@ TOPOLOGY_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Sơ đồ mạng - Console Pi</title>
+    <title>Sơ đồ mạng - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }

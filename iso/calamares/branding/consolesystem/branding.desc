@@ -1,0 +1,48 @@
+# Console System - thuong hieu cho trinh cai dat do hoa (Calamares).
+# Mau lay dung bang mau cua dashboard (src/ui/layout.py): nen #0B0E14,
+# chu #E3E8EF, nhan cyan #38BDF8 - de USB cai dat va giao dien web nhin
+# cung mot "nha".
+---
+componentName:  consolesystem
+
+welcomeStyleCalamares:   false
+welcomeExpandingLogo:    true
+
+# Toan man hinh: chay trong cage (xem console-system-cai.service), khong co
+# desktop phia sau nen khong can cua so co vien.
+windowExpanding:    fullscreen
+windowSize:         1024px,640px
+windowPlacement:    center
+
+sidebar:      widget
+navigation:   widget
+
+strings:
+    productName:         "Console System"
+    shortProductName:    "Console System"
+    version:             "1.0"
+    shortVersion:        "1.0"
+    versionedName:       "Console System 1.0"
+    shortVersionedName:  "Console System 1.0"
+    # Ten hien trong menu GRUB cua may da cai (GRUB_DISTRIBUTOR). Ten thu
+    # muc EFI dat rieng o modules/bootloader.conf (efiBootloaderId).
+    bootloaderEntryName: "Console System"
+    productUrl:          "https://github.com/zTieuYeuz/server-consolepi"
+    supportUrl:          ""
+    knownIssuesUrl:      ""
+    releaseNotesUrl:     ""
+    donateUrl:           ""
+
+images:
+    productLogo:         "logo.png"
+    productIcon:         "logo.png"
+    productWelcome:      "welcome.png"
+
+style:
+   SidebarBackground:        "#0B0E14"
+   SidebarText:              "#E3E8EF"
+   SidebarTextCurrent:       "#0B0E14"
+   SidebarBackgroundCurrent: "#38BDF8"
+
+slideshow:     "show.qml"
+slideshowAPI:  2

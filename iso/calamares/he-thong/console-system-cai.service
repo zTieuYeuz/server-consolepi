@@ -1,0 +1,47 @@
+# Mo trinh cai dat do hoa (Calamares) toan man hinh tren tty1 - CHI khi boot
+# bang muc "CAI Console System - giao dien do hoa" (tham so
+# console-system.cai=giaodien). Boot binh thuong thi dich vu nay khong chay.
+[Unit]
+Description=Console System - trinh cai dat do hoa
+ConditionKernelCommandLine=console-system.cai=giaodien
+After=systemd-user-sessions.service dbus.service console-system-lan-dau.service
+Wants=dbus.service
+Conflicts=getty@tty1.service
+# Do hoa loi (khong mo duoc) 3 lan -> tra tty1 ve dong lenh, man hinh hien
+# huong dan dung muc "che do chu" thay vi den thui. Bai hoc tu kiosk tren
+# VMware (CHANGELOG 1.1.3).
+StartLimitIntervalSec=120
+StartLimitBurst=3
+OnFailure=getty@tty1.service
+
+[Service]
+Type=simple
+User=root
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty-fail
+StandardOutput=journal
+StandardError=journal
+Environment=XDG_RUNTIME_DIR=/run/user/0
+Environment=XDG_SESSION_TYPE=wayland
+# Ve bang CPU, KHONG can card 3D: trinh cai phai chay duoc ca tren may ao
+# khong co tang toc 3D (VMware tren Hyper-V) - kiosk da chet dung cho do.
+# Da thu that: cage + pixman hien duoc giao dien tren may ao khong 3D.
+Environment=WLR_RENDERER=pixman
+Environment=WLR_NO_HARDWARE_CURSORS=1
+Environment=QT_QPA_PLATFORM=wayland
+Environment=QT_QUICK_BACKEND=software
+# Tieng Viet mac dinh. PHAI dat qua env ngay truoc khi chay: dat bang
+# Environment= la bi PAM (PAMName=login) ghi de bang LANG trong
+# /etc/default/locale cua phien USB - da thu, trinh cai hien tieng Anh.
+ExecStart=/usr/bin/env LANG=vi_VN.UTF-8 LANGUAGE=vi /usr/bin/cage -d -- /usr/bin/calamares
+Restart=on-failure
+RestartSec=3
+# Nguoi cai bam "Xong"/"Huy" ma khong khoi dong lai: tra lai dong lenh.
+ExecStopPost=-/bin/systemctl --no-block start getty@tty1.service
+
+[Install]
+WantedBy=multi-user.target

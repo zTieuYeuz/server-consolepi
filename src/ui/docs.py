@@ -639,22 +639,38 @@ bat ky. Cung mot bo cong cu, chi khac phan cung ben duoi.</p>
       Image mode mac dinh). Che do DD chep nguyen anh dia, giong het cach
       Debian khuyen dung.</li>
   <li>Cam USB, vao BIOS chon boot tu USB.</li>
-  <li>Menu boot <strong>tu chay sau 5 giay</strong> neu khong bam gi, chi con
-      dung 3 muc (da bo "Tuy chon cai dat nang cao" 8 muc long nhau va muc
-      "Utilities" - rac roi khong can thiet cho da so truong hop):
+  <li>Menu boot <strong>tu chay sau 5 giay</strong> neu khong bam gi (vao muc
+      dau tien - chay thu, KHONG BAO GIO tu vao trinh cai). Co 4 muc:
       <ul>
         <li><em>Chay thu Console System</em> - chay thang tu USB, KHONG dung
             gi toi o cung. Hop de thu nhanh ngoai hien truong.</li>
         <li><em>Chay thu - che do an toan</em> - giong muc tren nhung tat bot
             driver do hoa/ACPI, dung khi may la doi chay thu binh thuong bi
             treo man hinh den.</li>
-        <li><em>CAI Console System len o cung</em> - cai han vao may.</li>
+        <li><em>CAI Console System - giao dien do hoa (khuyen dung)</em> -
+            trinh cai kieu Windows: tung buoc co nut Tiep/Quay lai, chon o
+            dia bang hinh ve truoc/sau, co trang gioi thieu chay trong luc
+            chep file.</li>
+        <li><em>CAI Console System - che do chu (du phong)</em> - trinh cai
+            man hinh xanh cua Debian. Dung khi may loi do hoa, giao dien tren
+            khong hien.</li>
       </ul>
-      <p class="hint">Ba muc nay giong nhau o ca hai kieu boot. Rieng
-      <strong>anh nen</strong> thi chi co o may boot kieu BIOS: may boot UEFI
-      hien menu chu mau xanh cyan tren nen den, vi bo hien anh nen cua GRUB
-      bi loi san - no ve mot o den che kin danh sach lam khong bam duoc vao
-      dau (da kiem chung ca voi cau hinh goc chua sua gi).</p></li>
+      <p class="hint">Ban <strong>32-bit (i386)</strong> chi co 3 muc - khong
+      co trinh cai do hoa, chi co trinh cai che do chu. Trinh cai do hoa cua
+      Debian 12 keo theo them khoang 200MB thu vien, qua nang cho loai may
+      doi cu chi chay 32-bit ma ban nay nham toi.</p>
+      <p class="hint">Ca hai trinh cai deu <strong>khong tu chon o dia, khong
+      tu xoa gi</strong>: nguoi cai phai tu chon o, tu chon cach chia va bam
+      xac nhan. O USB cai dat khong hien trong danh sach nen khong the xoa
+      nham. Rieng <strong>anh nen</strong> menu thi chi co o may boot kieu
+      BIOS: may boot UEFI hien menu chu mau xanh cyan tren nen den, vi bo hien
+      anh nen cua GRUB bi loi san - no ve mot o den che kin danh sach lam
+      khong bam duoc vao dau.</p></li>
+  <li><strong>Trinh cai do hoa</strong> gom 5 buoc: Chao mung (chon ngon ngu)
+      &rarr; Vi tri (mui gio, mac dinh Ho Chi Minh) &rarr; Phan vung &rarr;
+      Tai khoan (ten dang nhap, ten may, mat khau) &rarr; Tom tat, roi hoi
+      xac nhan lan cuoi truoc khi ghi o dia. Cai xong tu go trinh cai va thu
+      vien do hoa khoi may, may da cai gon nhu cai bang che do chu.</li>
   <li>May len xong, <strong>man hinh hien san dia chi</strong> dang
       <code>http://192.168.x.x</code> kem ten cong mang. Mo trinh duyet tu
       may khac vao dia chi do.</li>
@@ -667,11 +683,13 @@ bat ky. Cung mot bo cong cu, chi khac phan cung ben duoi.</p>
 <strong>chon o dia va chia phan vung thi CO Y de nguoi cai tu bam</strong> -
 dien san may cau do la co ngay xoa nham o chua du lieu cua khach.</p>
 
-<h4>Vì sao không có giao diện đồ hoạ</h4>
+<h4>Vì sao máy đã cài không có desktop</h4>
 <p>Day la thiet ke co y, khong phai thieu sot. May nay la <strong>thiet bi
 mang</strong>: moi thao tac lam qua trinh duyet tu may khac, nen desktop chi
-ton RAM va dung luong ma khong dung toi. Nho vay ban cai chi khoang
-<strong>1.1 GB</strong> va chay duoc tren may cu RAM thap.</p>
+ton RAM va dung luong ma khong dung toi. Trinh cai do hoa chi chay trong luc
+cai tu USB va tu go di khi cai xong. Nho vay may da cai chi chiem khoang
+<strong>2-3 GB</strong> o dia (file ISO khoang 1.4 GB) va chay duoc tren may
+cu RAM thap.</p>
 
 <h4>Hai bản - chọn đúng bản cho máy</h4>
 <table>

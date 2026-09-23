@@ -1,0 +1,15 @@
+#!/bin/sh
+# Calamares goi file nay thay cho grub-install (modules/bootloader.conf).
+#
+# Khi cai kieu UEFI, them --force-extra-removable: grub-install cua Debian
+# se chep CA bo shim (da duoc Microsoft ky) + grub vao /EFI/BOOT/, dung
+# duong du phong ma mini PC bo qua NVRAM van tim. Buoc du phong rieng cua
+# Calamares chi chep grub (khong co shim) nen may bat Secure Boot tu choi -
+# da tat no di. Day chinh la cach trinh cai d-i dang lam (preseed
+# grub-installer/force-efi-extra-removable) va da kiem chung boot duoc
+# voi Secure Boot bat, NVRAM trong.
+case " $* " in
+    *--target=x86_64-efi*|*--target=i386-efi*)
+        exec grub-install "$@" --force-extra-removable ;;
+esac
+exec grub-install "$@"

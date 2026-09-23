@@ -10,3 +10,9 @@ label live-@FLAVOUR@-failsafe
 	linux @LINUX@
 	initrd @INITRD@
 	append @APPEND_LIVE_FAILSAFE@
+
+label install-giaodien
+	menu label ^CAI Console System - giao dien do hoa (khuyen dung)
+	linux @LINUX@
+	initrd @INITRD@
+	append @APPEND_LIVE@ console-system.cai=giaodien

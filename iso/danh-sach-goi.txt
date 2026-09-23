@@ -199,3 +199,40 @@ chromium
 wlr-randr
 fonts-noto-color-emoji
 python3-websocket
+# pipewire: server am thanh. THIEU thi tab Giai tri (YouTube) chay hinh MA
+# KHONG CO TIENG va khong bao loi gi - install.sh tren Pi cai san may goi
+# nay tu lau, ban ISO thi quen.
+pipewire
+pipewire-audio
+pipewire-pulse
+wireplumber
+
+# --- CONG CONSOLE (cap USB-serial) ---
+# LOI THAT (bat duoc 23/09/2026 khi cam cap USB-serial gia lap vao may ao
+# cai tu ISO): moi ban ISO tu truoc den nay DEU THIEU microcom, ma
+# scripts/ttyd-one.sh goi thang lenh nay de mo cong serial. Ket qua: dich
+# vu console-pi-ttyd@ttyUSB0 van "active", trang Console van hien cong,
+# nhung bam "Mo Console" thi khong co phien nao - API tra "Khong tao duoc
+# phien console cho ttyUSB0". Tuc la chuc nang CHINH cua san pham (cam cap
+# console vao switch) hong tren may cai tu ISO. install.sh tren Pi co cai
+# microcom (dong 163) nen tren Pi khong lo ra.
+microcom
+
+# --- TRINH CAI DAT DO HOA (Calamares) ---
+# Anh Thoai yeu cau 22/09/2026: trinh cai dep kieu Windows thay cho man hinh
+# xanh cua Debian. Chi dung trong phien USB (muc boot "CAI ... giao dien do
+# hoa"); cai xong se tu go calamares + Qt khoi may (xem
+# iso/calamares/modules/packages.conf) nen may da cai khong nang them.
+# KHONG dung calamares-settings-debian: goi do keo theo thu vien Qt5 va
+# pkexec khong can thiet - cau hinh rieng nam o iso/calamares/.
+calamares
+qt6-wayland
+qml6-module-qtquick
+qml6-module-qtquick-window
+qml6-module-qtqml-workerscript
+# unpackfs chep he thong bang rsync; kpmcore can polkitd de chia o dia
+# (ke ca khi chay quyen root) va dosfstools de tao phan vung EFI.
+rsync
+squashfs-tools
+polkitd
+dosfstools

@@ -41,6 +41,28 @@ def run_eapol_test(radius_ip, radius_port, radius_secret, eap, identity, passwor
     Tra ve {"ok": bool, "error": str|None, "success": bool|None, "output": str}
     success=None nghia la khong ket luan duoc (vd RADIUS khong phan hoi).
     """
+    # Kiem tra truoc khi goi eapol_test. LOI THAT (thu ban ISO 23/09/2026):
+    # bam Chay voi o trong -> eapol_test chet voi "wpa_init_conf: Assertion
+    # `0' failed" hien nguyen cho nguoi dung. Dau "-" o dau cung bi chan de
+    # gia tri khong bi hieu nham thanh tuy chon dong lenh.
+    radius_ip = (radius_ip or "").strip()
+    identity = (identity or "").strip()
+    try:
+        radius_port = int(str(radius_port).strip() or 1812)
+    except ValueError:
+        radius_port = 0
+    loi = None
+    if not radius_ip or radius_ip.startswith("-") or " " in radius_ip:
+        loi = "Nhập địa chỉ IP của RADIUS server."
+    elif not 1 <= radius_port <= 65535:
+        loi = "Cổng RADIUS phải là số từ 1 đến 65535 (thường là 1812)."
+    elif not radius_secret:
+        loi = "Nhập Shared Secret (khoá chung cấu hình trên RADIUS server)."
+    elif not identity:
+        loi = "Nhập Identity/Username để thử đăng nhập."
+    if loi:
+        return {"ok": False, "error": loi, "success": None, "output": ""}
+
     conf_text = build_conf(eap, identity, password, phase2)
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".conf", delete=False) as f:

@@ -233,7 +233,9 @@ def trang_thai_he_thong():
     from . import health, network, direct, storage
 
     mang = {}
-    for ten in ("eth0", "wlan0", "pan0"):
+    # Cong that cua may (x86 la ens3/enp1s0..., khong phai eth0) + pan0 ao
+    from .phancung import danh_sach_cong
+    for ten in [c["ten"] for c in danh_sach_cong()] + ["pan0"]:
         d = iface_detail(ten)
         if d:
             mang[ten] = {"ip": d["ip"], "mac": d["mac"],

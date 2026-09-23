@@ -1,0 +1,17 @@
+/* Nut bam va thanh tien trinh mang mau cyan cua Console System */
+QPushButton {
+    background-color: #38BDF8;
+    color: #0B0E14;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 18px;
+    font-weight: bold;
+}
+QPushButton:hover    { background-color: #0EA5E9; }
+QPushButton:disabled { background-color: #CBD5E1; color: #64748B; }
+QProgressBar {
+    border: 1px solid #CBD5E1;
+    border-radius: 5px;
+    text-align: center;
+}
+QProgressBar::chunk { background-color: #38BDF8; border-radius: 4px; }

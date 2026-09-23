@@ -264,8 +264,14 @@ def register_home(app):
 
         # --- Mang chi tiet ---
         net_rows = ""
-        for ifname, label in (("eth0", "Card LAN"), ("wlan0", "Card WiFi"),
-                              ("pan0", "Bluetooth PAN")):
+        # Liet ke CONG THAT cua may, khong viet cung "eth0"/"wlan0": tren may
+        # x86 cong ten ens3/enp1s0/wlp2s0 nen bang nay tung trong tron (bat
+        # duoc khi thu ban ISO 23/09/2026). pan0 la cong ao cua du an
+        # (Bluetooth) nen phancung loc ra - them tay, khong co thi bo qua.
+        from .phancung import danh_sach_cong
+        cac_cong = [(c["ten"], "Card WiFi" if c["wifi"] else "Card LAN")
+                    for c in danh_sach_cong()] + [("pan0", "Bluetooth PAN")]
+        for ifname, label in cac_cong:
             d = iface_detail(ifname)
             if not d:
                 continue

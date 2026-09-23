@@ -46,6 +46,31 @@ sự phục vụ được**.
 | `includes/console-system-lan-dau` | `/usr/local/sbin/` |
 | `includes/console-system-lan-dau.service` | `/etc/systemd/system/` |
 | `includes/10-console-system.conf` | `/etc/ssh/sshd_config.d/` |
+| `includes/apt.conf.d/00-toc-do-build` | `/etc/apt/apt.conf.d/` (bi hook xoa khoi may da cai) |
+| `calamares/settings.conf`, `calamares/modules/`, `calamares/branding/` | `/etc/calamares/` |
+| `calamares/lang/calamares_vi.qm` (sinh bang `calamares/lang/sua-ban-dich-vi.py`) | `/usr/share/calamares/lang/` |
+| `calamares/he-thong/console-system-grub-install` | `/usr/local/sbin/` |
+| `calamares/he-thong/console-system-cai.service` | `/etc/systemd/system/` |
+| `calamares/he-thong/05-khi-cai-dat.conf` | `/etc/systemd/system/console-pi-kiosk.service.d/` va `console-pi-kiosk-helper.service.d/` |
+
+## Trình cài đồ hoạ (Calamares)
+
+Mục boot *"CAI Console System - giao dien do hoa"* khởi động hệ thống chạy thử
+với tham số `console-system.cai=giaodien`; dịch vụ `console-system-cai.service`
+thấy tham số đó thì mở Calamares toàn màn hình trong `cage`, vẽ bằng CPU
+(`WLR_RENDERER=pixman`) nên chạy được cả trên máy ảo không có 3D. Trình cài chữ
+(d-i) vẫn giữ làm mục dự phòng.
+
+Những chỗ đã phải xử lý riêng (đều kiểm chứng bằng cài thật trong QEMU):
+- **GRUB có ký cho Secure Boot**: tự cài `grub-efi-amd64-signed` + `shim-signed`
+  từ kho gói trên chính USB (`shellprocess@caigrub`), không cần Internet.
+- **Đường dự phòng `/EFI/BOOT/BOOTX64.EFI`**: tắt bước dự phòng của Calamares
+  (nó chép grub không có shim, máy bật Secure Boot sẽ từ chối) và để
+  `grub-install --force-extra-removable` của Debian lo.
+- **Khoá SSH riêng cho từng máy**: live-build xoá khoá khỏi ISO, Calamares
+  không tạo lại nên `ssh.service` chết. `ssh-keygen -A` ở bước dọn dẹp.
+- **Tiếng Việt mặc định**: đặt `LANG` qua `env` ngay trong `ExecStart`, vì
+  `Environment=` bị PAM ghi đè.
 
 ## Những quyết định quan trọng (và lý do thật)
 

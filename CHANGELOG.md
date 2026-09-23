@@ -1,5 +1,83 @@
 # Changelog
 
+## 1.2.0
+
+**Trinh cai dat do hoa (Calamares) + ban ISO ra dung duoc cho khach.** Anh
+Thoai: "co the lam giong nhu windows ma hinh dep... chu khong dung mac dinh
+cua debian nua". Ban ISO 64-bit nay co them muc menu *CAI Console System -
+giao dien do hoa (khuyen dung)*: 5 buoc bam Tiep/Quay lai, co so do o dia
+truoc/sau, co trang gioi thieu chay trong luc chep file. Trinh cai chu cua
+Debian van giu lam duong du phong cho may loi do hoa.
+
+### Trinh cai do hoa
+- Giao dien tieng Viet, thuong hieu Console System (logo, mau, anh chao).
+- **KHONG chon san o dia, khong chon san cach chia** - dung nguyen tac an
+  toan xuyen suot du an. O USB dang cai khong hien trong danh sach.
+- Cai xong TU GO trinh cai + thu vien Qt + live-boot khoi may da cai, tu
+  sinh khoa SSH rieng cho tung may, bo dong nguon `file:/run/live/medium`
+  va cac dong `deb-src` trong `sources.list`.
+- Cai GRUB da ky (shim) cho may UEFI, them ca duong du phong
+  `/EFI/BOOT/BOOTX64.EFI`; may BIOS thi cai `grub-pc`.
+- **Sua 113 chuoi trong ban dich tieng Viet cua Calamares 3.3.14**
+  (`iso/calamares/lang/sua-ban-dich-vi.py` - chay lai duoc khi len ban moi).
+  Ban goc co loi hien ngay tren man hinh: "Hay cho **Vigo** biet ten day du
+  cua ban?", "Tu dang nhat", o "Yeu cau mat khau manh" bi dich NGUOC nghia,
+  va ca hop xac nhan truoc khi XOA DIA ("Install Now"/"Go Back") lan phan
+  mo ta thao tac phan vung van con nguyen tieng Anh.
+- **Tat o "Ma hoa he thong"**: anh dia khong co `cryptsetup`, khach tick vao
+  la cai xong khong mo khoa duoc luc boot (bat duoc khi cai thu).
+- Ban 32-bit (i386) CO Y khong co trinh cai do hoa: Calamares cua Debian 12
+  keo theo QtWebKit + KDE Frameworks (~200MB), qua nang cho may doi cu.
+
+### Sua loi tim duoc khi cai that ra may x86
+- **THIEU `microcom` trong ISO - chuc nang CHINH cua san pham (cam cap
+  console vao switch/router) hong tren moi may cai tu ISO tu truoc den
+  gio.** `scripts/ttyd-one.sh` goi thang lenh `microcom` de mo cong serial,
+  nhung goi nay chi co trong danh sach cai cua Pi (`install.sh`), khong co
+  trong danh sach goi cua ISO. Hau qua: dich vu console van bao "active",
+  trang Console van hien dung cong, nhung bam "Mo Console" thi khong co
+  phien nao - API tra "Khong tao duoc phien console". Kiem chung that:
+  cam cap USB-serial gia lap switch vao may cai tu ISO, go duoc lenh va
+  doc duoc phan hoi sau khi them goi.
+- Thieu ca `pipewire`/`pipewire-pulse`/`wireplumber`: tab Giai tri (video)
+  chay hinh nhung KHONG CO TIENG, khong bao loi gi.
+- **Vua bat may, mo trang web ra "502 Bad Gateway"** muoi may giay (Flask
+  chua kip mo cong 5000), cac trang terminal con ra "500". Nay nginx tra
+  trang "Console System dang khoi dong..." tu tai lai sau 3 giay. Chi bat
+  loi do nginx sinh ra - loi 500 that cua Flask van hien nguyen.
+- **Cong mang tren may x86 ten `ens3`/`enp1s0`, khong phai `eth0`**:
+  - trang chu KHONG hien card LAN nao (bang mang trong tron),
+  - trang TFTP khong hien duoc IP de go vao lenh tren switch,
+  - `/api/system` bo sot toan bo phan mang.
+- **802.1X**: bam Chay voi o trong thi hien loi tho cua chuong trinh
+  (`eapol_test ... Assertion '0' failed`). Nay kiem tra du lieu nhap truoc.
+- **Kiem tra DNS bao nham "bi can thiep"**: DNS he thong tra 1 IP, cac DNS
+  cong khai tra 4 IP trong do co chinh IP do (binh thuong voi CDN). Nay chi
+  canh bao khi co hai server tra ve hai tap IP KHONG TRUNG NHAU IP nao.
+- **Trang Bluetooth cho 5 giay moi lan mo** tren may khong co Bluetooth
+  (`bluetoothctl` ngoi cho bluetoothd). Nay hoi kernel truoc, khong co thi
+  bao ro "May nay khong co bo Bluetooth" va mo ngay (0.06s).
+- Nhan TFTP ghi "dang bat tren eth0" trong khi dich vu nghe tren MOI cong
+  (`--address 0.0.0.0:69`) - sai ca tren Pi. So do mang ghi "Console Pi"
+  tren san pham ten Console System. Mo ta L2 scan ghi cung "eth0".
+
+### Tai lieu
+- Muc cai dat: 4 muc menu (ban i386 co 3), mo ta trinh cai do hoa, dung
+  luong that.
+- `iso/README.md`: them phan Calamares va bang anh xa file.
+
+Kiem chung that tren ca hai ban (amd64 + i386), cai bang CA HAI trinh cai
+(do hoa va chu), tren QEMU:
+  - amd64, do hoa, UEFI: cai xong khoi dong duoc kem Secure Boot
+    (`SecureBoot enabled`), sudo dung, khong dich vu nao that bai,
+    dashboard tra 302, cong Console gop cap USB-serial (gia lap switch)
+    go duoc `show version` va doc duoc phan hoi
+  - amd64, do hoa, BIOS: cai xong khoi dong duoc trong 30s
+  - amd64, trinh cai chu (d-i), UEFI: cai tu dong, cung dat het cac muc
+    tren, Calamares/Qt khong co trong danh sach goi (khong bi anh huong)
+  - i386, trinh cai chu (d-i), BIOS: cai tu dong, dat het cac muc tren
+  - Ca hai bang goi da kiem lai co du `microcom` va `pipewire`
+
 ## 1.1.5
 
 **Cai len mini PC that: hoi firmware + cai xong khong boot - da sua.** Anh

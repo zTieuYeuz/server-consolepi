@@ -55,9 +55,11 @@ done
 #                            xuyen suot du an) - nguoi dung tu bat khi can
 for s in console-pi-dashboard console-pi-term-local console-pi-term-ssh \
          nginx lldpd avahi-daemon ssh NetworkManager \
-         console-system-lan-dau; do
+         console-system-lan-dau console-system-cai; do
     systemctl enable "$s" >/dev/null 2>&1 || echo "[console-system] khong bat duoc $s"
 done
+# console-system-cai (trinh cai do hoa) bat san nhung CHI chay khi boot bang
+# muc cai dat do hoa (ConditionKernelCommandLine) - boot thuong la bo qua.
 
 # --- 2b. TAT cac dich vu MANG tu bat theo goi ---
 #
@@ -157,3 +159,13 @@ echo "[console-system] da dat thuong hieu"
 # Protected, duong cai BIOS se go no va that bai (loi da gap o ban 1.1.x).
 rm -f /etc/apt/apt.conf.d/00recommends
 echo "[console-system] da tra lai mac dinh cai goi khuyen nghi"
+
+# --- 8. Xoa tuy chon tang toc BUILD (--force-unsafe-io) khoi may da cai ---
+#
+# File 00-toc-do-build chi de dpkg CHAY NHANH HON trong luc DUNG ANH DIA
+# tren may build (bo qua fsync khi cai goi - xem giai thich trong chinh
+# file do). Tren may THAT cua khach, mat dien giua luc cai them goi la
+# chuyen co that -> PHAI xoa o day de dpkg tren may khach quay lai an
+# toan mac dinh. Khong lien quan gi den toc do chay cua Console System.
+rm -f /etc/apt/apt.conf.d/00-toc-do-build
+echo "[console-system] da tat che do tang toc dpkg (chi danh cho may build)"

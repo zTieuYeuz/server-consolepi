@@ -1,0 +1,22 @@
+// Console System - CHI dung khi DUNG ISO, khong lien quan gi den may da cai.
+//
+// LOI THAT (23/09/2026, anh Thoai hoi sao server build CPU chi chay
+// 12-20%): do luong that tren may build cho thay dpkg khi cai goi trong
+// chroot GHI DIA THEO KIEU fsync tung file mot (de an toan khi mat dien
+// giua chung) - toc do do tren o dia ao chi ~12MB/s, trong khi mang toi
+// mirror Debian nhanh (~90MB/s). Ket qua: CPU ngoi cho dia GHI XONG cho
+// tung goi, khong phai thieu suc manh CPU - 8 nhan chi dung het 1-2 nhan.
+//
+// --force-unsafe-io tat cac loi goi sync()/fsync() nay TRONG LUC CAI GOI.
+// An toan de dung o day vi day la MOI TRUONG DUNG ANH DIA: neu build vo
+// tinh mat dien giua chung thi von da phai xoa chroot va build lai tu dau
+// (lb clean), khong co "du lieu quan trong" nao can bao ve o day ca. Day
+// la tuy chon CHINH THUC cua dpkg (khong phai mo tinh nhu eatmydata),
+// dung rong rai trong cac he thong build/CI.
+//
+// PHAI xoa khoi may da cai (xem hook 0100-console-system, phan don dep):
+// may that co the mat dien that su, giu --force-unsafe-io tren do la mat
+// an toan that cho nguoi dung cuoi, khong phai chi cho luc build.
+Dpkg::Options {
+   "--force-unsafe-io";
+}
