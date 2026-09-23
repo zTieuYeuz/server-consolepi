@@ -75,9 +75,9 @@ Những chỗ đã phải xử lý riêng (đều kiểm chứng bằng cài th�
 
 ## Những quyết định quan trọng (và lý do thật)
 
-- **Không có desktop.** Máy này là thiết bị mạng, mọi thao tác qua trình
-  duyệt từ máy khác. Bỏ desktop giúp ISO còn ~1.1 GB và chạy được trên máy
-  RAM thấp.
+- **Không có desktop, chỉ có kiosk.** Máy thật cài xong tự hiện dashboard
+  toàn màn hình (cage + Chromium, như RasPad); máy ảo thì không tự bật. Không
+  có desktop giúp ISO nhẹ và chạy được trên máy RAM thấp.
 - **Bỏ firmware đồ hoạ (~224 MB)** — nvidia/amdgpu/i915 — vì không có
   desktop thì không dùng tới. **Giữ nguyên toàn bộ firmware mạng** (94 thư
   mục: Intel, Realtek, Atheros, Broadcom, MediaTek, card mạng máy chủ...) vì

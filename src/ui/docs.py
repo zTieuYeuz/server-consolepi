@@ -736,10 +736,10 @@ Chi may mua truoc 2006 moi thuc su chi chay duoc 32-bit.</p>
 y het cho <strong>laptop hoac may ban co man hinh cam vao</strong>: dashboard
 hien thang len man hinh do, khong can may thu hai mo trinh duyet.</p>
 <ul>
-  <li><strong>Tu nhan dien</strong>: luc khoi dong lan dau, may doc
-      <code>/sys/class/drm/*/status</code> - thay co cong man hinh dang cam
-      thi TU BAT giao dien; may cam trong rack khong man hinh thi bo qua,
-      khong bao gio bat nham roi lap loi vo han.</li>
+  <li><strong>Cai xong la bat luon</strong>: lan khoi dong dau tien, may
+      that tu bat giao dien man hinh (cho driver card man hinh nap xong roi
+      moi hien, toi da 60 giay). May nao khong dung man hinh thi khong cam
+      man hinh - kiosk chay khong ai nhin, khong anh huong gi.</li>
   <li><strong>May ao (VMware, VirtualBox, Hyper-V, QEMU...) KHONG tu bat</strong>:
       card do hoa ao luc nao cung bao "co man hinh", va nhieu may ao khong co
       tang toc 3D nen Chromium ve ra man hinh den thui. May ao thi mo web tu
@@ -754,8 +754,9 @@ hien thang len man hinh do, khong can may thu hai mo trinh duyet.</p>
       <code>sudo systemctl disable --now console-pi-kiosk console-pi-kiosk-helper</code>
       roi <code>sudo systemctl start getty@tty1</code>.</li>
   <li><strong>Bat/tat tay</strong>: o tab <strong>Cai dat chung</strong>, muc
-      man hinh/kiosk - dung khi cam man hinh vao SAU luc cai, hoac muon tat
-      di de nhuong lai dong lenh <code>tty1</code>.</li>
+      man hinh/kiosk. Bam tat thi man hinh quay ve dong lenh dang nhap ngay
+      (tu ban 1.2.3; ban cu bi den man hinh - bam <kbd>Alt</kbd>+<kbd>F2</kbd>
+      hoac khoi dong lai).</li>
   <li>Dung <code>cage</code> (trinh quan ly cua so Wayland toi gian, chi
       chay dung mot ung dung) + Chromium toan man hinh - cung mot co che voi
       ban Pi, chi khac cach xac dinh tai khoan chay (Pi dung san

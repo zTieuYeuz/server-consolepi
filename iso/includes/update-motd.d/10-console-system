@@ -1,7 +1,7 @@
 #!/bin/sh
 # Man hinh chao: viec DUY NHAT nguoi dung can biet khi nhin vao may nay la
-# "mo trinh duyet vao dia chi nao". Vi day la he thong khong co giao dien
-# do hoa - moi thao tac deu qua web tu may khac.
+# "mo trinh duyet vao dia chi nao". Man hinh chu nay chi hien khi kiosk
+# dang tat/loi (hoac tren may ao) - luc do moi thao tac qua web tu may khac.
 #
 # LOI THAT DA GAP (20/09/2026, anh Thoai boot thu tren may that): man hinh
 # bao "ens33: chua co dia chi IP" nhung ngay sau do go `ip a` thi thay IP
@@ -22,8 +22,8 @@ printf "${C}  / ___|___  _ __  ___  ___ | | ___   ${T}\n"
 printf "${C} | |   / _ \\| '_ \\/ __|/ _ \\| |/ _ \\  ${T}\n"
 printf "${C} | |__| (_) | | | \\__ \\ (_) | |  __/  ${T}${X}SYSTEM${T}\n"
 printf "${C}  \\____\\___/|_| |_|___/\\___/|_|\\___|  ${T}\n\n"
-printf " ${X}Bo cong cu ky thuat mang - khong co giao dien do hoa.${T}\n"
-printf " ${X}Moi thao tac lam qua trinh duyet tu may khac.${T}\n\n"
+printf " ${X}Bo cong cu ky thuat mang.${T}\n"
+printf " ${X}Mo trinh duyet tu may khac vao dia chi duoi day.${T}\n\n"
 
 _co_cong_that() {
     for i in $(ls /sys/class/net 2>/dev/null); do

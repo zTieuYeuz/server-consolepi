@@ -67,14 +67,23 @@ if [ -n "$_nd" ]; then
     for _u in console-pi-kiosk console-pi-kiosk-helper; do
         mkdir -p "/etc/systemd/system/${_u}.service.d"
         {
-            echo "[Unit]"
-            echo "ConditionPathExists=/dev/dri/card0"
             echo "[Service]"
             echo "User=${_nd}"
             echo "Group=${_nd}"
             echo "Environment=XDG_RUNTIME_DIR=/run/user/${_uid}"
         } > "/etc/systemd/system/${_u}.service.d/10-nguoi-dung.conf"
     done
+    # CHO driver man hinh nap xong roi moi chay cage (toi da 60 giay).
+    # Truoc day dung ConditionPathExists=/dev/dri/card0: luc kiosk den luot
+    # ma driver (vd i915 cua Intel) chua nap xong thi systemd BO QUA kiosk
+    # ca lan boot do - man hinh chi con dong lenh. Cho o day thi chac chan;
+    # may that su khong co card do hoa thi het 60 giay bao loi, loi 5 lan
+    # thi tra tty1 ve dong lenh (xem 20-tra-man-hinh.conf ben duoi).
+    # "+" = chay quyen root (udevadm settle can quyen root).
+    {
+        echo "[Service]"
+        echo "ExecStartPre=+/bin/sh -c 'udevadm settle -t 30; timeout 60 sh -c \"until [ -e /dev/dri/card0 ]; do sleep 1; done\" || { echo khong thay card do hoa; exit 1; }'"
+    } > /etc/systemd/system/console-pi-kiosk.service.d/15-cho-man-hinh.conf
 
     # --- Kiosk loi thi TRA tty1 ve cho dong lenh ---
     # Kiosk chiem tty1 va tat getty (Conflicts=getty@tty1). Neu cage/Chromium
@@ -89,6 +98,17 @@ if [ -n "$_nd" ]; then
         echo "StartLimitIntervalSec=300"
         echo "StartLimitBurst=5"
         echo "OnFailure=getty@tty1.service"
+        # LOI THAT (23/09/2026, anh Thoai bam "Tat giao dien man hinh" tren
+        # mini PC Dell): man hinh DEN THUI, chi con con tro nhap nhay, khong
+        # quay ve dong lenh. Kiosk tat getty@tty1 luc chay (Conflicts) nhung
+        # luc TAT kiosk thi khong ai bat lai getty. Sua: tat kiosk BINH
+        # THUONG (nut tren web, systemctl stop/disable) -> bat lai getty.
+        # CHI khi SERVICE_RESULT=success: kiosk bi loi/crash thi KHONG bat
+        # getty o day - de Restart=always tu chay lai kiosk (bat getty luc
+        # do se tat luon kiosk vi Conflicts). Loi mai thi da co OnFailure.
+        # Da thu that bang systemd: bat/crash/tat/disable --now deu dung.
+        echo "[Service]"
+        echo "ExecStopPost=+/bin/sh -c '[ \"\$\$SERVICE_RESULT\" = success ] && systemctl start --no-block getty@tty1.service; true'"
     } > /etc/systemd/system/console-pi-kiosk.service.d/20-tra-man-hinh.conf
     # Bo gioi han khoi dong lai cua getty tren tty1. Ly do - da do that:
     # OnFailure bat getty moi lan kiosk loi, roi kiosk thu lai thi lai tat
@@ -102,11 +122,16 @@ if [ -n "$_nd" ]; then
         echo "StartLimitIntervalSec=0"
     } > /etc/systemd/system/getty@tty1.service.d/20-khong-gioi-han.conf
 
-    _co_man_hinh=0
-    for _s in /sys/class/drm/*/status; do
-        [ -e "$_s" ] || continue
-        if grep -qx "connected" "$_s" 2>/dev/null; then _co_man_hinh=1; fi
-    done
+    # LOI THAT (23/09/2026, anh Thoai cai len mini PC Dell co cam man
+    # hinh): cai xong KHONG vao kiosk, chi co dong lenh - bat tay bang
+    # `systemctl start console-pi-kiosk` thi hien binh thuong. Truoc day
+    # chi bat kiosk khi luc nay doc /sys/class/drm/*/status thay
+    # "connected", nhung script nay chay RAT SOM trong luc boot - driver man
+    # hinh chua nap xong thi chua co gi de doc, ket luan nham "khong co man
+    # hinh", ma script chi chay 1 lan nen khong bao gio bat lai.
+    # Anh Thoai chot: cai xong la BAT KIOSK LUON; may nao khong dung man
+    # hinh thi khong cam man hinh (kiosk chay khong ai nhin, vo hai).
+    _co_man_hinh=1
 
     # --- May ao: KHONG tu bat kiosk ---
     # LOI THAT (21/09/2026, anh Thoai cai len VMware Workstation): cai xong
@@ -126,7 +151,7 @@ if [ -n "$_nd" ]; then
         echo "[console-system] dang chay tren may ao ($_may_ao) - khong tu bat kiosk"
     fi
 
-    if [ "$_co_man_hinh" = "1" ] && [ -e /dev/dri/card0 ]; then
+    if [ "$_co_man_hinh" = "1" ]; then
         systemctl daemon-reload >/dev/null 2>&1 || true
         # KHONG DUOC DUNG `enable --now` O DAY - DA LAM TREO BOOT THAT.
         # `--now` = enable roi START VA DOI cho start xong. Nhung dich vu nay
@@ -139,11 +164,11 @@ if [ -n "$_nd" ]; then
         # (xep hang xong tra ve ngay), de systemd tu chay kiosk khi den luot.
         systemctl enable console-pi-kiosk console-pi-kiosk-helper >/dev/null 2>&1 || true
         if systemctl start --no-block console-pi-kiosk console-pi-kiosk-helper >/dev/null 2>&1; then
-            echo "[console-system] co man hinh - da bat giao dien kiosk"
+            echo "[console-system] da bat giao dien kiosk"
         else
-            echo "[console-system] co man hinh nhung khong bat duoc kiosk"
+            echo "[console-system] khong bat duoc kiosk"
         fi
     else
-        echo "[console-system] khong thay man hinh - bo qua kiosk (bat tay o tab Cai dat neu can)"
+        echo "[console-system] may ao - bo qua kiosk (bat tay o tab Cai dat neu can)"
     fi
 fi

@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.2.3
+
+**Cai xong la vao kiosk luon + tat kiosk khong con den man hinh.** Anh
+Thoai cai len mini PC Dell co cam man hinh: cai xong chi co dong lenh, phai
+go lenh moi hien giao dien; bam "Tat giao dien man hinh" tren web thi man
+hinh den thui, chi con con tro nhap nhay.
+
+- Truoc day kiosk chi bat neu luc khoi dong lan dau "thay man hinh", nhung
+  luc do driver card man hinh (Intel) chua nap xong -> ket luan nham. Nay
+  may that cai xong la BAT KIOSK LUON (theo yeu cau anh Thoai); kiosk tu cho
+  driver man hinh nap xong (toi da 60 giay). May ao van khong tu bat.
+- Tat kiosk (nut tren web hoac `systemctl stop/disable`) thi tu bat lai
+  dong lenh dang nhap tren man hinh. Kiosk bi loi thi van tu chay lai nhu
+  cu, loi 5 lan moi tra ve dong lenh.
+- Man hinh chao bo cau "khong co giao dien do hoa".
+
+Kiem chung (may ao gia lap may that, card man hinh std-VGA): lan khoi dong
+dau tu vao dashboard; khoi dong lai van vao; bam Tat tren web -> hien
+`console-system login:`; bam Bat lai -> vao dashboard; giet cage -> kiosk tu
+chay lai; khong unit nao loi.
+
+**May da cai tu ban cu** - sua tat-kiosk-den-man-hinh (khong can cai lai):
+
+```bash
+printf '[Service]\nExecStopPost=+/bin/sh -c %s\n' "'[ \"\$\$SERVICE_RESULT\" = success ] && systemctl start --no-block getty@tty1.service; true'" | sudo tee /etc/systemd/system/console-pi-kiosk.service.d/30-tra-tty1.conf
+sudo systemctl daemon-reload
+```
+
 ## 1.2.2
 
 **May cai bang TRINH CAI CHU khong cai them duoc goi nao - da sua.** Sau
