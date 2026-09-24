@@ -313,24 +313,12 @@ def _sinh_menu_ipxe(kieu_boot="truc_tiep"):
     # vuot 4GB thanh install.swm/install2.swm, parted+mkfs.vfat de dung
     # GPT+FAT32, cac file boot van trich thang tu boot.wim) - xem
     # ui/unattend.py: dung_dia_gpt_tu_dong().
-    from . import unattend as _u
-    # Menu PXE (Buoc A - xem ui/pxemenu.py): may khach TU CHON kich ban.
-    # Menu tat (mac dinh) -> giu nguyen 1 dong sanboot nhu truoc day.
+    # CHI CON MENU (25/09/2026 - xem ui/pxemenu.py): may khach TU CHON kich
+    # ban, moi muc sanboot 1 anh dia GPT+FAT32 rieng. Khong con duong
+    # "1 anh chung" cua nut "Dung" lan duong wimboot tran (boot.wim khong
+    # co autounattend - Setup hoi tay, khong dung kich ban nao).
     from . import pxemenu as _m
-    if _m.menu_dang_dung():
-        return _m.sinh_script(goc)
-    if _u.co_san_dia_gpt_tu_dong():
-        return f"""#!ipxe
-sanboot --no-describe {goc}/{_u.TEN_DIA_GPT_TU_DONG}
-"""
-
-    return f"""#!ipxe
-kernel {goc}/wimboot
-initrd {goc}/boot.wim            boot.wim
-initrd {goc}/{TEN_BCD_BIOS}      BCD
-initrd {goc}/{TEN_BOOTMGR_BIOS}  bootmgr.exe
-boot
-"""
+    return _m.sinh_script(goc)
 
 
 def _ghi_menu_ipxe(kieu_boot="truc_tiep"):
@@ -469,27 +457,15 @@ def _don_phien_smb_cu(dia_chi_may):
     _sh(["smbcontrol", "smbd", "kill-client-ip", dia_chi_may], timeout=10)
 
 
-def _bat_pxe_that(kieu_boot="truc_tiep", cauhinh=None):
+def _bat_pxe_that(kieu_boot="truc_tiep"):
     """
-    cauhinh: dict trang thai wizard (ten_may, username, password, o_dia...)
-    - neu co va la Windows, TU DONG dung lai anh dia GPT+FAT32 (boot.wim +
-    script trien khai + unattend rieng cho os_id/kich ban NAY - xem
-    ui/unattend.py: dung_dia_gpt_tu_dong()) truoc khi bat, de may can cai
-    tu chay het khong can go tay gi ca.
+    Bat PXE o che do mang kieu_boot: dua eth0 ve dung trang thai cua che do
+    do, dung/dung lai anh dia cho MOI kich ban Windows (menu - xem
+    ui/pxemenu.py), ghi menu.ipxe, khoi dong dnsmasq + Samba.
 
-    LOI THAT DA GAP (anh Thoai bao "lam sao biet chac no dung kich ban anh
-    muon"): ham nay TUNG (a) goi chuan_bi_autounattend() - ham CU da bi
-    thay the tu lau (dia mem ao, khong con dung nua) thay vi
-    dung_dia_gpt_tu_dong() la ham THAT SU dang duoc PXE su dung (xem
-    _sinh_menu_ipxe: sanboot thang vao file dung_dia_gpt_tu_dong() tao
-    ra); va (b) neu PXE DA dang bat san thi return SOM ngay dau ham,
-    KHONG BAO GIO dung lai anh dia - nghia la bam "Dung" 1 kich ban khac
-    trong khi PXE dang chay se KHONG co tac dung gi, may can cai van boot
-    vao anh dia CU. Sua lai: LUON dung lai anh dia truoc (khop dung
-    os_id/kich ban dang chon), roi moi kiem tra da bat san hay chua de
-    quyet dinh co can khoi dong lai dich vu dnsmasq hay khong (khong can
-    khoi dong lai neu da bat san - file anh dia se duoc doc lai tu dau
-    o lan sanboot TIEP THEO).
+    Dang bat san dung che do nay -> chi dung lai anh con thieu/da sua va
+    ghi lai menu (khong khoi dong lai dnsmasq). Khac che do -> tat roi bat
+    lai theo thu tu bat buoc o duoi.
     """
     da_bat_san = dang_bat()
     kieu_dang_chay = kieu_dang_bat()
@@ -499,18 +475,10 @@ def _bat_pxe_that(kieu_boot="truc_tiep", cauhinh=None):
     # ---- 1. Dang chay DUNG kieu cua kich ban nay: chi can dung lai anh dia
     # (eth0 va dnsmasq da o dung trang thai cua kieu do roi, khong dung vao).
     if da_bat_san and kieu_dang_chay == kieu_boot:
-        if cauhinh and cauhinh.get("os_ho") == "windows":
-            from . import unattend as _u
-            ok, msg = _u.dung_dia_gpt_tu_dong(cauhinh, _dia_chi_pi_that(kieu_boot))
-            if not ok:
-                return False, f"Không dựng được ảnh đĩa cài đặt: {msg}"
-            # menu.ipxe phai ghi lai: menu co muc "kich ban dang dung" doi ten.
-            them = _dung_menu(kieu_boot, cauhinh)
-            _ghi_menu_ipxe(kieu_boot)
-            return True, ("Đã cập nhật ảnh đĩa cài đặt theo kịch bản đang "
-                           "chọn. PXE vẫn đang bật đúng kiểu, không cần "
-                           "khởi động lại." + them)
-        return True, "PXE đang bật sẵn đúng kiểu của kịch bản này."
+        them = _dung_menu(kieu_boot)
+        if not _ghi_menu_ipxe(kieu_boot):
+            return False, "Không ghi được script iPXE."
+        return True, "PXE vẫn đang bật đúng chế độ này, đã cập nhật menu." + them
 
     # ---- 2. Khac kieu (hoac dang tat): dua eth0 ve dung trang thai cua kieu
     # MOI TRUOC, roi moi lam nhung viec phu thuoc vao dia chi Pi.
@@ -574,13 +542,7 @@ def _bat_pxe_that(kieu_boot="truc_tiep", cauhinh=None):
             _sh(["nmcli", "device", "set", cong(), "managed", "yes"])
             _sh(["nmcli", "device", "connect", cong()], timeout=30)
 
-    if cauhinh and cauhinh.get("os_ho") == "windows":
-        from . import unattend as _u
-        ok, msg = _u.dung_dia_gpt_tu_dong(cauhinh, dia_chi_pi)
-        if not ok:
-            _tra_lai_eth0()
-            return False, f"Không dựng được ảnh đĩa cài đặt: {msg}"
-    them_menu = _dung_menu(kieu_boot, cauhinh)
+    them_menu = _dung_menu(kieu_boot)
 
     if not _ghi_menu_ipxe(kieu_boot):
         _tra_lai_eth0()
@@ -693,13 +655,13 @@ def _don_rac_dung_anh():
                 pass
 
 
-def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
+def bat_pxe(kieu_boot="truc_tiep"):
     """Xem _bat_pxe_that. Co khoa: bam 2 lan khong chay chong."""
     if not _KHOA.acquire(blocking=False):
         return False, _DANG_LAM
     try:
         _don_rac_dung_anh()
-        return _bat_pxe_that(kieu_boot, cauhinh)
+        return _bat_pxe_that(kieu_boot)
     finally:
         _KHOA.release()
 
@@ -725,21 +687,15 @@ def cap_nhat_menu():
         _KHOA.release()
 
 
-def _dung_menu(kieu_boot, cauhinh=None):
+def _dung_menu(kieu_boot):
     """
-    Menu PXE dang bat -> dung/dung lai anh dia cho cac kich ban trong menu.
-    Tra ve doan chu noi them vao thong bao (rong neu menu tat).
+    Dung/dung lai anh dia cho moi kich ban Windows (menu PXE). Tra ve doan
+    chu noi them vao thong bao.
     """
     from . import pxemenu as _m
-    from . import unattend as _u
-    if not _m.doc_cauhinh()["bat"]:
-        return ""
-    ten_dang = (cauhinh or {}).get("tu_kichban", "")
-    if not ten_dang:
-        ten_dang = (_u.doc_dau_kichban() or {}).get("ten_kichban", "")
-    kq = _m.dung_anh_menu(_dia_chi_pi_that(kieu_boot), kieu_boot, ten_dang)
-    so_muc = len(_m.muc_menu(_u.doc_dau_kichban()))
-    return (f" Menu PXE: {so_muc} mục." + (" " + " ".join(kq) if kq else ""))
+    kq = _m.dung_anh_menu(_dia_chi_pi_that(kieu_boot), kieu_boot)
+    so_muc = len(_m.muc_menu())
+    return (f" Menu: {so_muc} kịch bản." + (" " + " ".join(kq) if kq else ""))
 
 
 def _cap_nhat_menu_that():
@@ -754,7 +710,7 @@ def _cap_nhat_menu_that():
     them = _dung_menu(kieu)
     if not _ghi_menu_ipxe(kieu):
         return " KHÔNG ghi được menu.ipxe."
-    return them or " Đã cập nhật menu (menu đang tắt - máy khách vào thẳng kịch bản đang dùng)."
+    return them
 
 
 def _tat_pxe_that():
@@ -858,26 +814,12 @@ def register_pxe(app):
 
     @app.route("/deployos/pxe/bat", methods=["POST"])
     def deployos_pxe_bat():
-        kieu = request.form.get("kieu_boot", "truc_tiep")
-        # Doc lai toan bo cau hinh cua trinh tu (khong chi kieu_boot) de
-        # sinh dung autounattend.xml khop voi ten may/tai khoan/o dia anh
-        # Thoai da chon - xem bat_pxe() va ui/unattend.py.
-        ma = request.form.get("ma", "")
-        cauhinh = _d._wizard_lay(ma) if ma else None
-        # LOI THAT DA GAP (anh Thoai: cai xong nhung "mat khau khong dung,
-        # no chay kich ban nao ay"): trang thai trinh tu nam trong BO NHO
-        # (_WIZARD) nen se MAT khi dashboard khoi dong lai hoac qua han.
-        # Luc do cauhinh = None, bat_pxe() se BO QUA hoan toan buoc dung
-        # lai anh dia va bat PXE voi anh dia CU (cua lan chay truoc do,
-        # co the cua kich ban khac hoan toan) MA KHONG BAO GI CA. Phai
-        # bao loi ro rang thay vi im lang chay sai kich ban.
-        if ma and cauhinh is None:
-            return _ve_lai(
-                "Trình tự đã hết hạn (hoặc dashboard vừa khởi động lại) nên "
-                "không còn giữ được lựa chọn của anh. CHƯA bật PXE - vào lại "
-                "danh sách kịch bản và bấm \"Dùng\" lần nữa để chắc chắn máy "
-                "cài đúng kịch bản anh muốn.", False)
-        ok, msg = bat_pxe(kieu, cauhinh)
+        from . import pxemenu as _m
+        ok, msg = _m.luu_cauhinh(request.form.get("kieu_boot", ""),
+                                 request.form.get("cho_giay", "30"))
+        if not ok:
+            return _ve_lai(msg, False)
+        ok, msg = bat_pxe(_m.doc_cauhinh()["kieu_boot"])
         return _ve_lai(msg, ok)
 
     @app.route("/deployos/pxe/tat", methods=["POST"])
@@ -888,13 +830,11 @@ def register_pxe(app):
     # ---- Menu PXE (Buoc A - xem ui/pxemenu.py)
     @app.route("/deployos/menu-pxe/luu", methods=["POST"])
     def deployos_menu_pxe_luu():
+        """Doi so giay cho luc PXE dang bat (doi che do mang: tat roi bat lai)."""
         from . import pxemenu as _m
-        ok, msg = _m.luu_cauhinh(request.form.get("bat") == "1",
-                                 request.form.get("cho_giay", "10"),
-                                 request.form.get("mac_dinh", "kichban"))
+        ok, msg = _m.luu_cauhinh(cho_giay=request.form.get("cho_giay", "30"))
         if ok:
             msg += cap_nhat_menu()
-        flash(msg, "ok" if ok else "err")
-        return redirect("/deployos/kichban")
+        return _ve_lai(msg, ok)
 
     return app

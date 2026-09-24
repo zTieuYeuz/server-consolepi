@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.4.0
+
+**Chi con menu PXE: bat PXE -> may khach tu chon kich ban. Bo nut "Dung".**
+Anh Thoai 25/09/2026: "co menu va khi nao client chon kich ban thi moi bat
+dau boot, con phan 'dung' kia thi thoi".
+
+- Tab Cai dat -> Bat / Tat PXE la noi DUY NHAT bat PXE: chon che do mang
+  (truc tiep / mang khong DHCP / mang co san DHCP - mac dinh "co DHCP" vi
+  khong bao gio tranh cap IP voi router), so giay cho, bam Bat PXE. Dung 1 anh
+  dia cho moi kich ban Windows roi bat menu. Dang bat: "Cap nhat menu" va
+  "Tat PXE"; doi che do = tat roi bat lai. Co bang kich ban trong menu
+  (co / thieu gi / chua co anh) va xem truoc man hinh may khach.
+- Trang nay TUNG khong hien thong bao ket qua (flash bi nuot) - bam Bat PXE
+  khong biet thanh cong hay loi. Da sua.
+- Bo nut "Dung", route `/deployos/kichban/dung/<ten>`, anh chung
+  `windows-autounattend.img` (tu xoa khi bat PXE, ~500 MB) va duong wimboot
+  tran. Menu la duong duy nhat.
+- Menu chinh het gio -> khoi dong o cung; danh sach kich ban cho nguoi chon,
+  khong tu cai. Bo tuy chon "muc mac dinh"/"bat menu".
+- Trinh tu tao kich ban: bo buoc "Kieu boot" (con 6 buoc, danh so lai); bo
+  dong "Kieu boot" o tong ket va tom tat kich ban.
+- Tai lieu: che do mang chon khi bat PXE; loi that "mang khong DHCP" tren
+  mang cong ty -> iPXE nhan IP router, "Nothing to boot".
+
+Kiem chung: Flask test client voi du lieu tam, MOI lenh he thong duoc thay
+bang lenh gia (khong dung eth0/dnsmasq cua Pi dang chay): bat PXE che do co
+DHCP -> dung dung 2 anh (bo kich ban thieu mat khau, bao ro), xoa anh chung
+cu, menu.ipxe dung dia chi Pi, khong nmcli/ip; cap nhat menu dung lai anh;
+tat PXE; trinh tu buoc 1->2, 8->2, lui tu buoc dau; cac trang 200.
+
 ## 1.3.3
 
 **Sua loi "PXE cua Console Pi khong bat duoc" (bat menu PXE tren Pi).**

@@ -129,8 +129,12 @@ BAN_PHIM = [
 
 # Cac buoc cua trinh tu tu chon (dung chung cho ca 2 che do: chay ngay va
 # luu thanh kich ban - chi khac o buoc cuoi)
+#
+# Buoc 1 "Kieu boot" DA BO (25/09/2026): che do mang gio chon 1 lan khi bat
+# PXE (menu, may khach tu chon kich ban) - khong con thuoc tung kich ban.
+# Giu nguyen SO buoc noi bo (2..7) de khong dung toi code tung buoc; chi
+# danh so HIEN THI lai tu 1 (xem so_hien_thi).
 TEN_BUOC = [
-    (1, "Kiểu boot"),
     (2, "Chọn OS"),
     (3, "Thông tin OS"),
     (4, "Phân chia ổ đĩa"),
@@ -138,7 +142,13 @@ TEN_BUOC = [
     (6, "Chỉnh sửa cài đặt"),
     (7, "Tổng kết"),
 ]
-SO_BUOC = len(TEN_BUOC)
+BUOC_DAU = TEN_BUOC[0][0]
+SO_BUOC = TEN_BUOC[-1][0]
+
+
+def so_hien_thi(buoc):
+    """So buoc hien cho nguoi dung (buoc noi bo 2 -> "1")."""
+    return buoc - BUOC_DAU + 1
 
 
 # ---------------------------------------------------------------- tien ich
@@ -1087,13 +1097,13 @@ def kiem_tra_san_sang(cauhinh):
         if not os_id:
             ra.append((
                 False, "Hệ điều hành",
-                "Chưa chọn hệ điều hành ở bước 2 của kịch bản.",
+                "Chưa chọn hệ điều hành ở bước 1 của kịch bản.",
             ))
         elif not o:
             ra.append((
                 False, "Hệ điều hành",
                 f'Không tìm thấy hệ điều hành "{os_id}" (có thể đã bị xóa) - '
-                "chọn lại ở bước 2.",
+                "chọn lại ở bước 1.",
             ))
         else:
             ra.append((
@@ -1796,45 +1806,22 @@ def register_deployos(app):
 
     def _khoi_dang_phuc_vu():
         """
-        Bang bao "may can cai dang duoc phuc vu theo kich ban nao".
-
-        LY DO THAT (anh Thoai yeu cau sau 1 lan cai xong ma mat khau khong
-        phai cua minh): anh dia cai dat la MOT file dung chung, ai dung
-        sau de len nguoi truoc. Truoc day giao dien khong he noi anh dia
-        DANG phuc vu la cua kich ban nao - nen khong tai nao biet no da bi
-        ghi de. Bang nay doc dau vet that (ui/unattend.py: doc_dau_kichban)
-        chu KHONG suy doan.
+        Dong trang thai PXE o dau trang Kich ban / buoc tong ket. Tu
+        25/09/2026 khong con "kich ban dang Dung": PXE bat = menu, may khach
+        tu chon - chi can noi PXE bat chua, che do nao, menu co may muc.
         """
         from . import pxe as _pxe
-        from . import unattend as _u
-        dang_bat = _pxe.dang_bat()
-        dau = _u.doc_dau_kichban()
-
-        if not dang_bat:
-            return ('<div class="msg warn"><strong>Không chạy kịch bản nào.'
-                    '</strong> PXE đang tắt - máy cắm vào sẽ không boot qua '
-                    'mạng được. Bấm <em>Dùng</em> ở một kịch bản bên dưới để '
-                    'chạy.</div>')
-
-        if not dau:
-            return ('<div class="msg warn"><strong>PXE đang bật nhưng chưa '
-                    'dựng ảnh đĩa từ kịch bản nào.</strong> Máy cần cài sẽ '
-                    'boot vào ảnh đĩa cũ (không rõ của ai). Bấm <em>Dùng</em> '
-                    'ở kịch bản muốn chạy để dựng lại cho chắc.</div>')
-
-        ten_kb = dau.get("ten_kichban") or ""
-        nhan = (f"kịch bản <strong>{_esc(ten_kb)}</strong>" if ten_kb else
-                "<strong>lựa chọn trực tiếp</strong> (chưa lưu thành kịch bản)")
-        return f"""
-        <div class="msg ok">
-          <strong>Đang phục vụ {nhan}.</strong><br>
-          <span style="font-size:12.5px;">
-            Hệ điều hành: {_esc(dau.get('os_id') or '?')} &nbsp;&bull;&nbsp;
-            Tên máy: {_esc(dau.get('ten_may') or '?')} &nbsp;&bull;&nbsp;
-            Tài khoản: {_esc(dau.get('username') or '?')} &nbsp;&bull;&nbsp;
-            Dựng ảnh đĩa lúc: {_esc(dau.get('dung_luc') or '?')}
-          </span>
-        </div>"""
+        from . import pxemenu as _pm
+        if not _pxe.dang_bat():
+            return ('<div class="msg warn"><strong>PXE đang tắt</strong> &mdash; '
+                    'máy boot qua mạng chưa thấy menu. Bật ở '
+                    '<a href="/deployos/caidat">Cài đặt &rarr; Bật / Tắt PXE</a>.</div>')
+        kieu = _pxe.kieu_dang_bat()
+        ten_kieu = dict((k, t) for k, t, _ in KIEU_BOOT).get(kieu, kieu)
+        return (f'<div class="msg ok"><strong>PXE đang bật</strong> ({_esc(ten_kieu)}) '
+                f'&mdash; menu có <strong>{len(_pm.muc_menu())}</strong> kịch bản, '
+                f'máy khách tự chọn khi boot qua mạng. '
+                f'<a href="/deployos/caidat">Cài đặt PXE</a></div>')
 
     @app.route("/deployos/kichban")
     def deployos_boot():
@@ -1856,13 +1843,6 @@ def register_deployos(app):
                   <td style="color:#8b93a1;">{_esc(k.get('_ngay', ''))}</td>
                   <td>{_pm.trang_thai_html(k, _esc)}</td>
                   <td>
-                    <form method="POST"
-                          action="/deployos/kichban/dung/{_esc(k['_file'])}"
-                          style="display:inline;">
-                      <button type="submit" class="small"
-                        data-busy="Đang dựng ảnh đĩa... có thể mất vài phút (menu PXE bật thì lâu hơn), KHÔNG bấm lại">
-                        Dùng</button>
-                    </form>
                     <a class="btn small gray"
                        href="/deployos/kichban/sua/{_esc(k['_file'])}">Chỉnh sửa</a>
                     <form method="POST" action="/deployos/kichban/xoa" style="display:inline;"
@@ -1877,7 +1857,7 @@ def register_deployos(app):
               <tr><th>Tên kịch bản</th><th>Tóm tắt</th>
                   <th style="width:140px;">Ngày tạo</th>
                   <th style="width:140px;">Menu PXE</th>
-                  <th style="width:200px;">Thao tác</th></tr>
+                  <th style="width:150px;">Thao tác</th></tr>
               {hang}
             </table></div>"""
         else:
@@ -1894,7 +1874,7 @@ def register_deployos(app):
         <div class="card">
           <h3>Tạo kịch bản mới</h3>
           <p style="color:#8b93a1;font-size:13.5px;margin:0 0 13px;">
-            Đi qua {SO_BUOC} bước: kiểu boot &rarr; chọn OS &rarr; thông tin
+            Đi qua {len(TEN_BUOC)} bước: chọn OS &rarr; thông tin
             máy &rarr; chia ổ đĩa &rarr; phần mềm/driver &rarr; chỉnh sửa
             cài đặt &rarr; tổng kết. Lưu lại để dùng nhiều lần, không phải
             chọn lại từ đầu.</p>
@@ -1903,8 +1883,7 @@ def register_deployos(app):
         </div>
 
         <h2>Kịch bản đã lưu ({len(ds_kb)})</h2>
-        {noi_dung}
-        {_pm.khoi_cai_dat_html(_esc)}"""
+        {noi_dung}"""
         return _trang(body, "Deployment OS",
                       "Triển khai hệ điều hành qua mạng cho máy cần cài lại")
 
@@ -1930,35 +1909,6 @@ def register_deployos(app):
         _WIZARD[ma] = cauhinh_tu_kichban(kb)
         return ma, kb
 
-    @app.route("/deployos/kichban/dung/<ten>", methods=["POST"])
-    def deployos_dung_kichban(ten):
-        """
-        "Dung" = CHAY NGAY kich ban: dung lai anh dia cai dat theo dung
-        kich ban nay roi bat PXE - khong bat nguoi dung phai vao them 1
-        trang nua rui bam them 1 lan nua.
-
-        (Truoc day nut nay chi NAP kich ban vao trinh tu roi nhay toi
-        trang tong ket, phai bam tiep "Ap dung" o trong do - anh Thoai
-        phan anh la thua 1 buoc. Viec chinh sua da tach han sang nut
-        "Chinh sua" ben canh.)
-        """
-        ma, kb = _nap_kichban_vao_trinh_tu(ten)
-        if ma is None:
-            flash("Không tìm thấy kịch bản.", "err")
-            return redirect("/deployos/kichban")
-
-        d = _WIZARD[ma]
-        thieu = _thieu_gi(d)
-        if thieu:
-            flash("Chưa chạy được: " + ", ".join(thieu) +
-                  '. Bấm "Chỉnh sửa" để bổ sung.', "err")
-            return redirect("/deployos/kichban")
-
-        from . import pxe as _pxe
-        ok, msg = _pxe.bat_pxe(d.get("kieu_boot", "truc_tiep"), d)
-        flash(msg, "ok" if ok else "err")
-        return redirect("/deployos/kichban")
-
     @app.route("/deployos/kichban/sua/<ten>")
     def deployos_sua_kichban(ten):
         """
@@ -1969,7 +1919,7 @@ def register_deployos(app):
         if ma is None:
             flash("Không tìm thấy kịch bản.", "err")
             return redirect("/deployos/kichban")
-        return redirect(f"/deployos/wizard/{ma}/1")
+        return redirect(f"/deployos/wizard/{ma}/{BUOC_DAU}")
 
     # ================================================ TRINH TU TU CHON (wizard)
     @app.route("/deployos/wizard/bat-dau")
@@ -1978,7 +1928,7 @@ def register_deployos(app):
         if che_do not in ("chay", "luu"):
             che_do = "chay"
         ma = _wizard_moi(che_do)
-        return redirect(f"/deployos/wizard/{ma}/1")
+        return redirect(f"/deployos/wizard/{ma}/{BUOC_DAU}")
 
     def _het_han():
         return _trang(
@@ -1994,14 +1944,14 @@ def register_deployos(app):
         d = _wizard_lay(ma)
         if d is None:
             return _het_han()
-        if buoc < 1 or buoc > SO_BUOC:
-            return redirect(f"/deployos/wizard/{ma}/1")
+        if buoc < BUOC_DAU or buoc > SO_BUOC:
+            return redirect(f"/deployos/wizard/{ma}/{BUOC_DAU}")
 
         if request.method == "POST":
             loi = _nhan_du_lieu_buoc(d, buoc, request.form)
             huong = request.form.get("huong", "tiep")
             if huong == "lui":
-                return redirect(f"/deployos/wizard/{ma}/{max(1, buoc - 1)}")
+                return redirect(f"/deployos/wizard/{ma}/{max(BUOC_DAU, buoc - 1)}")
             if loi:
                 return _ve_buoc(ma, d, buoc, loi=loi)
             if buoc < SO_BUOC:
@@ -2167,12 +2117,13 @@ def register_deployos(app):
         h = '<div class="buoc-bar">'
         for so, ten in TEN_BUOC:
             cls = "nay" if so == buoc else ("qua" if so < buoc else "")
-            h += f'<div class="buoc-o {cls}"><span class="so">{so}</span>{_esc(ten)}</div>'
+            h += (f'<div class="buoc-o {cls}"><span class="so">{so_hien_thi(so)}'
+                  f'</span>{_esc(ten)}</div>')
         return h + "</div>"
 
     def _nut_dieu_huong(buoc, nhan_tiep="Tiếp theo &rarr;"):
         lui = ('<button type="submit" name="huong" value="lui" class="gray">'
-               '&larr; Quay lại</button>' if buoc > 1 else "")
+               '&larr; Quay lại</button>' if buoc > BUOC_DAU else "")
         return f"""
         <div class="row" style="margin-top:20px;gap:10px;">
           {lui}
@@ -2191,7 +2142,7 @@ def register_deployos(app):
         tieu_de = ("Tao kich ban" if d.get("che_do") == "luu"
                    else "Deployment OS")
         return _trang(than, tieu_de,
-                      f"Bước {buoc}/{SO_BUOC}: {dict(TEN_BUOC)[buoc]}",
+                      f"Bước {so_hien_thi(buoc)}/{len(TEN_BUOC)}: {dict(TEN_BUOC)[buoc]}",
                       active="/deployos")
 
     def _noi_dung_buoc(ma, d, buoc):
@@ -2274,8 +2225,8 @@ def register_deployos(app):
         # -------------------------------------------- 1.1.3 thong tin OS
         if buoc == 3:
             if not d["os_ho"]:
-                return ('<div class="msg warn">Chưa chọn hệ điều hành ở bước 2. '
-                        f'<a href="/deployos/wizard/{ma}/2">Quay lại bước 2</a>.</div>')
+                return ('<div class="msg warn">Chưa chọn hệ điều hành ở bước 1. '
+                        f'<a href="/deployos/wizard/{ma}/2">Quay lại bước 1</a>.</div>')
             la_linux = d["os_ho"] == "linux"
             o_ssh = ""
             if la_linux:
@@ -2724,7 +2675,6 @@ def register_deployos(app):
     # ------------------------------------------------------- buoc 7: tong ket
     def _ve_tongket(ma, d):
         os_ten = _ten_os(d)
-        kieu_ten = dict((k, t) for k, t, _ in KIEU_BOOT).get(d["kieu_boot"], d["kieu_boot"])
 
         if d["o_dia_che_do"] == "tu_dong":
             o_dia = f"Tu dong tren o dia so {_esc(d['o_dia_so'])} ({d['o_dia_bang'].upper()})"
@@ -2777,9 +2727,9 @@ def register_deployos(app):
         ghi_chu_kb = (
             '<p style="color:#8b93a1;font-size:12.5px;margin:-4px 0 12px;">'
             'Đây là kịch bản đã lưu - sửa xong nhớ bấm <strong>"Lưu đè kịch '
-            'bản"</strong> bên dưới. Muốn dựng ảnh đĩa và bật PXE thì bấm '
-            '<em>Dùng</em> ở kịch bản này trên trang '
-            '<a href="/deployos/kichban">danh sách kịch bản</a>.</p>'
+            'bản"</strong> bên dưới. Kịch bản Windows tự có trong menu PXE '
+            '(máy khách tự chọn) &mdash; PXE đang bật thì menu cập nhật ngay '
+            'khi lưu.</p>'
             if tu_kb else "")
 
         bang = f"""
@@ -2787,7 +2737,6 @@ def register_deployos(app):
           <h3>{tieu_de_bang}</h3>
           {ghi_chu_kb}
           <table class="tt-bang">
-            <tr><td>Kiểu boot</td><td>{_esc(kieu_ten)}</td></tr>
             <tr><td>Hệ điều hành</td><td>{_esc(os_ten)}</td></tr>
             <tr><td>Driver kèm theo</td><td>{
                 (', '.join(_esc(x) for x in d.get('driver_ids') or [])
@@ -2822,8 +2771,8 @@ def register_deployos(app):
         sua_lai = f"""
         <div class="row" style="margin-top:4px;">
           {ve_ds_kichban}
-          <a class="btn gray" href="/deployos/wizard/{ma}/1">&larr; Sửa lại từ bước 1</a>
-          <a class="btn gray" href="/deployos/wizard/{ma}/6">&larr; Quay lại bước 6</a>
+          <a class="btn gray" href="/deployos/wizard/{ma}/{BUOC_DAU}">&larr; Sửa lại từ bước 1</a>
+          <a class="btn gray" href="/deployos/wizard/{ma}/6">&larr; Quay lại bước 5</a>
         </div>"""
 
         # --- che do LUU: dat ten kich ban ---
@@ -2950,73 +2899,134 @@ def register_deployos(app):
     # tiep". Muon doi sang kich ban KHAC thi van phai bam "Dung" o kich ban
     # do (vi phai dung lai anh dia theo cau hinh cua no).
     def _trang_caidat_pxe(msg="", ok=True):
+        """
+        Trang DUY NHAT bat/tat PXE (25/09/2026 - chi con menu, bo nut "Dung"
+        o tung kich ban): chon che do mang + so giay cho -> Bat PXE. May
+        khach boot qua mang luon thay menu va TU CHON kich ban.
+
+        LOI THAT (25/09/2026): trang nay TUNG khong hien flash() - bam Bat
+        PXE xong thong bao ket qua (thanh cong / loi gi) bi nuot mat, anh
+        Thoai khong biet PXE co bat duoc khong.
+        """
         from . import pxe as _pxe
-        from . import unattend as _u
+        from . import pxemenu as _pm
+        flash_html = "".join(_msg(nd, cat == "ok")
+                             for cat, nd in get_flashed_messages(with_categories=True))
         dang_bat = _pxe.dang_bat()
-        dau_kb = _u.doc_dau_kichban()
+        c = _pm.doc_cauhinh()
+        muc = _pm.muc_menu()
+        ten_kieu = dict((k, t) for k, t, _ in KIEU_BOOT)
 
         if dang_bat:
-            try:
-                kieu_dang_chay = open(_pxe.STATE_FLAG).read().strip() or "truc_tiep"
-            except OSError:
-                kieu_dang_chay = "truc_tiep"
-            dia_chi_that = _pxe._dia_chi_pi_that(kieu_dang_chay)
+            kieu_dang_chay = _pxe.kieu_dang_bat() or c["kieu_boot"]
             trang_thai = f"""
-            <div class="msg ok">PXE đang <strong>BẬT</strong> trên cổng
-              {_pxe.cong()} &mdash; Pi là {_esc(dia_chi_that)}.
-              {_esc(_pxe.mo_ta_ket_noi(kieu_dang_chay))}</div>"""
-            nut = """
+            <div class="msg ok">PXE đang <strong>BẬT</strong> &mdash;
+              chế độ <strong>{_esc(ten_kieu.get(kieu_dang_chay, kieu_dang_chay))}</strong>,
+              cổng {_pxe.cong()}, Pi là {_esc(_pxe._dia_chi_pi_that(kieu_dang_chay))}.
+              Menu có <strong>{len(muc)}</strong> kịch bản.<br>
+              <span style="font-size:12.5px;">{_esc(_pxe.mo_ta_ket_noi(kieu_dang_chay))}</span></div>"""
+            dieu_khien = f"""
+            <form method="POST" action="/deployos/menu-pxe/luu" style="margin-bottom:12px;">
+              <input type="hidden" name="ve" value="/deployos/caidat">
+              <label style="display:block;margin-bottom:10px;">Không ai bấm thì
+                khởi động ổ cứng sau
+                <input type="number" name="cho_giay" min="0" max="{_pm.CHO_TOI_DA}"
+                       value="{c['cho_giay']}" style="width:80px;"> giây
+                <small style="color:#8b93a1;">(0 = chờ mãi)</small></label>
+              <button type="submit" class="gray"
+                data-busy="Đang cập nhật menu... có thể mất vài phút, KHÔNG bấm lại">
+                Cập nhật menu</button>
+              <small style="color:#8b93a1;margin-left:8px;">Dựng ảnh cho kịch
+                bản mới/đã sửa (lưu kịch bản lúc PXE bật cũng tự làm).</small>
+            </form>
             <form method="POST" action="/deployos/pxe/tat">
               <input type="hidden" name="ve" value="/deployos/caidat">
               <button type="submit" class="red" data-busy="Đang tắt...">
                 Tắt PXE</button>
+              <small style="color:#8b93a1;margin-left:8px;">Muốn đổi chế độ
+                mạng: tắt rồi bật lại.</small>
             </form>"""
         else:
-            kieu_se_bat = (dau_kb or {}).get("kieu_boot", "truc_tiep")
-            trang_thai = f"""
-            <div class="msg warn">PXE đang <strong>TẮT</strong>. Bật lên sẽ
-              CẮT DHCP trên cổng {_pxe.cong()} (giống hệt cảnh báo của
-              &quot;Cắm thẳng thiết bị&quot;). {_esc(_pxe.mo_ta_ket_noi(kieu_se_bat))}</div>"""
+            o = ""
+            for gt, ten, mo_ta in KIEU_BOOT:
+                ch = " checked" if c["kieu_boot"] == gt else ""
+                o += f"""
+                <label class="chon">
+                  <input type="radio" name="kieu_boot" value="{gt}"{ch}>
+                  <span class="t">{_esc(ten)}</span>
+                  <div class="d">{_esc(mo_ta)}</div>
+                </label>"""
             if _pxe.san_sang_bat():
-                kieu = kieu_se_bat
                 nut = f"""
-                <form method="POST" action="/deployos/pxe/bat">
-                  <input type="hidden" name="ve" value="/deployos/caidat">
-                  <input type="hidden" name="kieu_boot" value="{_esc(kieu)}">
-                  <button type="submit" data-busy="Đang bật PXE... bật menu thì mỗi kịch bản mất khoảng 1-2 phút, KHÔNG bấm lại">
-                    Bật PXE lại (dùng ảnh đĩa đang có)</button>
-                </form>"""
+                <button type="submit"
+                  data-busy="Đang bật PXE... mỗi kịch bản Windows mất khoảng 1-2 phút, KHÔNG bấm lại">
+                  Bật PXE</button>"""
             else:
                 nut = ('<div class="msg err">Chưa đủ điều kiện để bật &mdash; '
                        'xem tab <a href="/deployos/caidat/hatang">Kiểm tra '
                        'hạ tầng</a>.</div>')
+            trang_thai = f"""
+            <div class="msg warn">PXE đang <strong>TẮT</strong>. Chọn chế độ
+              mạng rồi bấm <strong>Bật PXE</strong>. Không chắc thì chọn
+              <strong>"mạng có sẵn DHCP"</strong> &mdash; Pi không cấp IP nên
+              không bao giờ tranh với router của mạng đó.</div>"""
+            dieu_khien = f"""
+            <form method="POST" action="/deployos/pxe/bat">
+              <input type="hidden" name="ve" value="/deployos/caidat">
+              {o}
+              <label style="display:block;margin:12px 0;">Không ai bấm thì
+                khởi động ổ cứng sau
+                <input type="number" name="cho_giay" min="0" max="{_pm.CHO_TOI_DA}"
+                       value="{c['cho_giay']}" style="width:80px;"> giây
+                <small style="color:#8b93a1;">(0 = chờ mãi)</small></label>
+              {nut}
+            </form>"""
 
-        if dau_kb:
-            dang_phuc_vu = f"""
-            <table style="margin-top:6px;">
-              <tr><td>Kịch bản của ảnh đĩa</td>
-                  <td><strong>{_esc(dau_kb.get('ten_kichban') or '?')}</strong></td></tr>
-              <tr><td>Tên máy sẽ đặt</td><td>{_esc(dau_kb.get('ten_may') or '?')}</td></tr>
-              <tr><td>Tài khoản</td><td>{_esc(dau_kb.get('username') or '?')}</td></tr>
-              <tr><td>Dựng lúc</td><td>{_esc(dau_kb.get('dung_luc') or '?')}</td></tr>
-            </table>"""
-        else:
-            dang_phuc_vu = ('<p style="color:#8b93a1;font-size:13px;">Chưa dựng '
-                            'ảnh đĩa lần nào &mdash; bấm <em>Dùng</em> ở một '
-                            'kịch bản để dựng.</p>')
+        # Kich ban trong menu - nguon that: file anh dia co tren dia.
+        ds = [k for k in danh_sach_kichban() if k.get("os_ho") == "windows"]
+        co_anh = {n for n, _a in muc}
+        hang = ""
+        for k in ds:
+            ten = k.get("ten_kichban", k["_file"])
+            thieu = _pm.thieu_cua(k)
+            if thieu:
+                tt = f'<span style="color:#f59e0b;">thiếu: {_esc(", ".join(thieu))}</span>'
+            elif ten in co_anh:
+                tt = '<span style="color:#4CAF50;">&#10003; có trong menu</span>'
+            elif dang_bat:
+                tt = ('<span style="color:#f59e0b;">chưa có ảnh đĩa &mdash; bấm '
+                      '"Cập nhật menu"</span>')
+            else:
+                tt = '<span style="color:#8b93a1;">dựng ảnh khi bật PXE</span>'
+            hang += f"<tr><td>{_esc(ten)}</td><td>{tt}</td></tr>"
+        bang = (f"<table><tr><th>Kịch bản Windows</th><th>Trạng thái</th></tr>{hang}</table>"
+                if ds else '<p style="color:#8b93a1;">Chưa có kịch bản Windows nào &mdash; '
+                           'tạo ở tab <a href="/deployos/kichban">Kịch bản</a>.</p>')
 
-        body = _tabs("caidat", "pxe") + _msg(msg, ok) + f"""
+        man_chinh, man_con = _pm._xem_truoc(c, muc)
+        kieu_pre = ("background:#000;color:#ddd;padding:12px;border-radius:6px;"
+                    "overflow-x:auto;font-size:13px;line-height:1.5;margin:6px 0 12px;")
+        body = _tabs("caidat", "pxe") + _msg(msg, ok) + flash_html + f"""
         <div class="card">
           <h3>Bật / Tắt PXE</h3>
           {trang_thai}
-          {nut}
+          {dieu_khien}
         </div>
         <div class="card">
-          <h3>Ảnh đĩa đang phục vụ</h3>
-          <p style="color:#8b93a1;font-size:13px;margin:0 0 4px;">
-            Bật PXE ở trang này phục vụ đúng ảnh đĩa dưới đây. Muốn chạy kịch
-            bản khác thì bấm <em>Dùng</em> ở kịch bản đó (phải dựng lại ảnh).</p>
-          {dang_phuc_vu}
+          <h3>Menu máy khách sẽ thấy</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 8px;">
+            Máy khách boot qua mạng thấy menu này và <strong>tự chọn kịch
+            bản</strong> (phím mũi tên + Enter). Chỉ cài khi có người chọn;
+            không ai bấm thì khởi động ổ cứng. Mọi kịch bản Windows đủ thông
+            tin đều có trong menu.</p>
+          {bang}
+          <details style="margin-top:12px;">
+            <summary>Xem trước màn hình máy khách</summary>
+            <div style="color:#8b93a1;font-size:13px;margin-top:10px;">Menu chính:</div>
+            <pre style="{kieu_pre}">{_esc(man_chinh)}</pre>
+            <div style="color:#8b93a1;font-size:13px;">Sau khi chọn "2. Install Windows":</div>
+            <pre style="{kieu_pre}">{_esc(man_con)}</pre>
+          </details>
         </div>"""
         return _trang(body, "Cài đặt Deployment OS",
                       "Bật/tắt PXE và kiểm tra hạ tầng", active="/deployos")
@@ -4684,14 +4694,8 @@ def _tom_tat_day_du(k, esc):
             dong.append(f"<tr><td style='color:#8b93a1;white-space:nowrap;'>"
                         f"{esc(nhan)}</td><td>{gt}</td></tr>")
 
-    # Kieu boot phai la dong DAU TIEN: hai kich ban co the giong nhau y het
-    # moi thu (cung OS, cung phan mem, cung tuy chon) ma CHI khac kieu boot -
-    # dung truong hop anh Thoai dang co ("Install windows 10 - DHCP" va
-    # "Install windows 10 - khong DHCP"). Thieu dong nay thi mo tom tat ra
-    # khong the phan biet duoc 2 cai, ma chon nham kieu boot la hong ca buoi
-    # (Pi cap IP nham tren mang khach, hoac nguoc lai khong ai cap IP ca).
-    them("Kiểu boot", esc(dict((ma, t) for ma, t, _m in KIEU_BOOT).get(
-        k.get("kieu_boot"), k.get("kieu_boot") or "")))
+    # (Dong "Kieu boot" da bo 25/09/2026: che do mang chon khi bat PXE, khong
+    # con thuoc kich ban - xem ui/pxemenu.py.)
     them("Hệ điều hành", esc(_ten_os(k)))
     them("Tên máy", esc(k.get("ten_may") or ""))
     them("Tài khoản", esc(k.get("username") or ""))

@@ -849,45 +849,45 @@ Microsoft, nhung dung cong cu Linux co san.</p>
       <td>Cam Pi vao mang cua khach da co DHCP. Pi CHI chay proxyDHCP: khong cap
       IP, chi tra loi "file boot o dau" - khong tranh gianh voi DHCP that.</td></tr>
 </table>
-<p><strong>Doi kieu boot thi bam "Dung" lai o kich ban co kieu do</strong> - he
-thong tu tat che do cu, doi IP cua <code>eth0</code>, dung lai anh dia theo dia
-chi moi roi bat lai. Khong duoc sua tay file cau hinh dnsmasq.</p>
+<p><strong>Che do mang chon 1 lan khi bat PXE</strong> (Deployment OS &rarr; Cai
+dat &rarr; Bat / Tat PXE), khong thuoc kich ban nao. Doi che do: Tat PXE roi Bat
+lai - he thong tu doi IP cua <code>eth0</code>, dung lai anh dia theo dia chi
+moi. Khong duoc sua tay file cau hinh dnsmasq. <strong>Khong chac thi chon "Mang
+co san DHCP"</strong>: loi that da gap - chon "Mang khong co DHCP" tren mang cong
+ty thi may khach nhan IP cua router cong ty o lan hoi thu 2 (cua iPXE), bao
+"Nothing to boot" va khong bao gio thay menu.</p>
 
 <h4>Menu chọn kịch bản ngay tại máy khách (kiểu MDT)</h4>
-<p>Mac dinh may khach boot qua mang la vao THANG kich ban dang "Dung". Bat
-<strong>menu</strong> thi may khach hien menu de ky thuat vien chon tai cho -
-khong phai quay lai web doi kich ban cho tung may:</p>
+<p>Bat PXE thi may khach boot qua mang LUON thay menu va <strong>tu chon kich
+ban tai cho</strong> - chi cai khi co nguoi chon. Khong con nut "Dung" o tung
+kich ban.</p>
 <pre>Console System - Cai dat qua mang
    1. Win PE (chua co - sap ra mat)
    2. Install Windows > (N kich ban)   -> vao day thay TAT CA kich ban Windows
-   Khoi dong o cung (KHONG cai gi)
+   Khoi dong o cung (KHONG cai gi)     &lt;- mac dinh
    Khoi dong lai may</pre>
 <ol>
-  <li>Hop <strong>"Menu khi may khach khoi dong qua mang"</strong> (cuoi tab
-      <strong>Kich ban</strong>): tick bat menu, dat so giay cho, chon muc mac
-      dinh, Luu.</li>
-  <li>Bam <strong>"Dung"</strong> 1 kich ban nhu binh thuong de bat PXE - no la
-      muc dau tien trong "Install Windows".</li>
+  <li>Tao kich ban Windows o tab <strong>Kich ban</strong> (du thong tin la tu
+      vao menu).</li>
+  <li>Tab <strong>Cai dat &rarr; Bat / Tat PXE</strong>: chon che do mang, so giay
+      cho, bam <strong>Bat PXE</strong>. Lan dau dung moi kich ban 1 anh dia
+      (~1-2 phut/cai tren Pi) - <strong>khong bam lai</strong> trong luc cho.</li>
+  <li>Cho may khach boot qua mang (Network Boot / PXE), chon
+      "2. Install Windows" roi chon kich ban.</li>
 </ol>
 <ul>
-  <li><strong>Khong can chon tung kich ban</strong>: moi kich ban Windows du
-      thong tin deu tu vao menu (cot "Menu PXE" cua bang kich ban cho biet
-      kich ban nao con thieu gi). Luu/xoa kich ban luc PXE dang bat thi menu
-      cap nhat ngay.</li>
-  <li><strong>Chon bang phim mui ten + Enter</strong> (menu chu cua iPXE, chay
-      truoc Windows nen khong co chuot, khong dau tieng Viet).</li>
-  <li><strong>Muc mac dinh</strong>: "Kich ban dang Dung" = khong ai bam thi tu
-      cai (phong may - ca 2 tang menu deu dem nguoc). "Khoi dong o cung" = an
-      toan, may lo boot qua mang cung khong bi xoa o. Bam <kbd>Esc</kbd> o
-      danh sach kich ban = quay lai menu chinh; o menu chinh = khoi dong o
-      cung.</li>
-  <li><strong>Moi kich ban 1 anh dia rieng (~500 MB)</strong>, dung lan dau mat
-      khoang 20-60 giay moi cai (tren Pi lau hon); lan sau chi dung lai cai nao
-      da sua (hoac khi doi kieu boot/dia chi Pi). Xoa kich ban thi anh dia tu
-      xoa. Nhieu kich ban thi can nhieu cho trong - het cho thi kich ban do bi
-      bo qua va bao ro.</li>
-  <li>Moi muc dung <strong>kieu boot cua kich ban dang "Dung"</strong> (Pi chi
-      chay 1 kieu mot luc).</li>
+  <li><strong>Khong ai bam</strong> thi menu chinh tu khoi dong o cung sau so giay
+      da dat - may lo boot qua mang khong bao gio tu cai. Danh sach kich ban thi
+      cho den khi co nguoi chon.</li>
+  <li><kbd>Esc</kbd> o danh sach kich ban = quay lai menu chinh; o menu chinh =
+      khoi dong o cung. Nap anh loi thi bao loi roi quay lai danh sach.</li>
+  <li>Luu/xoa kich ban luc PXE dang bat: menu cap nhat ngay (dung/xoa anh dia).
+      Nut "Cap nhat menu" o trang Bat / Tat PXE lam lai viec nay bang tay.</li>
+  <li><strong>Moi kich ban 1 anh dia rieng (~500 MB)</strong>; lan sau chi dung lai
+      cai nao da sua (hoac khi doi che do mang/dia chi Pi). Het cho thi kich ban
+      do bi bo qua va bao ro.</li>
+  <li>Menu chu cua iPXE (chay truoc Windows): khong co chuot, khong dau tieng
+      Viet.</li>
 </ul>
 
 <h4>Luồng chạy bên trong (đã kiểm chứng thật)</h4>
