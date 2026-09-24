@@ -639,8 +639,8 @@ def _dung_menu(kieu_boot, cauhinh=None):
 
 def cap_nhat_menu():
     """
-    Goi khi doi cai dat menu / them-bot kich ban trong menu LUC PXE DANG
-    BAT: dung anh con thieu va ghi lai menu.ipxe ngay, khong phai tat-bat
+    Goi khi doi cai dat menu / luu-xoa kich ban (menu co TAT CA kich ban
+    Windows) LUC PXE DANG BAT: dung anh con thieu va ghi lai menu.ipxe ngay, khong phai tat-bat
     lai PXE. PXE dang tat thi khong lam gi (lan bat sau se tu dung).
     """
     if not dang_bat():
@@ -787,16 +787,6 @@ def register_pxe(app):
         ok, msg = _m.luu_cauhinh(request.form.get("bat") == "1",
                                  request.form.get("cho_giay", "10"),
                                  request.form.get("mac_dinh", "kichban"))
-        if ok:
-            msg += cap_nhat_menu()
-        flash(msg, "ok" if ok else "err")
-        return redirect("/deployos/kichban")
-
-    @app.route("/deployos/menu-pxe/kichban", methods=["POST"])
-    def deployos_menu_pxe_kichban():
-        from . import pxemenu as _m
-        ok, msg = _m.dat_trong_menu(request.form.get("ten", ""),
-                                    request.form.get("co") == "1")
         if ok:
             msg += cap_nhat_menu()
         flash(msg, "ok" if ok else "err")

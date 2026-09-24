@@ -1854,7 +1854,7 @@ def register_deployos(app):
                   <td><strong>{_esc(k.get('ten_kichban', k['_file']))}</strong></td>
                   <td>{_o_tom_tat(k, _esc)}</td>
                   <td style="color:#8b93a1;">{_esc(k.get('_ngay', ''))}</td>
-                  <td>{_pm.nut_trong_menu_html(k, _esc)}</td>
+                  <td>{_pm.trang_thai_html(k, _esc)}</td>
                   <td>
                     <form method="POST"
                           action="/deployos/kichban/dung/{_esc(k['_file'])}"
@@ -1911,6 +1911,13 @@ def register_deployos(app):
     @app.route("/deployos/kichban/xoa", methods=["POST"])
     def deployos_kichban_xoa():
         ok, msg = xoa_kichban(request.form.get("ten", ""))
+        if ok:
+            # Menu PXE liet ke TAT CA kich ban Windows - xoa thi bo khoi menu
+            # (va xoa anh dia cua no) ngay, khong phai tat-bat lai PXE.
+            from . import pxe as _pxe
+            them = _pxe.cap_nhat_menu()
+            if them:
+                flash(msg + them, "ok")
         return redirect("/deployos/kichban")
 
     def _nap_kichban_vao_trinh_tu(ten):
@@ -2837,7 +2844,7 @@ def register_deployos(app):
                   Kịch bản sẽ hiện ở tab <strong>Kịch bản</strong> để chọn
                   nhanh lần sau.</p>
                 <div class="row" style="margin-top:16px;">
-                  <button type="submit" data-busy="Đang lưu...">Lưu kịch bản</button>
+                  <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu, có thể mất vài phút)">Lưu kịch bản</button>
                 </div>
               </div>
             </form>
@@ -2890,7 +2897,7 @@ def register_deployos(app):
           <h3>Lưu thay đổi</h3>
           <form method="POST" action="/deployos/kichban/luu/{ma}">
             <input type="hidden" name="ten" value="{_esc(tu_kb)}">
-            <button type="submit" data-busy="Dang luu...">
+            <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu, có thể mất vài phút)">
               Lưu đè kịch bản "{_esc(tu_kb)}"</button>
           </form>
           <div style="border-top:1px solid #2a2f3a;margin:16px 0 12px;"></div>
@@ -2899,7 +2906,7 @@ def register_deployos(app):
             <input type="text" name="ten" required
                    placeholder="vd: Win10 van phong + Chrome" autocapitalize="off">
             <div class="row" style="margin-top:12px;">
-              <button type="submit" class="gray" data-busy="Đang lưu...">
+              <button type="submit" class="gray" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu, có thể mất vài phút)">
                 Lưu thành kịch bản mới</button>
             </div>
           </form>
@@ -2913,7 +2920,7 @@ def register_deployos(app):
             <input type="text" name="ten" required
                    placeholder="vd: Win11 van phong + Chrome" autocapitalize="off">
             <div class="row" style="margin-top:14px;">
-              <button type="submit" data-busy="Đang lưu...">Lưu thành kịch bản</button>
+              <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu, có thể mất vài phút)">Lưu thành kịch bản</button>
             </div>
           </div>
         </form>"""
@@ -3071,6 +3078,11 @@ def register_deployos(app):
         # rat de gay hieu nham khi doc lai file sau nay.
         cauhinh.pop("tu_kichban", None)
         ok, msg = luu_kichban(cauhinh, request.form.get("ten", ""))
+        if ok:
+            # Kich ban moi/da sua hien ngay trong menu PXE neu PXE dang bat
+            # (dung/dung lai anh dia cua no). PXE tat thi khong lam gi.
+            from . import pxe as _pxe
+            msg += _pxe.cap_nhat_menu()
         ds = danh_sach_kichban()
         body = (_tabs("kichban") + _msg(msg, ok) +
                 _bang_kichban(ds, _esc) +

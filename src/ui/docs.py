@@ -855,25 +855,37 @@ chi moi roi bat lai. Khong duoc sua tay file cau hinh dnsmasq.</p>
 
 <h4>Menu chọn kịch bản ngay tại máy khách (kiểu MDT)</h4>
 <p>Mac dinh may khach boot qua mang la vao THANG kich ban dang "Dung". Bat
-<strong>menu</strong> thi may khach hien danh sach kich ban de ky thuat vien
-chon tai cho - khong phai quay lai web doi kich ban cho tung may.</p>
+<strong>menu</strong> thi may khach hien menu de ky thuat vien chon tai cho -
+khong phai quay lai web doi kich ban cho tung may:</p>
+<pre>Console System - Cai dat qua mang
+   1. Win PE (chua co - sap ra mat)
+   2. Install Windows > (N kich ban)   -> vao day thay TAT CA kich ban Windows
+   Khoi dong o cung (KHONG cai gi)
+   Khoi dong lai may</pre>
 <ol>
-  <li>Tab <strong>Kich ban</strong>: bam <strong>"Them vao menu"</strong> o
-      nhung kich ban Windows muon hien.</li>
-  <li>Hop <strong>"Menu khi may khach khoi dong qua mang"</strong> (cuoi
-      trang): tick bat menu, dat so giay cho, chon muc mac dinh, Luu.</li>
+  <li>Hop <strong>"Menu khi may khach khoi dong qua mang"</strong> (cuoi tab
+      <strong>Kich ban</strong>): tick bat menu, dat so giay cho, chon muc mac
+      dinh, Luu.</li>
   <li>Bam <strong>"Dung"</strong> 1 kich ban nhu binh thuong de bat PXE - no la
-      muc dau tien cua menu.</li>
+      muc dau tien trong "Install Windows".</li>
 </ol>
 <ul>
+  <li><strong>Khong can chon tung kich ban</strong>: moi kich ban Windows du
+      thong tin deu tu vao menu (cot "Menu PXE" cua bang kich ban cho biet
+      kich ban nao con thieu gi). Luu/xoa kich ban luc PXE dang bat thi menu
+      cap nhat ngay.</li>
   <li><strong>Chon bang phim mui ten + Enter</strong> (menu chu cua iPXE, chay
       truoc Windows nen khong co chuot, khong dau tieng Viet).</li>
   <li><strong>Muc mac dinh</strong>: "Kich ban dang Dung" = khong ai bam thi tu
-      cai (phong may). "Khoi dong o cung" = an toan, may lo boot qua mang cung
-      khong bi xoa o. Bam <kbd>Esc</kbd> luon la khoi dong o cung.</li>
+      cai (phong may - ca 2 tang menu deu dem nguoc). "Khoi dong o cung" = an
+      toan, may lo boot qua mang cung khong bi xoa o. Bam <kbd>Esc</kbd> o
+      danh sach kich ban = quay lai menu chinh; o menu chinh = khoi dong o
+      cung.</li>
   <li><strong>Moi kich ban 1 anh dia rieng (~500 MB)</strong>, dung lan dau mat
-      khoang 20-60 giay moi cai; lan sau chi dung lai cai nao da sua (hoac khi
-      doi kieu boot/dia chi Pi). Bo khoi menu thi anh dia tu xoa.</li>
+      khoang 20-60 giay moi cai (tren Pi lau hon); lan sau chi dung lai cai nao
+      da sua (hoac khi doi kieu boot/dia chi Pi). Xoa kich ban thi anh dia tu
+      xoa. Nhieu kich ban thi can nhieu cho trong - het cho thi kich ban do bi
+      bo qua va bao ro.</li>
   <li>Moi muc dung <strong>kieu boot cua kich ban dang "Dung"</strong> (Pi chi
       chay 1 kieu mot luc).</li>
 </ul>

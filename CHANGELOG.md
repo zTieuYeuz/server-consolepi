@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.3.2
+
+**Menu PXE 2 tang: "1. Win PE" + "2. Install Windows" -> tat ca kich ban.**
+Anh Thoai: "neu nhu la kich ban de lua chon thi co 1 cai a lua chon lam gi" -
+ban 1.3.0 bat phai tick tung kich ban vao menu, de ra menu chi co 1 muc.
+
+- Menu chinh: `1. Win PE` (dong chu, chua chon duoc - lam sau), `2. Install
+  Windows >`, Khoi dong o cung, Khoi dong lai. Vao muc 2 thay TAT CA kich ban
+  Windows du thong tin; Esc quay lai menu chinh; loi nap anh quay lai danh
+  sach kich ban.
+- Bo nut "Them vao menu" va route `/deployos/menu-pxe/kichban`. Cot "Menu PXE"
+  nay chi cho biet: Co trong menu / thieu gi / chi Windows.
+- Luu hoac xoa kich ban luc PXE dang bat -> tu dung/xoa anh dia va ghi lai
+  menu.ipxe ngay.
+- Mac dinh "Kich ban dang Dung": ca 2 tang dem nguoc (phong may van tu cai).
+- Xem truoc tren web ve ca 2 man hinh, dung nhu iPXE hien (iPXE gop dau cach).
+
+Kiem chung: iPXE that trong QEMU (menu chinh, vao Install Windows, chon kich
+ban thu 2 -> nap dung `_menu-<ten>.img`, loi -> ve danh sach, Esc -> menu
+chinh); Flask test client voi du lieu tam + gia lap PXE dang bat (luu kich ban
+-> dung anh + vao menu, xoa -> bo khoi menu + xoa anh, PXE tat -> khong dung).
+
 ## 1.3.1
 
 **Sua loi install.sh: Pi cai moi thieu cong cu cho Deployment OS.**

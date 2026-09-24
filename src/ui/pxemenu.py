@@ -6,8 +6,15 @@ kich ban - kich ban vua bam "Dung" tren web. Muon cai may khac bang kich
 ban khac thi phai quay lai web bam "Dung" kich ban do (dung lai anh dia
 ~1 phut). Kieu MDT thi nguoc lai: ky thuat vien dung TAI MAY chon.
 
+MENU 2 TANG (anh Thoai 24/09/2026: "neu nhu la kich ban de lua chon thi co
+1 cai a lua chon lam gi" - ban dau phai tick tung kich ban vao menu, tick
+1 cai thi menu chi co 1 muc, vo nghia):
+  Menu chinh:  1. Win PE (chua co - lam sau, hien san cho biet)
+               2. Install Windows  >  TAT CA kich ban Windows dang co
+               Khoi dong o cung / Khoi dong lai
+
 CACH LAM - dung lai nguyen duong da kiem chung, khong viet lai:
-  - Moi kich ban tick "Hien trong menu" duoc dung 1 ANH DIA RIENG bang
+  - Moi kich ban Windows (du thong tin) duoc dung 1 ANH DIA RIENG bang
     CHINH ham cua nut "Dung" (unattend.dung_dia_gpt_tu_dong) voi cau hinh
     nap Y HET nut "Dung" (deployos.cauhinh_tu_kichban). Ten file
     "_menu-<ten kich ban>.img": dau "_" de trang "Tai nguyen > File boot"
@@ -78,35 +85,17 @@ def luu_cauhinh(bat, cho_giay, mac_dinh):
     return True, "Đã lưu cài đặt menu PXE."
 
 
-def dat_trong_menu(ten_file, co):
-    """Bat/tat co "trong_menu" cua 1 kich ban - giu nguyen quyen 600."""
-    p = _d._duong_dan_trong(_d.KICHBAN_DIR, ten_file)
-    if not p or not os.path.isfile(p):
-        return False, "Không tìm thấy kịch bản."
-    try:
-        with open(p, encoding="utf-8") as f:
-            kb = json.load(f)
-        if co:
-            kb["trong_menu"] = True
-        else:
-            kb.pop("trong_menu", None)
-        # Ghi file tam roi doi ten: khong bao gio de kich ban (co mat khau)
-        # o trang thai ghi do dang, va giu quyen 600 ngay tu luc tao.
-        tam = p + ".tam"
-        fd = os.open(tam, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w") as f:
-            json.dump(kb, f, ensure_ascii=False, indent=1)
-        os.replace(tam, p)
-    except (OSError, ValueError) as e:
-        return False, f"Không cập nhật được kịch bản: {e}"
-    ten = kb.get("ten_kichban", ten_file)
-    return True, (f'Đã thêm "{ten}" vào menu PXE.' if co
-                  else f'Đã bỏ "{ten}" khỏi menu PXE.')
+def kichban_windows():
+    """TAT CA kich ban Windows (khong can tick nua), theo thu tu ten."""
+    return [k for k in _d.danh_sach_kichban() if k.get("os_ho") == "windows"]
 
 
-def kichban_trong_menu():
-    """Cac kich ban da tick "Hien trong menu", theo thu tu ten."""
-    return [k for k in _d.danh_sach_kichban() if k.get("trong_menu")]
+def thieu_cua(kb, kieu_boot=None):
+    """Nhung gi kich ban con thieu de dung duoc anh dia (rong = du)."""
+    d = _d.cauhinh_tu_kichban(kb)
+    if kieu_boot:
+        d["kieu_boot"] = kieu_boot
+    return _d.thieu_gi(d)
 
 
 # ------------------------------------------------------------ anh dia rieng
@@ -147,19 +136,15 @@ def _con_trong_mb():
 
 def dung_anh_menu(dia_chi_pi, kieu_boot, ten_kichban_dang_dung=""):
     """
-    Dung (hoac dung lai neu da cu) anh dia cho moi kich ban trong menu, tru
-    kich ban dang "Dung" (no da co anh chinh). Xoa anh cua kich ban da bo
-    khoi menu. Tra ve danh sach dong ket qua de hien cho nguoi dung.
+    Dung (hoac dung lai neu da cu) anh dia cho moi kich ban Windows, tru
+    kich ban dang "Dung" (no da co anh chinh). Xoa anh cua kich ban da xoa. Tra ve danh sach dong ket qua de hien cho nguoi dung.
     """
     from . import unattend as _u
     ket_qua = []
     can_giu = set()
-    for kb in kichban_trong_menu():
+    for kb in kichban_windows():
         ten = kb.get("ten_kichban", kb["_file"])
         if ten_kichban_dang_dung and ten == ten_kichban_dang_dung:
-            continue
-        if kb.get("os_ho") != "windows":
-            ket_qua.append(f'"{ten}": bỏ qua - menu chỉ hỗ trợ kịch bản Windows.')
             continue
         d = _d.cauhinh_tu_kichban(kb)
         # Moi muc dung che do mang cua kich ban dang Dung - xem GIOI HAN.
@@ -192,7 +177,7 @@ def dung_anh_menu(dia_chi_pi, kieu_boot, ten_kichban_dang_dung=""):
         ket_qua.append(f'"{ten}": ' + ("đã dựng ảnh đĩa." if ok else f"LỖI - {msg}"))
         if not ok:
             can_giu.discard(anh)
-    # Don anh cua kich ban da bo khoi menu / da xoa - moi anh vai tram MB.
+    # Don anh cua kich ban da xoa / khong con la Windows - moi anh vai tram MB.
     try:
         for n in os.listdir(_d.BOOT_DIR):
             if n.startswith(TIEN_TO_ANH) and n.endswith(".img") and n not in can_giu:
@@ -232,7 +217,7 @@ def muc_menu(kb_dang_dung):
         muc.append((kb_dang_dung.get("ten_kichban") or "Kich ban dang dung",
                     _u.TEN_DIA_GPT_TU_DONG))
     ten_dang_dung = (kb_dang_dung or {}).get("ten_kichban")
-    for kb in kichban_trong_menu():
+    for kb in kichban_windows():
         ten = kb.get("ten_kichban", kb["_file"])
         anh = ten_anh(kb["_file"])
         if ten == ten_dang_dung:
@@ -243,23 +228,43 @@ def muc_menu(kb_dang_dung):
 
 
 def sinh_script(goc):
-    """Script iPXE co menu. goc = http://<dia chi Pi>/deployos/pxeboot"""
+    """
+    Script iPXE menu 2 tang. goc = http://<dia chi Pi>/deployos/pxeboot
+
+    Menu chinh -> "Install Windows" -> menu con liet ke kich ban. Mac dinh
+    "kich ban dang Dung" thi CA 2 tang cung dem nguoc (phong may: khong ai
+    bam van tu cai kich ban dang Dung); mac dinh "o cung" thi menu con cho
+    nguoi bam. Esc o menu con = quay lai menu chinh, o menu chinh = o cung.
+    """
     from . import unattend as _u
     c = doc_cauhinh()
     muc = muc_menu(_u.doc_dau_kichban())
+    tu_cai = c["mac_dinh"] == "kichban" and bool(muc)
+    # --timeout tinh bang mili giay; 0 giay = cho mai den khi co nguoi bam.
+    cho = f"--timeout {c['cho_giay'] * 1000} " if c["cho_giay"] > 0 else ""
     dong = ["#!ipxe", ":menu",
             "menu Console System - Cai dat qua mang",
-            "item --gap -- Chon kich ban cai dat (phim mui ten + Enter):"]
+            "item --gap -- Chon bang phim mui ten + Enter:",
+            "item --gap -- ",
+            # iPXE "gap" = dong chu KHONG chon duoc - WinPE chua co (lam sau).
+            "item --gap -- 1. Win PE (chua co - sap ra mat)",
+            f"item win 2. Install Windows > ({len(muc)} kich ban)",
+            "item --gap -- ",
+            "item odia Khoi dong o cung (KHONG cai gi)",
+            "item lai Khoi dong lai may",
+            f"choose {cho}--default {'win' if tu_cai else 'odia'} chon || goto odia",
+            "goto ${chon}", "",
+            ":win",
+            "menu Install Windows - chon kich ban cai dat"]
+    if not muc:
+        dong.append("item --gap -- (Chua co kich ban Windows nao dung duoc)")
     for i, (nhan, _anh) in enumerate(muc):
         dong.append(f"item kb{i} {_chu_ipxe(nhan)}")
     dong += ["item --gap -- ",
-             "item odia Khoi dong o cung (KHONG cai gi)",
-             "item lai Khoi dong lai may"]
-    mac_dinh = "kb0" if (c["mac_dinh"] == "kichban" and muc) else "odia"
-    # --timeout tinh bang mili giay; 0 giay = cho mai den khi co nguoi bam.
-    cho = f"--timeout {c['cho_giay'] * 1000} " if c["cho_giay"] > 0 else ""
-    # Bam Esc (huy) -> khoi dong o cung, KHONG bao gio tu cai.
-    dong += [f"choose {cho}--default {mac_dinh} chon || goto odia",
+             "item menu < Quay lai menu chinh"]
+    # Menu con: chi dem nguoc khi dang o che do tu cai.
+    cho_con = cho if tu_cai else ""
+    dong += [f"choose {cho_con}--default {'kb0' if muc else 'menu'} chon || goto menu",
              "goto ${chon}", ""]
     for i, (nhan, anh) in enumerate(muc):
         dong += [f":kb{i}",
@@ -273,7 +278,7 @@ def sinh_script(goc):
              ":loi",
              "echo LOI: khong nap duoc anh dia cai dat tu Console System.",
              "prompt Bam phim bat ky de quay lai menu...",
-             "goto menu", ""]
+             "goto win", ""]
     return "\n".join(dong)
 
 
@@ -284,25 +289,37 @@ def menu_dang_dung():
 
 
 # ------------------------------------------------------------------- web
+def _xem_truoc(c, muc):
+    """Ve lai 2 man hinh menu may khach se thay (cung chu voi sinh_script)."""
+    tu_cai = c["mac_dinh"] == "kichban" and bool(muc)
+    # iPXE gop nhieu dau cach thanh 1 -> xem truoc cung khong can can cot.
+    chinh = ["  Console System - Cai dat qua mang", "",
+             "    Chon bang phim mui ten + Enter:", "",
+             "    1. Win PE (chua co - sap ra mat)",
+             ("  > " if tu_cai else "    ") +
+             f"2. Install Windows > ({len(muc)} kich ban)", "",
+             ("    " if tu_cai else "  > ") + "Khoi dong o cung (KHONG cai gi)",
+             "    Khoi dong lai may"]
+    con = ["  Install Windows - chon kich ban cai dat", ""]
+    if not muc:
+        con.append("    (Chua co kich ban Windows nao dung duoc)")
+    for i, (nhan, _a) in enumerate(muc):
+        con.append(("  > " if i == 0 else "    ") + _chu_ipxe(nhan))
+    con += ["", ("  > " if not muc else "    ") + "< Quay lai menu chinh"]
+    if c["cho_giay"]:
+        chinh += ["", f"  (tu chon muc > sau {c['cho_giay']} giay)"]
+        if tu_cai:
+            con += ["", f"  (tu chon muc > sau {c['cho_giay']} giay)"]
+    return "\n".join(chinh), "\n".join(con)
+
+
 def khoi_cai_dat_html(esc):
     """Hop cai dat menu + xem truoc menu may khach se thay (trang Kich ban)."""
     from . import unattend as _u
     c = doc_cauhinh()
     muc = muc_menu(_u.doc_dau_kichban())
-    so_tick = len(kichban_trong_menu())
-    # Xem truoc: ve lai dung noi dung menu iPXE (cung ham _chu_ipxe).
-    dong = ["  Console System - Cai dat qua mang", "",
-            "  Chon kich ban cai dat (phim mui ten + Enter):"]
-    mac_dinh = 0 if (c["mac_dinh"] == "kichban" and muc) else len(muc)
-    for i, (nhan, _a) in enumerate(muc):
-        dong.append(("  > " if i == mac_dinh else "    ") + _chu_ipxe(nhan))
-    dong.append("")
-    dong.append(("  > " if mac_dinh == len(muc) else "    ") +
-                "Khoi dong o cung (KHONG cai gi)")
-    dong.append("    Khoi dong lai may")
-    if c["cho_giay"]:
-        dong += ["", f"  (tu chon muc > sau {c['cho_giay']} giay)"]
-    xem_truoc = esc("\n".join(dong))
+    so_win = len(kichban_windows())
+    man_chinh, man_con = _xem_truoc(c, muc)
     if not c["bat"]:
         tinh_trang = ('<div class="msg warn" style="margin-top:0;">Menu đang '
                       '<strong>TẮT</strong> &mdash; máy khách boot qua mạng vào '
@@ -313,22 +330,25 @@ def khoi_cai_dat_html(esc):
                       'để bật PXE.</div>')
     else:
         tinh_trang = (f'<div class="msg ok" style="margin-top:0;">Menu đang '
-                      f'<strong>BẬT</strong> &mdash; {len(muc)} kịch bản để chọn.</div>')
+                      f'<strong>BẬT</strong> &mdash; "Install Windows" có '
+                      f'{len(muc)} kịch bản để chọn.</div>')
     chk = "checked" if c["bat"] else ""
     md_kb = "checked" if c["mac_dinh"] == "kichban" else ""
     md_od = "checked" if c["mac_dinh"] == "odia" else ""
+    kieu_pre = ("background:#000;color:#ddd;padding:12px;border-radius:6px;"
+                "overflow-x:auto;font-size:13px;line-height:1.5;margin:6px 0 12px;")
     return f"""
     <div class="card">
       <h3>Menu khi máy khách khởi động qua mạng</h3>
       {tinh_trang}
       <p style="color:#8b93a1;font-size:13.5px;margin:8px 0 12px;">
-        Bật menu thì máy khách thấy danh sách kịch bản để <strong>tự chọn
-        tại máy</strong> (kiểu MDT). Menu gồm kịch bản đang "Dùng" và các
-        kịch bản tick <strong>"Có trong menu"</strong> ở bảng bên dưới
-        (đang tick: {so_tick}). Mỗi kịch bản cần một ảnh đĩa riêng (vài
-        trăm MB) &mdash; lần đầu dựng mất khoảng 1 phút mỗi cái, các lần sau
-        chỉ dựng lại cái nào đã sửa. Tất cả dùng chế độ mạng của kịch bản
-        đang "Dùng".</p>
+        Bật menu thì máy khách thấy menu để <strong>tự chọn tại máy</strong>
+        (kiểu MDT): <strong>1. Win PE</strong> (sắp có) và <strong>2. Install
+        Windows</strong> &mdash; vào mục 2 sẽ thấy <strong>tất cả kịch bản
+        Windows</strong> đang có (hiện có {so_win}), không cần chọn từng cái.
+        Mỗi kịch bản cần một ảnh đĩa riêng (vài trăm MB) &mdash; lần đầu dựng
+        mất khoảng 1 phút mỗi cái, các lần sau chỉ dựng lại cái nào đã sửa.
+        Tất cả dùng chế độ mạng của kịch bản đang "Dùng".</p>
       <form method="POST" action="/deployos/menu-pxe/luu">
         <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
           <input type="checkbox" name="bat" value="1" {chk}>
@@ -349,22 +369,20 @@ def khoi_cai_dat_html(esc):
       </form>
       <details style="margin-top:14px;">
         <summary>Xem trước màn hình máy khách</summary>
-        <pre style="background:#000;color:#ddd;padding:12px;border-radius:6px;
-             overflow-x:auto;font-size:13px;line-height:1.5;">{xem_truoc}</pre>
+        <div style="color:#8b93a1;font-size:13px;margin-top:10px;">Menu chính:</div>
+        <pre style="{kieu_pre}">{esc(man_chinh)}</pre>
+        <div style="color:#8b93a1;font-size:13px;">Sau khi chọn "2. Install Windows":</div>
+        <pre style="{kieu_pre}">{esc(man_con)}</pre>
       </details>
     </div>"""
 
 
-def nut_trong_menu_html(k, esc):
-    """Nut them/bo 1 kich ban khoi menu (cot "Menu PXE" cua bang kich ban)."""
+def trang_thai_html(k, esc):
+    """Cot "Menu PXE" cua bang kich ban: kich ban nay co hien trong menu khong."""
     if k.get("os_ho") != "windows":
         return '<small style="color:#8b93a1;">chỉ Windows</small>'
-    co = bool(k.get("trong_menu"))
-    return f"""
-    <form method="POST" action="/deployos/menu-pxe/kichban" style="display:inline;">
-      <input type="hidden" name="ten" value="{esc(k['_file'])}">
-      <input type="hidden" name="co" value="{'0' if co else '1'}">
-      <button type="submit" class="small {'' if co else 'gray'}"
-        data-busy="Đang cập nhật menu...">
-        {'&#10003; Có trong menu' if co else 'Thêm vào menu'}</button>
-    </form>"""
+    thieu = thieu_cua(k)
+    if thieu:
+        return (f'<small style="color:#f59e0b;">thiếu: '
+                f'{esc(", ".join(thieu))}</small>')
+    return '<small style="color:#4CAF50;">&#10003; Có trong menu</small>'
