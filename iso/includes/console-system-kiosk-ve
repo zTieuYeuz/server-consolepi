@@ -1,0 +1,121 @@
+#!/bin/sh
+# Console System - chon cach VE cho giao dien kiosk (GPU hay CPU) va canh gac.
+#
+# Goi tu drop-in cua console-pi-kiosk.service (do console-system-lan-dau
+# sinh ra - CHI ban ISO x86, con Pi khong dung file nay):
+#   ExecStartPre=+ ... chuan-bi   -> cho card do hoa, ghi /run/console-pi-kiosk.env
+#   ExecStartPost=+ ... canh-gac  -> sau 90s chua co trinh duyet thi doi sang CPU
+#   ExecStopPost=+ ... sau-khi-dung -> dem so lan kiosk THOAT LOI khi ve bang GPU
+#
+# VI SAO CAN (LOI THAT 24/09/2026, SSH vao chinh may VMware cua anh Thoai):
+# VMware khong bat 3D -> cage bao "VMware: No 3D enabled ... Unable to create
+# the wlroots renderer" roi TREO LUON (khong thoat, ke ca khi bi SIGTERM) ->
+# man hinh den vinh vien, co che "loi 5 lan thi tra dong lenh" khong bao gio
+# chay vi cage khong he thoat. Ve bang CPU (WLR_RENDERER=pixman + Chromium
+# --disable-gpu) thi chinh may do hien dashboard sau 15 giay - anh Thoai da
+# nhin man hinh xac nhan.
+#
+# Khong chi VMware: moi card KHONG ve 3D duoc deu co the treo y het - may ao
+# (VirtualBox, Hyper-V, Proxmox/QEMU), card quan tri cua may chu (ast cua
+# Dell iDRAC/Supermicro, mgag200 cua HP iLO), NVIDIA chay nouveau, may chi
+# co framebuffer (simpledrm). Anh Thoai: "file nay phai chay duoc nhieu loai
+# may cua nhieu hang khac nhau". Nen:
+#   1. CHI dung GPU voi driver da biet ve 3D tot (Intel i915/xe, AMD
+#      amdgpu/radeon - firmware cua ca hai deu co san trong ISO). Gom LUON
+#      card do hoa TICH HOP trong CPU (iGPU) - phan lon may van phong/mini
+#      PC khong co card roi: Intel UHD/Iris dung i915/xe, AMD Ryzen APU
+#      (Radeon Graphics) dung amdgpu - cung driver voi card roi. Con lai ve
+#      bang CPU - cham hon chut khi xem video, nhung LUON hien hinh.
+#   2. Canh gac: chon GPU ma 90 giay sau van chua co trinh duyet (card that
+#      nhung loi driver/firmware) -> ghi nho may nay phai ve bang CPU, khoi
+#      dong lai kiosk. Kiosk thoat loi lien 2 lan bang GPU cung vay.
+#   Muon thu lai GPU: sudo rm /var/lib/console-pi/kiosk-ve-cpu
+ENV=/run/console-pi-kiosk.env
+DAU_CPU=/var/lib/console-pi/kiosk-ve-cpu
+DEM=/run/console-pi-kiosk.gpu-that-bai
+
+chuan_bi() {
+    udevadm settle -t 30 >/dev/null 2>&1 || true
+    # Cho card do hoa (toi da 60 giay): driver (vd i915) co the nap cham hon
+    # kiosk. Xet MOI card chu khong chi card0: may co simpledrm luc dau roi
+    # driver that thay vao thi card that thanh card1.
+    i=0
+    while ! ls /dev/dri/card* >/dev/null 2>&1; do
+        i=$((i + 1))
+        if [ "$i" -ge 60 ]; then
+            echo "khong thay card do hoa"
+            exit 1
+        fi
+        sleep 1
+    done
+
+    ly_do=""
+    ds=""
+    ao="$(systemd-detect-virt --vm 2>/dev/null || true)"
+    if [ -f "$DAU_CPU" ]; then
+        ly_do="da ghi nho: lan truoc ve bang GPU that bai"
+    elif [ "$(cat "$DEM" 2>/dev/null || echo 0)" -ge 2 ]; then
+        ly_do="kiosk thoat loi 2 lan lien khi ve bang GPU"
+        mkdir -p /var/lib/console-pi && touch "$DAU_CPU"
+    elif [ -n "$ao" ] && [ "$ao" != "none" ]; then
+        ly_do="may ao ($ao)"
+    else
+        co_gpu=0
+        for c in /sys/class/drm/card[0-9]*; do
+            case "${c##*/}" in *-*) continue ;; esac   # bo cong man hinh (card0-HDMI-A-1...)
+            [ -e "$c/device/driver" ] || continue
+            drv="$(basename "$(readlink -f "$c/device/driver")")"
+            ds="$ds $drv"
+            case "$drv" in i915|xe|amdgpu|radeon) co_gpu=1 ;; esac
+        done
+        [ "$co_gpu" = 1 ] || ly_do="card do hoa khong ve 3D on dinh:${ds:- khong ro}"
+    fi
+
+    if [ -n "$ly_do" ]; then
+        printf 'WLR_RENDERER=pixman\nKIOSK_KHONG_GPU=1\n' > "$ENV"
+        echo "kiosk ve bang CPU - $ly_do"
+    else
+        : > "$ENV"
+        echo "kiosk ve bang GPU -$ds"
+    fi
+}
+
+canh_gac() {
+    # Dang ve bang CPU thi khong co gi de canh.
+    grep -q '^WLR_RENDERER=pixman' "$ENV" 2>/dev/null && exit 0
+    (
+        sleep 90
+        if pgrep -f '/usr/lib/chromium/chromium .*--kiosk' >/dev/null 2>&1; then
+            echo 0 > "$DEM"   # GPU chay tot
+        else
+            mkdir -p /var/lib/console-pi && touch "$DAU_CPU"
+            logger -t console-pi-kiosk "90 giay chua co trinh duyet khi ve bang GPU - doi sang ve bang CPU (ghi nho $DAU_CPU)"
+            # KHONG dung `systemctl restart`: cage dang treo bo qua SIGTERM ->
+            # dung qua gio -> ket qua "failed" -> OnFailure bat getty@tty1,
+            # getty (Conflicts) huy luon buoc chay lai kiosk -> ve dong lenh
+            # thay vi dashboard (DA GAP THAT khi test tren VMware 24/09/2026).
+            # Giet thang cage (SIGKILL) de Restart=always tu chay lai - lan
+            # chay lai thay dau ghi nho -> ve bang CPU. Lenh nay giet ca chinh
+            # tien trinh canh gac (cung cgroup) - la viec cuoi cung nen khong sao.
+            systemctl kill -s KILL console-pi-kiosk.service
+        fi
+    ) >/dev/null 2>&1 &
+    exit 0
+}
+
+sau_khi_dung() {
+    # CHI dem lan THOAT LOI (SERVICE_RESULT do systemd dat) khi dang ve bang
+    # GPU. Tat/bat kiosk binh thuong (success) khong tinh - neu khong, may GPU
+    # tot ma bat tat vai lan lien tiep cung bi chuyen nham sang CPU.
+    grep -q '^WLR_RENDERER=pixman' "$ENV" 2>/dev/null && exit 0
+    [ "${SERVICE_RESULT:-success}" = success ] && exit 0
+    echo "$(( $(cat "$DEM" 2>/dev/null || echo 0) + 1 ))" > "$DEM"
+    exit 0
+}
+
+case "$1" in
+    chuan-bi) chuan_bi ;;
+    canh-gac) canh_gac ;;
+    sau-khi-dung) sau_khi_dung ;;
+    *) echo "dung: $0 chuan-bi|canh-gac|sau-khi-dung"; exit 2 ;;
+esac

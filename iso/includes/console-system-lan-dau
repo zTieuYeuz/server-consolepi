@@ -73,17 +73,23 @@ if [ -n "$_nd" ]; then
             echo "Environment=XDG_RUNTIME_DIR=/run/user/${_uid}"
         } > "/etc/systemd/system/${_u}.service.d/10-nguoi-dung.conf"
     done
-    # CHO driver man hinh nap xong roi moi chay cage (toi da 60 giay).
-    # Truoc day dung ConditionPathExists=/dev/dri/card0: luc kiosk den luot
-    # ma driver (vd i915 cua Intel) chua nap xong thi systemd BO QUA kiosk
-    # ca lan boot do - man hinh chi con dong lenh. Cho o day thi chac chan;
-    # may that su khong co card do hoa thi het 60 giay bao loi, loi 5 lan
-    # thi tra tty1 ve dong lenh (xem 20-tra-man-hinh.conf ben duoi).
-    # "+" = chay quyen root (udevadm settle can quyen root).
+    # CHON CACH VE (GPU hay CPU) + CHO card do hoa + CANH GAC - xem giai
+    # thich day du trong /usr/local/sbin/console-system-kiosk-ve. Tom tat:
+    # Intel/AMD (ca card roi lan iGPU trong CPU) ve bang GPU; may ao, card
+    # may chu, nouveau... ve bang CPU; GPU loi (90s chua co trinh duyet)
+    # thi tu doi sang CPU. LOI THAT dan toi thiet ke nay: VMware khong 3D
+    # lam cage TREO (24/09/2026) - man hinh den vinh vien.
+    # TimeoutStopSec=15: cage treo bo qua SIGTERM, mac dinh systemd cho 90s
+    # moi giet - canh gac khoi dong lai kiosk se bi cham theo.
     {
         echo "[Service]"
-        echo "ExecStartPre=+/bin/sh -c 'udevadm settle -t 30; timeout 60 sh -c \"until [ -e /dev/dri/card0 ]; do sleep 1; done\" || { echo khong thay card do hoa; exit 1; }'"
+        echo "ExecStartPre=+/usr/local/sbin/console-system-kiosk-ve chuan-bi"
+        echo "EnvironmentFile=-/run/console-pi-kiosk.env"
+        echo "ExecStartPost=+/usr/local/sbin/console-system-kiosk-ve canh-gac"
+        echo "ExecStopPost=+/usr/local/sbin/console-system-kiosk-ve sau-khi-dung"
+        echo "TimeoutStopSec=15"
     } > /etc/systemd/system/console-pi-kiosk.service.d/15-cho-man-hinh.conf
+    rm -f /etc/systemd/system/console-pi-kiosk.service.d/16-ve-bang-cpu.conf
 
     # --- Kiosk loi thi TRA tty1 ve cho dong lenh ---
     # Kiosk chiem tty1 va tat getty (Conflicts=getty@tty1). Neu cage/Chromium
@@ -103,12 +109,20 @@ if [ -n "$_nd" ]; then
         # quay ve dong lenh. Kiosk tat getty@tty1 luc chay (Conflicts) nhung
         # luc TAT kiosk thi khong ai bat lai getty. Sua: tat kiosk BINH
         # THUONG (nut tren web, systemctl stop/disable) -> bat lai getty.
-        # CHI khi SERVICE_RESULT=success: kiosk bi loi/crash thi KHONG bat
-        # getty o day - de Restart=always tu chay lai kiosk (bat getty luc
-        # do se tat luon kiosk vi Conflicts). Loi mai thi da co OnFailure.
-        # Da thu that bang systemd: bat/crash/tat/disable --now deu dung.
-        echo "[Service]"
-        echo "ExecStopPost=+/bin/sh -c '[ \"\$\$SERVICE_RESULT\" = success ] && systemctl start --no-block getty@tty1.service; true'"
+        # KHONG bat getty khi:
+        #  - kiosk bi loi/crash (SERVICE_RESULT khac success): de
+        #    Restart=always tu chay lai; loi mai thi da co OnFailure.
+        #  - dang RESTART kiosk (vd doi xoay man hinh o tab Cai dat goi
+        #    `systemctl restart`). LOI THAT (24/09/2026, bat duoc khi test
+        #    ban 1.2.3): restart = dung roi chay lai; buoc dung bat getty,
+        #    getty (Conflicts) da luon kiosk vua chay lai -> mat kiosk, ve
+        #    dong lenh. Phan biet bang loai job systemd dang chay cho kiosk:
+        #    "restart" hay "stop" (da thu that: bat/restart/crash/stop/
+        #    bat lai/restart/disable --now - ca 7 truong hop dung).
+        cat <<'DROPIN'
+[Service]
+ExecStopPost=+/bin/sh -c '[ "$$SERVICE_RESULT" = success ] || exit 0; systemctl list-jobs --no-legend | grep -qE "console-pi-kiosk.service +(start|restart|try-restart|reload-or-start)" && exit 0; systemctl start --no-block getty@tty1.service; true'
+DROPIN
     } > /etc/systemd/system/console-pi-kiosk.service.d/20-tra-man-hinh.conf
     # Bo gioi han khoi dong lai cua getty tren tty1. Ly do - da do that:
     # OnFailure bat getty moi lan kiosk loi, roi kiosk thu lai thi lai tat
@@ -133,23 +147,10 @@ if [ -n "$_nd" ]; then
     # hinh thi khong cam man hinh (kiosk chay khong ai nhin, vo hai).
     _co_man_hinh=1
 
-    # --- May ao: KHONG tu bat kiosk ---
-    # LOI THAT (21/09/2026, anh Thoai cai len VMware Workstation): cai xong
-    # man hinh DEN THUI, khong hien gi. Nguyen nhan: card do hoa AO luc nao
-    # cung bao man hinh "connected" (VMware: Virtual-1, QEMU: Virtual-1...),
-    # nen doan kiem tra o tren tuong co man hinh that va bat kiosk. Kiosk
-    # chiem tty1, ma VMware cua anh Thoai chay tren Hyper-V nen KHONG co tang
-    # toc 3D (vmware.log: "SVGA3dCaps: Disabling 3d support") - Chromium khong
-    # ve duoc gi, man hinh den vinh vien, mat luon dau nhac dang nhap lan dia
-    # chi IP. Da do tren may ao co card do hoa thuong: kiosk van hien duoc
-    # nhung mat ~3 phut, suot luc do den hoan toan.
-    # May ao thi luon vao web tu trinh duyet may that - kiosk khong co ich gi
-    # ma chi them rui ro. Can thi van bat tay duoc o tab Cai dat.
-    _may_ao="$(systemd-detect-virt --vm 2>/dev/null || true)"
-    if [ -n "$_may_ao" ] && [ "$_may_ao" != "none" ]; then
-        _co_man_hinh=0
-        echo "[console-system] dang chay tren may ao ($_may_ao) - khong tu bat kiosk"
-    fi
+    # May ao CUNG bat kiosk (anh Thoai 24/09/2026: "lo nhu sau nay user
+    # chay tren may ao thi sao") - ve bang CPU, do console-system-kiosk-ve
+    # tu nhan ra luc kiosk khoi dong. Ban 1.2.x truoc do bo qua may ao vi
+    # VMware khong 3D lam man hinh den.
 
     if [ "$_co_man_hinh" = "1" ]; then
         systemctl daemon-reload >/dev/null 2>&1 || true
@@ -168,7 +169,5 @@ if [ -n "$_nd" ]; then
         else
             echo "[console-system] khong bat duoc kiosk"
         fi
-    else
-        echo "[console-system] may ao - bo qua kiosk (bat tay o tab Cai dat neu can)"
     fi
 fi

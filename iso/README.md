@@ -47,6 +47,8 @@ sự phục vụ được**.
 | `includes/console-system-lan-dau.service` | `/etc/systemd/system/` |
 | `includes/10-console-system.conf` | `/etc/ssh/sshd_config.d/` |
 | `includes-installer/console-system-nguon-apt.sh` | goc initrd cua trinh cai chu (`config/includes.installer/`), goi tu `preseed/late_command` |
+| `includes/console-system-kiosk-ve` | `/usr/local/sbin/` (chon ve kiosk bang GPU hay CPU theo driver card do hoa + canh gac 90s tu doi sang CPU) |
+| `includes/chromium-policies/console-system.json` | `/etc/chromium/policies/managed/` (tat hop thoai "Dich trang" cua Chromium tren kiosk - co `--disable-features=Translate` khong con tac dung o Chromium 153) |
 | `includes/apt.conf.d/00-toc-do-build` | `/etc/apt/apt.conf.d/` (bi hook xoa khoi may da cai) |
 | `calamares/settings.conf`, `calamares/modules/`, `calamares/branding/` | `/etc/calamares/` |
 | `calamares/lang/calamares_vi.qm` (sinh bang `calamares/lang/sua-ban-dich-vi.py`) | `/usr/share/calamares/lang/` |
@@ -75,9 +77,12 @@ Những chỗ đã phải xử lý riêng (đều kiểm chứng bằng cài th�
 
 ## Những quyết định quan trọng (và lý do thật)
 
-- **Không có desktop, chỉ có kiosk.** Máy thật cài xong tự hiện dashboard
-  toàn màn hình (cage + Chromium, như RasPad); máy ảo thì không tự bật. Không
-  có desktop giúp ISO nhẹ và chạy được trên máy RAM thấp.
+- **Không có desktop, chỉ có kiosk.** Cài xong tự hiện dashboard toàn màn
+  hình (cage + Chromium, như RasPad) trên mọi loại máy, kể cả máy ảo. Card
+  Intel/AMD (cả iGPU trong CPU) vẽ bằng GPU; còn lại (máy ảo, card máy chủ,
+  nouveau, simpledrm) vẽ bằng CPU — vì cage 0.2.0 gặp card không 3D thì
+  **treo luôn** chứ không thoát (đã thấy thật trên VMware), màn hình đen
+  vĩnh viễn. Có canh gác: GPU mà 90 giây chưa có trình duyệt thì tự đổi CPU.
 - **Bỏ firmware đồ hoạ (~224 MB)** — nvidia/amdgpu/i915 — vì không có
   desktop thì không dùng tới. **Giữ nguyên toàn bộ firmware mạng** (94 thư
   mục: Intel, Realtek, Atheros, Broadcom, MediaTek, card mạng máy chủ...) vì

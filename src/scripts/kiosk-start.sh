@@ -100,6 +100,21 @@ fi
 # cho trang file:// tu doc file file:// khac - KHONG anh huong gi toi bao
 # mat cua http/https (dashboard, YouTube, TikTok...), va trang file:// duy
 # nhat tung mo trong kiosk nay la kiosk-loading.html do chinh du an tao ra.
+# --- May ao / may khong co tang toc 3D: ve bang CPU ---------------------
+# LOI THAT (21/09 va 24/09/2026, anh Thoai chay ban ISO tren VMware
+# Workstation nam tren Hyper-V - khong co 3D, vmware.log: "SVGA3dCaps:
+# Disabling 3d support"): kiosk MAN HINH DEN, khong hien gi. Chromium
+# dung GPU de ve, card do hoa ao khong co 3D thi khong ve ra duoc. Trinh
+# cai do hoa (Calamares) chay duoc tren chinh may do vi no ve bang CPU.
+# Bien KIOSK_KHONG_GPU do drop-in systemd dat (chi ban ISO, chi tren may
+# ao - xem iso/includes/console-system-lan-dau), di kem WLR_RENDERER=pixman
+# cho cage. Pi khong dat bien nay -> dong lenh chromium y nhu cu.
+GPU_FLAGS=""
+if [ "${KIOSK_KHONG_GPU:-0}" = "1" ]; then
+    GPU_FLAGS="--disable-gpu"
+    echo "Ve bang CPU (khong dung GPU)"
+fi
+
 exec chromium \
     --kiosk \
     --remote-debugging-port=9222 \
@@ -128,4 +143,5 @@ exec chromium \
     --metrics-recording-only \
     --disable-dev-shm-usage \
     $LOW_RAM_FLAGS \
+    $GPU_FLAGS \
     "$LOADING_URL"

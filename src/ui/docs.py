@@ -740,10 +740,13 @@ hien thang len man hinh do, khong can may thu hai mo trinh duyet.</p>
       that tu bat giao dien man hinh (cho driver card man hinh nap xong roi
       moi hien, toi da 60 giay). May nao khong dung man hinh thi khong cam
       man hinh - kiosk chay khong ai nhin, khong anh huong gi.</li>
-  <li><strong>May ao (VMware, VirtualBox, Hyper-V, QEMU...) KHONG tu bat</strong>:
-      card do hoa ao luc nao cung bao "co man hinh", va nhieu may ao khong co
-      tang toc 3D nen Chromium ve ra man hinh den thui. May ao thi mo web tu
-      trinh duyet may that; can kiosk thi bat tay.</li>
+  <li><strong>Moi loai may deu hien hinh</strong>: may tu chon cach ve.
+      Card Intel/AMD (ca card roi lan card tich hop trong CPU) ve bang GPU;
+      may ao (VMware, VirtualBox, Hyper-V, Proxmox...), card quan tri may chu
+      (iDRAC, iLO), NVIDIA khong driver chinh hang thi ve bang CPU. GPU loi
+      (90 giay chua hien trinh duyet) thi tu doi sang CPU va ghi nho - muon
+      thu lai GPU: <code>sudo rm /var/lib/console-pi/kiosk-ve-cpu</code>.
+      Xem may dang ve bang gi: <code>journalctl -u console-pi-kiosk | grep "kiosk ve"</code>.</li>
   <li><strong>Kiosk loi thi tu tra man hinh</strong>: Chromium khong khoi dong
       duoc 5 lan trong 5 phut thi tu dung, <code>tty1</code> quay ve dong lenh
       co logo + dia chi IP - khong bao gio den vinh vien.</li>

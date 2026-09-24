@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.2.4
+
+**Kiosk hien hinh tren MOI loai may, ke ca may ao VMware.** Anh Thoai chay
+ban ISO tren VMware: man hinh den. "lo nhu sau nay user chay tren may ao
+thi sao ... file nay phai chay duoc nhieu loai may cua nhieu hang khac nhau".
+
+Nguyen nhan THAT (SSH vao chinh may VMware cua anh Thoai, doc nhat ky): may
+ao khong co 3D -> cage bao "VMware: No 3D enabled ... Unable to create the
+wlroots renderer" roi TREO LUON, bo qua ca lenh dung - co che "loi 5 lan
+thi tra dong lenh" khong bao gio chay, man hinh den vinh vien.
+
+- Script moi `console-system-kiosk-ve` chon cach ve moi lan kiosk khoi dong:
+  card Intel/AMD (ca card roi lan iGPU tich hop trong CPU) ve bang GPU; may
+  ao, card may chu (iDRAC/iLO), nouveau, simpledrm... ve bang CPU (cage
+  `WLR_RENDERER=pixman` + Chromium `--disable-gpu`).
+- Canh gac: chon GPU ma 90 giay chua co trinh duyet (card that nhung loi
+  driver/firmware) -> tu doi sang CPU, ghi nho cho may do. Kiosk thoat loi 2
+  lan lien bang GPU cung doi sang CPU.
+- May ao nay CUNG tu bat kiosk sau khi cai (truoc day bo qua).
+- **Sua loi cua 1.2.3**: khoi dong lai kiosk (vd doi xoay man hinh o tab Cai
+  dat) lam mat kiosk, rot ve dong lenh.
+- Tat hop thoai "Dich trang Vietnamese/English" cua Chromium tren kiosk.
+
+Kiem chung tren may VMware THAT cua anh Thoai (anh Thoai nhin man hinh xac
+nhan hien dashboard): ve bang CPU hien sau 5-15 giay; ep ve bang GPU de
+cage treo that -> 90 giay sau tu doi CPU, hien dashboard, khong den man
+hinh; restart, Tat/Bat tren web, kiosk crash, khoi dong lai may - deu dung.
+
 ## 1.2.3
 
 **Cai xong la vao kiosk luon + tat kiosk khong con den man hinh.** Anh
