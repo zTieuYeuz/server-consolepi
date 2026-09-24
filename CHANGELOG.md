@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.3.0
+
+**Menu PXE: may khach tu chon kich ban ngay tai may (kieu MDT) - "Buoc A".**
+Truoc day PXE chi phuc vu dung 1 kich ban (cai vua bam "Dung"); cai may khac
+bang kich ban khac phai quay lai web doi. Nay bat menu thi may khach boot qua
+mang thay danh sach kich ban, chon bang phim mui ten + Enter.
+
+- Tab Kich ban: cot "Menu PXE" (Them vao menu / Co trong menu) + hop cai dat
+  menu: bat/tat, so giay cho, muc mac dinh ("Kich ban dang Dung" = tu cai cho
+  phong may, hoac "Khoi dong o cung" = an toan). Co xem truoc man hinh may
+  khach. Bam Esc tai menu luon la khoi dong o cung.
+- Moi kich ban trong menu 1 anh dia rieng, dung bang CHINH ham cua nut "Dung"
+  voi cau hinh nap y het (tach ra deployos.cauhinh_tu_kichban) - 2 duong khong
+  bao gio lech nhau. Chi dung lai anh nao da doi (dau van tay: kich ban + dia
+  chi Pi + boot.wim + ma nguon); bo khoi menu thi anh tu xoa.
+- Menu TAT (mac dinh) thi menu.ipxe y het ban cu - khong doi gi voi nguoi
+  dang dung.
+- **Sua loi cua ban ISO**: thieu `parted` (va `dosfstools` o ban 32-bit) ->
+  Deployment OS tren may x86 bam "Dung" bao "No such file or directory:
+  'parted'", chua bao gio dung duoc anh dia cai dat. Pi khong bi vi Raspberry
+  Pi OS co san.
+
+Kiem chung: menu chay tren iPXE THAT (QEMU): hien dung, dem nguoc, het gio
+chay muc mac dinh, mui ten + Enter chon dung anh, Esc -> o cung, thieu anh ->
+bao loi quay lai menu, chon muc tro toi anh boot duoc -> boot that. Dung anh
+that bang boot.wim Windows 10 tren may Console System x86: anh chinh 46s, anh
+menu 19s, lan 2 dung lai 0s; mo anh ra kiem tra moi anh dung ten may cua kich
+ban minh. Them/bo kich ban luc PXE dang bat -> tu dung lai (doi dia chi Pi) va
+ghi lai menu; tat menu -> menu.ipxe ve dung 1 dong nhu cu. 16 trang Deployment
+OS + trinh tu sua kich ban 7 buoc deu 200, khong loi.
+
 ## 1.2.4
 
 **Kiosk hien hinh tren MOI loai may, ke ca may ao VMware.** Anh Thoai chay

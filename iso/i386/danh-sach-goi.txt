@@ -44,6 +44,14 @@ openssh-server
 
 # --- Trien khai Windows (Deployment OS) ---
 wimtools
+# parted (+ dosfstools): Deployment OS dung anh dia GPT+FAT32 de may khach
+# boot qua mang (ui/unattend.py: dung_dia_gpt_tu_dong - parted mklabel gpt,
+# mkfs.vfat). LOI THAT (24/09/2026, test menu PXE tren ban ISO): ISO THIEU
+# parted -> bam "Dung" kich ban bao "No such file or directory: 'parted'",
+# Deployment OS tren may x86 CHUA BAO GIO dung duoc anh dia. Pi khong bi vi
+# Raspberry Pi OS co san parted.
+parted
+dosfstools
 7zip
 genisoimage
 

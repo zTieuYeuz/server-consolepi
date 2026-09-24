@@ -853,6 +853,31 @@ Microsoft, nhung dung cong cu Linux co san.</p>
 thong tu tat che do cu, doi IP cua <code>eth0</code>, dung lai anh dia theo dia
 chi moi roi bat lai. Khong duoc sua tay file cau hinh dnsmasq.</p>
 
+<h4>Menu chọn kịch bản ngay tại máy khách (kiểu MDT)</h4>
+<p>Mac dinh may khach boot qua mang la vao THANG kich ban dang "Dung". Bat
+<strong>menu</strong> thi may khach hien danh sach kich ban de ky thuat vien
+chon tai cho - khong phai quay lai web doi kich ban cho tung may.</p>
+<ol>
+  <li>Tab <strong>Kich ban</strong>: bam <strong>"Them vao menu"</strong> o
+      nhung kich ban Windows muon hien.</li>
+  <li>Hop <strong>"Menu khi may khach khoi dong qua mang"</strong> (cuoi
+      trang): tick bat menu, dat so giay cho, chon muc mac dinh, Luu.</li>
+  <li>Bam <strong>"Dung"</strong> 1 kich ban nhu binh thuong de bat PXE - no la
+      muc dau tien cua menu.</li>
+</ol>
+<ul>
+  <li><strong>Chon bang phim mui ten + Enter</strong> (menu chu cua iPXE, chay
+      truoc Windows nen khong co chuot, khong dau tieng Viet).</li>
+  <li><strong>Muc mac dinh</strong>: "Kich ban dang Dung" = khong ai bam thi tu
+      cai (phong may). "Khoi dong o cung" = an toan, may lo boot qua mang cung
+      khong bi xoa o. Bam <kbd>Esc</kbd> luon la khoi dong o cung.</li>
+  <li><strong>Moi kich ban 1 anh dia rieng (~500 MB)</strong>, dung lan dau mat
+      khoang 20-60 giay moi cai; lan sau chi dung lai cai nao da sua (hoac khi
+      doi kieu boot/dia chi Pi). Bo khoi menu thi anh dia tu xoa.</li>
+  <li>Moi muc dung <strong>kieu boot cua kich ban dang "Dung"</strong> (Pi chi
+      chay 1 kieu mot luc).</li>
+</ul>
+
 <h4>Luồng chạy bên trong (đã kiểm chứng thật)</h4>
 <pre>May can cai bat len, chon Network Boot
    -> dnsmasq cua Pi tra loi: BIOS lay undionly.kpxe / UEFI lay snponly.efi
@@ -860,6 +885,7 @@ chi moi roi bat lai. Khong duoc sua tay file cau hinh dnsmasq.</p>
    -> dnsmasq tra ve dia chi script menu.ipxe qua HTTP  (khong lam buoc nay
       se bi VONG LAP VO TAN - iPXE tu tai lai chinh no mai mai)
    -> menu.ipxe goi `sanboot` anh dia GPT+FAT32 do Pi tu dung san
+      (bat menu: hien danh sach kich ban, moi muc sanboot 1 anh rieng)
    -> Windows Setup doc autounattend.xml trong anh dia do, cai tu dong
    -> WinPE noi lai ve Pi qua SMB (Samba) de lay install.wim + phan mem
    -> Sau khi vao Windows: script chay tiep, cai phan mem, bao tien do ve Pi</pre>

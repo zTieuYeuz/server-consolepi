@@ -311,6 +311,11 @@ def _sinh_menu_ipxe(kieu_boot="truc_tiep"):
     # GPT+FAT32, cac file boot van trich thang tu boot.wim) - xem
     # ui/unattend.py: dung_dia_gpt_tu_dong().
     from . import unattend as _u
+    # Menu PXE (Buoc A - xem ui/pxemenu.py): may khach TU CHON kich ban.
+    # Menu tat (mac dinh) -> giu nguyen 1 dong sanboot nhu truoc day.
+    from . import pxemenu as _m
+    if _m.menu_dang_dung():
+        return _m.sinh_script(goc)
     if _u.co_san_dia_gpt_tu_dong():
         return f"""#!ipxe
 sanboot --no-describe {goc}/{_u.TEN_DIA_GPT_TU_DONG}
@@ -496,9 +501,12 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
             ok, msg = _u.dung_dia_gpt_tu_dong(cauhinh, _dia_chi_pi_that(kieu_boot))
             if not ok:
                 return False, f"Không dựng được ảnh đĩa cài đặt: {msg}"
+            # menu.ipxe phai ghi lai: menu co muc "kich ban dang dung" doi ten.
+            them = _dung_menu(kieu_boot, cauhinh)
+            _ghi_menu_ipxe(kieu_boot)
             return True, ("Đã cập nhật ảnh đĩa cài đặt theo kịch bản đang "
                            "chọn. PXE vẫn đang bật đúng kiểu, không cần "
-                           "khởi động lại.")
+                           "khởi động lại." + them)
         return True, "PXE đang bật sẵn đúng kiểu của kịch bản này."
 
     # ---- 2. Khac kieu (hoac dang tat): dua eth0 ve dung trang thai cua kieu
@@ -569,6 +577,7 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
         if not ok:
             _tra_lai_eth0()
             return False, f"Không dựng được ảnh đĩa cài đặt: {msg}"
+    them_menu = _dung_menu(kieu_boot, cauhinh)
 
     if not _ghi_menu_ipxe(kieu_boot):
         _tra_lai_eth0()
@@ -608,7 +617,39 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
     dau = ("Đã ĐỔI chế độ PXE sang kiểu mới (tắt kiểu cũ rồi bật lại)."
            if doi_kieu else "Đã bật PXE.")
     return True, (f"{dau} {mo_ta_ket_noi(kieu_boot)} Vào BIOS/UEFI máy "
-                  "đó chọn boot qua mạng (Network Boot / PXE Boot).")
+                  "đó chọn boot qua mạng (Network Boot / PXE Boot)." + them_menu)
+
+
+def _dung_menu(kieu_boot, cauhinh=None):
+    """
+    Menu PXE dang bat -> dung/dung lai anh dia cho cac kich ban trong menu.
+    Tra ve doan chu noi them vao thong bao (rong neu menu tat).
+    """
+    from . import pxemenu as _m
+    from . import unattend as _u
+    if not _m.doc_cauhinh()["bat"]:
+        return ""
+    ten_dang = (cauhinh or {}).get("tu_kichban", "")
+    if not ten_dang:
+        ten_dang = (_u.doc_dau_kichban() or {}).get("ten_kichban", "")
+    kq = _m.dung_anh_menu(_dia_chi_pi_that(kieu_boot), kieu_boot, ten_dang)
+    so_muc = len(_m.muc_menu(_u.doc_dau_kichban()))
+    return (f" Menu PXE: {so_muc} mục." + (" " + " ".join(kq) if kq else ""))
+
+
+def cap_nhat_menu():
+    """
+    Goi khi doi cai dat menu / them-bot kich ban trong menu LUC PXE DANG
+    BAT: dung anh con thieu va ghi lai menu.ipxe ngay, khong phai tat-bat
+    lai PXE. PXE dang tat thi khong lam gi (lan bat sau se tu dung).
+    """
+    if not dang_bat():
+        return ""
+    kieu = kieu_dang_bat()
+    them = _dung_menu(kieu)
+    if not _ghi_menu_ipxe(kieu):
+        return " KHÔNG ghi được menu.ipxe."
+    return them or " Đã cập nhật menu (menu đang tắt - máy khách vào thẳng kịch bản đang dùng)."
 
 
 def tat_pxe():
@@ -738,5 +779,27 @@ def register_pxe(app):
     def deployos_pxe_tat():
         ok, msg = tat_pxe()
         return _ve_lai(msg, ok)
+
+    # ---- Menu PXE (Buoc A - xem ui/pxemenu.py)
+    @app.route("/deployos/menu-pxe/luu", methods=["POST"])
+    def deployos_menu_pxe_luu():
+        from . import pxemenu as _m
+        ok, msg = _m.luu_cauhinh(request.form.get("bat") == "1",
+                                 request.form.get("cho_giay", "10"),
+                                 request.form.get("mac_dinh", "kichban"))
+        if ok:
+            msg += cap_nhat_menu()
+        flash(msg, "ok" if ok else "err")
+        return redirect("/deployos/kichban")
+
+    @app.route("/deployos/menu-pxe/kichban", methods=["POST"])
+    def deployos_menu_pxe_kichban():
+        from . import pxemenu as _m
+        ok, msg = _m.dat_trong_menu(request.form.get("ten", ""),
+                                    request.form.get("co") == "1")
+        if ok:
+            msg += cap_nhat_menu()
+        flash(msg, "ok" if ok else "err")
+        return redirect("/deployos/kichban")
 
     return app

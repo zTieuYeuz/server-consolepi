@@ -1137,7 +1137,13 @@ def _wizard_moi(che_do):
     """che_do: 'chay' = dung ngay | 'luu' = luu thanh kich ban."""
     _don_wizard_cu()
     ma = secrets.token_urlsafe(12)
-    _WIZARD[ma] = {
+    _WIZARD[ma] = _cauhinh_mac_dinh(che_do)
+    return ma
+
+
+def _cauhinh_mac_dinh(che_do):
+    """Gia tri mac dinh cua 1 trinh tu (tach ra de menu PXE dung chung)."""
+    return {
         "_luc": time.time(),
         "che_do": che_do,
         "kieu_boot": "truc_tiep",
@@ -1165,7 +1171,53 @@ def _wizard_moi(che_do):
         "domain": "", "domain_ou": "", "domain_user": "", "domain_pass": "",
         "tuy_chon": [],
     }
-    return ma
+
+
+# Cac truong cua kich ban da luu duoc nap vao trinh tu khi "Dung".
+_TRUONG_KICHBAN = (
+    "kieu_boot", "os_ho", "os_id", "driver_ids", "ten_may",
+    "username", "password", "ssh", "mui_gio", "o_dia_che_do",
+    "o_dia_so", "o_dia_bang", "phan_vung", "apps", "ungdung",
+    "scripts", "lenh_them",
+    "domain", "domain_ou", "domain_user", "domain_pass",
+    "tuy_chon",
+    "bat_admin", "mk_admin", "ngon_ngu", "ban_phim",
+    "product_key", "tu_dang_nhap", "go_app")
+
+
+def cauhinh_tu_kichban(kb):
+    """
+    Dict cau hinh day du tu 1 kich ban da luu - Y HET cach nut "Dung" nap
+    kich ban (mac dinh cua trinh tu + cac truong da luu). Dung chung cho
+    nut "Dung" va menu PXE (ui/pxemenu.py) de 2 duong KHONG BAO GIO lech
+    nhau: cung 1 kich ban thi anh dia dung ra phai giong het.
+    """
+    d = _cauhinh_mac_dinh("chay")
+    for k in _TRUONG_KICHBAN:
+        if k in kb:
+            d[k] = kb[k]
+    d["tu_kichban"] = kb.get("ten_kichban", "")
+    # Kich ban da luu thi lua chon "go app" trong do la CHINH THUC -
+    # kho chon app phai hien dung no, khong duoc tich lai theo mac dinh
+    # (xem _khoi_go_app). Ke ca kich ban khong go app nao.
+    d["_da_qua_buoc6"] = True
+    return d
+
+
+def thieu_gi(d):
+    """Danh sach nhung thu con thieu de chay duoc 1 cau hinh (rong = du)."""
+    thieu = []
+    if not d["os_ho"]:
+        thieu.append("chưa chọn OS")
+    if not d["ten_may"]:
+        thieu.append("chưa có tên máy")
+    if not d["username"]:
+        thieu.append("chưa có tên đăng nhập")
+    if not d["password"]:
+        thieu.append("chưa đặt mật khẩu")
+    if not d.get("os_id"):
+        thieu.append("chưa chọn hệ điều hành")
+    return thieu
 
 
 def _wizard_lay(ma):
@@ -1792,6 +1844,7 @@ def register_deployos(app):
         kich ban moi" la 1 nut dan toi trinh tu tung buoc (wizard). Thay
         cho 2 trang trung lap truoc day (xem ghi chu tai _tabs()).
         """
+        from . import pxemenu as _pm
         ds_kb = danh_sach_kichban()
         if ds_kb:
             hang = ""
@@ -1801,6 +1854,7 @@ def register_deployos(app):
                   <td><strong>{_esc(k.get('ten_kichban', k['_file']))}</strong></td>
                   <td>{_o_tom_tat(k, _esc)}</td>
                   <td style="color:#8b93a1;">{_esc(k.get('_ngay', ''))}</td>
+                  <td>{_pm.nut_trong_menu_html(k, _esc)}</td>
                   <td>
                     <form method="POST"
                           action="/deployos/kichban/dung/{_esc(k['_file'])}"
@@ -1821,7 +1875,9 @@ def register_deployos(app):
             noi_dung = f"""
             <div class="tbl-scroll"><table>
               <tr><th>Tên kịch bản</th><th>Tóm tắt</th>
-                  <th style="width:140px;">Ngày tạo</th><th style="width:200px;">Thao tác</th></tr>
+                  <th style="width:140px;">Ngày tạo</th>
+                  <th style="width:140px;">Menu PXE</th>
+                  <th style="width:200px;">Thao tác</th></tr>
               {hang}
             </table></div>"""
         else:
@@ -1847,7 +1903,8 @@ def register_deployos(app):
         </div>
 
         <h2>Kịch bản đã lưu ({len(ds_kb)})</h2>
-        {noi_dung}"""
+        {noi_dung}
+        {_pm.khoi_cai_dat_html(_esc)}"""
         return _trang(body, "Deployment OS",
                       "Triển khai hệ điều hành qua mạng cho máy cần cài lại")
 
@@ -1861,23 +1918,9 @@ def register_deployos(app):
         kb = doc_kichban(ten)
         if kb is None:
             return None, None
-        ma = _wizard_moi("chay")
-        d = _WIZARD[ma]
-        for k in ("kieu_boot", "os_ho", "os_id", "driver_ids", "ten_may",
-                  "username", "password", "ssh", "mui_gio", "o_dia_che_do",
-                  "o_dia_so", "o_dia_bang", "phan_vung", "apps", "ungdung",
-                  "scripts", "lenh_them",
-                  "domain", "domain_ou", "domain_user", "domain_pass",
-                  "tuy_chon",
-                  "bat_admin", "mk_admin", "ngon_ngu", "ban_phim",
-                  "product_key", "tu_dang_nhap", "go_app"):
-            if k in kb:
-                d[k] = kb[k]
-        d["tu_kichban"] = kb.get("ten_kichban", "")
-        # Kich ban da luu thi lua chon "go app" trong do la CHINH THUC -
-        # kho chon app phai hien dung no, khong duoc tich lai theo mac dinh
-        # (xem _khoi_go_app). Ke ca kich ban khong go app nao.
-        d["_da_qua_buoc6"] = True
+        _don_wizard_cu()
+        ma = secrets.token_urlsafe(12)
+        _WIZARD[ma] = cauhinh_tu_kichban(kb)
         return ma, kb
 
     @app.route("/deployos/kichban/dung/<ten>", methods=["POST"])
@@ -3013,19 +3056,7 @@ def register_deployos(app):
     def deployos_caidat_hatang():
         return _trang_caidat_hatang()
 
-    def _thieu_gi(d):
-        thieu = []
-        if not d["os_ho"]:
-            thieu.append("chưa chọn OS")
-        if not d["ten_may"]:
-            thieu.append("chưa có tên máy")
-        if not d["username"]:
-            thieu.append("chưa có tên đăng nhập")
-        if not d["password"]:
-            thieu.append("chưa đặt mật khẩu")
-        if not d.get("os_id"):
-            thieu.append("chưa chọn hệ điều hành")
-        return thieu
+    _thieu_gi = thieu_gi
 
     @app.route("/deployos/kichban/luu/<ma>", methods=["POST"])
     def deployos_luu_kichban(ma):

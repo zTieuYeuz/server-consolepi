@@ -2696,7 +2696,7 @@ def co_san_dia_gpt_tu_dong():
 TEN_DAU_KICHBAN = TEN_DIA_GPT_TU_DONG + ".json"
 
 
-def _ghi_dau_kichban(d):
+def _ghi_dau_kichban(d, ten_dia=TEN_DIA_GPT_TU_DONG, them=None):
     """
     Ghi lai CHINH XAC kich ban nao da dung nen anh dia dang phuc vu.
 
@@ -2720,26 +2720,30 @@ def _ghi_dau_kichban(d):
         "kieu_boot": d.get("kieu_boot") or "",
         "dung_luc": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
+    # Menu PXE (ui/pxemenu.py) ghi them "dau van tay" de biet anh dia con
+    # khop kich ban khong - khop thi khoi dung lai (moi anh vai tram MB).
+    dau.update(them or {})
     try:
-        with open(os.path.join(_d.BOOT_DIR, TEN_DAU_KICHBAN), "w",
+        with open(os.path.join(_d.BOOT_DIR, ten_dia + ".json"), "w",
                   encoding="utf-8") as f:
             json.dump(dau, f, ensure_ascii=False, indent=1)
     except OSError:
         pass  # khong ghi duoc dau thi van coi nhu dung anh dia thanh cong
 
 
-def doc_dau_kichban():
+def doc_dau_kichban(ten_dia=TEN_DIA_GPT_TU_DONG):
     """Dict mo ta kich ban da dung nen anh dia hien tai, None neu khong co."""
     import json
     try:
-        with open(os.path.join(_d.BOOT_DIR, TEN_DAU_KICHBAN),
+        with open(os.path.join(_d.BOOT_DIR, ten_dia + ".json"),
                   encoding="utf-8") as f:
             return json.load(f)
     except (OSError, ValueError):
         return None
 
 
-def dung_dia_gpt_tu_dong(d, dia_chi_pi="192.168.98.1"):
+def dung_dia_gpt_tu_dong(d, dia_chi_pi="192.168.98.1",
+                         ten_dia=TEN_DIA_GPT_TU_DONG, dau_them=None):
     """
     Dung 1 ANH DIA GPT + 1 phan vung FAT32 (kieu USB cai Windows that,
     KHONG phai ISO9660) - thay the hoan toan cho dung_iso_tu_dong().
@@ -2806,7 +2810,9 @@ def dung_dia_gpt_tu_dong(d, dia_chi_pi="192.168.98.1"):
 
     import tempfile
     tam = tempfile.mkdtemp(prefix="gpt-src-", dir=_d.BOOT_DIR)
-    duong_dia = os.path.join(_d.BOOT_DIR, TEN_DIA_GPT_TU_DONG)
+    # ten_dia: anh dia chinh (nut "Dung") hoac anh rieng cua 1 muc trong
+    # menu PXE (ui/pxemenu.py) - moi muc 1 file, khong de len nhau.
+    duong_dia = os.path.join(_d.BOOT_DIR, ten_dia)
     duong_mnt = None
     loop_dev = None
     try:
@@ -2981,8 +2987,8 @@ def dung_dia_gpt_tu_dong(d, dia_chi_pi="192.168.98.1"):
         loop_dev = None
 
         os.replace(duong_dia_tam, duong_dia)
-        _ghi_dau_kichban(d)
-        return True, f"Đã dựng {TEN_DIA_GPT_TU_DONG} ({os.path.getsize(duong_dia):,} bytes)."
+        _ghi_dau_kichban(d, ten_dia, dau_them)
+        return True, f"Đã dựng {ten_dia} ({os.path.getsize(duong_dia):,} bytes)."
     except Exception as e:
         return False, f"Lỗi khi dựng ảnh đĩa GPT: {e}"
     finally:
