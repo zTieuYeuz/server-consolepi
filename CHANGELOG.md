@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3.1
+
+**Sua loi install.sh: Pi cai moi thieu cong cu cho Deployment OS.**
+install.sh chua bao gio cai cac lenh ma Deployment OS goi (wimlib-imagex,
+wiminfo, 7z, parted, mkfs.vfat, mformat/mcopy). Pi dang chay duoc chi vi cac
+goi nay da cai tay / co san - Pi cai moi tu ban Lite se bao "No such file or
+directory" khi nap ISO hoac bam "Dung" kich ban.
+
+- Them mang `PKGS_DEPLOY` (wimtools 7zip parted dosfstools mtools), luon cai
+  (khong phu thuoc man hinh), giong danh sach goi ban ISO x86.
+- Pi OS cu khong co goi `7zip`: da co lenh `7z` thi bo qua; chua co thi tu
+  doi sang `p7zip-full` de apt-get khong dung ca buoc cai goi.
+
+Kiem chung: `bash -n`; chay rieng doan logic (Pi nay: khong thieu goi nao;
+gia lap thieu 7zip + ban cu: doi dung thanh p7zip-full); `apt-cache policy`
+tren Pi (Debian 13 trixie arm64) - ca 5 goi deu co.
+
 ## 1.3.0
 
 **Menu PXE: may khach tu chon kich ban ngay tai may (kieu MDT) - "Buoc A".**

@@ -108,11 +108,30 @@ PKGS_CORE=(
 PKGS_SCREEN=( cage chromium wlr-randr fonts-noto-color-emoji
               pipewire pipewire-audio pipewire-pulse wireplumber
               python3-websocket )
+# Cong cu dong lenh cho tinh nang Deployment OS (cai Windows qua mang).
+# LOI THAT: Pi dang chay tot chi vi cac goi nay da cai tay / co san trong
+# Raspberry Pi OS ban day du - Pi cai moi tu ban Lite se thieu, bam "Dung"
+# kich ban hoac nap ISO la bao "No such file or directory: 'parted'"...
+#   wimtools   : wimlib-imagex, wiminfo - rut/va boot.wim (ui/pxe.py,
+#                ui/unattend.py, ui/isotach.py)
+#   7zip       : 7z - doc va tach file tu ISO Windows (ui/isotach.py)
+#   parted     : tao bang phan vung GPT cho anh dia boot mang
+#   dosfstools : mkfs.vfat - format FAT32 anh dia do (unattend.py:
+#                dung_dia_gpt_tu_dong)
+#   mtools     : mformat, mcopy - tao dia mem ao chua autounattend.xml
+# Giong danh sach goi cua ban ISO x86 (iso/danh-sach-goi.txt).
+PKGS_DEPLOY=( wimtools 7zip parted dosfstools mtools )
 
 export DEBIAN_FRONTEND=noninteractive
 
 MISSING=()
 for p in "${PKGS_CORE[@]}"; do
+    dpkg -s "$p" >/dev/null 2>&1 || MISSING+=("$p")
+done
+for p in "${PKGS_DEPLOY[@]}"; do
+    # Pi OS cu (bullseye) chi co p7zip-full cung cap lenh 7z - da co lenh
+    # 7z thi coi nhu du, khong ep cai them goi 7zip.
+    [[ "$p" == "7zip" ]] && command -v 7z >/dev/null && continue
     dpkg -s "$p" >/dev/null 2>&1 || MISSING+=("$p")
 done
 if [[ "$WANT_SCREEN" == "yes" ]]; then
@@ -124,6 +143,11 @@ fi
 if [[ ${#MISSING[@]} -gt 0 ]]; then
     ok "Can cai ${#MISSING[@]} goi: ${MISSING[*]}"
     apt-get update -qq
+    # Goi "7zip" chi co tu bookworm tro len; ban cu hon dung p7zip-full.
+    # Khong doi thi apt-get bao "Unable to locate package" va dung ca buoc.
+    if [[ " ${MISSING[*]} " == *" 7zip "* ]] && ! apt-cache show 7zip >/dev/null 2>&1; then
+        MISSING=("${MISSING[@]/#7zip/p7zip-full}")
+    fi
     apt-get install -y -qq "${MISSING[@]}" || die "Cai goi that bai"
     ok "Da cai xong"
 else
