@@ -2981,8 +2981,15 @@ def dung_dia_gpt_tu_dong(d, dia_chi_pi="192.168.98.1",
         if not ok:
             return False, f"Không chép file vào ảnh đĩa được: {out[-300:]}"
 
-        _sh(["sync"], timeout=30)
-        _sh(["umount", duong_mnt], timeout=15)
+        # LOI THAT (Pi, 24/09/2026): sync 30s / umount 15s KHONG DU cho the
+        # nho SD ghi ~500 MB - umount bi cat ngang, anh dia KET o trang thai
+        # mount (gpt-mnt-* con treo, loop con gan) va file co the chua ghi
+        # xong luc da doi ten thanh anh that. Cho du lau; umount khong duoc
+        # thi BAO LOI, khong coi anh do la xong.
+        _sh(["sync"], timeout=600)
+        ok, out = _sh(["umount", duong_mnt], timeout=300)
+        if not ok:
+            return False, f"Không tháo được ảnh đĩa sau khi chép: {out[-300:]}"
         _sh(["losetup", "--detach", loop_dev], timeout=15)
         loop_dev = None
 
@@ -2994,7 +3001,9 @@ def dung_dia_gpt_tu_dong(d, dia_chi_pi="192.168.98.1",
     finally:
         if loop_dev:
             if duong_mnt:
-                _sh(["umount", duong_mnt], timeout=15)
+                ok_u, _ = _sh(["umount", duong_mnt], timeout=300)
+                if not ok_u:
+                    _sh(["umount", "-l", duong_mnt], timeout=30)
             _sh(["losetup", "--detach", loop_dev], timeout=15)
         if duong_mnt:
             try:

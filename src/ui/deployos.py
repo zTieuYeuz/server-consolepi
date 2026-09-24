@@ -1860,7 +1860,7 @@ def register_deployos(app):
                           action="/deployos/kichban/dung/{_esc(k['_file'])}"
                           style="display:inline;">
                       <button type="submit" class="small"
-                        data-busy="Đang dựng ảnh đĩa... có thể mất 1 phút">
+                        data-busy="Đang dựng ảnh đĩa... có thể mất vài phút (menu PXE bật thì lâu hơn), KHÔNG bấm lại">
                         Dùng</button>
                     </form>
                     <a class="btn small gray"
@@ -2983,7 +2983,7 @@ def register_deployos(app):
                 <form method="POST" action="/deployos/pxe/bat">
                   <input type="hidden" name="ve" value="/deployos/caidat">
                   <input type="hidden" name="kieu_boot" value="{_esc(kieu)}">
-                  <button type="submit" data-busy="Đang bật...">
+                  <button type="submit" data-busy="Đang bật PXE... bật menu thì mỗi kịch bản mất khoảng 1-2 phút, KHÔNG bấm lại">
                     Bật PXE lại (dùng ảnh đĩa đang có)</button>
                 </form>"""
             else:

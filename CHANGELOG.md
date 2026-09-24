@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.3.3
+
+**Sua loi "PXE cua Console Pi khong bat duoc" (bat menu PXE tren Pi).**
+Loi that tren Pi cua anh Thoai 24/09/2026:
+
+- Bat menu thi "Bat PXE" dung them 1 anh dia cho moi kich ban Windows
+  (~1-2 phut/cai tren Pi) -> trang quay lau, bam them lan nua -> 2 lan bat
+  CHAY CHONG: lan sau bao thieu cho (file tam cua lan truoc chiem o) va bo
+  kich ban khoi menu, ca 2 cung khoi dong lai dnsmasq/ghi de menu.ipxe.
+  Sua: khoa (RLock) cho bat_pxe / tat_pxe / cap_nhat_menu - lan bam sau duoc
+  bao "dang lam, cho xong, khong can bam lai".
+- `sync` 30s / `umount` 15s khong du cho the SD ghi ~500 MB -> umount bi cat
+  ngang, anh dia KET mount (gpt-mnt-* treo, loop con gan). Sua: sync 600s,
+  umount 300s; umount khong duoc thi bao loi, khong coi anh la xong.
+- Truoc moi lan dung anh: don rac cua lan bi ngat (gpt-mnt-* con mount ->
+  umount, gpt-src-*, *.dang-dung) va XOA dau van tay cua anh tung bi ket de
+  bat buoc dung lai (dau van tay khop du file co the chua ghi du).
+- Nut "Bat PXE" / "Dung": chu cho noi ro mat vai phut, KHONG bam lai.
+
+Kiem chung: test khoa bang 2 luong (lan 2 bi tu choi dung thong bao, xong
+thi bat lai binh thuong); don rac tren thu muc tam; tim dung file sau
+/dev/loop1p1 tren chinh Pi (anh _menu-TEST_TOAN_BO.img dang ket that);
+Flask test client luu kich ban -> menu van cap nhat.
+
 ## 1.3.2
 
 **Menu PXE 2 tang: "1. Win PE" + "2. Install Windows" -> tat ca kich ban.**

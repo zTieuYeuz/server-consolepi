@@ -50,7 +50,10 @@ AN TOAN:
     nguoi dung chu dong yeu cau).
 """
 import os
+import re
+import shutil
 import subprocess
+import threading
 
 from . import deployos as _d
 
@@ -466,7 +469,7 @@ def _don_phien_smb_cu(dia_chi_may):
     _sh(["smbcontrol", "smbd", "kill-client-ip", dia_chi_may], timeout=10)
 
 
-def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
+def _bat_pxe_that(kieu_boot="truc_tiep", cauhinh=None):
     """
     cauhinh: dict trang thai wizard (ten_may, username, password, o_dia...)
     - neu co va la Windows, TU DONG dung lai anh dia GPT+FAT32 (boot.wim +
@@ -543,7 +546,7 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
     # kieu boot cua kich ban nguoi dung chon.
     doi_kieu = da_bat_san
     if doi_kieu:
-        tat_pxe()
+        _tat_pxe_that()
 
     if kieu_boot != "mang_co_dhcp":
         # Che do tu cap IP: can chiem han eth0, giong het direct.py
@@ -620,6 +623,108 @@ def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
                   "đó chọn boot qua mạng (Network Boot / PXE Boot)." + them_menu)
 
 
+# ---- KHOA: moi luc chi 1 viec bat/tat PXE / dung anh dia.
+#
+# LOI THAT (Pi, 24/09/2026 - anh Thoai: "pxe cua console pi sao ko bat
+# duoc"): bat menu PXE thi "Bat PXE" phai dung them 1 anh dia cho MOI kich
+# ban Windows (~1-2 phut moi cai tren Pi) -> trang quay lau, bam them lan
+# nua -> 2 lan bat CHAY CHONG nhau: lan sau thay o dia dang bi lan truoc
+# chiem cho (file tam ~1 GB) nen bao "khong du cho" va BO kich ban do khoi
+# menu, ca hai cung khoi dong lai dnsmasq va ghi de menu.ipxe cua nhau.
+# Gio lan bam sau duoc bao ro "dang lam, cho" thay vi chay chong.
+_KHOA = threading.RLock()
+_DANG_LAM = ("Đang bật PXE / dựng ảnh đĩa từ lần bấm trước (mỗi kịch bản "
+             "Windows trong menu mất khoảng 1-2 phút trên Pi). Chờ xong rồi "
+             "tải lại trang - KHÔNG cần bấm lại.")
+
+
+def _file_sau_mount(diem_mount):
+    """File anh dia dung sau 1 diem mount loop (/dev/loopNp1), khong co -> ""."""
+    try:
+        with open("/proc/mounts") as f:
+            for dong in f:
+                phan = dong.split()
+                if len(phan) > 1 and phan[1] == diem_mount and phan[0].startswith("/dev/loop"):
+                    # /dev/loop1p1 -> loop1 (KHONG split("p"): "loop" co chu p)
+                    loop = re.match(r"/dev/(loop\d+)", phan[0]).group(1)
+                    with open(f"/sys/block/{loop}/loop/backing_file") as g:
+                        return g.read().strip()
+    except OSError:
+        pass
+    return ""
+
+
+def _don_rac_dung_anh():
+    """
+    Don do dang con sot lai tu lan dung anh truoc bi ngat giua chung (dung
+    cho that: gpt-mnt-* con mount lam treo loop device, file tam 500 MB).
+    CHI goi khi dang giu _KHOA - luc do chac chan khong co ai dang dung.
+    """
+    try:
+        ten = os.listdir(_d.BOOT_DIR)
+    except OSError:
+        return
+    for n in ten:
+        p = os.path.join(_d.BOOT_DIR, n)
+        if n.startswith("gpt-mnt-") and os.path.isdir(p):
+            if os.path.ismount(p):
+                # Anh dia dang bi ket mount nay co the CHUA ghi du -> xoa dau
+                # van tay cua no de lan dung sau bat buoc dung lai, khong
+                # "dung lai anh cu" (dau van tay van khop du file hong).
+                anh = _file_sau_mount(p)
+                if anh:
+                    try:
+                        os.remove(anh + ".json")
+                    except OSError:
+                        pass
+                ok, _ = _sh(["umount", p], timeout=300)
+                if not ok:
+                    _sh(["umount", "-l", p], timeout=30)
+            try:
+                os.rmdir(p)
+            except OSError:
+                pass
+        elif n.startswith("gpt-src-") and os.path.isdir(p):
+            shutil.rmtree(p, ignore_errors=True)
+        elif n.endswith(".dang-dung"):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+
+
+def bat_pxe(kieu_boot="truc_tiep", cauhinh=None):
+    """Xem _bat_pxe_that. Co khoa: bam 2 lan khong chay chong."""
+    if not _KHOA.acquire(blocking=False):
+        return False, _DANG_LAM
+    try:
+        _don_rac_dung_anh()
+        return _bat_pxe_that(kieu_boot, cauhinh)
+    finally:
+        _KHOA.release()
+
+
+def tat_pxe():
+    if not _KHOA.acquire(blocking=False):
+        return False, _DANG_LAM
+    try:
+        return _tat_pxe_that()
+    finally:
+        _KHOA.release()
+
+
+def cap_nhat_menu():
+    """Xem _cap_nhat_menu_that. Dang ban thi bao, khong chay chong."""
+    if not _KHOA.acquire(blocking=False):
+        return (" Menu PXE CHƯA cập nhật: đang dựng ảnh đĩa từ lần bấm "
+                "khác - chờ xong rồi bấm \"Lưu cài đặt menu\" lại.")
+    try:
+        _don_rac_dung_anh()
+        return _cap_nhat_menu_that()
+    finally:
+        _KHOA.release()
+
+
 def _dung_menu(kieu_boot, cauhinh=None):
     """
     Menu PXE dang bat -> dung/dung lai anh dia cho cac kich ban trong menu.
@@ -637,7 +742,7 @@ def _dung_menu(kieu_boot, cauhinh=None):
     return (f" Menu PXE: {so_muc} mục." + (" " + " ".join(kq) if kq else ""))
 
 
-def cap_nhat_menu():
+def _cap_nhat_menu_that():
     """
     Goi khi doi cai dat menu / luu-xoa kich ban (menu co TAT CA kich ban
     Windows) LUC PXE DANG BAT: dung anh con thieu va ghi lai menu.ipxe ngay, khong phai tat-bat
@@ -652,7 +757,7 @@ def cap_nhat_menu():
     return them or " Đã cập nhật menu (menu đang tắt - máy khách vào thẳng kịch bản đang dùng)."
 
 
-def tat_pxe():
+def _tat_pxe_that():
     if not dang_bat():
         return True, "PXE vốn đã tắt."
     _sh(["systemctl", "stop", DON_VI_SYSTEMD])
