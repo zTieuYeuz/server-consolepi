@@ -1171,7 +1171,7 @@ def _cauhinh_mac_dinh(che_do):
         # dung khong doi duoc.
         "ngon_ngu": NGON_NGU[0][0], "ban_phim": BAN_PHIM[0][0],
         "product_key": "",
-        "o_dia_che_do": "tu_dong", "o_dia_so": "0", "o_dia_bang": "gpt",
+        "o_dia_che_do": "tu_dong", "o_dia_so": "0", "o_dia_bang": "tu_dong",
         "phan_vung": [],
         "apps": [], "ungdung": [], "scripts": [], "lenh_them": "",
         # Gia nhap domain + cac tuy chon Windows sau khi cai (mo hinh MDT).
@@ -2044,8 +2044,10 @@ def register_deployos(app):
             d["o_dia_che_do"] = "chia_tay" if che == "chia_tay" else "tu_dong"
             so = (form.get("o_dia_so") or "0").strip()
             d["o_dia_so"] = so if so.isdigit() else "0"
-            bang = form.get("o_dia_bang", "gpt")
-            d["o_dia_bang"] = bang if bang in ("gpt", "mbr") else "gpt"
+            # Tu 1.5.0 deploy.cmd TU chon theo may (UEFI -> GPT, BIOS -> MBR),
+            # xem unattend.sinh_diskpart_txt. Truoc do o chon GPT/MBR nay BI
+            # BO QUA (luon chia GPT) - chon MBR cung khong co tac dung.
+            d["o_dia_bang"] = "tu_dong"
             if d["o_dia_che_do"] == "chia_tay":
                 nhan = form.getlist("pv_nhan")
                 cd = form.getlist("pv_cd")
@@ -2407,10 +2409,9 @@ def register_deployos(app):
                   </div>
                   <div>
                     <label>Bảng phân vùng</label>
-                    <select name="o_dia_bang" style="max-width:260px;">
-                      <option value="gpt"{' selected' if d['o_dia_bang'] == 'gpt' else ''}>GPT (máy UEFI - hầu hết máy từ 2012)</option>
-                      <option value="mbr"{' selected' if d['o_dia_bang'] == 'mbr' else ''}>MBR (máy BIOS đời cũ)</option>
-                    </select>
+                    <div style="padding:8px 0;color:#c9d1d9;">Tự động theo máy:
+                      <strong>UEFI &rarr; GPT</strong>, <strong>BIOS/Legacy &rarr; MBR</strong>
+                      <br><small style="color:#8b93a1;">Máy nhận ra lúc cài, không cần chọn.</small></div>
                   </div>
                 </div>
                 <div class="msg warn" style="margin-top:14px;">
@@ -2675,7 +2676,7 @@ def register_deployos(app):
         os_ten = _ten_os(d)
 
         if d["o_dia_che_do"] == "tu_dong":
-            o_dia = f"Tu dong tren o dia so {_esc(d['o_dia_so'])} ({d['o_dia_bang'].upper()})"
+            o_dia = f"Tu dong tren o dia so {_esc(d['o_dia_so'])} (GPT/MBR tu nhan theo may)"
         else:
             pv = d["phan_vung"] or _phan_vung_mac_dinh(d["os_ho"])
             dong = "".join(
@@ -2684,7 +2685,7 @@ def register_deployos(app):
                 f"&mdash; {_esc(p['fs'])} &mdash; {_esc(p['gan'])}</div>"
                 for p in pv)
             o_dia = (f"Chia tay tren o dia so {_esc(d['o_dia_so'])} "
-                     f"({d['o_dia_bang'].upper()})<div style='margin-top:6px;'>{dong}</div>")
+                     f"(GPT/MBR tu nhan theo may)<div style='margin-top:6px;'>{dong}</div>")
 
         ds_app = chuan_hoa_apps(d.get("apps"))
         apps = ("<br>".join(
@@ -4748,8 +4749,7 @@ def _tom_tat_day_du(k, esc):
              f"{esc(k['lenh_them'])}</pre>")
 
     od = k.get("o_dia_che_do")
-    them("Ổ đĩa", ("tự động (ổ %s, %s)" % (k.get("o_dia_so", "0"),
-                                           (k.get("o_dia_bang") or "gpt").upper())
+    them("Ổ đĩa", ("tự động (ổ %s, GPT/MBR tự nhận theo máy)" % k.get("o_dia_so", "0")
                    if od == "tu_dong" else "chia tay"))
     return "<table class='tt-bang'>" + "".join(dong) + "</table>"
 

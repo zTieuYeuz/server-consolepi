@@ -20,6 +20,8 @@ sanboot; iPXE cua Debian khong ky).
   /f BIOS; UEFI -> GPT + bcdboot /f UEFI.
 - Driver "cho anh boot" dong thanh drivers.wim (wimboot chi chen file phang),
   deploy.cmd bung bang dism roi drvload nhu cu.
+- Trinh tao kich ban: o "Bang phan vung" GPT/MBR thanh "Tu dong theo may"
+  (truoc day chon MBR cung BI BO QUA - luon chia GPT; nay deploy.cmd tu chon).
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu
