@@ -403,9 +403,18 @@ dhcp-match=set:efi-x64,option:client-arch,9
 dhcp-userclass=set:ipxe,iPXE
 tag-if=set:bios-that,tag:bios,tag:!ipxe
 tag-if=set:efi-that,tag:efi-x64,tag:!ipxe
-dhcp-boot=tag:bios-that,undionly.kpxe
-dhcp-boot=tag:efi-that,snponly.efi
-dhcp-boot=tag:ipxe,http://{dia_chi_pi}:80/deployos/pxeboot/menu.ipxe
+#
+# LOI THAT (25/09/2026, anh Thoai che do "mang co DHCP" - proxyDHCP): iPXE
+# bao "Nothing to boot" du Pi CO tra loi dung ten file. Bat goi tin trong
+# phong thi nghiem (router DHCP + Pi proxy + may khach QEMU): iPXE hoi Pi
+# qua cong 4011, Pi tra loi co ten file nhung next-server (siaddr) = 0.0.0.0
+# -> iPXE LOAI goi (src/net/udp/dhcp.c, dhcp_has_pxeopts(): proxyDHCP chi
+# hop le khi CO next-server VA ten file, hoac co menu PXE). Sua: ghi RO dia
+# chi Pi o truong thu 3 cua dhcp-boot -> dnsmasq dien siaddr. Ghi cho ca 3
+# dong (ca 3 che do) - che do cap IP day du thi vo hai, van dung dia chi Pi.
+dhcp-boot=tag:bios-that,undionly.kpxe,,{dia_chi_pi}
+dhcp-boot=tag:efi-that,snponly.efi,,{dia_chi_pi}
+dhcp-boot=tag:ipxe,http://{dia_chi_pi}:80/deployos/pxeboot/menu.ipxe,,{dia_chi_pi}
 {dong_pxe_service}
 enable-tftp
 tftp-root={_d.BOOT_DIR}

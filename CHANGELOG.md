@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.4.1
+
+**Sua loi che do "mang co san DHCP": may khach bao "Nothing to boot", khong
+thay menu.** Loi that tren may VMware cua anh Thoai 25/09/2026.
+
+Nguyen nhan (tai hien trong phong thi nghiem: router DHCP + Pi proxyDHCP +
+may khach QEMU, bat goi tin 2 phia): iPXE hoi Pi qua cong 4011, Pi tra loi CO
+ten file menu nhung next-server (siaddr) = 0.0.0.0 -> iPXE loai goi
+(src/net/udp/dhcp.c, dhcp_has_pxeopts: proxyDHCP chi hop le khi co ca
+next-server lan ten file). Sua: 3 dong dhcp-boot ghi ro dia chi Pi o truong
+thu 3 -> dnsmasq dien siaddr.
+
+Kiem chung (phong thi nghiem, file cau hinh sinh boi chinh code, menu that 2
+kich ban): BIOS x 3 che do (co DHCP, khong DHCP, cam thang) - deu hien menu,
+vao "Install Windows", chon kich ban thu 2 -> tai dung `_menu-B.img`. Truoc
+khi sua: tai hien dung loi "Nothing to boot". CHUA kiem chung UEFI trong phong
+thi nghiem (OVMF cua Debian khong tu boot mang; may build mat ket noi giua
+chung) - phan UEFI dung chung dong dhcp-boot tag ipxe da sua.
+
 ## 1.4.0
 
 **Chi con menu PXE: bat PXE -> may khach tu chon kich ban. Bo nut "Dung".**
