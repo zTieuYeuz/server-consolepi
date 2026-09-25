@@ -48,13 +48,16 @@ def _run(cmd, timeout=4):
 
 
 def cpu_temp():
-    """Doc tu sysfs truoc (nhanh hon nhieu so voi goi vcgencmd)."""
+    """Doc tu sysfs truoc (nhanh hon nhieu so voi goi vcgencmd). May x86
+    khong co thermal_zone0 thi tim tiep (cac vung khac, hwmon coretemp/
+    k10temp) - xem phancung.nhiet_do_cpu. Khong co cam bien nao (vd may ao)
+    -> None, giao dien noi ro "khong co cam bien" thay vi "? do C"."""
     try:
         with open("/sys/class/thermal/thermal_zone0/temp") as f:
             return round(int(f.read().strip()) / 1000.0, 1)
     except Exception:
-        m = re.search(r"([\d.]+)", _run(["vcgencmd", "measure_temp"]))
-        return float(m.group(1)) if m else None
+        from .phancung import nhiet_do_cpu
+        return nhiet_do_cpu()
 
 
 def throttle_status():

@@ -27,6 +27,10 @@ sanboot; iPXE cua Debian khong ky).
   "?" 0/0, buoc chi con "Buoc 1, Buoc 2..."). Sua: script gui byte UTF-8; Pi
   doc lai goi hong theo cp1252 thay vi bo ca goi. Ban ghi theo "ten may · IP"
   - 2 may cung ten (cung kich ban) khong con de trang thai len nhau.
+- May x86 (ban ISO): nhiet do CPU doc them hwmon (coretemp/k10temp) khi
+  khong co thermal_zone0; khong co cam bien (may ao) -> ghi ro "may nay khong
+  co cam bien nhiet do" thay vi "? do C". Nguon dien: "Khong ap dung - may
+  nay khong phai Raspberry Pi" (co dau). "Cam cap ... vao Pi" -> "vao may nay".
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu

@@ -40,8 +40,8 @@ def power_msg_html(h):
     """Dung chung giua Tong quan va tab Nguon dien (dung 1 nguon logic)."""
     th = h["throttle"]
     if th is None:
-        return ('<span style="color:#8b93a1;">Không đọc được (máy này '
-                'khong phai Raspberry Pi)</span>')
+        return ('<span style="color:#8b93a1;">Không áp dụng &mdash; máy này '
+                'không phải Raspberry Pi (không có cảm biến nguồn)</span>')
     if th["now"]:
         return ('<span style="color:#ff6b6b;">⛔ ' +
                 _esc(", ".join(th["now"])) +
@@ -195,6 +195,9 @@ def _bang_suc_khoe(h, power_msg):
     khi /api/suckhoe tra ve de cap nhat tai cho. Viet 2 ban se lech nhau.
     """
     temp = h.get("temp")
+    o_temp = (f"{temp} &deg;C" if temp is not None else
+              '<span style="color:#8b93a1;font-weight:400;">máy này không có '
+              'cảm biến nhiệt độ</span>')
     temp_color = ("#6ee7a0" if (temp or 0) < 65
                   else ("#ffb74d" if (temp or 0) < 80 else "#ff6b6b"))
     mem_u, mem_t, mem_p = h.get("mem", (0, 0, 0))
@@ -219,7 +222,7 @@ def _bang_suc_khoe(h, power_msg):
                   {_thanh(mem_p)}</td></tr>
           <tr><td>Nhiệt độ CPU</td>
               <td><span style="color:{temp_color};font-weight:600;">
-                  {temp if temp is not None else '?'} &deg;C</span></td></tr>
+                  {o_temp}</span></td></tr>
           <tr><td>Thời gian chạy</td><td>{h.get('uptime', '?')}</td></tr>
           <tr><td>Tải hệ thống</td>
               <td><code>{h.get('load', '?')}</code>
@@ -260,7 +263,7 @@ def register_home(app):
             </table>"""
         else:
             ports_html = ('<div class="msg warn">Chưa cắm cáp console nào. '
-                          'Cam cap USB-serial (FTDI/Prolific) vao Pi, trang se tu nhan.</div>')
+                          'Cắm cáp USB-serial (FTDI/Prolific) vào máy này, trang sẽ tự nhận.</div>')
 
         # --- Mang chi tiet ---
         net_rows = ""
@@ -415,7 +418,7 @@ def register_home(app):
               <h3>Cổng console đang cắm</h3>
               <div class="msg warn">Chưa cắm cáp console nào. Cắm cáp USB-serial
                 (FTDI / Prolific / CH340) hoặc cáp console micro-USB của Cisco
-                vào Pi &mdash; trang này tự nhận, không cần khởi động lại.</div>
+                vào máy này &mdash; trang này tự nhận, không cần khởi động lại.</div>
             </div>"""
         return render_page(noi_dung, active="/console", title="Console",
                            subtitle="Cổng serial nối tới switch / router")

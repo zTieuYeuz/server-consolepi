@@ -356,7 +356,7 @@ TEMPLATE = """
     </div>
 
     {% if not cong %}
-    <div class="msg warn">Chua cam cap console nao. Cam cap USB-serial vao Pi roi tai lai trang.</div>
+    <div class="msg warn">Chưa cắm cáp console nào. Cắm cáp USB-serial vào máy này rồi tải lại trang.</div>
     {% else %}
     <div class="msg warn">
         ⚠️ <strong>Voi Cisco/HP-Aruba: phai vao che do dac quyen truoc</strong> (dau nhac

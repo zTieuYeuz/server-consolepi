@@ -189,6 +189,39 @@ def nhiet_do_cpu():
                 continue
     except OSError:
         pass
+    # Nhieu may ban/laptop KHONG co thermal_zone nhung co hwmon cua chip CPU
+    # (Intel coretemp, AMD k10temp/zenpower). Lay cam bien "Package"/"Tctl"
+    # (nhiet do ca con chip) truoc, khong co thi lay cam bien dau tien.
+    goc = "/sys/class/hwmon"
+    try:
+        for h in sorted(os.listdir(goc)):
+            try:
+                with open(os.path.join(goc, h, "name")) as f:
+                    ten = f.read().strip()
+            except OSError:
+                continue
+            if ten not in ("coretemp", "k10temp", "zenpower", "cpu_thermal"):
+                continue
+            cac = sorted(x for x in os.listdir(os.path.join(goc, h))
+                         if x.startswith("temp") and x.endswith("_input"))
+            uu_tien = []
+            for x in cac:
+                try:
+                    with open(os.path.join(goc, h, x.replace("_input", "_label"))) as f:
+                        nhan = f.read().strip()
+                except OSError:
+                    nhan = ""
+                uu_tien.append((0 if nhan.startswith(("Package", "Tctl", "Tdie")) else 1, x))
+            for _u, x in sorted(uu_tien):
+                try:
+                    with open(os.path.join(goc, h, x)) as f:
+                        do = int(f.read().strip()) / 1000.0
+                    if 0 < do < 150:
+                        return round(do, 1)
+                except (OSError, ValueError):
+                    continue
+    except OSError:
+        pass
     return None
 
 
