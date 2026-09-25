@@ -187,30 +187,47 @@ def register_tiendo(app):
     # vua cai xong, chua co phien dang nhap nao voi dashboard, va no chi
     # GHI du lieu tien trinh (khong doc duoc gi cua Pi). Xem them danh sach
     # duong mo trong ui/auth.py.
+    def _goi():
+        """JSON may dich gui len. Ban script cu (< 1.5.0) gui chuoi ma hoa
+        ISO-8859-1 -> get_json hong -> doc lai theo cp1252 (mat dau tieng
+        Viet nhung KHONG mat ca goi nhu truoc)."""
+        g = request.get_json(silent=True)
+        if g is None:
+            try:
+                g = json.loads(request.get_data().decode("cp1252", "replace"))
+            except ValueError:
+                g = None
+        return g if isinstance(g, dict) else {}
+
+    def _khoa_may(g):
+        """Ten may + IP: 2 may cung ten (cung 1 kich ban) KHONG bi gop chung
+        1 ban ghi - loi that 25/09/2026, 2 may ao PC01 de trang thai len nhau."""
+        return f"{str(g.get('may') or '?')[:64]} · {request.remote_addr}"
+
     @app.route("/api/tiendo/batdau", methods=["POST"])
     def api_tiendo_batdau():
-        g = request.get_json(silent=True) or {}
-        may = str(g.get("may") or "?")[:64]
+        g = _goi()
+        may = _khoa_may(g)
         bat_dau(may, str(g.get("kichban") or "?")[:120],
                 [str(t)[:120] for t in (g.get("buoc") or [])][:60])
         return jsonify({"ok": True})
 
     @app.route("/api/tiendo/buoc", methods=["POST"])
     def api_tiendo_buoc():
-        g = request.get_json(silent=True) or {}
+        g = _goi()
         try:
             chi_so = int(g.get("chi_so", 0))
         except (TypeError, ValueError):
             chi_so = 0
-        cap_nhat(str(g.get("may") or "?")[:64], max(0, min(chi_so, 59)),
+        cap_nhat(_khoa_may(g), max(0, min(chi_so, 59)),
                  str(g.get("trang_thai") or ""), int(g.get("giay") or 0),
                  str(g.get("ghi_chu") or ""))
         return jsonify({"ok": True})
 
     @app.route("/api/tiendo/ketthuc", methods=["POST"])
     def api_tiendo_ketthuc():
-        g = request.get_json(silent=True) or {}
-        ket_thuc(str(g.get("may") or "?")[:64])
+        g = _goi()
+        ket_thuc(_khoa_may(g))
         return jsonify({"ok": True})
 
     @app.route("/api/tiendo/data")

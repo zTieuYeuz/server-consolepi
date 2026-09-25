@@ -745,10 +745,15 @@ function Ghi($t) {{
 
 # Bao ve Pi. TUYET DOI khong duoc lam dung qua trinh cai: loi thi bo qua,
 # han gio ngan (4 giay) vi Pi co the da bi rut day mang tu luc nao.
+# PHAI gui BYTE UTF-8: Windows PowerShell 5.1 ma hoa -Body kieu chuoi theo
+# ISO-8859-1 -> ten buoc tieng Viet thanh byte khong hop le UTF-8, Pi khong
+# doc duoc goi "batdau" (loi that 25/09/2026: trang Tien trinh hien ban ghi
+# "?" 0/0 va cac buoc chi con ten "Buoc 1, Buoc 2...").
 function BaoPi($duong, $goi) {{
     try {{
+        $byte = [System.Text.Encoding]::UTF8.GetBytes(($goi | ConvertTo-Json -Compress))
         Invoke-RestMethod -Uri "http://$Pi/api/tiendo/$duong" -Method Post `
-            -Body ($goi | ConvertTo-Json -Compress) -ContentType 'application/json' `
+            -Body $byte -ContentType 'application/json; charset=utf-8' `
             -TimeoutSec 4 | Out-Null
     }} catch {{ }}
 }}

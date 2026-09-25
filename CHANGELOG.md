@@ -22,6 +22,11 @@ sanboot; iPXE cua Debian khong ky).
   deploy.cmd bung bang dism roi drvload nhu cu.
 - Trinh tao kich ban: o "Bang phan vung" GPT/MBR thanh "Tu dong theo may"
   (truoc day chon MBR cung BI BO QUA - luon chia GPT; nay deploy.cmd tu chon).
+- Trang Tien trinh: may dich gui ten buoc tieng Viet -> PowerShell 5.1 ma hoa
+  -Body chuoi theo ISO-8859-1 -> Pi khong doc duoc goi "batdau" (hien ban ghi
+  "?" 0/0, buoc chi con "Buoc 1, Buoc 2..."). Sua: script gui byte UTF-8; Pi
+  doc lai goi hong theo cp1252 thay vi bo ca goi. Ban ghi theo "ten may · IP"
+  - 2 may cung ten (cung kich ban) khong con de trang thai len nhau.
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu
