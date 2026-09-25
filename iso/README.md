@@ -20,7 +20,7 @@ bash /root/consolepi-toolkit/iso/dung-cay-build.sh      # dung ca 2 cay build tu
 `dung-cay-build.sh` chép **mọi thứ** từ repo vào đúng vị trí của live-build
 (bảng bên dưới) — cây build không còn được sửa tay (bài học mất máy build cũ
 25/09/2026). Quy tắc build và kiểm thử đầy đủ: `docs/QUY-TAC-BUILD-VA-KIEM-THU.md`.
-Script test (chỉ dùng cho máy ảo): `iso/test/`.
+Script test (chỉ dùng cho máy ảo): `iso/test/` - xem `iso/test/README.md`.
 
 `dung-iso.sh` làm đúng thứ tự **clean → config → build**, và chỉ báo thành
 công khi **có file ISO thật** — không tin mã thoát của `lb build` (nó nuốt
