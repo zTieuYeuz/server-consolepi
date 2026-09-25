@@ -10,6 +10,7 @@
 #                                            vao o DA CAI (chi may test)
 #   bash may-chu-iso.sh mang <co_dhcp|khong> dung mang lab (+ router gia neu co_dhcp)
 #   bash may-chu-iso.sh mang giu-cau       chi tat router gia, giu bridge (may dang chay)
+#   bash may-chu-iso.sh router <bat|tat>     router gia tren bridge dang chay
 #   bash may-chu-iso.sh bat | tat            may chu: card 1 = user-net (Internet,
 #                                            SSH 127.0.0.1:18022, web :18080),
 #                                            card 2 (enp0s4) = mang lab (PXE)
@@ -74,6 +75,22 @@ mang)
     ip netns exec cty2 dnsmasq -C $W/cty2.conf --pid-file=$W/cty2.pid && echo "ROUTER GIA 10.77.0.1 DA CHAY"
   fi
   echo "MANG LAB: $1" ;;
+
+router)
+  # Bat/tat router gia TREN bridge dang chay (khong dung lai brlab -> may chu
+  # va may khach dang cam vao khong bi rot mang).
+  [ -f $W/cty2.pid ] && kill $(cat $W/cty2.pid) 2>/dev/null
+  ip link del c2b 2>/dev/null; ip netns del cty2 2>/dev/null
+  [ "$1" = tat ] && { echo "ROUTER GIA DA TAT"; exit 0; }
+  ip netns add cty2
+  ip link add c2 netns cty2 type veth peer name c2b
+  ip link set c2b master brlab; ip link set c2b up
+  ip -n cty2 link set c2 up; ip -n cty2 link set lo up
+  ip -n cty2 addr add 10.77.0.1/24 dev c2
+  printf '%s\n' interface=c2 bind-interfaces port=0 \
+    dhcp-range=10.77.0.100,10.77.0.150,255.255.255.0,1h dhcp-option=3,10.77.0.1 \
+    log-dhcp log-facility=$W/cty2.log > $W/cty2.conf
+  ip netns exec cty2 dnsmasq -C $W/cty2.conf --pid-file=$W/cty2.pid && echo "ROUTER GIA 10.77.0.1 DA CHAY" ;;
 
 bat)
   [ -f $W/q.pid ] && kill $(cat $W/q.pid) 2>/dev/null; sleep 1
