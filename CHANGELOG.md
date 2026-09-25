@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.4.2
+
+**May khach BIOS/Legacy dung im sau "Booting from SAN device 0x80".** Loi that
+tren may VMware cua anh Thoai 25/09/2026 (Firmware = BIOS): chon kich ban, may
+doc 3 khoi dau anh dia roi dung mai, khong bao loi. Nguyen nhan: anh cai
+Windows la GPT+FAT32 chi co duong boot UEFI (440 byte ma boot MBR toan 0).
+Sua: menu iPXE kiem tra `${platform}`; may khong phai UEFI -> hien huong dan
+chuyen sang UEFI + tat Secure Boot, bam phim quay lai menu. Them ghi chu vao
+tai lieu.
+
+**Bat PXE sau moi lan cap nhat khong con dung lai het anh dia.** Dau van tay anh
+dia truoc day tinh theo NGAY GIO file code - cap-nhat-pi.sh chep lai moi file
+nen lan bat PXE dau sau moi lan cap nhat deu dung lai tat ca (~1 phut/kich
+ban, 3 kich ban = 3 phut). Nay bam theo NOI DUNG unattend.py + deployos.py
+(2 file sinh noi dung anh). Lan bat dau tien sau ban 1.4.2 van dung lai 1 lan
+vi cach tinh doi.
+
 ## 1.4.1
 
 **Sua loi che do "mang co san DHCP": may khach bao "Nothing to boot", khong

@@ -123,17 +123,28 @@ def _dau_van_tay(kb, dia_chi_pi):
     """
     Thay doi BAT KY thu gi lam anh dia khac di thi dau van tay phai khac:
     noi dung kich ban, dia chi Pi nhet vao anh, boot.wim cua OS do, va ma
-    nguon sinh script (cap nhat Console Pi -> dung lai cho chac).
+    nguon sinh noi dung anh (unattend.py, deployos.py).
+
+    Ma nguon bam theo NOI DUNG, khong theo ngay gio: cap-nhat-pi.sh chep lai
+    moi file nen ngay gio luon doi - bam theo ngay gio thi lan bat PXE dau
+    sau MOI lan cap nhat deu dung lai het anh (~1 phut/kich ban, anh Thoai
+    cho 3 phut ngay 25/09/2026) du code tao anh khong doi 1 chu.
     """
     from . import unattend as _u
     h = hashlib.sha256()
     kb_sach = {k: v for k, v in kb.items() if not k.startswith("_")}
     h.update(json.dumps(kb_sach, sort_keys=True, ensure_ascii=False).encode())
     h.update(dia_chi_pi.encode())
-    for p in (_d.duong_boot_wim(kb.get("os_id", "")), _u.__file__, __file__):
+    wim = _d.duong_boot_wim(kb.get("os_id", ""))
+    try:  # boot.wim vai tram MB - bam ca file thi cham, kich thuoc+gio la du
+        st = os.stat(wim)
+        h.update(f"{wim}:{st.st_size}:{int(st.st_mtime)}".encode())
+    except OSError:
+        h.update(f"{wim}:khong-co".encode())
+    for p in (_u.__file__, _d.__file__):
         try:
-            st = os.stat(p)
-            h.update(f"{p}:{st.st_size}:{int(st.st_mtime)}".encode())
+            with open(p, "rb") as f:
+                h.update(hashlib.sha256(f.read()).digest())
         except OSError:
             h.update(f"{p}:khong-co".encode())
     return h.hexdigest()[:16]
@@ -273,6 +284,10 @@ def sinh_script(goc):
              "goto ${chon}", ""]
     for i, (nhan, anh) in enumerate(muc):
         dong += [f":kb{i}",
+                 # Anh GPT+FAT32 chi boot duoc bang UEFI (MBR khong co ma
+                 # boot) - may BIOS/Legacy se DUNG IM sau "Booting from SAN
+                 # device 0x80". Chan truoc, noi ro cach sua.
+                 "iseq ${platform} efi || goto bios",
                  f"echo Dang nap: {_chu_ipxe(nhan)}",
                  f"sanboot --no-describe {goc}/{anh} || goto loi", ""]
     dong += [":odia",
@@ -280,6 +295,14 @@ def sinh_script(goc):
              "exit", "",
              ":lai",
              "reboot", "",
+             ":bios",
+             "echo",
+             "echo LOI: may nay dang khoi dong kieu BIOS / Legacy.",
+             "echo Anh cai Windows cua Console System CHI chay tren UEFI.",
+             "echo Vao BIOS/Setup cua may (hoac Firmware cua may ao) chon UEFI,",
+             "echo tat Secure Boot, roi boot qua mang lai.",
+             "prompt Bam phim bat ky de quay lai menu...",
+             "goto win", "",
              ":loi",
              "echo LOI: khong nap duoc anh dia cai dat tu Console System.",
              "prompt Bam phim bat ky de quay lai menu...",

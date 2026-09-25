@@ -856,6 +856,12 @@ moi. Khong duoc sua tay file cau hinh dnsmasq. <strong>Khong chac thi chon "Mang
 co san DHCP"</strong>: loi that da gap - chon "Mang khong co DHCP" tren mang cong
 ty thi may khach nhan IP cua router cong ty o lan hoi thu 2 (cua iPXE), bao
 "Nothing to boot" va khong bao gio thay menu.</p>
+<p><strong>May can cai phai boot kieu UEFI</strong> (tat Secure Boot). Anh cai
+Windows la o GPT+FAT32 chi co duong boot UEFI. Loi that da gap: may ao VMware
+de Firmware = BIOS van hien menu, chon kich ban thi dung im o dong "Booting
+from SAN device 0x80". Tu ban 1.4.2 menu tu nhan ra may BIOS va bao ro cach
+sua thay vi dung im. VMware: Edit Settings &rarr; VM Options &rarr; Boot
+Options &rarr; Firmware = EFI.</p>
 
 <h4>Menu chọn kịch bản ngay tại máy khách (kiểu MDT)</h4>
 <p>Bat PXE thi may khach boot qua mang LUON thay menu va <strong>tu chon kich
