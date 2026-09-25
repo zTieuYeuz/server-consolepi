@@ -654,8 +654,7 @@ def _danh_sach_buoc_nguoi_dung(d):
             ra.append((f"Cài {o.get('ten_hien_thi') or u['id']}", lenh))
 
     for ten in (d.get("scripts") or []):
-        ra.append((f"Chạy script {ten}",
-                   f'"{THU_MUC_TREN_MAY}\\scripts\\{ten}"'))
+        ra.append((f"Chạy script {ten}", _lenh_mot_script(ten)))
 
     for dong in (d.get("lenh_them") or "").splitlines():
         dong = dong.strip()
@@ -676,7 +675,12 @@ def _nhan_tuy_chon(d, pha):
     ra = []
     for ma, nhan, _mo, pha_muc, cac_lenh in TUY_CHON_WINDOWS:
         if ma in da_chon and pha_muc == pha:
-            ra.extend([nhan] * len(cac_lenh))
+            # Nhieu lenh -> danh so "(1/2)" - truoc day lap nguyen ten, bang
+            # tien trinh hien "Bat san Num Lock" 2 dong giong het, trong nhu
+            # bi chay trung (anh chup lab 26/09/2026).
+            n = len(cac_lenh)
+            ra.extend([nhan] if n == 1 else
+                      [f"{nhan} ({i}/{n})" for i in range(1, n + 1)])
     return ra
 
 
@@ -2234,10 +2238,25 @@ def _lenh_ungdung_theo_dich(d, dich):
     return ra
 
 
+def _lenh_mot_script(ten):
+    """
+    Lenh chay 1 script theo DUNG loai file (cmd.exe /c <lenh>).
+
+    LOI THAT (lab 26/09/2026, kich ban co script .ps1): truoc day chi goi
+    duong dan file -> Windows mo .ps1 bang Notepad (lien ket mac dinh cua
+    .ps1 la "Edit"), script KHONG chay, buoc tien trinh dung cho toi khi qua
+    gio. .ps1 phai chay qua powershell -ExecutionPolicy Bypass -File.
+    """
+    duong = f"{THU_MUC_TREN_MAY}\\scripts\\{ten}"
+    if ten.lower().endswith(".ps1"):
+        return ('powershell.exe -NoProfile -ExecutionPolicy Bypass '
+                f'-File "{duong}"')
+    return f'"{duong}"'
+
+
 def _lenh_script(d):
     """Lenh chay cac script da chon (luon chay o phien nguoi dung dau)."""
-    return [f'"{THU_MUC_TREN_MAY}\\scripts\\{ten}"'
-            for ten in (d.get("scripts") or [])]
+    return [_lenh_mot_script(ten) for ten in (d.get("scripts") or [])]
 
 
 def _lenh_bat_administrator(d):

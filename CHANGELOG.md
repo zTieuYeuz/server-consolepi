@@ -43,6 +43,11 @@ sanboot; iPXE cua Debian khong ky).
   / cap nhat menu, ui/pxe.py tu dam bao tai khoan ton tai + mat khau khop file
   khoa (may DA cai tu ISO loi tu het sau khi cap nhat). Them muc kiem tra vao
   kiem-tra-may-da-cai.sh.
+- Kich ban co script .ps1: script KHONG chay ma mo ra Notepad (goi thang
+  duong dan file - lien ket mac dinh cua .ps1 la "Edit"), buoc tien trinh dung
+  toi qua gio. Nay .ps1 chay qua powershell -ExecutionPolicy Bypass -File.
+- Tuy chon gom nhieu lenh hien "(1/2)", "(2/2)" tren bang tien trinh thay vi
+  2 dong trung ten (trong nhu chay trung).
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu
