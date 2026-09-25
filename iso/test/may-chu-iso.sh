@@ -136,6 +136,31 @@ khach)
   chup) m "screendump $K/$1.ppm"; sleep 1
         python3 -c "from PIL import Image;Image.open('$K/$1.ppm').save('$K/$1.png')" && rm -f $K/$1.ppm && echo $K/$1.png ;;
   stop) [ -f $K/q.pid ] && kill $(cat $K/q.pid) 2>/dev/null; echo DUNG ;;
+  # Tat DUNG CACH (nut nguon ACPI) truoc khi doc o dia: tat ngang may that,
+  # file Windows vua ghi co the chua xuong dia (NTFS $LogFile - ntfs-3g
+  # khong doc) -> tuong la mat file.
+  tatdep) m "system_powerdown"
+          for i in $(seq 1 60); do kill -0 $(cat $K/q.pid) 2>/dev/null || { echo "DA TAT sau $((i*5))s"; exit 0; }; sleep 5; done
+          kill $(cat $K/q.pid) 2>/dev/null; echo "TAT CUONG BUC (qua 5 phut)" ;;
+  xem)  # doc ket qua cai tren o Windows (sau khi tatdep)
+        qemu-nbd -r -c /dev/nbd1 $K/disk.qcow2 && sleep 2 && partprobe /dev/nbd1; sleep 1
+        P=$(lsblk -lnbo NAME,SIZE /dev/nbd1 | grep p | sort -k2 -n | tail -1 | cut -d" " -f1)
+        # MBR (BIOS) co the co nhieu phan vung lon - lay phan vung co thu muc Windows
+        for x in $(lsblk -lno NAME /dev/nbd1 | grep p); do
+          mount -t ntfs-3g -o ro /dev/$x /mnt/w 2>/dev/null || continue
+          [ -d /mnt/w/Windows ] && break; umount /mnt/w
+        done
+        cd /mnt/w/ConsolePi 2>/dev/null && {
+          ls; for f in script-ps1.txt script-cmd.txt lenh-them.txt; do [ -f $f ] && echo "$f: $(tr -d "\r\0" < $f | head -c 100)"; done
+          echo "=== BAO-CAO"; tr -d "\r" < BAO-CAO-TONG-KET.txt | sed "s/^\xef\xbb\xbf//"
+          echo "=== CHUA DAT"; [ -f bao-cao-day-du.json ] && python3 -c "
+import json,sys
+d=json.load(open('bao-cao-day-du.json',encoding='utf-8-sig'))
+d=d if isinstance(d,list) else [d]
+for r in d:
+    if r.get('Dat') is not True: print(' ', r.get('Nhom'), '|', r.get('Nhan'), '|', r.get('ChiTiet'))"
+          echo "=== TIEN TRINH"; tr -d "\r" < tien-trinh.log | grep -E "\]|->" | tail -30; cd /; }
+        umount /mnt/w 2>/dev/null; qemu-nbd -d /dev/nbd1 >/dev/null ;;
   esac ;;
 *) echo "lenh?"; exit 1 ;;
 esac

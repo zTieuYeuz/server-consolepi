@@ -928,6 +928,16 @@ kich ban.</p>
       file cau hinh chen qua wimboot.</li>
   <li><strong>May BIOS dung im o "Booting from SAN device 0x80"</strong> (ban
       1.4.x): anh dia GPT cu khong co ma boot BIOS. Da bo tu 1.5.0.</li>
+  <li><strong>May bat Secure Boot bao "Security Violation"</strong>: shim xin
+      tang 2 ten <code>snponly.efi</code> (proxyDHCP) hoac <code>ipxe.efi</code>
+      (Pi cap IP). Ca 2 ten phai la ban KY - Pi tu ghi de moi lan bat PXE (file
+      cu cua Debian tai len tu truoc la ban khong ky).</li>
+  <li><strong>WinPE bao "System error 1312" khi noi kho</strong>: tai khoan Samba
+      <code>consolepi-deploy</code> thieu/sai mat khau (ban ISO 1.5.0 dau tien tao
+      nham ten). Bat PXE / cap nhat menu la he thong tu sua lai.</li>
+  <li><strong>Menu het gio "Khoi dong o cung" ma may UEFI vao man hinh
+      Setup</strong>: iPXE phai tra loi "that bai" (<code>exit 1</code>) de
+      firmware thu thiet bi ke tiep - da sua tu 1.5.0.</li>
   <li><strong>Loi SMB "System error 53" luc cai lai lan 2</strong>: Pi con giu
       phien SMB cu cua chinh may do o trang thai ESTABLISHED. He thong tu goi
       <code>smbcontrol smbd kill-client-ip</code> truoc moi lan bat PXE.</li>
