@@ -54,6 +54,12 @@ sanboot; iPXE cua Debian khong ky).
 - Tuy chon "Tat Widgets": Windows 11 moi chan ghi HKCU TaskbarDa (Ma loi 1 -
   lab Win11 24H2). Nay dung chinh sach may: Dsh\AllowNewsAndInterests=0
   (Win11) + Windows Feeds\EnableFeeds=0 (Win10).
+- Go app kem san: truoc chi go o phien nguoi dung dau - Weather/Solitaire VAN
+  CON (lenh can quyen quan tri, loi bi nuot, buoc van bao "xong" - lo ra nho
+  bao-cao-day-du.json). Nay deploy.cmd go ngay trong WinPE tren anh vua bung
+  (dism /Image:W:\ /Remove-ProvisionedAppxPackage, kieu MDT).
+- Bao cao: khoa HKU\... (Num Lock) luon "khong tim thay" - PowerShell khong co
+  o HKU:/HKCR:. Doi sang Registry::HKEY_USERS\... / HKEY_CLASSES_ROOT\...
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu

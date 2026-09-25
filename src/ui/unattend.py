@@ -444,7 +444,11 @@ def _phan_tich_lenh_reg(lenh):
         return None
     duong, con_lai = m.group(1), m.group(2)
     # HKLM\... -> HKLM:\...  (dang PowerShell dung)
-    duong_ps = re.sub(r"^(HKLM|HKCU|HKCR|HKU)\\", r"\1:\\", duong, flags=re.I)
+    # HKU/HKCR KHONG co san o dia PowerShell (chi HKLM:, HKCU:) - loi that
+    # lab 26/09/2026: muc Num Lock (HKU\.DEFAULT) luon "khong tim thay".
+    duong_ps = re.sub(r"^HKU\\", r"Registry::HKEY_USERS\\", duong, flags=re.I)
+    duong_ps = re.sub(r"^HKCR\\", r"Registry::HKEY_CLASSES_ROOT\\", duong_ps, flags=re.I)
+    duong_ps = re.sub(r"^(HKLM|HKCU)\\", r"\1:\\", duong_ps, flags=re.I)
 
     m_ten = re.search(r'/v\s+("[^"]+"|\S+)', con_lai)
     m_gt = re.search(r'/d\s+("[^"]+"|\S+)', con_lai)
@@ -1612,6 +1616,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "if errorlevel 1 goto loi_bung",
         "",
         "echo.",
+    ] + _lenh_go_app_offline(d) + [
         "echo  [5/6] Chep cau hinh tu dong - ten may, tai khoan, mui gio...",
         "if not exist W:\\Windows\\Panther mkdir W:\\Windows\\Panther",
         "copy /y %NHUNG%\\unattend.xml W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
@@ -2165,6 +2170,32 @@ APP_RAC = [
     ("Microsoft.WindowsSoundRecorder", "Ghi âm", False),
     ("Microsoft.WindowsCamera", "Máy ảnh (Camera)", False),
 ]
+
+
+def _lenh_go_app_offline(d):
+    r"""
+    Go app kem san NGAY TRONG WinPE, tren anh Windows vua bung ra W:\ (kieu
+    MDT) - dong batch cho deploy.cmd.
+
+    LOI THAT (lab 26/09/2026): chi go o phien nguoi dung dau (Remove-AppxPackage
+    -AllUsers + Remove-AppxProvisionedPackage) thi Weather/Solitaire VAN CON -
+    2 lenh do can quyen quan tri, loi bi -EA SilentlyContinue nuot, buoc van bao
+    "xong". Go o anh offline thi tai khoan moi KHONG BAO GIO nhan app do.
+    Ten goi day du (co so phien ban) lay tu /Get-ProvisionedAppxPackages.
+    """
+    ds = [m for m in (d.get("go_app") or [])
+          if re.fullmatch(r"[A-Za-z0-9._-]{1,64}", m or "")]
+    if not ds:
+        return []
+    return [
+        f"echo  ... go {len(ds)} ung dung kem san khoi anh Windows...",
+        "echo === go app kem san (offline) === >> %LOG%",
+        "dism /Image:W:\\ /Get-ProvisionedAppxPackages > X:\\appx.txt 2>&1",
+    ] + [
+        f'for /f "tokens=2 delims=: " %%P in (\'findstr /i /c:"PackageName : {m}_" X:\\appx.txt\') '
+        f"do dism /Image:W:\\ /Remove-ProvisionedAppxPackage /PackageName:%%P >> %LOG% 2>&1"
+        for m in ds
+    ] + [""]
 
 
 def _lenh_go_app(d):
