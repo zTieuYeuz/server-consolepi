@@ -1616,7 +1616,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "if errorlevel 1 goto loi_bung",
         "",
         "echo.",
-    ] + _lenh_go_app_offline(d) + [
+    ] + _lenh_chep_go_app(d) + [
         "echo  [5/6] Chep cau hinh tu dong - ten may, tai khoan, mui gio...",
         "if not exist W:\\Windows\\Panther mkdir W:\\Windows\\Panther",
         "copy /y %NHUNG%\\unattend.xml W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
@@ -2172,30 +2172,54 @@ APP_RAC = [
 ]
 
 
-def _lenh_go_app_offline(d):
-    r"""
-    Go app kem san NGAY TRONG WinPE, tren anh Windows vua bung ra W:\ (kieu
-    MDT) - dong batch cho deploy.cmd.
+TEN_PS_GO_APP = "go-app.ps1"
+DUONG_PS_GO_APP = "C:\\Windows\\Setup\\Scripts\\" + TEN_PS_GO_APP
 
-    LOI THAT (lab 26/09/2026): chi go o phien nguoi dung dau (Remove-AppxPackage
-    -AllUsers + Remove-AppxProvisionedPackage) thi Weather/Solitaire VAN CON -
-    2 lenh do can quyen quan tri, loi bi -EA SilentlyContinue nuot, buoc van bao
-    "xong". Go o anh offline thi tai khoan moi KHONG BAO GIO nhan app do.
-    Ten goi day du (co so phien ban) lay tu /Get-ProvisionedAppxPackages.
+
+def _ds_go_app(d):
+    return [m for m in (d.get("go_app") or [])
+            if re.fullmatch(r"[A-Za-z0-9._-]{1,64}", m or "")]
+
+
+def sinh_ps_go_app(d):
+    r"""
+    Script go BO CAI (provisioned) cua app kem san - chay o pha specialize
+    (quyen SYSTEM, TRUOC khi co tai khoan nao) nen tai khoan tao sau KHONG
+    BAO GIO nhan app do. Cach nay dung y trinh tao unattend schneegans.de.
+
+    LOI THAT (lab 26/09/2026): (1) chi go o phien nguoi dung dau thi app
+    VAN CON (can quyen quan tri, loi bi nuot, buoc van bao "xong");
+    (2) go offline trong WinPE (dism /Image) cung khong an - bo cai
+    "neutral_~" van nam trong WindowsApps. Ca 2 lo ra nho bao-cao-day-du.json.
+    Ghi ra file rieng (khong nhet vao <Path> cua RunSynchronousCommand - gioi
+    han 259 ky tu, danh sach app dai se vuot).
     """
-    ds = [m for m in (d.get("go_app") or [])
-          if re.fullmatch(r"[A-Za-z0-9._-]{1,64}", m or "")]
+    ds = _ds_go_app(d)
     if not ds:
+        return ""
+    mang = ",".join("'" + m + "'" for m in ds)
+    return f"""# Console Pi - go app kem san (pha specialize, SYSTEM). Tu sinh, khong sua tay.
+$ds = @({mang})
+$log = 'C:\\Windows\\Setup\\Scripts\\go-app.log'
+foreach ($p in (Get-AppxProvisionedPackage -Online)) {{
+    if ($ds -contains $p.DisplayName) {{
+        try {{
+            Remove-AppxProvisionedPackage -Online -AllUsers -PackageName $p.PackageName -ErrorAction Stop | Out-Null
+            Add-Content $log "da go: $($p.DisplayName)"
+        }} catch {{ Add-Content $log "LOI go $($p.DisplayName): $($_.Exception.Message)" }}
+    }}
+}}
+"""
+
+
+def _lenh_chep_go_app(d):
+    """Dong deploy.cmd: chep go-app.ps1 vao anh Windows vua bung."""
+    if not _ds_go_app(d):
         return []
     return [
-        f"echo  ... go {len(ds)} ung dung kem san khoi anh Windows...",
-        "echo === go app kem san (offline) === >> %LOG%",
-        "dism /Image:W:\\ /Get-ProvisionedAppxPackages > X:\\appx.txt 2>&1",
-    ] + [
-        f'for /f "tokens=2 delims=: " %%P in (\'findstr /i /c:"PackageName : {m}_" X:\\appx.txt\') '
-        f"do dism /Image:W:\\ /Remove-ProvisionedAppxPackage /PackageName:%%P >> %LOG% 2>&1"
-        for m in ds
-    ] + [""]
+        "if not exist W:\\Windows\\Setup\\Scripts mkdir W:\\Windows\\Setup\\Scripts",
+        f"copy /y %NHUNG%\\{TEN_PS_GO_APP} W:\\Windows\\Setup\\Scripts\\{TEN_PS_GO_APP} >> %LOG% 2>&1",
+    ]
 
 
 def _lenh_go_app(d):
@@ -2363,6 +2387,8 @@ def _khoi_runsync_specialize(d):
     quyen he thong, TRUOC khi co ai dang nhap).
     """
     lenh = (_lenh_bat_administrator(d)
+            + ([f"powershell -NoProfile -ExecutionPolicy Bypass -File {DUONG_PS_GO_APP}"]
+               if _ds_go_app(d) else [])
             + _lenh_theo_pha(d, "may") + _lenh_app_theo_dich(d, "may")
             + _lenh_ungdung_theo_dich(d, "may"))
     if not lenh:
@@ -2854,7 +2880,7 @@ def sinh_winpeshl_ini():
 
 def sinh_file_nhung(d, dia_chi_pi):
     """{ten file: noi dung} - moi file wimboot se chen cho 1 kich ban."""
-    return {
+    ra = {
         "winpeshl.ini": sinh_winpeshl_ini(),
         # autounattend.xml : chi de GOI deploy.cmd (sinh_autounattend_goi_script)
         "autounattend.xml": sinh_autounattend_goi_script(),
@@ -2870,6 +2896,9 @@ def sinh_file_nhung(d, dia_chi_pi):
         "bao-cao.ps1": sinh_script_bao_cao(d),
         "tien-trinh.ps1": sinh_script_tien_trinh(d, dia_chi_pi),
     }
+    if _ds_go_app(d):
+        ra[TEN_PS_GO_APP] = sinh_ps_go_app(d)
+    return ra
 
 
 def ghi_file_nhung(d, dia_chi_pi, thu_muc):
