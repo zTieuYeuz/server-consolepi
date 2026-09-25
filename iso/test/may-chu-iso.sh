@@ -90,6 +90,25 @@ tat)
 
 ssh) $SSHC "$@" ;;
 
+cap-nhat)
+  # Day code MOI NHAT trong repo (/root/consolepi-toolkit tren may build) vao
+  # may chu - giong cap-nhat-pi.sh (ui, nettools, pxe-boot, scripts, app.py,
+  # VERSION) - de test ban sua ma khong phai build lai ISO.
+  rsync -a --delete --exclude=__pycache__ -e "${SSHC% -p 18022*} -p 18022" \
+    /root/consolepi-toolkit/src/ administrator@127.0.0.1:/tmp/src-moi/ || exit 1
+  rsync -a -e "${SSHC% -p 18022*} -p 18022" /root/consolepi-toolkit/VERSION \
+    administrator@127.0.0.1:/tmp/src-moi/VERSION
+  $SSHC 'set -e; D=/opt/console-pi; S=/tmp/src-moi
+    sudo cp -r $S/ui/. $D/ui/; sudo cp -r $S/nettools/. $D/nettools/
+    sudo rm -rf $D/pxe-boot; sudo cp -r $S/pxe-boot $D/pxe-boot
+    for f in $S/scripts/*; do [ -f "$f" ] && sudo install -m 755 "$f" $D/scripts/; done
+    sudo install -m 644 $S/app.py $D/app.py
+    sudo install -m 644 $S/VERSION $D/VERSION
+    sudo find $D -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
+    sudo python3 -m py_compile $D/ui/*.py $D/nettools/*.py $D/app.py
+    sudo systemctl restart console-pi-dashboard; sleep 5
+    systemctl is-active console-pi-dashboard' ;;
+
 khach)
   FW=$1; L2=$2; shift 2
   K=$W/khach-$FW; mkdir -p $K

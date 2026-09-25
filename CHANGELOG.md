@@ -31,6 +31,11 @@ sanboot; iPXE cua Debian khong ky).
   khong co thermal_zone0; khong co cam bien (may ao) -> ghi ro "may nay khong
   co cam bien nhiet do" thay vi "? do C". Nguon dien: "Khong ap dung - may
   nay khong phai Raspberry Pi" (co dau). "Cam cap ... vao Pi" -> "vao may nay".
+- Ban ISO: may co 2 card LAN cai xong KHONG co mang - trinh cai dat de lai 1
+  ho so NetworkManager "Wired connection 1" khong gan card, NM cam no vao card
+  khong co DHCP va bo trong card co DHCP. Thiet lap lan dau nay xoa ho so DHCP
+  khong gan card (giu ho so IP tinh/da gan card) -> NM tu tao ho so cho tung
+  card. Kiem chung may ao 2 card: ens3 nhan IP ngay, ens4 co ho so rieng.
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu

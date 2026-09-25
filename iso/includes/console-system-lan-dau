@@ -171,3 +171,23 @@ DROPIN
         fi
     fi
 fi
+
+# --- 8. MANG: bo ho so "Wired connection N" KHONG gan card cua trinh cai dat ---
+#
+# LOI THAT (26/09/2026, may ao 2 card mang cai tu ISO): trinh cai dat de lai
+# DUNG 1 ho so NetworkManager "Wired connection 1" KHONG gan vao card nao
+# (khong interface-name, khong mac). NetworkManager chi dung 1 ho so cho 1
+# card mot luc: no dem ho so do cam vao card KHONG co DHCP (ens4) va thu lai
+# mai, card CO DHCP (ens3) thi khong co ho so nao -> ca may khong co mang.
+# May khach co 2 cong LAN (onboard + card roi, rat pho bien) se dinh ngay.
+# SUA: xoa ho so DHCP khong gan card do; NetworkManager tu tao ho so rieng
+# cho TUNG card (hanh vi mac dinh). Ho so IP tinh / da gan card thi GIU.
+for _f in /etc/NetworkManager/system-connections/*; do
+    [ -f "$_f" ] || continue
+    grep -qE '^type=(802-3-ethernet|ethernet)' "$_f" || continue
+    grep -qE '^(interface-name|mac-address)=' "$_f" && continue
+    grep -qE '^method=manual' "$_f" && continue
+    echo "[console-system] bo ho so mang khong gan card: $(basename "$_f")"
+    rm -f "$_f"
+done
+nmcli connection reload >/dev/null 2>&1 || true
