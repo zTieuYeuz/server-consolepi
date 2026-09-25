@@ -21,6 +21,11 @@ sanboot; iPXE cua Debian khong ky).
 - Driver "cho anh boot" dong thanh drivers.wim (wimboot chi chen file phang),
   deploy.cmd bung bang dism roi drvload nhu cu.
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
+- Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
+  UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu
+  het gio -> `exit` -> firmware DUNG o man hinh Setup (OVMF) thay vi vao o
+  cung. `exit 1` = "boot mang khong thanh" -> firmware thu muc ke tiep; kiem
+  chung lab: vao thang Windows. BIOS giu `exit` (da chay dung).
 - Lab tu dong iso/test/wimboot-lab.sh (QEMU/KVM, OVMF khoa Microsoft): BIOS,
   UEFI, UEFI+SB deu vao WinPE, chay script, net use Samba thanh cong.
 

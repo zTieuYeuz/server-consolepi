@@ -263,7 +263,12 @@ def sinh_script(goc):
                  "boot || goto loi", ""]
     dong += [":odia",
              "echo Khoi dong tu o cung...",
-             "exit", "",
+             # UEFI: `exit` (ma 0) = firmware coi muc boot mang "chay xong" va
+             # nhieu firmware (OVMF, kiem chung that 25/09/2026 bang may ao cai
+             # tu Pi) DUNG o man hinh Setup thay vi sang o cung. `exit 1` = bao
+             # "boot mang khong thanh" -> firmware thu muc boot KE TIEP (o cung).
+             # BIOS: quay ve ROM PXE -> BIOS tu sang thiet bi ke tiep (da chay).
+             "iseq ${platform} efi && exit 1 || exit", "",
              ":lai",
              "reboot", "",
              ":loi",

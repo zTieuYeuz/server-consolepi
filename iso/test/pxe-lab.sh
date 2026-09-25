@@ -11,10 +11,12 @@
 #   "May khach" = QEMU boot mang (BIOS: iPXE ROM cua e1000; UEFI: OVMF)
 #
 #   bash pxe-lab.sh <mang_co_dhcp|mang_khong_dhcp|truc_tiep> <bios|uefi> <thu_muc_vao>
-# thu_muc_vao can co: <kieu>.conf, <kieu>.ipxe (sinh bang sinh-cau-hinh.py),
-# undionly.kpxe, snponly.efi. Ket qua + anh man hinh: <thu_muc_vao>/kq-<kieu>-<fw>/
+# thu_muc_vao can co: <kieu>.conf, <kieu>.ipxe, boot/ (ca 3 sinh bang
+# sinh-cau-hinh.py - boot/ = file boot kem san + _pxe/<kich ban>/).
+# Chi kiem den buoc may khach TAI dung file cua kich ban (khong co boot.wim
+# that); chay tron WinPE xem wimboot-lab.sh, cai that xem pi-that.sh. Ket qua + anh man hinh: <thu_muc_vao>/kq-<kieu>-<fw>/
 K=$1; FW=$2; D=${3:-/tmp/pxl}; R=$D/kq-$K-$FW; rm -rf $R; mkdir -p $R
-for f in $K.conf $K.ipxe undionly.kpxe snponly.efi; do [ -f $D/$f ] || { echo "THIEU $D/$f"; exit 1; }; done
+for f in $K.conf $K.ipxe boot/undionly.kpxe boot/snponly-shim.efi boot/ipxe.efi; do [ -f $D/$f ] || { echo "THIEU $D/$f"; exit 1; }; done
 for f in cty.pid pi.pid http.pid q.pid; do [ -f $D/$f ] && kill $(cat $D/$f) 2>/dev/null; rm -f $D/$f; done
 sleep 1
 for n in lan pi cty; do ip netns del $n 2>/dev/null; done
@@ -39,9 +41,9 @@ else
   ip -n pi addr add 192.168.98.1/24 dev p0     # KHONG co DHCP nao khac
 fi
 rm -rf $D/www $D/tftp; mkdir -p $D/www/deployos/pxeboot $D/tftp
-cp $D/undionly.kpxe $D/snponly.efi $D/tftp/
+cp $D/boot/undionly.kpxe $D/boot/snponly-shim.efi $D/boot/ipxe.efi $D/tftp/
+cp -r $D/boot/. $D/www/deployos/pxeboot/
 cp $D/$K.ipxe $D/www/deployos/pxeboot/menu.ipxe
-for i in _menu-A.img _menu-B.img; do echo x > $D/www/deployos/pxeboot/$i; done
 sed -e "s/^interface=eth0/interface=p0/" -e "s#^tftp-root=.*#tftp-root=$D/tftp#" \
     -e "/^except-interface/d" $D/$K.conf > $R/dnsmasq.conf
 echo "log-facility=$R/dnsmasq.log" >> $R/dnsmasq.conf

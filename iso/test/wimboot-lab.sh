@@ -130,6 +130,9 @@ case $FW in
         NIC="-netdev tap,id=n0,ifname=tap0,script=no,downscript=no -device virtio-net-pci,netdev=n0,mac=52:54:00:12:34:01,bootindex=1 -netdev tap,id=n1,ifname=tap1,script=no,downscript=no -device e1000,netdev=n1,mac=52:54:00:12:34:02,romfile=" ;;
 esac
 rm -f $D/mon.sock
+# DISK=<qcow2> : gan them o dia (che do -snapshot, khong ghi gi vao file do) -
+# vd de thu menu "Khoi dong o cung" co roi dung sang Windows da cai hay khong.
+[ -n "$DISK" ] && NIC="$NIC -drive file=$DISK,if=none,id=d0,snapshot=on -device ahci,id=ah -device ide-hd,drive=d0,bus=ah.0,bootindex=2"
 ip netns exec lan qemu-system-x86_64 -enable-kvm -cpu host -m 2048 -display none -vga std $EXTRA $NIC \
   -monitor unix:$D/mon.sock,server,nowait -pidfile $D/q.pid -daemonize || { echo QEMU_LOI; exit 1; }
 m(){ echo "$1" | socat - UNIX-CONNECT:$D/mon.sock >/dev/null; }
