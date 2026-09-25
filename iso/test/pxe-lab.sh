@@ -41,7 +41,7 @@ else
   ip -n pi addr add 192.168.98.1/24 dev p0     # KHONG co DHCP nao khac
 fi
 rm -rf $D/www $D/tftp; mkdir -p $D/www/deployos/pxeboot $D/tftp
-cp $D/boot/undionly.kpxe $D/boot/snponly-shim.efi $D/boot/ipxe.efi $D/tftp/
+cp $D/boot/undionly.kpxe $D/boot/snponly-shim.efi $D/boot/ipxe.efi $D/boot/snponly.efi $D/tftp/
 cp -r $D/boot/. $D/www/deployos/pxeboot/
 cp $D/$K.ipxe $D/www/deployos/pxeboot/menu.ipxe
 sed -e "s/^interface=eth0/interface=p0/" -e "s#^tftp-root=.*#tftp-root=$D/tftp#" \

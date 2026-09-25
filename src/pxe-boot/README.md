@@ -6,10 +6,10 @@
 |---|---|---|
 | `undionly.kpxe` | iPXE v2.0.0 `ipxeboot.tar.gz` → `x86_64/undionly.kpxe` | Máy BIOS/Legacy |
 | `snponly-shim.efi` | iPXE v2.0.0 → `x86_64-sb/shimx64.efi` (shim, Microsoft UEFI CA 2011 ký) | Máy UEFI, có hoặc không Secure Boot |
-| `ipxe.efi` | iPXE v2.0.0 → `x86_64-sb/snponly.efi` (iPXE Secure Boot CA ký) | shim tự tải file tên `ipxe.efi` qua TFTP |
+| `ipxe.efi`, `snponly.efi` | iPXE v2.0.0 → `x86_64-sb/snponly.efi` (iPXE Secure Boot CA ký), 2 bản giống hệt | shim tải tầng 2 qua TFTP |
 | `wimboot` | wimboot v2.9.0 release (Microsoft UEFI CA 2011 ký) | Nạp boot.wim của Windows |
 
-Về tên file `ipxe.efi`: shim tải tầng 2 theo tên mặc định là `ipxe.efi`. Điều này đã kiểm chứng qua log TFTP trong lab. Nên file này thực chất là bản `snponly.efi` đã ký, chỉ đổi tên. Lý do dùng snponly: NIC ảo VMware làm `ipxe.efi` đầy đủ bị crash.
+Về 2 tên file: shim xin tầng 2 bằng tên nào còn tuỳ trường hợp. Log TFTP thật cho thấy: khi Pi cấp IP (DHCP đầy đủ) nó xin `ipxe.efi`, còn khi dùng proxyDHCP trên mạng công ty nó xin `snponly.efi`. Vì vậy phát cùng một bản `snponly` đã ký dưới cả hai tên. Lý do dùng snponly: NIC ảo VMware làm `ipxe.efi` đầy đủ bị crash.
 
 Nguồn:
 - https://github.com/ipxe/ipxe/releases/tag/v2.0.0

@@ -71,11 +71,18 @@ DON_VI_SYSTEMD = "dnsmasq-pxe"
 # README o do) - chep vao TFTP moi lan bat PXE. Truoc 1.5.0 nguoi dung phai tu
 # tai len, va iPXE cua Debian KHONG ky -> may bat Secure Boot tu choi.
 #   BIOS        -> undionly.kpxe
-#   UEFI (+SB)  -> snponly-shim.efi (shim, Microsoft ky) -> tu tai ipxe.efi
-#                  (= snponly.efi ban ky; shim xin DUNG ten nay - log TFTP)
+#   UEFI (+SB)  -> snponly-shim.efi (shim, Microsoft ky) -> tu tai tang 2
+#                  = snponly ban KY, phat duoi CA 2 TEN vi shim xin ten nao
+#                  tuy cach no biet ten cua chinh no (log TFTP that):
+#                    - DHCP day du (lab): xin "ipxe.efi"
+#                    - proxyDHCP (mang cong ty, 26/09/2026): xin "snponly.efi"
+#                  Loi that: Pi con "snponly.efi" CU cua Debian (khong ky, tai
+#                  len tu truoc) -> may bat Secure Boot bao "Security
+#                  Violation". Nay ghi de bang ban ky moi lan bat PXE.
 THU_MUC_FILE_KEM = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "pxe-boot")
-FILE_BOOT_KEM = ("undionly.kpxe", "snponly-shim.efi", "ipxe.efi", "wimboot")
+FILE_BOOT_KEM = ("undionly.kpxe", "snponly-shim.efi", "ipxe.efi", "snponly.efi",
+                 "wimboot")
 FILE_EFI_DAU = "snponly-shim.efi"
 
 TEN_BOOTMGR_BIOS = "bootmgr.exe"
