@@ -36,6 +36,13 @@ sanboot; iPXE cua Debian khong ky).
   khong co DHCP va bo trong card co DHCP. Thiet lap lan dau nay xoa ho so DHCP
   khong gan card (giu ho so IP tinh/da gan card) -> NM tu tao ho so cho tung
   card. Kiem chung may ao 2 card: ens3 nhan IP ngay, ens4 co ho so rieng.
+- Ban ISO: kho Samba KHONG dung duoc - thiet lap lan dau tao nham tai khoan
+  "deploy" trong khi share va deploy.cmd dung "consolepi-deploy" -> WinPE
+  `net use` bao System error 1312, khong lay duoc install.wim (lab may chu cai
+  tu ISO, 26/09/2026). Sua ca 2 dau: lan dau tao dung ten; va moi lan bat PXE
+  / cap nhat menu, ui/pxe.py tu dam bao tai khoan ton tai + mat khau khop file
+  khoa (may DA cai tu ISO loi tu het sau khi cap nhat). Them muc kiem tra vao
+  kiem-tra-may-da-cai.sh.
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu

@@ -15,8 +15,15 @@ KHOA=/var/lib/console-pi/samba-deploy.key
 if [ ! -f "$KHOA" ]; then
     head -c 18 /dev/urandom | base64 | tr -d "/+=" | head -c 20 > "$KHOA"
     chmod 600 "$KHOA"
-    if id -u deploy >/dev/null 2>&1 || useradd -r -s /usr/sbin/nologin deploy 2>/dev/null; then
-        printf "%s\n%s\n" "$(cat $KHOA)" "$(cat $KHOA)" | smbpasswd -s -a deploy >/dev/null 2>&1 || true
+    # Tai khoan PHAI la "consolepi-deploy" - dung ten share [deploy] trong
+    # config/smb.conf (valid users) va ten deploy.cmd dung (ui/unattend.py).
+    # LOI THAT 26/09/2026: truoc day tao nham "deploy" -> WinPE `net use`
+    # bao System error 1312, khong lay duoc install.wim. (ui/pxe.py cung tu
+    # sua lai moi lan bat PXE cho may da cai tu ban loi.)
+    if id -u consolepi-deploy >/dev/null 2>&1 || \
+       useradd --system --no-create-home --shell /usr/sbin/nologin consolepi-deploy 2>/dev/null; then
+        printf "%s\n%s\n" "$(cat $KHOA)" "$(cat $KHOA)" | smbpasswd -s -a consolepi-deploy >/dev/null 2>&1 || true
+        smbpasswd -e consolepi-deploy >/dev/null 2>&1 || true
     fi
 fi
 

@@ -19,6 +19,7 @@ kt "os-release con VERSION_CODENAME"      grep -q '^VERSION_CODENAME=[a-z]' /etc
 kt "khong co dich vu nao loi"             test -z "$(systemctl --failed --no-legend)"
 kt "da chay xong thiet lap lan dau"       test -f /var/lib/console-pi/.da-thiet-lap
 kt "mat khau Samba rieng cho may nay"     test -s /var/lib/console-pi/samba-deploy.key
+kt "tai khoan Samba consolepi-deploy (dung ten share/deploy.cmd)" sh -c "pdbedit -L | grep -q '^consolepi-deploy:'"
 kt "khoa SSH may da sinh"                 test -s /etc/ssh/ssh_host_ed25519_key
 kt "nguon apt khong con tro vao USB"      khong grep -qs '^deb cdrom' /etc/apt/sources.list
 kt "da go file tang toc build dpkg"       test ! -e /etc/apt/apt.conf.d/00-toc-do-build

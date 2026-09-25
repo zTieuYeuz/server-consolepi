@@ -722,6 +722,56 @@ def cap_nhat_menu():
         _KHOA.release()
 
 
+TAI_KHOAN_SAMBA = "consolepi-deploy"
+
+
+def _bao_dam_tai_khoan_samba():
+    """
+    Dam bao tai khoan Samba cua kho trien khai TON TAI, BAT, va mat khau
+    KHOP file khoa (deploy.cmd nhung mat khau tu file khoa nay) - chay moi
+    lan bat PXE / cap nhat menu, truoc khi sinh file cho kich ban.
+
+    LOI THAT (26/09/2026, may cai tu ISO 1.5.0): thiet lap lan dau cua ISO
+    tao NHAM tai khoan "deploy" thay vi "consolepi-deploy" -> WinPE `net use`
+    bao "System error 1312", khong lay duoc install.wim. Tu sua o day de ca
+    may DA CAI tu ISO loi cung tu het sau khi cap nhat, khong phai cai lai.
+    Tren Pi (install.sh da tao dung) thi chi dong bo lai - vo hai.
+    """
+    import secrets
+    from .duongdan import FILE_KHOA_SAMBA
+    try:
+        with open(FILE_KHOA_SAMBA, encoding="utf-8") as f:
+            mk = f.read().strip()
+    except OSError:
+        mk = ""
+    if not mk:
+        mk = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789")
+                     for _ in range(24))
+        try:
+            os.makedirs(os.path.dirname(FILE_KHOA_SAMBA), exist_ok=True)
+            fd = os.open(FILE_KHOA_SAMBA, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w") as f:
+                f.write(mk)
+        except OSError as e:
+            return False, f"Không tạo được khoá Samba: {e}"
+    ok, _ = _sh(["id", TAI_KHOAN_SAMBA])
+    if not ok:
+        ok, out = _sh(["useradd", "--system", "--no-create-home",
+                       "--shell", "/usr/sbin/nologin", TAI_KHOAN_SAMBA])
+        if not ok:
+            return False, f"Không tạo được tài khoản {TAI_KHOAN_SAMBA}: {out[:150]}"
+    try:
+        r = subprocess.run(["smbpasswd", "-s", "-a", TAI_KHOAN_SAMBA],
+                           input=f"{mk}\n{mk}\n", capture_output=True,
+                           text=True, timeout=20)
+        if r.returncode != 0:
+            return False, f"Không đặt được mật khẩu Samba: {(r.stdout + r.stderr)[:150]}"
+    except (OSError, subprocess.SubprocessError) as e:
+        return False, f"Không chạy được smbpasswd: {e}"
+    _sh(["smbpasswd", "-e", TAI_KHOAN_SAMBA])
+    return True, ""
+
+
 def _dung_menu(kieu_boot):
     """
     Ghi file nhung (wimboot) cho moi kich ban Windows (menu PXE) + chep file
@@ -729,7 +779,10 @@ def _dung_menu(kieu_boot):
     """
     from . import pxemenu as _m
     ok, loi = _chep_file_boot()
+    ok_smb, loi_smb = _bao_dam_tai_khoan_samba()
     kq = _m.chuan_bi_menu(_dia_chi_pi_that(kieu_boot), kieu_boot)
+    if not ok_smb:
+        kq.insert(0, loi_smb)
     if not ok:
         kq.insert(0, loi)
     so_muc = len(_m.muc_menu())
