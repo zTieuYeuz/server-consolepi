@@ -865,6 +865,9 @@ BaoPi 'batdau' @{{ may = $TenMay; kichban = $KichBan;
 
 $i = 0
 $soLoi = 0
+# Ket qua tung buoc -> bao-cao.ps1 doc lai de BAO CAO co ca script, lenh
+# them, cai/go phan mem (truoc day bao cao khong nhac toi cac viec nay).
+$KetQuaBuoc = New-Object System.Collections.Generic.List[object]
 foreach ($b in $Buoc) {{
     $lblDay.Text = "Đang làm bước $($i + 1) / $($Buoc.Count)..."
     DatDong $i ">" "đang chạy..." "" $VANG
@@ -909,6 +912,8 @@ foreach ($b in $Buoc) {{
         DatDong $i ([char]0x2718) "lỗi" "$giay" $DO
     }}
     Ghi ("      -> {{0}} ({{1}}s) {{2}}" -f $tt, $giay, $ghiChu)
+    $KetQuaBuoc.Add([PSCustomObject]@{{ Ten = $b.Ten; TrangThai = $tt;
+                                         Giay = $giay; GhiChu = $ghiChu }})
     BaoPi 'buoc' @{{ may = $TenMay; chi_so = $i; trang_thai = $tt;
                      giay = $giay; ghi_chu = $ghiChu }}
 
@@ -919,6 +924,10 @@ foreach ($b in $Buoc) {{
 
 Ghi "===== Xong ====="
 BaoPi 'ketthuc' @{{ may = $TenMay }}
+try {{
+    $KetQuaBuoc | ConvertTo-Json -Depth 3 |
+        Out-File (Join-Path $ThuMuc 'ket-qua-tien-trinh.json') -Encoding UTF8
+}} catch {{ }}
 
 if ($soLoi -eq 0) {{
     $lblDay.Text = "Xong tất cả $($Buoc.Count) bước. Không có lỗi."
@@ -1063,6 +1072,25 @@ foreach ($m in $MUC) {
         ChiTiet = $ct
         TrangThai = $(if ($dat -eq $true) { 'ĐÃ LÀM' } elseif ($dat -eq $false) { 'chưa được' } else { 'không rõ' })
     }
+}
+
+# Cac buoc chay SAU KHI dang nhap (tien-trinh.ps1 ghi lai): script, lenh
+# them, cai/go phan mem - bao cao ghi ca nhung viec nay. Tuy chon Windows
+# thi da doi chieu registry o tren nen khong lap lai.
+$fKq = Join-Path $OutDir 'ket-qua-tien-trinh.json'
+if (Test-Path $fKq) {
+    try {
+        foreach ($b in @(Get-Content $fKq -Raw -Encoding UTF8 | ConvertFrom-Json)) {
+            if ("$($b.Ten)" -notmatch '^(Chạy script|Lệnh thêm|Cài |Gỡ )') { continue }
+            $ok = ($b.TrangThai -eq 'xong')
+            $ketQua += [PSCustomObject]@{
+                Nhom = 'Sau đăng nhập'; Nhan = "$($b.Ten)"
+                Dat = $ok
+                ChiTiet = $(if ($ok) { "xong ($($b.Giay)s)" } else { "$($b.TrangThai) $($b.GhiChu)" })
+                TrangThai = $(if ($ok) { 'ĐÃ LÀM' } else { 'chưa được' })
+            }
+        }
+    } catch { }
 }
 
 $soDat   = @($ketQua | Where-Object { $_.Dat -eq $true }).Count

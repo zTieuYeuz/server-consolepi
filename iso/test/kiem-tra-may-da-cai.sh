@@ -29,10 +29,17 @@ for s in console-pi-dashboard nginx ssh console-pi-term-local console-pi-term-ss
     kt "$s dang chay" systemctl is-active --quiet $s
 done
 echo "== An toan mang: KHONG tu phat DHCP/WiFi/TFTP/Samba khi cam vao mang khach"
+# Nguoi dung CHU DONG bat PXE (co /run/console-pi-pxe.flag) thi dnsmasq-pxe,
+# smbd, cong 67 chay la DUNG - chi kiem khi PXE dang tat.
+PXE_BAT=""; [ -f /run/console-pi-pxe.flag ] && PXE_BAT=1
 for s in dnsmasq dnsmasq-pxe dnsmasq-direct hostapd tftpd-hpa smbd; do
+    case "$PXE_BAT:$s" in
+        1:dnsmasq-pxe|1:smbd) echo "BO QUA $s (nguoi dung dang bat PXE)"; continue;;
+    esac
     kt "$s khong tu chay" khong systemctl is-active --quiet $s
 done
-kt "khong co gi nghe cong 67 (DHCP)"      khong sh -c "ss -ulpn | grep -q ':67 '"
+if [ -n "$PXE_BAT" ]; then echo "BO QUA cong 67 (nguoi dung dang bat PXE)"
+else kt "khong co gi nghe cong 67 (DHCP)"  khong sh -c "ss -ulpn | grep -q ':67 '"; fi
 
 echo "== Kiosk (man hinh)"
 kt "kiosk dang chay"                      systemctl is-active --quiet console-pi-kiosk

@@ -57,7 +57,9 @@ KICH_BAN = {
             "mui_gio": "Asia/Ho_Chi_Minh"},
         4: {"o_dia_che_do": "tu_dong", "o_dia_so": "0"},
         5: {"app": ["winrar-x64-580.exe"], "dich_winrar-x64-580.exe": "may"},
-        6: {"tuy_chon": ["menu_chuot_cu", "taskbar_trai", "tat_widgets"]},
+        6: {"tuy_chon": ["menu_chuot_cu", "taskbar_trai", "tat_widgets"],
+            "script": ["kiem-tra.ps1"],
+            "lenh_them": "echo win11-lenh-them > C:\\ConsolePi\\lenh-them.txt"},
     },
 }
 
