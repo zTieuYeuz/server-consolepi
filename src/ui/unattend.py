@@ -1223,7 +1223,7 @@ $frm.AcceptButton = $btnDong
     return (f"$TEN_KICHBAN = {_ps_chuoi(ten_kb)}\n\n" + bang + than)
 
 
-def sinh_diskpart_txt(d):
+def sinh_diskpart_txt(d, mbr=False):
     """
     Script cho `diskpart /s` - chia o dia theo dung lua chon wizard.
 
@@ -1232,40 +1232,58 @@ def sinh_diskpart_txt(d):
     docstring cua sinh_deploy_cmd().
 
     Quy uoc chu o (giong het MDT):
-      S: = phan vung EFI (System)
+      S: = phan vung he thong (EFI khi UEFI, phan vung "active" khi BIOS)
       W: = phan vung se chua Windows (luc boot that no se thanh C:)
     Khong dung C: trong WinPE vi chu o do co the da bi chiem san.
+
+    mbr=True: ban cho may BIOS/Legacy (deploy.cmd tu chon theo
+    PEFirmwareType). Wizard ve bo cuc theo GPT (EFI + MSR + ...) nen doi:
+    EFI -> phan vung he thong NTFS "active" (bcdboot /f BIOS ghi bootmgr vao
+    do), MSR -> bo (MBR khong co), MBR toi da 4 phan vung chinh -> tu phan
+    vung thu 4 tro di nam trong 1 phan vung mo rong (logical).
     """
     o_dia_so = d.get("o_dia_so", "0")
-    dong = [f"select disk {o_dia_so}", "clean", "convert gpt"]
+    dong = [f"select disk {o_dia_so}", "clean",
+            "convert mbr" if mbr else "convert gpt"]
+    so_chinh = 0
+
+    def tao(kich_thuoc=None):
+        nonlocal so_chinh
+        cd = f" size={kich_thuoc}" if kich_thuoc else ""
+        if not mbr:
+            return [f"create partition primary{cd}"]
+        so_chinh += 1
+        if so_chinh < 4:
+            return [f"create partition primary{cd}"]
+        ra = ["create partition extended"] if so_chinh == 4 else []
+        return ra + [f"create partition logical{cd}"]
+
+    def he_thong(kich_thuoc, nhan):
+        if not mbr:
+            return [f"create partition efi size={kich_thuoc}",
+                    f'format quick fs=fat32 label="{nhan}"', "assign letter=S"]
+        # 500 MB: du cho bootmgr + WinRE nhu Windows tu chia tren may BIOS.
+        return tao(max(500, int(kich_thuoc) if str(kich_thuoc).isdigit() else 500)) + [
+            f'format quick fs=ntfs label="{nhan}"', "active", "assign letter=S"]
 
     if d.get("o_dia_che_do") != "chia_tay":
-        dong += [
-            "create partition efi size=260",
-            'format quick fs=fat32 label="System"',
-            "assign letter=S",
-            "create partition msr size=16",
-            "create partition primary",
-            'format quick fs=ntfs label="Windows"',
-            "assign letter=W",
-        ]
+        dong += he_thong(260, "System")
+        if not mbr:
+            dong.append("create partition msr size=16")
+        dong += tao() + ['format quick fs=ntfs label="Windows"', "assign letter=W"]
     else:
         da_gan_windows = False
         for i, p in enumerate(d.get("phan_vung") or [], start=1):
             fs = (p.get("fs") or "ntfs").lower()
             nhan = p.get("nhan") or ""
             if fs == "msr":
-                dong.append(f"create partition msr size={p.get('cd', '16')}")
+                if not mbr:
+                    dong.append(f"create partition msr size={p.get('cd', '16')}")
                 continue
             if fs == "fat32" and i == 1:
-                dong.append(f"create partition efi size={p.get('cd', '260')}")
-                dong.append(f'format quick fs=fat32 label="{nhan or "System"}"')
-                dong.append("assign letter=S")
+                dong += he_thong(p.get("cd", "260"), nhan or "System")
                 continue
-            if p.get("cd") == "con_lai":
-                dong.append("create partition primary")
-            else:
-                dong.append(f"create partition primary size={p.get('cd', '1024')}")
+            dong += tao(None if p.get("cd") == "con_lai" else p.get("cd", "1024"))
             dinh_dang = "fat32" if fs == "fat32" else "ntfs"
             dong.append(f'format quick fs={dinh_dang} label="{nhan}"')
             # Phan vung dau tien khong phai EFI/MSR chinh la o he dieu hanh
@@ -1389,6 +1407,10 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "@echo off",
         "title Console Pi - Trien khai he dieu hanh",
         "set LOG=X:\\deploy_log.txt",
+        # File nhung (deploy.cmd, diskpart*.txt, unattend.xml, *.ps1) do
+        # wimboot chen vao luc boot - wimboot LUON dat chung o System32
+        # (tai lieu wimboot), khong phai goc X:\\ nhu thoi anh dia GPT.
+        f"set NHUNG={THU_MUC_NHUNG}",
         "echo === Console Pi - bat dau trien khai === > %LOG%",
         "",
         "echo.",
@@ -1431,8 +1453,26 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         # nay khong ton tai va vong lap chay qua, khong anh huong gi.
         "echo  [1/6] Nap driver card mang (neu co)...",
         "echo === nap driver cho WinPE === >> %LOG%",
+        # wimboot chi chen duoc FILE PHANG (khong thu muc) -> cac goi
+        # driver "cho anh boot" dong chung 1 file drivers.wim, bung ra
+        # X:\\ConsolePiDrivers bang dism (co san trong boot.wim).
+        f"if exist %NHUNG%\\{TEN_WIM_DRIVER} dism /apply-image "
+        f"/imagefile:%NHUNG%\\{TEN_WIM_DRIVER} /index:1 "
+        "/applydir:X:\\ConsolePiDrivers >> %LOG% 2>&1",
         'if exist X:\\ConsolePiDrivers (for /r X:\\ConsolePiDrivers %%i in '
         '(*.inf) do drvload "%%i" >> %LOG% 2>&1)',
+        "",
+        # BIOS hay UEFI? - quyet dinh kieu chia o (MBR/GPT) va kieu boot
+        # loader. PEFirmwareType: 1 = BIOS, 2 = UEFI (tai lieu WinPE cua
+        # Microsoft; kiem chung that trong lab: may BIOS doc ra 0x1).
+        "wpeutil UpdateBootInfo >nul 2>&1",
+        "set FW=UEFI",
+        'for /f "tokens=3" %%a in (\'reg query '
+        'HKLM\\System\\CurrentControlSet\\Control /v PEFirmwareType '
+        '2^>nul ^| find "PEFirmwareType"\') do if "%%a"=="0x1" set FW=BIOS',
+        "echo === may khoi dong kieu %FW% === >> %LOG%",
+        "set DPT=%NHUNG%\\diskpart.txt",
+        'if "%FW%"=="BIOS" set DPT=%NHUNG%\\diskpart-mbr.txt',
         "",
         "echo  [1/6] Khoi tao mang va doi mang san sang...",
         "echo === khoi tao mang === >> %LOG%",
@@ -1516,7 +1556,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         f"if not exist {duong_wim} goto loi_thieu_wim",
         "",
         "echo  [3/6] Chia lai o dia - toan bo du lieu cu se mat...",
-        "diskpart /s X:\\diskpart.txt >> %LOG% 2>&1",
+        "diskpart /s %DPT% >> %LOG% 2>&1",
         "if errorlevel 1 goto loi_dia",
         "",
         "echo  [4/6] Bung anh he dieu hanh - buoc nay lau nhat, xin doi...",
@@ -1528,7 +1568,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "echo.",
         "echo  [5/6] Chep cau hinh tu dong - ten may, tai khoan, mui gio...",
         "if not exist W:\\Windows\\Panther mkdir W:\\Windows\\Panther",
-        "copy /y X:\\unattend.xml W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
+        "copy /y %NHUNG%\\unattend.xml W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
         "if errorlevel 1 goto loi_chep",
         "",
         # Chep phan mem + script sang THANG o dia may dich NGAY BAY GIO,
@@ -1544,11 +1584,11 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         # y hay khong, khong duoc phep phu thuoc vao mang con song hay
         # kho Samba con ket noi duoc hay khong.
         "if not exist W:\\ConsolePi mkdir W:\\ConsolePi",
-        "copy /y X:\\bao-cao.ps1 W:\\ConsolePi\\bao-cao.ps1 >> %LOG% 2>&1",
-        "copy /y X:\\tien-trinh.ps1 W:\\ConsolePi\\tien-trinh.ps1 >> %LOG% 2>&1",
+        "copy /y %NHUNG%\\bao-cao.ps1 W:\\ConsolePi\\bao-cao.ps1 >> %LOG% 2>&1",
+        "copy /y %NHUNG%\\tien-trinh.ps1 W:\\ConsolePi\\tien-trinh.ps1 >> %LOG% 2>&1",
         "",
-        "echo  [6/6] Tao boot loader UEFI...",
-        "bcdboot W:\\Windows /s S: /f UEFI >> %LOG% 2>&1",
+        "echo  [6/6] Tao boot loader (%FW%)...",
+        "bcdboot W:\\Windows /s S: /f %FW% >> %LOG% 2>&1",
         "if errorlevel 1 goto loi_boot",
         "",
         "echo XONG >> %LOG%",
@@ -1663,7 +1703,7 @@ def sinh_autounattend_goi_script():
       <RunSynchronous>
         <RunSynchronousCommand wcm:action="add">
           <Order>1</Order>
-          <Path>cmd /c X:\\deploy.cmd</Path>
+          <Path>cmd /c X:\\Windows\\System32\\deploy.cmd</Path>
           <Description>Console Pi - trien khai he dieu hanh</Description>
         </RunSynchronousCommand>
       </RunSynchronous>
@@ -2685,333 +2725,141 @@ def dung_iso_tu_dong(d, dia_chi_pi="192.168.98.1"):
         shutil.rmtree(tam, ignore_errors=True)
 
 
-TEN_DIA_GPT_TU_DONG = "windows-autounattend.img"
+# =====================================================================
+# FILE NHUNG QUA WIMBOOT (1.5.0) - thay cho anh dia GPT+FAT32 + sanboot
+# =====================================================================
+# Anh dia GPT+FAT32 cu (1 file ~500 MB moi kich ban, dung ~1 phut) chi boot
+# duoc tren UEFI TAT Secure Boot: may BIOS dung im o "Booting from SAN
+# device 0x80" (440 byte ma boot MBR toan 0 - loi that anh Thoai 25/09/2026),
+# may bat Secure Boot tu choi iPXE khong ky. Nay: iPXE ban KY chinh thuc +
+# wimboot (Microsoft ky) nap boot.wim GOC (khong sua 1 byte) + cac file
+# nhung duoi day. Chay duoc BIOS, UEFI, UEFI + Secure Boot (kiem chung that
+# trong lab QEMU/OVMF khoa Microsoft - iso/test/wimboot-lab.sh).
+#
+# wimboot dat file chen vao X:\Windows\System32 (tai lieu wimboot). Setup
+# KHONG tu quet autounattend.xml o do (da thu 2024: dung o "Language to
+# install") -> chen them winpeshl.ini goi CHINH setup.exe kem
+# /unattend:<duong dan ro>. Van la setup.exe chay (khong thay no bang script
+# rieng - thay bang script thi bo SMB client khong len, xem
+# sinh_autounattend_goi_script), nen RunSynchronous -> deploy.cmd nhu cu.
+# Lab: may BIOS chay het chuoi, net use vao Samba thanh cong.
+TEN_DIA_GPT_TU_DONG = "windows-autounattend.img"   # anh cu - chi con de don rac
+THU_MUC_NHUNG = "X:\\Windows\\System32"
+TEN_WIM_DRIVER = "drivers.wim"
+DUOI_PS1_CO_BOM = ".ps1"
 
 
-def co_san_dia_gpt_tu_dong():
-    """True neu da dung xong anh dia GPT+FAT32 (xem dung_dia_gpt_tu_dong)."""
-    return os.path.isfile(os.path.join(_d.BOOT_DIR, TEN_DIA_GPT_TU_DONG))
+def sinh_winpeshl_ini():
+    return ("[LaunchApps]\r\n"
+            f"X:\\sources\\setup.exe, /unattend:{THU_MUC_NHUNG}\\autounattend.xml\r\n")
 
 
-TEN_DAU_KICHBAN = TEN_DIA_GPT_TU_DONG + ".json"
-
-
-def _ghi_dau_kichban(d, ten_dia=TEN_DIA_GPT_TU_DONG, them=None):
-    """
-    Ghi lai CHINH XAC kich ban nao da dung nen anh dia dang phuc vu.
-
-    LY DO THAT (loi that da xay ra, tra gia bang 1 lan cai lai may): anh
-    dia la MOT file duy nhat dung chung (windows-autounattend.img) - ai
-    dung lai sau se de len nguoi truoc ma khong de lai dau vet gi. Da co
-    lan anh Thoai bam "Bat PXE" tu kich ban cua anh (dung mat khau cua
-    anh), sau do 1 lan dung anh dia de kiem thu (mat khau test khac) da
-    ghi de len - may cai xong thi mat khau khong phai cua anh, va KHONG
-    CO CACH NAO nhin ra dieu do tu giao dien. Tu gio moi lan dung anh
-    dia deu ghi kem file dau nay de man hinh Deployment OS noi ro dang
-    phuc vu kich ban nao (xem deployos.kichban_dang_phuc_vu()).
-    """
-    import json
-    import datetime
-    dau = {
-        "ten_kichban": d.get("tu_kichban") or "",
-        "os_id": d.get("os_id") or "",
-        "ten_may": d.get("ten_may") or "",
-        "username": d.get("username") or "",
-        "kieu_boot": d.get("kieu_boot") or "",
-        "dung_luc": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+def sinh_file_nhung(d, dia_chi_pi):
+    """{ten file: noi dung} - moi file wimboot se chen cho 1 kich ban."""
+    return {
+        "winpeshl.ini": sinh_winpeshl_ini(),
+        # autounattend.xml : chi de GOI deploy.cmd (sinh_autounattend_goi_script)
+        "autounattend.xml": sinh_autounattend_goi_script(),
+        # deploy.cmd : script trien khai kieu MDT (lam het moi viec)
+        "deploy.cmd": sinh_deploy_cmd(d, dia_chi_pi),
+        # 2 ban chia o - deploy.cmd tu chon theo BIOS/UEFI cua may
+        "diskpart.txt": sinh_diskpart_txt(d),
+        "diskpart-mbr.txt": sinh_diskpart_txt(d, mbr=True),
+        # unattend.xml : cau hinh Windows sau khi bung (chep vao Panther)
+        "unattend.xml": sinh_unattend_offline_xml(d),
+        # Bao cao + tien trinh: nam trong chinh luc boot, KHONG qua Samba -
+        # co mat ke ca khi mang chap chon.
+        "bao-cao.ps1": sinh_script_bao_cao(d),
+        "tien-trinh.ps1": sinh_script_tien_trinh(d, dia_chi_pi),
     }
-    # Menu PXE (ui/pxemenu.py) ghi them "dau van tay" de biet anh dia con
-    # khop kich ban khong - khop thi khoi dung lai (moi anh vai tram MB).
-    dau.update(them or {})
-    try:
-        with open(os.path.join(_d.BOOT_DIR, ten_dia + ".json"), "w",
-                  encoding="utf-8") as f:
-            json.dump(dau, f, ensure_ascii=False, indent=1)
-    except OSError:
-        pass  # khong ghi duoc dau thi van coi nhu dung anh dia thanh cong
 
 
-def doc_dau_kichban(ten_dia=TEN_DIA_GPT_TU_DONG):
-    """Dict mo ta kich ban da dung nen anh dia hien tai, None neu khong co."""
-    import json
-    try:
-        with open(os.path.join(_d.BOOT_DIR, ten_dia + ".json"),
-                  encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return None
-
-
-def dung_dia_gpt_tu_dong(d, dia_chi_pi="192.168.98.1",
-                         ten_dia=TEN_DIA_GPT_TU_DONG, dau_them=None):
+def ghi_file_nhung(d, dia_chi_pi, thu_muc):
     """
-    Dung 1 ANH DIA GPT + 1 phan vung FAT32 (kieu USB cai Windows that,
-    KHONG phai ISO9660) - thay the hoan toan cho dung_iso_tu_dong().
-
-    LOI THAT DA GAP (anh Thoai kiem chung that qua sanboot, tra ve 2 ma
-    loi iPXE khac nhau 0x7f22208e roi 0x7f222091, da tra cuu tai
-    ipxe.org): sau khi sua dung entry El Torito UEFI (tro efisys_noprompt.bin
-    thay vi bootx64.efi), VAN loi - vi day la 1 LOI THAT DA BIET cua chinh
-    iPXE (mailing list ipxe-devel, thang 12/2016, "Bug in UEFI Sanboot with
-    iso9660"): code `efi_block.c` cua iPXE tu dong nhan dien chu ky ISO9660
-    tren dia va ap dat sai `blksize_shift`, khien no doc sai du lieu FAT
-    nam trong anh El Torito - xay ra VOI BAT KY dia nao vua co ISO9660 vua
-    co cau truc UEFI phuc tap (dung y het truong hop cua minh). Fix that
-    su can sua lai chinh ma nguon C cua iPXE (bien dich lai iPXE tu dau -
-    ngoai pham vi hop ly cua Console Pi).
-
-    SUA DUNG: bo ISO9660 hoan toan, dung dinh dang GPT+FAT32 (kieu USB cai
-    Windows that) - KHONG co chu ky ISO9660 nao ca nen khong bao gio cham
-    vao doan code loi do cua iPXE.
-
-    GIOI HAN THAT cua FAT32 (da kiem chung, khong doan): 1 file khong duoc
-    vuot 4GB (truong kich thuoc 32-bit) - install.wim (~4.4GB) VUOT gioi
-    han nay. Giai phap CHINH THUC cua Microsoft (khop voi cach lam USB cai
-    Windows that su khi install.wim qua lon): `wimlib-imagex split` chia
-    thanh install.swm + install2.swm (< 4GB moi phan), autounattend.xml
-    tro InstallFrom/Path toi install.swm - Windows Setup TU tim cac phan
-    tiep theo (install2.swm...) theo dung quy uoc dat ten, khong can khai
-    bao gi them.
-
-    KHONG dung NTFS (co the chua ca install.wim khong can chia) vi
-    firmware UEFI dùng chung (nhu cua VMware/QEMU, dua tren EDK2) KHONG co
-    san driver doc NTFS - day la ly do cong cu Rufus phai tu nhung 1
-    driver UEFI:NTFS rieng. FAT32 la dinh dang UEFI DOC DUOC SAN, an toan
-    nhat.
-
-    Can chay voi quyen root (losetup/mount/mkfs.vfat) - dashboard da chay
-    duoi quyen root nen khong can sudo rieng trong subprocess.
-
-    QUAN TRONG - PHAT HIEN THAT lam DON GIAN HOA lon (kiem chung that qua
-    `diskpart list disk` + `wmic diskdrive` NGAY TRONG WinPE dang chay tu
-    dia nay): ket noi SAN cua sanboot CHI ton tai trong luc firmware dang
-    boot (de nap boot.wim vao RAM) - MOT KHI WinPE da chay xong (X: la RAM
-    disk, KHONG con lien quan gi den dia SAN nua) thi dia do BIEN MAT hoan
-    toan, khong con thay duoc boi Windows/diskpart. Vi vay: KHONG con ly
-    do gi de nhet install.wim/install.swm VAO dia nay nua - se KHONG THE
-    nao doc lai duoc sau khi boot xong (kiem chung that: Windows Setup bao
-    "specified file does not exist" khi tu no doc mot duong UNC bat ky
-    tro ve dia nay sau khi WinPE da boot xong). install.wim VAN phai lay
-    qua Samba (xem sinh_autounattend_xml: InstallFrom co <Credentials>,
-    DriverPaths cung vay). Nho vay khong can wimlib-imagex split nua (tiet
-    kiem rat nhieu thoi gian + dung luong dia tam).
-
-    RIENG autounattend.xml thi KHAC: no duoc NHUNG THANG vao ben trong
-    ban sao boot.wim cua chinh dia nay (xem doan wimlib-imagex update ben
-    duoi) - vi no la 1 phan cua chinh anh WinPE dang chay (X:), KHONG phai
-    thu Windows can "doc lai tu ben ngoai" sau khi boot, nen khong bi anh
-    huong boi viec dia SAN bien mat. Windows Setup tu quet duoc no ngay
-    tren X: - khong can lenh `setup.exe /unattend:` thu cong nua.
+    Ghi bo file nhung cua 1 kich ban vao thu_muc (thay ca bo mot luc - may
+    dang boot giua chung khong bao gio thay nua cu nua moi). Vai chuc KB,
+    duoi 1 giay - khong con "dung anh" nua.
     """
-    os_id = d.get("os_id", "")
-    goc_wim = _d.duong_boot_wim(os_id)
-    if not os.path.isfile(goc_wim):
-        return False, f'Không tìm thấy boot.wim cho hệ điều hành "{os_id}".'
-
-    import tempfile
-    tam = tempfile.mkdtemp(prefix="gpt-src-", dir=_d.BOOT_DIR)
-    # ten_dia: anh dia chinh (nut "Dung") hoac anh rieng cua 1 muc trong
-    # menu PXE (ui/pxemenu.py) - moi muc 1 file, khong de len nhau.
-    duong_dia = os.path.join(_d.BOOT_DIR, ten_dia)
-    duong_mnt = None
-    loop_dev = None
+    import shutil
+    tam = thu_muc + ".moi"
+    shutil.rmtree(tam, ignore_errors=True)
     try:
-        # 1. Trich xuat cac file boot BIOS+UEFI tu chinh boot.wim cua os_id
-        #    da chon (tai su dung danh sach _CAC_FILE_BOOT_ISO).
-        for duong_wim, duong_dich in _CAC_FILE_BOOT_ISO:
-            dich_day_du = os.path.join(tam, duong_dich)
-            os.makedirs(os.path.dirname(dich_day_du), exist_ok=True)
-            ok, out = _sh(["wimlib-imagex", "extract", goc_wim, "2",
-                           duong_wim,
-                           f"--dest-dir={os.path.dirname(dich_day_du)}"],
-                          timeout=60)
-            if not ok:
-                return False, f"Không trích xuất được {duong_wim}: {out[-300:]}"
-            ten_goc = duong_wim.rsplit("\\", 1)[-1]
-            trich_ra = os.path.join(os.path.dirname(dich_day_du), ten_goc)
-            if trich_ra != dich_day_du and os.path.isfile(trich_ra):
-                os.replace(trich_ra, dich_day_du)
-
-        import shutil
-        os.makedirs(os.path.join(tam, "sources"), exist_ok=True)
-        duong_boot_wim_tam = os.path.join(tam, "sources", "boot.wim")
-        shutil.copyfile(goc_wim, duong_boot_wim_tam)
-        os.chmod(duong_boot_wim_tam, 0o644)
-
-        # 1b. THU that: nhet install.wim (tach nho .swm) NGAY TREN dia GPT
-        #     nay, hy vong Setup doc duoc no y het luc doc boot.wim. KET
-        #     QUA THAT (kiem chung bang `wmic logicaldisk get caption,
-        #     volumename,filesystem` ngay trong WinPE dang chay): dia
-        #     WININSTALL KHONG XUAT HIEN o bat ky o dia nao (C: la Windows
-        #     cai lan truoc, D: rong, X: la RAM cua boot.wim) - CHUNG TO dia
-        #     SAN da bien mat TU RAT SOM, som hon ca luc Setup xu ly
-        #     ImageInstall. Vay khong con cach nao khac: install.wim BAT
-        #     BUOC phai lay qua Samba (UNC), quay lai dung Credentials.
-        #
-        #     NHUNG loi THAT SU (kiem chung bang log Samba /var/log/samba/:
-        #     HOAN TOAN khong co ket noi nao duoc ghi nhan trong MOI lan
-        #     thu, ke ca lan RunSynchronousCommand da xac nhan mang len
-        #     duoc that su qua netinit_log.txt) la: Windows Setup xu ly
-        #     ImageInstall/InstallFrom SOM HON ca RunSynchronousCommand cua
-        #     CHINH pass windowsPE (dat Order=1 cung khong giup - Setup
-        #     KHONG dam bao chay RunSynchronousCommand truoc DiskConfig/
-        #     ImageInstall, khac voi tai lieu Microsoft ngu y). Vi vay
-        #     RunSynchronousCommand la SAI CHO cho viec nay.
-        #
-        #     SUA DUNG THAT SU (mo hinh MDT): WinPE luon uu tien chay
-        #     winpeshl.ini (neu co) TRUOC khi lam bat ky viec gi khac luc
-        #     khoi dong shell - da KIEM CHUNG THAT bang file log X:\diag.txt
-        #     (thu tu chay dung 100%: bat_dau -> wpeinit_xong -> goi_setup).
-        #     Nhung ngay ca khi mang DA len HAN truoc khi goi setup.exe,
-        #     Setup VAN bao loi credentials va Samba VAN khong ghi nhan ket
-        #     noi nao - ly do cuoi cung tim ra o setupact.log:
-        #     ERROR_BAD_NETPATH tu chinh ruot setup.exe (khong sua duoc).
-        #
-        #     => BO HAN setup.exe. Dung winpeshl.ini de chay 1 SCRIPT
-        #     TRIEN KHAI cua rieng minh (deploy.cmd), tu lam tung buoc
-        #     bang diskpart + dism + bcdboot - dung y het cach MDT
-        #     (LiteTouch) lam. Xem chi tiet trong sinh_deploy_cmd().
-        goc_install = _d.duong_install_wim(os_id)
-        if not os.path.isfile(goc_install):
-            return False, f'Không tìm thấy install.wim cho hệ điều hành "{os_id}".'
-
-        # 4 file nhung vao goc image 2 cua boot.wim (deu doc duoc tu X:\)
-        #   autounattend.xml : Setup tu quet thay o goc X:, chi de GOI
-        #                      deploy.cmd (xem sinh_autounattend_goi_script)
-        #   deploy.cmd       : script trien khai kieu MDT (lam het moi viec)
-        #   diskpart.txt     : script chia o dia cho deploy.cmd
-        #   unattend.xml     : cau hinh cho Windows sau khi bung xong,
-        #                      deploy.cmd chep vao W:\Windows\Panther
-        # KHONG con nhung winpeshl.ini nua - de setup.exe chay binh thuong
-        # (chinh no moi kich hoat duoc bo SMB client - xem ly do that trong
-        # docstring cua sinh_autounattend_goi_script).
-        cac_file_nhung = {
-            "autounattend.xml": sinh_autounattend_goi_script(),
-            "deploy.cmd": sinh_deploy_cmd(d, dia_chi_pi),
-            "diskpart.txt": sinh_diskpart_txt(d),
-            "unattend.xml": sinh_unattend_offline_xml(d),
-            # Bao cao tong ket - LUON nhung, khong phai tuy chon. Nam
-            # trong chinh anh boot nen co mat o MOI lan cai, khong phu
-            # thuoc Samba hay viec anh Thoai co chon gi hay khong.
-            "bao-cao.ps1": sinh_script_bao_cao(d),
-            # Script dieu phoi cai dat + bao tien trinh ve Pi. Nhung vao
-            # anh boot (khong qua Samba) de no co mat ke ca khi mang chap
-            # chon - day la thu duy nhat biet dang cai toi dau.
-            "tien-trinh.ps1": sinh_script_tien_trinh(d, dia_chi_pi),
-        }
-        lenh_update = []
-        duong_tam_da_tao = []
-        for ten, noi_dung in cac_file_nhung.items():
-            duong = os.path.join(tam, f"_nhung_{ten}")
-            # File .ps1 PHAI co BOM. Windows PowerShell 5.1 (ban co san
-            # trong Windows 10/11) doc file .ps1 KHONG co BOM theo bang ma
-            # ANSI cua he thong, nen moi chu tieng Viet co dau trong bao
-            # cao se thanh ky tu rac. Co BOM thi no doc dung UTF-8.
-            ma_hoa = "utf-8-sig" if ten.lower().endswith(".ps1") else "utf-8"
-            with open(duong, "w", encoding=ma_hoa, newline="") as f:
+        os.makedirs(tam)
+        for ten, noi_dung in sinh_file_nhung(d, dia_chi_pi).items():
+            # File .ps1 PHAI co BOM. Windows PowerShell 5.1 doc .ps1 khong BOM
+            # theo bang ma ANSI -> moi chu tieng Viet co dau thanh ky tu rac.
+            ma_hoa = "utf-8-sig" if ten.lower().endswith(DUOI_PS1_CO_BOM) else "utf-8"
+            with open(os.path.join(tam, ten), "w", encoding=ma_hoa, newline="") as f:
                 f.write(noi_dung)
-            duong_tam_da_tao.append(duong)
-            lenh_update.append(f"add {duong} /{ten}")
-
-        # Driver CHO ANH BOOT: chep ca thu muc goi driver vao trong
-        # boot.wim tai /ConsolePiDrivers/<id>/. deploy.cmd se `drvload`
-        # chung NGAY TRUOC khi khoi tao mang - xem ly do that (do chinh
-        # boot.wim thieu driver LAN Intel doi moi) trong docstring cua
-        # deployos.dat_driver_cho_boot().
-        for dr in _d.danh_sach_driver():
-            if not dr.get("cho_boot"):
-                continue
-            thu_muc_dr = os.path.join(_d.DRIVERS_DIR, dr["id"])
-            if os.path.isdir(thu_muc_dr):
-                lenh_update.append(
-                    f"add {thu_muc_dr} /ConsolePiDrivers/{dr['id']}")
-
-        # LUU Y: wimlib-imagex chi nhan 1 tham so --command duy nhat (khong
-        #     lap lai duoc) - phai gop nhieu lenh vao CHUNG 1 chuoi, moi
-        #     lenh 1 dong (kiem chung that qua CLI, ERROR "--command may
-        #     only be specified one time" khi truyen 2 lan rieng).
-        ok, out = _sh(["wimlib-imagex", "update", duong_boot_wim_tam, "2",
-                       "--command", "\n".join(lenh_update)],
-                      timeout=120)
-        for duong in duong_tam_da_tao:
-            os.remove(duong)
-        if not ok:
-            return False, f"Không nhúng được script triển khai vào boot.wim: {out[-300:]}"
-
-        # 2. Tinh dung luong can - cong tat ca file that su se nam tren
-        #    dia, cong them 10% du phong cho cau truc FAT32 + GPT (dia
-        #    nho hon nhieu lan so voi truoc vi khong con install.wim).
-        tong_byte = sum(
-            os.path.getsize(os.path.join(goc, f))
-            for goc, _dirs, files in os.walk(tam) for f in files)
-        dung_luong_mb = int(tong_byte / 1024 / 1024 * 1.05) + 16
-
-        # 5. Tao anh dia GPT + 1 phan vung FAT32 (kieu ESP), format, gan
-        #    qua loop device, chep file vao, thao ra.
-        duong_dia_tam = duong_dia + ".dang-dung"
-        ok, out = _sh(["truncate", "-s", f"{dung_luong_mb}M", duong_dia_tam],
-                      timeout=30)
-        if not ok:
-            return False, f"Không tạo được file ảnh đĩa: {out[-300:]}"
-        ok, out = _sh(["parted", "--script", duong_dia_tam,
-                       "mklabel", "gpt",
-                       "mkpart", "ESP", "fat32", "1MiB", "100%",
-                       "set", "1", "esp", "on"], timeout=30)
-        if not ok:
-            return False, f"Không phân vùng được ảnh đĩa: {out[-300:]}"
-
-        ok, out = _sh(["losetup", "--find", "--partscan", "--show",
-                       duong_dia_tam], timeout=15)
-        if not ok:
-            return False, f"Không gắn được loop device: {out[-300:]}"
-        loop_dev = out.strip().splitlines()[-1].strip()
-        duong_phan_vung = f"{loop_dev}p1"
-
-        ok, out = _sh(["mkfs.vfat", "-F", "32", "-n", "WININSTALL",
-                       duong_phan_vung], timeout=60)
-        if not ok:
-            return False, f"Không định dạng FAT32 được: {out[-300:]}"
-
-        duong_mnt = tempfile.mkdtemp(prefix="gpt-mnt-", dir=_d.BOOT_DIR)
-        ok, out = _sh(["mount", duong_phan_vung, duong_mnt], timeout=15)
-        if not ok:
-            return False, f"Không mount được phân vùng: {out[-300:]}"
-
-        ok, out = _sh(["cp", "-a", f"{tam}/.", duong_mnt], timeout=600)
-        if not ok:
-            return False, f"Không chép file vào ảnh đĩa được: {out[-300:]}"
-
-        # LOI THAT (Pi, 24/09/2026): sync 30s / umount 15s KHONG DU cho the
-        # nho SD ghi ~500 MB - umount bi cat ngang, anh dia KET o trang thai
-        # mount (gpt-mnt-* con treo, loop con gan) va file co the chua ghi
-        # xong luc da doi ten thanh anh that. Cho du lau; umount khong duoc
-        # thi BAO LOI, khong coi anh do la xong.
-        _sh(["sync"], timeout=600)
-        ok, out = _sh(["umount", duong_mnt], timeout=300)
-        if not ok:
-            return False, f"Không tháo được ảnh đĩa sau khi chép: {out[-300:]}"
-        _sh(["losetup", "--detach", loop_dev], timeout=15)
-        loop_dev = None
-
-        os.replace(duong_dia_tam, duong_dia)
-        _ghi_dau_kichban(d, ten_dia, dau_them)
-        return True, f"Đã dựng {ten_dia} ({os.path.getsize(duong_dia):,} bytes)."
+        cu = thu_muc + ".cu"
+        shutil.rmtree(cu, ignore_errors=True)
+        if os.path.isdir(thu_muc):
+            os.replace(thu_muc, cu)
+        os.replace(tam, thu_muc)
+        shutil.rmtree(cu, ignore_errors=True)
+        return True, ""
     except Exception as e:
-        return False, f"Lỗi khi dựng ảnh đĩa GPT: {e}"
-    finally:
-        if loop_dev:
-            if duong_mnt:
-                ok_u, _ = _sh(["umount", duong_mnt], timeout=300)
-                if not ok_u:
-                    _sh(["umount", "-l", duong_mnt], timeout=30)
-            _sh(["losetup", "--detach", loop_dev], timeout=15)
-        if duong_mnt:
+        shutil.rmtree(tam, ignore_errors=True)
+        return False, str(e)
+
+
+def dung_wim_driver(duong_wim):
+    """
+    Dong cac goi driver "cho anh boot" vao 1 file .wim (wimboot chi chen
+    duoc FILE PHANG, khong chen duoc thu muc driver). deploy.cmd bung no ra
+    X:\\ConsolePiDrivers bang dism roi drvload - xem ly do (boot.wim thieu
+    driver LAN Intel doi moi) trong deployos.dat_driver_cho_boot().
+
+    Tra ve (ok, thong_bao). Khong co driver nao -> xoa file, ok. Chi dung lai
+    khi danh sach/noi dung driver doi (dau van tay luu canh file).
+    """
+    import hashlib
+    import shutil
+    import tempfile
+    cac = []
+    for dr in _d.danh_sach_driver():
+        thu_muc = os.path.join(_d.DRIVERS_DIR, dr["id"])
+        if dr.get("cho_boot") and os.path.isdir(thu_muc):
+            cac.append((dr["id"], thu_muc))
+    dau_file = duong_wim + ".dau"
+    if not cac:
+        for x in (duong_wim, dau_file):
             try:
-                os.rmdir(duong_mnt)
+                os.remove(x)
             except OSError:
                 pass
+        return True, ""
+    h = hashlib.sha256()
+    for ma, thu_muc in sorted(cac):
+        for goc, _ds, fs in sorted(os.walk(thu_muc)):
+            for f in sorted(fs):
+                try:
+                    st = os.stat(os.path.join(goc, f))
+                except OSError:
+                    continue
+                h.update(f"{ma}/{os.path.relpath(goc, thu_muc)}/{f}:{st.st_size}:{int(st.st_mtime)}".encode())
+    dau = h.hexdigest()
+    try:
+        with open(dau_file) as f:
+            if f.read().strip() == dau and os.path.isfile(duong_wim):
+                return True, ""
+    except OSError:
+        pass
+    tam = tempfile.mkdtemp(prefix="drv-", dir=os.path.dirname(duong_wim))
+    try:
+        for ma, thu_muc in cac:
+            os.symlink(thu_muc, os.path.join(tam, ma))
+        ok, out = _sh(["wimlib-imagex", "capture", tam, duong_wim + ".moi",
+                       "ConsolePiDrivers", "--dereference"], timeout=600)
+        if not ok:
+            return False, f"Không đóng gói được driver cho ảnh boot: {out[-300:]}"
+        os.replace(duong_wim + ".moi", duong_wim)
+        with open(dau_file, "w") as f:
+            f.write(dau)
+        return True, ""
+    finally:
         shutil.rmtree(tam, ignore_errors=True)
         try:
-            os.remove(duong_dia + ".dang-dung")
+            os.remove(duong_wim + ".moi")
         except OSError:
             pass

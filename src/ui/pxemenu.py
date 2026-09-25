@@ -13,21 +13,17 @@ MENU 2 TANG (anh Thoai 24/09/2026: "neu nhu la kich ban de lua chon thi co
                2. Install Windows  >  TAT CA kich ban Windows dang co
                Khoi dong o cung / Khoi dong lai
 
-CACH LAM - dung lai nguyen duong da kiem chung, khong viet lai:
-  - Moi kich ban Windows (du thong tin) duoc dung 1 ANH DIA RIENG bang
-    CHINH ham cua nut "Dung" (unattend.dung_dia_gpt_tu_dong) voi cau hinh
-    nap Y HET nut "Dung" (deployos.cauhinh_tu_kichban). Ten file
-    "_menu-<ten kich ban>.img": dau "_" de trang "Tai nguyen > File boot"
-    khong liet ke (xem deployos._liet_ke), duoi .img nam trong danh sach
-    route /deployos/pxeboot/ duoc phep phuc vu.
-  - menu.ipxe (file iPXE tai DUNG 1 lan dau moi lan boot, xem pxe.py) doi
-    tu 1 dong `sanboot` thanh 1 MENU cua chinh iPXE (lenh menu/item/choose).
-    Muc mac dinh chay sau N giay neu khong ai bam - giu duoc che do "cam
-    vao la tu cai" cho phong may.
-  - Anh dia chi dung lai khi THAT SU can: "dau van tay" (noi dung kich ban
-    + dia chi Pi + boot.wim + phien ban ma sinh script) khop thi dung lai
-    anh cu. Moi anh vai tram MB, dung mat ~1 phut - dung lai het moi lan
-    bat PXE thi rat cham.
+CACH LAM (tu 1.5.0 - wimboot, xem unattend: FILE NHUNG QUA WIMBOOT):
+  - Moi kich ban Windows (du thong tin) co 1 thu muc BOOT_DIR/_pxe/<ten>/
+    chua cac file nho (winpeshl.ini, autounattend.xml, deploy.cmd,
+    diskpart*.txt, unattend.xml, *.ps1) sinh bang CHINH cau hinh cua kich ban
+    (deployos.cauhinh_tu_kichban). Vai chuc KB, ghi lai MOI lan bat PXE /
+    luu kich ban - duoi 1 giay, khong can "dau van tay" nhu thoi anh dia.
+  - Muc menu = `kernel wimboot` + `initrd` tung file + boot.wim GOC cua he
+    dieu hanh. Chay tren BIOS, UEFI, UEFI + Secure Boot.
+  - Truoc 1.5.0: moi kich ban 1 anh dia GPT+FAT32 ~500 MB (dung ~1 phut) +
+    `sanboot` - chi chay UEFI tat Secure Boot (BIOS dung im o "Booting from
+    SAN device 0x80", loi that anh Thoai 25/09/2026). Anh cu tu xoa.
 
 CHI CON MENU (anh Thoai 25/09/2026: "co menu va khi nao client chon kich
 ban thi moi bat dau boot, con phan 'dung' kia thi thoi"): bo nut "Dung"
@@ -39,10 +35,9 @@ GIOI HAN THAT:
   - Menu chu (iPXE chay TRUOC Windows, chi co man hinh chu, khong co dau
     tieng Viet, chon bang phim mui ten + Enter).
   - Moi muc dung CHE DO MANG da chon khi bat PXE (dnsmasq chi chay 1 che
-    do mot luc) - dia chi Pi nhet vao anh dia la dia chi cua che do do.
+    do mot luc) - dia chi Pi ghi trong deploy.cmd la dia chi cua che do do.
   - Chi kich ban Windows (Linux van dung duong cu, chua co menu).
 """
-import hashlib
 import json
 import os
 import re
@@ -51,7 +46,8 @@ import unicodedata
 from . import deployos as _d
 
 FILE_CAUHINH = os.path.join(_d.DEPLOY_DIR, "menu-pxe.json")
-TIEN_TO_ANH = "_menu-"
+TIEN_TO_ANH = "_menu-"      # anh dia GPT cu (< 1.5.0) - chi con de don rac
+THU_MUC_PXE = "_pxe"        # BOOT_DIR/_pxe/<kich ban>/ = file wimboot chen vao
 CHO_TOI_DA = 300          # giay
 KIEU_HOP_LE = [k for k, _t, _m in _d.KIEU_BOOT]
 # Mac dinh "mang co DHCP" (proxyDHCP): khong bao gio tranh cap IP voi router
@@ -104,118 +100,79 @@ def kichban_windows():
 
 
 def thieu_cua(kb, kieu_boot=None):
-    """Nhung gi kich ban con thieu de dung duoc anh dia (rong = du)."""
+    """Nhung gi kich ban con thieu de vao duoc menu (rong = du)."""
     d = _d.cauhinh_tu_kichban(kb)
     if kieu_boot:
         d["kieu_boot"] = kieu_boot
     return _d.thieu_gi(d)
 
 
-# ------------------------------------------------------------ anh dia rieng
-def ten_anh(ten_file_kichban):
+# ------------------------------------------------- file nhung rieng (wimboot)
+def ten_thu_muc(ten_file_kichban):
+    """Thu muc file nhung cua 1 kich ban: BOOT_DIR/_pxe/<ten nay>/.
+    Nam trong URL cua lenh initrd - chi giu ky tu an toan cho URL."""
     goc = ten_file_kichban[:-5] if ten_file_kichban.endswith(".json") else ten_file_kichban
-    # Ten nay nam trong URL cua lenh sanboot - chi giu ky tu an toan cho URL
-    # (ten_an_toan con cho phep dau cach, dau cach se lam gay lenh iPXE).
-    return TIEN_TO_ANH + re.sub(r"[^A-Za-z0-9._-]", "_", goc)[:120] + ".img"
+    return re.sub(r"[^A-Za-z0-9._-]", "_", goc)[:120].lstrip(".") or "_"
 
 
-def _dau_van_tay(kb, dia_chi_pi):
-    """
-    Thay doi BAT KY thu gi lam anh dia khac di thi dau van tay phai khac:
-    noi dung kich ban, dia chi Pi nhet vao anh, boot.wim cua OS do, va ma
-    nguon sinh noi dung anh (unattend.py, deployos.py).
+def _duong_pxe(*phan):
+    return os.path.join(_d.BOOT_DIR, THU_MUC_PXE, *phan)
 
-    Ma nguon bam theo NOI DUNG, khong theo ngay gio: cap-nhat-pi.sh chep lai
-    moi file nen ngay gio luon doi - bam theo ngay gio thi lan bat PXE dau
-    sau MOI lan cap nhat deu dung lai het anh (~1 phut/kich ban, anh Thoai
-    cho 3 phut ngay 25/09/2026) du code tao anh khong doi 1 chu.
-    """
+
+def _don_anh_cu():
+    """Anh dia GPT cua ban < 1.5.0 (moi cai ~500 MB) - khong con dung nua."""
     from . import unattend as _u
-    h = hashlib.sha256()
-    kb_sach = {k: v for k, v in kb.items() if not k.startswith("_")}
-    h.update(json.dumps(kb_sach, sort_keys=True, ensure_ascii=False).encode())
-    h.update(dia_chi_pi.encode())
-    wim = _d.duong_boot_wim(kb.get("os_id", ""))
-    try:  # boot.wim vai tram MB - bam ca file thi cham, kich thuoc+gio la du
-        st = os.stat(wim)
-        h.update(f"{wim}:{st.st_size}:{int(st.st_mtime)}".encode())
-    except OSError:
-        h.update(f"{wim}:khong-co".encode())
-    for p in (_u.__file__, _d.__file__):
-        try:
-            with open(p, "rb") as f:
-                h.update(hashlib.sha256(f.read()).digest())
-        except OSError:
-            h.update(f"{p}:khong-co".encode())
-    return h.hexdigest()[:16]
-
-
-def _con_trong_mb():
     try:
-        st = os.statvfs(_d.BOOT_DIR)
-        return st.f_bavail * st.f_frsize // (1024 * 1024)
+        for n in os.listdir(_d.BOOT_DIR):
+            if ((n.startswith(TIEN_TO_ANH) and (n.endswith(".img") or n.endswith(".img.json")))
+                    or n in (_u.TEN_DIA_GPT_TU_DONG, _u.TEN_DIA_GPT_TU_DONG + ".json")):
+                try:
+                    os.remove(os.path.join(_d.BOOT_DIR, n))
+                except OSError:
+                    pass
     except OSError:
-        return 0
+        pass
 
 
-def dung_anh_menu(dia_chi_pi, kieu_boot):
+def chuan_bi_menu(dia_chi_pi, kieu_boot):
     """
-    Dung (hoac dung lai neu da cu) anh dia cho MOI kich ban Windows. Xoa
-    anh cua kich ban da xoa va anh chung cu (windows-autounattend.img). Tra ve danh sach dong ket qua de hien cho nguoi dung.
+    Ghi bo file nhung cho MOI kich ban Windows du thong tin (vai chuc KB moi
+    kich ban, duoi 1 giay - khong con dung anh dia 500 MB/1 phut nhu truoc
+    1.5.0) + dong goi driver cho anh boot. Xoa thu muc cua kich ban da xoa va
+    anh dia GPT cu. Tra ve danh sach dong ket qua de hien cho nguoi dung.
     """
+    import shutil
     from . import unattend as _u
     ket_qua = []
     can_giu = set()
+    os.makedirs(_duong_pxe(), exist_ok=True)
     for kb in kichban_windows():
         ten = kb.get("ten_kichban", kb["_file"])
         d = _d.cauhinh_tu_kichban(kb)
-        # Moi muc dung che do mang cua kich ban dang Dung - xem GIOI HAN.
         d["kieu_boot"] = kieu_boot
         thieu = _d.thieu_gi(d)
+        if not thieu and not os.path.isfile(_d.duong_boot_wim(kb.get("os_id", ""))):
+            thieu = ["boot.wim của hệ điều hành"]
         if thieu:
             ket_qua.append(f'"{ten}": bỏ qua - ' + ", ".join(thieu) + ".")
             continue
-        anh = ten_anh(kb["_file"])
-        can_giu.add(anh)
-        dau = _dau_van_tay(kb, dia_chi_pi)
-        cu = _u.doc_dau_kichban(anh)
-        if (cu and cu.get("dau_van_tay") == dau
-                and os.path.isfile(os.path.join(_d.BOOT_DIR, anh))):
-            ket_qua.append(f'"{ten}": ảnh đĩa vẫn đúng, dùng lại.')
-            continue
-        # Moi anh ~ kich thuoc boot.wim + file boot. Doi 1.5 lan + 300MB
-        # cho chac (co ca file tam trong luc dung).
-        try:
-            can_mb = os.path.getsize(_d.duong_boot_wim(kb.get("os_id", ""))) * 3 // 2 // (1024 * 1024) + 300
-        except OSError:
-            can_mb = 1200
-        if _con_trong_mb() < can_mb:
-            ket_qua.append(f'"{ten}": KHÔNG dựng được - ổ đĩa còn {_con_trong_mb()} MB, '
-                           f'cần khoảng {can_mb} MB.')
-            can_giu.discard(anh)
-            continue
-        ok, msg = _u.dung_dia_gpt_tu_dong(d, dia_chi_pi, ten_dia=anh,
-                                          dau_them={"dau_van_tay": dau})
-        ket_qua.append(f'"{ten}": ' + ("đã dựng ảnh đĩa." if ok else f"LỖI - {msg}"))
-        if not ok:
-            can_giu.discard(anh)
-    # Anh chung cu cua nut "Dung" (da bo) - khong con muc nao tro toi, ~500 MB.
-    for x in (_u.TEN_DIA_GPT_TU_DONG, _u.TEN_DIA_GPT_TU_DONG + ".json"):
-        try:
-            os.remove(os.path.join(_d.BOOT_DIR, x))
-        except OSError:
-            pass
-    # Don anh cua kich ban da xoa / khong con la Windows - moi anh vai tram MB.
+        thu_muc = ten_thu_muc(kb["_file"])
+        ok, loi = _u.ghi_file_nhung(d, dia_chi_pi, _duong_pxe(thu_muc))
+        if ok:
+            can_giu.add(thu_muc)
+        else:
+            ket_qua.append(f'"{ten}": LỖI - {loi}')
+    ok, loi = _u.dung_wim_driver(_duong_pxe(_u.TEN_WIM_DRIVER))
+    if not ok:
+        ket_qua.append(loi)
     try:
-        for n in os.listdir(_d.BOOT_DIR):
-            if n.startswith(TIEN_TO_ANH) and n.endswith(".img") and n not in can_giu:
-                for x in (n, n + ".json"):
-                    try:
-                        os.remove(os.path.join(_d.BOOT_DIR, x))
-                    except OSError:
-                        pass
+        for n in os.listdir(_duong_pxe()):
+            p = _duong_pxe(n)
+            if os.path.isdir(p) and n not in can_giu:
+                shutil.rmtree(p, ignore_errors=True)
     except OSError:
         pass
+    _don_anh_cu()
     return ket_qua
 
 
@@ -235,14 +192,17 @@ def _chu_ipxe(s, dai=60):
 
 def muc_menu():
     """
-    Danh sach (nhan, file anh) theo DUNG thu tu hien trong menu - dung cho
-    ca script iPXE lan phan xem truoc tren web. Chi kich ban DA CO anh dia.
+    Danh sach (nhan, thu muc file nhung, os_id) theo DUNG thu tu hien trong
+    menu - dung cho ca script iPXE lan phan xem truoc tren web. Chi kich ban
+    DA CO file nhung va boot.wim cua he dieu hanh.
     """
     muc = []
     for kb in kichban_windows():
-        anh = ten_anh(kb["_file"])
-        if os.path.isfile(os.path.join(_d.BOOT_DIR, anh)):
-            muc.append((kb.get("ten_kichban", kb["_file"]), anh))
+        thu_muc = ten_thu_muc(kb["_file"])
+        os_id = kb.get("os_id", "")
+        if (os.path.isfile(_duong_pxe(thu_muc, "deploy.cmd"))
+                and os.path.isfile(_d.duong_boot_wim(os_id))):
+            muc.append((kb.get("ten_kichban", kb["_file"]), thu_muc, os_id))
     return muc
 
 
@@ -275,36 +235,39 @@ def sinh_script(goc):
             "menu Install Windows - chon kich ban cai dat"]
     if not muc:
         dong.append("item --gap -- (Chua co kich ban Windows nao dung duoc)")
-    for i, (nhan, _anh) in enumerate(muc):
+    for i, (nhan, *_r) in enumerate(muc):
         dong.append(f"item kb{i} {_chu_ipxe(nhan)}")
     dong += ["item --gap -- ",
              "item menu < Quay lai menu chinh"]
     # Menu con: KHONG dem nguoc - chi cai khi co nguoi chon.
     dong += [f"choose --default {'kb0' if muc else 'menu'} chon || goto menu",
              "goto ${chon}", ""]
-    for i, (nhan, anh) in enumerate(muc):
-        dong += [f":kb{i}",
-                 # Anh GPT+FAT32 chi boot duoc bang UEFI (MBR khong co ma
-                 # boot) - may BIOS/Legacy se DUNG IM sau "Booting from SAN
-                 # device 0x80". Chan truoc, noi ro cach sua.
-                 "iseq ${platform} efi || goto bios",
-                 f"echo Dang nap: {_chu_ipxe(nhan)}",
-                 f"sanboot --no-describe {goc}/{anh} || goto loi", ""]
+    from . import unattend as _u
+    co_driver = os.path.isfile(_duong_pxe(_u.TEN_WIM_DRIVER))
+    for i, (nhan, thu_muc, os_id) in enumerate(muc):
+        # wimboot (Microsoft ky) nap boot.wim GOC + file nhung - chay tren
+        # BIOS, UEFI va UEFI + Secure Boot (xem unattend: FILE NHUNG QUA
+        # WIMBOOT). Ten thu 2 cua initrd = ten file hien trong X:\System32.
+        dong += [f":kb{i}", f"echo Dang nap: {_chu_ipxe(nhan)}",
+                 f"kernel {goc}/wimboot || goto loi"]
+        try:
+            cac_file = sorted(os.listdir(_duong_pxe(thu_muc)))
+        except OSError:
+            cac_file = []
+        for f in cac_file:
+            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{thu_muc}/{f} {f} || goto loi")
+        if co_driver:
+            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_WIM_DRIVER} "
+                        f"{_u.TEN_WIM_DRIVER} || goto loi")
+        dong += [f"initrd {goc}/os/{os_id}/boot.wim boot.wim || goto loi",
+                 "boot || goto loi", ""]
     dong += [":odia",
              "echo Khoi dong tu o cung...",
              "exit", "",
              ":lai",
              "reboot", "",
-             ":bios",
-             "echo",
-             "echo LOI: may nay dang khoi dong kieu BIOS / Legacy.",
-             "echo Anh cai Windows cua Console System CHI chay tren UEFI.",
-             "echo Vao BIOS/Setup cua may (hoac Firmware cua may ao) chon UEFI,",
-             "echo tat Secure Boot, roi boot qua mang lai.",
-             "prompt Bam phim bat ky de quay lai menu...",
-             "goto win", "",
              ":loi",
-             "echo LOI: khong nap duoc anh dia cai dat tu Console System.",
+             "echo LOI: khong nap duoc file cai dat tu Console System.",
              "prompt Bam phim bat ky de quay lai menu...",
              "goto win", ""]
     return "\n".join(dong)
@@ -323,7 +286,7 @@ def _xem_truoc(c, muc):
     con = ["  Install Windows - chon kich ban cai dat", ""]
     if not muc:
         con.append("    (Chua co kich ban Windows nao dung duoc)")
-    for i, (nhan, _a) in enumerate(muc):
+    for i, (nhan, *_r) in enumerate(muc):
         con.append(("  > " if i == 0 else "    ") + _chu_ipxe(nhan))
     con += ["", ("  > " if not muc else "    ") + "< Quay lai menu chinh"]
     if c["cho_giay"]:

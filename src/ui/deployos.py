@@ -1062,16 +1062,14 @@ def kiem_tra_san_sang(cauhinh):
     ))
 
     # 2. Bootloader iPXE (giai doan 1 cua PXE: TFTP phat file nho nay truoc)
-    co_ipxe = any(
-        os.path.isfile(os.path.join(BOOT_DIR, t))
-        for t in ("undionly.kpxe", "ipxe.efi", "snponly.efi")
-    )
+    # Tu 1.5.0 kem san ban ky chinh thuc (src/pxe-boot) - khong can tai len.
+    from . import pxe as _pxe
+    co_ipxe = _pxe._file_kem_du()
     ra.append((
         co_ipxe,
-        "Bootloader iPXE",
-        ("Đã có trong thư mục boot" if co_ipxe else
-         "Chưa có (cần undionly.kpxe cho máy BIOS đời cũ / ipxe.efi cho máy "
-         "UEFI - tải từ ipxe.org rồi tải lên ở tab File boot)"),
+        "Bootloader iPXE + wimboot",
+        ("Kèm sẵn bản ký chính thức - máy BIOS, UEFI và UEFI bật Secure Boot"
+         if co_ipxe else "THIẾU file kèm sẵn - cài lại/cập nhật Console System"),
     ))
 
     # Muc "cau hinh PXE cua dnsmasq" TUNG nam o day nhu 1 gach dau dong tinh
@@ -2793,7 +2791,7 @@ def register_deployos(app):
                   Kịch bản sẽ hiện ở tab <strong>Kịch bản</strong> để chọn
                   nhanh lần sau.</p>
                 <div class="row" style="margin-top:16px;">
-                  <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu, có thể mất vài phút)">Lưu kịch bản</button>
+                  <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu luôn)">Lưu kịch bản</button>
                 </div>
               </div>
             </form>
@@ -2846,7 +2844,7 @@ def register_deployos(app):
           <h3>Lưu thay đổi</h3>
           <form method="POST" action="/deployos/kichban/luu/{ma}">
             <input type="hidden" name="ten" value="{_esc(tu_kb)}">
-            <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu, có thể mất vài phút)">
+            <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu luôn)">
               Lưu đè kịch bản "{_esc(tu_kb)}"</button>
           </form>
           <div style="border-top:1px solid #2a2f3a;margin:16px 0 12px;"></div>
@@ -2855,7 +2853,7 @@ def register_deployos(app):
             <input type="text" name="ten" required
                    placeholder="vd: Win10 van phong + Chrome" autocapitalize="off">
             <div class="row" style="margin-top:12px;">
-              <button type="submit" class="gray" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu, có thể mất vài phút)">
+              <button type="submit" class="gray" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu luôn)">
                 Lưu thành kịch bản mới</button>
             </div>
           </form>
@@ -2869,7 +2867,7 @@ def register_deployos(app):
             <input type="text" name="ten" required
                    placeholder="vd: Win11 van phong + Chrome" autocapitalize="off">
             <div class="row" style="margin-top:14px;">
-              <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu, có thể mất vài phút)">Lưu thành kịch bản</button>
+              <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu luôn)">Lưu thành kịch bản</button>
             </div>
           </div>
         </form>"""
@@ -2934,7 +2932,7 @@ def register_deployos(app):
                        value="{c['cho_giay']}" style="width:80px;"> giây
                 <small style="color:#8b93a1;">(0 = chờ mãi)</small></label>
               <button type="submit" class="gray"
-                data-busy="Đang cập nhật menu... có thể mất vài phút, KHÔNG bấm lại">
+                data-busy="Đang cập nhật menu... KHÔNG bấm lại">
                 Cập nhật menu</button>
               <small style="color:#8b93a1;margin-left:8px;">Dựng ảnh cho kịch
                 bản mới/đã sửa (lưu kịch bản lúc PXE bật cũng tự làm).</small>
@@ -2959,7 +2957,7 @@ def register_deployos(app):
             if _pxe.san_sang_bat():
                 nut = f"""
                 <button type="submit"
-                  data-busy="Đang bật PXE... mỗi kịch bản Windows mất khoảng 1-2 phút, KHÔNG bấm lại">
+                  data-busy="Đang bật PXE... chỉ vài giây, KHÔNG bấm lại">
                   Bật PXE</button>"""
             else:
                 nut = ('<div class="msg err">Chưa đủ điều kiện để bật &mdash; '
@@ -2982,9 +2980,9 @@ def register_deployos(app):
               {nut}
             </form>"""
 
-        # Kich ban trong menu - nguon that: file anh dia co tren dia.
+        # Kich ban trong menu - nguon that: file nhung (wimboot) co tren dia.
         ds = [k for k in danh_sach_kichban() if k.get("os_ho") == "windows"]
-        co_anh = {n for n, _a in muc}
+        co_anh = {n for n, *_r in muc}
         hang = ""
         for k in ds:
             ten = k.get("ten_kichban", k["_file"])
@@ -2994,10 +2992,10 @@ def register_deployos(app):
             elif ten in co_anh:
                 tt = '<span style="color:#4CAF50;">&#10003; có trong menu</span>'
             elif dang_bat:
-                tt = ('<span style="color:#f59e0b;">chưa có ảnh đĩa &mdash; bấm '
+                tt = ('<span style="color:#f59e0b;">chưa vào menu &mdash; bấm '
                       '"Cập nhật menu"</span>')
             else:
-                tt = '<span style="color:#8b93a1;">dựng ảnh khi bật PXE</span>'
+                tt = '<span style="color:#8b93a1;">vào menu khi bật PXE</span>'
             hang += f"<tr><td>{_esc(ten)}</td><td>{tt}</td></tr>"
         bang = (f"<table><tr><th>Kịch bản Windows</th><th>Trạng thái</th></tr>{hang}</table>"
                 if ds else '<p style="color:#8b93a1;">Chưa có kịch bản Windows nào &mdash; '
@@ -3044,14 +3042,9 @@ def register_deployos(app):
                      f"<td><strong>{_esc(nhan)}</strong><br>"
                      f"<small style='color:#8b93a1;'>{_esc(chi_tiet)}</small></td></tr>")
 
-        trich_can = (not _pxe._co_bootmgr_pxe()
-                     and os.path.isfile(_pxe._duong("boot.wim")))
-        nut_trich = """
-        <form method="POST" action="/deployos/pxe/trich-bootmgr" style="margin-top:10px;">
-          <input type="hidden" name="ve" value="/deployos/caidat/hatang">
-          <button type="submit" class="gray" data-busy="Đang trích...">
-            Trích bootmgr từ boot.wim</button>
-        </form>""" if trich_can else ""
+        # Tu 1.5.0 wimboot tu lay bootmgr + BCD trong boot.wim - bo nut
+        # "Trich bootmgr" (khong con buoc thu cong nao).
+        nut_trich = ""
 
         body = _tabs("caidat", "hatang") + _msg(msg, ok) + f"""
         <div class="card">
@@ -3063,7 +3056,7 @@ def register_deployos(app):
           {nut_trich}
         </div>"""
         return _trang(body, "Kiểm tra hạ tầng PXE",
-                      "Bootloader, wimboot, bootmgr, BCD", active="/deployos")
+                      "iPXE + wimboot (bản ký, kèm sẵn)", active="/deployos")
 
     @app.route("/deployos/caidat")
     def deployos_caidat():
@@ -4384,9 +4377,9 @@ def register_deployos(app):
         ds = _liet_ke(BOOT_DIR, EXT_BOOT)
         ghi_chu = """
         <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-          Nhận ảnh cài đặt (.iso/.wim/.esd/.img/.vhd) và bootloader iPXE
-          (undionly.kpxe cho máy BIOS đời cũ, ipxe.efi cho máy UEFI - tải từ
-          <code>ipxe.org</code>). Ảnh WinPE (boot.wim) phải tạo sẵn trên 1 máy
+          Nhận ảnh cài đặt (.iso/.wim/.esd/.img/.vhd). Bootloader iPXE +
+          wimboot đã <strong>kèm sẵn bản ký chính thức</strong> (tự chép vào
+          đây mỗi lần bật PXE) - không cần tải lên. Ảnh WinPE (boot.wim) phải tạo sẵn trên 1 máy
           Windows có Windows ADK - Pi không tự tạo được, chỉ lưu và phục vụ.</p>"""
         body = (_tabs("tainguyen", "file") + _msg(msg, ok) +
                 _khoi_tai_len("/deployos/console/file/len", "file boot", EXT_BOOT, ghi_chu, "file") +

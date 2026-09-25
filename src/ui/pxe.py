@@ -67,6 +67,17 @@ PI_CIDR = f"{PI_IP}/24"
 # THIET BI thi may nao cung dung.
 DON_VI_SYSTEMD = "dnsmasq-pxe"
 
+# File boot BAN KY chinh thuc kem san trong ma nguon (src/pxe-boot/, xem
+# README o do) - chep vao TFTP moi lan bat PXE. Truoc 1.5.0 nguoi dung phai tu
+# tai len, va iPXE cua Debian KHONG ky -> may bat Secure Boot tu choi.
+#   BIOS        -> undionly.kpxe
+#   UEFI (+SB)  -> snponly-shim.efi (shim, Microsoft ky) -> tu tai ipxe.efi
+#                  (= snponly.efi ban ky; shim xin DUNG ten nay - log TFTP)
+THU_MUC_FILE_KEM = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "pxe-boot")
+FILE_BOOT_KEM = ("undionly.kpxe", "snponly-shim.efi", "ipxe.efi", "wimboot")
+FILE_EFI_DAU = "snponly-shim.efi"
+
 TEN_BOOTMGR_BIOS = "bootmgr.exe"
 TEN_BOOTMGR_UEFI = "wdsmgfw.efi"
 TEN_BCD_BIOS = "bcd-bios"
@@ -162,33 +173,37 @@ def _co_bcd():
     return os.path.isfile(_duong(TEN_BCD_BIOS)) and os.path.isfile(_duong(TEN_BCD_UEFI))
 
 
+def _file_kem_du():
+    return all(os.path.isfile(os.path.join(THU_MUC_FILE_KEM, f)) for f in FILE_BOOT_KEM)
+
+
+def _chep_file_boot():
+    """Chep bo file boot kem san vao TFTP (BOOT_DIR) neu thieu/khac."""
+    import filecmp
+    for f in FILE_BOOT_KEM:
+        nguon, dich = os.path.join(THU_MUC_FILE_KEM, f), _duong(f)
+        try:
+            if not (os.path.isfile(dich) and filecmp.cmp(nguon, dich, shallow=False)):
+                shutil.copyfile(nguon, dich + ".moi")
+                os.chmod(dich + ".moi", 0o644)
+                os.replace(dich + ".moi", dich)
+        except OSError as e:
+            return False, f"Không chép được file boot {f}: {e}"
+    return True, ""
+
+
 def trang_thai_chuan_bi():
     """
     Danh sach (dat, nhan, chi_tiet) - PHAN NOI TIEP kiem_tra_san_sang() cua
     deployos.py, kiem tra rieng cac dieu kien PXE THAT SU can de bat duoc.
+
+    Tu 1.5.0: iPXE + wimboot kem san (ban ky), bootmgr + BCD do wimboot tu
+    lay tu boot.wim -> khong con buoc tai len / trich / lay BCD tu ISO.
     """
-    ra = []
-    co_ipxe_tftp = os.path.isfile(_duong("undionly.kpxe")) and os.path.isfile(_duong("snponly.efi"))
-    ra.append((co_ipxe_tftp, "Bootloader iPXE (BIOS + UEFI)",
-               "Đã có cả undionly.kpxe và snponly.efi" if co_ipxe_tftp else
-               "Thiếu - tải lên ở tab Tài nguyên > File boot (cần cả "
-               "undionly.kpxe và snponly.efi - snponly.efi tương thích tốt "
-               "hơn với máy ảo/một số card mạng UEFI, đã kiểm chứng thật)"))
-
-    co_wimboot = os.path.isfile(_duong("wimboot"))
-    ra.append((co_wimboot, "wimboot",
-               "Đã có" if co_wimboot else "Thiếu - tải lên ở tab Tài nguyên > File boot"))
-
-    ra.append((_co_bootmgr_pxe(), "bootmgr.exe + wdsmgfw.efi (trích từ boot.wim)",
-               "Đã trích" if _co_bootmgr_pxe() else
-               "Chưa trích - bấm nút 'Trích bootmgr từ boot.wim' bên dưới"))
-
-    ra.append((_co_bcd(), "File BCD (từ ISO gốc)",
-               "Đã có" if _co_bcd() else
-               "CHƯA CÓ - cần lấy từ gốc ISO (thư mục boot/bcd và "
-               "efi/microsoft/boot/bcd), không nằm sẵn trong boot.wim. "
-               "Tải lại ISO và bấm nút lấy BCD."))
-    return ra
+    du = _file_kem_du()
+    return [(du, "File boot iPXE + wimboot (bản ký chính thức, kèm sẵn)",
+             "Đủ - chạy được máy BIOS, UEFI và UEFI bật Secure Boot" if du else
+             f"THIẾU trong {THU_MUC_FILE_KEM} - cài lại/cập nhật Console System")]
 
 
 def san_sang_bat():
@@ -313,8 +328,13 @@ def _sinh_menu_ipxe(kieu_boot="truc_tiep"):
     # vuot 4GB thanh install.swm/install2.swm, parted+mkfs.vfat de dung
     # GPT+FAT32, cac file boot van trich thang tu boot.wim) - xem
     # ui/unattend.py: dung_dia_gpt_tu_dong().
+    # TU 1.5.0 QUAY LAI wimboot - nhung KHONG sua boot.wim (nguyen nhan
+    # 0xc000000f o tren) va KHONG trong cho Setup tu quet autounattend: chen
+    # them winpeshl.ini goi setup.exe /unattend:<duong dan ro> (xem unattend:
+    # FILE NHUNG QUA WIMBOOT). Ly do bo sanboot: anh GPT chi chay UEFI tat
+    # Secure Boot. Kiem chung lab BIOS/UEFI/UEFI+SB - iso/test/wimboot-lab.sh.
     # CHI CON MENU (25/09/2026 - xem ui/pxemenu.py): may khach TU CHON kich
-    # ban, moi muc sanboot 1 anh dia GPT+FAT32 rieng. Khong con duong
+    # ban. Khong con duong
     # "1 anh chung" cua nut "Dung" lan duong wimboot tran (boot.wim khong
     # co autounattend - Setup hoi tay, khong dung kich ban nao).
     from . import pxemenu as _m
@@ -366,7 +386,7 @@ def _ghi_dnsmasq_conf(kieu_boot):
         dong_gateway = ""     # proxyDHCP khong cap IP nen khong can khai bao gateway
         dong_pxe_service = (
             'pxe-service=tag:bios-that,x86PC,"Cai dat qua mang (Console Pi)",undionly.kpxe\n'
-            'pxe-service=tag:efi-that,x86-64_EFI,"Cai dat qua mang (Console Pi)",snponly.efi'
+            f'pxe-service=tag:efi-that,x86-64_EFI,"Cai dat qua mang (Console Pi)",{FILE_EFI_DAU}'
         )
     else:
         dhcp_range = (f"dhcp-range={PI_IP.rsplit('.',1)[0]}.50,"
@@ -413,7 +433,7 @@ tag-if=set:efi-that,tag:efi-x64,tag:!ipxe
 # chi Pi o truong thu 3 cua dhcp-boot -> dnsmasq dien siaddr. Ghi cho ca 3
 # dong (ca 3 che do) - che do cap IP day du thi vo hai, van dung dia chi Pi.
 dhcp-boot=tag:bios-that,undionly.kpxe,,{dia_chi_pi}
-dhcp-boot=tag:efi-that,snponly.efi,,{dia_chi_pi}
+dhcp-boot=tag:efi-that,{FILE_EFI_DAU},,{dia_chi_pi}
 dhcp-boot=tag:ipxe,http://{dia_chi_pi}:80/deployos/pxeboot/menu.ipxe,,{dia_chi_pi}
 {dong_pxe_service}
 enable-tftp
@@ -604,8 +624,7 @@ def _bat_pxe_that(kieu_boot="truc_tiep"):
 # menu, ca hai cung khoi dong lai dnsmasq va ghi de menu.ipxe cua nhau.
 # Gio lan bam sau duoc bao ro "dang lam, cho" thay vi chay chong.
 _KHOA = threading.RLock()
-_DANG_LAM = ("Đang bật PXE / dựng ảnh đĩa từ lần bấm trước (mỗi kịch bản "
-             "Windows trong menu mất khoảng 1-2 phút trên Pi). Chờ xong rồi "
+_DANG_LAM = ("Đang bật/cập nhật PXE từ lần bấm trước. Chờ vài giây rồi "
              "tải lại trang - KHÔNG cần bấm lại.")
 
 
@@ -687,8 +706,8 @@ def tat_pxe():
 def cap_nhat_menu():
     """Xem _cap_nhat_menu_that. Dang ban thi bao, khong chay chong."""
     if not _KHOA.acquire(blocking=False):
-        return (" Menu PXE CHƯA cập nhật: đang dựng ảnh đĩa từ lần bấm "
-                "khác - chờ xong rồi bấm \"Lưu cài đặt menu\" lại.")
+        return (" Menu PXE CHƯA cập nhật: đang bận xử lý lần bấm khác - "
+                "chờ vài giây rồi bấm \"Lưu cài đặt menu\" lại.")
     try:
         _don_rac_dung_anh()
         return _cap_nhat_menu_that()
@@ -698,11 +717,14 @@ def cap_nhat_menu():
 
 def _dung_menu(kieu_boot):
     """
-    Dung/dung lai anh dia cho moi kich ban Windows (menu PXE). Tra ve doan
-    chu noi them vao thong bao.
+    Ghi file nhung (wimboot) cho moi kich ban Windows (menu PXE) + chep file
+    boot kem san vao TFTP. Tra ve doan chu noi them vao thong bao.
     """
     from . import pxemenu as _m
-    kq = _m.dung_anh_menu(_dia_chi_pi_that(kieu_boot), kieu_boot)
+    ok, loi = _chep_file_boot()
+    kq = _m.chuan_bi_menu(_dia_chi_pi_that(kieu_boot), kieu_boot)
+    if not ok:
+        kq.insert(0, loi)
     so_muc = len(_m.muc_menu())
     return (f" Menu: {so_muc} kịch bản." + (" " + " ".join(kq) if kq else ""))
 
@@ -789,6 +811,33 @@ def register_pxe(app):
             _don_phien_smb_cu(request.remote_addr)
 
         return send_from_directory(_d.BOOT_DIR, ten_sach)
+
+    # Ten thu muc/file cua duong wimboot: chi ky tu an toan, khong ".." -
+    # cung la ten do pxemenu.ten_thu_muc() sinh ra.
+    _TEN_SACH = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]{0,150}$")
+
+    @app.route("/deployos/pxeboot/_pxe/<thu_muc>/<ten>")
+    @app.route("/deployos/pxeboot/_pxe/<ten>", defaults={"thu_muc": ""})
+    def deployos_pxeboot_nhung(thu_muc, ten):
+        """File wimboot chen vao cho tung kich ban (+ drivers.wim dung chung)."""
+        from . import pxemenu as _m
+        if not dang_bat() or not _TEN_SACH.match(ten) or (
+                thu_muc and not _TEN_SACH.match(thu_muc)):
+            abort(404)
+        goc = os.path.join(_d.BOOT_DIR, _m.THU_MUC_PXE, thu_muc)
+        if not os.path.isfile(os.path.join(goc, ten)):
+            abort(404)
+        return send_from_directory(goc, ten)
+
+    @app.route("/deployos/pxeboot/os/<os_id>/boot.wim")
+    def deployos_pxeboot_bootwim(os_id):
+        """boot.wim GOC cua tung he dieu hanh - wimboot nap, khong sua gi."""
+        if not dang_bat() or not _TEN_SACH.match(os_id):
+            abort(404)
+        p = _d.duong_boot_wim(os_id)
+        if not os.path.isfile(p):
+            abort(404)
+        return send_from_directory(os.path.dirname(p), os.path.basename(p))
 
     def _ve_lai(msg, ok):
         """

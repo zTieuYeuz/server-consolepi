@@ -1,6 +1,6 @@
 #!/bin/bash
 # Cap nhat Console Pi dang chay len ban moi nhat trong repo
-# Chi thay ui/, nettools/, scripts/, VERSION - giong dung buoc copy cua install.sh.
+# Chi thay ui/, nettools/, pxe-boot/, scripts/, VERSION - giong dung buoc copy cua install.sh.
 # KHONG dung toi mang, dich vu systemd, cau hinh. Chay: sudo bash ~/cap-nhat-pi.sh
 set -e
 [ "$(id -u)" = 0 ] || { echo "Can chay bang sudo"; exit 1; }
@@ -8,12 +8,15 @@ SRC=/home/administrator/consolepi-toolkit
 DST=/opt/console-pi
 BK=/home/administrator/console-pi-truoc-moi-$(date +%Y%m%d-%H%M).tgz
 
-tar czf "$BK" -C /opt console-pi/ui console-pi/nettools console-pi/scripts console-pi/VERSION
+tar czf "$BK" -C /opt console-pi/ui console-pi/nettools console-pi/scripts console-pi/VERSION \
+    $(cd /opt && ls -d console-pi/pxe-boot 2>/dev/null)
 echo "Da sao luu ban cu: $BK"
 
 # ui + nettools: chep de (khong xoa file rieng cua Pi nhu ifthen-rules.json)
 cp -r "$SRC/src/ui/." "$DST/ui/"
 cp -r "$SRC/src/nettools/." "$DST/nettools/"
+# File boot PXE ban ky kem san (tu 1.5.0)
+rm -rf "$DST/pxe-boot" && cp -r "$SRC/src/pxe-boot" "$DST/pxe-boot"
 for f in "$SRC"/src/scripts/*; do
     [ -f "$f" ] && install -m 755 "$f" "$DST/scripts/$(basename "$f")"
 done

@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.5.0
+
+**Cai Windows qua PXE chay duoc ca BIOS, UEFI va UEFI bat Secure Boot.** Anh
+Thoai 25/09/2026: "may do la bios, uefi hoac co secure thi sao, minh phai boot
+duoc het chu". Ban 1.4.x chi chay UEFI tat Secure Boot (anh dia GPT+FAT32 +
+sanboot; iPXE cua Debian khong ky).
+
+- Kem san iPXE v2.0.0 + wimboot v2.9.0 BAN KY chinh thuc (src/pxe-boot/, co
+  README + SHA256SUMS; chu ky kiem bang sbverify). BIOS -> undionly.kpxe;
+  UEFI -> snponly-shim.efi (Microsoft UEFI CA 2011) -> ipxe.efi (= snponly ban
+  ky, shim xin dung ten nay). Khong con phai tai file boot len.
+- Bo anh dia 500 MB/kich ban: wimboot nap boot.wim GOC + file nho cua kich ban
+  (X:\Windows\System32). winpeshl.ini goi setup.exe /unattend:<duong dan> ->
+  deploy.cmd nhu cu. Bat PXE con vai giay (truoc ~1 phut/kich ban). Anh cu
+  _menu-*.img tu xoa (giai phong ~500 MB moi kich ban).
+- deploy.cmd tu nhan BIOS/UEFI (PEFirmwareType): BIOS -> chia MBR (phan vung
+  he thong NTFS active, >3 phan vung thi dung extended/logical) + bcdboot
+  /f BIOS; UEFI -> GPT + bcdboot /f UEFI.
+- Driver "cho anh boot" dong thanh drivers.wim (wimboot chi chen file phang),
+  deploy.cmd bung bang dism roi drvload nhu cu.
+- Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
+- Lab tu dong iso/test/wimboot-lab.sh (QEMU/KVM, OVMF khoa Microsoft): BIOS,
+  UEFI, UEFI+SB deu vao WinPE, chay script, net use Samba thanh cong.
+
 ## 1.4.2
 
 **May khach BIOS/Legacy dung im sau "Booting from SAN device 0x80".** Loi that

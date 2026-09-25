@@ -256,6 +256,8 @@ copy_tree() {   # copy_tree <nguon> <dich>
 
 copy_tree "$SRC_DIR/src/ui"       "$INSTALL_DIR/ui"
 copy_tree "$SRC_DIR/src/nettools" "$INSTALL_DIR/nettools.new"
+# File boot PXE ban ky kem san (iPXE + shim + wimboot) - xem src/pxe-boot/README.md
+copy_tree "$SRC_DIR/src/pxe-boot" "$INSTALL_DIR/pxe-boot"
 
 # Giu lai rule IF/THEN cu neu co
 if [[ -f "$INSTALL_DIR/nettools/ifthen-rules.json" ]]; then

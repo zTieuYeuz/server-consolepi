@@ -856,12 +856,16 @@ moi. Khong duoc sua tay file cau hinh dnsmasq. <strong>Khong chac thi chon "Mang
 co san DHCP"</strong>: loi that da gap - chon "Mang khong co DHCP" tren mang cong
 ty thi may khach nhan IP cua router cong ty o lan hoi thu 2 (cua iPXE), bao
 "Nothing to boot" va khong bao gio thay menu.</p>
-<p><strong>May can cai phai boot kieu UEFI</strong> (tat Secure Boot). Anh cai
-Windows la o GPT+FAT32 chi co duong boot UEFI. Loi that da gap: may ao VMware
-de Firmware = BIOS van hien menu, chon kich ban thi dung im o dong "Booting
-from SAN device 0x80". Tu ban 1.4.2 menu tu nhan ra may BIOS va bao ro cach
-sua thay vi dung im. VMware: Edit Settings &rarr; VM Options &rarr; Boot
-Options &rarr; Firmware = EFI.</p>
+<p><strong>Chay duoc ca 3 kieu may</strong> (tu 1.5.0): BIOS/Legacy, UEFI, va
+UEFI bat Secure Boot - khong can vao BIOS doi gi. Pi dung iPXE + wimboot ban
+KY chinh thuc (kem san, khong can tai len). Script cai tu nhan may BIOS hay
+UEFI de chia o MBR hay GPT va tao boot loader dung kieu. Kiem chung trong lab
+QEMU: BIOS, UEFI, UEFI + Secure Boot (khoa Microsoft) deu vao WinPE, chay
+script, noi Samba duoc.</p>
+<p class="hint">Gioi han: mot so may doi moi dat chuan "Secured-core" tat san
+chung chi "Microsoft 3rd-party UEFI CA" - may do tu choi MOI cong cu PXE khong
+phai cua Microsoft (ke ca shim cua Linux). Can bat lai muc do trong BIOS
+("Allow Microsoft 3rd Party UEFI CA") hoac tam tat Secure Boot.</p>
 
 <h4>Menu chọn kịch bản ngay tại máy khách (kiểu MDT)</h4>
 <p>Bat PXE thi may khach boot qua mang LUON thay menu va <strong>tu chon kich
@@ -876,8 +880,7 @@ kich ban.</p>
   <li>Tao kich ban Windows o tab <strong>Kich ban</strong> (du thong tin la tu
       vao menu).</li>
   <li>Tab <strong>Cai dat &rarr; Bat / Tat PXE</strong>: chon che do mang, so giay
-      cho, bam <strong>Bat PXE</strong>. Lan dau dung moi kich ban 1 anh dia
-      (~1-2 phut/cai tren Pi) - <strong>khong bam lai</strong> trong luc cho.</li>
+      cho, bam <strong>Bat PXE</strong> - chi mat vai giay.</li>
   <li>Cho may khach boot qua mang (Network Boot / PXE), chon
       "2. Install Windows" roi chon kich ban.</li>
 </ol>
@@ -887,24 +890,25 @@ kich ban.</p>
       cho den khi co nguoi chon.</li>
   <li><kbd>Esc</kbd> o danh sach kich ban = quay lai menu chinh; o menu chinh =
       khoi dong o cung. Nap anh loi thi bao loi roi quay lai danh sach.</li>
-  <li>Luu/xoa kich ban luc PXE dang bat: menu cap nhat ngay (dung/xoa anh dia).
+  <li>Luu/xoa kich ban luc PXE dang bat: menu cap nhat ngay.
       Nut "Cap nhat menu" o trang Bat / Tat PXE lam lai viec nay bang tay.</li>
-  <li><strong>Moi kich ban 1 anh dia rieng (~500 MB)</strong>; lan sau chi dung lai
-      cai nao da sua (hoac khi doi che do mang/dia chi Pi). Het cho thi kich ban
-      do bi bo qua va bao ro.</li>
+  <li>Moi kich ban chi la vai file nho (vai chuc KB) - khong con anh dia
+      ~500 MB/kich ban nhu truoc 1.5.0 (anh cu tu xoa khi bat PXE).</li>
   <li>Menu chu cua iPXE (chay truoc Windows): khong co chuot, khong dau tieng
       Viet.</li>
 </ul>
 
 <h4>Luồng chạy bên trong (đã kiểm chứng thật)</h4>
 <pre>May can cai bat len, chon Network Boot
-   -> dnsmasq cua Pi tra loi: BIOS lay undionly.kpxe / UEFI lay snponly.efi
+   -> dnsmasq cua Pi tra loi: BIOS lay undionly.kpxe
+      UEFI lay snponly-shim.efi (shim Microsoft ky) -> shim tai ipxe.efi (ban ky)
    -> iPXE chay, tu bao danh la "iPXE" qua DHCP option 77
    -> dnsmasq tra ve dia chi script menu.ipxe qua HTTP  (khong lam buoc nay
       se bi VONG LAP VO TAN - iPXE tu tai lai chinh no mai mai)
-   -> menu.ipxe goi `sanboot` anh dia GPT+FAT32 do Pi tu dung san
-      (bat menu: hien danh sach kich ban, moi muc sanboot 1 anh rieng)
-   -> Windows Setup doc autounattend.xml trong anh dia do, cai tu dong
+   -> menu.ipxe: chon kich ban -> wimboot nap boot.wim GOC + file nhung cua
+      kich ban (hien trong X:\\Windows\\System32)
+   -> winpeshl.ini goi setup.exe /unattend:...autounattend.xml -> deploy.cmd
+   -> deploy.cmd: BIOS -> chia MBR + bcdboot BIOS; UEFI -> GPT + bcdboot UEFI
    -> WinPE noi lai ve Pi qua SMB (Samba) de lay install.wim + phan mem
    -> Sau khi vao Windows: script chay tiep, cai phan mem, bao tien do ve Pi</pre>
 
@@ -914,13 +918,16 @@ kich ban.</p>
       Hay gap nhat la dang chay SAI kieu boot (vd dang o <code>mang_co_dhcp</code>
       nhung da rut day khoi mang khach nen <code>eth0</code> mat IP). Xem
       <em>Deployment OS &gt; Cai dat</em> co bao dung kieu khong.</li>
-  <li><strong>UEFI dung <code>snponly.efi</code>, KHONG dung <code>ipxe.efi</code></strong>:
-      ban ipxe.efi mang driver mang rieng, tai duoc qua TFTP nhung chay la crash
-      ngay roi boot vong tron (da kiem chung tren VMware that).</li>
+  <li><strong>UEFI dung ban <code>snponly</code></strong> (driver mang cua chinh
+      UEFI): ban ipxe.efi day du mang driver rieng, chay la crash roi boot vong
+      tron tren VMware. File ten <code>ipxe.efi</code> tren Pi chinh la snponly
+      ban ky - shim chi xin dung ten do.</li>
   <li><strong>Khong duoc nhet autounattend.xml vao trong boot.wim</strong>: moi
       cach (wimlib, DISM mount/commit) deu lam boot.wim mat kha nang boot
-      (<em>0xc000000f</em>) du cong cu bao thanh cong. Vi vay dung anh dia
-      GPT+FAT32 rieng.</li>
+      (<em>0xc000000f</em>) du cong cu bao thanh cong. Vi vay giu boot.wim goc,
+      file cau hinh chen qua wimboot.</li>
+  <li><strong>May BIOS dung im o "Booting from SAN device 0x80"</strong> (ban
+      1.4.x): anh dia GPT cu khong co ma boot BIOS. Da bo tu 1.5.0.</li>
   <li><strong>Loi SMB "System error 53" luc cai lai lan 2</strong>: Pi con giu
       phien SMB cu cua chinh may do o trang thai ESTABLISHED. He thong tu goi
       <code>smbcontrol smbd kill-client-ip</code> truoc moi lan bat PXE.</li>
