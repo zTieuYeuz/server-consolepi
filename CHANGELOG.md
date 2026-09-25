@@ -48,6 +48,12 @@ sanboot; iPXE cua Debian khong ky).
   toi qua gio. Nay .ps1 chay qua powershell -ExecutionPolicy Bypass -File.
 - Tuy chon gom nhieu lenh hien "(1/2)", "(2/2)" tren bang tien trinh thay vi
   2 dong trung ten (trong nhu chay trung).
+- Bao cao: PowerShell 5.1 ConvertFrom-Json tra ca mang thanh 1 doi tuong ->
+  dong "Sau dang nhap" khong hien (lab Win11). Sua: gan bien truoc khi duyet.
+  Them C:\ConsolePi\bao-cao-day-du.json (ca muc chua dat) cho ky thuat.
+- Tuy chon "Tat Widgets": Windows 11 moi chan ghi HKCU TaskbarDa (Ma loi 1 -
+  lab Win11 24H2). Nay dung chinh sach may: Dsh\AllowNewsAndInterests=0
+  (Win11) + Windows Feeds\EnableFeeds=0 (Win10).
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu

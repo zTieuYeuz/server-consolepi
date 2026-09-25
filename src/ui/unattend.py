@@ -1080,7 +1080,12 @@ foreach ($m in $MUC) {
 $fKq = Join-Path $OutDir 'ket-qua-tien-trinh.json'
 if (Test-Path $fKq) {
     try {
-        foreach ($b in @(Get-Content $fKq -Raw -Encoding UTF8 | ConvertFrom-Json)) {
+        # PHAI gan vao bien truoc: PowerShell 5.1 `ConvertFrom-Json` tra CA
+        # MANG thanh 1 doi tuong - boc @(...) quanh ong dan thi foreach chi
+        # chay 1 lan voi ca mang (loi that lab 26/09/2026: bao cao Win11 khong
+        # hien dong "Sau dang nhap" nao du script da chay).
+        $dsBuoc = Get-Content $fKq -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($b in $dsBuoc) {
             if ("$($b.Ten)" -notmatch '^(Chạy script|Lệnh thêm|Cài |Gỡ )') { continue }
             $ok = ($b.TrangThai -eq 'xong')
             $ketQua += [PSCustomObject]@{
@@ -1130,6 +1135,10 @@ $thieu = @(Get-CimInstance Win32_PnPEntity | Where-Object { $_.ConfigManagerErro
 $txt.Add('  Thiet bi thieu driver: ' + $thieu.Count)
 foreach ($t in $thieu) { $txt.Add('      - ' + $t.Name) }
 $txt -join "`r`n" | Out-File -FilePath $OutFile -Encoding UTF8
+# Ban DAY DU (ca muc chua dat) cho ky thuat tra loi - cua so va file .txt chi
+# hien viec da xong theo yeu cau anh Thoai, nen muc hong khong duoc mat dau vet.
+try { $ketQua | ConvertTo-Json -Depth 3 |
+      Out-File -FilePath (Join-Path $OutDir 'bao-cao-day-du.json') -Encoding UTF8 } catch { }
 
 # ---------- Cua so bao cao ----------
 Add-Type -AssemblyName System.Windows.Forms
@@ -1872,10 +1881,16 @@ TUY_CHON_WINDOWS = [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
          r' /v TaskbarAl /t REG_DWORD /d 0 /f',
      ]),
+    # LOI THAT (lab Win11 24H2, 26/09/2026): ghi HKCU ...\TaskbarDa bi Windows
+    # 11 moi CHAN (driver UCPD bao ve khoa nay) -> "Ma loi: 1". Dung CHINH
+    # SACH may (pha "may", quyen quan tri): Dsh\AllowNewsAndInterests cho
+    # Windows 11, "Windows Feeds"\EnableFeeds cho tin tuc/thoi tiet Windows 10.
     ("tat_widgets", "Tắt Widgets / bảng tin thời tiết",
-     "Bỏ ô thời tiết - tin tức trên thanh tác vụ", "nguoi_dung", [
-         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
-         r' /v TaskbarDa /t REG_DWORD /d 0 /f',
+     "Bỏ ô thời tiết - tin tức trên thanh tác vụ", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh"'
+         r' /v AllowNewsAndInterests /t REG_DWORD /d 0 /f',
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"'
+         r' /v EnableFeeds /t REG_DWORD /d 0 /f',
      ]),
     ("tat_goi_y_app", "Tắt gợi ý ứng dụng và quảng cáo",
      "Windows không tự cài app gợi ý, không hiện quảng cáo trong Start và "
