@@ -9,6 +9,7 @@
 #   bash may-chu-iso.sh chuan-bi             gan khoa SSH + sudo khong mat khau
 #                                            vao o DA CAI (chi may test)
 #   bash may-chu-iso.sh mang <co_dhcp|khong> dung mang lab (+ router gia neu co_dhcp)
+#   bash may-chu-iso.sh mang giu-cau       chi tat router gia, giu bridge (may dang chay)
 #   bash may-chu-iso.sh bat | tat            may chu: card 1 = user-net (Internet,
 #                                            SSH 127.0.0.1:18022, web :18080),
 #                                            card 2 (enp0s4) = mang lab (PXE)
@@ -51,7 +52,12 @@ chuan-bi)
   umount /mnt/srv; qemu-nbd -d /dev/nbd0 >/dev/null; echo "CHUAN BI XONG ($GOC)" ;;
 
 mang)
+  # Tat router gia cu (xoa netns KHONG giet tien trinh ben trong - dnsmasq cu
+  # van song va van noi vao brlab -> 2 DHCP trong lab, da gap 26/09/2026)
+  [ -f $W/cty2.pid ] && kill $(cat $W/cty2.pid) 2>/dev/null
+  pkill -F $W/cty2.pid 2>/dev/null; ip link del c2b 2>/dev/null
   ip netns del cty2 2>/dev/null
+  [ "$1" = giu-cau ] && exit 0
   ip link del brlab 2>/dev/null
   ip link add brlab type bridge; ip link set brlab up
   ip addr add 192.168.98.254/24 dev brlab
