@@ -10,18 +10,17 @@ Pi là ARM). Máy build dùng thật: 8 nhân / 12 GB RAM / 49 GB trống, mỗi
 build mất khoảng **15 phút**.
 
 ```bash
-sudo apt install live-build xorriso squashfs-tools debootstrap
-mkdir -p /build/console-system && cd /build/console-system
-# chép các file trong thư mục này vào đúng vị trí của live-build:
-#   hooks/*                    -> config/hooks/live/
-#   danh-sach-goi.txt          -> config/package-lists/console-pi.list.chroot
-#   bootloader/isolinux.cfg    -> config/bootloaders/isolinux/
-#   bootloader/menu.cfg        -> config/bootloaders/syslinux_common/
-#   bootloader/live.cfg.in     -> config/bootloaders/syslinux_common/
-#   includes/*                 -> config/includes.chroot/... (xem dưới)
-#   mã nguồn src/              -> config/includes.chroot/opt/console-pi/
-./dung-iso.sh
+# may build Debian 13: xem goi can cai trong docs/QUY-TAC-BUILD-VA-KIEM-THU.md muc 4.1
+rsync -a --delete --exclude=__pycache__ ~/consolepi-toolkit/ build-consolepi:/root/consolepi-toolkit/
+bash /root/consolepi-toolkit/iso/dung-cay-build.sh      # dung ca 2 cay build tu repo
+/build/console-system/dung-iso.sh                        # ISO 64-bit
+/build/console-system-i386/dung-iso.sh                   # ISO 32-bit
 ```
+
+`dung-cay-build.sh` chép **mọi thứ** từ repo vào đúng vị trí của live-build
+(bảng bên dưới) — cây build không còn được sửa tay (bài học mất máy build cũ
+25/09/2026). Quy tắc build và kiểm thử đầy đủ: `docs/QUY-TAC-BUILD-VA-KIEM-THU.md`.
+Script test (chỉ dùng cho máy ảo): `iso/test/`.
 
 `dung-iso.sh` làm đúng thứ tự **clean → config → build**, và chỉ báo thành
 công khi **có file ISO thật** — không tin mã thoát của `lb build` (nó nuốt

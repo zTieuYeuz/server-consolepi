@@ -57,19 +57,22 @@ echo "[1/3] don ban build cu..."
 lb clean >/dev/null 2>&1 || true
 
 echo "[2/3] cau hinh..."
-lb config \
-  --distribution trixie --architectures amd64 \
-  --archive-areas "main contrib non-free non-free-firmware" \
-  --binary-images iso-hybrid --bootloaders "syslinux,grub-efi" \
-  --uefi-secure-boot enable \
-  --debian-installer live --debian-installer-gui false \
-  --firmware-binary true --firmware-chroot false \
-  --apt-recommends false \
-  --memtest none \
-  --iso-application "Console System" --iso-publisher "Console System" \
-  --iso-volume "CONSOLE-SYSTEM" \
-  --bootappend-live "boot=live components quiet splash hostname=console-system" \
-  >/tmp/lb-config.log 2>&1
+cau_hinh() {
+  lb config \
+    --distribution trixie --architectures amd64 \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --binary-images iso-hybrid --bootloaders "syslinux,grub-efi" \
+    --uefi-secure-boot enable \
+    --debian-installer live --debian-installer-gui false \
+    --firmware-binary true --firmware-chroot false \
+    --apt-recommends false \
+    --memtest none \
+    --iso-application "Console System" --iso-publisher "Console System" \
+    --iso-volume "CONSOLE-SYSTEM" \
+    --bootappend-live "boot=live components quiet splash hostname=console-system" \
+    >/tmp/lb-config.log 2>&1
+}
+cau_hinh
 
 # --- CO Y KHONG chep anh nen sang thu muc grub-pc ---
 # Neu co config/bootloaders/grub-pc/splash.svg thi live-build se sinh
@@ -80,7 +83,20 @@ lb config \
 # Menu BIOS (isolinux) van co anh nen binh thuong - duong do khong dinh loi.
 
 echo "[3/3] dung anh dia (20-40 phut)..."
-lb build > build.log 2>&1 || true
+# LOI THAT (25/09/2026, may build moi): debootstrap/apt thinh thoang bao
+# "Couldn't download packages: <goi>" - moi lan 1 goi KHAC NHAU, goi do van
+# tai duoc ngay sau do (mang toi mirror Debian chap chon). Mot goi loi la ca
+# ban build hong. Chi voi DUNG loi tai goi thi build lai (toi da 3 lan,
+# goi da tai nam trong cache/ nen lan sau nhanh); loi khac dung ngay.
+for lan in 1 2 3; do
+    lb build > build.log 2>&1 || true
+    ls *.iso >/dev/null 2>&1 && break
+    grep -qE "Couldn't download|Failed to fetch|Hash Sum mismatch" build.log || break
+    echo "  lan $lan: loi tai goi ($(grep -oE "Couldn't download packages: .*|Failed to fetch [^ ]*" build.log | head -1)) - build lai"
+    lb clean >/dev/null 2>&1 || true
+    cau_hinh        # BAT BUOC sau lb clean (xem dau file) - khong thi lb build bo ngang
+    sleep 30
+done
 
 # KHONG tin ma thoat cua lb build - no nuot loi o buoc don dep cuoi va van
 # tra 0. Chi co FILE ISO THAT moi la bang chung.

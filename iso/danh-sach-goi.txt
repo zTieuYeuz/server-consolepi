@@ -51,6 +51,9 @@ wimtools
 # Deployment OS tren may x86 CHUA BAO GIO dung duoc anh dia. Pi khong bi vi
 # Raspberry Pi OS co san parted.
 parted
+# mtools (mformat/mcopy): cung danh sach PKGS_DEPLOY cua install.sh tren Pi -
+# giu 2 ban khop nhau (bo kiem tra may da cai bao thieu mcopy, 25/09/2026).
+mtools
 7zip
 genisoimage
 

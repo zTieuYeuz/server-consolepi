@@ -50,21 +50,37 @@ echo "[0/3] da nhung $(ls "$_fw/rtl_nic" | wc -l) file firmware Realtek vao bo c
 
 echo "[1/3] don..."; lb clean >/dev/null 2>&1 || true
 echo "[2/3] cau hinh..."
-lb config \
-  --distribution bookworm --architectures i386 \
-  --archive-areas "main contrib non-free non-free-firmware" \
-  --binary-images iso-hybrid --bootloaders syslinux \
-  --debian-installer live --debian-installer-gui false \
-  --firmware-binary true --firmware-chroot false \
-  --apt-recommends false \
-  --memtest none \
-  --linux-flavours 686-pae \
-  --iso-application "Console System (32-bit)" --iso-publisher "Console System" \
-  --iso-volume "CONSOLE-SYS-32" \
-  --bootappend-live "boot=live components quiet splash hostname=console-system" \
-  >/tmp/lb-config-i386.log 2>&1
+cau_hinh() {
+  lb config \
+    --distribution bookworm --architectures i386 \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --binary-images iso-hybrid --bootloaders syslinux \
+    --debian-installer live --debian-installer-gui false \
+    --firmware-binary true --firmware-chroot false \
+    --apt-recommends false \
+    --memtest none \
+    --linux-flavours 686-pae \
+    --iso-application "Console System (32-bit)" --iso-publisher "Console System" \
+    --iso-volume "CONSOLE-SYS-32" \
+    --bootappend-live "boot=live components quiet splash hostname=console-system" \
+    >/tmp/lb-config-i386.log 2>&1
+}
+cau_hinh
 echo "[3/3] dung anh dia..."
-lb build > build.log 2>&1 || true
+# LOI THAT (25/09/2026, may build moi): debootstrap/apt thinh thoang bao
+# "Couldn't download packages: <goi>" - moi lan 1 goi KHAC NHAU, goi do van
+# tai duoc ngay sau do (mang toi mirror Debian chap chon). Mot goi loi la ca
+# ban build hong. Chi voi DUNG loi tai goi thi build lai (toi da 3 lan,
+# goi da tai nam trong cache/ nen lan sau nhanh); loi khac dung ngay.
+for lan in 1 2 3; do
+    lb build > build.log 2>&1 || true
+    ls *.iso >/dev/null 2>&1 && break
+    grep -qE "Couldn't download|Failed to fetch|Hash Sum mismatch" build.log || break
+    echo "  lan $lan: loi tai goi ($(grep -oE "Couldn't download packages: .*|Failed to fetch [^ ]*" build.log | head -1)) - build lai"
+    lb clean >/dev/null 2>&1 || true
+    cau_hinh        # BAT BUOC sau lb clean (xem dau file) - khong thi lb build bo ngang
+    sleep 30
+done
 if ls *.iso >/dev/null 2>&1; then
     echo "XONG: $(ls -la *.iso | awk '{printf "%.0f MB", $5/1048576}')"; exit 0
 fi
