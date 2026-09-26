@@ -1663,9 +1663,14 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "echo === CANH BAO: card VMware E1000 (82545EM) === >> %LOG%",
         "echo.",
         "echo  CANH BAO: may ao VMware nay dung card mang E1000 (Intel 82545EM, doi 2001).",
-        "echo  WinPE cua Windows 10/11 THUONG TREO khi nap driver cho card nay.",
-        "echo  CACH SUA: tat may ao - Edit Settings - xoa Network Adapter - them lai",
-        "echo  voi Adapter Type = E1000E (Guest OS nen dat Windows 10/11 64-bit).",
+        # Nguyen nhan goc (26/09/2026): may ao khai Guest OS la LINUX (vd
+        # "debian13-64") -> VMware dua phan cung/ACPI kieu Linux, driver E1000
+        # cua WinPE treo ca ngan xep mang. Doi Guest OS sang Windows la het
+        # (schmidi2itblog 2013: ESXi, doi Guest OS tu Linux sang Windows).
+        "echo  Neu may ao khai Guest OS la Linux/Other, WinPE se TREO o buoc mang.",
+        "echo  CACH SUA (1 lan cho may ao): tat may ao - Edit Settings - Options -",
+        "echo    General - Guest OS = Microsoft Windows, Version = Windows 10/11 x64.",
+        "echo  (Hoac doi Network Adapter sang E1000E / VMXNET3.) May that khong bi.",
         "echo  Van thu tiep - neu dung qua 3 phut o duoi thi lam theo cach tren.",
         "echo.",
         ":khong_e1000_vmware",

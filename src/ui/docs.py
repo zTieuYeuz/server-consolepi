@@ -939,9 +939,12 @@ kich ban.</p>
       <code>consolepi-deploy</code> thieu/sai mat khau (ban ISO 1.5.0 dau tien tao
       nham ten). Bat PXE / cap nhat menu la he thong tu sua lai.</li>
   <li><strong>May ao VMware dung o "dang doi mang san sang..."</strong>: card
-      <em>E1000</em> (Intel 82545EM, doi 2001) - WinPE Windows 10/11 treo luc nap
-      driver cho no. Doi Adapter Type sang <strong>E1000E</strong> (xoa card, them
-      lai), Guest OS dat Windows 10/11 64-bit. Script tu nhan ra va bao ngay.
+      <em>E1000</em> (Intel 82545EM, doi 2001) va may ao khai <strong>Guest OS la
+      Linux/Other</strong> (vd debian13-64) - VMware dua phan cung/ACPI kieu Linux,
+      WinPE treo ca ngan xep mang luc nap driver. Sua: Edit Settings &rarr; Options
+      &rarr; Guest OS = <strong>Windows 10/11 x64</strong> (may ao tao dung kieu Windows
+      thi VMware tu chon E1000E + LSI SAS/NVMe, khong bao gio gap). Script tu nhan ra
+      va bao ngay.
       Card <em>VMXNET3</em>, Intel I225/I226, virtio: WinPE KHONG co san driver -
       vao Tai nguyen &rarr; Drivers &rarr; <strong>Goi driver pho bien</strong>,
       bam "Tai tat ca" (Pi tu tai goi chinh thuc tu Microsoft Update Catalog,
