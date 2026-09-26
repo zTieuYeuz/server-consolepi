@@ -70,7 +70,16 @@ WinPE của Windows 10/11 không có driver cho: VMware VMXNET3, PVSCSI; Intel I
 
 **VMware "LSI Logic Parallel"**: Microsoft không có driver cho Windows 10/11 (đã bỏ từ Windows 8) → đổi sang LSI Logic SAS, NVMe hoặc VMware Paravirtual. Trang Drivers và Tài liệu đã ghi rõ.
 
-## 5. Kiểm tra khác
+## 5. ISO phát hành (build lại 26/09/2026, sau mọi bản sửa)
+
+| Bản | File trên máy build | SHA256 |
+|---|---|---|
+| 64-bit | `/build/console-system/live-image-amd64.hybrid.iso` (1,51 GB) | `32189452be9b5a04d38604155e76c06811d37fb76b3abafa0d86001e0a95ceee` |
+| 32-bit | `/build/console-system-i386/live-image-i386.hybrid.iso` (1042 MB) | `9cff5cd240e6cc11796a3a84a4661e5909896a9fb4e4134588a2eeb8344b1cec` |
+
+Cài sạch ISO 64-bit cuối: bảng kiểm **34/34**. Tải gói driver phổ biến trên máy cài từ ISO: 10/10. PXE từ máy cài ISO → máy khách UEFI + VMXNET3 + PVSCSI, kịch bản T1: **5/5** (firmware OVMF của lab không boot được ổ PVSCSI nên phần sau cài chạy qua AHCI; VMware thật boot được PVSCSI, và bài test BIOS trên Pi thật đã boot Windows từ PVSCSI). Cổng mạng đã chọn không còn → PXE từ chối bật (đã thử).
+
+## 6. Kiểm tra khác
 
 - **Kho trung tâm** (kho-console.home-server.id.vn): trên Pi kết nối được, đọc 2 mục. Trên máy cài từ ISO: kết nối tới kho OK, token sai thì báo "Token không hợp lệ", xoá kết nối được. Muốn tải thật thì anh tạo token cho máy đó trong trang quản trị kho.
 - **Bảng kiểm "hàng đem bán"** trên máy cài từ ISO: đạt toàn bộ; 3 mục dịch vụ PXE được bỏ qua đúng vì lúc đó đang bật PXE. Quét được 47 trang, không trang nào hỏng.
@@ -78,7 +87,7 @@ WinPE của Windows 10/11 không có driver cho: VMware VMXNET3, PVSCSI; Intel I
 - Toàn bộ code biên dịch được trên Python 3.11 (ISO i386, Debian 12) và 3.13.
 - Chữ ký file boot kiểm bằng `sbverify`: shim và wimboot do Microsoft UEFI CA 2011 ký; iPXE do iPXE Secure Boot CA ký.
 
-## 6. Việc anh cần làm
+## 7. Việc anh cần làm
 
 1. **Cập nhật Console Pi** (em không có quyền sudo trên Pi), rồi vào Deployment OS → Cài đặt → **Tắt PXE → Bật PXE**:
    ```bash
