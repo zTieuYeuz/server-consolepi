@@ -9,7 +9,7 @@ ban khac thi phai quay lai web bam "Dung" kich ban do (dung lai anh dia
 MENU 2 TANG (anh Thoai 24/09/2026: "neu nhu la kich ban de lua chon thi co
 1 cai a lua chon lam gi" - ban dau phai tick tung kich ban vao menu, tick
 1 cai thi menu chi co 1 muc, vo nghia):
-  Menu chinh:  1. Win PE (chua co - lam sau, hien san cho biet)
+  Menu chinh:  1. Win PE - cuu ho may > (moi bo Windows co boot.wim 1 muc)
                2. Install Windows  >  TAT CA kich ban Windows dang co
                Khoi dong o cung / Khoi dong lai
 
@@ -48,6 +48,7 @@ from . import deployos as _d
 FILE_CAUHINH = os.path.join(_d.DEPLOY_DIR, "menu-pxe.json")
 TIEN_TO_ANH = "_menu-"      # anh dia GPT cu (< 1.5.0) - chi con de don rac
 THU_MUC_PXE = "_pxe"        # BOOT_DIR/_pxe/<kich ban>/ = file wimboot chen vao
+THU_MUC_WINPE = "_winpe"    # BOOT_DIR/_pxe/_winpe/startnet.cmd cho WinPE cuu ho
 CHO_TOI_DA = 300          # giay
 KIEU_HOP_LE = [k for k, _t, _m in _d.KIEU_BOOT]
 # Mac dinh "mang co DHCP" (proxyDHCP): khong bao gio tranh cap IP voi router
@@ -134,6 +135,59 @@ def _don_anh_cu():
         pass
 
 
+def sinh_startnet_winpe():
+    r"""
+    startnet.cmd cho muc "Win PE - cuu ho": chay tren boot.wim image 2 (moi
+    truong Setup) + man hinh huong dan. KHONG dung image 1: trong boot.wim cua
+    bo cai, image 1 cau hinh SYSTEMROOT = X:\$windows.~bt (danh rieng cho
+    Setup) - boot rieng bao "Windows PE cannot start" (lab 26/09/2026).
+    winpeshl.ini (sinh_winpeshl_cuu_ho) mo cmd chay file nay thay cho Setup. Nap driver card mang "cho anh boot" (neu
+    co) truoc wpeinit - cung cach deploy.cmd lam.
+
+    KHONG nhet mat khau Samba cua kho vao day: ai dung truoc may cung chon
+    duoc muc nay (khong phai kich ban da duyet), lo mat khau la lo kho.
+    """
+    from . import unattend as _u
+    return "\r\n".join([
+        "@echo off",
+        "title Console System - WinPE cuu ho",
+        # Tung dong + goto (khong gop vao khoi ngoac: "(*.inf)" ben trong
+        # de lam vo ngoac cua khoi if).
+        f"if not exist X:\\Windows\\System32\\{_u.TEN_WIM_DRIVER} goto het_driver",
+        f"dism /apply-image /imagefile:X:\\Windows\\System32\\{_u.TEN_WIM_DRIVER} "
+        "/index:1 /applydir:X:\\ConsolePiDrivers >nul 2>&1",
+        'for /r X:\\ConsolePiDrivers %%i in (*.inf) do drvload "%%i" >nul 2>&1',
+        ":het_driver",
+        "wpeinit",
+        "cls",
+        "echo ==============================================================",
+        "echo   CONSOLE SYSTEM - WinPE CUU HO MAY",
+        "echo ==============================================================",
+        "echo   diskpart            - xem / chia lai o dia (list disk, list vol)",
+        "echo   notepad             - mo hop thoai File-Open de duyet va CHEP file",
+        "echo   bcdboot C:\\Windows  - tao lai boot loader khi Windows khong boot",
+        "echo   chkdsk C: /f        - sua loi o dia",
+        "echo   net use Z: \\\\may\\thu-muc /user:ten  - noi thu muc chia se",
+        "echo   wpeutil reboot      - khoi dong lai may",
+        "echo ==============================================================",
+        "ipconfig | find \"IPv4\"",
+        "echo.",
+    ]) + "\r\n"
+
+
+def sinh_winpeshl_cuu_ho():
+    """Thay Setup bang cua so lenh chay startnet.cmd cuu ho."""
+    return ("[LaunchApps]\r\n"
+            "%SYSTEMROOT%\\System32\\cmd.exe, /k %SYSTEMROOT%\\System32\\startnet.cmd\r\n")
+
+
+def muc_winpe():
+    """(ten hien thi, os_id) cua moi bo Windows CO boot.wim - moi bo 1 muc
+    WinPE (boot.wim cua ban nao thi co driver cua ban do)."""
+    return [(o["ten_hien_thi"], o["id"]) for o in _d.danh_sach_os()
+            if o.get("os_ho") == "windows" and o.get("co_boot_wim")]
+
+
 def chuan_bi_menu(dia_chi_pi, kieu_boot):
     """
     Ghi bo file nhung cho MOI kich ban Windows du thong tin (vai chuc KB moi
@@ -165,6 +219,16 @@ def chuan_bi_menu(dia_chi_pi, kieu_boot):
     ok, loi = _u.dung_wim_driver(_duong_pxe(_u.TEN_WIM_DRIVER))
     if not ok:
         ket_qua.append(loi)
+    try:
+        os.makedirs(_duong_pxe(THU_MUC_WINPE), exist_ok=True)
+        for ten, nd in (("startnet.cmd", sinh_startnet_winpe()),
+                        ("winpeshl.ini", sinh_winpeshl_cuu_ho())):
+            with open(_duong_pxe(THU_MUC_WINPE, ten), "w",
+                      encoding="utf-8", newline="") as f:
+                f.write(nd)
+        can_giu.add(THU_MUC_WINPE)
+    except OSError as e:
+        ket_qua.append(f"Không ghi được file WinPE cứu hộ: {e}")
     try:
         for n in os.listdir(_duong_pxe()):
             p = _duong_pxe(n)
@@ -217,14 +281,15 @@ def sinh_script(goc):
     """
     c = doc_cauhinh()
     muc = muc_menu()
+    pe = muc_winpe()
     # --timeout tinh bang mili giay; 0 giay = cho mai den khi co nguoi bam.
     cho = f"--timeout {c['cho_giay'] * 1000} " if c["cho_giay"] > 0 else ""
     dong = ["#!ipxe", ":menu",
             "menu Console System - Cai dat qua mang",
             "item --gap -- Chon bang phim mui ten + Enter:",
             "item --gap -- ",
-            # iPXE "gap" = dong chu KHONG chon duoc - WinPE chua co (lam sau).
-            "item --gap -- 1. Win PE (chua co - sap ra mat)",
+            ("item pe 1. Win PE - cuu ho may >" if pe else
+             "item --gap -- 1. Win PE (chua co boot.wim nao)"),
             f"item win 2. Install Windows > ({len(muc)} kich ban)",
             "item --gap -- ",
             "item odia Khoi dong o cung (KHONG cai gi)",
@@ -244,6 +309,24 @@ def sinh_script(goc):
              "goto ${chon}", ""]
     from . import unattend as _u
     co_driver = os.path.isfile(_duong_pxe(_u.TEN_WIM_DRIVER))
+    # ---- Menu con WinPE cuu ho: boot.wim image 2 + winpeshl.ini mo cmd chay
+    # startnet.cmd cuu ho thay cho Setup (xem sinh_startnet_winpe).
+    dong += [":pe", "menu Win PE - cuu ho may (khong cai gi, khong xoa gi)"]
+    for i, (nhan, _o) in enumerate(pe):
+        dong.append(f"item pe{i} Win PE cua {_chu_ipxe(nhan)}")
+    dong += ["item --gap -- ", "item menu < Quay lai menu chinh",
+             f"choose --default {'pe0' if pe else 'menu'} chon || goto menu",
+             "goto ${chon}", ""]
+    for i, (nhan, os_id) in enumerate(pe):
+        dong += [f":pe{i}", f"echo Dang nap Win PE: {_chu_ipxe(nhan)}",
+                 f"kernel {goc}/wimboot || goto loi",
+                 f"initrd {goc}/{THU_MUC_PXE}/{THU_MUC_WINPE}/winpeshl.ini winpeshl.ini || goto loi",
+                 f"initrd {goc}/{THU_MUC_PXE}/{THU_MUC_WINPE}/startnet.cmd startnet.cmd || goto loi"]
+        if co_driver:
+            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_WIM_DRIVER} "
+                        f"{_u.TEN_WIM_DRIVER} || goto loi")
+        dong += [f"initrd {goc}/os/{os_id}/boot.wim boot.wim || goto loi",
+                 "boot || goto loi", ""]
     for i, (nhan, thu_muc, os_id) in enumerate(muc):
         # wimboot (Microsoft ky) nap boot.wim GOC + file nhung - chay tren
         # BIOS, UEFI va UEFI + Secure Boot (xem unattend: FILE NHUNG QUA
@@ -285,7 +368,8 @@ def _xem_truoc(c, muc):
     # iPXE gop nhieu dau cach thanh 1 -> xem truoc cung khong can can cot.
     chinh = ["  Console System - Cai dat qua mang", "",
              "    Chon bang phim mui ten + Enter:", "",
-             "    1. Win PE (chua co - sap ra mat)",
+             ("    1. Win PE - cuu ho may >" if muc_winpe() else
+              "    1. Win PE (chua co boot.wim nao)"),
              f"    2. Install Windows > ({len(muc)} kich ban)", "",
              "  > Khoi dong o cung (KHONG cai gi)",
              "    Khoi dong lai may"]

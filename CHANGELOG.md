@@ -62,6 +62,12 @@ sanboot; iPXE cua Debian khong ky).
   (dism /Image:W:\ /Remove-ProvisionedAppxPackage, kieu MDT).
 - Bao cao: khoa HKU\... (Num Lock) luon "khong tim thay" - PowerShell khong co
   o HKU:/HKCR:. Doi sang Registry::HKEY_USERS\... / HKEY_CLASSES_ROOT\...
+- Menu PXE "1. Win PE - cuu ho may" (truoc: "chua co"): moi bo Windows co
+  boot.wim 1 muc. Boot boot.wim image 2 + winpeshl.ini mo cmd cuu ho (diskpart,
+  notepad de chep file, bcdboot, chkdsk, net use) - co nap driver "cho anh
+  boot", KHONG kem mat khau kho. Image 1 cua boot.wim bo cai khong boot rieng
+  duoc ("SYSTEMROOT X:\$windows.~bt"). Kiem chung: may UEFI+Secure Boot vao
+  WinPE, co mang.
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu

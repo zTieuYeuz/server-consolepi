@@ -872,7 +872,7 @@ phai cua Microsoft (ke ca shim cua Linux). Can bat lai muc do trong BIOS
 ban tai cho</strong> - chi cai khi co nguoi chon. Khong con nut "Dung" o tung
 kich ban.</p>
 <pre>Console System - Cai dat qua mang
-   1. Win PE (chua co - sap ra mat)
+   1. Win PE - cuu ho may >            -> cua so lenh WinPE (khong cai, khong xoa gi)
    2. Install Windows > (N kich ban)   -> vao day thay TAT CA kich ban Windows
    Khoi dong o cung (KHONG cai gi)     &lt;- mac dinh
    Khoi dong lai may</pre>
