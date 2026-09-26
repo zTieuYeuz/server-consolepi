@@ -70,12 +70,12 @@ WinPE của Windows 10/11 không có driver cho: VMware VMXNET3, PVSCSI; Intel I
 
 **VMware "LSI Logic Parallel"**: Microsoft không có driver cho Windows 10/11 (đã bỏ từ Windows 8) → đổi sang LSI Logic SAS, NVMe hoặc VMware Paravirtual. Trang Drivers và Tài liệu đã ghi rõ.
 
-## 5. ISO phát hành (build lại 26/09/2026 lần cuối: có tab Góp ý, kho 2.0, không lộ địa chỉ kho)
+## 5. ISO phát hành (build lại 26/09/2026 lần cuối: tab Góp ý, kho 2.0, ghi công tác giả zTieuYeuz, hiện mật khẩu WiFi, che mật khẩu terminal, sửa sơ đồ mạng/LLDP)
 
 | Bản | File trên máy build | SHA256 |
 |---|---|---|
-| 64-bit | `/build/console-system/live-image-amd64.hybrid.iso` (1,51 GB) | `a7d6ede0c2821aee2c74b8c39b4a74a2eab001c90d0e0879722e2a849707aa7d` |
-| 32-bit | `/build/console-system-i386/live-image-i386.hybrid.iso` (1042 MB) | `0783184d515baca6a9f6a3ce33c42935213430cf907d111896e57c1b05eda502` |
+| 64-bit | `/build/console-system/live-image-amd64.hybrid.iso` (1,51 GB) | `4b427c6d67f3d93f5aa1eaece4bfc2344339c152ec430317d5460713e2932adc` |
+| 32-bit | `/build/console-system-i386/live-image-i386.hybrid.iso` (1042 MB) | `0de3f0849ea1975ca53a941affcb2ef4714b5c89764e5829003f01650cc96732` |
 
 Cài sạch ISO 64-bit cuối: bảng kiểm **34/34**; gửi góp ý từ máy cài ISO lên kho: đạt; trong ISO không có file nào chứa địa chỉ kho hay mật khẩu. Tải gói driver phổ biến trên máy cài từ ISO: 10/10. PXE từ máy cài ISO → máy khách UEFI + VMXNET3 + PVSCSI, kịch bản T1: **5/5** (firmware OVMF của lab không boot được ổ PVSCSI nên phần sau cài chạy qua AHCI; VMware thật boot được PVSCSI, và bài test BIOS trên Pi thật đã boot Windows từ PVSCSI). Cổng mạng đã chọn không còn → PXE từ chối bật (đã thử).
 
