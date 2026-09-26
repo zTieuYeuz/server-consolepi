@@ -1,6 +1,9 @@
 [Unit]
 Description=Console System - thiet lap lan dau (sinh bi mat rieng cho may nay)
-Before=console-pi-dashboard.service
+# Before NetworkManager: buoc 8 (xoa ho so mang khong gan card) phai xong
+# TRUOC khi NM gan ho so do vao card - xoa luc NM dang chay thi NM khong tu
+# tao lai ho so cho tung card (lab 26/09/2026, may cai moi van mat mang).
+Before=console-pi-dashboard.service NetworkManager.service
 After=local-fs.target
 
 [Service]

@@ -197,4 +197,8 @@ for _f in /etc/NetworkManager/system-connections/*; do
     echo "[console-system] bo ho so mang khong gan card: $(basename "$_f")"
     rm -f "$_f"
 done
-nmcli connection reload >/dev/null 2>&1 || true
+# Binh thuong NM chua chay (unit xep Before=NetworkManager). Neu vi ly do nao
+# NM da chay thi khoi dong lai (khong cho) de NM tao ho so cho tung card.
+if systemctl is-active --quiet NetworkManager; then
+    systemctl try-restart --no-block NetworkManager >/dev/null 2>&1 || true
+fi

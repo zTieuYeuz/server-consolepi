@@ -35,7 +35,9 @@ sanboot; iPXE cua Debian khong ky).
   ho so NetworkManager "Wired connection 1" khong gan card, NM cam no vao card
   khong co DHCP va bo trong card co DHCP. Thiet lap lan dau nay xoa ho so DHCP
   khong gan card (giu ho so IP tinh/da gan card) -> NM tu tao ho so cho tung
-  card. Kiem chung may ao 2 card: ens3 nhan IP ngay, ens4 co ho so rieng.
+  card. Thiet lap lan dau xep TRUOC NetworkManager (xoa luc NM dang chay thi
+  NM khong tu tao lai ho so - may cai moi van mat mang, lab 26/09/2026).
+  Kiem chung may ao 2 card: ens3 nhan IP ngay, ens4 co ho so rieng.
 - Ban ISO: kho Samba KHONG dung duoc - thiet lap lan dau tao nham tai khoan
   "deploy" trong khi share va deploy.cmd dung "consolepi-deploy" -> WinPE
   `net use` bao System error 1312, khong lay duoc install.wim (lab may chu cai
