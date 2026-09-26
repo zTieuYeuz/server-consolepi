@@ -68,6 +68,13 @@ sanboot; iPXE cua Debian khong ky).
   boot", KHONG kem mat khau kho. Image 1 cua boot.wim bo cai khong boot rieng
   duoc ("SYSTEMROOT X:\$windows.~bt"). Kiem chung: may UEFI+Secure Boot vao
   WinPE, co mang.
+- May dich treo o buoc mang (may ao VMware card E1000 cua anh Thoai): wpeinit
+  goi dong bo nen card nap driver cham/treo = ca script dung. Nay wpeinit chay o
+  nen, cho mang ~5 phut; ghi canh bao card chua co driver luc giay 30, het gio
+  moi ket luan va bao TEN card thieu driver (VMXNET3, I225/I226, virtio...).
+  Card VMware E1000 (82545EM) - WinPE Win10/11 treo khi nap driver (loi cua
+  VMware, lab QEMU cung chip thi chay, nap cham ~75s) - script nhan ra ngay tu
+  dau va huong dan doi sang E1000E.
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu

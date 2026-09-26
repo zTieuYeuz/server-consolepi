@@ -935,6 +935,12 @@ kich ban.</p>
   <li><strong>WinPE bao "System error 1312" khi noi kho</strong>: tai khoan Samba
       <code>consolepi-deploy</code> thieu/sai mat khau (ban ISO 1.5.0 dau tien tao
       nham ten). Bat PXE / cap nhat menu la he thong tu sua lai.</li>
+  <li><strong>May ao VMware dung o "dang doi mang san sang..."</strong>: card
+      <em>E1000</em> (Intel 82545EM, doi 2001) - WinPE Windows 10/11 treo luc nap
+      driver cho no. Doi Adapter Type sang <strong>E1000E</strong> (xoa card, them
+      lai), Guest OS dat Windows 10/11 64-bit. Script tu nhan ra va bao ngay.
+      Card <em>VMXNET3</em>, Intel I225/I226, virtio: WinPE KHONG co san driver -
+      nap vao muc "Driver cho anh boot" (script bao ten card thieu driver).</li>
   <li><strong>Menu het gio "Khoi dong o cung" ma may UEFI vao man hinh
       Setup</strong>: iPXE phai tra loi "that bai" (<code>exit 1</code>) de
       firmware thu thiet bi ke tiep - da sua tu 1.5.0.</li>

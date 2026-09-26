@@ -1598,6 +1598,22 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         # dong tren, vong cho ben duoi KHONG in dong nao -> ket ngay trong
         # `wpeinit` goi dong bo. Nay chay wpeinit/InitializeNetwork O NEN
         # (start) - script van dem, van ping, van bao loi dung luc.
+        # Card E1000 GIA LAP cua VMware (PCI 8086:100F, SUBSYS ..15AD): WinPE
+        # Windows 10/11 treo luc cai driver cho no (loi that may ao anh Thoai
+        # 26/09/2026 - dung ca he thong o vong 19-20; dung loi Michael Niehaus
+        # da ghi: oofhours.com 2020/12/30). Chip 2001, may that khong con - bao
+        # ngay cach sua thay vi de nguoi dung ngoi doi.
+        'reg query HKLM\\SYSTEM\\CurrentControlSet\\Enum\\PCI /k /f "VEN_8086&DEV_100F&SUBSYS_075015AD" 2>nul | find /i "DEV_100F" >nul',
+        "if errorlevel 1 goto khong_e1000_vmware",
+        "echo === CANH BAO: card VMware E1000 (82545EM) === >> %LOG%",
+        "echo.",
+        "echo  CANH BAO: may ao VMware nay dung card mang E1000 (Intel 82545EM, doi 2001).",
+        "echo  WinPE cua Windows 10/11 THUONG TREO khi nap driver cho card nay.",
+        "echo  CACH SUA: tat may ao - Edit Settings - xoa Network Adapter - them lai",
+        "echo  voi Adapter Type = E1000E (Guest OS nen dat Windows 10/11 64-bit).",
+        "echo  Van thu tiep - neu dung qua 3 phut o duoi thi lam theo cach tren.",
+        "echo.",
+        ":khong_e1000_vmware",
         'start "khoi tao mang" /min cmd /c "wpeinit >> X:\\wpeinit_log.txt 2>&1 '
         '& wpeutil InitializeNetwork >> X:\\wpeinit_log.txt 2>&1"',
         "set CHO=0",
