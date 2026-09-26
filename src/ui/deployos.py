@@ -3771,6 +3771,16 @@ def register_deployos(app):
         </div>
 
         <div class="card">
+          <h3>Lấy từ kho trung tâm</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">Kho trung tâm có bảng tham số
+            dùng chung cho mọi Console Pi. Bấm để thêm các dòng máy này chưa có (dòng đã có
+            giữ nguyên, không bị ghi đè).</p>
+          <form method="POST" action="/deployos/thamso/tu-kho">
+            <button type="submit" class="gray" data-busy="Đang lấy...">⬇ Lấy tham số từ kho</button>
+          </form>
+        </div>
+
+        <div class="card">
           <h3>Thêm dòng mới</h3>
           <form method="POST" action="/deployos/thamso/them">
             <div class="luoi-them">{o_them}</div>
@@ -3899,6 +3909,30 @@ def register_deployos(app):
         return _trang(body, "Tham số cài đặt",
                       "Tra tham số cài im lặng của từng phần mềm",
                       active="/deployos")
+
+    @app.route("/deployos/thamso/tu-kho", methods=["POST"])
+    def deployos_thamso_tu_kho():
+        """Keo bang tham so tu kho trung tam - chi THEM dong chua co (trung ten
+        phan mem + trung tham so cai thi bo qua), khong ghi de ghi chep cu."""
+        from . import khotrungtam as _kt, thamso as _ts
+        cauhinh = _kt.doc_cauhinh()
+        if not cauhinh:
+            return _trang_thamso("Máy này chưa kết nối kho trung tâm (Deployment OS → Kho trung tâm).", False)
+        ok, kq = _kt.lay_tham_so(cauhinh)
+        if not ok:
+            return _trang_thamso(kq, False)
+        co = {((x.get("phan_mem") or "").strip().lower(), (x.get("cai_dat") or "").strip())
+              for x in _ts.danh_sach()}
+        them = 0
+        for m in kq:
+            khoa = ((m.get("phan_mem") or "").strip().lower(), (m.get("cai_dat") or "").strip())
+            if not khoa[0] or khoa in co:
+                continue
+            if _ts.them(m)[0]:
+                co.add(khoa)
+                them += 1
+        return _trang_thamso(f"Kho có {len(kq)} dòng - đã thêm {them} dòng mới, "
+                             f"{len(kq) - them} dòng máy này đã có.", True)
 
     @app.route("/deployos/thamso/them", methods=["POST"])
     def deployos_thamso_them():

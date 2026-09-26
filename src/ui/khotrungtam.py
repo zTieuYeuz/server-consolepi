@@ -307,3 +307,23 @@ def tai_nen(cauhinh, muc, duong_dich, sau_khi_xong=None):
 
     threading.Thread(target=chay, daemon=True).start()
     return True, f'Đang tải "{muc["ten"]}" ở nền - xem tiến độ ngay trên trang này.'
+
+
+def lay_tham_so(cauhinh):
+    """Bang tham so cai dat tren kho (/api/tham-so). Tra (ok, list | loi)."""
+    try:
+        r = requests.get(f"{cauhinh['url']}/api/tham-so", headers=_headers(cauhinh),
+                         timeout=TIMEOUT_DANH_SACH)
+    except requests.RequestException as e:
+        return False, f"Không kết nối được tới kho: {e}"
+    if r.status_code in (401, 403):
+        return False, "Token không hợp lệ hoặc đã bị thu hồi trên kho."
+    if r.status_code == 404:
+        return False, "Kho này là bản cũ, chưa có mục Tham số cài đặt."
+    try:
+        d = r.json()
+    except ValueError:
+        return False, "Kho trả về dữ liệu không hợp lệ."
+    if not d.get("ok") or not isinstance(d.get("tham_so"), list):
+        return False, d.get("loi") or "Kho trả về dữ liệu không hợp lệ."
+    return True, d["tham_so"]
