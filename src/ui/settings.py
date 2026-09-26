@@ -260,7 +260,12 @@ def _render_settings(msg="", ok=True):
       <h3>Mat khau terminal</h3>
       <table style="max-width:430px;margin-bottom:12px;">
         <tr><th style="width:150px;">Tai khoan</th><td><code>{user}</code></td></tr>
-        <tr><th>Mat khau</th><td><code>{pw}</code></td></tr>
+        <tr><th>Mat khau</th><td><code id="term-mk" data-mk="{pw}">••••••••••</code>
+          <button type="button" class="small gray" style="margin-left:8px;"
+            onclick="var c=document.getElementById('term-mk');var h=c.textContent.indexOf('•')<0;
+                     c.textContent=h?'••••••••••':c.dataset.mk;this.textContent=h?'Hiện':'Ẩn';">Hiện</button>
+          <!-- Che mac dinh (26/09/2026): truoc day hien thang chu ro - ai liec man
+               hinh / chup anh la lo. Bam Hien moi thay. --></td></tr>
       </table>
       <form method="POST" action="/settings/regen-term-pass"
             onsubmit="return confirm('Doi mat khau terminal? Trinh duyet se hoi dang nhap lai.');">
