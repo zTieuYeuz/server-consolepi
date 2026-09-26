@@ -25,6 +25,10 @@ m(){ echo "$1" | socat - UNIX-CONNECT:$D/mon.sock >/dev/null; }
 
 case $LENH in
 start|odia)
+  # Moi may cai xong chiem 7-22 GB; het cho thi QEMU tam dung (io-error) va
+  # nhin nhu "treo" (lab 26/09/2026). Can it nhat 15 GB trong.
+  CON=$(df -BG --output=avail /build | tail -1 | tr -dc 0-9)
+  [ "$CON" -lt 15 ] && { echo "HET CHO: con ${CON}G tren /build - xoa o may test cu (pi-that/*/disk.qcow2)"; exit 1; }
   [ -f $D/q.pid ] && kill $(cat $D/q.pid) 2>/dev/null; sleep 1
   for n in 0 1; do ip link del mvt$M$n 2>/dev/null; done
   rm -f $D/mon.sock

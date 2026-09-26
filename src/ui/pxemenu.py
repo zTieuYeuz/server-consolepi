@@ -325,7 +325,11 @@ def sinh_script(goc):
                  f"initrd {goc}/{THU_MUC_PXE}/{THU_MUC_WINPE}/winpeshl.ini winpeshl.ini || goto loi",
                  f"initrd {goc}/{THU_MUC_PXE}/{THU_MUC_WINPE}/startnet.cmd startnet.cmd || goto loi"]
         if co_driver:
-            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_WIM_DRIVER} "
+            # URL PHAI ket thuc bang dung ten file: iPXE UEFI dua file cho
+            # wimboot theo TEN CUOI URL (doi so thu 2 cua initrd chi la
+            # cmdline, ban BIOS moi dung lam ten). URL ".../drivers.wim" ->
+            # wimboot UEFI bo qua (duoi .wim) - lab Secure Boot 26/09/2026.
+            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_NHUNG_DRIVER} "
                         f"{_u.TEN_NHUNG_DRIVER} || goto loi")
         dong += [f"initrd {goc}/os/{os_id}/boot.wim boot.wim || goto loi",
                  "boot || goto loi", ""]
@@ -342,7 +346,11 @@ def sinh_script(goc):
         for f in cac_file:
             dong.append(f"initrd {goc}/{THU_MUC_PXE}/{thu_muc}/{f} {f} || goto loi")
         if co_driver:
-            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_WIM_DRIVER} "
+            # URL PHAI ket thuc bang dung ten file: iPXE UEFI dua file cho
+            # wimboot theo TEN CUOI URL (doi so thu 2 cua initrd chi la
+            # cmdline, ban BIOS moi dung lam ten). URL ".../drivers.wim" ->
+            # wimboot UEFI bo qua (duoi .wim) - lab Secure Boot 26/09/2026.
+            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_NHUNG_DRIVER} "
                         f"{_u.TEN_NHUNG_DRIVER} || goto loi")
         dong += [f"initrd {goc}/os/{os_id}/boot.wim boot.wim || goto loi",
                  "boot || goto loi", ""]

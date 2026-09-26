@@ -3525,7 +3525,9 @@ def register_deployos(app):
                 vân tay, chipset...</td></tr>
             <tr><td>Nạp vào ảnh boot</td>
                 <td>Nạp vào <strong>WinPE ngay lúc mới boot</strong>, trước
-                khi máy xin IP. <strong>Chỉ cần cho card mạng (LAN).</strong>
+                khi máy xin IP. <strong>Cho card mạng (LAN) và bộ điều khiển
+                ổ đĩa</strong> (máy không thấy ổ cứng lúc cài). Driver này cũng
+                được tiêm luôn vào Windows vừa cài.
                 Nếu WinPE không có driver LAN của máy đó thì máy không có
                 mạng, không tải được ảnh cài đặt và sẽ đứng ngay từ đầu.</td></tr>
           </table>
@@ -3540,14 +3542,15 @@ def register_deployos(app):
           2016-2019, Realtek RTL8111/8168 và RTL8125, Broadcom NetXtreme,
           và card USB-LAN (ASIX AX88179, Realtek RTL8153).
           <br><br>
-          <strong>Thiếu</strong> - phải tải driver rồi đánh dấu "nạp vào ảnh
-          boot": <strong>Intel I219 từ đời 2020 trở đi</strong> (Comet Lake,
-          Tiger Lake, Alder Lake, Raptor Lake, Meteor Lake) và
-          <strong>toàn bộ Intel I225/I226 2.5G</strong>. Đây là card LAN của
-          hầu hết máy HP / Dell / Lenovo đời 2020 trở lại đây - đúng nguyên
-          nhân làm máy boot vào nhưng không nhận mạng.
+          <strong>Thiếu</strong>: <strong>Intel I219 từ đời 2020 trở đi</strong>
+          (Comet Lake, Tiger Lake, Alder Lake, Raptor Lake, Meteor Lake),
+          <strong>toàn bộ Intel I225/I226 2.5G</strong>, VMware VMXNET3/PVSCSI,
+          virtio, Intel RST VMD. Đây là card LAN của hầu hết máy HP / Dell /
+          Lenovo đời 2020 trở lại đây - đúng nguyên nhân làm máy boot vào
+          nhưng không nhận mạng. <strong>Cách nhanh nhất: bấm "Tải tất cả gói
+          chưa có" ở khung Gói driver phổ biến phía trên.</strong>
           <br><br>
-          <strong>Lấy driver ở đâu:</strong> Dell và HP có sẵn gói riêng cho
+          <strong>Máy khác vẫn thiếu driver thì lấy ở đâu:</strong> Dell và HP có sẵn gói riêng cho
           WinPE (Dell "WinPE Driver Pack", HP "WinPE Driver Pack") - tải về,
           giải nén, lấy thư mục network. Lenovo có driver pack theo từng dòng
           máy. Asus thì tải driver LAN theo model trên trang hỗ trợ. Chỉ cần

@@ -885,6 +885,9 @@ def register_pxe(app):
                 thu_muc and not _TEN_SACH.match(thu_muc)):
             abort(404)
         goc = os.path.join(_d.BOOT_DIR, _m.THU_MUC_PXE, thu_muc)
+        from . import unattend as _u
+        if not thu_muc and ten == _u.TEN_NHUNG_DRIVER:
+            ten = _u.TEN_WIM_DRIVER      # xem pxemenu: ten cuoi URL = ten file
         if not os.path.isfile(os.path.join(goc, ten)):
             abort(404)
         return send_from_directory(goc, ten)

@@ -1137,7 +1137,12 @@ foreach ($c in (Get-NetAdapter -Physical | Where-Object Status -eq 'Up')) {
 }
 $thieu = @(Get-CimInstance Win32_PnPEntity | Where-Object { $_.ConfigManagerErrorCode -ne 0 })
 $txt.Add('  Thiet bi thieu driver: ' + $thieu.Count)
-foreach ($t in $thieu) { $txt.Add('      - ' + $t.Name) }
+# Thiet bi chua co driver thuong KHONG co Name (lab 26/09/2026: dong "- "
+# trong) -> ghi ma phan cung de biet can tai driver gi.
+foreach ($t in $thieu) {
+    $ten = if ($t.Name) { $t.Name } else { '(chua co ten)' }
+    $txt.Add('      - ' + $ten + '  [' + $t.PNPDeviceID + '] ma loi ' + $t.ConfigManagerErrorCode)
+}
 $txt -join "`r`n" | Out-File -FilePath $OutFile -Encoding UTF8
 # Ban DAY DU (ca muc chua dat) cho ky thuat tra loi - cua so va file .txt chi
 # hien viec da xong theo yeu cau anh Thoai, nen muc hong khong duoc mat dau vet.
