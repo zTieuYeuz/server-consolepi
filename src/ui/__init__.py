@@ -19,6 +19,7 @@ from .deployos import register_deployos                    # noqa: F401
 from .pxe import register_pxe                              # noqa: F401
 from .tiendo import register_tiendo                        # noqa: F401
 from .gopy import register_gopy                            # noqa: F401
+from .phien import register_phien                          # noqa: F401
 
 
 def register_all(app):
@@ -42,4 +43,5 @@ def register_all(app):
     register_pxe(app)
     register_tiendo(app)
     register_gopy(app)
+    register_phien(app)
     return app

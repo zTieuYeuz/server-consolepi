@@ -18,6 +18,17 @@ sanboot; iPXE cua Debian khong ky).
 - deploy.cmd tu nhan BIOS/UEFI (PEFirmwareType): BIOS -> chia MBR (phan vung
   he thong NTFS active, >3 phan vung thi dung extended/logical) + bcdboot
   /f BIOS; UEFI -> GPT + bcdboot /f UEFI.
+- PHIEN KET NOI kieu MobaXterm (Ket noi thiet bi -> Phien ket noi): 1 trang cho
+  SSH / Telnet / cong console, NHIEU TAB cung luc, luu thiet bi theo nhom (ten,
+  IP, cong, user, baud, ghi chu), ket noi nhanh ("ssh admin@10.0.0.1",
+  "telnet 10.0.0.1", "ttyUSB0"), cong console tu nhan. Moi tab: gui tap lenh tu
+  thu vien (dan tung dong an toan), go mat khau giup, luu log man hinh, ngat
+  phien, toan man hinh. Rot ket noi -> Enter ket noi lai. Dong tab / tai lai
+  trang khong mat phien. Telnet tu viet (khong them goi he thong). Mat khau chi
+  luu khi tich, file 600, khong bao gio gui ra trinh duyet. Dich vu moi
+  console-pi-term-phien (ttyd 8012, nginx /term-phien/, qua dang nhap).
+- tmux: window-size latest + tat thanh trang thai - het loi 2 man hinh khac
+  kich thuoc cung xem 1 phien (thanh xanh nam giua khung, lap du lieu cu).
 - TAB GOP Y (menu trai): nguoi dung gui gop y / bao loi / de xuat kem anh va
   tai lieu (toi da 10 tep, 20 MB/tep). Luu tren may truoc roi tu gui ve nha
   phat trien o nen - mat mang thi tu gui lai moi 5 phut, khong mat gop y, khong

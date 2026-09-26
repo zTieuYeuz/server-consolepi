@@ -269,7 +269,7 @@ def register_home(app):
                       <button type="submit" class="gray small">Lưu tên</button>
                     </form>
                   </td>
-                  <td><a class="btn" href="/console/{p['devname']}">Mở Console</a></td>
+                  <td><a class="btn" href="/phien?mo=serial-{p['devname']}">Mở Console</a></td>
                 </tr>"""
             ports_html = f"""
             <table>
@@ -413,7 +413,7 @@ def register_home(app):
                       <button type="submit" class="gray small">Lưu tên</button>
                     </form>
                   </td>
-                  <td><a class="btn" href="/console/{p['devname']}">Mở Console</a></td>
+                  <td><a class="btn" href="/phien?mo=serial-{p['devname']}">Mở Console</a></td>
                 </tr>"""
             noi_dung = f"""
             <div class="card">

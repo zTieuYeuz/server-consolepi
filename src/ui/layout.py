@@ -58,6 +58,7 @@ NAV_ITEMS = [
 
     # Cac duong tu Pi ket noi RA thiet bi mang can lam viec
     ("nhom", "Kết nối thiết bị", "🔌", [
+        ("/phien", "Phiên kết nối", "🗂️"),
         ("/console", "Console", "🖥️"),
         ("/terminal", "Terminal server", "⌨️"),
         ("/ssh", "SSH", "🔑"),

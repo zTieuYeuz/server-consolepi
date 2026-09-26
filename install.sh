@@ -705,7 +705,7 @@ systemctl daemon-reload
 # Thu tu quan trong: dashboard phai khoi dong lai TRUOC nginx.
 # Ban cu cua dashboard lang nghe 0.0.0.0:80, ban moi chuyen sang
 # 127.0.0.1:5000 - neu bat nginx truoc thi cong 80 con bi giu, nginx chet.
-ENABLE_LIST=( console-pi-dashboard console-pi-term-local console-pi-term-ssh
+ENABLE_LIST=( console-pi-dashboard console-pi-term-local console-pi-term-ssh console-pi-term-phien
               bt-pan0 dnsmasq-bt bt-agent bt-nap
               wifi-fallback.timer lldpd bluetooth avahi-daemon nginx
               wpa_supplicant@wlan0 console-pi-selftest )
@@ -760,7 +760,7 @@ fi
 
 say "Kiem tra sau cai dat"
 FAIL=0
-for s in nginx console-pi-dashboard console-pi-term-local console-pi-term-ssh; do
+for s in nginx console-pi-dashboard console-pi-term-local console-pi-term-ssh console-pi-term-phien; do
     if systemctl is-active --quiet "$s"; then
         ok "$s: dang chay"
     else

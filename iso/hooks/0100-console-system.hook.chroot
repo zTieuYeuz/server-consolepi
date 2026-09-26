@@ -53,7 +53,7 @@ done
 #   - dnsmasq-pxe/direct   : dich vu mang KHONG xac thuc, khong bao gio
 #                            duoc tu bat luc khoi dong (nguyen tac an toan
 #                            xuyen suot du an) - nguoi dung tu bat khi can
-for s in console-pi-dashboard console-pi-term-local console-pi-term-ssh \
+for s in console-pi-dashboard console-pi-term-local console-pi-term-ssh console-pi-term-phien \
          nginx lldpd avahi-daemon ssh NetworkManager \
          console-system-lan-dau console-system-cai; do
     systemctl enable "$s" >/dev/null 2>&1 || echo "[console-system] khong bat duoc $s"

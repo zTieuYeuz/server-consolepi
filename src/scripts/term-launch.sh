@@ -32,6 +32,13 @@ THEME='{"background":"#0f1114","foreground":"#d5dae2","cursor":"#4CAF50","select
 tmux new-session -A -d -s "$SESSION" \
     bash --rcfile /opt/console-pi/scripts/console-bashrc 2>/dev/null || true
 tmux set-option -g mouse on 2>/dev/null || true
+# Mo cung phien tren 2 man hinh khac kich thuoc (man cam ung + laptop): mac
+# dinh tmux thu theo man NHO NHAT -> thanh trang thai nam giua khung, phan
+# duoi lap du lieu cu (loi that 27/09/2026). "latest" = theo man vua go phim.
+tmux set-option -g window-size latest 2>/dev/null || true
+# Tat thanh trang thai cua tmux: nguoi dung khong can "[console-t0:microcom*]",
+# va khi 2 man hinh khac co xem cung phien no nam lo lung giua khung.
+tmux set-option -g status off 2>/dev/null || true
 
 # Shell co mau san (dau nhac, ls, grep, va cac lenh mang qua grc).
 # Dung --rcfile de KHONG dung vao .bashrc cua he thong.

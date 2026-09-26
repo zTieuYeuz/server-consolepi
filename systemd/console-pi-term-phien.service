@@ -1,0 +1,18 @@
+[Unit]
+Description=Console System - Phien ket noi kieu MobaXterm (ttyd + tmux, nhieu phien)
+After=network.target console-pi-dashboard.service
+
+[Service]
+Type=exec
+# Chi lang nghe 127.0.0.1 - vao qua nginx /term-phien/ (da kiem tra dang nhap).
+# -a: lay ma phien tu URL (?arg=...) - phien-mo.sh kiem tra ma truoc khi dung.
+ExecStart=/usr/local/bin/ttyd -p 8012 -i 127.0.0.1 -b /term-phien -W -a \
+    -t fontSize=15 -t "fontFamily=ui-monospace, Menlo, Consolas, monospace" \
+    -t disableLeaveAlert=true -t disableResizeOverlay=true \
+    -t "theme={\"background\":\"#0f1114\",\"foreground\":\"#d5dae2\",\"cursor\":\"#4CAF50\",\"selectionBackground\":\"#2f4a5f\"}" \
+    /opt/console-pi/scripts/phien-mo.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
