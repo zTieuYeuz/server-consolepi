@@ -18,6 +18,17 @@ sanboot; iPXE cua Debian khong ky).
 - deploy.cmd tu nhan BIOS/UEFI (PEFirmwareType): BIOS -> chia MBR (phan vung
   he thong NTFS active, >3 phan vung thi dung extended/logical) + bcdboot
   /f BIOS; UEFI -> GPT + bcdboot /f UEFI.
+- SUA LOI LON: driver "nap vao anh boot" CHUA BAO GIO toi WinPE qua PXE -
+  wimboot bo qua file duoi .wim (BIOS), iPXE UEFI lay ten file theo URL (UEFI).
+  Nay chen duoi ten cpi-drivers.bin. Driver con duoc tiem vao Windows vua bung
+  (dism /add-driver) - truoc day o PVSCSI/VMD/virtio se man hinh xanh lan
+  khoi dong dau, card VMXNET3 mat mang sau cai. Kiem tren Pi that: BIOS
+  VMXNET3+PVSCSI 11/11, UEFI VMXNET3+NVMe 42/42, Secure Boot VirtIO 65/65.
+- Trang Tien trinh chi bao "da xong" SAU khi bao cao da ghi ra dia (tat may
+  ngay luc bao xong truoc day mat bao cao). Bao cao ghi ma phan cung thiet bi
+  thieu driver.
+- An toan: cong mang da chon khong con (rut USB-LAN, doi ten) -> PXE / cam
+  thang TU CHOI bat thay vi am tham phat DHCP tren cong khac.
 - GOI DRIVER PHO BIEN (Drivers): WinPE Windows 10/11 thieu driver cho VMware
   VMXNET3/PVSCSI, Intel I225/I226 va I219 doi moi, Intel RST VMD, Realtek
   8125/8126, virtio (KVM/Proxmox) -> may do khong co mang / khong thay o dia
