@@ -49,7 +49,9 @@ chuan-bi)
   chmod 440 /mnt/srv/etc/sudoers.d/99-chi-may-test
   # Cong PXE = card thu 2 (card 1 la user-net de SSH/Internet)
   mkdir -p /mnt/srv/var/lib/console-pi
-  echo '{"day": "enp0s4"}' > /mnt/srv/var/lib/console-pi/cong-mang.json
+  # Ten that cua card 2 tren may chu lab la ens4 (enp0s4 cu SAI - truoc day
+  # he thong am tham lui sang card khac nen khong ai thay, 26/09/2026).
+  echo '{"day": "ens4"}' > /mnt/srv/var/lib/console-pi/cong-mang.json
   umount /mnt/srv; qemu-nbd -d /dev/nbd0 >/dev/null; echo "CHUAN BI XONG ($GOC)" ;;
 
 mang)
@@ -144,7 +146,14 @@ khach)
     [ $L2 = start ] && { rm -f $K/disk.qcow2; qemu-img create -q -f qcow2 $K/disk.qcow2 60G; }
     for t in 0 1; do ip tuntap add tk$M$t mode tap 2>/dev/null; ip link set tk$M$t master brlab; ip link set tk$M$t up; done
     EXTRA=""; BOOT=",bootindex=1"; [ $L2 = odia ] && BOOT=",romfile="
-    NIC="-netdev tap,id=n0,ifname=tk${M}0,script=no,downscript=no -device e1000,netdev=n0,mac=52:54:00:bb:00:$M$BOOT"
+    NIC="-netdev tap,id=n0,ifname=tk${M}0,script=no,downscript=no -device ${CARD:-e1000},netdev=n0,mac=52:54:00:bb:00:$M$BOOT"
+    # CARD=vmxnet3|e1000e..., DISK=pvscsi|virtio|nvme (giong pi-that.sh)
+    case ${DISK:-ahci} in
+      pvscsi) OD="-device pvscsi,id=s0 -device scsi-hd,drive=d0,bus=s0.0,bootindex=2" ;;
+      virtio) OD="-device virtio-blk-pci,drive=d0,bootindex=2" ;;
+      nvme)   OD="-device nvme,drive=d0,serial=cpi0001,bootindex=2" ;;
+      *)      OD="-device ahci,id=ah -device ide-hd,drive=d0,bus=ah.0,bootindex=2" ;;
+    esac
     case $FW in
       uefi) [ $L2 = start ] && cp /usr/share/OVMF/OVMF_VARS_4M.fd $K/vars.fd
             EXTRA="-drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd -drive if=pflash,format=raw,file=$K/vars.fd" ;;
@@ -153,7 +162,7 @@ khach)
             NIC="-netdev tap,id=n0,ifname=tk${M}0,script=no,downscript=no -device virtio-net-pci,netdev=n0,mac=52:54:00:bb:00:$M$BOOT -netdev tap,id=n1,ifname=tk${M}1,script=no,downscript=no -device e1000,netdev=n1,mac=52:54:00:bb:01:$M,romfile=" ;;
     esac
     qemu-system-x86_64 -enable-kvm -cpu host -smp 2 -m 3072 -display none -vga std $EXTRA $NIC \
-      -drive file=$K/disk.qcow2,if=none,id=d0 -device ahci,id=ah -device ide-hd,drive=d0,bus=ah.0,bootindex=2 \
+      -drive file=$K/disk.qcow2,if=none,id=d0 $OD \
       -monitor unix:$K/mon.sock,server,nowait -pidfile $K/q.pid -daemonize && echo "KHACH $FW BAT ($L2)" ;;
   key)  for k in "$@"; do m "sendkey $k"; sleep 2; done ;;
   chup) m "screendump $K/$1.ppm"; sleep 1

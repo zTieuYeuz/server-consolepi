@@ -134,6 +134,34 @@ def cong_day():
     return cac[0]["ten"]
 
 
+def cong_day_da_chon_mat():
+    """
+    Ten cong day NGUOI DUNG DA CHON trong Cai dat nhung hien KHONG co tren
+    may (rut USB-LAN, doi ten cong sau cap nhat...). "" neu khong co van de.
+
+    cong_day() luc do tu lui sang cong khac de HIEN THI; nhung dich vu phat
+    DHCP (PXE "Pi tu cap IP", cam thang) KHONG duoc tu doi cong - se phat
+    DHCP nham vao mang khac (lab 26/09/2026: ten cong da chon khong ton tai
+    -> dnsmasq-pxe tu gan vao card mang cong ty). Goi ham nay truoc khi bat.
+    """
+    chon = _doc_chon_tay().get("day", "")
+    if chon and not os.path.exists(os.path.join(DUONG_NET, chon)):
+        return chon
+    return ""
+
+
+def loi_cong_da_chon_mat():
+    """Thong bao chan bat dich vu, hoac "" neu cong da chon van con."""
+    mat = cong_day_da_chon_mat()
+    if not mat:
+        return ""
+    co = ", ".join(c["ten"] for c in danh_sach_cong() if not c["wifi"]) or "không có"
+    return (f"Cổng mạng đã chọn ({mat}) hiện không có trên máy "
+            f"(cổng dây đang có: {co}). Không tự đổi sang cổng khác để tránh "
+            f"phát DHCP nhầm vào mạng khác. Sửa tên cổng trong {FILE_CHON_CONG} "
+            f"(hoặc xoá file đó để máy tự chọn cổng có dây) rồi bật lại.")
+
+
 def cong_wifi():
     """Ten cong WiFi. Tra "" neu may khong co card WiFi."""
     chon = _doc_chon_tay().get("wifi", "")

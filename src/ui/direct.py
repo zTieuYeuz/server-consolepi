@@ -71,6 +71,10 @@ def bat_che_do():
     """eth0 -> IP tinh + DHCP server nho. Tra ve (ok, thong bao)."""
     if dang_bat():
         return True, "Chế độ cắm thẳng đang bật sẵn."
+    from . import phancung as _pc
+    loi = _pc.loi_cong_da_chon_mat()
+    if loi:
+        return False, loi
 
     # Tach eth0 khoi NetworkManager de no khong doi lai DHCP ngay sau lung
     _sh(["nmcli", "device", "set", cong(), "managed", "no"])

@@ -695,6 +695,10 @@ def bat_pxe(kieu_boot="truc_tiep"):
     if not _KHOA.acquire(blocking=False):
         return False, _DANG_LAM
     try:
+        from . import phancung as _pc
+        loi = _pc.loi_cong_da_chon_mat()
+        if loi:
+            return False, loi
         _don_rac_dung_anh()
         return _bat_pxe_that(kieu_boot)
     finally:
