@@ -4062,10 +4062,6 @@ def register_deployos(app):
           </div>
           <div id="ket-qua-tim-kho" class="ket-qua"></div>
           {bang}
-          <form method="POST" action="/deployos/kho/xoa-cauhinh" style="margin-top:12px;"
-                onsubmit="return confirm('Ngắt kết nối kho hiện tại?');">
-            <button type="submit" class="small gray">Đổi kết nối</button>
-          </form>
         </div>
 
         <script>
