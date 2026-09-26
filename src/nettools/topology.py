@@ -120,19 +120,38 @@ def _ve_svg(iface, switch, hosts):
         diem_bat_dau_host = (x_switch, Y_SWITCH + 22)
 
     # --- Cac host ---
+    # Toi da MOI_HANG may/hang, tu xuong hang. Truoc day chia deu chieu ngang
+    # cho TAT CA may: mang 17 thiet bi (lab nha anh Thoai 26/09/2026) cho moi
+    # may ~50 don vi trong khi o rong 116 -> cac o chong len nhau, khong doc
+    # duoc. Moi hang co 1 thanh ngang (bus) noi vao truc doc tu switch.
     hien_thi = hosts[:SO_HOST_TOI_DA_TREN_HINH]
     n = len(hien_thi)
     if n:
-        khoang_cach = RONG / (n + 1)
-        for i, h in enumerate(hien_thi):
-            x = khoang_cach * (i + 1)
-            phan.append(f'<line class="duong" x1="{diem_bat_dau_host[0]}" y1="{diem_bat_dau_host[1]}" '
-                       f'x2="{x}" y2="{Y_HOST-18}"/>')
-            phan.append(f'<rect class="hop" x="{x-58}" y="{Y_HOST-18}" width="116" height="40" rx="6"/>')
-            phan.append(f'<text class="ten" x="{x}" y="{Y_HOST-2}" text-anchor="middle" '
-                       f'style="font-size:11px;">{_thoat_svg(h["ip"])}</text>')
-            ten_vendor = h.get("vendor", "")[:16]
-            phan.append(f'<text class="nhan" x="{x}" y="{Y_HOST+14}" text-anchor="middle">{_thoat_svg(ten_vendor)}</text>')
+        MOI_HANG = 7
+        so_hang = (n + MOI_HANG - 1) // MOI_HANG
+        CAO_HANG = 78
+        x0, y0 = diem_bat_dau_host
+        y_cuoi_bus = Y_HOST - 36 + (so_hang - 1) * CAO_HANG
+        phan.append(f'<line class="duong" x1="{x0}" y1="{y0}" x2="{x0}" y2="{y_cuoi_bus}"/>')
+        for hang in range(so_hang):
+            cac = hien_thi[hang * MOI_HANG:(hang + 1) * MOI_HANG]
+            khoang_cach = RONG / (len(cac) + 1)
+            y_bus = Y_HOST - 36 + hang * CAO_HANG
+            y_hop = Y_HOST + hang * CAO_HANG
+            x_trai, x_phai = khoang_cach, khoang_cach * len(cac)
+            phan.append(f'<line class="duong" x1="{min(x_trai, x0)}" y1="{y_bus}" '
+                        f'x2="{max(x_phai, x0)}" y2="{y_bus}"/>')
+            for i, h in enumerate(cac):
+                x = khoang_cach * (i + 1)
+                phan.append(f'<line class="duong" x1="{x}" y1="{y_bus}" x2="{x}" y2="{y_hop-18}"/>')
+                phan.append(f'<rect class="hop" x="{x-58}" y="{y_hop-18}" width="116" height="40" rx="6"/>')
+                phan.append(f'<text class="ten" x="{x}" y="{y_hop-2}" text-anchor="middle" '
+                            f'style="font-size:11px;">{_thoat_svg(h["ip"])}</text>')
+                ten_vendor = h.get("vendor", "")[:16]
+                phan.append(f'<text class="nhan" x="{x}" y="{y_hop+14}" text-anchor="middle">{_thoat_svg(ten_vendor)}</text>')
+        CAO = max(CAO, Y_HOST + (so_hang - 1) * CAO_HANG + 60)
+        phan[0] = (f'<svg viewBox="0 0 {RONG} {CAO}" xmlns="http://www.w3.org/2000/svg" '
+                   f'style="width:100%;height:auto;background:#111;border-radius:8px;">')
 
     if len(hosts) > SO_HOST_TOI_DA_TREN_HINH:
         phan.append(f'<text class="nhan" x="{RONG-10}" y="{CAO-8}" text-anchor="end">'

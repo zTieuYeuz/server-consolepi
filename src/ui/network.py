@@ -423,6 +423,22 @@ _PAIR = {"running": False, "mac": "", "step": "", "ok": None, "detail": ""}
 _KHOA_PAIR = threading.Lock()
 
 
+def _doc_ap():
+    """(ten WiFi, mat khau) cua AP do Pi phat - doc tu hostapd.conf."""
+    ssid, mk = "ConsolePi", ""
+    try:
+        with open("/etc/hostapd/hostapd.conf", encoding="utf-8") as f:
+            for dong in f:
+                k, _, v = dong.strip().partition("=")
+                if k == "ssid":
+                    ssid = v
+                elif k == "wpa_passphrase":
+                    mk = v
+    except OSError:
+        pass
+    return ssid, mk
+
+
 def _co_dich_vu_nap(mac):
     """
     Thiet bi kia co CHIA SE MANG khong (co dich vu NAP - 00001116)?
@@ -1034,9 +1050,24 @@ def _wifi_page(msg="", ok=True):
     last_html = (f'<div class="msg {"err" if state == "failed" else "ok"}">{_esc(last)}</div>'
                  if last else "")
 
+    # Ten + mat khau WiFi Pi tu phat (26/09/2026, anh Thoai): mat khau sinh
+    # ngau nhien rieng tung may luc cai nhung truoc day KHONG hien o dau -
+    # nguoi dung khong IT khong biet go lenh de xem. Hien o day (trang da
+    # qua dang nhap), an sau nut bam de khong lo khi dang chieu man hinh.
+    ap_ssid, ap_mk = _doc_ap()
+    ap_tt = (f"""
+      <table style="max-width:460px;margin:0 0 12px;">
+        <tr><td style="width:150px;">Tên WiFi</td><td><code>{_esc(ap_ssid)}</code></td></tr>
+        <tr><td>Mật khẩu</td><td><code id="ap-mk" data-mk="{_esc(ap_mk)}">••••••••••</code>
+          <button type="button" class="small gray" style="margin-left:8px;"
+            onclick="var c=document.getElementById('ap-mk');var h=c.textContent.indexOf('•')<0;
+                     c.textContent=h?'••••••••••':c.dataset.mk;this.textContent=h?'Hiện':'Ẩn';">Hiện</button></td></tr>
+        <tr><td>Địa chỉ giao diện</td><td><code>http://192.168.50.1</code></td></tr>
+      </table>""" if ap_mk else "")
     ap_card = f"""
     <div class="card">
       <h3>Chế độ phát sóng (AP ConsolePi)</h3>
+      {ap_tt}
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
         {"Dang KHOA o che do AP - Pi se khong tu chuyen sang WiFi." if locked
          else "Pi tự chuyển sang WiFi quen thuộc khi tìm thấy. Khóa AP để giữ nguyên sóng ConsolePi."}

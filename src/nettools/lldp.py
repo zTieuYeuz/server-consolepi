@@ -30,6 +30,16 @@ from flask import render_template_string
 from . import nettools_bp
 
 
+
+def _ip_mo_duoc(ip):
+    """IP quan ly co mo duoc tu may nay khong (khong phai loopback/0.0.0.0/link-local)."""
+    import ipaddress
+    try:
+        a = ipaddress.ip_address((ip or "").strip())
+    except ValueError:
+        return False
+    return not (a.is_loopback or a.is_unspecified or a.is_link_local or a.is_multicast)
+
 def _gt(node):
     """
     'Get first' - lay phan tu dau cua mot truong lldpcli, luon tra ve dict.
@@ -142,6 +152,9 @@ def get_lldp_neighbors():
                 "iface": iface_name, "protocol": via, "age": age,
                 "remote_name": remote_name, "remote_descr": remote_descr,
                 "chassis_id": chassis_id, "mgmt_ip": mgmt_ip,
+                # Router nha (vd ASUS RT-AX55) quang ba 127.0.0.1 - bam "Mo web"
+                # se mo nham CHINH may nguoi dung. Chi cho mo IP dung duoc.
+                "mgmt_mo_duoc": _ip_mo_duoc(mgmt_ip),
                 "port_id": port_id, "port_descr": port_descr,
                 "capabilities": capabilities, "poe_info": poe_info,
             })
@@ -230,7 +243,8 @@ LLDP_TEMPLATE = """
                     <dd>
                         {% if n.mgmt_ip %}
                             <code>{{ n.mgmt_ip }}</code>
-                            &nbsp;<a href="http://{{ n.mgmt_ip }}" target="_blank" rel="noopener">Mở web ↗</a>
+                            {% if n.mgmt_mo_duoc %}&nbsp;<a href="http://{{ n.mgmt_ip }}" target="_blank" rel="noopener">Mở web ↗</a>
+                            {% else %}&nbsp;<span class="none-val">(địa chỉ nội bộ của thiết bị - không mở từ đây được)</span>{% endif %}
                         {% else %}<span class="none-val">Thiết bị không quảng bá IP quản lý</span>{% endif %}
                     </dd>
 
