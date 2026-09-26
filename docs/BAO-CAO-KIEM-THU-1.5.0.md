@@ -31,7 +31,9 @@ Mục tiêu của bản này: **cài Windows qua mạng (PXE) chạy được tr
 | 10 | ISO | BIOS | Mạng không DHCP | T1 | ✅ **5/5, 0 mục chưa đạt** |
 | 11 | ISO | UEFI | Mạng có sẵn DHCP | T3 Win11 (sau khi sửa D, E) | ✅ **11/11, 0 mục chưa đạt** (Widgets đạt, báo cáo có mục "Sau đăng nhập") |
 
-Phủ đủ **3 kiểu máy × 3 chế độ mạng**. Ngoài ra đã kiểm trong lab netns (wimboot-lab): BIOS, UEFI và UEFI+SB đều vào WinPE, `net use` Samba được.
+| 12 | **ISO cuối, cài sạch** | **UEFI + SB** | Boot trực tiếp | T2 | ✅ **24/24, 0 mục chưa đạt** |
+
+Phủ đủ **3 kiểu máy × 3 chế độ mạng**. Máy cài sạch từ ISO cuối đạt **34/34** trên bảng kiểm "hàng đem bán": mạng 2 card, tài khoản Samba đúng, không tự phát DHCP, 44 trang không trang nào hỏng. Ngoài ra đã kiểm trong lab netns (wimboot-lab): BIOS, UEFI và UEFI+SB đều vào WinPE, `net use` Samba được.
 
 ## 3. Lỗi tìm ra và đã sửa
 
