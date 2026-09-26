@@ -3980,10 +3980,6 @@ def register_deployos(app):
             <div class="msg err">Không lấy được danh sách từ kho: {_esc(ket_qua)}</div>
             <div class="card">
               <a href="/deployos/kho"><button type="button">Thử lại</button></a>
-              <form method="POST" action="/deployos/kho/xoa-cauhinh" style="display:inline;"
-                    onsubmit="return confirm('Xoá kết nối hiện tại?');">
-                <button type="submit" class="gray">Đổi kết nối khác</button>
-              </form>
             </div>"""
             return _trang(body, "Deployment OS", "Kho trung tâm - lỗi kết nối")
 
