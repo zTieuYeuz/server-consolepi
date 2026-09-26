@@ -3979,8 +3979,6 @@ def register_deployos(app):
             body = _tabs("kho") + _msg(msg, ok) + f"""
             <div class="msg err">Không lấy được danh sách từ kho: {_esc(ket_qua)}</div>
             <div class="card">
-              <p style="color:#8b93a1;font-size:13px;">Đang kết nối tới
-                 <code>{_esc(cauhinh['url'])}</code>.</p>
               <a href="/deployos/kho"><button type="button">Thử lại</button></a>
               <form method="POST" action="/deployos/kho/xoa-cauhinh" style="display:inline;"
                     onsubmit="return confirm('Xoá kết nối hiện tại?');">
@@ -4047,21 +4045,6 @@ def register_deployos(app):
             f'{n} ({dem[k]})</button> ' for k, n in TEN_LOAI_KHO.items())
 
         body = _tabs("kho") + _msg(msg, ok) + f"""
-        <div class="card">
-          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
-            Đang kết nối <code>{_esc(cauhinh['url'])}</code> &middot; {len(ds)} mục.
-            Phần mềm/script tải về vào <a href="/deployos/console/apps">Phần mềm</a> /
-            <a href="/deployos/console/scripts">Script</a> (kèm tham số cài đặt);
-            hệ điều hành tải về tự tách thành boot.wim + install.wim trong
-            <a href="/deployos/os">Hệ điều hành</a>.
-            <form method="POST" action="/deployos/kho/xoa-cauhinh"
-                  style="display:inline;margin-left:8px;"
-                  onsubmit="return confirm('Xoá kết nối hiện tại?');">
-              <button type="submit" class="small gray">Đổi kết nối</button>
-            </form>
-          </p>
-        </div>
-
         <div class="card" id="khung-tai" hidden>
           <h3>Đang tải</h3>
           <div id="ds-tai"></div>
@@ -4079,6 +4062,10 @@ def register_deployos(app):
           </div>
           <div id="ket-qua-tim-kho" class="ket-qua"></div>
           {bang}
+          <form method="POST" action="/deployos/kho/xoa-cauhinh" style="margin-top:12px;"
+                onsubmit="return confirm('Ngắt kết nối kho hiện tại?');">
+            <button type="submit" class="small gray">Đổi kết nối</button>
+          </form>
         </div>
 
         <script>
@@ -4297,7 +4284,7 @@ def register_deployos(app):
                 with open(f_meta, encoding="utf-8") as f:
                     meta = json.load(f)
                 meta.update({"kho_id": muc_id, "phien_ban": m.get("du_lieu", ""),
-                             "nguon": cauhinh["url"]})
+                             "nguon": "kho"})
                 with open(f_meta, "w", encoding="utf-8") as f:
                     json.dump(meta, f, ensure_ascii=False)
 
