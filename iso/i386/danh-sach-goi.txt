@@ -154,6 +154,12 @@ os-prober
 # nhung anh Thoai chon MOT ban duy nhat tu nhan man hinh - de nguoi dung
 # khong phai chon nham ban luc tai ve.
 cage
+# LOI THAT (26/09/2026, test ban 32-bit): kiosk MAN HINH DEN. cage 0.1.4 cua
+# bookworm (wlroots 0.15) can /usr/bin/Xwayland moi chay duoc, nhung goi
+# cage cua bookworm KHONG khai phu thuoc xwayland (ban trixie 0.2.0 thi co,
+# nen ISO 64-bit va Pi tu keo ve) - build voi --apt-recommends false la
+# thieu. Cai xwayland vao may ao that thi kiosk hien dashboard ngay.
+xwayland
 chromium
 wlr-randr
 fonts-noto-color-emoji

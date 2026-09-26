@@ -83,6 +83,12 @@ dung_cay() {   # $1 = amd64 | i386
                  "$R/etc/systemd/system/console-pi-kiosk.service.d" \
                  "$R/etc/systemd/system/console-pi-kiosk-helper.service.d"
         cp -r "$I/calamares/settings.conf" "$I/calamares/modules" "$I/calamares/branding" "$R/etc/calamares/"
+        # Phien ban trinh cai lay tu VERSION (truoc 26/09/2026 viet cung "1.0"
+        # trong branding.desc - lech voi ban phat hanh that).
+        local PB; PB="$(tr -d ' \r\n' < "$REPO/VERSION")"
+        sed -i -e "s/\"Console System [0-9][0-9.]*\"/\"Console System $PB\"/" \
+               -e "s/^\( *\(short\)\{0,1\}[vV]ersion: *\)\"[0-9][0-9.]*\"/\1\"$PB\"/" \
+            "$R/etc/calamares/branding/consolesystem/branding.desc"
         install -m 644 "$I/calamares/lang/calamares_vi.qm" "$R/usr/share/calamares/lang/"
         install -m 755 "$I/calamares/he-thong/console-system-grub-install" "$R/usr/local/sbin/"
         install -m 644 "$I/calamares/he-thong/console-system-cai.service" "$R/etc/systemd/system/"
@@ -92,7 +98,8 @@ dung_cay() {   # $1 = amd64 | i386
         install -m 755 "$I/i386/hook-console-system.chroot" "$C/hooks/live/0100-console-system.hook.chroot"
         install -m 644 "$I/i386/danh-sach-goi.txt" "$C/package-lists/console-pi.list.chroot"
         install -m 755 "$I/i386/dung-iso.sh" "$T/dung-iso.sh"
-        install -m 644 "$I/i386/os-release" "$R/etc/os-release"
+        # (26/09/2026) Bo file iso/i386/os-release viet cung "1.0": base-files
+        # ghi de no, ten + phien ban that do hook dat tu file VERSION.
     fi
 
     # Chan som loi da gap: dau phan tram trong danh sach goi (xem dung-iso.sh)

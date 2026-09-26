@@ -749,7 +749,10 @@ hien thang len man hinh do, khong can may thu hai mo trinh duyet.</p>
       Xem may dang ve bang gi: <code>journalctl -u console-pi-kiosk | grep "kiosk ve"</code>.</li>
   <li><strong>Kiosk loi thi tu tra man hinh</strong>: Chromium khong khoi dong
       duoc 5 lan trong 5 phut thi tu dung, <code>tty1</code> quay ve dong lenh
-      co logo + dia chi IP - khong bao gio den vinh vien.</li>
+      co logo + dia chi IP - khong bao gio den vinh vien. Card ve bang CPU
+      ma van khong hien duoc (vd. card "std" cua QEMU/Proxmox tren ban
+      32-bit) thi toi da 90 giay sau cung tu tra ve dong lenh; dashboard
+      van mo tu may khac qua web.</li>
   <li><strong>Da cai ban cu va bi man hinh den</strong>: bam
       <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F2</kbd> (trong VMware:
       giu <kbd>Ctrl</kbd>+<kbd>Alt</kbd>, bam <kbd>Space</kbd>, roi

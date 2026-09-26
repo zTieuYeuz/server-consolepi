@@ -46,9 +46,11 @@ kt "kiosk dang chay"                      systemctl is-active --quiet console-pi
 kt "trinh duyet kiosk dang mo dashboard"  sh -c "curl -s http://127.0.0.1:9222/json | grep -q 8880"
 
 echo "== Cong cu Deployment OS"
-for c in parted wimlib-imagex 7z mkfs.vfat mcopy genisoimage; do
+for c in parted wimlib-imagex mkfs.vfat mcopy genisoimage; do
     kt "co lenh $c" sh -c "PATH=\$PATH:/usr/sbin command -v $c"
 done
+# bookworm (ISO 32-bit) chi co 7zz, trixie co 7z - ui/isotach.py dung ca hai
+kt "co lenh 7z hoac 7zz"                  sh -c "command -v 7z || command -v 7zz"
 kt "co ttyd (terminal web)"               /usr/local/bin/ttyd --version
 
 echo "== Trang web (qua cong kiosk 8880)"

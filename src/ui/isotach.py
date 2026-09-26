@@ -57,6 +57,27 @@ DU_PHONG_GB = 1
 HAN_GIO_7Z = 3 * 3600
 
 
+def _lenh_7z():
+    """
+    Tra ve ten lenh 7-Zip co tren may nay, hoac None neu khong co.
+
+    LOI THAT (26/09/2026, test ban ISO 32-bit Debian 12 bookworm): tach
+    ISO Windows bao loi ngay buoc doc muc luc vi goi `7zip` cua bookworm
+    CHI co /usr/bin/7zz - khong co lenh `7z`. Debian 13 trixie (Pi, ISO
+    64-bit) thi goi 7zip co san ca `7z`; Pi OS cu dung p7zip-full cung la
+    `7z`. Nen thu `7z` truoc (giu nguyen hanh vi cu), khong co moi dung
+    `7zz` - hai lenh cung cu phap `l -slt` / `e -o`.
+    """
+    for ten in ("7z", "7zz"):
+        if shutil.which(ten):
+            return ten
+    return None
+
+
+LOI_THIEU_7Z = ("máy thiếu lệnh 7z/7zz (gói 7zip) - cài bằng lệnh: "
+                "sudo apt install 7zip")
+
+
 # ---------------------------------------------------------------- trang thai
 #
 # Mot viec tach duy nhat tai mot thoi diem. Dung 1 dict + 1 khoa, giong het
@@ -131,7 +152,10 @@ def doc_muc_luc_iso(duong_iso):
     liet ke dang bang - ban dang bang cat cot theo do rong co dinh nen ten
     file dai bi cat cut, doc ra sai duong dan.
     """
-    ma, ra, loi = _chay(["7z", "l", "-slt", duong_iso], timeout=600)
+    lenh = _lenh_7z()
+    if not lenh:
+        return None, LOI_THIEU_7Z
+    ma, ra, loi = _chay([lenh, "l", "-slt", duong_iso], timeout=600)
     if ma != 0:
         return None, (loi or ra or "khong doc duoc ISO")[:200]
     muc = {}
@@ -194,6 +218,10 @@ def _giai_nen_1_file(duong_iso, duong_trong_iso, thu_muc_ra, ten_dich,
         except OSError:
             pass
 
+    lenh = _lenh_7z()
+    if not lenh:
+        return False, LOI_THIEU_7Z
+
     dung_lai = threading.Event()
     # 7z `e` giai nen PHANG (bo thu muc) va tu dat ten theo ten goc trong
     # ISO, nen phai giai ra thu muc tam rieng roi doi ten - neu khong se
@@ -209,7 +237,7 @@ def _giai_nen_1_file(duong_iso, duong_trong_iso, thu_muc_ra, ten_dich,
                          daemon=True)
     t.start()
     try:
-        ma, ra, loi = _chay(["7z", "e", f"-o{thu_muc_tam}", "-y",
+        ma, ra, loi = _chay([lenh, "e", f"-o{thu_muc_tam}", "-y",
                              duong_iso, duong_trong_iso], timeout=HAN_GIO_7Z)
     finally:
         dung_lai.set()

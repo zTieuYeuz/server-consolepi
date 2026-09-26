@@ -84,15 +84,19 @@ if [ -n "$_nd" ]; then
     # thich day du trong /usr/local/sbin/console-system-kiosk-ve. Tom tat:
     # Intel/AMD (ca card roi lan iGPU trong CPU) ve bang GPU; may ao, card
     # may chu, nouveau... ve bang CPU; GPU loi (90s chua co trinh duyet)
-    # thi tu doi sang CPU. LOI THAT dan toi thiet ke nay: VMware khong 3D
-    # lam cage TREO (24/09/2026) - man hinh den vinh vien.
+    # thi tu doi sang CPU; CPU cung hong (bochs-drm cua QEMU/Proxmox voi
+    # cage Debian 12, 26/09/2026) thi tra tty1 ve dong lenh. LOI THAT dan
+    # toi thiet ke nay: VMware khong 3D lam cage TREO (24/09/2026) - man
+    # hinh den vinh vien.
     # TimeoutStopSec=15: cage treo bo qua SIGTERM, mac dinh systemd cho 90s
     # moi giet - canh gac khoi dong lai kiosk se bi cham theo.
     {
         echo "[Service]"
         echo "ExecStartPre=+/usr/local/sbin/console-system-kiosk-ve chuan-bi"
         echo "EnvironmentFile=-/run/console-pi-kiosk.env"
-        echo "ExecStartPost=+/usr/local/sbin/console-system-kiosk-ve canh-gac"
+        # KHONG co ExecStartPost: lenh do cung bi vhangup tty1 (TTYVHangup
+        # ap cho moi lenh Exec*) -> giet cage bang SIGHUP (LOI THAT
+        # 26/09/2026). Canh gac nay do "chuan-bi" tha chay nen.
         echo "ExecStopPost=+/usr/local/sbin/console-system-kiosk-ve sau-khi-dung"
         echo "TimeoutStopSec=15"
     } > /etc/systemd/system/console-pi-kiosk.service.d/15-cho-man-hinh.conf

@@ -4,7 +4,7 @@
 # Goi tu drop-in cua console-pi-kiosk.service (do console-system-lan-dau
 # sinh ra - CHI ban ISO x86, con Pi khong dung file nay):
 #   ExecStartPre=+ ... chuan-bi   -> cho card do hoa, ghi /run/console-pi-kiosk.env
-#   ExecStartPost=+ ... canh-gac  -> sau 90s chua co trinh duyet thi doi sang CPU
+#                                    va tha CANH GAC chay nen (xem canh_gac_nen)
 #   ExecStopPost=+ ... sau-khi-dung -> dem so lan kiosk THOAT LOI khi ve bang GPU
 #
 # VI SAO CAN (LOI THAT 24/09/2026, SSH vao chinh may VMware cua anh Thoai):
@@ -29,6 +29,14 @@
 #   2. Canh gac: chon GPU ma 90 giay sau van chua co trinh duyet (card that
 #      nhung loi driver/firmware) -> ghi nho may nay phai ve bang CPU, khoi
 #      dong lai kiosk. Kiosk thoat loi lien 2 lan bang GPU cung vay.
+#   3. (26/09/2026) Ve bang CPU cung co the hong: tren QEMU/Proxmox card
+#      "std" (bochs-drm) cage cua Debian 12 (wlroots 0.15) bao "PRIME import
+#      not supported ... Unable to create the wlroots backend" roi TREO
+#      (Ss+ do_wait) -> kiosk van "active", man hinh den mai mai. Da thu
+#      WLR_DRM_NO_MODIFIERS/WLR_DRM_NO_ATOMIC/WLR_RENDERER_ALLOW_SOFTWARE:
+#      khong bien nao cuu duoc (wlroots 0.15 bat buoc card co PRIME import,
+#      bochs dung drm_vram_helper khong co). Nen canh gac ca duong CPU: hong
+#      thi TRA tty1 cho dong lenh (getty) - co logo + dia chi IP de vao web.
 #   Muon thu lai GPU: sudo rm /var/lib/console-pi/kiosk-ve-cpu
 ENV=/run/console-pi-kiosk.env
 DAU_CPU=/var/lib/console-pi/kiosk-ve-cpu
@@ -78,28 +86,69 @@ chuan_bi() {
         : > "$ENV"
         echo "kiosk ve bang GPU -$ds"
     fi
+
+    # Tha canh gac chay NEN tu day, KHONG dung ExecStartPost nua.
+    # LOI THAT (26/09/2026, ban ISO 32-bit chay live tren QEMU): kiosk chet
+    # vi SIGHUP sau 59 ms roi tra ve dong lenh, ca khi card ve duoc. Nguyen
+    # nhan (da do: bo ExecStartPost thi 3/3 lan khong con HUP, de lai thi
+    # 2/3 lan HUP): TTYPath/TTYVHangup cua unit ap dung cho MOI lenh Exec*,
+    # nen ExecStartPost chay SAU khi cage da mo tty1 va vhangup tty1 -> cage
+    # nhan SIGHUP. ExecStartPre chay TRUOC cage nen vo hai.
+    # Chay bang unit tam (systemd-run) chu khong "&" o day: systemd GIET moi
+    # tien trinh con cua ExecStartPre truoc khi chay cage (da thu: tien trinh
+    # nen bien mat). BindsTo: kiosk dung/khoi dong lai thi canh gac cu tu tat.
+    systemd-run --quiet --no-block --collect \
+        -p BindsTo=console-pi-kiosk.service -p After=console-pi-kiosk.service \
+        "$0" canh-gac-nen "$(date +%s)" >/dev/null 2>&1 || true
 }
 
-canh_gac() {
-    # Dang ve bang CPU thi khong co gi de canh.
-    grep -q '^WLR_RENDERER=pixman' "$ENV" 2>/dev/null && exit 0
-    (
-        sleep 90
+canh_gac_nen() {
+    # $1 = thoi diem (epoch) kiosk bat dau lan nay - chi doc nhat ky cage tu
+    # luc do. (cage chay trong session-N.scope do PAMName, nen nhat ky cua
+    # no KHONG gan voi unit kiosk - phai loc theo ten tien trinh "cage".)
+    cpu=0
+    grep -q '^WLR_RENDERER=pixman' "$ENV" 2>/dev/null && cpu=1
+    # Cho toi da 90 giay co trinh duyet. Thoat som neu cage da tu bao hong
+    # (cage khong thoat ma treo, nen chi biet qua nhat ky): "Unable to create
+    # the wlroots backend" (bochs-drm) hay "... renderer" (VMware khong 3D).
+    t=0
+    hong=""
+    while [ "$t" -lt 90 ]; do
+        sleep 3
+        t=$((t + 3))
         if pgrep -f '/usr/lib/chromium/chromium .*--kiosk' >/dev/null 2>&1; then
-            echo 0 > "$DEM"   # GPU chay tot
-        else
-            mkdir -p /var/lib/console-pi && touch "$DAU_CPU"
-            logger -t console-pi-kiosk "90 giay chua co trinh duyet khi ve bang GPU - doi sang ve bang CPU (ghi nho $DAU_CPU)"
-            # KHONG dung `systemctl restart`: cage dang treo bo qua SIGTERM ->
-            # dung qua gio -> ket qua "failed" -> OnFailure bat getty@tty1,
-            # getty (Conflicts) huy luon buoc chay lai kiosk -> ve dong lenh
-            # thay vi dashboard (DA GAP THAT khi test tren VMware 24/09/2026).
-            # Giet thang cage (SIGKILL) de Restart=always tu chay lai - lan
-            # chay lai thay dau ghi nho -> ve bang CPU. Lenh nay giet ca chinh
-            # tien trinh canh gac (cung cgroup) - la viec cuoi cung nen khong sao.
-            systemctl kill -s KILL console-pi-kiosk.service
+            [ "$cpu" = 1 ] || echo 0 > "$DEM"   # GPU chay tot
+            exit 0
         fi
-    ) >/dev/null 2>&1 &
+        if [ -n "$1" ] && journalctl -q -o cat -t cage --since "@$1" 2>/dev/null |
+                grep -qE 'Unable to create the wlroots (backend|renderer)'; then
+            hong="cage bao khong tao duoc man hinh wlroots"
+            break
+        fi
+    done
+    [ -n "$hong" ] || hong="90 giay chua co trinh duyet"
+
+    if [ "$cpu" = 1 ]; then
+        # Ve bang CPU cung hong -> het cach ve. Tra tty1 cho dong lenh.
+        # Bat getty@tty1 (Conflicts voi kiosk) -> systemd DUNG kiosk (khong
+        # phai loi nen Restart=always khong chay lai -> khong lap vo han).
+        # cage treo bo qua SIGTERM thi TimeoutStopSec=15 roi SIGKILL.
+        # Lan khoi dong may sau van thu lai kiosk (doi card/man hinh la tu
+        # hien lai) - chi mat toi da ~90 giay man hinh den.
+        logger -t console-pi-kiosk "$hong khi ve bang CPU - khong hien duoc giao dien tren card nay, tra tty1 ve dong lenh (getty@tty1). Dashboard van mo duoc tu may khac qua web."
+        systemctl start --no-block getty@tty1.service
+    else
+        mkdir -p /var/lib/console-pi && touch "$DAU_CPU"
+        logger -t console-pi-kiosk "$hong khi ve bang GPU - doi sang ve bang CPU (ghi nho $DAU_CPU)"
+        # KHONG dung `systemctl restart`: cage dang treo bo qua SIGTERM ->
+        # dung qua gio -> ket qua "failed" -> OnFailure bat getty@tty1,
+        # getty (Conflicts) huy luon buoc chay lai kiosk -> ve dong lenh
+        # thay vi dashboard (DA GAP THAT khi test tren VMware 24/09/2026).
+        # Giet thang cage (SIGKILL) de Restart=always tu chay lai - lan
+        # chay lai thay dau ghi nho -> ve bang CPU. Kiosk dung thi chinh unit
+        # canh gac nay cung bi tat (BindsTo) - la viec cuoi cung nen khong sao.
+        systemctl kill -s KILL console-pi-kiosk.service
+    fi
     exit 0
 }
 
@@ -115,7 +164,10 @@ sau_khi_dung() {
 
 case "$1" in
     chuan-bi) chuan_bi ;;
-    canh-gac) canh_gac ;;
+    canh-gac-nen) canh_gac_nen "$2" ;;
+    # Drop-in cu (may cai tu ISO truoc 26/09/2026) con goi ExecStartPost
+    # canh-gac: khong lam gi - canh gac da chay tu chuan-bi.
+    canh-gac) exit 0 ;;
     sau-khi-dung) sau_khi_dung ;;
-    *) echo "dung: $0 chuan-bi|canh-gac|sau-khi-dung"; exit 2 ;;
+    *) echo "dung: $0 chuan-bi|sau-khi-dung"; exit 2 ;;
 esac

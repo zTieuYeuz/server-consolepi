@@ -131,7 +131,9 @@ done
 for p in "${PKGS_DEPLOY[@]}"; do
     # Pi OS cu (bullseye) chi co p7zip-full cung cap lenh 7z - da co lenh
     # 7z thi coi nhu du, khong ep cai them goi 7zip.
-    [[ "$p" == "7zip" ]] && command -v 7z >/dev/null && continue
+    # Debian 12 bookworm: goi 7zip CHI co lenh 7zz (khong co 7z) - ui/isotach.py
+    # dung duoc ca hai (LOI THAT 26/09/2026 tren ISO 32-bit), nen co 7zz cung du.
+    [[ "$p" == "7zip" ]] && { command -v 7z || command -v 7zz; } >/dev/null && continue
     dpkg -s "$p" >/dev/null 2>&1 || MISSING+=("$p")
 done
 if [[ "$WANT_SCREEN" == "yes" ]]; then

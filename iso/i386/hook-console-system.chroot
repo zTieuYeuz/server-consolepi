@@ -135,9 +135,15 @@ echo "[console-system] xong"
 # base-files cai) va CHI thay NAME/PRETTY_NAME/VERSION/HOME_URL - moi truong
 # con lai (VERSION_CODENAME, VERSION_ID, DEBIAN_VERSION_FULL, ID...) giu y
 # nguyen. Kiem tra cuoi cung: thieu VERSION_CODENAME thi lam do ban build.
-sed -e 's/^PRETTY_NAME=.*/PRETTY_NAME="Console System 1.0 (32-bit)"/' \
+# PHIEN BAN lay tu file VERSION cua repo (dung-cay-build.sh chep vao
+# /opt/console-pi/VERSION truoc khi hook chay). LOI THAT (26/09/2026): so
+# "1.0" viet cung o day -> ban 1.5.0 van tu khai "Console System 1.0" o
+# os-release va man hinh dang nhap. Thieu file thi lam do ban build.
+PHIEN_BAN="$(tr -d ' \r\n' < /opt/console-pi/VERSION 2>/dev/null || true)"
+[ -n "$PHIEN_BAN" ] || { echo "[console-system] thieu /opt/console-pi/VERSION"; exit 1; }
+sed -e "s/^PRETTY_NAME=.*/PRETTY_NAME=\"Console System $PHIEN_BAN (32-bit)\"/" \
     -e 's/^NAME=.*/NAME="Console System"/' \
-    -e 's/^VERSION=.*/VERSION="1.0 32-bit (tren Debian 12 bookworm)"/' \
+    -e "s/^VERSION=.*/VERSION=\"$PHIEN_BAN 32-bit (tren Debian 12 bookworm)\"/" \
     -e 's#^HOME_URL=.*#HOME_URL="https://github.com/zTieuYeuz/server-consolepi"#' \
     /usr/lib/os-release > /etc/os-release.moi
 rm -f /etc/os-release
@@ -146,7 +152,7 @@ chmod 644 /etc/os-release
 grep -q '^VERSION_CODENAME=[a-z]' /etc/os-release || {
     echo "[console-system] os-release thieu VERSION_CODENAME"; exit 1; }
 
-printf 'Console System 1.0  \\n \\l\n\n' > /etc/issue
+printf 'Console System %s  \\n \\l\n\n' "$PHIEN_BAN" > /etc/issue
 
 echo "[console-system] da dat thuong hieu"
 

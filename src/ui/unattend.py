@@ -1337,6 +1337,37 @@ def _lenh_kiem_tra_card_mang():
     ]
 
 
+def _lenh_khong_thay_o(d):
+    r"""
+    Doan deploy.cmd khi diskpart KHONG thay o dia can cai: liet ke bo dieu
+    khien o dia PCI (CompatibleIDs "PCI\CC_01") chua co driver va neu ten
+    nhung loai hay gap. Chi dung reg/find (WinPE khong co findstr/powershell).
+    """
+    so = d.get("o_dia_so", "0")
+    return [
+        ":khong_thay_o",
+        "echo === KHONG THAY O DIA - kiem tra bo dieu khien o === >> %LOG%",
+        'for /f "delims=" %%D in (\'reg query HKLM\\SYSTEM\\CurrentControlSet\\Enum\\PCI /s /f "PCI\\CC_01" /d 2^>nul ^| find /i "HKEY_"\') do call :xet_o "%%D"',
+        "echo.",
+        f"echo  LOI: WinPE KHONG THAY o dia so {so} (xem danh sach 'list disk' trong log).",
+        "echo    Thuong do bo dieu khien o dia chua co driver trong WinPE:",
+        "echo    VEN_1000^&DEV_0030 = VMware LSI Logic Parallel: sua file .vmx",
+        'echo        scsi0.virtualDev = "lsisas1068"  (LSI SAS) hoac dung SATA/NVMe.',
+        "echo    VEN_15AD^&DEV_07C0 = VMware PVSCSI (Win10 PE khong co driver).",
+        "echo    VEN_8086 RAID/VMD (laptop Intel doi moi): BIOS doi RAID/VMD sang AHCI",
+        "echo        hoac nap driver Intel RST vao muc Driver cho anh boot.",
+        f"set BUOC=Khong thay o dia so {so} - bo dieu khien o dia chua co driver (xem tren)",
+        "goto bao_loi",
+        "",
+        ":xet_o",
+        'reg query "%~1" /v Driver >nul 2>&1',
+        "if not errorlevel 1 goto :eof",
+        'echo     [O DIA THIEU DRIVER] "%~1"',
+        'echo [O DIA THIEU DRIVER] "%~1" >> %LOG%',
+        "goto :eof",
+    ]
+
+
 def sinh_diskpart_txt(d, mbr=False):
     """
     Script cho `diskpart /s` - chia o dia theo dung lua chon wizard.
@@ -1701,8 +1732,21 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         f"if not exist {duong_wim} goto loi_thieu_wim",
         "",
         "echo  [3/6] Chia lai o dia - toan bo du lieu cu se mat...",
+        # WinPE CO THAY o dia can cai khong? LOI THAT (VMware Workstation cua
+        # anh Thoai, 26/09/2026): bo dieu khien "LSI Logic Parallel" - WinPE
+        # Win10/11 KHONG co driver -> diskpart "The disk you specified is not
+        # valid", script van chay tiep va bao "Error: 3" o buoc bung anh, rat
+        # kho hieu. Nay kiem truoc, khong thay thi bao ro bo dieu khien nao.
+        "echo list disk> X:\\ds.txt",
+        "diskpart /s X:\\ds.txt > X:\\ds_out.txt 2>&1",
+        "type X:\\ds_out.txt >> %LOG%",
+        f'find /i "Disk {d.get("o_dia_so", "0")} " X:\\ds_out.txt >nul',
+        "if errorlevel 1 goto khong_thay_o",
         "diskpart /s %DPT% >> %LOG% 2>&1",
         "if errorlevel 1 goto loi_dia",
+        # diskpart KHONG luon tra ma loi khi 1 lenh trong script hong - kiem
+        # bang ket qua that: phai co o W: vua tao.
+        "if not exist W:\\ goto loi_dia",
         "",
         "echo  [4/6] Bung anh he dieu hanh - buoc nay lau nhat, xin doi...",
         "echo.",
@@ -1765,8 +1809,10 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "goto bao_loi",
         "",
         ":loi_dia",
-        "set BUOC=Chia o dia that bai",
+        "set BUOC=Chia o dia that bai (khong tao duoc o W:) - xem dong diskpart trong log",
         "goto bao_loi",
+        "",
+    ] + _lenh_khong_thay_o(d) + [
         "",
         ":loi_bung",
         "set BUOC=Bung anh he dieu hanh that bai - xem X:\\dism_log.txt",

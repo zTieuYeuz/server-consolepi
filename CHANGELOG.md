@@ -75,6 +75,11 @@ sanboot; iPXE cua Debian khong ky).
   Card VMware E1000 (82545EM) - WinPE Win10/11 treo khi nap driver (loi cua
   VMware, lab QEMU cung chip thi chay, nap cham ~75s) - script nhan ra ngay tu
   dau va huong dan doi sang E1000E.
+- Khong thay o dia (may ao VMware Workstation cua anh Thoai: bo dieu khien LSI
+  Logic Parallel - WinPE Win10/11 khong co driver): truoc day diskpart hong
+  nhung script van chay tiep, bao "Error: 3" o buoc bung anh. Nay kiem 'list
+  disk' TRUOC khi chia (khong thay -> liet ke bo dieu khien o dia thieu driver
+  + cach sua: LSI SAS/SATA/NVMe, Intel RST/VMD) va kiem o W: SAU khi chia.
 - Bo nut "Trich bootmgr" va yeu cau BCD tu ISO (wimboot tu lay trong boot.wim).
 - Menu "Khoi dong o cung" tren UEFI dung `exit 1` (truoc la `exit`): may ao
   UEFI cai tu Pi that - moi lan Windows tu khoi dong lai giua luc cai, menu

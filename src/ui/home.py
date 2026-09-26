@@ -204,6 +204,22 @@ def _bang_suc_khoe(h, power_msg):
     dk_u, dk_t, dk_p = h.get("disk", (0, 0, 0))
     cpu = h.get("cpu")
 
+    # LOI THAT (26/09/2026, test ban ISO 32-bit chay LIVE tu USB): o dia hien
+    # "0 / 0 GB 0%" - so bia. May live khong co o cai dat: "/" la overlay nam
+    # tren RAM (tmpfs ~ nua RAM), statvfs tra < 1 GB nen chia nguyen ra 0
+    # (may nhieu RAM hon thi ra "0 / 1 GB" - van la so cua RAM, khong phai
+    # dia). Nguyen tac du an: khong bia so - ghi ro la khong ap dung.
+    # /run/live/medium chi co khi boot live (live-boot); Pi va may da cai
+    # khong co thu muc nay nen hien so that nhu cu.
+    if os.path.isdir("/run/live/medium"):
+        o_dia = ('<span style="color:#8b93a1;">không áp dụng (đang chạy từ '
+                 'USB/live, chưa cài vào ổ cứng)</span>')
+    elif dk_t:
+        o_dia = (f'{dk_u} / {dk_t} GB &nbsp;<strong>{dk_p}%</strong>'
+                 f'{_thanh(dk_p, 80, 92)}')
+    else:
+        o_dia = '<span style="color:#8b93a1;">không đọc được dung lượng đĩa</span>'
+
     if cpu is None:
         # Lan do dau tien chua co moc so sanh - xem cpu_percent() trong
         # ui/health.py. Sau 10 giay se co so that.
@@ -227,8 +243,7 @@ def _bang_suc_khoe(h, power_msg):
           <tr><td>Tải hệ thống</td>
               <td><code>{h.get('load', '?')}</code>
                   <span style="color:#8b93a1;font-size:12px;">(1 / 5 / 15 phút)</span></td></tr>
-          <tr><td>Đĩa</td><td>{dk_u} / {dk_t} GB &nbsp;<strong>{dk_p}%</strong>
-                  {_thanh(dk_p, 80, 92)}</td></tr>
+          <tr><td>Đĩa</td><td>{o_dia}</td></tr>
         </table>"""
 
 

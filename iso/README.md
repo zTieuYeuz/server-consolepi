@@ -46,7 +46,7 @@ sự phục vụ được**.
 | `includes/console-system-lan-dau.service` | `/etc/systemd/system/` |
 | `includes/10-console-system.conf` | `/etc/ssh/sshd_config.d/` |
 | `includes-installer/console-system-nguon-apt.sh` | goc initrd cua trinh cai chu (`config/includes.installer/`), goi tu `preseed/late_command` |
-| `includes/console-system-kiosk-ve` | `/usr/local/sbin/` (chon ve kiosk bang GPU hay CPU theo driver card do hoa + canh gac 90s tu doi sang CPU) |
+| `includes/console-system-kiosk-ve` | `/usr/local/sbin/` (chon ve kiosk bang GPU hay CPU theo driver card do hoa + canh gac 90s tu doi sang CPU; CPU cung hong thi tra tty1 ve dong lenh) |
 | `includes/chromium-policies/console-system.json` | `/etc/chromium/policies/managed/` (tat hop thoai "Dich trang" cua Chromium tren kiosk - co `--disable-features=Translate` khong con tac dung o Chromium 153) |
 | `includes/apt.conf.d/00-toc-do-build` | `/etc/apt/apt.conf.d/` (bi hook xoa khoi may da cai) |
 | `calamares/settings.conf`, `calamares/modules/`, `calamares/branding/` | `/etc/calamares/` |
