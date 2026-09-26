@@ -88,6 +88,35 @@ sanboot; iPXE cua Debian khong ky).
   chung lab: vao thang Windows. BIOS giu `exit` (da chay dung).
 - Lab tu dong iso/test/wimboot-lab.sh (QEMU/KVM, OVMF khoa Microsoft): BIOS,
   UEFI, UEFI+SB deu vao WinPE, chay script, net use Samba thanh cong.
+- Ban 32-bit (Debian 12) - sua loi tester bat duoc 26/09/2026:
+  - Kiosk man hinh den: cage 0.1.4 (wlroots 0.15) cua bookworm can
+    /usr/bin/Xwayland nhung khong khai phu thuoc; them `xwayland` vao
+    iso/i386/danh-sach-goi.txt. Ban 64-bit/Pi (trixie, cage 0.2.0 Depends
+    xwayland) da tu co, khong them.
+  - Kiosk chet vi SIGHUP ~60 ms sau khi chay roi tra ve dong lenh (ca 32 lan
+    64-bit, nhat la khi chay live): ExecStartPost cung bi TTYVHangup tty1 ->
+    giet cage. Bo ExecStartPost; canh gac chay bang unit tam (systemd-run,
+    BindsTo kiosk) tha tu buoc chuan-bi.
+  - QEMU/Proxmox card "std" (bochs-drm): cage bao "PRIME import not
+    supported" roi TREO, kiosk van "active", man hinh den mai. Khong bien
+    WLR_* nao cuu duoc (da thu). Canh gac nay canh ca duong ve bang CPU: cage
+    bao loi (doc nhat ky) hoac 90 giay chua co Chromium -> bat getty@tty1
+    (kiosk dung, khong lap lai). Duong GPU loi cung doi sang CPU som hon.
+  - Doc ISO Windows hong: bookworm chi co lenh `7zz`. ui/isotach.py dung
+    `7z` hoac `7zz` (cai nao co), thieu ca hai thi bao ro cach cai;
+    install.sh coi `7zz` la du; iso/test/kiem-tra-may-da-cai.sh kiem 7z/7zz.
+  - Ten he thong: os-release, /etc/issue (ca 2 ban) va Calamares lay phien
+    ban tu file VERSION thay vi viet cung "1.0"; bo iso/i386/os-release
+    (base-files ghi de, vo dung).
+  - Dashboard chay live hien Dia "0 / 0 GB 0%" (so cua RAM) - nay ghi
+    "không áp dụng (đang chạy từ USB/live...)".
+  - Kiem chung: build lai ISO 32-bit (1042 MB; co Xwayland, 7zz, os-release
+    "Console System 1.5.0 (32-bit)"); boot live `-vga virtio` -> kiosk hien
+    dashboard, 0 lan restart, kiem-tra-may-da-cai.sh 34 dat / 0 loi; `-vga
+    std` -> 19 giay sau ve dong lenh co logo + IP, kiosk "failed" khong lap;
+    isotach doc muc luc + tach file tu ISO thu bang 7zz (live bookworm) va 7z
+    (Pi), md5 khop; py_compile Python 3.13 (Pi) va 3.11 (chroot i386).
+    CHUA test: ban 64-bit (khong build lai), cai 32-bit vao o cung, may that.
 
 ## 1.4.2
 
