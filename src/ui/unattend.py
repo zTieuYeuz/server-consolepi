@@ -927,7 +927,9 @@ foreach ($b in $Buoc) {{
 }}
 
 Ghi "===== Xong ====="
-BaoPi 'ketthuc' @{{ may = $TenMay }}
+# 'ketthuc' gui SAU khi bao cao da ghi ra dia (ben duoi) - lab 26/09/2026:
+# Pi bao "da xong" truoc, tat may ngay luc do thi thu muc ConsolePi KHONG co
+# bao cao (bao-cao.ps1 mat ~30s de kiem).
 try {{
     $KetQuaBuoc | ConvertTo-Json -Depth 3 |
         Out-File (Join-Path $ThuMuc 'ket-qua-tien-trinh.json') -Encoding UTF8
@@ -958,13 +960,25 @@ $frm.TopMost = $false
 # chac chan la KHONG PHU THUOC vao no nua: goi bao cao tu chinh day, sau
 # khi vong lap cac buoc da chay xong han. Thu tu do chinh script nay
 # quyet dinh, Windows khong xen vao duoc.
+$daBao = $false
 $baoCao = Join-Path $ThuMuc 'bao-cao.ps1'
 if (Test-Path $baoCao) {{
     $lblDay.Text = "Đang mở bảng báo cáo tổng kết..."
     [System.Windows.Forms.Application]::DoEvents()
+    $fBaoCao = Join-Path $ThuMuc 'bao-cao-day-du.json'
+    Remove-Item $fBaoCao -ErrorAction SilentlyContinue
     try {{
-        Start-Process -FilePath 'powershell.exe' -Wait -ArgumentList `
+        $pBc = Start-Process -FilePath 'powershell.exe' -PassThru -ArgumentList `
             '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $baoCao
+        # bao-cao.ps1 ghi file xong roi moi mo cua so (cho nguoi bam Dong)
+        for ($k = 0; $k -lt 180 -and -not (Test-Path $fBaoCao) -and -not $pBc.HasExited; $k++) {{
+            Start-Sleep -Seconds 1
+            [System.Windows.Forms.Application]::DoEvents()
+        }}
+        Start-Sleep -Seconds 2
+        BaoPi 'ketthuc' @{{ may = $TenMay }}
+        $daBao = $true
+        $pBc.WaitForExit()
     }} catch {{ Ghi "Khong mo duoc bao cao: $($_.Exception.Message)" }}
     if ($soLoi -eq 0) {{
         $lblDay.Text = "Xong tất cả $($Buoc.Count) bước. Không có lỗi."
@@ -972,6 +986,7 @@ if (Test-Path $baoCao) {{
         $lblDay.Text = "Xong, nhưng có $soLoi bước không đạt — xem dòng màu đỏ."
     }}
 }}
+if (-not $daBao) {{ BaoPi 'ketthuc' @{{ may = $TenMay }} }}
 
 # Dung yen cho toi khi bam Dong. Khong tu dong dong: nguoi di cai may
 # phai co co hoi doc xem buoc nao hong - day la ly do cua ca cua so nay.
