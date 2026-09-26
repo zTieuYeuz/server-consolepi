@@ -268,6 +268,7 @@ def sinh_script(goc):
              # tu Pi) DUNG o man hinh Setup thay vi sang o cung. `exit 1` = bao
              # "boot mang khong thanh" -> firmware thu muc boot KE TIEP (o cung).
              # BIOS: quay ve ROM PXE -> BIOS tu sang thiet bi ke tiep (da chay).
+             "iseq ${platform} efi && echo (May UEFI: dong Could not boot image ngay sau day la BINH THUONG - firmware se tu sang o cung)",
              "iseq ${platform} efi && exit 1 || exit", "",
              ":lai",
              "reboot", "",
