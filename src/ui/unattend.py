@@ -1273,6 +1273,52 @@ $frm.AcceptButton = $btnDong
     return (f"$TEN_KICHBAN = {_ps_chuoi(ten_kb)}\n\n" + bang + than)
 
 
+def _lenh_kiem_tra_card_mang():
+    r"""
+    Doan deploy.cmd (nhay toi bang goto kiem_tra_card, quay ve
+    sau_kiem_tra_card): liet ke card mang PCI (CompatibleIDs co "PCI\CC_02")
+    va card nao KHONG co gia tri Driver = chua nap duoc driver. Chi dung
+    reg.exe + find.exe (WinPE KHONG co findstr/powershell - da kiem tra trong
+    boot.wim Win10/Win11). Tat ca card deu thieu driver -> bao loi NGAY, neu
+    ten card thuong gap (VMware VMXNET3, Intel I225/I226, virtio) kem cach sua.
+
+    Thuc te trong boot.wim Win10/Win11 (kiem 26/09/2026): KHONG co VMXNET3
+    (15AD:07B0), Intel I225/I226, virtio; I219-V doi moi thieu. Co: E1000
+    (8086:100F), e1000e 82574L, Realtek 8168/8125, Broadcom, Hyper-V.
+    """
+    return [
+        ":kiem_tra_card",
+        "echo === kiem tra card mang co driver === >> %LOG%",
+        "set NICCO=0",
+        "set NICTHIEU=0",
+        'for /f "delims=" %%D in (\'reg query HKLM\\SYSTEM\\CurrentControlSet\\Enum\\PCI /s /f "PCI\\CC_02" /d 2^>nul ^| find /i "HKEY_"\') do call :xet_card "%%D"',
+        "echo     card mang PCI: %NICCO%, thieu driver: %NICTHIEU% >> %LOG%",
+        "if %NICCO%==0 goto sau_kiem_tra_card",
+        "if %NICCO%==%NICTHIEU% goto thieu_driver",
+        "goto sau_kiem_tra_card",
+        "",
+        ":xet_card",
+        "set /a NICCO+=1",
+        'reg query "%~1" /v Driver >nul 2>&1',
+        "if not errorlevel 1 goto :eof",
+        "set /a NICTHIEU+=1",
+        # Trong ngoac kep: ma phan cung co "&" (VEN_..&DEV_..) - khong co ngoac
+        # thi cmd cat lenh tai "&" va chay phan con lai nhu 1 lenh.
+        'echo     [THIEU DRIVER] "%~1"',
+        'echo [THIEU DRIVER] "%~1" >> %LOG%',
+        "goto :eof",
+        "",
+        ":thieu_driver",
+        "echo.",
+        "echo  LOI: card mang cua may nay CHUA CO DRIVER trong WinPE (dong [THIEU DRIVER] o tren).",
+        "echo    VEN_15AD^&DEV_07B0 = VMware VMXNET3: tat may ao, doi Adapter Type sang E1000E,",
+        "echo        hoac tai goi vmxnet3 (Microsoft Update Catalog) vao muc Driver cho anh boot.",
+        "echo    VEN_8086^&DEV_125x / 15F2 / 15F3 / 3100 = Intel I225/I226 2.5G;",
+        "echo    VEN_1AF4 = virtio (may ao KVM/Proxmox) - nap driver vao muc Driver cho anh boot.",
+        "goto loi_thieu_driver",
+    ]
+
+
 def sinh_diskpart_txt(d, mbr=False):
     """
     Script cho `diskpart /s` - chia o dia theo dung lua chon wizard.
@@ -1526,8 +1572,16 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "",
         "echo  [1/6] Khoi tao mang va doi mang san sang...",
         "echo === khoi tao mang === >> %LOG%",
-        "wpeinit >> %LOG% 2>&1",
-        "wpeutil InitializeNetwork >> %LOG% 2>&1",
+        # Setup thuong da tu khoi tao mang truoc khi goi script nay - thong
+        # roi thi thoi, khong goi lai wpeinit.
+        f"ping -n 1 -w 1000 {dia_chi_pi} >nul 2>&1",
+        "if not errorlevel 1 goto mang_thong",
+        # LOI THAT (VMware BIOS, card E1000, 26/09/2026): man hinh dung mai o
+        # dong tren, vong cho ben duoi KHONG in dong nao -> ket ngay trong
+        # `wpeinit` goi dong bo. Nay chay wpeinit/InitializeNetwork O NEN
+        # (start) - script van dem, van ping, van bao loi dung luc.
+        'start "khoi tao mang" /min cmd /c "wpeinit >> X:\\wpeinit_log.txt 2>&1 '
+        '& wpeutil InitializeNetwork >> X:\\wpeinit_log.txt 2>&1"',
         "set CHO=0",
         "",
         ":cho_mang",
@@ -1535,21 +1589,26 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         f"ping -n 1 -w 1000 {dia_chi_pi} >nul 2>&1",
         "if not errorlevel 1 goto mang_thong",
         "if %CHO% GEQ 40 goto loi_mang_khong_thong",
-        # Cu 5 lan doi khong duoc thi khoi tao lai 1 lan (phong truong hop
-        # lan khoi tao dau roi vao luc setup.exe dang doi lai card mang).
-        "set /a NHAC=%CHO% %% 5",
+        # Sau ~30 giay chua thong: xem may CO card mang nao duoc nap driver
+        # khong - thieu driver thi bao ngay ten card (khong bat doi 3 phut).
+        "if %CHO% EQU 8 goto kiem_tra_card",
+        ":sau_kiem_tra_card",
+        # Cu 10 lan doi khong duoc thi khoi tao lai 1 lan (o nen).
+        "set /a NHAC=%CHO% %% 10",
         "if %NHAC% NEQ 0 goto cho_tiep",
         "echo === khoi tao lai mang lan %CHO% === >> %LOG%",
-        "wpeinit >> %LOG% 2>&1",
-        "wpeutil InitializeNetwork >> %LOG% 2>&1",
+        'start "khoi tao mang" /min cmd /c "wpeutil InitializeNetwork >> X:\\wpeinit_log.txt 2>&1"',
         "",
         ":cho_tiep",
         "echo     dang doi mang san sang... (%CHO%)",
         "ping -n 3 127.0.0.1 >nul",
         "goto cho_mang",
         "",
+    ] + _lenh_kiem_tra_card_mang() + [
+        "",
         ":mang_thong",
         "echo === mang da thong === >> %LOG%",
+        "if exist X:\\wpeinit_log.txt type X:\\wpeinit_log.txt >> %LOG% 2>&1",
         "ipconfig >> %LOG% 2>&1",
         "",
         "echo  [2/6] Ket noi kho trien khai tren Console Pi...",
@@ -1650,6 +1709,10 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "ping -n 11 127.0.0.1 >nul",
         "wpeutil reboot",
         "exit",
+        "",
+":loi_thieu_driver",
+        "set BUOC=Card mang cua may nay CHUA CO DRIVER trong WinPE - xem dong [THIEU DRIVER] o tren",
+        "goto bao_loi",
         "",
         ":loi_mang_khong_thong",
         f"set BUOC=Mang khong thong toi Console Pi ({dia_chi_pi}) - kiem tra "
