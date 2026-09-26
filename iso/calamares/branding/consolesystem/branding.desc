@@ -27,7 +27,7 @@ strings:
     # Ten hien trong menu GRUB cua may da cai (GRUB_DISTRIBUTOR). Ten thu
     # muc EFI dat rieng o modules/bootloader.conf (efiBootloaderId).
     bootloaderEntryName: "Console System"
-    productUrl:          "https://github.com/zTieuYeuz/server-consolepi"
+    productUrl:          ""
     supportUrl:          ""
     knownIssuesUrl:      ""
     releaseNotesUrl:     ""

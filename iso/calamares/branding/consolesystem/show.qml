@@ -59,7 +59,7 @@ Presentation
 
     Trang {
         tieuDe: "Chào mừng đến với Console System"
-        noiDung: "Bộ công cụ cho kỹ sư mạng: console thiết bị, quét mạng, kiểm tra DHCP/DNS/MTU, triển khai Windows qua mạng - tất cả trong trình duyệt."
+        noiDung: "Bộ công cụ cho kỹ sư mạng: console thiết bị, quét mạng, kiểm tra DHCP/DNS/MTU, triển khai Windows qua mạng - tất cả trong trình duyệt.\n\nPhát triển bởi zTieuYeuz."
     }
     Trang {
         tieuDe: "Dùng từ máy khác"
@@ -72,6 +72,10 @@ Presentation
     Trang {
         tieuDe: "An toàn khi cắm vào mạng khách"
         noiDung: "Các dịch vụ có thể gây ảnh hưởng mạng (DHCP, phát WiFi, TFTP, Samba) đều TẮT sẵn. Chỉ bật khi bạn chủ động bật trong giao diện."
+    }
+    Trang {
+        tieuDe: "Tác giả"
+        noiDung: "Console System do zTieuYeuz thiết kế và phát triển.\n© 2026 zTieuYeuz. Bảo lưu mọi quyền."
     }
     Trang {
         tieuDe: "Sắp xong rồi"

@@ -42,4 +42,6 @@
        "menu vshift 12" trong stdmenu.cfg, ~16px moi dong x 12) -->
   <text x="320" y="216" font-family="DejaVu Sans Mono, monospace" font-size="11"
         fill="#5D6879" text-anchor="middle">@VERSION@ (@DISTRIBUTION@) @ARCHITECTURE@ &#8226; Built: @YEAR@-@MONTH@-@DAY@</text>
+  <text x="320" y="232" font-family="DejaVu Sans, sans-serif" font-size="11"
+        fill="#5D6879" text-anchor="middle">&#169; 2026 zTieuYeuz</text>
 </svg>

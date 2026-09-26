@@ -689,6 +689,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     <div class="nav">{nav_html}</div>
     <div class="foot">
       <a href="/logout">Đăng xuất</a>
+      <div style="font-size:11px;color:#5D6879;margin-top:6px;">&copy; 2026 zTieuYeuz</div>
     </div>
   </div>
   <div class="main">
