@@ -1,6 +1,6 @@
 """
 Console Pi - ket noi toi "Kho luu tru trung tam" (kho-console-pi), du an
-web rieng chay tren may chu .34, xem
+web rieng chay tren may chu rieng cua nha phat trien, xem
 Y-tuong-kho-luu-tru-Console-Pi.md.
 
 VI SAO CO MUC NAY: truoc day moi Pi hien truong deu phai tu mang theo /

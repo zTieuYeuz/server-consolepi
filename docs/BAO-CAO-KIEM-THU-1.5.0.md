@@ -81,7 +81,7 @@ Cài sạch ISO 64-bit cuối: bảng kiểm **34/34**. Tải gói driver phổ 
 
 ## 6. Kiểm tra khác
 
-- **Kho trung tâm** (kho-console.home-server.id.vn): trên Pi kết nối được, đọc 2 mục. Trên máy cài từ ISO: kết nối tới kho OK, token sai thì báo "Token không hợp lệ", xoá kết nối được. Muốn tải thật thì anh tạo token cho máy đó trong trang quản trị kho.
+- **Kho trung tâm** (máy chủ kho riêng): trên Pi kết nối được, đọc 2 mục. Trên máy cài từ ISO: kết nối tới kho OK, token sai thì báo "Token không hợp lệ", xoá kết nối được. Muốn tải thật thì anh tạo token cho máy đó trong trang quản trị kho.
 - **Bảng kiểm "hàng đem bán"** trên máy cài từ ISO: đạt toàn bộ; 3 mục dịch vụ PXE được bỏ qua đúng vì lúc đó đang bật PXE. Quét được 47 trang, không trang nào hỏng.
 - **Tải script lên qua web**: OK.
 - Toàn bộ code biên dịch được trên Python 3.11 (ISO i386, Debian 12) và 3.13.

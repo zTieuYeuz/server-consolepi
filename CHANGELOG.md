@@ -18,6 +18,12 @@ sanboot; iPXE cua Debian khong ky).
 - deploy.cmd tu nhan BIOS/UEFI (PEFirmwareType): BIOS -> chia MBR (phan vung
   he thong NTFS active, >3 phan vung thi dung extended/logical) + bcdboot
   /f BIOS; UEFI -> GPT + bcdboot /f UEFI.
+- TAB GOP Y (menu trai): nguoi dung gui gop y / bao loi / de xuat kem anh va
+  tai lieu (toi da 10 tep, 20 MB/tep). Luu tren may truoc roi tu gui ve nha
+  phat trien o nen - mat mang thi tu gui lai moi 5 phut, khong mat gop y, khong
+  gui trung. Dia chi noi nhan KHONG hien o giao dien/tai lieu/log; may khach
+  khong can ket noi kho. Bo dia chi kho khoi o goi y cua trang Kho trung tam
+  va bao cao kiem thu.
 - KHO TRUNG TAM (anh Thoai: "ket noi muot ma" + "them phan OS, nhieu khi ho
   muon tai OS xuong luon"): ket noi bang MA 6 KY TU (khong chep token 64 ky tu);
   tai o NEN co tien do, dut mang tai TIEP (HTTP Range), kiem SHA-256; muc HE

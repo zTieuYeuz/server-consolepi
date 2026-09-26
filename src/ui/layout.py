@@ -76,6 +76,7 @@ NAV_ITEMS = [
     ("/logs", "Nhật ký lỗi", "📋"),
     ("/power", "Nguồn điện", "⚡"),
     ("/giaitri", "Giải trí", "📺"),
+    ("/gopy", "Góp ý", "💬"),
 
     ("nhom", "Cài đặt", "⚙️", [
         ("/settings", "Cài đặt chung", "⚙️"),

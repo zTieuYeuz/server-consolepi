@@ -3948,7 +3948,7 @@ def register_deployos(app):
                 nối</strong>, rồi điền 2 ô dưới đây.</p>
               <form method="POST" action="/deployos/kho/ghep">
                 <label>Địa chỉ kho</label>
-                <input type="text" name="url" placeholder="kho-console.home-server.id.vn"
+                <input type="text" name="url" placeholder="VD: kho.congty.vn"
                        autocapitalize="off" autocomplete="off" required>
                 <label style="margin-top:10px;display:block;">Mã kết nối (6 ký tự)</label>
                 <input type="text" name="ma" maxlength="7" placeholder="VD: K7M4QX"
@@ -3964,7 +3964,7 @@ def register_deployos(app):
                 (kho bản cũ)</summary>
               <form method="POST" action="/deployos/kho/cauhinh" style="margin-top:12px;">
                 <label>Địa chỉ kho (URL)</label>
-                <input type="text" name="url" placeholder="https://kho-console.home-server.id.vn"
+                <input type="text" name="url" placeholder="VD: https://kho.congty.vn"
                        autocapitalize="off">
                 <label style="margin-top:10px;display:block;">Token của máy này</label>
                 <input type="text" name="token" placeholder="Dán token tạo trên trang kho"
