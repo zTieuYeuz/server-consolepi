@@ -70,14 +70,14 @@ WinPE của Windows 10/11 không có driver cho: VMware VMXNET3, PVSCSI; Intel I
 
 **VMware "LSI Logic Parallel"**: Microsoft không có driver cho Windows 10/11 (đã bỏ từ Windows 8) → đổi sang LSI Logic SAS, NVMe hoặc VMware Paravirtual. Trang Drivers và Tài liệu đã ghi rõ.
 
-## 5. ISO phát hành (build lại 26/09/2026, sau mọi bản sửa)
+## 5. ISO phát hành (build lại 26/09/2026 lần cuối: có tab Góp ý, kho 2.0, không lộ địa chỉ kho)
 
 | Bản | File trên máy build | SHA256 |
 |---|---|---|
-| 64-bit | `/build/console-system/live-image-amd64.hybrid.iso` (1,51 GB) | `32189452be9b5a04d38604155e76c06811d37fb76b3abafa0d86001e0a95ceee` |
-| 32-bit | `/build/console-system-i386/live-image-i386.hybrid.iso` (1042 MB) | `9cff5cd240e6cc11796a3a84a4661e5909896a9fb4e4134588a2eeb8344b1cec` |
+| 64-bit | `/build/console-system/live-image-amd64.hybrid.iso` (1,51 GB) | `a7d6ede0c2821aee2c74b8c39b4a74a2eab001c90d0e0879722e2a849707aa7d` |
+| 32-bit | `/build/console-system-i386/live-image-i386.hybrid.iso` (1042 MB) | `0783184d515baca6a9f6a3ce33c42935213430cf907d111896e57c1b05eda502` |
 
-Cài sạch ISO 64-bit cuối: bảng kiểm **34/34**. Tải gói driver phổ biến trên máy cài từ ISO: 10/10. PXE từ máy cài ISO → máy khách UEFI + VMXNET3 + PVSCSI, kịch bản T1: **5/5** (firmware OVMF của lab không boot được ổ PVSCSI nên phần sau cài chạy qua AHCI; VMware thật boot được PVSCSI, và bài test BIOS trên Pi thật đã boot Windows từ PVSCSI). Cổng mạng đã chọn không còn → PXE từ chối bật (đã thử).
+Cài sạch ISO 64-bit cuối: bảng kiểm **34/34**; gửi góp ý từ máy cài ISO lên kho: đạt; trong ISO không có file nào chứa địa chỉ kho hay mật khẩu. Tải gói driver phổ biến trên máy cài từ ISO: 10/10. PXE từ máy cài ISO → máy khách UEFI + VMXNET3 + PVSCSI, kịch bản T1: **5/5** (firmware OVMF của lab không boot được ổ PVSCSI nên phần sau cài chạy qua AHCI; VMware thật boot được PVSCSI, và bài test BIOS trên Pi thật đã boot Windows từ PVSCSI). Cổng mạng đã chọn không còn → PXE từ chối bật (đã thử).
 
 ## 6. Kiểm tra khác
 
