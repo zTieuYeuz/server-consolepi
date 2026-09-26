@@ -13,7 +13,8 @@
 # ao tai menu.ipxe roi moi gui phim chon kich ban.
 # MAC co dinh theo kieu may -> router cong ty cap lai dung 1 IP moi lan.
 # Bien moi truong: CARD=e1000-82545em (card cua VMware) | vmxnet3 | e1000e...,
-# RAM=MB (mac dinh 4096).
+# RAM=MB (mac dinh 4096), DISK=ahci (mac dinh) | pvscsi | virtio | nvme
+# (bo dieu khien o dia WinPE khong co san driver -> test goi driver pho bien).
 # ===================================================================
 FW=$1; LENH=$2; shift 2
 D=/build/test/pi-that/$FW; mkdir -p $D
@@ -48,8 +49,14 @@ start|odia)
   esac
   # odia: card mang van co (Windows can mang) nhung KHONG boot mang
   [ $LENH = odia ] && NIC=$(echo "$NIC" | sed 's/,bootindex=1/,romfile=/; s/romfile=,romfile=/romfile=/')
+  case ${DISK:-ahci} in
+    pvscsi) OD="-device pvscsi,id=s0 -device scsi-hd,drive=d0,bus=s0.0,bootindex=2" ;;
+    virtio) OD="-device virtio-blk-pci,drive=d0,bootindex=2" ;;
+    nvme)   OD="-device nvme,drive=d0,serial=cpi0001,bootindex=2" ;;
+    *)      OD="-device ahci,id=ah -device ide-hd,drive=d0,bus=ah.0,bootindex=2" ;;
+  esac
   eval "qemu-system-x86_64 -enable-kvm -cpu host -smp 4 -m ${RAM:-4096} -display none -vga std $EXTRA $NIC \
-    -drive file=$D/disk.qcow2,if=none,id=d0 -device ahci,id=ah -device ide-hd,drive=d0,bus=ah.0,bootindex=2 \
+    -drive file=$D/disk.qcow2,if=none,id=d0 $OD \
     -monitor unix:$D/mon.sock,server,nowait -pidfile $D/q.pid -daemonize $FDS" || { echo QEMU_LOI; exit 1; }
   echo "BAT $FW mac=$MAC0 pid=$(cat $D/q.pid)" ;;
 key)  for k in "$@"; do m "sendkey $k"; sleep 2; done ;;

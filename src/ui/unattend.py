@@ -1601,8 +1601,12 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         # wimboot chi chen duoc FILE PHANG (khong thu muc) -> cac goi
         # driver "cho anh boot" dong chung 1 file drivers.wim, bung ra
         # X:\\ConsolePiDrivers bang dism (co san trong boot.wim).
-        f"if exist %NHUNG%\\{TEN_WIM_DRIVER} dism /apply-image "
-        f"/imagefile:%NHUNG%\\{TEN_WIM_DRIVER} /index:1 "
+        # dism can thu muc dich co san + file duoi .wim.
+        f"if exist %NHUNG%\\{TEN_NHUNG_DRIVER} copy /y %NHUNG%\\{TEN_NHUNG_DRIVER} "
+        "X:\\cpi-drivers.wim >> %LOG% 2>&1",
+        "if exist X:\\cpi-drivers.wim mkdir X:\\ConsolePiDrivers >nul 2>&1",
+        "if exist X:\\cpi-drivers.wim dism /apply-image "
+        "/imagefile:X:\\cpi-drivers.wim /index:1 "
         "/applydir:X:\\ConsolePiDrivers >> %LOG% 2>&1",
         'if exist X:\\ConsolePiDrivers (for /r X:\\ConsolePiDrivers %%i in '
         '(*.inf) do drvload "%%i" >> %LOG% 2>&1)',
@@ -1755,7 +1759,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "if errorlevel 1 goto loi_bung",
         "",
         "echo.",
-    ] + _lenh_chep_go_app(d) + [
+    ] + _lenh_tiem_driver_offline(d) + _lenh_chep_go_app(d) + [
         "echo  [5/6] Chep cau hinh tu dong - ten may, tai khoan, mui gio...",
         "if not exist W:\\Windows\\Panther mkdir W:\\Windows\\Panther",
         "copy /y %NHUNG%\\unattend.xml W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
@@ -2355,6 +2359,32 @@ foreach ($p in (Get-AppxProvisionedPackage -Online)) {{
     }}
 }}
 """
+
+
+def _lenh_tiem_driver_offline(d):
+    r"""
+    Tiem driver vao anh Windows VUA BUNG (dism /image:W:\ /add-driver).
+
+    LY DO THAT (26/09/2026, goi driver pho bien): deploy.cmd tu bung
+    install.wim bang dism nen setup.exe KHONG BAO GIO chay buoc cai - khoi
+    DriverPaths (PnpCustomizationsWinPE) trong unattend cua WinPE vi vay
+    khong co tac dung. Driver chi nap trong WinPE (drvload) KHONG theo sang
+    Windows: may o dia PVSCSI / VMD / virtio se man hinh xanh
+    INACCESSIBLE_BOOT_DEVICE ngay lan khoi dong dau, may card VMXNET3 /
+    I226... vao Windows khong co mang de lam cac buoc sau dang nhap.
+      - driver "cho anh boot": da bung o X:\ConsolePiDrivers
+      - driver thuong cua kich ban: lay tu o mang Z:\drivers\<id>
+    Loi o day KHONG dung cai dat (driver hong/khong ky chi bi bo qua) - ghi log.
+    """
+    dong = [
+        "echo === tiem driver vao Windows vua bung === >> %LOG%",
+        "if exist X:\\ConsolePiDrivers dism /image:W:\\ /add-driver "
+        "/driver:X:\\ConsolePiDrivers /recurse >> %LOG% 2>&1",
+    ]
+    for driver_id in d.get("driver_ids") or []:
+        dong.append(f'if exist "Z:\\drivers\\{driver_id}" dism /image:W:\\ /add-driver '
+                    f'/driver:"Z:\\drivers\\{driver_id}" /recurse >> %LOG% 2>&1')
+    return dong
 
 
 def _lenh_chep_go_app(d):
@@ -3015,6 +3045,11 @@ def dung_iso_tu_dong(d, dia_chi_pi="192.168.98.1"):
 TEN_DIA_GPT_TU_DONG = "windows-autounattend.img"   # anh cu - chi con de don rac
 THU_MUC_NHUNG = "X:\\Windows\\System32"
 TEN_WIM_DRIVER = "drivers.wim"
+# TEN FILE KHI CHEN QUA wimboot. wimboot KHONG chen file duoi ".wim" vao
+# System32 (coi la anh boot) - lab 26/09/2026 may VMXNET3: drivers.wim da
+# tai ve nhung khong co trong X:\Windows\System32 -> driver cho anh boot
+# chua bao gio duoc nap qua PXE. Chen duoi ten khac, deploy.cmd chep lai.
+TEN_NHUNG_DRIVER = "cpi-drivers.bin"
 DUOI_PS1_CO_BOM = ".ps1"
 
 

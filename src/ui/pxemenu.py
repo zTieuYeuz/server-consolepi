@@ -153,8 +153,10 @@ def sinh_startnet_winpe():
         "title Console System - WinPE cuu ho",
         # Tung dong + goto (khong gop vao khoi ngoac: "(*.inf)" ben trong
         # de lam vo ngoac cua khoi if).
-        f"if not exist X:\\Windows\\System32\\{_u.TEN_WIM_DRIVER} goto het_driver",
-        f"dism /apply-image /imagefile:X:\\Windows\\System32\\{_u.TEN_WIM_DRIVER} "
+        f"if not exist X:\\Windows\\System32\\{_u.TEN_NHUNG_DRIVER} goto het_driver",
+        f"copy /y X:\\Windows\\System32\\{_u.TEN_NHUNG_DRIVER} X:\\cpi-drivers.wim >nul",
+        "mkdir X:\\ConsolePiDrivers >nul 2>&1",
+        "dism /apply-image /imagefile:X:\\cpi-drivers.wim "
         "/index:1 /applydir:X:\\ConsolePiDrivers >nul 2>&1",
         'for /r X:\\ConsolePiDrivers %%i in (*.inf) do drvload "%%i" >nul 2>&1',
         ":het_driver",
@@ -324,7 +326,7 @@ def sinh_script(goc):
                  f"initrd {goc}/{THU_MUC_PXE}/{THU_MUC_WINPE}/startnet.cmd startnet.cmd || goto loi"]
         if co_driver:
             dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_WIM_DRIVER} "
-                        f"{_u.TEN_WIM_DRIVER} || goto loi")
+                        f"{_u.TEN_NHUNG_DRIVER} || goto loi")
         dong += [f"initrd {goc}/os/{os_id}/boot.wim boot.wim || goto loi",
                  "boot || goto loi", ""]
     for i, (nhan, thu_muc, os_id) in enumerate(muc):
@@ -341,7 +343,7 @@ def sinh_script(goc):
             dong.append(f"initrd {goc}/{THU_MUC_PXE}/{thu_muc}/{f} {f} || goto loi")
         if co_driver:
             dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_WIM_DRIVER} "
-                        f"{_u.TEN_WIM_DRIVER} || goto loi")
+                        f"{_u.TEN_NHUNG_DRIVER} || goto loi")
         dong += [f"initrd {goc}/os/{os_id}/boot.wim boot.wim || goto loi",
                  "boot || goto loi", ""]
     dong += [":odia",
