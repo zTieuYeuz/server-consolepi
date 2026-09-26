@@ -1287,15 +1287,31 @@ def _lenh_kiem_tra_card_mang():
     (8086:100F), e1000e 82574L, Realtek 8168/8125, Broadcom, Hyper-V.
     """
     return [
+        ":kiem_tra_card_cuoi",
+        "ipconfig >> %LOG% 2>&1",
         ":kiem_tra_card",
-        "echo === kiem tra card mang co driver === >> %LOG%",
+        "echo === kiem tra card mang co driver (lan %CHO%) === >> %LOG%",
         "set NICCO=0",
         "set NICTHIEU=0",
         'for /f "delims=" %%D in (\'reg query HKLM\\SYSTEM\\CurrentControlSet\\Enum\\PCI /s /f "PCI\\CC_02" /d 2^>nul ^| find /i "HKEY_"\') do call :xet_card "%%D"',
         "echo     card mang PCI: %NICCO%, thieu driver: %NICTHIEU% >> %LOG%",
+        # Het gio: co card co driver ma khong thong / khong thay card nao ->
+        # loi mang (khong quay lai vong cho nua).
+        "if %CHO% GEQ 75 if %NICCO%==0 goto loi_mang_khong_thong",
+        "if %CHO% GEQ 75 if not %NICCO%==%NICTHIEU% goto loi_mang_khong_thong",
         "if %NICCO%==0 goto sau_kiem_tra_card",
-        "if %NICCO%==%NICTHIEU% goto thieu_driver",
+        "if %NICCO%==%NICTHIEU% goto canh_bao_driver",
         "goto sau_kiem_tra_card",
+        "",
+        ":canh_bao_driver",
+        "if %CHO% GEQ 75 goto thieu_driver",
+        "echo     (card mang chua co driver - van dang cho, co card nap driver cham...)",
+        "goto sau_kiem_tra_card",
+        "",
+        ":het_gio_mang",
+        # Het gio: kiem lai card mot lan cuoi - thieu driver thi bao ten card,
+        # co driver ma van khong thong thi la loi mang/DHCP.
+        "goto kiem_tra_card_cuoi",
         "",
         ":xet_card",
         "set /a NICCO+=1",
@@ -1588,9 +1604,11 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "set /a CHO+=1",
         f"ping -n 1 -w 1000 {dia_chi_pi} >nul 2>&1",
         "if not errorlevel 1 goto mang_thong",
-        "if %CHO% GEQ 40 goto loi_mang_khong_thong",
-        # Sau ~30 giay chua thong: xem may CO card mang nao duoc nap driver
-        # khong - thieu driver thi bao ngay ten card (khong bat doi 3 phut).
+        # ~5 phut (75 x ~4 giay). LOI THAT (lab 26/09/2026, card 82545EM - dung
+        # loai E1000 cua VMware): WinPE nap driver cho card nay MAT HON 30 GIAY
+        # - kiem tra som thi tuong "thieu driver" trong khi mot lat sau card
+        # co IP. Vi vay: giay ~30 chi GHI canh bao, het gio moi ket luan.
+        "if %CHO% GEQ 75 goto het_gio_mang",
         "if %CHO% EQU 8 goto kiem_tra_card",
         ":sau_kiem_tra_card",
         # Cu 10 lan doi khong duoc thi khoi tao lai 1 lan (o nen).

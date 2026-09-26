@@ -12,6 +12,8 @@
 # Nguoi dieu khien (Claude tren Pi) doc log HTTP cua Pi de biet luc nao may
 # ao tai menu.ipxe roi moi gui phim chon kich ban.
 # MAC co dinh theo kieu may -> router cong ty cap lai dung 1 IP moi lan.
+# Bien moi truong: CARD=e1000-82545em (card cua VMware) | vmxnet3 | e1000e...,
+# RAM=MB (mac dinh 4096).
 # ===================================================================
 FW=$1; LENH=$2; shift 2
 D=/build/test/pi-that/$FW; mkdir -p $D
@@ -29,7 +31,7 @@ start|odia)
   ip link add link $IF name mvt${M}0 address $MAC0 type macvtap mode bridge
   ip link set mvt${M}0 up
   T0=/dev/tap$(cat /sys/class/net/mvt${M}0/ifindex)
-  EXTRA=""; NIC="-netdev tap,id=n0,fd=3 -device e1000,netdev=n0,mac=$MAC0,bootindex=1"
+  EXTRA=""; NIC="-netdev tap,id=n0,fd=3 -device ${CARD:-e1000},netdev=n0,mac=$MAC0,bootindex=1"
   FDS="3<>$T0"
   case $FW in
     uefi) [ $LENH = start ] && cp /usr/share/OVMF/OVMF_VARS_4M.fd $D/vars.fd
@@ -46,7 +48,7 @@ start|odia)
   esac
   # odia: card mang van co (Windows can mang) nhung KHONG boot mang
   [ $LENH = odia ] && NIC=$(echo "$NIC" | sed 's/,bootindex=1/,romfile=/; s/romfile=,romfile=/romfile=/')
-  eval "qemu-system-x86_64 -enable-kvm -cpu host -smp 4 -m 4096 -display none -vga std $EXTRA $NIC \
+  eval "qemu-system-x86_64 -enable-kvm -cpu host -smp 4 -m ${RAM:-4096} -display none -vga std $EXTRA $NIC \
     -drive file=$D/disk.qcow2,if=none,id=d0 -device ahci,id=ah -device ide-hd,drive=d0,bus=ah.0,bootindex=2 \
     -monitor unix:$D/mon.sock,server,nowait -pidfile $D/q.pid -daemonize $FDS" || { echo QEMU_LOI; exit 1; }
   echo "BAT $FW mac=$MAC0 pid=$(cat $D/q.pid)" ;;
