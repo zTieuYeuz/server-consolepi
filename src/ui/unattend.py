@@ -1305,7 +1305,7 @@ def _lenh_kiem_tra_card_mang():
         "",
         ":canh_bao_driver",
         "if %CHO% GEQ 75 goto thieu_driver",
-        "echo     (card mang chua co driver - van dang cho, co card nap driver cham...)",
+        "echo     (card mang dang nap driver - co may mat 1-2 phut, van dang cho...)",
         "goto sau_kiem_tra_card",
         "",
         ":het_gio_mang",
@@ -1320,7 +1320,9 @@ def _lenh_kiem_tra_card_mang():
         "set /a NICTHIEU+=1",
         # Trong ngoac kep: ma phan cung co "&" (VEN_..&DEV_..) - khong co ngoac
         # thi cmd cat lenh tai "&" va chay phan con lai nhu 1 lenh.
-        'echo     [THIEU DRIVER] "%~1"',
+        # Chi hien len man hinh luc HET GIO (luc giay 30 card nap cham van con
+        # thieu - hien ra lam nguoi dung hoang du mot lat sau van chay).
+        'if %CHO% GEQ 75 echo     [THIEU DRIVER] "%~1"',
         'echo [THIEU DRIVER] "%~1" >> %LOG%',
         "goto :eof",
         "",
