@@ -18,6 +18,16 @@ sanboot; iPXE cua Debian khong ky).
 - deploy.cmd tu nhan BIOS/UEFI (PEFirmwareType): BIOS -> chia MBR (phan vung
   he thong NTFS active, >3 phan vung thi dung extended/logical) + bcdboot
   /f BIOS; UEFI -> GPT + bcdboot /f UEFI.
+- GOI DRIVER PHO BIEN (Drivers): WinPE Windows 10/11 thieu driver cho VMware
+  VMXNET3/PVSCSI, Intel I225/I226 va I219 doi moi, Intel RST VMD, Realtek
+  8125/8126, virtio (KVM/Proxmox) -> may do khong co mang / khong thay o dia
+  (may ao VMware cua anh Thoai 26/09/2026). Bam "Tai" -> Pi tu tai goi CHINH
+  THUC (Microsoft ky) tu Microsoft Update Catalog, kiem sha256, giai nen, danh
+  dau nap vao anh boot + dung cho Windows sau cai. KHONG dong goi san driver
+  cua hang (giay phep) - may cua nguoi dung tu tai nhu Windows Update. Danh
+  sach: src/ui/goi-driver.json (10 goi x64, da kiem cai duoc tren WinPE 19041
+  va 26100). LSI Logic Parallel khong co driver Win10 - trang huong dan doi
+  sang LSI Logic SAS.
 - Driver "cho anh boot" dong thanh drivers.wim (wimboot chi chen file phang),
   deploy.cmd bung bang dism roi drvload nhu cu.
 - Trinh tao kich ban: o "Bang phan vung" GPT/MBR thanh "Tu dong theo may"

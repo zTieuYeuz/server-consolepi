@@ -1,0 +1,106 @@
+[
+ {
+  "ma": "vmxnet3",
+  "ten_hien_thi": "Card mạng ảo VMware VMXNET3",
+  "loai": "mang",
+  "mo_ta": "Card mạng — thiếu thì WinPE không có mạng, không tải được bộ cài. Bản 1.9.20.0.",
+  "dung_luong": 68496,
+  "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2024/12/aa4cbb24-96f6-4858-a535-275cbbd00c80_8bce44234b287a94e07d44f69c77ad3b92996bc3.cab",
+  "sha256": "636e0324d6761cf220fcea51573668908fc8f5e9d8b081716967f4545eb9abaa",
+  "nguon": "Microsoft Update Catalog — Broadcom Inc. - Net - 1.9.20.0 (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "pvscsi",
+  "ten_hien_thi": "Bộ điều khiển đĩa ảo VMware Paravirtual SCSI (PVSCSI)",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa — thiếu thì WinPE không thấy ổ cứng. Bản 1.3.29.0.",
+  "dung_luong": 40964,
+  "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2024/12/d6f05493-4103-4725-a485-554817879f55_430176e127434fd90671dce4bff19857b3b377f0.cab",
+  "sha256": "2d9ef8f4f70f476c32f979dd7c3694c65585a3ad024c4e290aaccaf98863a567",
+  "nguon": "Microsoft Update Catalog — Broadcom Inc. - SCSIAdapter - 1.3.29.0 (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "intel_i225_i226",
+  "ten_hien_thi": "Card mạng Intel I225/I226 2.5GbE",
+  "loai": "mang",
+  "mo_ta": "Card mạng — thiếu thì WinPE không có mạng, không tải được bộ cài. Bản 1.1.4.45.",
+  "dung_luong": 286927,
+  "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2025/03/feb4cd83-9ec0-45a9-b43c-710ae8d13101_ad2f08d91ffd5f98d85b806ee0030ccad3fb11c5.cab",
+  "sha256": "64f96b733c57317122433d6e956e19af9793a827a03f66cf22a1b465132b7070",
+  "nguon": "Microsoft Update Catalog — Intel - Net - 1.1.4.45 (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "intel_i219",
+  "ten_hien_thi": "Card mạng Intel I219-V/LM (và I217/I218)",
+  "loai": "mang",
+  "mo_ta": "Card mạng — thiếu thì WinPE không có mạng, không tải được bộ cài. Bản 12.19.2.66.",
+  "dung_luong": 286663,
+  "url": "https://catalog.s.download.windowsupdate.com/c/msdownload/update/driver/drvs/2026/02/3de915d8-3c4d-4341-a002-840a5d8be101_97f01c46b968a3faa7e4a342a4b1dfb88ed86bbe.cab",
+  "sha256": "a93bce06ebdc81e6d4ba32b1c22c1015a9350d202850359dd283c2fe3505037f",
+  "nguon": "Microsoft Update Catalog — Intel Net Driver Update (12.19.2.66) (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "intel_rst_vmd",
+  "ten_hien_thi": "Bộ điều khiển Intel RST VMD (laptop/PC Intel đời 11 trở lên bật VMD)",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa — thiếu thì WinPE không thấy ổ cứng. Bản 20.2.4.1019.",
+  "dung_luong": 1336335,
+  "url": "https://catalog.s.download.windowsupdate.com/c/msdownload/update/driver/drvs/2025/02/9ef121be-ce9e-452c-a6dc-6d20b15fb7a1_98f9769d22bff8ad475a7d1f790a7e1bc7fc784e.cab",
+  "sha256": "913a94e9e292ea984f9150d093456ff8595e6cf4aea3943801a5f2801781e00d",
+  "nguon": "Microsoft Update Catalog — Intel Corporation - SCSIAdapter - 20.2.4.1019 (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "realtek_pcie_gbe_2g5",
+  "ten_hien_thi": "Card mạng Realtek PCIe RTL8111/8168/8125 2.5G/8126 5G",
+  "loai": "mang",
+  "mo_ta": "Card mạng — thiếu thì WinPE không có mạng, không tải được bộ cài. Bản 10.079.1003.2025.",
+  "dung_luong": 601479,
+  "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2026/04/12410157-0483-4eca-94ce-a6ed4e6fea65_c1a514029b5b741cadd058d6be1cca0fe1c739f2.cab",
+  "sha256": "debb14edebb1d1289d924a49d61dacf6b24c4c59e6c71a05b7d4ab4c3f4c67cf",
+  "nguon": "Microsoft Update Catalog — Realtek Net Driver Update (10.79.1003.2025) (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "realtek_usb_nic",
+  "ten_hien_thi": "USB LAN Realtek RTL8152/8153/8156 (tùy chọn)",
+  "loai": "mang",
+  "mo_ta": "Card mạng — thiếu thì WinPE không có mạng, không tải được bộ cài. Bản 10.65.20.0603.",
+  "dung_luong": 451860,
+  "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2026/02/bbcf8413-edc1-4eb8-938b-1b7c87b31878_79a95e30186aef7d9165d0c1a1656b828a392340.cab",
+  "sha256": "13c6516abfea36ee661c79837ccf089100908746c33611430a7dcdce16c42d6a",
+  "nguon": "Microsoft Update Catalog — Realtek Driver Update (10.65.20.603) (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "virtio_netkvm",
+  "ten_hien_thi": "Card mạng ảo VirtIO (KVM/QEMU/Proxmox) - NetKVM",
+  "loai": "mang",
+  "mo_ta": "Card mạng — thiếu thì WinPE không có mạng, không tải được bộ cài. Bản 100.101.104.27700.",
+  "dung_luong": 485897,
+  "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2025/06/a4590352-604e-4494-8cd6-bac0b8275f67_17de44357f63bee7ec94416f5aadadcaec363bf7.cab",
+  "sha256": "79e361ae2039bc3870bf408ddfc747e38d24766c91df7586bcc69010bafb6401",
+  "nguon": "Microsoft Update Catalog — Red Hat, Inc. - Net - 100.101.104.27700 (Windows 10, Vibranium and later)",
+  "bo_file": [
+   "vioprot.inf",
+   "vioprot.cat"
+  ]
+ },
+ {
+  "ma": "virtio_viostor",
+  "ten_hien_thi": "Ổ đĩa ảo VirtIO Block (viostor)",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa — thiếu thì WinPE không thấy ổ cứng. Bản 100.103.104.29700.",
+  "dung_luong": 49463,
+  "url": "https://catalog.s.download.windowsupdate.com/c/msdownload/update/driver/drvs/2026/04/d13078e9-d2ff-4d73-84c9-6942b1e317ef_d9693b5c3f002969cf393f78bb36515fa1ef2228.cab",
+  "sha256": "f677a72c3adcb18300c65cc3736cdb032b92949bdd56725eebd4161064e4127d",
+  "nguon": "Microsoft Update Catalog — Red Hat, Inc. SCSIAdapter Driver Update (100.103.104.29700) (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "virtio_vioscsi",
+  "ten_hien_thi": "Bộ điều khiển VirtIO SCSI (vioscsi)",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa — thiếu thì WinPE không thấy ổ cứng. Bản 100.102.104.29500.",
+  "dung_luong": 54415,
+  "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2026/03/b31a098d-9115-45a0-8546-bc346dcfcbce_fd9927ee6024afff0600f5f09e1cbdb937060463.cab",
+  "sha256": "4d5639b7f09755ce4480b0bd94adb07ea3aa48fec91ded54c9e1ecb2117fddda",
+  "nguon": "Microsoft Update Catalog — Red Hat, Inc. Driver Update (100.102.104.29500) (Windows 10, Vibranium and later)"
+ }
+]

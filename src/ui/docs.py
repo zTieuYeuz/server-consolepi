@@ -943,7 +943,15 @@ kich ban.</p>
       driver cho no. Doi Adapter Type sang <strong>E1000E</strong> (xoa card, them
       lai), Guest OS dat Windows 10/11 64-bit. Script tu nhan ra va bao ngay.
       Card <em>VMXNET3</em>, Intel I225/I226, virtio: WinPE KHONG co san driver -
-      nap vao muc "Driver cho anh boot" (script bao ten card thieu driver).</li>
+      vao Tai nguyen &rarr; Drivers &rarr; <strong>Goi driver pho bien</strong>,
+      bam "Tai tat ca" (Pi tu tai goi chinh thuc tu Microsoft Update Catalog,
+      kiem sha256, tu danh dau nap vao anh boot).</li>
+  <li><strong>WinPE bao "khong thay o dia" / DISM "The disk you specified is not
+      valid"</strong>: bo dieu khien o dia khong co driver. VMware <em>LSI Logic
+      Parallel</em> KHONG co driver cho Windows 10/11 (Microsoft bo tu Windows 8)
+      - doi sang <strong>LSI Logic SAS</strong>, NVMe hoac VMware Paravirtual
+      (goi PVSCSI). May Intel doi 11 tro len bat VMD/RST: tai goi "Intel RST
+      VMD" hoac tat VMD trong BIOS. KVM/Proxmox: goi VirtIO Block/SCSI.</li>
   <li><strong>Menu het gio "Khoi dong o cung" ma may UEFI vao man hinh
       Setup</strong>: iPXE phai tra loi "that bai" (<code>exit 1</code>) de
       firmware thu thiet bi ke tiep - da sua tu 1.5.0.</li>

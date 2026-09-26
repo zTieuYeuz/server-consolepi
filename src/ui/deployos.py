@@ -3514,7 +3514,8 @@ def register_deployos(app):
               {hang}
             </table></div>""" if ds else
             '<p style="color:#8b93a1;">Chưa có gói driver nào.</p>')
-        body = (_tabs("tainguyen", "drivers") + _msg(msg, ok) + f"""
+        body = (_tabs("tainguyen", "drivers") + _msg(msg, ok) + _khoi_goi_pho_bien()
+                + f"""
         <div class="card">
           <h3>Hai loại driver - khác nhau ở thời điểm nạp</h3>
           <table class="tt-bang">
@@ -3577,6 +3578,77 @@ def register_deployos(app):
         <h2>Gói driver đã có ({len(ds)})</h2>
         {bang}""")
         return _trang(body, "Deployment OS", "Driver")
+
+    def _khoi_goi_pho_bien():
+        """Khung "Goi driver pho bien" - xem ui/goidriver.py."""
+        from . import goidriver as _gd
+        ds = _gd.danh_sach_goi()
+        if not ds:
+            return ""
+        dang = any(g["dang_tai"] for g in ds)
+        hang = ""
+        for g in ds:
+            if g["dang_tai"]:
+                tt = f'<span style="color:#f59e0b;">{_esc(g["thong_bao"])}</span>'
+            elif g["da_tai"]:
+                tt = '<span style="color:#4CAF50;">&#10003; Đã có - nạp vào ảnh boot</span>'
+            else:
+                tt = '<span style="color:#8b93a1;">Chưa tải</span>'
+            if g["thong_bao"] and not g["dang_tai"]:
+                tt += f'<br><small style="color:#8b93a1;">{_esc(g["thong_bao"])}</small>'
+            nut = "" if g["dang_tai"] else f"""
+                <form method="POST" action="/deployos/drivers/goi-pho-bien/tai" style="display:inline;">
+                  <input type="hidden" name="ma" value="{_esc(g['ma'])}">
+                  <button type="submit" class="small{' gray' if g['da_tai'] else ''}">{
+                    'Tải lại' if g['da_tai'] else 'Tải'}</button>
+                </form>"""
+            hang += (f"<tr><td><strong>{_esc(g['ten_hien_thi'])}</strong><br>"
+                     f"<small style='color:#8b93a1;'>{_esc(g.get('mo_ta', ''))}<br>"
+                     f"Nguồn: {_esc(g.get('nguon', ''))}</small></td>"
+                     f"<td style='width:90px;'>{co_kich_thuoc(g.get('dung_luong', 0))}</td>"
+                     f"<td style='width:230px;'>{tt}</td><td style='width:90px;'>{nut}</td></tr>")
+        lam_moi = '<meta http-equiv="refresh" content="4">' if dang else ""
+        return f"""{lam_moi}
+        <div class="card">
+          <h3>Gói driver phổ biến cho ảnh boot (tải từ Microsoft)</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
+            WinPE của Windows 10/11 KHÔNG có sẵn driver cho các card mạng / bộ
+            điều khiển ổ đĩa dưới đây - máy dùng chúng sẽ không có mạng hoặc
+            không thấy ổ cứng khi cài. Bấm <strong>Tải</strong>: Console Pi tự tải
+            gói driver chính thức (đã được Microsoft ký) từ Microsoft Update
+            Catalog, giải nén và đánh dấu nạp vào ảnh boot. Windows sau khi cài
+            cũng dùng luôn các driver này.</p>
+          <form method="POST" action="/deployos/drivers/goi-pho-bien/tai" style="margin-bottom:10px;">
+            <input type="hidden" name="ma" value="__tat_ca__">
+            <button type="submit"{' disabled' if dang else ''}>Tải tất cả gói chưa có</button>
+          </form>
+          <div class="tbl-scroll"><table>
+            <tr><th>Gói</th><th>Dung lượng</th><th>Trạng thái</th><th></th></tr>
+            {hang}
+          </table></div>
+          <p style="color:#8b93a1;font-size:12px;margin:10px 0 0;">
+            <strong>Máy ảo VMware dùng "LSI Logic Parallel"</strong>: Microsoft
+            không có driver loại này cho Windows 10/11 (đã bỏ từ Windows 8), nên
+            không gói nào tải được. Đổi bộ điều khiển ổ đĩa của máy ảo sang
+            <strong>LSI Logic SAS</strong> (WinPE có sẵn), <strong>NVMe</strong>
+            hoặc <strong>VMware Paravirtual</strong> (tải gói PVSCSI ở trên).
+            Card mạng nên chọn <strong>E1000E</strong> hoặc
+            <strong>VMXNET3</strong> (tải gói ở trên), tránh E1000.</p>
+        </div>"""
+
+    @app.route("/deployos/drivers/goi-pho-bien/tai", methods=["POST"])
+    def deployos_drivers_goi_tai():
+        from . import goidriver as _gd
+        ma = request.form.get("ma", "")
+        if ma == "__tat_ca__":
+            cac = [g["ma"] for g in _gd.danh_sach_goi() if not g["da_tai"]]
+        else:
+            cac = [ma]
+        ok, msg = _gd.tai_goi(cac)
+        if ok:
+            # Ve trang GET de the meta refresh tu lam moi khong gui lai POST
+            return redirect("/deployos/drivers")
+        return _trang_drivers(msg, ok)
 
     @app.route("/deployos/drivers/tao", methods=["POST"])
     def deployos_drivers_tao():
