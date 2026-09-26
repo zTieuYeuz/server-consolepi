@@ -992,13 +992,25 @@ thuc te khong boot duoc - va chi vo ra luc dang cai that cho khach.</p>
 """),
 
     ("khotrungtam", "🏬 Kho lưu trữ trung tâm", """
-<p>May chu rieng (du an <code>kho-console-pi</code>) luu san phan mem/script dung
-chung cho MOI Console Pi ngoai hien truong - khong phai mang USB di khap noi nua.</p>
+<p>May chu rieng (du an <code>kho-console-pi</code>) luu san phan mem, script va
+<strong>he dieu hanh (file ISO)</strong> dung chung cho MOI Console Pi ngoai hien
+truong - khong phai mang USB di khap noi nua.</p>
 <ul>
-  <li>Vao <strong>Deployment OS &gt; Kho trung tam</strong>, dien dia chi kho va
-      <strong>token rieng cua may nay</strong> (sinh o trang quan tri kho, muc
-      Token). Token khac han mat khau dang nhap web cua kho - may goi API dung
-      token, nguoi dung web dung mat khau.</li>
+  <li><strong>Ket noi bang ma 6 ky tu</strong>: tren trang kho vao <em>Ket noi Console
+      Pi</em> &rarr; <em>Tao ma ket noi</em>. Tren Pi vao <strong>Deployment OS &gt; Kho
+      trung tam</strong>, dien dia chi kho (khong can go https://) va ma do. Ma song 15
+      phut, dung 1 lan; kho doi ma lay token rieng cho may nay. Trang kho hien Pi nao
+      dang ket noi, IP, phien ban; bam <em>Ngat ket noi</em> la Pi do het tai duoc.</li>
+  <li><strong>Tai o nen, tai tiep khi dut mang</strong>: bam <em>Tai ve</em>, trang hien
+      thanh tien do + toc do + thoi gian con lai. Mat mang giua chung Pi tu thu lai va
+      tai TIEP tu byte da co (khong lam lai tu dau). Xong thi kiem SHA-256 voi kho -
+      sai la xoa, khong bao gio dung file hong.</li>
+  <li><strong>He dieu hanh</strong>: tai ISO tu kho -> Pi tu tao muc he dieu hanh moi va
+      tach boot.wim + install.wim (nhu tai ISO len bang tay), xong la chon duoc trong
+      kich ban. Can trong khoang 2 lan kich thuoc ISO trong luc tach. Nguoi dung cung
+      tai thang ISO ve may tinh tu trang kho duoc.</li>
+  <li>Kho nhan file lon (ISO 5-6 GB) qua trinh duyet: gui theo khuc 8 MB (Cloudflare
+      chan request &gt; 100 MB), dong trang giua chung thi chon lai file do de tai tiep.</li>
   <li>Tim kiem go khong dau va sai chinh ta van ra (dung chung thuat toan voi
       bang tra tham so).</li>
   <li>Bam <em>Tai ve</em>: file ve thang kho cuc bo cua Pi -

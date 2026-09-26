@@ -18,6 +18,13 @@ sanboot; iPXE cua Debian khong ky).
 - deploy.cmd tu nhan BIOS/UEFI (PEFirmwareType): BIOS -> chia MBR (phan vung
   he thong NTFS active, >3 phan vung thi dung extended/logical) + bcdboot
   /f BIOS; UEFI -> GPT + bcdboot /f UEFI.
+- KHO TRUNG TAM (anh Thoai: "ket noi muot ma" + "them phan OS, nhieu khi ho
+  muon tai OS xuong luon"): ket noi bang MA 6 KY TU (khong chep token 64 ky tu);
+  tai o NEN co tien do, dut mang tai TIEP (HTTP Range), kiem SHA-256; muc HE
+  DIEU HANH - tai ISO tu kho, Pi tu tach boot.wim/install.wim, san sang cai.
+  Trang kho (repo kho-console-pi, ban 2.0): tai len theo khuc 8 MB (Cloudflare
+  chan request > 100 MB - truoc day file lon khong len duoc), gunicorn gthread
+  (tai file lon khong bi cat), trang Tong quan + Pi dang ket noi.
 - SUA LOI LON: driver "nap vao anh boot" CHUA BAO GIO toi WinPE qua PXE -
   wimboot bo qua file duoi .wim (BIOS), iPXE UEFI lay ten file theo URL (UEFI).
   Nay chen duoi ten cpi-drivers.bin. Driver con duoc tiem vao Windows vua bung
