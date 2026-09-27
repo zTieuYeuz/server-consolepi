@@ -8,24 +8,18 @@ Lấy cảm hứng từ netool.io Pro2 ($299), làm lại bằng phần cứng s
 
 ---
 
-## Cài đặt — một lệnh
+## Cài đặt
+
+Repo để private nên cài bằng `git clone` qua SSH key có quyền đọc repo:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/USER/consolepi-toolkit/main/install.sh | sudo bash
-```
-
-Thiết bị **không gắn màn hình** (bỏ qua giao diện kiosk, tiết kiệm ~500MB):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/USER/consolepi-toolkit/main/install.sh | sudo bash -s -- --no-screen
-```
-
-Cài từ thư mục có sẵn (không cần mạng):
-
-```bash
-git clone https://github.com/USER/consolepi-toolkit.git
+git clone git@github.com:zTieuYeuz/server-consolepi.git consolepi-toolkit
 sudo bash consolepi-toolkit/install.sh --local consolepi-toolkit
 ```
+
+Thiết bị **không gắn màn hình** (bỏ qua giao diện kiosk, tiết kiệm ~500MB): thêm `--no-screen`.
+
+Dựng lại máy hỏng (kèm dữ liệu + bí mật từ bản sao lưu): xem `docs/KHOI-PHUC-TU-DAU.md`.
 
 > **Chạy lại được nhiều lần.** Cài đè bản mới không làm mất: WiFi đã lưu,
 > thư viện lệnh, tên cổng console, rule IF/THEN, cấu hình AP, hướng màn hình.
