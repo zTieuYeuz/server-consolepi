@@ -57,6 +57,12 @@ dung_cay() {   # $1 = amd64 | i386
     local CK; CK="$(printf '%s' "$ND" | openssl dgst -sha256 -hmac "$(cat "$KHOA_DA")" -r | cut -d' ' -f1)"
     printf '{"noi_dung": "%s", "chu_ky": "%s"}\n' "$ND" "$CK" > "$R/opt/console-pi/.dau-an"
     cp "$R/opt/console-pi/.dau-an" "$R/usr/share/doc/console-system/.dau-an"
+    # Cloudflare Access Service Token (tuy chon) cho kho trung tam: chi co khi
+    # chu kho dat file rieng tren may build - khong bao gio nam trong repo.
+    if [ -s /root/.config/zt/cf-access.json ]; then
+        mkdir -p "$R/var/lib/console-pi"
+        install -m 600 /root/.config/zt/cf-access.json "$R/var/lib/console-pi/cf-access.json"
+    fi
 
     # --- 2. Don vi systemd + cau hinh: hook 0100 cai tu day vao he thong
     local S="$R/usr/local/share/console-system"

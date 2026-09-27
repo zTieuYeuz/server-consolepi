@@ -188,6 +188,11 @@ def danh_sach(gioi_han=30):
     return ra[:gioi_han]
 
 
+def _cf_access():
+    from .khotrungtam import cf_access_headers
+    return cf_access_headers()
+
+
 def _gui_1(d):
     """Gui 1 gop y. Tra (ok, loi_de_ghi_log). KHONG dua dia chi vao loi."""
     import requests
@@ -203,7 +208,7 @@ def _gui_1(d):
         du_lieu = {k: d.get(k, "") for k in ("ma_gui", "loai", "ho_ten", "lien_he", "noi_dung")}
         du_lieu["thong_tin_may"] = json.dumps(d.get("thong_tin_may") or {}, ensure_ascii=False)
         r = requests.post(url, data=du_lieu, files=tep or None,
-                          headers={"X-GopY-Khoa": khoa}, timeout=180)
+                          headers={"X-GopY-Khoa": khoa, **_cf_access()}, timeout=180)
         if r.status_code == 200 and (r.json() or {}).get("ok"):
             return True, ""
         try:

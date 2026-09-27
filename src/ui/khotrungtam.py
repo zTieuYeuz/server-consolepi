@@ -56,10 +56,30 @@ def _phien_ban():
     return ""
 
 
+# Cloudflare Access (tuy chon, 27/09/2026): neu chu kho bat Access cho /api/*
+# kieu "Service Auth", moi request cua may phai kem cap Service Token. Cap ma
+# nay KHONG nam trong ma nguon: may build chep vao anh ISO tu file rieng (xem
+# iso/dung-cay-build.sh), hoac dat tay file duoi day (quyen 600). Khong co file
+# -> khong gui gi (dung khi kho chi dung Bypass cho /api/*).
+FILE_CF_ACCESS = "/var/lib/console-pi/cf-access.json"
+
+
+def cf_access_headers():
+    try:
+        with open(FILE_CF_ACCESS, encoding="utf-8") as f:
+            d = json.load(f)
+        if d.get("client_id") and d.get("client_secret"):
+            return {"CF-Access-Client-Id": d["client_id"],
+                    "CF-Access-Client-Secret": d["client_secret"]}
+    except (OSError, ValueError):
+        pass
+    return {}
+
+
 def _headers(cauhinh):
     """Kem ten may + phien ban -> trang kho hien Pi nao dang ket noi."""
     return {"X-Token": cauhinh["token"], "X-Pi-Ten": socket.gethostname(),
-            "X-Pi-Phienban": _phien_ban()}
+            "X-Pi-Phienban": _phien_ban(), **cf_access_headers()}
 
 
 def chuan_hoa_url(url):
@@ -124,7 +144,8 @@ def ghep_noi(url, ma):
     if len(ma) != 6:
         return False, "Mã kết nối gồm đúng 6 ký tự (lấy ở trang kho, mục Kết nối Console Pi)."
     try:
-        r = requests.get(f"{url}/api/thong-tin", timeout=TIMEOUT_DANH_SACH)
+        r = requests.get(f"{url}/api/thong-tin", timeout=TIMEOUT_DANH_SACH,
+                         headers=cf_access_headers())
         d = r.json() if r.status_code == 200 else {}
     except (requests.RequestException, ValueError) as e:
         return False, f"Không mở được {url} - kiểm tra lại địa chỉ và mạng ({type(e).__name__})."
@@ -133,6 +154,7 @@ def ghep_noi(url, ma):
                        f"mã kết nối - dùng ô Token (nâng cao) bên dưới.")
     try:
         r = requests.post(f"{url}/api/ghep-noi", timeout=TIMEOUT_DANH_SACH,
+                          headers=cf_access_headers(),
                           json={"ma": ma, "ten_pi": socket.gethostname(),
                                 "phien_ban": _phien_ban()})
         d = r.json()
