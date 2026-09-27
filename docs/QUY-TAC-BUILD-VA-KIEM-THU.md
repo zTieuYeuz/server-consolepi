@@ -131,7 +131,11 @@ journalctl -u b-all | grep -E "XONG|THAT BAI|E:"
 5. Có lỗi → **sửa trong mã nguồn (repo)**, quay lại bước 1.
 6. Đạt → đẩy **mã nguồn** lên GitHub (ISO ở lại máy build), gửi anh Thoại
    **đường dẫn ISO + SHA256** để anh test lần cuối.
-7. Cập nhật tài liệu: `src/ui/docs.py`, `iso/README.md`, `CHANGELOG.md`, `VERSION`.
+7. Cập nhật tài liệu: **trang console-docs** (repo `consolepi-docs` — hướng dẫn sử dụng +
+   mục "Tài liệu kỹ thuật", đã lọc chi tiết nhạy cảm, ảnh chụp không lộ IP/kho),
+   `iso/README.md`, `CHANGELOG.md`, `VERSION`. Trong máy không còn tài liệu:
+   `src/ui/docs.py` chỉ là trang dẫn link sang console-docs (thêm trang mới thì
+   thêm link vào danh sách `MUC` trong file đó).
 
 Thay đổi chỉ ảnh hưởng Pi (không đụng ISO) vẫn làm bước 4–7, cộng thêm mục 7
 (cập nhật Pi) bên dưới.

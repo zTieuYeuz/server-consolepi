@@ -55,24 +55,7 @@ def register_power(app):
         <p style="color:#8b93a1;font-size:13px;margin-top:10px;">
           Luôn tắt máy bằng nút này trước khi rút điện, tránh hỏng thẻ nhớ.
           Đợi đến khi đèn xanh (ACT) trên board Pi ngừng nhấp nháy rồi mới rút điện.
-        </p>
-
-        <h2>Cắm vỏ RasPad có tắt "hoàn toàn" được không?</h2>
-        <div class="msg warn" style="line-height:1.6;">
-          <strong>Không thể tắt màn hình/mạch nguồn của vỏ RasPad từ trang này.</strong><br>
-          Đã kiểm tra thật trên chính máy: I2C đang bị tắt trong cấu hình boot
-          (không có <code>/dev/i2c-1</code>), và không tìm thấy driver/dịch vụ
-          nào của RasPad/SunFounder trên hệ thống - nên không có đường nào để
-          phần mềm trên Pi nói chuyện với mạch nguồn riêng của vỏ.
-          <br><br>
-          Theo thiết kế của RasPad, vỏ này dùng <strong>công tắc nguồn vật lý</strong>
-          (thường ở cạnh vỏ) để cấp/ngắt điện cho toàn bộ cụm màn hình + Pi -
-          đây là cách DUY NHẤT để tắt hoàn toàn hiện tại. Quy trình đúng:
-          <ol style="margin:8px 0 0 18px;">
-            <li>Bấm "🛑 Tắt máy" ở trên, đợi đèn ACT trên Pi ngừng nhấp nháy (Pi đã tắt hẳn).</li>
-            <li>Sau đó gạt công tắc nguồn vật lý của vỏ RasPad để cắt điện màn hình.</li>
-          </ol>
-        </div>"""
+        </p>"""
         return render_page(body, active="/power", title="Nguồn điện",
                            subtitle="Tắt máy / khởi động lại module Raspberry Pi")
 
