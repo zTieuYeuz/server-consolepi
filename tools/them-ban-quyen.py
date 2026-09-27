@@ -46,7 +46,7 @@ def them(p):
     dong = mau.format(DONG)
     L = s.split("\n")
     i = 0
-    while i < len(L) and i < 2 and (L[i].startswith("#!") or L[i].startswith("<?xml")
+    while i < len(L) and i < 2 and (L[i].startswith("#!") or L[i].startswith("<?xml") or L[i].lower().startswith("<!doctype")
                                     or "coding" in L[i] and L[i].startswith("#")):
         i += 1
     L.insert(i, dong)
