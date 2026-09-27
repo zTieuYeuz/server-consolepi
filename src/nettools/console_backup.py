@@ -211,8 +211,8 @@ def chup_cau_hinh(dev, ho="cisco", ten_file=""):
     if not os.path.exists(f"/dev/{dev}"):
         return False, f"Không thấy /dev/{dev} - có thể cáp đã bị rút.", ""
     if not phien_dang_chay(dev):
-        return False, (f"Chua co phien console cho {dev}. Vao Tong quan bam "
-                       f"'Mo Console' cho cong nay truoc roi quay lai."), ""
+        return False, (f"Chưa có phiên console cho {dev}. Vào Phiên kết nối, mở "
+                       f"cổng này trước rồi quay lại."), ""
 
     cau_hinh = HO_THIET_BI.get(ho) or HO_THIET_BI["cisco"]
 
@@ -280,10 +280,10 @@ def chup_cau_hinh(dev, ho="cisco", ten_file=""):
             f.write(text)
         os.chmod(duong, 0o600)   # chua mat khau thiet bi - chi root doc duoc
     except OSError as e:
-        return False, f"Khong luu duoc file: {e}", ""
+        return False, f"Không lưu được file: {e}", ""
 
     so_dong = text.count("\n")
-    return True, f"Da luu {so_dong} dong vao {ten}.", ten
+    return True, f"Đã lưu {so_dong} dòng vào {ten}.", ten
 
 
 def duong_dan_an_toan(ten):
@@ -319,12 +319,12 @@ def danh_sach_ban_luu():
 def xoa_ban_luu(ten):
     duong = duong_dan_an_toan(ten)
     if not duong:
-        return False, "Ten file khong hop le hoac khong tim thay."
+        return False, "Tên file không hợp lệ hoặc không tìm thấy."
     try:
         os.remove(duong)
     except OSError as e:
-        return False, f"Khong xoa duoc: {e}"
-    return True, f"Da xoa {os.path.basename(duong)}."
+        return False, f"Không xóa được: {e}"
+    return True, f"Đã xóa {os.path.basename(duong)}."
 
 
 TEMPLATE = """
@@ -332,11 +332,11 @@ TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Sao luu qua cap console - Console Pi</title>
+    <title>Sao lưu qua cáp console - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         .hint { color:#8b93a1; font-size:13px; }
-        .khoi { background:#1b1e22; border:1px solid #2c3036; border-left:4px solid #4CAF50;
+        .khoi { background:#1b1e22; border:1px solid #2c3036; border-left:4px solid #22D3EE;
                 border-radius:9px; padding:17px 19px; margin-bottom:16px; }
         .nut-tai { display:inline-block; background:#2563eb; color:#fff !important;
                    padding:11px 15px; border-radius:6px; text-decoration:none;
@@ -344,98 +344,98 @@ TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🔌 Sao luu cau hinh qua cap console</h1>
+    <h1>🔌 Sao lưu cấu hình qua cáp console</h1>
     <p><a href="/nettools">← Network Tools</a></p>
 
     {% if msg %}<div class="msg {{ 'ok' if ok else 'err' }}">{{ msg | safe }}</div>{% endif %}
 
     <div class="msg info">
-        Dung khi thiet bi <strong>mat IP quan ly / chua cau hinh mang</strong> nen khong
-        TFTP duoc - chi con cap console. Console Pi se bao thiet bi in cau hinh ra man
-        hinh roi hung lai thanh file (giong bat "session logging" trong PuTTY, nhung tu dong).
+        Dùng khi thiết bị <strong>mất IP quản lý / chưa cấu hình mạng</strong> nên không
+        TFTP được - chỉ còn cáp console. Máy sẽ bảo thiết bị in cấu hình ra màn
+        hình rồi hứng lại thành file (giống bật "session logging" trong PuTTY, nhưng tự động).
     </div>
 
     {% if not cong %}
     <div class="msg warn">Chưa cắm cáp console nào. Cắm cáp USB-serial vào máy này rồi tải lại trang.</div>
     {% else %}
     <div class="msg warn">
-        ⚠️ <strong>Voi Cisco/HP-Aruba: phai vao che do dac quyen truoc</strong> (dau nhac
-        ket thuc bang <code>#</code>, vd <code>Switch#</code>) - mo khung Console cho cong
-        do, go <code>enable</code> (nhap mat khau neu thiet bi hoi) cho toi khi thay dau
-        <code>#</code>, roi moi quay lai bam chup. Neu con dang o dau nhac
-        <code>&gt;</code> thi thiet bi se tu choi lenh va Console Pi se bao ro cho anh biet,
-        khong luu ban chup loi.
+        ⚠️ <strong>Với Cisco/HP-Aruba: phải vào chế độ đặc quyền trước</strong> (dấu nhắc
+        kết thúc bằng <code>#</code>, ví dụ <code>Switch#</code>) - mở phiên console của cổng
+        đó, gõ <code>enable</code> (nhập mật khẩu nếu thiết bị hỏi) cho tới khi thấy dấu
+        <code>#</code>, rồi mới quay lại bấm chụp. Nếu còn đang ở dấu nhắc
+        <code>&gt;</code> thì thiết bị sẽ từ chối lệnh và máy sẽ báo rõ,
+        không lưu bản chụp lỗi.
     </div>
     <div class="khoi">
-        <h3>Chup cau hinh</h3>
+        <h3>Chụp cấu hình</h3>
         <form method="POST" action="/nettools/console-backup/chup">
-            <label>Cong console</label>
+            <label>Cổng console</label>
             <select name="dev" required>
                 {% for c in cong %}
                 <option value="{{ c.dev }}" {{ 'selected' if c.dev == dev_chon else '' }}>
-                  {{ c.dev }}{% if not c.co_phien %} (chua mo phien console){% endif %}</option>
+                  {{ c.dev }}{% if not c.co_phien %} (chưa mở phiên console){% endif %}</option>
                 {% endfor %}
             </select>
 
-            <label>Dong thiet bi</label>
+            <label>Dòng thiết bị</label>
             <select name="ho">
                 {% for ma, h in ho_thiet_bi.items() %}
                 <option value="{{ ma }}">{{ h.ten }}</option>
                 {% endfor %}
             </select>
 
-            <label>Ten file (de trong = tu dat theo ngay gio)</label>
-            <input type="text" name="ten_file" placeholder="vd: switch-tang3.cfg">
+            <label>Tên file (để trống = tự đặt theo ngày giờ)</label>
+            <input type="text" name="ten_file" placeholder="ví dụ: switch-tang3.cfg">
 
             <div class="row" style="margin-top:14px;">
-                <button type="submit" data-busy="Dang chup, co the mat 1-3 phut...">
-                    ⬇ Chup cau hinh ngay</button>
-                <a class="btn gray" href="/console/{{ dev_chon }}">↗ Mo khung Console (go enable o day)</a>
+                <button type="submit" data-busy="Đang chụp, có thể mất 1-3 phút...">
+                    ⬇ Chụp cấu hình ngay</button>
+                <a class="btn gray" href="/phien?mo=serial-{{ dev_chon }}">↗ Mở phiên console (gõ enable ở đây)</a>
             </div>
         </form>
         <p class="hint" style="margin-top:12px;">
-            Phai <strong>mo phien console</strong> cho cong do truoc (Tong quan &rarr; Mo Console)
-            va thiet bi da dang nhap xong, dang o dau nhac lenh. Cong doan chup mat tu vai
-            giay den vai phut tuy do dai cau hinh va toc do baud.
+            Phải <strong>mở phiên console</strong> cho cổng đó trước (Phiên kết nối)
+            và thiết bị đã đăng nhập xong, đang ở dấu nhắc lệnh. Công đoạn chụp mất từ vài
+            giây đến vài phút tùy độ dài cấu hình và tốc độ baud.
         </p>
     </div>
 
-    <h3>Ban da luu ({{ ban_luu|length }})</h3>
-    <p class="hint">Luu tai <code>{{ backup_dir }}</code>, quyen 600 (chi root doc) - khong
-       nam trong thu muc TFTP nen thiet bi khac cam vao eth0 khong tai ve duoc.</p>
+    <h3>Bản đã lưu ({{ ban_luu|length }})</h3>
+    <p class="hint">Lưu trên máy, chỉ quản trị viên đọc được - không nằm trong thư mục TFTP
+       nên thiết bị khác cắm vào cổng mạng không tải về được.</p>
     <table>
-        <tr><th>Ten file</th><th style="width:110px;">Kich thuoc</th>
-            <th style="width:150px;">Thoi gian</th><th style="width:210px;">Thao tac</th></tr>
+        <tr><th>Tên file</th><th style="width:110px;">Kích thước</th>
+            <th style="width:150px;">Thời gian</th><th style="width:210px;">Thao tác</th></tr>
         {% for f in ban_luu %}
         <tr>
             <td>{{ f.ten }}</td>
             <td>{{ (f.kich_thuoc / 1024) | round(1) }} KB</td>
             <td class="hint">{{ f.thoi_gian }}</td>
             <td style="white-space:nowrap;">
-                <a class="nut-tai" href="/nettools/console-backup/tai/{{ f.ten | urlencode }}" download>⬇ Tai ve</a>
+                <a class="nut-tai" href="/nettools/console-backup/tai/{{ f.ten | urlencode }}" download>⬇ Tải về</a>
                 <form method="POST" action="/nettools/console-backup/xoa" style="display:inline;"
-                      onsubmit="return confirm('Xoa {{ f.ten }}?');">
+                      onsubmit="return confirm('Xóa {{ f.ten }}?');">
                     <input type="hidden" name="ten" value="{{ f.ten }}">
-                    <button type="submit" class="red">Xoa</button>
+                    <button type="submit" class="red">Xóa</button>
                 </form>
             </td>
         </tr>
         {% endfor %}
     </table>
-    {% if not ban_luu %}<p class="hint">Chua co ban luu nao.</p>{% endif %}
+    {% if not ban_luu %}<p class="hint">Chưa có bản lưu nào.</p>{% endif %}
     {% endif %}
 
-    <h3>Cac cach khac de backup khi khong co mang</h3>
+    <h3>Các cách khác để sao lưu khi không có mạng</h3>
     <div class="khoi" style="border-left-color:#3b82f6;">
-        <p style="margin:0 0 9px;"><strong>USB cam thang vao switch</strong> - nhanh nhat
-        NEU thiet bi co cong USB va ho tro:</p>
+        <p style="margin:0 0 9px;"><strong>USB cắm thẳng vào switch</strong> - nhanh nhất
+        NẾU thiết bị có cổng USB và hỗ trợ:</p>
         <pre>copy running-config usbflash0:backup.cfg</pre>
-        <p class="hint" style="margin:0 0 11px;">Rat nhieu thiet bi khong co cong USB
-        (2960 doi cu, switch nho, nhieu hang khac) - luc do dung cach chup qua console
-        o tren, chay duoc voi moi thiet bi co cong console.</p>
-        <p style="margin:0 0 9px;"><strong>Khong the</strong> hut file qua cap console
-        bang USB cam o Pi: cong console chi truyen KY TU, khong phai duong truyen file -
-        khong co giao thuc san co nao tren switch de day file nhi phan qua duong do.</p>
+        <p class="hint" style="margin:0 0 11px;">Rất nhiều thiết bị không có cổng USB
+        (2960 đời cũ, switch nhỏ, nhiều hãng khác) - lúc đó dùng cách chụp qua console
+        ở trên, chạy được với mọi thiết bị có cổng console.</p>
+        <p style="margin:0 0 9px;"><strong>Không thể</strong> hút file qua cáp console
+        bằng USB cắm ở máy: cổng console chỉ truyền KÝ TỰ, không phải đường truyền file -
+        không có giao thức sẵn có nào trên switch để đẩy file nhị phân qua đường đó.</p>
     </div>
 </body>
 </html>

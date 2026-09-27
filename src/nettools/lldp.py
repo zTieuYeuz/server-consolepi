@@ -187,7 +187,7 @@ LLDP_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>LLDP/CDP Discovery - Console Pi</title>
+    <title>LLDP/CDP Discovery - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -224,10 +224,10 @@ LLDP_TEMPLATE = """
 <body>
     <h1>🔗 LLDP/CDP Discovery</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Thiet bi Pi lang nghe quang ba LLDP va CDP tren tung cong mang.
-        Cam day vao mot switch/router co bat cac giao thuc nay, doi 10-60 giay
-        (thiet bi thuong quang ba moi 30-60s) roi bam Quet lai.</p>
-    <p><a class="btn" href="/nettools/lldp">🔄 Quet lai</a></p>
+    <p class="hint">Máy lắng nghe quảng bá LLDP và CDP trên từng cổng mạng.
+        Cắm dây vào một switch/router có bật các giao thức này, đợi 10-60 giây
+        (thiết bị thường quảng bá mỗi 30-60 giây) rồi bấm Quét lại.</p>
+    <p><a class="btn" href="/nettools/lldp">🔄 Quét lại</a></p>
 
     {% if result.error %}
     <div class="err">Lỗi: {{ result.error }}</div>
@@ -236,8 +236,8 @@ LLDP_TEMPLATE = """
             {% for n in result.neighbors %}
             <div class="card">
                 <h2>{{ n.remote_name }}<span class="badge-proto">{{ n.protocol }}</span></h2>
-                <p class="via-if">Thấy qua cổng <strong>{{ n.iface }}</strong> cua Pi
-                    {% if n.age %}&middot; da thay {{ n.age }}{% endif %}</p>
+                <p class="via-if">Thấy qua cổng <strong>{{ n.iface }}</strong> của máy
+                    {% if n.age %}&middot; đã thấy {{ n.age }}{% endif %}</p>
                 <dl class="grid">
                     <dt>Địa chỉ quản lý (Mgmt IP)</dt>
                     <dd>
@@ -283,14 +283,14 @@ LLDP_TEMPLATE = """
         <p style="margin-top:16px;">Chưa thấy thiết bị láng giềng nào qua LLDP/CDP. Có thể do:</p>
         <ul>
             <li>Switch đang cắm không bật LLDP/CDP</li>
-            <li>Vua cam day, can doi 30-60s de trao doi TLV dau tien</li>
-            <li>lldpd chua bat che do tuong thich CDP (kiem tra /etc/default/lldpd)</li>
+            <li>Vừa cắm dây, cần đợi 30-60 giây để trao đổi thông tin đầu tiên</li>
+            <li>Chưa bật chế độ tương thích CDP (cài lại phần mềm sẽ tự bật)</li>
         </ul>
         {% endif %}
     {% endif %}
 
     <details>
-        <summary>Xem JSON tho tu lldpcli (chi de doi chieu ky thuat neu can - khong can doc thuong xuyen)</summary>
+        <summary>Xem dữ liệu JSON thô (chỉ để đối chiếu kỹ thuật khi cần - không cần đọc thường xuyên)</summary>
         <pre>{{ raw_json }}</pre>
     </details>
 </body>

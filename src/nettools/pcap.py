@@ -176,7 +176,7 @@ PCAP_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>PCAP Capture - Console Pi</title>
+    <title>PCAP Capture - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -197,14 +197,14 @@ PCAP_TEMPLATE = """
     <h1>📼 PCAP Capture</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Thư mục đang dùng: <code>{{ capture_dir }}</code>
-    {% if is_usb %}(USB drive){% else %}(dia cuc bo Pi - nen cam USB de an toan hon){% endif %}</p>
+    {% if is_usb %}(USB drive){% else %}(ổ đĩa của máy - nên cắm USB để an toàn hơn){% endif %}</p>
 
     {% if msg %}<div class="{{ 'ok' if ok else 'err' }}">{{ msg }}</div>{% endif %}
 
     {% if capturing %}
     <form method="POST" action="/nettools/pcap/stop">
-        <p>⏺ Dang capture: <strong>{{ current_file }}</strong></p>
-        <button type="submit" class="stop">⏹ Dung capture</button>
+        <p>⏺ Đang capture: <strong>{{ current_file }}</strong></p>
+        <button type="submit" class="stop">⏹ Dừng capture</button>
     </form>
     {% else %}
     <form method="POST" action="/nettools/pcap/start">
@@ -213,10 +213,10 @@ PCAP_TEMPLATE = """
             {{ o_chon_cong|safe }}
         </select>
         <label style="margin-left:10px;">BPF filter (tùy chọn):</label>
-        <input type="text" name="filter" placeholder="vd port 80">
+        <input type="text" name="filter" placeholder="ví dụ port 80">
         <label style="margin-left:10px;">Thời lượng (giây):</label>
         <input type="number" name="duration" value="60" min="5" max="600" style="width:80px;">
-        <button type="submit" style="margin-left:10px;">⏺ Bat dau</button>
+        <button type="submit" style="margin-left:10px;">⏺ Bắt đầu</button>
     </form>
     {% endif %}
 
@@ -234,7 +234,7 @@ PCAP_TEMPLATE = """
                 {% else %}
                 | <form method="POST" action="/nettools/pcap/convert" style="display:inline;">
                     <input type="hidden" name="filename" value="{{ f.name }}">
-                    <button type="submit" style="padding:4px 10px;">Convert sang text</button>
+                    <button type="submit" style="padding:4px 10px;">Chuyển sang text</button>
                   </form>
                 {% endif %}
             </td>
@@ -268,7 +268,7 @@ def pcap_start_route():
     duration = request.form.get("duration", 60)
     res = start_capture(iface=iface, bpf_filter=bpf_filter, duration=duration)
     if res["ok"]:
-        return _render(msg=f"Da bat dau capture: {res['file']} (toi da {res['duration']}s).", ok=True)
+        return _render(msg=f"Đã bắt đầu capture: {res['file']} (tối đa {res['duration']} giây).", ok=True)
     return _render(msg=res["error"], ok=False)
 
 
@@ -276,7 +276,7 @@ def pcap_start_route():
 def pcap_stop_route():
     res = stop_capture()
     if res["ok"]:
-        return _render(msg=f"Da dung capture: {res['file']}", ok=True)
+        return _render(msg=f"Đã dừng capture: {res['file']}", ok=True)
     return _render(msg=res["error"], ok=False)
 
 
@@ -285,7 +285,7 @@ def pcap_convert_route():
     filename = request.form.get("filename", "")
     res = convert_to_text(filename)
     if res["ok"]:
-        return _render(msg=f"Da convert: {res['file']}", ok=True)
+        return _render(msg=f"Đã chuyển đổi: {res['file']}", ok=True)
     return _render(msg=res["error"], ok=False)
 
 

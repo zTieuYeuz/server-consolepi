@@ -188,12 +188,12 @@ TOPOLOGY_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🗺️ So do mang 1 doan</h1>
+    <h1>🗺️ Sơ đồ mạng 1 đoạn</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Ghep ARP Scan + LLDP/CDP Discovery thanh 1 so do: Pi → switch dang cam vao
-    (neu co quang ba LLDP/CDP) → cac thiet bi tren cung doan mang.</p>
-    <p class="hint">⚠️ <strong>Giới hạn:</strong> chi ve duoc 1 doan mang noi truc tiep vao cong
-    nay - khong ve duoc nhieu switch noi tiep qua nhieu hop.</p>
+    <p class="hint">Ghép ARP Scan + LLDP/CDP Discovery thành 1 sơ đồ: máy → switch đang cắm vào
+    (nếu có quảng bá LLDP/CDP) → các thiết bị trên cùng đoạn mạng.</p>
+    <p class="hint">⚠️ <strong>Giới hạn:</strong> chỉ vẽ được 1 đoạn mạng nối trực tiếp vào cổng
+    này - không vẽ được nhiều switch nối tiếp qua nhiều hop.</p>
 
     <form method="POST" style="margin-top:16px;">
         <label>Interface:</label>
@@ -209,14 +209,14 @@ TOPOLOGY_TEMPLATE = """
         {% else %}
         <div class="card">{{ result.svg|safe }}</div>
 
-        <h3>Chi tiet ({{ result.hosts|length }} thiet bi)</h3>
+        <h3>Chi tiết ({{ result.hosts|length }} thiết bị)</h3>
         <table>
             <tr><th>IP</th><th>MAC</th><th>Vendor</th></tr>
             {% for h in result.hosts %}
             <tr><td>{{ h.ip }}</td><td>{{ h.mac }}</td><td>{{ h.vendor }}</td></tr>
             {% endfor %}
         </table>
-        {% if not result.hosts %}<p>Khong tim thay thiet bi nao.</p>{% endif %}
+        {% if not result.hosts %}<p>Không tìm thấy thiết bị nào.</p>{% endif %}
         {% endif %}
     {% endif %}
 </body>

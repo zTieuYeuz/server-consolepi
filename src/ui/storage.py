@@ -170,7 +170,7 @@ def save_upload(fileobj):
             f.write(f"{sha.hexdigest()}  {name}\n")
     except OSError:
         pass
-    return True, f"Da luu {name} ({human_size(written)}). SHA256: {sha.hexdigest()[:16]}..."
+    return True, f"Đã lưu {name} ({human_size(written)}). SHA256: {sha.hexdigest()[:16]}..."
 
 
 def delete_file(name):
@@ -217,11 +217,11 @@ def register_storage(app):
               <td>{human_size(f['size'])}</td>
               <td style="color:#8b93a1;">{f['mtime']}</td>
               <td>
-                <a class="btn small" href="/storage/tai/{_esc(f['name'])}">Tai ve</a>
+                <a class="btn small" href="/storage/tai/{_esc(f['name'])}">Tải về</a>
                 <form method="POST" action="/storage/xoa" style="display:inline;"
-                      onsubmit="return confirm('Xoa {_esc(f['name'])}?');">
+                      onsubmit="return confirm('Xóa {_esc(f['name'])}?');">
                   <input type="hidden" name="name" value="{_esc(f['name'])}">
-                  <button type="submit" class="red small">Xoa</button>
+                  <button type="submit" class="red small">Xóa</button>
                 </form>
               </td>
             </tr>"""
@@ -229,16 +229,16 @@ def register_storage(app):
         du_cho = free >= MIN_FREE_GB
         upload_html = f"""
         <form method="POST" action="/storage/len" enctype="multipart/form-data">
-          <label>Chon file (ISO, IMG, firmware, cau hinh...)</label>
+          <label>Chọn file (ISO, IMG, firmware, cấu hình...)</label>
           <input type="file" name="file" required>
           <div class="row" style="margin-top:13px;">
-            <button type="submit" data-busy="Dang tai len, dung dong trang...">⬆ Tai len</button>
+            <button type="submit" data-busy="Đang tải lên, đừng đóng trang...">⬆ Tải lên</button>
             <span style="color:#8b93a1;font-size:13px;margin-left:10px;">
               File lớn mất vài phút. Trang sẽ đứng yên cho đến khi xong.</span>
           </div>
         </form>""" if du_cho else f"""
-        <div class="msg err">Chi con {free} GB trong. Xoa bot file hoac cam USB
-        truoc khi tai them (can it nhat {MIN_FREE_GB} GB de he thong chay an toan).</div>"""
+        <div class="msg err">Chỉ còn {free} GB trống. Xóa bớt file hoặc cắm USB
+        trước khi tải thêm (cần ít nhất {MIN_FREE_GB} GB để hệ thống chạy an toàn).</div>"""
 
         body = f"""
         {msg_html}
@@ -249,22 +249,22 @@ def register_storage(app):
             <div style="background:{bar_color};height:100%;width:{pct}%;"></div>
           </div>
           <p style="color:#8b93a1;font-size:13px;margin:7px 0 0;">
-            Da dung {used} GB / {total} GB &nbsp;&middot;&nbsp; con trong <strong>{free} GB</strong></p>
+            Đã dùng {used} GB / {total} GB &nbsp;&middot;&nbsp; còn trống <strong>{free} GB</strong></p>
         </div>
 
-        <h2>Tai file len</h2>
+        <h2>Tải file lên</h2>
         <div class="card">{upload_html}</div>
 
         <h2>File đang có ({len(files)})</h2>
         <table>
-          <tr><th>Ten file</th><th style="width:110px;">Kich thuoc</th>
-              <th style="width:140px;">Ngay luu</th><th style="width:170px;">Thao tac</th></tr>
+          <tr><th>Tên file</th><th style="width:110px;">Kích thước</th>
+              <th style="width:140px;">Ngày lưu</th><th style="width:170px;">Thao tác</th></tr>
           {rows}
         </table>
         {'<p style="color:#8b93a1;">Chưa có file nào. Tải bộ cài OS, firmware switch, hay file cấu hình lên để mang theo dùng khi không có internet.</p>' if not files else ''}"""
 
         return render_page(body, active="/storage", title="Kho file",
-                           subtitle="Mang theo bo cai OS, firmware, cau hinh")
+                           subtitle="Mang theo bộ cài OS, firmware, cấu hình")
 
     @app.route("/storage")
     def storage_page():

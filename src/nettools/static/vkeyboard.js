@@ -151,7 +151,7 @@
   var enabled = luu !== null ? (luu !== "0") : IS_LOCAL;
   function paintToggle() {
     toggle.className = enabled ? "" : "off";
-    toggle.title = enabled ? "Ban phim ao: DANG BAT" : "Ban phim ao: DANG TAT";
+    toggle.title = enabled ? "Bàn phím ảo: ĐANG BẬT" : "Bàn phím ảo: ĐANG TẮT";
   }
   paintToggle();
 
@@ -264,11 +264,11 @@
     if (tmuxSession && !target) {
       lbl.innerHTML = "⌨ Go thang vao <b>terminal</b>";
     } else {
-      lbl.innerHTML = "⌨ Dang go vao: <b>" +
+      lbl.innerHTML = "⌨ Đang gõ vào: <b>" +
         (target ? (target.getAttribute("name") || target.type || "o nhap lieu") : "-") + "</b>";
     }
     bar.appendChild(lbl);
-    bar.appendChild(btn("✕ Dong", "cpclose", hide));
+    bar.appendChild(btn("✕ Đóng", "cpclose", hide));
     kb.appendChild(bar);
 
     (symbols ? ROWS_SYMBOLS : ROWS_LETTERS).forEach(function (keys) {

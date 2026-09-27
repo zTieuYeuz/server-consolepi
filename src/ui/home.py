@@ -45,12 +45,12 @@ def power_msg_html(h):
     if th["now"]:
         return ('<span style="color:#ff6b6b;">⛔ ' +
                 _esc(", ".join(th["now"])) +
-                ' - DANG xay ra. Doi nguon/cap sac tot hon ngay.</span>')
+                ' - ĐANG xảy ra. Đổi nguồn/cáp sạc tốt hơn ngay.</span>')
     if th["past"]:
         return ('<span style="color:#ffb74d;">⚠️ ' +
                 _esc(", ".join(th["past"])) +
-                ' - da tung xay ra ke tu luc bat may. Nguon dang o ranh gioi.</span>')
-    return '<span style="color:#6ee7a0;">🟢 Nguon on dinh, khong sut ap</span>'
+                ' - đã từng xảy ra kể từ lúc bật máy. Nguồn đang ở ranh giới.</span>')
+    return '<span style="color:#6ee7a0;">🟢 Nguồn ổn định, không sụt áp</span>'
 
 
 def load_names():
@@ -451,13 +451,13 @@ def register_home(app):
         if not _re.fullmatch(r"tty(USB|ACM)\d+", devname or ""):
             return render_page(
                 '<div class="msg err">Tên cổng không hợp lệ.</div>'
-                '<p><a class="btn" href="/">← Ve trang chu</a></p>',
+                '<p><a class="btn" href="/">← Về trang chủ</a></p>',
                 active="/", title="Console")
 
         if not os.path.exists(f"/dev/{devname}"):
             return render_page(
                 f'<div class="msg err">Không thấy cổng <code>{devname}</code>. '
-                f'Co the cap da bi rut.</div><p><a class="btn" href="/">← Ve trang chu</a></p>',
+                f'Co the cap da bi rut.</div><p><a class="btn" href="/">← Về trang chủ</a></p>',
                 active="/", title="Console")
 
         from .soanlenh import khoi_copy_terminal
@@ -468,9 +468,9 @@ def register_home(app):
 
         body = f"""
         <div class="row" style="margin-bottom:11px;">
-          <a class="btn gray" href="/">← Ve trang chu</a>
-          <a class="btn" href="{base}/" target="_blank" rel="noopener">↗ Mo toan man hinh</a>
-          <a class="btn blue" href="/nettools/console-backup?dev={devname}">🔌 Sao luu cau hinh</a>
+          <a class="btn gray" href="/">← Về trang chủ</a>
+          <a class="btn" href="{base}/" target="_blank" rel="noopener">↗ Mở toàn màn hình</a>
+          <a class="btn blue" href="/nettools/console-backup?dev={devname}">🔌 Sao lưu cấu hình</a>
           <span style="color:#8b93a1;font-size:13px;align-self:center;">
             {devname} &middot; 9600 8N1
           </span>

@@ -67,7 +67,7 @@ PING_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Ping / Traceroute - Console Pi</title>
+    <title>Ping / Traceroute - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -85,7 +85,7 @@ PING_TEMPLATE = """
 
     <form method="POST" style="margin-top:16px;">
         <label>Host/IP:</label>
-        <input type="text" name="host" value="{{ host or '' }}" placeholder="vd 8.8.8.8 hoac google.com" required>
+        <input type="text" name="host" value="{{ host or '' }}" placeholder="ví dụ 8.8.8.8 hoặc google.com" required>
         <label style="margin-left:10px;">Interface:</label>
         <select name="iface">
             {{ o_chon_cong|safe }}

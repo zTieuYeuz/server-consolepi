@@ -116,7 +116,7 @@ IFTHEN_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>IF/THEN Automation - Console Pi</title>
+    <title>IF/THEN Automation - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -146,12 +146,12 @@ IFTHEN_TEMPLATE = """
 <body>
     <h1>🧩 IF/THEN Automation</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Rule chi TAO GOI Y sau khi quet LLDP - khong tu dong chay lenh len thiet bi.
-    Ban van phai xac nhan qua man hinh xem-truoc cua Netmiko.</p>
+    <p class="hint">Rule chỉ TẠO GỢI Ý sau khi quét LLDP - không tự động chạy lệnh lên thiết bị.
+    Bạn vẫn phải xác nhận qua màn hình xem trước của Netmiko.</p>
 
     {% if msg %}<div class="msg {{ 'ok' if ok else 'err' }}">{{ msg }}</div>{% endif %}
 
-    <h3>▶ Quet va doi chieu rule</h3>
+    <h3>▶ Quét và đối chiếu rule</h3>
     <form method="POST" action="/nettools/ifthen/evaluate">
         <button type="submit">Quét LLDP và kiểm tra rule khớp</button>
     </form>
@@ -160,7 +160,7 @@ IFTHEN_TEMPLATE = """
         {% if suggestions %}
         {% for s in suggestions %}
         <div class="suggest">
-            <p>Rule "<strong>{{ s.rule.name }}</strong>" KHOP voi thiet bi
+            <p>Rule "<strong>{{ s.rule.name }}</strong>" KHỚP với thiết bị
             <strong>{{ s.neighbor.remote_name }}</strong> ({{ s.neighbor.iface }}):</p>
             <pre>{{ s.rule.commands | join('\\n') }}</pre>
             <form method="GET" action="/nettools/netmiko" style="display:inline;">
@@ -171,7 +171,7 @@ IFTHEN_TEMPLATE = """
         {% else %}<p>Không có rule nào khớp với thiết bị đã phát hiện.</p>{% endif %}
     {% endif %}
 
-    <h3>📋 Danh sach rule da luu</h3>
+    <h3>📋 Danh sách rule đã lưu</h3>
     <table>
         <tr><th>Ten</th><th>Điều kiện</th><th>Device type</th><th></th></tr>
         {% for i, r in rules %}
@@ -181,9 +181,9 @@ IFTHEN_TEMPLATE = """
             <td>{{ r.device_type }}</td>
             <td>
                 <form method="POST" action="/nettools/ifthen/delete"
-                      onsubmit="return confirm('Xoa rule {{ r.name }}?');">
+                      onsubmit="return confirm('Xóa rule {{ r.name }}?');">
                     <input type="hidden" name="index" value="{{ i }}">
-                    <button type="submit" class="del">Xoa</button>
+                    <button type="submit" class="del">Xóa</button>
                 </form>
             </td>
         </tr>
@@ -191,10 +191,10 @@ IFTHEN_TEMPLATE = """
     </table>
     {% if not rules %}<p>Chưa có rule nào.</p>{% endif %}
 
-    <h3>➕ Them rule moi</h3>
+    <h3>➕ Thêm rule mới</h3>
     <form method="POST" action="/nettools/ifthen/add">
         <label>Tên rule:</label>
-        <input type="text" name="name" required placeholder="vd Switch tang 3">
+        <input type="text" name="name" required placeholder="ví dụ Switch tầng 3">
         <label>Trường LLDP cần khớp:</label>
         <select name="field">
             <option value="remote_name">remote_name (hostname switch)</option>
@@ -202,7 +202,7 @@ IFTHEN_TEMPLATE = """
             <option value="port_descr">port_descr</option>
         </select>
         <label>Pattern (regex):</label>
-        <input type="text" name="pattern" required placeholder="vd SW-TANG3.*">
+        <input type="text" name="pattern" required placeholder="ví dụ SW-TANG3.*">
         <label>Device type (Netmiko):</label>
         <select name="device_type">
             <option value="cisco_ios">cisco_ios</option>
@@ -214,21 +214,21 @@ IFTHEN_TEMPLATE = """
         </select>
         <label>Danh sách lệnh (mỗi dòng 1 lệnh):</label>
         <textarea name="commands" placeholder="interface GigabitEthernet0/1&#10;switchport access vlan 10"></textarea>
-        <button type="submit">Luu rule</button>
+        <button type="submit">Lưu rule</button>
     </form>
 
-    <h3>🔒 Export / Import (ma hoa)</h3>
+    <h3>🔒 Export / Import (mã hóa)</h3>
     <form method="POST" action="/nettools/ifthen/export">
-        <label>Passphrase de ma hoa:</label>
+        <label>Passphrase để mã hóa:</label>
         <input type="password" name="passphrase" required>
-        <button type="submit">Tai ve file rule da ma hoa</button>
+        <button type="submit">Tải về file rule đã mã hóa</button>
     </form>
     <form method="POST" action="/nettools/ifthen/import" enctype="multipart/form-data" style="margin-top:16px;">
-        <label>File rule da ma hoa:</label>
+        <label>File rule đã mã hóa:</label>
         <input type="file" name="file" required>
-        <label>Passphrase de giai ma:</label>
+        <label>Passphrase để giải mã:</label>
         <input type="password" name="passphrase" required>
-        <button type="submit">Nhap rule</button>
+        <button type="submit">Nhập rule</button>
     </form>
 </body>
 </html>
@@ -251,7 +251,7 @@ def ifthen_route():
 def ifthen_evaluate_route():
     result = evaluate_rules()
     if not result["ok"]:
-        return _render(msg=f"Loi LLDP: {result['error']}", ok=False, suggestions=None)
+        return _render(msg=f"Lỗi LLDP: {result['error']}", ok=False, suggestions=None)
     return _render(suggestions=result["suggestions"])
 
 
@@ -260,30 +260,30 @@ def ifthen_add_route():
     f = request.form
     commands = [c for c in (f.get("commands") or "").splitlines() if c.strip()]
     if not f.get("name") or not f.get("pattern") or not commands:
-        return _render(msg="Thieu ten/pattern/lenh.", ok=False)
+        return _render(msg="Thiếu tên/pattern/lệnh.", ok=False)
     try:
         re.compile(f.get("pattern"))
     except re.error as e:
-        return _render(msg=f"Regex khong hop le: {e}", ok=False)
+        return _render(msg=f"Regex không hợp lệ: {e}", ok=False)
 
     add_rule(f.get("name"), f.get("field", "remote_name"), f.get("pattern"),
               f.get("device_type", "cisco_ios"), commands)
-    return _render(msg=f"Da them rule '{f.get('name')}'.", ok=True)
+    return _render(msg=f"Đã thêm rule '{f.get('name')}'.", ok=True)
 
 
 @nettools_bp.route("/nettools/ifthen/delete", methods=["POST"])
 def ifthen_delete_route():
     idx = int(request.form.get("index", -1))
     if delete_rule(idx):
-        return _render(msg="Da xoa rule.", ok=True)
-    return _render(msg="Khong tim thay rule.", ok=False)
+        return _render(msg="Đã xóa rule.", ok=True)
+    return _render(msg="Không tìm thấy rule.", ok=False)
 
 
 @nettools_bp.route("/nettools/ifthen/export", methods=["POST"])
 def ifthen_export_route():
     passphrase = request.form.get("passphrase", "")
     if not passphrase:
-        return _render(msg="Can nhap passphrase.", ok=False)
+        return _render(msg="Cần nhập passphrase.", ok=False)
     from flask import Response
     blob = export_rules_encrypted(passphrase)
     return Response(
@@ -297,7 +297,7 @@ def ifthen_import_route():
     passphrase = request.form.get("passphrase", "")
     file = request.files.get("file")
     if not passphrase or not file:
-        return _render(msg="Can chon file va nhap passphrase.", ok=False)
+        return _render(msg="Cần chọn file và nhập passphrase.", ok=False)
     ok, msg = import_rules_encrypted(passphrase, file.read())
     return _render(msg=msg, ok=ok)
 

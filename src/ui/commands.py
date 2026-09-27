@@ -155,12 +155,12 @@ def send_to_tmux(session_name, text, press_enter=False):
         # Loi nhan trung tinh: ham nay duoc goi ca tu trang Thu vien lenh lan
         # tu trang SSH (khung terminal nam ngay tren cung trang), nen khong
         # noi cung "mo tab Terminal" nua.
-        return True, (f"Da dan {n} lenh vao khung terminal (CHUA chay). "
-                      f"Doc lai lan cuoi roi bam Enter trong khung terminal de chay.")
+        return True, (f"Đã dán {n} lệnh vào khung terminal (CHƯA chạy). "
+                      f"Đọc lại lần cuối rồi bấm Enter trong khung terminal để chạy.")
     except FileNotFoundError:
-        return False, "Chua cai tmux tren may."
+        return False, "Chưa cài tmux trên máy."
     except Exception as e:
-        return False, f"Loi: {e}"
+        return False, f"Lỗi: {e}"
 
 
 def _chup_man_hinh_tmux(session_name):
@@ -207,12 +207,12 @@ def dan_thong_minh(session_name, text):
     if lenh in VO_SHELL:
         ok, msg = send_to_tmux(session_name, text)
         if ok:
-            msg = f"Dang o shell '{lenh}' nen dan ca khoi - CHUA dong nao chay. " + msg
+            msg = f"Đang ở dòng lệnh '{lenh}' nên dán cả khối - CHƯA dòng nào chạy. " + msg
         return ok, msg
 
     ok, msg = dan_tung_dong_vao_tmux(session_name, text)
     if ok and lenh:
-        msg = f"Terminal dang chay '{lenh}' (thiet bi ngoai) nen gui tung dong. " + msg
+        msg = f"Terminal đang chạy '{lenh}' (thiết bị ngoài) nên gửi từng dòng. " + msg
     return ok, msg
 
 
@@ -316,10 +316,10 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.25, toi_da_dong=120):
     """
     dong = [d for d in text.rstrip("\n").split("\n")]
     if not dong or not any(d.strip() for d in dong):
-        return False, "Khong co noi dung de dan."
+        return False, "Không có nội dung để dán."
     if len(dong) > toi_da_dong:
-        return False, (f"Tap lenh co {len(dong)} dong, vuot qua {toi_da_dong} dong cho 1 lan dan. "
-                       f"Chia nho ra dan lam nhieu lan cho an toan.")
+        return False, (f"Tập lệnh có {len(dong)} dòng, vượt quá {toi_da_dong} dòng cho 1 lần dán. "
+                       f"Chia nhỏ ra dán làm nhiều lần cho an toàn.")
 
     try:
         has = subprocess.run(["tmux", "has-session", "-t", session_name],
@@ -353,21 +353,21 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.25, toi_da_dong=120):
                 # van con ban vai chuc ms truoc khi doc duoc dau vao.
                 time.sleep(tre_giay)
     except FileNotFoundError:
-        return False, "Chua cai tmux tren may."
+        return False, "Chưa cài tmux trên máy."
     except Exception as e:
-        return False, f"Loi: {e}"
+        return False, f"Lỗi: {e}"
 
     if cham_gio:
-        return False, (f"Da gui {da_gui}/{len(dong)} dong roi phai dung vi qua 3 phut - "
-                       f"thiet bi phan hoi qua cham hoac dang ket. Kiem tra khung terminal, "
-                       f"dan phan con lai sau.")
+        return False, (f"Đã gửi {da_gui}/{len(dong)} dòng rồi phải dừng vì quá 3 phút - "
+                       f"thiết bị phản hồi quá chậm hoặc đang kẹt. Kiểm tra khung terminal, "
+                       f"dán phần còn lại sau.")
 
     n = len([d for d in dong if d.strip()])
     if len(dong) == 1:
-        return True, "Da dan vao khung terminal (CHUA chay) - bam Enter trong terminal de chay."
-    return True, (f"Da dan {n} lenh: gui tung dong, moi dong deu CHO THIET BI IN XONG moi "
-                  f"gui dong tiep nen khong bi roi mat chu. Dong CUOI chua bam Enter - "
-                  f"doc lai roi tu bam de chay.")
+        return True, "Đã dán vào khung terminal (CHƯA chạy) - bấm Enter trong terminal để chạy."
+    return True, (f"Đã dán {n} lệnh: gửi từng dòng, mỗi dòng đều CHỜ THIẾT BỊ IN XONG mới "
+                  f"gửi dòng tiếp nên không bị rơi mất chữ. Dòng CUỐI chưa bấm Enter - "
+                  f"đọc lại rồi tự bấm để chạy.")
 
 
 def _esc(s):
@@ -468,25 +468,25 @@ def render_library_page(msg="", ok=True, edit_index=None):
         <div class="card" data-tim="{kho_tim}">
           <h3 class="tap-ten">{_esc(it.get('name'))}</h3>
           <div class="tap-mo-ta">{_esc(it.get('desc'))}</div>
-          <div class="tap-meta">{n_lines} lenh &middot; {_esc(it.get('tags'))}</div>
+          <div class="tap-meta">{n_lines} lệnh &middot; {_esc(it.get('tags'))}</div>
           <pre>{cmds}</pre>
           <div class="row" style="margin-top:10px;">
             <form method="POST" action="/commands/send" style="display:inline;">
               <input type="hidden" name="index" value="{i}">
-              <button type="submit" class="blue small">⌨️ Gui vao Terminal</button>
+              <button type="submit" class="blue small">⌨️ Gửi vào Terminal</button>
             </form>
-            <a class="btn small" href="/ssh?lib={i}">🔑 Dung o tab SSH</a>
-            <a class="btn gray small" href="/commands?edit={i}">✏️ Sua</a>
+            <a class="btn small" href="/ssh?lib={i}">🔑 Dùng ở tab SSH</a>
+            <a class="btn gray small" href="/commands?edit={i}">✏️ Sửa</a>
             <form method="POST" action="/commands/delete" style="display:inline;"
-                  onsubmit="return confirm('Xoa tap lenh &quot;{_esc(it.get('name'))}&quot;?');">
+                  onsubmit="return confirm('Xóa tập lệnh &quot;{_esc(it.get('name'))}&quot;?');">
               <input type="hidden" name="index" value="{i}">
-              <button type="submit" class="red small">🗑 Xoa</button>
+              <button type="submit" class="red small">🗑 Xóa</button>
             </form>
           </div>
         </div>"""
 
     if not items:
-        rows = '<div class="msg info">Thu vien dang trong. Them tap lenh dau tien ben duoi.</div>'
+        rows = '<div class="msg info">Thư viện đang trống. Thêm tập lệnh đầu tiên ở bên dưới.</div>'
 
     # Form them moi hoac sua
     editing = edit_index is not None and 0 <= edit_index < len(items)
@@ -496,27 +496,27 @@ def render_library_page(msg="", ok=True, edit_index=None):
     form_ruot = f"""
       <form method="POST" action="{action}">
         {f'<input type="hidden" name="index" value="{edit_index}">' if editing else ''}
-        <label>Ten tap lenh</label>
+        <label>Tên tập lệnh</label>
         <input type="text" name="name" required value="{_esc(cur.get('name'))}"
-               placeholder="Vi du: Gan VLAN cho 1 cong">
-        <label>Mo ta ngan</label>
+               placeholder="Ví dụ: Gán VLAN cho 1 cổng">
+        <label>Mô tả ngắn</label>
         <input type="text" name="desc" value="{_esc(cur.get('desc'))}"
-               placeholder="Nho ghi ro cho nao can sua truoc khi chay">
+               placeholder="Nhớ ghi rõ chỗ nào cần sửa trước khi chạy">
         <label>Thẻ (phân cách bằng dấu phẩy) - dùng để lọc nhanh ở trên</label>
         <input type="text" name="tags" value="{_esc(cur.get('tags'))}"
-               placeholder="cisco, vlan, cau hinh">
+               placeholder="cisco, vlan, cấu hình">
         <label>Các lệnh (mỗi dòng 1 lệnh)</label>
         <textarea name="commands" required style="max-width:100%;">{_esc(cur.get('commands'))}</textarea>
         <div class="row" style="margin-top:12px;">
-          <button type="submit">{'Luu thay doi' if editing else 'Thêm vào thư viện'}</button>
-          {'<a class="btn gray" href="/commands">Huy</a>' if editing else ''}
+          <button type="submit">{'Lưu thay đổi' if editing else 'Thêm vào thư viện'}</button>
+          {'<a class="btn gray" href="/commands">Hủy</a>' if editing else ''}
         </div>
       </form>"""
 
     if editing:
         # Dang sua thi mo san va dua len TREN CUNG - do la viec anh dang lam.
         form_html = f"""
-        <h2>✏️ Sua: {_esc(cur.get('name'))}</h2>
+        <h2>✏️ Sửa: {_esc(cur.get('name'))}</h2>
         <div class="card">{form_ruot}</div>"""
     else:
         # Khong sua thi thu gon xuong DUOI danh sach: vao trang la thay ngay
@@ -524,7 +524,7 @@ def render_library_page(msg="", ok=True, edit_index=None):
         form_html = f"""
         <details style="margin-top:18px;">
           <summary style="cursor:pointer;color:#4CAF50;font-size:16px;font-weight:600;
-                          padding:10px 0;">➕ Them tap lenh moi</summary>
+                          padding:10px 0;">➕ Thêm tập lệnh mới</summary>
           <div class="card" style="margin-top:10px;">{form_ruot}</div>
         </details>"""
 
@@ -534,9 +534,9 @@ def render_library_page(msg="", ok=True, edit_index=None):
     {LIB_CSS}
     {msg_html}
     <div class="tim-hop">
-      <input type="text" id="tim_lenh" placeholder="🔎 Go de tim: ten, mo ta, the, hoac noi dung lenh...">
-      <button type="button" class="gray small" id="xoa_tim" style="display:none;">✕ Xoa tim</button>
-      <span style="color:#8b93a1;font-size:13px;">Hien <strong id="dem_kq">0/0</strong> tap lenh</span>
+      <input type="text" id="tim_lenh" placeholder="🔎 Gõ để tìm: tên, mô tả, thẻ, hoặc nội dung lệnh...">
+      <button type="button" class="gray small" id="xoa_tim" style="display:none;">✕ Xóa tìm</button>
+      <span style="color:#8b93a1;font-size:13px;">Hiện <strong id="dem_kq">0/0</strong> tập lệnh</span>
     </div>
     {the_khoi}
     <div id="khong_thay" class="msg info" style="display:none;">
@@ -545,13 +545,13 @@ def render_library_page(msg="", ok=True, edit_index=None):
     <div class="lenh-luoi">{rows}</div>
     {form_html}
     <div class="msg info" style="margin-top:18px;">
-      <strong>Cach dung:</strong> <em>Gui vao Terminal</em> dán lệnh vào terminal đang mở nhưng
-      <strong>không tự bấm Enter</strong> - anh xem lại rồi tự chạy.
-      <em>Dung o tab SSH</em> chép tập lệnh sang ô soạn ở tab SSH để sửa IP/tên trước khi dán.
+      <strong>Cách dùng:</strong> <em>Gửi vào Terminal</em> dán lệnh vào terminal đang mở nhưng
+      <strong>không tự bấm Enter</strong> - bạn xem lại rồi tự chạy.
+      <em>Dùng ở tab SSH</em> chép tập lệnh sang ô soạn ở tab SSH để sửa IP/tên trước khi dán.
     </div>
     {LIB_JS}"""
 
-    return render_page(body, active="/commands", title="Thu vien lenh",
+    return render_page(body, active="/commands", title="Thư viện lệnh",
                        subtitle="Lưu sẵn các tập lệnh hay dùng, sửa được trước khi chạy")
 
 
@@ -566,10 +566,10 @@ def register_commands(app, tmux_session="consolepi-local"):
     def commands_add():
         f = request.form
         if not (f.get("name") or "").strip() or not (f.get("commands") or "").strip():
-            return render_library_page(msg="Thieu ten hoac noi dung lenh.", ok=False)
+            return render_library_page(msg="Thiếu tên hoặc nội dung lệnh.", ok=False)
         add_item(f.get("name").strip(), f.get("desc", "").strip(),
                  f.get("tags", "").strip(), f.get("commands"))
-        return render_library_page(msg=f"Da them '{f.get('name')}'.", ok=True)
+        return render_library_page(msg=f"Đã thêm '{f.get('name')}'.", ok=True)
 
     @app.route("/commands/update", methods=["POST"])
     def commands_update():
@@ -577,22 +577,22 @@ def register_commands(app, tmux_session="consolepi-local"):
         idx = int(f.get("index", -1) or -1)
         if update_item(idx, f.get("name", "").strip(), f.get("desc", "").strip(),
                        f.get("tags", "").strip(), f.get("commands", "")):
-            return render_library_page(msg="Da luu thay doi.", ok=True)
-        return render_library_page(msg="Khong tim thay tap lenh de sua.", ok=False)
+            return render_library_page(msg="Đã lưu thay đổi.", ok=True)
+        return render_library_page(msg="Không tìm thấy tập lệnh để sửa.", ok=False)
 
     @app.route("/commands/delete", methods=["POST"])
     def commands_delete():
         idx = int(request.form.get("index", -1) or -1)
         if delete_item(idx):
-            return render_library_page(msg="Da xoa tap lenh.", ok=True)
-        return render_library_page(msg="Khong tim thay tap lenh.", ok=False)
+            return render_library_page(msg="Đã xóa tập lệnh.", ok=True)
+        return render_library_page(msg="Không tìm thấy tập lệnh.", ok=False)
 
     @app.route("/commands/send", methods=["POST"])
     def commands_send():
         idx = int(request.form.get("index", -1) or -1)
         items = load_library()
         if not (0 <= idx < len(items)):
-            return render_library_page(msg="Khong tim thay tap lenh.", ok=False)
+            return render_library_page(msg="Không tìm thấy tập lệnh.", ok=False)
         # Dung dan_thong_minh (khong phai send_to_tmux thang) - LOI THAT SUYT
         # LAP LAI: neu nguoi dung dang mo Terminal roi tu SSH vao 1 thiet bi
         # mang tu trong do (khong qua o soan cua tab SSH), roi quay lai

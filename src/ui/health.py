@@ -92,10 +92,10 @@ def uptime_text():
     h, r = divmod(r, 3600)
     mi = r // 60
     if d:
-        return f"{d} ngay {h} gio {mi} phut"
+        return f"{d} ngày {h} giờ {mi} phút"
     if h:
-        return f"{h} gio {mi} phut"
-    return f"{mi} phut"
+        return f"{h} giờ {mi} phút"
+    return f"{mi} phút"
 
 
 def load_avg():
@@ -206,9 +206,9 @@ def power_action(what):
     va nguoi dung khong biet lenh co an khong.
     """
     if what not in ("poweroff", "reboot"):
-        return False, "Lenh khong hop le."
+        return False, "Lệnh không hợp lệ."
     subprocess.Popen(["systemctl", "--no-block", what])
     if what == "poweroff":
-        return True, ("Dang tat may. Doi den khi den xanh tren Pi ngung nhap nhay "
-                      "roi hay rut dien - rut som co the hong the nho.")
-    return True, "Dang khoi dong lai. Trang se song lai sau khoang 40-60 giay."
+        return True, ("Đang tắt máy. Đợi đến khi đèn xanh trên Pi ngừng nhấp nháy "
+                      "rồi hãy rút điện - rút sớm có thể hỏng thẻ nhớ.")
+    return True, "Đang khởi động lại. Trang sẽ sống lại sau khoảng 40-60 giây."

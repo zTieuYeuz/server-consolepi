@@ -167,7 +167,7 @@ TLS_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Kiểm tra chứng chỉ TLS - Console Pi</title>
+    <title>Kiểm tra chứng chỉ TLS - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -189,15 +189,15 @@ TLS_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🔒 Kiem tra chung chi TLS</h1>
+    <h1>🔒 Kiểm tra chứng chỉ TLS</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Xem chi tiet chung chi HTTPS cua giao dien quan tri (switch/router/iLO/iDRAC).
-    Cac thiet bi nay thuong dung chung chi TU KY - do la BINH THUONG, khong phai loi. Cong cu nay
-    giup thay ro dang tin ai va con bao nhieu ngay truoc khi het han.</p>
+    <p class="hint">Xem chi tiết chứng chỉ HTTPS của giao diện quản trị (switch/router/iLO/iDRAC).
+    Các thiết bị này thường dùng chứng chỉ TỰ KÝ - đó là BÌNH THƯỜNG, không phải lỗi. Công cụ này
+    giúp thấy rõ đang tin ai và còn bao nhiêu ngày trước khi hết hạn.</p>
 
     <form method="POST" style="margin-top:16px;">
         <label>Host/IP:</label>
-        <input type="text" name="host" value="{{ host or '' }}" placeholder="vd 192.168.1.1" required>
+        <input type="text" name="host" value="{{ host or '' }}" placeholder="ví dụ 192.168.1.1" required>
         <label style="margin-left:10px;">Port:</label>
         <input type="number" name="port" value="{{ port or 443 }}" style="width:80px;">
         <button type="submit" style="margin-left:10px;" data-busy="Đang kết nối...">Kiểm tra</button>
@@ -208,14 +208,14 @@ TLS_TEMPLATE = """
         <div class="err">{{ result.error }}</div>
         {% else %}
         {% if result.xac_thuc_duoc %}
-        <div class="banner-ok">✔ Chung chi HOP LE, duoc he thong tin cay (chuoi chung nhan hop
-            le, dung ten mien).</div>
+        <div class="banner-ok">✔ Chứng chỉ HỢP LỆ, được hệ thống tin cậy (chuỗi chứng nhận hợp
+            lệ, đúng tên miền).</div>
         {% else %}
         <div class="banner-warn">
-            ⚠️ KHONG duoc he thong tin cay tu dong.
-            {% if result.tu_ky %}Chung chi TU KY (rat pho bien voi thiet bi mang - khong nhat
-            thiet la van de, nhung trinh duyet se luon canh bao).{% endif %}
-            {% if not result.khop_ten %}Ten trong chung chi KHONG khop voi dia chi dang truy cap.{% endif %}
+            ⚠️ KHÔNG được hệ thống tin cậy tự động.
+            {% if result.tu_ky %}Chứng chỉ TỰ KÝ (rất phổ biến với thiết bị mạng - không nhất
+            thiết là vấn đề, nhưng trình duyệt sẽ luôn cảnh báo).{% endif %}
+            {% if not result.khop_ten %}Tên trong chứng chỉ KHÔNG khớp với địa chỉ đang truy cập.{% endif %}
             <br><span class="hint">Chi tiết lỗi xác thực: {{ result.loi_xac_thuc }}</span>
         </div>
         {% endif %}

@@ -366,7 +366,7 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
             _xong_buoc("loi", f"boot.wim: {ct_b} | {ten_dich}: {ct_i}")
             _dat(xong=False, loi=(
                 "File tách ra KHÔNG qua được kiểm chứng. Đã xoá 2 file hỏng "
-                "đó đi và GIỮ NGUYÊN file ISO để anh tách lại. "
+                "đó đi và GIỮ NGUYÊN file ISO để bạn tách lại. "
                 f"Lý do - boot.wim: {ct_b}; {ten_dich}: {ct_i}."))
             return
         _xong_buoc("ok", f"boot.wim: {ct_b} · {ten_dich}: {ct_i}")

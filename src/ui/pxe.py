@@ -387,8 +387,8 @@ def _ghi_dnsmasq_conf(kieu_boot):
     if kieu_boot == "mang_co_dhcp":
         mang, prefix = _mang_that(cong())
         if not mang:
-            return False, (f"Khong doc duoc dia chi IP that cua {cong()} - "
-                           f"kiem tra da cam day mang va co IP chua.")
+            return False, (f"Không đọc được địa chỉ IP thật của {cong()} - "
+                           f"kiểm tra đã cắm dây mạng và có IP chưa.")
         dhcp_range = f"dhcp-range={mang},proxy"
         dong_gateway = ""     # proxyDHCP khong cap IP nen khong can khai bao gateway
         dong_pxe_service = (

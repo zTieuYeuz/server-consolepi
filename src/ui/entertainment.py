@@ -67,7 +67,7 @@ def register_entertainment(app):
           <strong>Bàn phím ảo cũng hiện được</strong> khi chạm vào ô tìm
           kiếm/bình luận/chat của chính trang đang mở - sẽ thấy bàn phím
           quen thuộc hiện lên dưới màn hình giống các trang khác của
-          Console Pi. Chi tiet ky thuat: xem <a href="/docs#giaitri">Tài liệu</a>.
+          Console Pi. Chi tiết kỹ thuật: xem <a href="https://console-docs.home-server.id.vn/ky-thuat-man-hinh.html" target="_blank" rel="noopener">Tài liệu kỹ thuật</a>.
         </div>"""
 
         return render_page(

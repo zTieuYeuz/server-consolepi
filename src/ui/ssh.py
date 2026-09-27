@@ -132,9 +132,9 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
                       f"Nhap mat khau trong khung terminal ben duoi.")
 
     if not _cho_dau_nhac_mat_khau(SSH_SESSION, truoc, 12):
-        return True, (f"Da gui lenh ket noi toi {host} nhung sau 12 giay khong thay dau "
-                      f"nhac mat khau - co the thiet bi phan hoi cham, dang dung khoa (key), "
-                      f"hoac khong ket noi duoc. Xem khung terminal ben duoi, nhap tay neu can.")
+        return True, (f"Đã gửi lệnh kết nối tới {host} nhưng sau 12 giây không thấy dấu "
+                      f"nhắc mật khẩu - có thể thiết bị phản hồi chậm, đang dùng khóa (key), "
+                      f"hoặc không kết nối được. Xem khung terminal bên dưới, nhập tay nếu cần.")
 
     try:
         # -l = gui NGUYEN VAN. Thieu -l thi tmux dich cac chuoi trung ten phim
@@ -144,10 +144,10 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
         subprocess.run(["tmux", "send-keys", "-t", SSH_SESSION, "Enter"],
                        capture_output=True, timeout=5)
     except Exception as e:
-        return False, f"Loi khi gui mat khau: {e}"
+        return False, f"Lỗi khi gửi mật khẩu: {e}"
 
-    return True, (f"Da ket noi toi {host} va tu dien mat khau. "
-                  f"Xem ket qua trong khung terminal ben duoi.")
+    return True, (f"Đã kết nối tới {host} và tự điền mật khẩu. "
+                  f"Xem kết quả trong khung terminal bên dưới.")
 
 
 # ---------------------------------------------------------------------------
@@ -218,16 +218,16 @@ def _render(msg="", ok=True, prefill=""):
 
     <form method="POST" action="/ssh/connect" id="form_ket_noi" class="row"
           style="align-items:flex-end;margin-bottom:10px;">
-      <div><label style="margin-top:0;">Dia chi</label>
+      <div><label style="margin-top:0;">Địa chỉ</label>
         <input type="text" name="host" placeholder="192.168.1.1" style="max-width:180px;" required></div>
-      <div><label style="margin-top:0;">Tai khoan</label>
+      <div><label style="margin-top:0;">Tài khoản</label>
         <input type="text" name="user" placeholder="admin" style="max-width:140px;" required></div>
-      <div><label style="margin-top:0;">Mat khau</label>
+      <div><label style="margin-top:0;">Mật khẩu</label>
         <input type="password" name="password" autocomplete="new-password"
-               placeholder="de trong = tu nhap" style="max-width:175px;"></div>
-      <div><label style="margin-top:0;">Cong</label>
+               placeholder="để trống = tự nhập" style="max-width:175px;"></div>
+      <div><label style="margin-top:0;">Cổng</label>
         <input type="number" name="port" value="22" style="max-width:85px;"></div>
-      <div><button type="submit" id="nut_ket_noi">🔑 Ket noi</button></div>
+      <div><button type="submit" id="nut_ket_noi">🔑 Kết nối</button></div>
     </form>
 
     <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px;">

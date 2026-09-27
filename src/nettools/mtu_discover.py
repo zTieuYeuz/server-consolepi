@@ -200,7 +200,7 @@ MTU_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>MTU Discovery - Console Pi</title>
+    <title>MTU Discovery - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -223,14 +223,14 @@ MTU_TEMPLATE = """
 <body>
     <h1>📏 MTU / Path MTU Discovery</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Tim MTU that cua duong truyen bang ping co co "khong phan manh" (DF), kich
-    thuoc tang/giam dan. Huu ich khi mang co trieu chung la: duyet web/ping binh thuong nhung
-    tai file lon hoac video hay bi treo/cham - dau hieu kinh dien cua MTU bi giam giua duong
+    <p class="hint">Tìm MTU thật của đường truyền bằng ping có cờ "không phân mảnh" (DF), kích
+    thước tăng/giảm dần. Hữu ích khi mạng có triệu chứng: duyệt web/ping bình thường nhưng
+    tải file lớn hoặc video hay bị treo/chậm - dấu hiệu kinh điển của MTU bị giảm giữa đường
     (VPN, PPPoE...).</p>
 
     <form method="POST" style="margin-top:16px;">
         <label>Địa chỉ/hostname cần đo:</label>
-        <input type="text" name="host" value="{{ host or '' }}" placeholder="vd 8.8.8.8 hoac google.com" required>
+        <input type="text" name="host" value="{{ host or '' }}" placeholder="ví dụ 8.8.8.8 hoặc google.com" required>
         <label style="margin-left:10px;">Interface:</label>
         <select name="iface">
             {{ o_chon_cong|safe }}
@@ -246,10 +246,10 @@ MTU_TEMPLATE = """
             <p style="margin:0;color:#8b93a1;">MTU thực tế tới <strong>{{ host }}</strong> qua {{ iface }}:</p>
             <p class="big" style="margin:6px 0;">{{ result.mtu }} bytes</p>
             {% if result.tu_router %}
-            <p class="hint">Gia tri nay do mot router giua duong bao thang qua ICMP
-            (Frag needed) - dang tin cay nhat, khong phai uoc luong.</p>
+            <p class="hint">Giá trị này do một router giữa đường báo thẳng qua ICMP
+            (Frag needed) - đáng tin cậy nhất, không phải ước lượng.</p>
             {% endif %}
-            <p class="hint">MTU cau hinh cua chinh cong {{ iface }}: {{ result.mtu_interface }} bytes.</p>
+            <p class="hint">MTU cấu hình của chính cổng {{ iface }}: {{ result.mtu_interface }} bytes.</p>
         </div>
         {% if result.canh_bao %}<div class="warn">⚠️ {{ result.canh_bao }}</div>{% endif %}
 
@@ -261,9 +261,9 @@ MTU_TEMPLATE = """
                 <tr>
                     <td>{{ b.payload }}</td>
                     <td>{{ b.mtu_tuong_ung }}</td>
-                    <td>{% if b.ket_qua == 'ok' %}<span style="color:#8fd99a;">✔ Qua duoc</span>
-                        {% elif b.ket_qua == 'qua_lon' %}<span style="color:#ff8a8a;">✘ Qua lon</span>
-                        {% else %}<span style="color:#999;">? Khong ro (mat goi)</span>{% endif %}</td>
+                    <td>{% if b.ket_qua == 'ok' %}<span style="color:#8fd99a;">✔ Qua được</span>
+                        {% elif b.ket_qua == 'qua_lon' %}<span style="color:#ff8a8a;">✘ Quá lớn</span>
+                        {% else %}<span style="color:#999;">? Không rõ (mất gói)</span>{% endif %}</td>
                 </tr>
                 {% endfor %}
             </table>

@@ -74,7 +74,7 @@ ARP_SCAN_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>ARP Scan - Console Pi</title>
+    <title>ARP Scan - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -99,9 +99,9 @@ ARP_SCAN_TEMPLATE = """
             {{ o_chon_cong|safe }}
         </select>
         <label style="margin-left:12px;">Dải IP (tùy chọn):</label>
-        <input type="text" name="target" value="{{ target or '' }}" placeholder="vd 192.168.1.0/24 - de trong = tu localnet">
-        <button type="submit" style="margin-left:12px;">Quet</button>
-        <div class="hint">Neu interface chua co dia chi IP (cam vao trunk port khong DHCP), phai nhap tay dai CIDR.</div>
+        <input type="text" name="target" value="{{ target or '' }}" placeholder="ví dụ 192.168.1.0/24 - để trống = tự dò mạng hiện tại">
+        <button type="submit" style="margin-left:12px;">Quét</button>
+        <div class="hint">Nếu cổng chưa có địa chỉ IP (cắm vào trunk port không DHCP), phải nhập tay dải CIDR.</div>
     </form>
 
     {% if ran %}

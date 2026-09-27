@@ -43,12 +43,12 @@ def register_power(app):
         <h2>Tắt máy / Khởi động lại (module Raspberry Pi)</h2>
         <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
           <form method="POST" action="/power/reboot"
-                onsubmit="return confirm('Khoi dong lai Console Pi ngay bay gio?\\n\\nMoi phien console dang mo se bi dong.');">
-            <button type="submit" class="gray" data-busy="Đang khởi động lại...">🔄 Khoi dong lai</button>
+                onsubmit="return confirm('Khởi động lại Console Pi ngay bây giờ?\\n\\nMọi phiên console đang mở sẽ bị đóng.');">
+            <button type="submit" class="gray" data-busy="Đang khởi động lại...">🔄 Khởi động lại</button>
           </form>
           <form method="POST" action="/power/poweroff"
-                onsubmit="return confirm('TAT HAN Console Pi?\\n\\nBat lai phai cam dien truc tiep - khong bat tu xa duoc.');">
-            <button type="submit" class="red" data-busy="Đang tắt máy...">🛑 Tat may</button>
+                onsubmit="return confirm('TẮT HẲN Console Pi?\\n\\nBật lại phải cắm điện trực tiếp - không bật từ xa được.');">
+            <button type="submit" class="red" data-busy="Đang tắt máy...">🛑 Tắt máy</button>
           </form>
         </div>
         <p style="color:#8b93a1;font-size:13px;margin-top:10px;">
@@ -68,8 +68,8 @@ def register_power(app):
           (thường ở cạnh vỏ) để cấp/ngắt điện cho toàn bộ cụm màn hình + Pi -
           đây là cách DUY NHẤT để tắt hoàn toàn hiện tại. Quy trình đúng:
           <ol style="margin:8px 0 0 18px;">
-            <li>Bam "🛑 Tat may" ở trên, đợi đèn ACT trên Pi ngừng nhấp nháy (Pi đã tắt hẳn).</li>
-            <li>Sau do gat công tắc nguồn vật lý cua vo RasPad de cat dien man hinh.</li>
+            <li>Bấm "🛑 Tắt máy" ở trên, đợi đèn ACT trên Pi ngừng nhấp nháy (Pi đã tắt hẳn).</li>
+            <li>Sau đó gạt công tắc nguồn vật lý của vỏ RasPad để cắt điện màn hình.</li>
           </ol>
         </div>"""
         return render_page(body, active="/power", title="Nguồn điện",
@@ -84,5 +84,5 @@ def register_power(app):
         body = f"""
         <div class="msg {color}" style="font-size:15px;">{_esc(msg)}</div>
         <p style="margin-top:15px;"><a class="btn" href="/power">Về trang Nguồn điện</a></p>"""
-        return render_page(body, active="/power", title="Nguon",
+        return render_page(body, active="/power", title="Nguồn điện",
                            subtitle="Lệnh đã được gửi tới hệ thống"), (200 if ok else 400)

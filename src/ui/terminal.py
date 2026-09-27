@@ -146,7 +146,7 @@ def _terminal_body(kind, base_path, session_name, service_name, warn_html):
     # nhieu khong gian de nhin, khong bi choan het boi phan chu thich.
     if running:
         status = (f'{warn_html} &middot; tmux <code>{session_name}</code> '
-                  f'{"dang mo" if has_session else "se tu tao khi mo"}')
+                  f'{"đang mở" if has_session else "sẽ tự tạo khi mở"}')
         banner = f'<div class="msg warn">{status}</div>'
     else:
         banner = (f'<div class="msg err">{warn_html} &middot; Dich vu '
@@ -163,7 +163,7 @@ def _terminal_body(kind, base_path, session_name, service_name, warn_html):
               style="width:100%;height:calc(100vh - 330px);min-height:360px;border:0;display:block;background:#000;"></iframe>
     </div>
     <div class="row" style="margin-bottom:12px;">
-      <a class="btn gray" href="{base_path}/">↗ Mo terminal toan man hinh</a>
+      <a class="btn gray" href="{base_path}/">↗ Mở terminal toàn màn hình</a>
     </div>
     {khoi_copy_terminal()}
     {khoi_soan_lenh("/terminal/paste", "consolepi-local-o-lenh")}"""
@@ -172,8 +172,8 @@ def _terminal_body(kind, base_path, session_name, service_name, warn_html):
 def register_terminal(app):
     @app.route("/terminal")
     def terminal_page():
-        warn = ('<strong>Lưu ý:</strong> Terminal của chính Pi với <strong>quyen root</strong> '
-               '- go lenh can than')
+        warn = ('<strong>Lưu ý:</strong> Terminal của chính Pi với <strong>quyền root</strong> '
+               '- gõ lệnh cẩn thận')
         body = _terminal_body("Terminal tại chỗ", "/term-local", LOCAL_SESSION,
                               "console-pi-term-local.service", warn)
         html = render_page(body, active="/terminal", title="Terminal",
@@ -201,8 +201,8 @@ def register_terminal(app):
             from flask import jsonify
             return jsonify({"ok": ok, "msg": msg})
 
-        warn = ('<strong>Lưu ý:</strong> Terminal của chính Pi với <strong>quyen root</strong> '
-                '- go lenh can than')
+        warn = ('<strong>Lưu ý:</strong> Terminal của chính Pi với <strong>quyền root</strong> '
+                '- gõ lệnh cẩn thận')
         body = _terminal_body("Terminal tại chỗ", "/term-local", LOCAL_SESSION,
                               "console-pi-term-local.service", warn)
         html = render_page(f'<div class="msg {"ok" if ok else "err"}">{msg}</div>' + body,

@@ -102,7 +102,7 @@ DOT1X_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>802.1X Testing - Console Pi</title>
+    <title>802.1X Testing - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -125,14 +125,14 @@ DOT1X_TEMPLATE = """
 <body>
     <h1>🔐 802.1X Testing</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Dùng <code>eapol_test</code> - chi noi UDP truc tiep toi RADIUS server,
-    <strong>KHÔNG đụng đến eth0/wlan0</strong>, nen an toan khong lam gian doan ket noi hien tai.
-    Neu khong co RADIUS server that, cong cu van chay duoc nhung se bao "khong ket luan duoc"
-    thay vi thanh cong/that bai ro rang.</p>
+    <p class="hint">Dùng <code>eapol_test</code> - chỉ nói chuyện UDP trực tiếp tới RADIUS server,
+    <strong>KHÔNG đụng đến cổng mạng đang dùng</strong>, nên an toàn, không làm gián đoạn kết nối hiện tại.
+    Nếu không có RADIUS server thật, công cụ vẫn chạy được nhưng sẽ báo "không kết luận được"
+    thay vì thành công/thất bại rõ ràng.</p>
 
     <form method="POST">
         <label>RADIUS Server IP:</label>
-        <input type="text" name="radius_ip" value="{{ radius_ip or '' }}" required placeholder="vd 192.168.1.10">
+        <input type="text" name="radius_ip" value="{{ radius_ip or '' }}" required placeholder="ví dụ 192.168.1.10">
         <label>RADIUS Port:</label>
         <input type="number" name="radius_port" value="{{ radius_port or 1812 }}" style="max-width:100px;">
         <label>Shared Secret:</label>
@@ -159,7 +159,7 @@ DOT1X_TEMPLATE = """
         <label>Password:</label>
         <input type="password" name="password" value="{{ password or '' }}" required>
 
-        <button type="submit">Chay Test</button>
+        <button type="submit">Chạy test</button>
     </form>
     <script>
       function togglePhase2(){
@@ -172,16 +172,16 @@ DOT1X_TEMPLATE = """
 
     {% if ran %}
         {% if result.error %}
-        <div class="err">Loi: {{ result.error }}</div>
+        <div class="err">Lỗi: {{ result.error }}</div>
         {% elif result.success is sameas true %}
-        <div class="ok">✅ EAP-SUCCESS - Xac thuc thanh cong.</div>
+        <div class="ok">✅ EAP-SUCCESS - Xác thực thành công.</div>
         {% elif result.success is sameas false %}
-        <div class="err">❌ EAP-FAILURE - Xac thuc that bai (kiem tra lai username/password/cau hinh RADIUS).</div>
+        <div class="err">❌ EAP-FAILURE - Xác thực thất bại (kiểm tra lại username/password/cấu hình RADIUS).</div>
         {% else %}
-        <div class="unknown">⚠️ Khong ket luan duoc (co the RADIUS server khong phan hoi, sai IP/secret,
-        hoac khong co RADIUS that trong moi truong nay).</div>
+        <div class="unknown">⚠️ Không kết luận được (có thể RADIUS server không phản hồi, sai IP/secret,
+        hoặc không có RADIUS thật trong môi trường này).</div>
         {% endif %}
-        <h3 style="color:#4CAF50;">Output day du</h3>
+        <h3 style="color:#22D3EE;">Output đầy đủ</h3>
         <pre>{{ result.output }}</pre>
     {% endif %}
 </body>

@@ -169,7 +169,7 @@ TFTP_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Máy chủ TFTP - Console Pi</title>
+    <title>Máy chủ TFTP - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -198,59 +198,59 @@ TFTP_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>📤 May chu TFTP</h1>
+    <h1>📤 Máy chủ TFTP</h1>
     <p><a href="/nettools">← Network Tools</a></p>
 
     {% if msg %}<div class="{{ 'warn' if not ok else 'card' }}">{{ msg }}</div>{% endif %}
 
     <div class="warn">
-        ⚠️ TFTP KHONG co xac thuc - bat ky thiet bi nao cam vao cong <strong>eth0</strong> deu
-        doc/ghi duoc file. Chi bat khi dang thuc su lam viec, tat ngay sau khi xong.
+        ⚠️ TFTP KHÔNG có xác thực - bất kỳ thiết bị nào cắm vào cổng <strong>{{ iface }}</strong> đều
+        đọc/ghi được file. Chỉ bật khi đang thực sự làm việc, tắt ngay sau khi xong.
     </div>
 
     {% if not da_cai %}
-    <div class="err">Chưa cài <code>tftpd-hpa</code> tren Console Pi. Chay lenh sau roi tai lai trang:
+    <div class="err">Chưa cài <code>tftpd-hpa</code> trên máy. Chạy lệnh sau rồi tải lại trang:
         <pre>sudo apt install -y tftpd-hpa
-sudo systemctl disable --now tftpd-hpa   # tat dich vu mac dinh cua goi, Console Pi tu quan ly rieng</pre>
+sudo systemctl disable --now tftpd-hpa   # tắt dịch vụ mặc định của gói, Console System tự quản lý riêng</pre>
     </div>
     {% else %}
     <div class="card">
         {% if dang_bat %}
-        <p>🟢 Dang bat tren <strong>{{ iface }}</strong>. Thu muc nhan file: <code>{{ tftp_root }}</code></p>
+        <p>🟢 Đang bật trên <strong>{{ iface }}</strong>. File nhận được hiện ở bảng bên dưới.</p>
         <form method="POST" action="/nettools/tftp/tat">
-            <button type="submit" class="red" data-busy="Đang tắt...">⏏ Tat TFTP</button>
+            <button type="submit" class="red" data-busy="Đang tắt...">⏏ Tắt TFTP</button>
         </form>
         {% else %}
-        <p>⚪ Dang tat.</p>
+        <p>⚪ Đang tắt.</p>
         <form method="POST" action="/nettools/tftp/bat">
-            <button type="submit" data-busy="Đang bật...">▶ Bat TFTP tren {{ iface }}</button>
+            <button type="submit" data-busy="Đang bật...">▶ Bật TFTP trên {{ iface }}</button>
         </form>
         {% endif %}
     </div>
 
     <h3>Cách dùng trên switch Cisco</h3>
     <div class="card">
-        <p class="hint">IP cua Pi de dien vao lenh:</p>
+        <p class="hint">IP của máy để điền vào lệnh:</p>
         {% for ip in danh_sach_ip %}<code>{{ ip.iface }}: {{ ip.ip }}</code><br>{% endfor %}
-        {% if not danh_sach_ip %}<p class="hint">Chua co IP tren interface nao.</p>{% endif %}
-        <p style="margin-top:11px;">Sao luu cau hinh len Pi:</p>
+        {% if not danh_sach_ip %}<p class="hint">Chưa có IP trên cổng mạng nào.</p>{% endif %}
+        <p style="margin-top:11px;">Sao lưu cấu hình lên máy:</p>
         <div class="lenh">
-            <pre id="lenh_backup">copy running-config tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-cua-Pi>' }}/backup.cfg</pre>
+            <pre id="lenh_backup">copy running-config tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-của-máy>' }}/backup.cfg</pre>
             <button type="button" class="nut-copy" data-dich="lenh_backup">📋 Copy</button>
         </div>
-        <p>Nap firmware/cau hinh tu Pi xuong switch (dat file vao thu muc <code>{{ tftp_root }}</code> truoc):</p>
+        <p>Nạp firmware/cấu hình từ máy xuống switch (đặt file vào thư mục <code>{{ tftp_root }}</code> của máy trước):</p>
         <div class="lenh">
-            <pre id="lenh_firmware">copy tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-cua-Pi>' }}/firmware.bin flash:</pre>
+            <pre id="lenh_firmware">copy tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-của-máy>' }}/firmware.bin flash:</pre>
             <button type="button" class="nut-copy" data-dich="lenh_firmware">📋 Copy</button>
         </div>
         <div id="bao_copy" class="hint" style="margin-top:8px;"></div>
     </div>
 
-    <h3>File da nhan ({{ files|length }})</h3>
-    <p class="hint">File switch day len nam trong <code>{{ tftp_root }}</code> - bam
-       <strong>Tai ve</strong> de lay ve may dang xem trang nay.</p>
+    <h3>File đã nhận ({{ files|length }})</h3>
+    <p class="hint">File switch đẩy lên hiện ở đây - bấm
+       <strong>Tải về</strong> để lấy về máy đang xem trang này.</p>
     <table>
-        <tr><th>Ten file</th><th style="width:120px;">Kich thuoc</th><th style="width:150px;">Thoi gian</th><th style="width:210px;">Thao tac</th></tr>
+        <tr><th>Tên file</th><th style="width:120px;">Kích thước</th><th style="width:150px;">Thời gian</th><th style="width:210px;">Thao tác</th></tr>
         {% for f in files %}
         <tr>
             <td>{{ f.ten }}</td>
@@ -258,17 +258,17 @@ sudo systemctl disable --now tftpd-hpa   # tat dich vu mac dinh cua goi, Console
             <td class="hint">{{ f.thoi_gian }}</td>
             <td style="white-space:nowrap;">
                 <a class="nut-tai" href="/nettools/tftp/tai/{{ f.ten | urlencode }}"
-                   download>⬇ Tai ve</a>
+                   download>⬇ Tải về</a>
                 <form method="POST" action="/nettools/tftp/xoa" style="display:inline;"
-                      onsubmit="return confirm('Xoa {{ f.ten }}?');">
+                      onsubmit="return confirm('Xóa {{ f.ten }}?');">
                     <input type="hidden" name="ten" value="{{ f.ten }}">
-                    <button type="submit" class="red">Xoa</button>
+                    <button type="submit" class="red">Xóa</button>
                 </form>
             </td>
         </tr>
         {% endfor %}
     </table>
-    {% if not files %}<p class="hint">Chua co file nao.</p>{% endif %}
+    {% if not files %}<p class="hint">Chưa có file nào.</p>{% endif %}
     {% endif %}
 
 <script>
@@ -295,7 +295,7 @@ sudo systemctl disable --now tftpd-hpa   # tat dich vu mac dinh cua goi, Console
     var ok = false;
     try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
     document.body.removeChild(o);
-    noi(ok ? "✅ Da copy dong lenh." : "⚠️ Trinh duyet khong cho copy tu dong - boi den dong lenh roi copy tay giup em.",
+    noi(ok ? "✅ Đã copy dòng lệnh." : "⚠️ Trình duyệt không cho copy tự động - bôi đen dòng lệnh rồi copy tay.",
         ok ? "#7ddc7d" : "#ffb74d");
   }
 
@@ -307,7 +307,7 @@ sudo systemctl disable --now tftpd-hpa   # tat dich vu mac dinh cua goi, Console
       var chu = dich.textContent.trim();
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(chu).then(
-          function () { noi("✅ Da copy dong lenh.", "#7ddc7d"); },
+          function () { noi("✅ Đã copy dòng lệnh.", "#7ddc7d"); },
           function () { copyCachCu(chu); });
       } else {
         copyCachCu(chu);

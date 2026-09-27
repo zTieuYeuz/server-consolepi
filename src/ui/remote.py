@@ -56,7 +56,7 @@ def kien_truc():
 def cai_cloudflared():
     """Tai goi .deb chinh chu tu Cloudflare va cai. Can internet."""
     if da_cai():
-        return True, "cloudflared da co san."
+        return True, "cloudflared đã có sẵn."
     url = DEB_URL.format(arch=kien_truc())
     deb = "/tmp/cloudflared.deb"
     try:
@@ -85,7 +85,7 @@ def luu_token(token):
     """
     token = (token or "").strip()
     if len(token) < 40 or not re.fullmatch(r"[A-Za-z0-9+/=_.\-]+", token):
-        return False, "Token khong dung dinh dang. Sao chep lai tu trang Cloudflare Zero Trust."
+        return False, "Token không đúng định dạng. Sao chép lại từ trang Cloudflare Zero Trust."
     try:
         os.makedirs(CONF_DIR, exist_ok=True)
         # Ghi voi quyen 600 NGAY TU DAU, khong ghi roi moi chmod - giua hai
@@ -166,32 +166,32 @@ def ts_cai_dat():
     tac (headless), khong phai chon curl|sh cho tien.
     """
     if ts_da_cai():
-        return True, "tailscale da co san."
+        return True, "Tailscale đã có sẵn."
     try:
         r = subprocess.run(
             "curl -fsSL https://tailscale.com/install.sh | sh",
             shell=True, capture_output=True, text=True, timeout=180)
         if r.returncode != 0:
-            return False, ("Cai that bai. Kiem tra Pi co vao duoc internet khong. "
+            return False, ("Cài thất bại. Kiểm tra máy có vào được Internet không. "
                            f"Chi tiet: {(r.stderr or r.stdout).strip()[-300:]}")
     except Exception as e:
         return False, f"Lỗi khi cài: {e}"
     if not ts_da_cai():
-        return False, "Script chay xong nhung khong thay lenh tailscale - cai that bai."
-    return True, "Da cai Tailscale."
+        return False, "Script chạy xong nhưng không thấy lệnh tailscale - cài thất bại."
+    return True, "Đã cài Tailscale."
 
 
 def ts_luu_authkey(authkey):
     authkey = (authkey or "").strip()
     if len(authkey) < 20:
-        return False, "Authkey khong dung dinh dang. Sao chep lai tu trang Tailscale admin."
+        return False, "Authkey không đúng định dạng. Sao chép lại từ trang Tailscale admin."
     try:
         fd = os.open(TS_AUTHKEY_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, "w") as f:
             f.write(authkey + "\n")
     except OSError as e:
-        return False, f"Khong luu duoc authkey: {e}"
-    return True, "Da luu authkey."
+        return False, f"Không lưu được authkey: {e}"
+    return True, "Đã lưu authkey."
 
 
 def ts_co_authkey():
@@ -240,14 +240,14 @@ def ts_trang_thai():
 def ts_bat():
     """Dang nhap + bat ket noi bang authkey da luu."""
     if not ts_da_cai():
-        return False, "Chua cai Tailscale."
+        return False, "Chưa cài Tailscale."
     if not ts_co_authkey():
-        return False, "Chua co authkey."
+        return False, "Chưa có authkey."
     try:
         with open(TS_AUTHKEY_FILE) as f:
             authkey = f.read().strip()
     except OSError as e:
-        return False, f"Khong doc duoc authkey da luu: {e}"
+        return False, f"Không đọc được authkey đã lưu: {e}"
 
     subprocess.run(["systemctl", "enable", "--now", "tailscaled"],
                    capture_output=True, timeout=20)
@@ -255,8 +255,8 @@ def ts_bat():
                         f"--hostname={TS_HOSTNAME}", "--accept-dns=false"],
                        capture_output=True, text=True, timeout=40)
     if r.returncode != 0:
-        return False, f"Khong ket noi duoc: {(r.stderr or r.stdout).strip()[:250]}"
-    return True, "Da ket noi Tailscale."
+        return False, f"Không kết nối được: {(r.stderr or r.stdout).strip()[:250]}"
+    return True, "Đã kết nối Tailscale."
 
 
 def ts_tat():
@@ -264,8 +264,8 @@ def ts_tat():
     nhanh, khong can authkey moi (khac voi 'quen thiet bi' o duoi)."""
     r = subprocess.run(["tailscale", "down"], capture_output=True, text=True, timeout=20)
     if r.returncode != 0:
-        return False, f"Khong tat duoc: {(r.stderr or r.stdout).strip()[:200]}"
-    return True, "Da ngat ket noi Tailscale."
+        return False, f"Không tắt được: {(r.stderr or r.stdout).strip()[:200]}"
+    return True, "Đã ngắt kết nối Tailscale."
 
 
 def ts_quen_thiet_bi():
@@ -276,7 +276,7 @@ def ts_quen_thiet_bi():
         os.remove(TS_AUTHKEY_FILE)
     except OSError:
         pass
-    return True, "Da dang xuat va xoa authkey khoi Pi."
+    return True, "Đã đăng xuất và xóa authkey khỏi máy."
 
 
 # =============================================================== giao dien web
@@ -306,40 +306,40 @@ def register_remote(app):
 
         if not cai:
             khoi = """
-            <div class="msg warn">Chua cai <code>cloudflared</code>. Pi phai vao duoc
-            internet de tai goi cai chinh chu tu Cloudflare.</div>
+            <div class="msg warn">Chưa cài <code>cloudflared</code>. Máy phải vào được
+            Internet để tải gói cài chính chủ từ Cloudflare.</div>
             <form method="POST" action="/remote/cai" style="margin-top:12px;">
-              <button type="submit" data-busy="Dang tai va cai, toi 2 phut...">
-                ⬇ Cai cloudflared</button>
+              <button type="submit" data-busy="Đang tải và cài, tới 2 phút...">
+                ⬇ Cài cloudflared</button>
             </form>"""
         elif not tok:
             khoi = """
             <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-              Vao <strong>Cloudflare Zero Trust &rarr; Networks &rarr; Tunnels</strong>,
-              tao mot tunnel moi, chon <em>Debian / arm64</em>, roi sao chep phan token
-              trong dong lenh cai dat (chuoi dai sau <code>--token</code>).
-              Tro tunnel do vao <code>http://127.0.0.1:80</code>.</p>
+              Vào <strong>Cloudflare Zero Trust &rarr; Networks &rarr; Tunnels</strong>,
+              tạo một tunnel mới, chọn <em>Debian / arm64</em> (máy tính: amd64), rồi sao chép phần token
+              trong dòng lệnh cài đặt (chuỗi dài sau <code>--token</code>).
+              Trỏ tunnel đó vào <code>http://127.0.0.1:80</code>.</p>
             <form method="POST" action="/remote/token">
               <label>Tunnel token</label>
               <input type="password" name="token" required autocomplete="off"
                      placeholder="eyJhIjoiN...">
               <div class="row" style="margin-top:13px;">
-                <button type="submit" data-busy="Dang luu...">Luu va bat duong ham</button>
+                <button type="submit" data-busy="Đang lưu...">Lưu và bật đường hầm</button>
               </div>
             </form>"""
         else:
             trang_thai = ('<span style="color:#6ee7a0;">🟢 Đường hầm đang chạy</span>'
-                          if chay else '<span style="color:#8b93a1;">⚪ Duong ham dang tat</span>')
-            mien_html = (f'<p style="margin:9px 0 0;">Truy cap tai: '
+                          if chay else '<span style="color:#8b93a1;">⚪ Đường hầm đang tắt</span>')
+            mien_html = (f'<p style="margin:9px 0 0;">Truy cập tại: '
                          f'<a href="https://{_esc(mien)}" target="_blank" rel="noopener">'
                          f'<code>https://{_esc(mien)}</code></a></p>' if mien else
                          '<p style="color:#8b93a1;font-size:13px;margin:9px 0 0;">'
-                         'Tên miền do anh đặt trong Cloudflare - xem trong trang Tunnels.</p>')
+                         'Tên miền do bạn đặt trong Cloudflare - xem trong trang Tunnels.</p>')
             nut = ('<form method="POST" action="/remote/tat" style="display:inline;">'
-                   '<button type="submit" class="red" data-busy="Dang tat...">⏹ Tat duong ham</button></form>'
+                   '<button type="submit" class="red" data-busy="Đang tắt...">⏹ Tắt đường hầm</button></form>'
                    if chay else
                    '<form method="POST" action="/remote/bat" style="display:inline;">'
-                   '<button type="submit" data-busy="Dang bat...">▶ Bat duong ham</button></form>')
+                   '<button type="submit" data-busy="Đang bật...">▶ Bật đường hầm</button></form>')
             khoi = f"""
             <p style="margin:0;">{trang_thai}</p>
             {mien_html}
@@ -373,7 +373,7 @@ def register_remote(app):
                       Zero Trust rồi dán vào đây.</li>
                 </ul>
                 <div class="msg err" style="margin:0 0 14px;">
-                  <strong>Cẩn thận:</strong> nếu anh đang mở trang này
+                  <strong>Cẩn thận:</strong> nếu bạn đang mở trang này
                   <em>qua chính đường hầm Cloudflare</em> thì xoá xong là
                   <strong>mất kết nối ngay lập tức</strong> — phải có mặt tại chỗ
                   (hoặc vào bằng WiFi/LAN nội bộ) mới làm tiếp được.
@@ -409,54 +409,54 @@ def register_remote(app):
 
         if not ts_cai:
             ts_khoi = """
-            <div class="msg warn">Chua cai <code>tailscale</code>. Pi phai vao duoc
-            internet de tai goi cai chinh chu tu Tailscale.</div>
+            <div class="msg warn">Chưa cài <code>tailscale</code>. Máy phải vào được
+            Internet để tải gói cài chính chủ từ Tailscale.</div>
             <form method="POST" action="/remote/ts/cai" style="margin-top:12px;">
-              <button type="submit" class="gray" data-busy="Dang tai va cai, toi 2 phut...">
-                ⬇ Cai Tailscale</button>
+              <button type="submit" class="gray" data-busy="Đang tải và cài, tới 2 phút...">
+                ⬇ Cài Tailscale</button>
             </form>"""
         elif not ts_key:
             ts_khoi = """
             <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-              Vao <strong>Tailscale admin console &rarr; Settings &rarr; Keys</strong>,
-              tao mot <em>Auth key</em> (nen chon <em>Reusable</em> neu muon dung lai
-              nhieu lan, hoac dat han su dung phu hop).</p>
+              Vào <strong>Tailscale admin console &rarr; Settings &rarr; Keys</strong>,
+              tạo một <em>Auth key</em> (nên chọn <em>Reusable</em> nếu muốn dùng lại
+              nhiều lần, hoặc đặt hạn sử dụng phù hợp).</p>
             <form method="POST" action="/remote/ts/authkey">
               <label>Auth key</label>
               <input type="password" name="authkey" required autocomplete="off"
                      placeholder="tskey-auth-...">
               <div class="row" style="margin-top:13px;">
-                <button type="submit" class="gray" data-busy="Dang luu va ket noi...">
-                  Luu va ket noi</button>
+                <button type="submit" class="gray" data-busy="Đang lưu và kết nối...">
+                  Lưu và kết nối</button>
               </div>
             </form>"""
         else:
             if not ts_tt["ro"]:
-                ts_trang = ('<span style="color:#8b93a1;">⚪ Khong doc duoc trang thai '
-                           '(chay <code>tailscale status</code> tren Terminal de xem chi tiet)</span>')
+                ts_trang = ('<span style="color:#8b93a1;">⚪ Không đọc được trạng thái '
+                           '(chạy <code>tailscale status</code> trên Terminal để xem chi tiết)</span>')
             elif ts_tt["dang_ket_noi"]:
-                mien_html = (f'<p style="margin:9px 0 0;">Truy cap tai: '
+                mien_html = (f'<p style="margin:9px 0 0;">Truy cập tại: '
                             f'<a href="http://{_esc(ts_tt["ten_mien"])}" target="_blank" rel="noopener">'
                             f'<code>http://{_esc(ts_tt["ten_mien"])}</code></a> '
-                            f'<span style="color:#8b93a1;">(hoac IP '
+                            f'<span style="color:#8b93a1;">(hoặc IP '
                             f'<code>{_esc(ts_tt["ip"])}</code>)</span></p>'
                             if ts_tt["ten_mien"] else
-                            f'<p style="margin:9px 0 0;">Dia chi trong tailnet: '
+                            f'<p style="margin:9px 0 0;">Địa chỉ trong tailnet: '
                             f'<code>{_esc(ts_tt["ip"])}</code></p>')
-                ts_trang = (f'<span style="color:#6ee7a0;">🟢 Dang ket noi</span>'
+                ts_trang = (f'<span style="color:#6ee7a0;">🟢 Đang kết nối</span>'
                            f'{mien_html}')
             elif ts_tt["can_dang_nhap"]:
-                ts_trang = ('<span style="color:#ffb74d;">⚠️ Authkey da luu nhung chua '
-                           'dang nhap duoc - co the authkey het han/da dung het luot. '
-                           'Xoa va dan authkey moi.</span>')
+                ts_trang = ('<span style="color:#ffb74d;">⚠️ Authkey đã lưu nhưng chưa '
+                           'đăng nhập được - có thể authkey hết hạn/đã dùng hết lượt. '
+                           'Xóa và dán authkey mới.</span>')
             else:
-                ts_trang = '<span style="color:#8b93a1;">⚪ Dang tat</span>'
+                ts_trang = '<span style="color:#8b93a1;">⚪ Đang tắt</span>'
 
             ts_nut = ('<form method="POST" action="/remote/ts/tat" style="display:inline;">'
-                     '<button type="submit" class="red" data-busy="Dang tat...">⏹ Tat</button></form>'
+                     '<button type="submit" class="red" data-busy="Đang tắt...">⏹ Tắt</button></form>'
                      if ts_tt["dang_ket_noi"] else
                      '<form method="POST" action="/remote/ts/bat" style="display:inline;">'
-                     '<button type="submit" class="gray" data-busy="Dang ket noi...">▶ Bat</button></form>')
+                     '<button type="submit" class="gray" data-busy="Đang kết nối...">▶ Bật</button></form>')
             ts_khoi = f"""
             <p style="margin:0;">{ts_trang}</p>
             <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
@@ -482,7 +482,7 @@ def register_remote(app):
                       Tailscale rồi dán vào đây.</li>
                 </ul>
                 <div class="msg err" style="margin:0 0 14px;">
-                  <strong>Cẩn thận:</strong> nếu anh đang vào Pi
+                  <strong>Cẩn thận:</strong> nếu bạn đang vào máy
                   <em>qua chính Tailscale</em> thì quên xong là mất kết nối ngay.
                 </div>
                 <label style="display:flex;gap:10px;align-items:flex-start;margin:0;">
@@ -508,17 +508,17 @@ def register_remote(app):
             </script>
             <details style="margin-top:13px;">
               <summary style="cursor:pointer;color:#8b93a1;font-size:13px;">
-                Authkey het han / muon doi sang key khac?</summary>
+                Authkey hết hạn / muốn đổi sang key khác?</summary>
               <p style="color:#8b93a1;font-size:13px;margin:9px 0 11px;">
-                Tao Auth key moi trong <strong>Tailscale admin console &rarr; Settings
-                &rarr; Keys</strong>, dan vao day - KHONG can bam "Quên thiết bị" truoc,
+                Tạo Auth key mới trong <strong>Tailscale admin console &rarr; Settings
+                &rarr; Keys</strong>, dán vào đây - KHÔNG cần bấm "Quên thiết bị" trước,
                 thiết bị vẫn giữ nguyên tên/địa chỉ cũ.</p>
               <form method="POST" action="/remote/ts/authkey">
                 <input type="password" name="authkey" required autocomplete="off"
                        placeholder="tskey-auth-...">
                 <div class="row" style="margin-top:11px;">
-                  <button type="submit" class="gray" data-busy="Dang doi key...">
-                    Doi sang key nay</button>
+                  <button type="submit" class="gray" data-busy="Đang đổi key...">
+                    Đổi sang key này</button>
                 </div>
               </form>
             </details>"""
@@ -528,10 +528,10 @@ def register_remote(app):
           <h3>Tailscale <span style="color:#8b93a1;font-size:12px;font-weight:400;">
               (lựa chọn phụ - vào được SSH/dịch vụ khác của Pi, không chỉ trang web)</span></h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-            Tạo mạng riêng ảo giữa các thiết bị CỦA CHÍNH ANH - máy nào muốn vào cũng
+            Tạo mạng riêng ảo giữa các thiết bị CỦA CHÍNH BẠN - máy nào muốn vào cũng
             phải cài app Tailscale và đăng nhập cùng tài khoản trước. Khác với Cloudflare
             ở trên (ai có link cũng vào được qua trình duyệt), Tailscale chỉ hợp khi
-            chính anh muốn truy cập đầy đủ hơn từ thiết bị cá nhân đã cài sẵn.</p>
+            chính bạn muốn truy cập đầy đủ hơn từ thiết bị cá nhân đã cài sẵn.</p>
           {ts_khoi}
         </div>"""
 
@@ -544,28 +544,28 @@ def register_remote(app):
             # Hien DUY NHAT mot lan ngay sau khi tao. Trong may chi luu ban bam
             # SHA256 nen khong the hien lai - dong nen chep ngay
             ai_khoi = f"""
-            <div class="msg ok" style="margin:0 0 13px;">Da tao token. <strong>Chep ngay
-              bay gio</strong> - roi khoi trang nay la khong xem lai duoc nua.</div>
-            <label>Token (chi hien mot lan)</label>
+            <div class="msg ok" style="margin:0 0 13px;">Đã tạo token. <strong>Chép ngay
+              bây giờ</strong> - rời khỏi trang này là không xem lại được nữa.</div>
+            <label>Token (chỉ hiện một lần)</label>
             <textarea readonly rows="2" onclick="this.select();"
                       style="width:100%;font-family:monospace;font-size:13px;">{_esc(token_moi)}</textarea>
-            <p style="margin:13px 0 5px;">Dua nguyen doan nay cho AI ben kia:</p>
+            <p style="margin:13px 0 5px;">Đưa nguyên đoạn này cho AI bên kia:</p>
             <textarea readonly rows="4" onclick="this.select();"
-                      style="width:100%;font-family:monospace;font-size:13px;">Toi co mot thiet bi Console Pi o xa. Hay doc tai lieu huong dan tai:
+                      style="width:100%;font-family:monospace;font-size:13px;">Tôi có một thiết bị Console System ở xa. Hãy đọc tài liệu hướng dẫn tại:
 {_esc(_goc_ngoai())}/ai
-Dung header: Authorization: Bearer {_esc(token_moi)}
-Doc tai lieu do truoc, roi giup toi lam viec voi thiet bi mang dang cam vao no.</textarea>"""
+Dùng header: Authorization: Bearer {_esc(token_moi)}
+Đọc tài liệu đó trước, rồi giúp tôi làm việc với thiết bị mạng đang cắm vào nó.</textarea>"""
         elif ai["has_token"]:
             ai_khoi = f"""
             <table style="max-width:470px;margin-bottom:12px;">
-              <tr><th style="width:150px;">Trang thai</th>
-                  <td><span style="color:#6ee7a0;">🟢 Dang bat</span></td></tr>
-              <tr><th>Quyen</th><td><code>{_esc(ai['scope'])}</code>
+              <tr><th style="width:150px;">Trạng thái</th>
+                  <td><span style="color:#6ee7a0;">🟢 Đang bật</span></td></tr>
+              <tr><th>Quyền</th><td><code>{_esc(ai['scope'])}</code>
                   {'&mdash; chỉ đọc' if ai['scope'] == 'read'
-                    else '&mdash; doc va go duoc lenh vao thiet bi mang'}</td></tr>
-              <tr><th>Tao luc</th><td>{_esc(ai['created'])}</td></tr>
-              <tr><th>Dung lan cuoi</th>
-                  <td>{_esc(ai['last_used']) or '<span style="color:#8b93a1;">chua dung</span>'}</td></tr>
+                    else '&mdash; đọc và gõ được lệnh vào thiết bị mạng'}</td></tr>
+              <tr><th>Tạo lúc</th><td>{_esc(ai['created'])}</td></tr>
+              <tr><th>Dùng lần cuối</th>
+                  <td>{_esc(ai['last_used']) or '<span style="color:#8b93a1;">chưa dùng</span>'}</td></tr>
             </table>
             <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
               Token thật không hiện lại được (trong máy chỉ lưu bản băm SHA256).
@@ -573,61 +573,61 @@ Doc tai lieu do truoc, roi giup toi lam viec voi thiet bi mang dang cam vao no.<
             <div class="row" style="gap:10px;flex-wrap:wrap;">
               <form method="POST" action="/remote/api-token">
                 <input type="hidden" name="scope" value="read">
-                <button type="submit" class="gray" data-busy="Dang tao...">Tạo token mới (chỉ đọc)</button>
+                <button type="submit" class="gray" data-busy="Đang tạo...">Tạo token mới (chỉ đọc)</button>
               </form>
               <form method="POST" action="/remote/api-token">
                 <input type="hidden" name="scope" value="full">
-                <button type="submit" class="gray" data-busy="Dang tao...">Tạo token mới (đầy đủ)</button>
+                <button type="submit" class="gray" data-busy="Đang tạo...">Tạo token mới (đầy đủ)</button>
               </form>
               <form method="POST" action="/remote/api-thu-hoi"
-                    onsubmit="return confirm('Thu hoi token? AI ben kia se mat quyen truy cap ngay lap tuc.');">
-                <button type="submit" class="red">Thu hoi</button>
+                    onsubmit="return confirm('Thu hồi token? AI bên kia sẽ mất quyền truy cập ngay lập tức.');">
+                <button type="submit" class="red">Thu hồi</button>
               </form>
             </div>"""
         else:
             ai_khoi = """
             <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
-              Dang <strong>tat</strong>. Tao token de mot AI (hoac phan mem khac) doc
-              duoc trang thai thiet bi va lam viec voi switch/router dang cam.
-              AI chi can mot duong dan <code>/ai</code> la tu biet phai goi gi.</p>
+              Đang <strong>tắt</strong>. Tạo token để một AI (hoặc phần mềm khác) đọc
+              được trạng thái thiết bị và làm việc với switch/router đang cắm.
+              AI chỉ cần một đường dẫn <code>/ai</code> là tự biết phải gọi gì.</p>
             <div class="row" style="gap:10px;flex-wrap:wrap;">
               <form method="POST" action="/remote/api-token">
                 <input type="hidden" name="scope" value="read">
-                <button type="submit" class="blue" data-busy="Dang tao...">
-                  🔍 Tao token CHI DOC</button>
+                <button type="submit" class="blue" data-busy="Đang tạo...">
+                  🔍 Tạo token CHỈ ĐỌC</button>
               </form>
               <form method="POST" action="/remote/api-token"
-                    onsubmit="return confirm('Token quyen day du cho phep GO LENH vao switch/router dang cam.\\n\\nChi tao khi that su can, va thu hoi ngay khi xong viec.');">
+                    onsubmit="return confirm('Token quyền đầy đủ cho phép GÕ LỆNH vào switch/router đang cắm.\\n\\nChỉ tạo khi thật sự cần, và thu hồi ngay khi xong việc.');">
                 <input type="hidden" name="scope" value="full">
-                <button type="submit" data-busy="Dang tao...">
-                  ⌨️ Tao token DAY DU (go duoc lenh)</button>
+                <button type="submit" data-busy="Đang tạo...">
+                  ⌨️ Tạo token ĐẦY ĐỦ (gõ được lệnh)</button>
               </form>
             </div>
             <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
               Nên bắt đầu bằng <strong>chỉ đọc</strong>. Chỉ nâng lên đầy đủ khi thật
-              su can go lenh, va thu hoi ngay khi xong.</p>"""
+              sự cần gõ lệnh, và thu hồi ngay khi xong.</p>"""
 
         ai_card = f"""
         <div class="card">
-          <h3>Cho AI / may khac truy cap</h3>
+          <h3>Cho AI / máy khác truy cập</h3>
           {ai_khoi}
         </div>"""
 
         log_html = ""
         if cai and tok:
             log_html = f"""
-            <h2>Nhat ky duong ham</h2>
+            <h2>Nhật ký đường hầm</h2>
             <pre style="background:#12151b;padding:13px;border-radius:6px;overflow:auto;
                         max-height:290px;font-size:12px;">{_esc(nhat_ky(30))}</pre>"""
 
         body = f"""
         {msg_html}
         <div class="card">
-          <h3>Truy cap tu xa qua Cloudflare</h3>
+          <h3>Truy cập từ xa qua Cloudflare</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
             Đưa Pi tới điểm xa, cắm console và cắm mạng internet là vào cấu hình được
             từ bất kỳ đâu. Không cần mở port trên router, không cần IP tĩnh, chạy
-            duoc ca sau 4G.</p>
+            được cả sau 4G.</p>
           {khoi}
         </div>
 
@@ -641,19 +641,19 @@ Doc tai lieu do truoc, roi giup toi lam viec voi thiet bi mang dang cam vao no.<
             <li>Đường hầm chỉ trỏ vào <code>127.0.0.1:80</code>, mà cổng đó đã có lớp
                 đăng nhập bằng tài khoản Linux của máy</li>
             <li>Nên bật thêm <strong>Cloudflare Access</strong> để chặn ngay từ biên
-                Cloudflare, truoc khi cham toi Pi</li>
+                Cloudflare, trước khi chạm tới máy</li>
             <li>Token được lưu quyền 600, chỉ root đọc được. Bất kỳ ai có token đều
                 dùng lại được đường hầm - đừng gửi qua chat/email</li>
-            <li>Xong viec thi <strong>tat duong ham</strong>, dùng để mở thường xuyên</li>
-            <li>Token cho AI mac dinh <strong>tat</strong>. Token quyền đầy đủ gõ được
+            <li>Xong việc thì <strong>tắt đường hầm</strong>, đừng để mở thường xuyên</li>
+            <li>Token cho AI mặc định <strong>tắt</strong>. Token quyền đầy đủ gõ được
                 lệnh vào switch/router - chỉ tạo khi cần, thu hồi ngay khi xong.
-                Mỗi lần máy gọi vào đều ghi <code>/var/log/console-pi-api.log</code></li>
+                Mỗi lần máy gọi vào đều được ghi nhật ký (xem ở menu Nhật ký).</li>
           </ul>
         </div>
 
         {log_html}"""
 
-        return render_page(body, active="/remote", title="Truy cap tu xa",
+        return render_page(body, active="/remote", title="Truy cập từ xa",
                            subtitle="Cloudflare Tunnel - vào được Pi từ bất kỳ đâu")
 
     @app.route("/remote")
@@ -699,7 +699,7 @@ Doc tai lieu do truoc, roi giup toi lam viec voi thiet bi mang dang cam vao no.<
     def remote_api_revoke():
         from . import api as capi
         capi.thu_hoi_token()
-        return page(msg="Da thu hoi token. May/AI ben kia mat quyen truy cap ngay.",
+        return page(msg="Đã thu hồi token. Máy/AI bên kia mất quyền truy cập ngay.",
                     ok=True)
 
     @app.route("/remote/xoa-token", methods=["POST"])

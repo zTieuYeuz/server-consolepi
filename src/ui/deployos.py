@@ -363,13 +363,13 @@ def _hoan_tat_ghi_thang(tam, thu_muc, ten_goc):
     try:
         cd = os.path.getsize(tam)
     except OSError:
-        return False, "Khong doc duoc file vua tai len.", None
+        return False, "Không đọc được file vừa tải lên.", None
     if cd == 0:
         try:
             os.remove(tam)
         except OSError:
             pass
-        return False, "File tai len rong (0 byte).", None
+        return False, "File tải lên rỗng (0 byte).", None
 
     ten = ten_an_toan(ten_goc)
     dich = os.path.join(thu_muc, ten)
@@ -380,8 +380,8 @@ def _hoan_tat_ghi_thang(tam, thu_muc, ten_goc):
     try:
         os.replace(tam, dich)
     except OSError as e:
-        return False, f"Khong luu duoc: {e}", None
-    return True, f"Da luu {ten} ({co_kich_thuoc(cd)}).", dich
+        return False, f"Không lưu được: {e}", None
+    return True, f"Đã lưu {ten} ({co_kich_thuoc(cd)}).", dich
 
 
 def _luu_tai_len(fileobj, thu_muc, duoi_cho_phep, nhan):
@@ -393,13 +393,13 @@ def _luu_tai_len(fileobj, thu_muc, duoi_cho_phep, nhan):
     _bao_dam_thu_muc()
     ten = ten_an_toan(getattr(fileobj, "filename", ""))
     if not ten:
-        return False, "Chua chon file."
+        return False, "Chưa chọn file."
     if os.path.splitext(ten)[1].lower() not in duoi_cho_phep:
-        return False, (f"Khong nhan duoi file nay cho muc {nhan}. Chi nhan: "
+        return False, (f"Không nhận đuôi file này cho mục {nhan}. Chỉ nhận: "
                        f"{', '.join(sorted(duoi_cho_phep))}")
     if _con_trong_gb() < MIN_FREE_GB:
-        return False, (f"Chi con {_con_trong_gb()} GB trong - can it nhat "
-                       f"{MIN_FREE_GB} GB. Xoa bot file truoc khi tai them.")
+        return False, (f"Chỉ còn {_con_trong_gb()} GB trống - cần ít nhất "
+                       f"{MIN_FREE_GB} GB. Xóa bớt file trước khi tải thêm.")
 
     # Can GAP DOI kich thuoc file, khong phai 1 lan: Werkzeug do file tai len
     # ra 1 file tam truoc (xem ghi chu ve /tmp trong app.py), roi ham nay moi
@@ -446,21 +446,21 @@ def _luu_tai_len(fileobj, thu_muc, duoi_cho_phep, nhan):
             os.remove(tam)
         except OSError:
             pass
-        return False, f"Loi khi luu: {e}"
-    return True, f"Da luu {ten} ({co_kich_thuoc(da_ghi)})."
+        return False, f"Lỗi khi lưu: {e}"
+    return True, f"Đã lưu {ten} ({co_kich_thuoc(da_ghi)})."
 
 
 def _xoa_file(thu_muc, ten):
     p = _duong_dan_trong(thu_muc, ten)
     if not p:
-        return False, "Ten file khong hop le."
+        return False, "Tên file không hợp lệ."
     if not os.path.isfile(p):
-        return False, "Khong tim thay file."
+        return False, "Không tìm thấy file."
     try:
         os.remove(p)
     except OSError as e:
-        return False, f"Khong xoa duoc: {e}"
-    return True, f"Da xoa {os.path.basename(p)}."
+        return False, f"Không xóa được: {e}"
+    return True, f"Đã xóa {os.path.basename(p)}."
 
 
 # ------------------------------------------------- thong tin phan mem (2.2)
@@ -818,10 +818,10 @@ def tao_os_moi(ten_hien_thi, os_ho="windows"):
     _bao_dam_thu_muc()
     ten_hien_thi = (ten_hien_thi or "").strip()
     if not ten_hien_thi:
-        return False, "Chua dat ten he dieu hanh.", None
+        return False, "Chưa đặt tên hệ điều hành.", None
     os_id = ten_an_toan(ten_hien_thi.replace(" ", "_")).lower()
     if not os_id:
-        return False, "Ten khong hop le.", None
+        return False, "Tên không hợp lệ.", None
     p = os.path.join(OS_DIR, os_id)
     if os.path.isdir(p):
         return False, f'Da co he dieu hanh "{os_id}" roi.', None
@@ -831,20 +831,20 @@ def tao_os_moi(ten_hien_thi, os_ho="windows"):
             json.dump({"ten_hien_thi": ten_hien_thi, "os_ho": os_ho}, f,
                       ensure_ascii=False)
     except OSError as e:
-        return False, f"Khong tao duoc: {e}", None
+        return False, f"Không tạo được: {e}", None
     return True, f'Da tao "{ten_hien_thi}".', os_id
 
 
 def xoa_os(os_id):
     p = _duong_dan_trong(OS_DIR, os_id)
     if not p or not os.path.isdir(p):
-        return False, "Khong tim thay he dieu hanh."
+        return False, "Không tìm thấy hệ điều hành."
     try:
         import shutil
         shutil.rmtree(p)
     except OSError as e:
-        return False, f"Khong xoa duoc: {e}"
-    return True, "Da xoa."
+        return False, f"Không xóa được: {e}"
+    return True, "Đã xóa."
 
 
 # ---------------------------- driver (mo hinh MDT: "Out-of-Box Drivers")
@@ -931,10 +931,10 @@ def tao_driver_moi(ten_hien_thi):
     _bao_dam_thu_muc()
     ten_hien_thi = (ten_hien_thi or "").strip()
     if not ten_hien_thi:
-        return False, "Chua dat ten goi driver.", None
+        return False, "Chưa đặt tên gói driver.", None
     driver_id = ten_an_toan(ten_hien_thi.replace(" ", "_")).lower()
     if not driver_id:
-        return False, "Ten khong hop le.", None
+        return False, "Tên không hợp lệ.", None
     p = os.path.join(DRIVERS_DIR, driver_id)
     if os.path.isdir(p):
         return False, f'Da co goi driver "{driver_id}" roi.', None
@@ -943,34 +943,34 @@ def tao_driver_moi(ten_hien_thi):
         with open(os.path.join(p, "_thongtin.json"), "w") as f:
             json.dump({"ten_hien_thi": ten_hien_thi}, f, ensure_ascii=False)
     except OSError as e:
-        return False, f"Khong tao duoc: {e}", None
+        return False, f"Không tạo được: {e}", None
     return True, f'Da tao "{ten_hien_thi}".', driver_id
 
 
 def xoa_driver(driver_id):
     p = _duong_dan_trong(DRIVERS_DIR, driver_id)
     if not p or not os.path.isdir(p):
-        return False, "Khong tim thay goi driver."
+        return False, "Không tìm thấy gói driver."
     try:
         import shutil
         shutil.rmtree(p)
     except OSError as e:
-        return False, f"Khong xoa duoc: {e}"
-    return True, "Da xoa."
+        return False, f"Không xóa được: {e}"
+    return True, "Đã xóa."
 
 
 def xoa_file_trong_driver(driver_id, ten_file):
     p = _duong_dan_trong(DRIVERS_DIR, driver_id)
     if not p or not os.path.isdir(p):
-        return False, "Khong tim thay goi driver."
+        return False, "Không tìm thấy gói driver."
     fp = _duong_dan_trong(p, ten_file)
     if not fp or not os.path.isfile(fp) or os.path.basename(fp) == "_thongtin.json":
-        return False, "Khong tim thay file."
+        return False, "Không tìm thấy file."
     try:
         os.remove(fp)
     except OSError as e:
-        return False, f"Khong xoa duoc: {e}"
-    return True, "Da xoa."
+        return False, f"Không xóa được: {e}"
+    return True, "Đã xóa."
 
 
 # ------------------------------------------------------------ kich ban (2.4)
@@ -1012,10 +1012,10 @@ def luu_kichban(cauhinh, ten):
     _bao_dam_thu_muc()
     ten = (ten or "").strip()
     if not ten:
-        return False, "Chua dat ten kich ban."
+        return False, "Chưa đặt tên kịch bản."
     ten_file = ten_an_toan(ten.replace(" ", "_")) + ".json"
     if ten_file == ".json":
-        return False, "Ten kich ban khong hop le."
+        return False, "Tên kịch bản không hợp lệ."
     p = os.path.join(KICHBAN_DIR, ten_file)
 
     d = dict(cauhinh)
@@ -1029,19 +1029,19 @@ def luu_kichban(cauhinh, ten):
             json.dump(d, f, ensure_ascii=False, indent=1)
         os.chmod(p, 0o600)
     except OSError as e:
-        return False, f"Khong luu duoc: {e}"
-    return True, f"Da luu kich ban \"{ten}\"."
+        return False, f"Không lưu được: {e}"
+    return True, f"Đã lưu kịch bản \"{ten}\"."
 
 
 def xoa_kichban(ten_file):
     p = _duong_dan_trong(KICHBAN_DIR, ten_file)
     if not p or not os.path.isfile(p):
-        return False, "Khong tim thay kich ban."
+        return False, "Không tìm thấy kịch bản."
     try:
         os.remove(p)
     except OSError as e:
-        return False, f"Khong xoa duoc: {e}"
-    return True, "Da xoa kich ban."
+        return False, f"Không xóa được: {e}"
+    return True, "Đã xóa kịch bản."
 
 
 # ------------------------------------------------------- kiem tra san sang
@@ -1485,7 +1485,7 @@ def register_deployos(app):
                 f'khoang {can_gb:.1f} GB trong, nhung chi con '
                 f'{_con_trong_gb()} GB. Da dung lai NGAY, chua ton thoi gian '
                 f'tai len cua anh. Xoa bot file cu hoac cam USB roi thu lai.</div>',
-                "Deployment OS", "Khong du dung luong"), 413
+                "Deployment OS", "Không đủ dung lượng"), 413
         return None
 
     def _nhan_tai_len(thu_muc, duoi_cho_phep, nhan):
@@ -1497,7 +1497,7 @@ def register_deployos(app):
         """
         f = request.files.get("file")
         if not f or not getattr(f, "filename", ""):
-            return False, "Chua chon file."
+            return False, "Chưa chọn file."
         duong = getattr(getattr(f, "stream", None), "_cp_duong_dan", None)
         if duong:
             try:
@@ -1511,7 +1511,7 @@ def register_deployos(app):
         # /dev/null): bao loi ro rang thay vi im lang
         ten = ten_an_toan(f.filename)
         if os.path.splitext(ten)[1].lower() not in duoi_cho_phep:
-            return False, (f"Khong nhan duoi file nay cho muc {nhan}. Chi nhan: "
+            return False, (f"Không nhận đuôi file này cho mục {nhan}. Chỉ nhận: "
                            f"{', '.join(sorted(duoi_cho_phep))}")
         return _luu_tai_len(f, thu_muc, duoi_cho_phep, nhan)
 
@@ -2341,10 +2341,10 @@ def register_deployos(app):
                 <h3>Thông tin máy sẽ cài</h3>
                 <label>Tên máy (hostname)</label>
                 <input type="text" name="ten_may" value="{_esc(d['ten_may'])}"
-                       placeholder="vd: PC-KETOAN-01" autocapitalize="off">
+                       placeholder="ví dụ: PC-KETOAN-01" autocapitalize="off">
                 <label>Tên đăng nhập (username)</label>
                 <input type="text" name="username" value="{_esc(d['username'])}"
-                       placeholder="vd: admin" autocapitalize="off">
+                       placeholder="ví dụ: admin" autocapitalize="off">
                 <label>Mật khẩu</label>
                 <input type="password" name="password" value=""
                        placeholder="{'Đã đặt rồi - để trống nếu không đổi' if d['password'] else 'Mật khẩu cho tài khoản trên máy đó'}">
@@ -2645,15 +2645,15 @@ def register_deployos(app):
                   hệt cách MDT làm.</p>
                 <label>Tên domain</label>
                 <input type="text" name="domain" value="{_esc(d.get('domain',''))}"
-                       placeholder="vd: congty.local" autocapitalize="off">
+                       placeholder="ví dụ: congty.local" autocapitalize="off">
                 <label style="margin-top:10px;">OU chứa máy (tùy chọn)</label>
                 <input type="text" name="domain_ou" value="{_esc(d.get('domain_ou',''))}"
-                       placeholder="vd: OU=May tram,DC=congty,DC=local"
+                       placeholder="ví dụ: OU=May tram,DC=congty,DC=local"
                        autocapitalize="off">
                 <label style="margin-top:10px;">Tài khoản gia nhập</label>
                 <input type="text" name="domain_user"
                        value="{_esc(d.get('domain_user',''))}"
-                       placeholder="vd: svc-join" autocapitalize="off">
+                       placeholder="ví dụ: svc-join" autocapitalize="off">
                 <label style="margin-top:10px;">Mật khẩu tài khoản gia nhập</label>
                 <input type="password" name="domain_pass" autocomplete="new-password"
                        placeholder="{'(đã có - để trống nếu không đổi)' if d.get('domain_pass') else ''}">
@@ -2670,7 +2670,7 @@ def register_deployos(app):
                   Mỗi dòng 1 lệnh, chạy khi người dùng đăng nhập lần đầu
                   (sau khi cài xong). Dòng bắt đầu bằng # được bỏ qua.</p>
                 <textarea name="lenh_them" style="max-width:none;"
-                  placeholder="vd: powercfg /h off">{_esc(d['lenh_them'])}</textarea>
+                  placeholder="ví dụ: powercfg /h off">{_esc(d['lenh_them'])}</textarea>
               </div>
               {_nut_dieu_huong(buoc)}
             </form>"""
@@ -2797,7 +2797,7 @@ def register_deployos(app):
                 <h3>Đặt tên kịch bản</h3>
                 <label>Tên kịch bản</label>
                 <input type="text" name="ten" required
-                       placeholder="vd: Win11 van phong + Chrome" autocapitalize="off">
+                       placeholder="ví dụ: Win11 văn phòng + Chrome" autocapitalize="off">
                 <p style="color:#8b93a1;font-size:12.5px;margin:8px 0 0;">
                   Kịch bản sẽ hiện ở tab <strong>Kịch bản</strong> để chọn
                   nhanh lần sau.</p>
@@ -2862,7 +2862,7 @@ def register_deployos(app):
           <form method="POST" action="/deployos/kichban/luu/{ma}">
             <label>Hoặc lưu thành kịch bản mới (đặt tên khác)</label>
             <input type="text" name="ten" required
-                   placeholder="vd: Win10 van phong + Chrome" autocapitalize="off">
+                   placeholder="ví dụ: Win10 văn phòng + Chrome" autocapitalize="off">
             <div class="row" style="margin-top:12px;">
               <button type="submit" class="gray" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu luôn)">
                 Lưu thành kịch bản mới</button>
@@ -2876,7 +2876,7 @@ def register_deployos(app):
             <h3>Lưu lựa chọn này thành kịch bản</h3>
             <label>Tên kịch bản</label>
             <input type="text" name="ten" required
-                   placeholder="vd: Win11 van phong + Chrome" autocapitalize="off">
+                   placeholder="ví dụ: Win11 văn phòng + Chrome" autocapitalize="off">
             <div class="row" style="margin-top:14px;">
               <button type="submit" data-busy="Đang lưu... (PXE đang bật thì cập nhật menu luôn)">Lưu thành kịch bản</button>
             </div>
@@ -3124,15 +3124,15 @@ def register_deployos(app):
         """
         return f"""
         <div class="card">
-          <h3>Tai len {_esc(nhan)}</h3>
+          <h3>Tải lên {_esc(nhan)}</h3>
           {ghi_chu}
           <form method="POST" action="{hanh_dong}" enctype="multipart/form-data"
                 class="form-tai-len" data-loai="{_esc(loai)}">
-            <label>Chon file ({', '.join(sorted(duoi))})</label>
+            <label>Chọn file ({', '.join(sorted(duoi))})</label>
             <input type="file" name="file" required>
             <div class="row" style="margin-top:13px;">
-              <button type="submit" data-busy="Dang tai len, dung dong trang...">
-                Tai len</button>
+              <button type="submit" data-busy="Đang tải lên, đừng đóng trang...">
+                Tải lên</button>
               <span style="color:#8b93a1;font-size:13px;">
                 File lớn mất vài phút. Sẽ có thanh tiến trình báo rõ đang tới đâu.</span>
             </div>
@@ -3147,14 +3147,14 @@ def register_deployos(app):
             </div>
             <div class="tt-dia"></div>
             <div style="margin-top:12px;">
-              <button type="button" class="red small tt-huy">Huy tai len</button>
+              <button type="button" class="red small tt-huy">Hủy tải lên</button>
             </div>
           </div>
         </div>"""
 
     def _bang_file(ds, duong_xoa, duong_tai):
         if not ds:
-            return '<p style="color:#8b93a1;">Chua co file nao.</p>'
+            return '<p style="color:#8b93a1;">Chưa có file nào.</p>'
         hang = ""
         for f in ds:
             hang += f"""
@@ -3165,7 +3165,7 @@ def register_deployos(app):
               <td>
                 <a class="btn small gray" href="{duong_tai}/{_esc(f['ten'])}">Tải về</a>
                 <form method="POST" action="{duong_xoa}" style="display:inline;"
-                      onsubmit="return confirm('Xoa {_esc(f['ten'])}?');">
+                      onsubmit="return confirm('Xóa {_esc(f['ten'])}?');">
                   <input type="hidden" name="ten" value="{_esc(f['ten'])}">
                   <button type="submit" class="red small">Xóa</button>
                 </form>
@@ -3173,8 +3173,8 @@ def register_deployos(app):
             </tr>"""
         return f"""
         <div class="tbl-scroll"><table>
-          <tr><th>Ten file</th><th style="width:110px;">Kich thuoc</th>
-              <th style="width:140px;">Ngay tai len</th><th style="width:180px;">Thao tác</th></tr>
+          <tr><th>Tên file</th><th style="width:110px;">Kích thước</th>
+              <th style="width:140px;">Ngày tải lên</th><th style="width:180px;">Thao tác</th></tr>
           {hang}
         </table></div>"""
 
@@ -3271,7 +3271,7 @@ def register_deployos(app):
           <h3>Thêm ảnh hệ điều hành</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
             Chọn cách anh đang có sẵn file trong tay:</p>
-          <label for="kieu-tai">Kiểu file anh có</label>
+          <label for="kieu-tai">Kiểu file bạn có</label>
           <select id="kieu-tai" style="max-width:420px;">
             <option value="iso">Tôi có file ISO Windows (Pi tự tách ra) — dễ nhất</option>
             <option value="wim">Tôi đã có sẵn boot.wim / install.wim</option>
@@ -3348,7 +3348,7 @@ def register_deployos(app):
         if ten_goc not in ("boot.wim", "install.wim"):
             return _trang_os(
                 f'Chỉ nhận đúng tên "boot.wim" hoặc "install.wim" '
-                f'(file anh tải lên tên là "{ten_goc}") - đổi tên lại cho '
+                f'(file bạn tải lên tên là "{ten_goc}") - đổi tên lại cho '
                 f'đúng như trên ISO Windows gốc.', False)
         if duong:
             try:
@@ -3380,7 +3380,7 @@ def register_deployos(app):
             return redirect(f"/deployos/os/{os_id}")
         ten_goc = ten_an_toan(f.filename)
         if not ten_goc.lower().endswith(".iso"):
-            return _trang_os(f'Cần file .iso (file anh chọn là "{ten_goc}").', False)
+            return _trang_os(f'Cần file .iso (file bạn chọn là "{ten_goc}").', False)
         if _it.dang_chay():
             return _trang_os("Đang tách một file ISO khác - đợi xong rồi làm tiếp.", False)
 
@@ -3762,6 +3762,17 @@ def register_deployos(app):
 
         body = tabs_deployos("tainguyen", "thamso") + _msg(msg, ok) + f"""
         <div class="card">
+          <h3>Cập nhật từ kho trung tâm</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">Lấy bảng tham số mới nhất trên kho
+            trung tâm về máy: dòng mới trên kho được <b>thêm</b>, dòng kho đã sửa được <b>cập nhật</b>.
+            Dòng <span class="nhan-ng tu">Tự thêm</span> trên máy và dòng bạn đã sửa tay luôn giữ nguyên;
+            dòng kho đã xoá vẫn giữ lại trên máy (muốn bỏ thì bấm Xoá).</p>
+          <form method="POST" action="/deployos/thamso/tu-kho">
+            <button type="submit" data-busy="Đang cập nhật...">🔄 Cập nhật từ kho</button>
+          </form>
+        </div>
+
+        <div class="card">
           <h3>Tra tham số cài đặt im lặng</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
             Mỗi bộ cài có một kiểu tham số cài im lặng riêng - không đoán được,
@@ -3782,17 +3793,6 @@ def register_deployos(app):
             </table>
           </div>
           <div id="khong-thay" class="khong-thay" hidden></div>
-        </div>
-
-        <div class="card">
-          <h3>Cập nhật từ kho trung tâm</h3>
-          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">Lấy bảng tham số mới nhất trên kho
-            trung tâm về máy: dòng mới trên kho được <b>thêm</b>, dòng kho đã sửa được <b>cập nhật</b>.
-            Dòng <span class="nhan-ng tu">Tự thêm</span> trên máy và dòng bạn đã sửa tay luôn giữ nguyên;
-            dòng kho đã xoá vẫn giữ lại trên máy (muốn bỏ thì bấm Xoá).</p>
-          <form method="POST" action="/deployos/thamso/tu-kho">
-            <button type="submit" data-busy="Đang cập nhật...">🔄 Cập nhật từ kho</button>
-          </form>
         </div>
 
         <div class="card">
@@ -3993,10 +3993,10 @@ def register_deployos(app):
                 nối</strong>, rồi điền 2 ô dưới đây.</p>
               <form method="POST" action="/deployos/kho/ghep">
                 <label>Địa chỉ kho</label>
-                <input type="text" name="url" placeholder="VD: kho.congty.vn"
+                <input type="text" name="url" placeholder="Ví dụ: kho.congty.vn"
                        autocapitalize="off" autocomplete="off" required>
                 <label style="margin-top:10px;display:block;">Mã kết nối (6 ký tự)</label>
-                <input type="text" name="ma" maxlength="7" placeholder="VD: K7M4QX"
+                <input type="text" name="ma" maxlength="7" placeholder="Ví dụ: K7M4QX"
                        autocapitalize="characters" autocomplete="off" required
                        style="font-size:22px;letter-spacing:6px;text-transform:uppercase;
                               font-family:ui-monospace,monospace;max-width:260px;">
@@ -4009,7 +4009,7 @@ def register_deployos(app):
                 (kho bản cũ)</summary>
               <form method="POST" action="/deployos/kho/cauhinh" style="margin-top:12px;">
                 <label>Địa chỉ kho (URL)</label>
-                <input type="text" name="url" placeholder="VD: https://kho.congty.vn"
+                <input type="text" name="url" placeholder="Ví dụ: https://kho.congty.vn"
                        autocapitalize="off">
                 <label style="margin-top:10px;display:block;">Token của máy này</label>
                 <input type="text" name="token" placeholder="Dán token tạo trên trang kho"
@@ -4479,7 +4479,7 @@ def register_deployos(app):
             dụ Office 365: <code>setup.exe /configure configuration.xml</code>.</p>
           <form method="POST" action="/deployos/ungdung/{_esc(ung_id)}/lenh">
             <input type="text" name="lenh_cai" value="{_esc(u['lenh_cai'])}"
-                   placeholder="vd: setup.exe /configure configuration.xml"
+                   placeholder="ví dụ: setup.exe /configure configuration.xml"
                    style="max-width:none;" autocapitalize="off">
             <div class="row" style="margin-top:10px;">
               <button type="submit">Lưu lệnh cài</button>
@@ -4589,7 +4589,7 @@ def register_deployos(app):
         ds = danh_sach_driver()
         dr = next((x for x in ds if x["id"] == driver_id), None)
         if dr is None:
-            return _trang_drivers("Khong tim thay goi driver.", False)
+            return _trang_drivers("Không tìm thấy gói driver.", False)
         p = os.path.join(DRIVERS_DIR, ten_an_toan(driver_id))
         hang = ""
         try:
@@ -4609,16 +4609,16 @@ def register_deployos(app):
         except OSError:
             pass
         bang = (f"""<div class="tbl-scroll"><table>
-              <tr><th>File</th><th>Dung luong</th><th style="width:90px;">Thao tac</th></tr>
+              <tr><th>File</th><th>Dung lượng</th><th style="width:90px;">Thao tác</th></tr>
               {hang}
             </table></div>""" if hang else
-            '<p style="color:#8b93a1;">Chua co file nao trong goi nay.</p>')
+            '<p style="color:#8b93a1;">Chưa có file nào trong gói này.</p>')
         body = (_tabs("tainguyen", "drivers") + f"""
-        <p><a href="/deployos/drivers">&larr; Ve danh sach driver</a></p>
+        <p><a href="/deployos/drivers">&larr; Về danh sách driver</a></p>
         <h2>{_esc(dr['ten_hien_thi'])}</h2>
         {bang}
         <div class="card" style="margin-top:14px;">
-          <h3>Tai len file driver (.inf/.sys/.cat/.dll/.zip)</h3>
+          <h3>Tải lên file driver (.inf/.sys/.cat/.dll/.zip)</h3>
           <form method="POST" action="/deployos/drivers/{_esc(driver_id)}/len"
                 enctype="multipart/form-data">
             <input type="file" name="file" required>

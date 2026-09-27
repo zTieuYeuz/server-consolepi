@@ -56,7 +56,7 @@
  * vai giay den vai chuc giay. Neu khong bao gi, nguoi dung tuong may treo va
  * bam lai nhieu lan - vua kho chiu vua co the chay trung.
  *
- * Cach dung: them data-busy="Dang quet..." vao nut. Khi bam, nut doi chu,
+ * Cach dung: them data-busy="Đang quét..." vao nut. Khi bam, nut doi chu,
  * hien vong xoay, va tu khoa lai.
  * ---------------------------------------------------------------------------
  */
@@ -94,7 +94,7 @@
     // Cho trinh duyet gui form xong roi moi khoa nut, neu khoa ngay thi
     // gia tri cua chinh nut do khong duoc gui kem
     setTimeout(function () {
-      var label = btn.getAttribute("data-busy") || "Dang xu ly...";
+      var label = btn.getAttribute("data-busy") || "Đang xử lý...";
       btn.dataset.cpOld = btn.innerHTML;
       btn.innerHTML = '<span class="cp-spin"></span>' + label;
       btn.disabled = true;

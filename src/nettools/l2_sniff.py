@@ -97,7 +97,7 @@ L2_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>STP/LACP/VLAN Scan - Console Pi</title>
+    <title>STP/LACP/VLAN Scan - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -118,8 +118,8 @@ L2_TEMPLATE = """
     <h1>🌲 STP / LACP / VLAN Scan</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Bắt gói tin thụ động trong khoảng thời gian đã chọn, trên cổng
-    chọn bên dưới. Tag 802.1Q chi hien ra neu co traffic tagged thuc su di
-    qua day.</p>
+    chọn bên dưới. Tag 802.1Q chỉ hiện ra nếu có traffic tagged thực sự đi
+    qua dây.</p>
 
     <form method="POST" style="margin-top:16px;">
         <label>Interface:</label>
@@ -165,14 +165,14 @@ L2_TEMPLATE = """
         <h3>VLAN Tag (802.1Q)</h3>
         {% if result.vlans %}
         <table>
-            <tr><th>VLAN ID</th><th>So goi thay duoc</th></tr>
+            <tr><th>VLAN ID</th><th>Số gói thấy được</th></tr>
             {% for vid, cnt in result.vlans.items() %}
             <tr><td>{{ vid }}</td><td>{{ cnt }}</td></tr>
             {% endfor %}
         </table>
-        {% else %}<p>Khong thay VLAN tag nao. Day la bi dong - can co traffic tagged
-        THUC SU di qua day trong luc quet moi thay duoc (cong access khong tag se
-        khong bao gio hien gi o day, do la binh thuong).</p>{% endif %}
+        {% else %}<p>Không thấy VLAN tag nào. Đây là bị động - cần có traffic tagged
+        THỰC SỰ đi qua dây trong lúc quét mới thấy được (cổng access không tag sẽ
+        không bao giờ hiện gì ở đây, đó là bình thường).</p>{% endif %}
         {% endif %}
     {% endif %}
 </body>

@@ -14,7 +14,7 @@ HUB_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Network Tools - Console Pi</title>
+    <title>Network Tools - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }

@@ -143,7 +143,7 @@ DNS_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Kiểm tra DNS - Console Pi</title>
+    <title>Kiểm tra DNS - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -164,15 +164,15 @@ DNS_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🌐 Kiem tra DNS</h1>
+    <h1>🌐 Kiểm tra DNS</h1>
     <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Truy van cung 1 ten mien toi DNS he thong hien tai va 3 DNS cong khai lon,
-    doi chieu ket qua. DNS he thong tra ve khac han cac DNS cong khai la dau hieu bi can thiep
-    (ISP chen quang cao, mang cong ty loc, captive portal).</p>
+    <p class="hint">Truy vấn cùng 1 tên miền tới DNS hệ thống hiện tại và 3 DNS công khai lớn,
+    đối chiếu kết quả. DNS hệ thống trả về khác hẳn các DNS công khai là dấu hiệu bị can thiệp
+    (nhà mạng chèn quảng cáo, mạng công ty lọc, cổng đăng nhập WiFi).</p>
 
     <form method="POST" style="margin-top:16px;">
         <label>Tên miền:</label>
-        <input type="text" name="domain" value="{{ domain or '' }}" placeholder="vd google.com" required>
+        <input type="text" name="domain" value="{{ domain or '' }}" placeholder="ví dụ google.com" required>
         <button type="submit" style="margin-left:10px;" data-busy="Đang truy vấn...">Kiểm tra</button>
     </form>
 
@@ -200,7 +200,7 @@ DNS_TEMPLATE = """
             </table>
         </div>
         {% if not result.co_mau_thuan %}
-        <p class="ok-txt" style="margin-top:11px;">✔ Tat ca DNS server co ket qua tra ve deu khop nhau (hoac khong du du lieu de so sanh).</p>
+        <p class="ok-txt" style="margin-top:11px;">✔ Tất cả DNS server có kết quả trả về đều khớp nhau (hoặc không đủ dữ liệu để so sánh).</p>
         {% endif %}
         {% endif %}
     {% endif %}

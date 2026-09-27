@@ -225,12 +225,12 @@ def khoi_copy_terminal():
     return f"""
     <div class="row" style="margin-bottom:10px;">
       <button type="button" class="gray" id="nut_copy_chon">📋 Copy vùng đã chọn</button>
-      <button type="button" class="gray" id="nut_copy_all">📄 Copy ca man hinh</button>
+      <button type="button" class="gray" id="nut_copy_all">📄 Copy cả màn hình</button>
     </div>
     <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
-      Bôi đen bằng chuột phải <strong>giu phim Shift</strong> (khong giu thi tmux
+      Bôi đen bằng chuột phải <strong>giữ phím Shift</strong> (không giữ thì tmux
       giữ chuột để cuộn màn hình). Không có bàn phím thì dùng nút
-      <strong>Copy ca man hinh</strong>.
+      <strong>Copy cả màn hình</strong>.
     </p>
     <div id="bao_copyterm" class="msg" style="display:none;"></div>
     {COPY_TERM_JS}"""
@@ -267,14 +267,14 @@ def khoi_soan_lenh(url_dan, khoa_luu, prefill=""):
     <form method="POST" action="{url_dan}" id="form_dan" data-khoa-luu="{_esc(khoa_luu)}">
       <div class="row" style="margin-bottom:8px;">
         <select id="chon_tap" style="max-width:300px;">
-          <option value="">-- Chon tap lenh tu Thu vien --</option>
+          <option value="">-- Chọn tập lệnh từ Thư viện --</option>
           {lua_chon}
         </select>
         <button type="button" class="gray" id="nut_chep">📄 Chep vao o</button>
         <a class="btn gray" href="/commands">📚 Sua thu vien</a>
       </div>
       <textarea name="noi_dung" id="o_lenh" style="max-width:100%;min-height:110px;"
-                placeholder="Go lenh o day, hoac chon tap lenh o tren roi sua lai IP/ten cong...">{_esc(prefill)}</textarea>
+                placeholder="Gõ lệnh ở đây, hoặc chọn tập lệnh ở trên rồi sửa lại IP/tên cổng...">{_esc(prefill)}</textarea>
       <div class="row" style="margin-top:10px;">
         <button type="submit" class="blue" id="nut_dan">⌨️ Dan vao terminal</button>
         <button type="button" class="gray" id="nut_copy">📋 Copy</button>

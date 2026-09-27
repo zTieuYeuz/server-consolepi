@@ -115,7 +115,7 @@ FORM_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Netmiko Config - Console Pi</title>
+    <title>Netmiko Config - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -143,17 +143,17 @@ FORM_TEMPLATE = """
     {% if mode == 'test' %}
     <a href="/nettools/netmiko">Sang form Cấu hình (ghi)</a>
     {% else %}
-    <a href="/nettools/netmiko/test-form">🔍 Sang form Test ket noi (chi doc)</a>
+    <a href="/nettools/netmiko/test-form">🔍 Sang form Test kết nối (chỉ đọc)</a>
     {% endif %}
     </p>
-    <div class="warn">⚠️ Cong cu nay GHI thay doi len thiet bi that qua SSH.
-    Luon <strong>Test kết nối</strong> truoc, roi <strong>Xem trước lệnh</strong>,
-    cuoi cung moi <strong>Xac nhan va chay</strong>. Khong tu dong luu vinh vien
-    (write memory) tru khi ban tich rieng.</div>
+    <div class="warn">⚠️ Công cụ này GHI thay đổi lên thiết bị thật qua SSH.
+    Luôn <strong>Test kết nối</strong> trước, rồi <strong>Xem trước lệnh</strong>,
+    cuối cùng mới <strong>Xác nhận và chạy</strong>. Không tự động lưu vĩnh viễn
+    (write memory) trừ khi bạn tích riêng.</div>
 
     <form method="POST" action="{{ action_url }}">
-        <label>Dia chi IP switch:</label>
-        <input type="text" name="host" value="{{ host or '' }}" required placeholder="vd 192.168.1.1">
+        <label>Địa chỉ IP switch:</label>
+        <input type="text" name="host" value="{{ host or '' }}" required placeholder="ví dụ 192.168.1.1">
 
         <label>Device type:</label>
         <select name="device_type">
@@ -172,21 +172,21 @@ FORM_TEMPLATE = """
         <input type="password" name="password" value="{{ password or '' }}" required>
 
         {% if mode == 'test' %}
-        <label>Lenh doc de test (khong vao config mode):</label>
+        <label>Lệnh đọc để test (không vào config mode):</label>
         <input type="text" name="test_cmd" value="{{ test_cmd or 'show version' }}">
-        <button type="submit" class="secondary">🔍 Test ket noi (chi doc)</button>
+        <button type="submit" class="secondary">🔍 Test kết nối (chỉ đọc)</button>
         {% else %}
-        <label>Danh sach lenh cau hinh (moi dong 1 lenh):</label>
+        <label>Danh sách lệnh cấu hình (mỗi dòng 1 lệnh):</label>
         <textarea name="commands">{{ commands_text or '' }}</textarea>
-        <button type="submit">👁 Xem truoc lenh</button>
+        <button type="submit">👁 Xem trước lệnh</button>
         {% endif %}
     </form>
 
     {% if result %}
         {% if result.error %}
-        <div class="err">Loi: {{ result.error }}</div>
+        <div class="err">Lỗi: {{ result.error }}</div>
         {% else %}
-        <div class="ok">Thanh cong{% if result.saved %} (da luu vinh vien){% endif %}.</div>
+        <div class="ok">Thành công{% if result.saved %} (đã lưu vĩnh viễn){% endif %}.</div>
         <h3>Output</h3>
         <pre>{{ result.output }}</pre>
         {% endif %}
@@ -200,7 +200,7 @@ PREVIEW_TEMPLATE = """
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Xem truoc lenh - Console Pi</title>
+    <title>Xem trước lệnh - Console System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
@@ -214,16 +214,16 @@ PREVIEW_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>👁 Xem truoc - CHUA KET NOI GI CA</h1>
-    <p><a href="/nettools/netmiko">← Quay lai form</a></p>
+    <h1>👁 Xem trước - CHƯA KẾT NỐI GÌ CẢ</h1>
+    <p><a href="/nettools/netmiko">← Quay lại form</a></p>
 
-    <p>Se ket noi toi <strong>{{ host }}</strong> ({{ device_type }}) va chay CHINH XAC cac lenh sau:</p>
+    <p>Sẽ kết nối tới <strong>{{ host }}</strong> ({{ device_type }}) và chạy CHÍNH XÁC các lệnh sau:</p>
     <pre>{{ commands_text }}</pre>
 
-    <div class="warn">⚠️ Day la buoc ghi cau hinh THUC SU len thiet bi. Doc lai ky truoc khi xac nhan.</div>
+    <div class="warn">⚠️ Đây là bước ghi cấu hình THỰC SỰ lên thiết bị. Đọc lại kỹ trước khi xác nhận.</div>
 
     <form method="POST" action="/nettools/netmiko/run"
-          onsubmit="return confirm('XAC NHAN chay {{ commands|length }} lenh cau hinh tren {{ host }}?');">
+          onsubmit="return confirm('XÁC NHẬN chạy {{ commands|length }} lệnh cấu hình trên {{ host }}?');">
         <input type="hidden" name="host" value="{{ host }}">
         <input type="hidden" name="device_type" value="{{ device_type }}">
         <input type="hidden" name="port" value="{{ port }}">
@@ -232,10 +232,10 @@ PREVIEW_TEMPLATE = """
         <input type="hidden" name="commands" value="{{ commands_text }}">
         <label>
             <input type="checkbox" name="save" value="1">
-            Cung luu vinh vien (write memory / save config) - KHO HOAN TAC, mac dinh KHONG tick
+            Cũng lưu vĩnh viễn (write memory / save config) - KHÓ HOÀN TÁC, mặc định KHÔNG tích
         </label>
-        <button type="submit">✅ Xac nhan va chay</button>
-        <a href="/nettools/netmiko" class="cancel" style="display:inline-block; padding:10px 20px; background:#607d8b; color:white; border-radius:4px; text-decoration:none;">Huy</a>
+        <button type="submit">✅ Xác nhận và chạy</button>
+        <a href="/nettools/netmiko" class="cancel" style="display:inline-block; padding:10px 20px; background:#607d8b; color:white; border-radius:4px; text-decoration:none;">Hủy</a>
     </form>
 </body>
 </html>

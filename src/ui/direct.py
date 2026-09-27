@@ -242,9 +242,9 @@ def register_direct(app):
           <form method="POST" action="/direct/quet" style="margin-top:13px;">
             <label>Hoặc quét một dải cụ thể (khi biết trước IP của iLO)</label>
             <div class="row" style="gap:9px;">
-              <input type="text" name="dai" placeholder="vi du 192.168.1.0/24"
+              <input type="text" name="dai" placeholder="ví dụ 192.168.1.0/24"
                      style="max-width:250px;">
-              <button type="submit" class="gray" data-busy="Đang quét...">Quet dai nay</button>
+              <button type="submit" class="gray" data-busy="Đang quét...">Quét dải này</button>
             </div>
           </form>
         </div>"""
@@ -262,9 +262,9 @@ def register_direct(app):
               <td><code>{_esc(d['ip'])}</code>
                   {f"<br><small style='color:#8b93a1;'>{_esc(d['ten'])}</small>" if d.get('ten') else ''}</td>
               <td><code style="font-size:12px;">{_esc(d['mac'])}</code></td>
-              <td>{_esc(d['hang']) or '<span style="color:#8b93a1;">khong ro hang</span>'}</td>
+              <td>{_esc(d['hang']) or '<span style="color:#8b93a1;">không rõ hãng</span>'}</td>
               <td style="color:#8b93a1;font-size:13px;">{_esc(d['nguon'])}</td>
-              <td>{lien_ket or '<span style="color:#8b93a1;">chua do cong</span>'}</td>
+              <td>{lien_ket or '<span style="color:#8b93a1;">chưa dò cổng</span>'}</td>
             </tr>"""
 
         if bat:
@@ -273,7 +273,7 @@ def register_direct(app):
             cap IP <code>192.168.99.50-99</code>.</div>
             <div class="row" style="gap:10px;margin-top:12px;flex-wrap:wrap;">
               <form method="POST" action="/direct/tat">
-                <button type="submit" class="red" data-busy="Dang tra ve DHCP...">⏏ Tat che do</button>
+                <button type="submit" class="red" data-busy="Đang trả về DHCP...">⏏ Tat che do</button>
               </form>
             </div>"""
         else:
@@ -296,7 +296,7 @@ def register_direct(app):
           <ol style="margin:0;padding-left:19px;line-height:1.75;">
             <li>Cắm dây mạng từ Pi thẳng sang cổng quản lý (iLO / iDRAC / IPMI) hoặc switch</li>
             <li>Bam <strong>Bật chế độ cắm thẳng</strong> - Pi tro thanh DHCP server nho</li>
-            <li>Doi 15-30 giay roi bam <strong>Quét thiết bị</strong></li>
+            <li>Đợi 15-30 giây rồi bấm <strong>Quét thiết bị</strong></li>
             <li>Bam nut <strong>Mo</strong> để vào giao diện web của thiết bị</li>
           </ol>
           <p style="color:#8b93a1;font-size:13px;margin:11px 0 0;">
@@ -343,4 +343,4 @@ def register_direct(app):
         # Chi do cong cho toi da 6 thiet bi - nmap cham, quet het thi cho lau
         for d in ds[:6]:
             d["cong"] = cong_web_mo(d["ip"])
-        return page(ds=ds, msg=f"Quet xong, thay {len(ds)} thiet bi.", ok=True)
+        return page(ds=ds, msg=f"Quét xong, thấy {len(ds)} thiết bị.", ok=True)

@@ -662,7 +662,7 @@ def bt_pair_start(mac):
     """Bat dau ghep cap o luong nen, tra ve ngay de trang web khong treo."""
     with _KHOA_PAIR:
         if _PAIR["running"]:
-            return False, "Dang ghep cap thiet bi khac, doi mot chut."
+            return False, "Đang ghép cặp thiết bị khác, đợi một chút."
         _PAIR.update(running=True, mac=mac, step="pair", ok=None, detail="")
     threading.Thread(target=_pair_worker, args=(mac,), daemon=True).start()
     return True, ""
@@ -693,7 +693,7 @@ def bt_connect_profile(mac, want=""):
     bai kho hieu vi adapter dang ban doi pho voi cac lan tu-ket-noi nen.
     """
     if not re.fullmatch(r"[0-9A-Fa-f:]{17}", mac or ""):
-        return False, "Dia chi MAC khong hop le."
+        return False, "Địa chỉ MAC không hợp lệ."
 
     info = bt_device_info(mac)
     kind = want or info["cls"]["kind"]
@@ -729,12 +729,12 @@ def bt_connect_profile(mac, want=""):
             path = "/org/bluez/hci0/dev_" + mac.upper().replace(":", "_")
             net = dbus.Interface(bus.get_object("org.bluez", path), "org.bluez.Network1")
             iface = str(net.Connect("nap"))
-            return True, (f"Da ket noi mang Bluetooth voi {ten} qua giao dien "
-                          f"{iface}. May do se cap IP cho Pi.")
+            return True, (f"Đã kết nối mạng Bluetooth với {ten} qua giao diện "
+                          f"{iface}. Máy đó sẽ cấp IP cho máy này.")
         except Exception as e:
             detail = str(e).split(":")[-1].strip()[:110]
-            return False, (f"Khong noi duoc mang (PAN) voi {ten}: {detail}. "
-                           "Tren may do phai bat chia se ket noi qua Bluetooth "
+            return False, (f"Không nối được mạng (PAN) với {ten}: {detail}. "
+                           "Trên máy đó phải bật chia sẻ kết nối qua Bluetooth "
                            "(Windows: Personal Area Network; Mac: Internet Sharing).")
 
     r = subprocess.run(["bluetoothctl", "connect", mac],
@@ -744,8 +744,8 @@ def bt_connect_profile(mac, want=""):
     good = "success" in last.lower() or "Connected: yes" in r.stdout
     if good:
         loai = info["cls"]["label"].lower()
-        return True, f"Da ket noi {ten} ({loai})."
-    return False, f"Khong ket noi duoc {ten}: {last[:120]}"
+        return True, f"Đã kết nối {ten} ({loai})."
+    return False, f"Không kết nối được {ten}: {last[:120]}"
 
 
 def bt_unpair(mac):
@@ -1270,14 +1270,14 @@ def _bt_page(msg="", ok=True, scanned=None):
             # chua chac da vao mang. Phai noi ro 2 viec nay khac nhau.
             vao_mang, ip_cap = bt_da_vao_mang(mac)
             if vao_mang:
-                state = ('<span style="color:#7ddc7d;">🟢 da vao mang'
+                state = ('<span style="color:#7ddc7d;">🟢 đã vào mạng'
                          + (f'<br><small>IP: {_esc(ip_cap)}</small>' if ip_cap else '')
                          + '</span>')
             else:
-                state = ('<span style="color:#ffd166;">🟡 co ket noi Bluetooth, '
-                         'CHUA vao mang<br><small>Tren may do: chuot phai '
+                state = ('<span style="color:#ffd166;">🟡 có kết nối Bluetooth, '
+                         'CHƯA vào mạng<br><small>Trên máy đó: chuột phải '
                          '<strong>ConsolePi</strong> &rarr; Connect using &rarr; '
-                         'Access point. Pi khong tu ep vao mang duoc.</small></span>')
+                         'Access point. Máy không tự ép vào mạng được.</small></span>')
         elif i["connected"]:
             state = "🟢 dang ket noi"
         elif i["paired"]:
@@ -1289,12 +1289,12 @@ def _bt_page(msg="", ok=True, scanned=None):
         # may tinh, dien thoai, iPad dung ho so mang PAN - goi nham thi
         # BlueZ bao loi kho hieu hoac treo.
         if c["kind"] == "net":
-            btn = ('<button type="submit" class="small" data-busy="Dang noi mang...">'
-                   '🌐 Ket noi mang (PAN)</button>')
+            btn = ('<button type="submit" class="small" data-busy="Đang nối mạng...">'
+                   '🌐 Kết nối mạng (PAN)</button>')
             prof = "net"
         elif c["kind"] == "hid":
-            btn = ('<button type="submit" class="small" data-busy="Dang noi...">'
-                   '⌨️ Ket noi ban phim/chuot</button>')
+            btn = ('<button type="submit" class="small" data-busy="Đang nối...">'
+                   '⌨️ Kết nối bàn phím/chuột</button>')
             prof = "hid"
 
         # Ban ghi ghep cap hong thi bam "Ket noi" bao nhieu lan cung vo ich -
@@ -1302,12 +1302,12 @@ def _bt_page(msg="", ok=True, scanned=None):
         # ghep lai tu dau, nen dua thang nut do ra.
         if hong_bond:
             btn = ('<button type="submit" class="small" '
-                   'formaction="/bt-ghep-lai" data-busy="Dang xoa va ghep lai...">'
-                   '🔁 Ghep cap lai</button>')
+                   'formaction="/bt-ghep-lai" data-busy="Đang xóa và ghép lại...">'
+                   '🔁 Ghép cặp lại</button>')
             prof = ""
         else:
-            btn = ('<button type="submit" class="small" data-busy="Dang noi...">'
-                   'Ket noi lai</button>')
+            btn = ('<button type="submit" class="small" data-busy="Đang nối...">'
+                   'Kết nối lại</button>')
             prof = ""
 
         rows += f"""
@@ -1323,7 +1323,7 @@ def _bt_page(msg="", ok=True, scanned=None):
               {btn}
             </form>
             <form method="POST" action="/bt-unpair" style="display:inline;"
-                  onsubmit="return confirm('Xoa ghep cap {_esc(i['name'])}?');">
+                  onsubmit="return confirm('Xóa ghép cặp {_esc(i['name'])}?');">
               <input type="hidden" name="mac" value="{_esc(mac)}">
               <button type="submit" class="red small">Xóa</button>
             </form>
@@ -1494,7 +1494,7 @@ def _bt_page(msg="", ok=True, scanned=None):
             (bàn phím/chuột/điện thoại đều phải ghép lại từ đầu)</span>
         </label>
         <div class="row" style="margin-top:13px;">
-          <button type="submit" class="gray" data-busy="Dang khoi dong lai...">🔄 Reset Bluetooth</button>
+          <button type="submit" class="gray" data-busy="Đang khởi động lại...">🔄 Reset Bluetooth</button>
         </div>
       </form>
       <script>
@@ -1531,7 +1531,7 @@ def _switching_page(ssid):
     body = f"""
     <div class="msg warn">
       <h3 style="margin:0 0 8px;">Đang chuyển sang '{_esc(ssid)}'</h3>
-      <p>Sau 20-30 giây: nối máy của anh vào WiFi <strong>{_esc(ssid)}</strong>
+      <p>Sau 20-30 giây: nối máy của bạn vào WiFi <strong>{_esc(ssid)}</strong>
       rồi mở lại <a href="http://server-console.local">http://server-console.local</a>.</p>
       <p>Nếu thất bại, Pi tự bật lại AP <strong>ConsolePi</strong> sau khoảng 30 giây.</p>
     </div>
@@ -1673,7 +1673,7 @@ def register_network(app):
     @app.route("/bt-scan", methods=["POST"])
     def bt_scan_route():
         found = bt_scan(10)
-        return _bt_page(msg=f"Quet xong, thay {len(found)} thiet bi.",
+        return _bt_page(msg=f"Quét xong, thấy {len(found)} thiết bị.",
                         ok=True, scanned=found)
 
     @app.route("/bt-pair", methods=["POST"])
@@ -1700,9 +1700,9 @@ def register_network(app):
             return _bt_page(msg=err, ok=False)
         time.sleep(2)
         return _bt_page(
-            msg=("Da xoa ban ghi cu va dang ghep cap lai. Neu la ban phim, hay "
-                 "bật chế độ ghép cặp trên bàn phím (thuong giu nut Connect vai "
-                 "giay den khi den nhap nhay) roi go ma so hien bên dưới."),
+            msg=("Đã xóa bản ghi cũ và đang ghép cặp lại. Nếu là bàn phím, hãy "
+                 "bật chế độ ghép cặp trên bàn phím (thường giữ nút Connect vài "
+                 "giây đến khi đèn nhấp nháy) rồi gõ mã số hiện bên dưới."),
             ok=True)
 
     @app.route("/bt-connect", methods=["POST"])
@@ -1716,8 +1716,8 @@ def register_network(app):
     def bt_unpair_route():
         mac = request.form.get("mac", "")
         ok_u, detail = bt_unpair(mac)
-        return _bt_page(msg=(f"Da xoa ghep cap {mac}." if ok_u
-                             else f"Khong xoa duoc: {detail}"), ok=ok_u)
+        return _bt_page(msg=(f"Đã xóa ghép cặp {mac}." if ok_u
+                             else f"Không xóa được: {detail}"), ok=ok_u)
 
     @app.route("/bt-reset", methods=["POST"])
     def bt_reset_route():
