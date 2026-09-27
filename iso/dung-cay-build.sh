@@ -44,9 +44,9 @@ dung_cay() {   # $1 = amd64 | i386
     # tren may build (KHONG vao repo, KHONG vao ISO) - chi tac gia tao/xac minh
     # duoc (tools/kiem-dau-an.py --iso ... --khoa ...). Chua co khoa thi tu sinh
     # 1 lan va nhac sao luu - mat khoa la mat kha nang chung minh ban build cu.
-    mkdir -p "$R/usr/share/doc/console-system"
+    # (KHONG dat trong /usr/share/doc: hook 0200-thu-gon xoa sach thu muc do)
     printf 'Console System\n(c) 2026 zTieuYeuz. All rights reserved.\nPhat trien boi zTieuYeuz - https://console-docs.home-server.id.vn\n' \
-        > "$R/usr/share/doc/console-system/COPYRIGHT"
+        > "$R/opt/console-pi/COPYRIGHT"
     local KHOA_DA=/root/.config/zt/dau-an.key
     if [ ! -s "$KHOA_DA" ]; then
         mkdir -p "$(dirname "$KHOA_DA")"; chmod 700 "$(dirname "$KHOA_DA")"
@@ -56,7 +56,6 @@ dung_cay() {   # $1 = amd64 | i386
     local ND; ND="ConsoleSystem|$(tr -d ' \r\n' < "$REPO/VERSION")|$ARCH|$(date -u +%Y-%m-%dT%H:%MZ)|zTieuYeuz"
     local CK; CK="$(printf '%s' "$ND" | openssl dgst -sha256 -hmac "$(cat "$KHOA_DA")" -r | cut -d' ' -f1)"
     printf '{"noi_dung": "%s", "chu_ky": "%s"}\n' "$ND" "$CK" > "$R/opt/console-pi/.dau-an"
-    cp "$R/opt/console-pi/.dau-an" "$R/usr/share/doc/console-system/.dau-an"
     # Cloudflare Access Service Token (tuy chon) cho kho trung tam: chi co khi
     # chu kho dat file rieng tren may build - khong bao gio nam trong repo.
     if [ -s /root/.config/zt/cf-access.json ]; then
