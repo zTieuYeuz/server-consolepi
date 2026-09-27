@@ -1,5 +1,50 @@
 # Changelog
 
+## 1.6.0
+
+Yeu cau cua anh Thoai 27/09/2026 (6 muc: Nhat ky, Cai dat/tai lieu, WiFi,
+Phien ket noi, Deployment OS, ca nhan hoa).
+
+- NHAT KY: doi ten "Nhat ky loi" -> "Nhat ky", the co dau. Tab moi "Log toan
+  bo": toan bo journal + file log rieng, loc theo nguon/dich vu/thoi gian
+  (1 gio -> 7 ngay)/muc do/tu khoa (go khong dau), Tai ve .txt dung phan dang
+  loc. TOAN BO nhat ky chi giu 7 NGAY (truoc 60): journald MaxRetentionSec=7day,
+  logrotate "rotate 7" (console-pi-*.log), nginx rotate 7 - ca Pi lan ISO.
+- TAI LIEU: ~1700 dong tai lieu trong may chuyen len console-docs thanh muc
+  rieng "Tai lieu ky thuat" (9 trang, DA LOC duong dan he thong / co che bao
+  mat / cach ket noi kho; bo quet chan lo mo rong). Tren may chi con trang
+  Tai lieu dan link tung muc. Anh chup cu lo IP noi bo (192.168.110.14) da
+  chup lai.
+- CAI DAT: the "Gioi thieu" (logo, phien ban, tac gia zTieuYeuz, ban quyen,
+  nut mo trang huong dan). Bo hien duong dan he thong trong trang Cai dat.
+- WIFI/AP va TOAN BO giao dien: sua chu khong dau (quet tu dong moi trang,
+  ~250 cho: Thu vien lenh, Nguon dien, Truy cap tu xa, SSH, Terminal, Kho
+  file, Bluetooth, Deployment OS, Network Tools, thong bao ket qua, ban phim
+  ao). Xung ho "ban" thay "anh" trong giao dien.
+- PHIEN KET NOI: bo thanh trang thai + tieu de lon, thu gon tab/thanh cong cu
+  -> khung terminal cao them ~140px.
+- THAM SO CAI DAT: chuyen vao Tai nguyen. Nut "Cap nhat tu kho": dong moi tren
+  kho -> them (nhan "Tu kho"); kho sua -> cap nhat; dong khach tu them giu
+  nguyen ("Tu them"); dong da sua tay tren may khong bi ghi de ("Da sua tay");
+  kho xoa -> VAN GIU tren may ("Kho da xoa"). Chi chay khi bam (khong tu dong).
+- THUONG HIEU zTieuYeuz: logo moi (cong RJ45 + dau nhac ">_", dai mau cyan ->
+  xanh duong), mau thuong hieu, favicon. Gan o: trang dang nhap, menu, Gioi
+  thieu, man hinh khoi dong ISO (BIOS), trinh cai (trang chao + slide), man
+  hinh dong lenh, trang docs, trang kho. Bo nhan dien: src/branding/README.md.
+- BAN QUYEN: dong "(c) 2026 zTieuYeuz" trong moi file ma nguon/cau hinh (3 repo,
+  tools/them-ban-quyen.py). Dau an an: ky tu khong rong ma hoa "zTieuYeuz" o
+  chan trang/dang nhap, ma nhan dien trong CSS + header X-CS-ID, chu ky HMAC
+  ban build (.dau-an, khoa rieng chi tren may build) - xac minh bang
+  tools/kiem-dau-an.py.
+- KHO + CLOUDFLARE ACCESS: may gui kem Service Token (CF-Access-Client-Id/
+  Secret) neu co file /var/lib/console-pi/cf-access.json (may build chep vao
+  ISO tu file rieng, khong nam trong repo).
+
+Kiem chung: tren Pi that - selftest 38 dat/2 luu y; moi trang GET quet lai
+khong con chu khong dau (tru du lieu nguoi dung); Cap nhat tu kho that 68
+dong + mo phong them/sua/xoa/sua tay; dau an doc lai duoc tu trang that;
+tab Log loc/tai ve; docs 30 trang, bo quet chan lo dat.
+
 ## 1.5.0
 
 **Cai Windows qua PXE chay duoc ca BIOS, UEFI va UEFI bat Secure Boot.** Anh
