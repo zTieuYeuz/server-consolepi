@@ -22,7 +22,7 @@ printf "${C}  / ___|___  _ __  ___  ___ | | ___   ${T}\n"
 printf "${C} | |   / _ \\| '_ \\/ __|/ _ \\| |/ _ \\  ${T}\n"
 printf "${C} | |__| (_) | | | \\__ \\ (_) | |  __/  ${T}${X}SYSTEM${T}\n"
 printf "${C}  \\____\\___/|_| |_|___/\\___/|_|\\___|  ${T}\n\n"
-printf " ${X}Bo cong cu ky thuat mang.${T}\n"
+printf " ${X}Bo cong cu ky thuat mang - phat trien boi ${T}${C}z${T}TieuYeu${C}z${T}${X} (c) 2026${T}\n"
 printf " ${X}Mo trinh duyet tu may khac vao dia chi duoi day.${T}\n\n"
 
 _co_cong_that() {

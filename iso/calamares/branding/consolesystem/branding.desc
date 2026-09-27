@@ -42,7 +42,7 @@ style:
    SidebarBackground:        "#0B0E14"
    SidebarText:              "#E3E8EF"
    SidebarTextCurrent:       "#0B0E14"
-   SidebarBackgroundCurrent: "#38BDF8"
+   SidebarBackgroundCurrent: "#22D3EE"
 
 slideshow:     "show.qml"
 slideshowAPI:  2

@@ -11,13 +11,14 @@ import subprocess
 from flask import request
 
 from .layout import render_page
+from .gioithieu import khoi_gioi_thieu, CSS_GIOI_THIEU
 from .terminal import load_config, save_config, get_term_credential
 
 ROTATIONS = [
-    ("normal", "0° - Binh thuong"),
-    ("90", "90° - Xoay phai"),
-    ("180", "180° - Lat nguoc"),
-    ("270", "270° - Xoay trai"),
+    ("normal", "0° - Bình thường"),
+    ("90", "90° - Xoay phải"),
+    ("180", "180° - Lật ngược"),
+    ("270", "270° - Xoay trái"),
 ]
 
 WAYLAND_ENV = {
@@ -85,9 +86,9 @@ def set_rotation(value):
 
     # Xoay toa do cam ung cho khop - bat buoc, neu khong se cham khong trung
     touch_ok = sync_touch_matrix(value)
-    extra = (" Toa do cam ung da xoay theo, kiosk dang khoi dong lai."
+    extra = (" Tọa độ cảm ứng đã xoay theo, giao diện màn hình đang khởi động lại."
              if touch_ok else
-             " CANH BAO: khong cap nhat duoc toa do cam ung, cham se khong trung.")
+             " CẢNH BÁO: không cập nhật được tọa độ cảm ứng, chạm sẽ không trúng.")
     return True, f"Đã xoay màn hình sang {value}.{extra}"
 
 
@@ -226,13 +227,13 @@ def _render_settings(msg="", ok=True):
         buttons = "".join(f"""
           <form method="POST" action="/settings/rotate" style="display:inline;">
             <input type="hidden" name="rotation" value="{val}">
-            <button type="submit" class="{'blue' if transform == val else 'gray'}" data-busy="Dang xoay...">{label}</button>
+            <button type="submit" class="{'blue' if transform == val else 'gray'}" data-busy="Đang xoay...">{label}</button>
           </form>""" for val, label in ROTATIONS)
         screen_card = f"""
         <div class="card">
-          <h3>Xoay man hinh</h3>
+          <h3>Xoay màn hình</h3>
           <table style="max-width:430px;margin-bottom:12px;">
-            <tr><th style="width:150px;">Man hinh</th><td><code>{name}</code></td></tr>
+            <tr><th style="width:150px;">Màn hình</th><td><code>{name}</code></td></tr>
             <tr><th>Hướng hiện tại</th><td><code>{transform}</code></td></tr>
             <tr><th>Đã lưu cho lần sau</th><td><code>{saved}</code></td></tr>
           </table>
@@ -245,22 +246,23 @@ def _render_settings(msg="", ok=True):
     else:
         screen_card = """
         <div class="card">
-          <h3>Xoay man hinh</h3>
+          <h3>Xoay màn hình</h3>
           <div class="msg info" style="margin:0;">
-            Thiet bi nay khong gan man hinh (hoac che do kiosk chua chay),
-            nen khong co gi de xoay. Day la binh thuong voi Pi dung tu xa.
+            Thiết bị này không gắn màn hình (hoặc giao diện màn hình chưa chạy),
+            nên không có gì để xoay. Đây là bình thường với máy dùng từ xa.
           </div>
         </div>"""
 
     body = f"""
     {msg_html}
+    {khoi_gioi_thieu()}
     {screen_card}
 
     <div class="card">
-      <h3>Mat khau terminal</h3>
+      <h3>Mật khẩu terminal</h3>
       <table style="max-width:430px;margin-bottom:12px;">
-        <tr><th style="width:150px;">Tai khoan</th><td><code>{user}</code></td></tr>
-        <tr><th>Mat khau</th><td><code id="term-mk" data-mk="{pw}">••••••••••</code>
+        <tr><th style="width:150px;">Tài khoản</th><td><code>{user}</code></td></tr>
+        <tr><th>Mật khẩu</th><td><code id="term-mk" data-mk="{pw}">••••••••••</code>
           <button type="button" class="small gray" style="margin-left:8px;"
             onclick="var c=document.getElementById('term-mk');var h=c.textContent.indexOf('•')<0;
                      c.textContent=h?'••••••••••':c.dataset.mk;this.textContent=h?'Hiện':'Ẩn';">Hiện</button>
@@ -268,12 +270,11 @@ def _render_settings(msg="", ok=True):
                hinh / chup anh la lo. Bam Hien moi thay. --></td></tr>
       </table>
       <form method="POST" action="/settings/regen-term-pass"
-            onsubmit="return confirm('Doi mat khau terminal? Trinh duyet se hoi dang nhap lai.');">
+            onsubmit="return confirm('Đổi mật khẩu terminal? Trình duyệt sẽ hỏi đăng nhập lại.');">
         <button type="submit" class="gray">🔄 Đổi mật khẩu mới</button>
       </form>
       <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
-        Dùng cho 2 khung terminal (Terminal tại chỗ và SSH). Lưu tại
-        <code>/opt/console-pi/config.json</code>.
+        Dùng cho 2 khung terminal (Terminal tại chỗ và SSH).
       </p>
     </div>
 
@@ -284,15 +285,14 @@ def _render_settings(msg="", ok=True):
     <div class="card">
       <h3>Thông tin hệ thống</h3>
       <table>
-        <tr><th style="width:180px;">Phien ban toolkit</th><td><code>{_version()}</code></td></tr>
-        <tr><th>Thư mục cài đặt</th><td><code>/opt/console-pi</code></td></tr>
-        <tr><th>File cau hinh</th><td><code>/opt/console-pi/config.json</code></td></tr>
-        <tr><th>Thu vien lenh</th><td><code>/opt/console-pi/command-library.json</code></td></tr>
+        <tr><th style="width:180px;">Phiên bản</th><td><code>{_version()}</code></td></tr>
+        <tr><th>Tên máy</th><td><code>{__import__("socket").gethostname()}</code></td></tr>
       </table>
     </div>"""
 
-    return render_page(body, active="/settings", title="Cai dat",
-                       subtitle="Màn hình, mật khẩu terminal, thông tin hệ thống")
+    return render_page(body, active="/settings", title="Cài đặt",
+                       subtitle="Giới thiệu, màn hình, mật khẩu terminal, thông tin hệ thống",
+                       extra_css=CSS_GIOI_THIEU)
 
 
 def _trang_thai_kiosk():
@@ -472,4 +472,4 @@ def _version():
                 return f.read().strip()
         except Exception:
             continue
-    return "khong ro"
+    return "không rõ"

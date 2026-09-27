@@ -10,8 +10,8 @@
       <stop offset="1" stop-color="#38BDF8" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="markGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#38BDF8"/>
-      <stop offset="1" stop-color="#0EA5E9"/>
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#2563EB"/>
     </linearGradient>
   </defs>
 
@@ -19,23 +19,26 @@
   <rect x="0" y="0" width="640" height="480" fill="url(#bg)"/>
   <rect x="0" y="0" width="640" height="480" fill="url(#glow)"/>
 
-  <!-- bieu tuong: khung terminal bo goc, dau nhac ">" + con tro -->
-  <g transform="translate(272,40)">
-    <rect x="0" y="0" width="96" height="72" rx="14" fill="#141A23" stroke="url(#markGrad)" stroke-width="2.5"/>
-    <text x="18" y="46" font-family="DejaVu Sans Mono, monospace" font-size="30" font-weight="bold" fill="#38BDF8">&gt;_</text>
+  <!-- logo zTieuYeuz (27/09/2026): cong RJ45 console + dau nhac ">_" -->
+  <g transform="translate(284,34) scale(0.5625)">
+    <rect x="4" y="4" width="120" height="120" rx="30" fill="url(#markGrad)"/>
+    <path d="M28 38h72v52H80v10H48V90H28z" fill="#fff"/>
+    <g stroke="#0B1220" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M43 53l12 10-12 10"/><path d="M62 76h22"/>
+    </g>
   </g>
 
   <!-- ten he thong -->
   <text x="320" y="150" font-family="DejaVu Sans, sans-serif" font-size="34" font-weight="bold"
         fill="#F1F5F9" text-anchor="middle" letter-spacing="6">CONSOLE SYSTEM</text>
 
-  <!-- khau hieu -->
-  <text x="320" y="176" font-family="DejaVu Sans, sans-serif" font-size="13"
-        fill="#8A94A6" text-anchor="middle" letter-spacing="1.5">NETWORK ENGINEER TOOLKIT</text>
+  <!-- thuong hieu -->
+  <text x="320" y="176" font-family="DejaVu Sans, sans-serif" font-size="14" font-weight="bold"
+        fill="#E6EDF7" text-anchor="middle" letter-spacing="1"><tspan fill="#22D3EE">z</tspan>TieuYeu<tspan fill="#22D3EE">z</tspan></text>
 
   <!-- vach ngan mong -->
   <rect x="248" y="192" width="144" height="2" fill="#1F2733"/>
-  <rect x="288" y="192" width="64" height="2" fill="#38BDF8"/>
+  <rect x="288" y="192" width="64" height="2" fill="#22D3EE"/>
 
   <!-- thong tin phien ban / build - gon, dat trong vung an toan phia tren
        hop menu (vesamenu ve hop menu de tren cung tu khoang y=192px do

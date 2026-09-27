@@ -1,5 +1,5 @@
 /* Console System - cac trang gioi thieu hien trong luc chep he thong.
- * Chi dung chu + mau (khong anh) de nhe va khong phu thuoc do phan giai.
+ * Chu + mau + logo zTieuYeuz (logo.png cung thu muc branding, 27/09/2026).
  */
 import QtQuick 2.0;
 import calamares.slideshow 1.0;
@@ -35,9 +35,15 @@ Presentation
                 anchors.centerIn: parent
                 width: parent.width * 0.8
                 spacing: 18
+                Image {
+                    source: "logo.png"
+                    width: 88; height: 88
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    smooth: true
+                }
                 Text {
                     text: tieuDe
-                    color: "#38BDF8"
+                    color: "#22D3EE"
                     font.pixelSize: 30
                     font.bold: true
                     width: parent.width

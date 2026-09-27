@@ -158,9 +158,11 @@ a:hover { color:var(--nhan-dam); }
 .brand .bten { flex:1; min-width:0; }
 /* Cham cyan truoc ten: dau hieu nhan dien, thay cho viec to xanh ca dong
    chu (chu mau nhat kho doc hon chu trang tren nen toi). */
-.brand .bten::before { content:""; display:inline-block; width:7px; height:7px;
-         border-radius:50%; background:var(--nhan); margin-right:8px;
-         vertical-align:middle; box-shadow:0 0 8px var(--nhan); }
+/* Logo zTieuYeuz (27/09/2026 - nhan dien thuong hieu) thay cho cham cyan cu */
+.brand .blogo { flex:none; display:flex; }
+.brand .blogo img { width:34px; height:34px; display:block; }
+.brand small .zt { font-weight:700; color:var(--chu-mo); }
+.brand small .zt i { font-style:normal; color:#22D3EE; }
 /* Nut thu gon: 40px de ngon tay bam trung tren man hinh cam ung */
 .brand .thu { flex:none; width:40px; height:40px; border-radius:9px; cursor:pointer;
               background:transparent; border:1px solid var(--vien-ro);
@@ -196,7 +198,7 @@ body.thu-gon .side { width:64px; flex:0 0 64px; }
 body.thu-gon .side .nl,
 body.thu-gon .side .brand .bten,
 body.thu-gon .side .foot { display:none; }
-body.thu-gon .side .brand { justify-content:center; padding:15px 8px; }
+body.thu-gon .side .brand { justify-content:center; padding:15px 8px; flex-direction:column; }
 body.thu-gon .side .nav a,
 body.thu-gon .side .nav .nhom > summary { justify-content:center; padding:12px 6px; }
 body.thu-gon .side .nav .nhom > summary::after { display:none; }
@@ -676,6 +678,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title} - {TEN_NGAN}</title>
+<link rel="icon" href="/favicon.ico">
 <style>{BASE_CSS}
 {extra_css}</style>
 </head>
@@ -683,14 +686,15 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 <div class="wrap">
   <div class="side">
     <div class="brand">
-      <span class="bten">{TEN_HE_THONG}<small>{KHAU_HIEU}</small></span>
+      <a href="/" class="blogo" title="Console System - zTieuYeuz"><img src="/thuong-hieu/logo-mark.svg" alt=""></a>
+      <span class="bten">{TEN_HE_THONG}<small>by <b class="zt"><i>z</i>TieuYeu<i>z</i></b></small></span>
       <button type="button" id="nut-thu" class="thu"
               title="Thu gọn / mở rộng thanh menu">&raquo;</button>
     </div>
     <div class="nav">{nav_html}</div>
     <div class="foot">
       <a href="/logout">Đăng xuất</a>
-      <div style="font-size:11px;color:#5D6879;margin-top:6px;">&copy; 2026 zTieuYeuz</div>
+      <div style="font-size:11px;color:#5D6879;margin-top:6px;">&copy; 2026 <b style="color:#8A94A6;"><span style="color:#22D3EE;">z</span>TieuYeu<span style="color:#22D3EE;">z</span></b></div>
     </div>
   </div>
   <div class="main">

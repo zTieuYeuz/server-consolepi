@@ -1,6 +1,6 @@
 /* Nut bam va thanh tien trinh mang mau cyan cua Console System */
 QPushButton {
-    background-color: #38BDF8;
+    background-color: #22D3EE;
     color: #0B0E14;
     border: none;
     border-radius: 6px;
@@ -14,4 +14,4 @@ QProgressBar {
     border-radius: 5px;
     text-align: center;
 }
-QProgressBar::chunk { background-color: #38BDF8; border-radius: 4px; }
+QProgressBar::chunk { background-color: #22D3EE; border-radius: 4px; }

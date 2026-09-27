@@ -14,7 +14,9 @@ import secrets
 from flask import request, redirect, session, render_template_string
 
 # Duong dan cac trang khong can dang nhap
-PUBLIC_PATHS = {"/login", "/vkeyboard.js", "/dashboard.js", "/healthz", "/_auth"}
+from .gioithieu import DUONG_CONG_KHAI as _LOGO
+# Logo/favicon cong khai: trang dang nhap phai hien duoc logo truoc khi dang nhap
+PUBLIC_PATHS = {"/login", "/vkeyboard.js", "/dashboard.js", "/healthz", "/_auth"} | _LOGO
 
 SECRET_FILE = "/opt/console-pi/flask-secret.key"
 
@@ -197,28 +199,35 @@ LOGIN_TEMPLATE = """<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Đăng nhập - Console System</title>
+<link rel="icon" href="/favicon.ico">
 <style>
 * { box-sizing:border-box; }
-body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-       background:#15171a; color:#e6e6e6; font-family:system-ui, Arial, sans-serif; }
-.box { background:#1b1e22; border:1px solid #2c3036; border-radius:11px;
-       padding:30px 32px; width:100%; max-width:390px; }
-h1 { margin:0 0 4px; font-size:21px; color:#4CAF50; }
-p.s { margin:0 0 20px; color:#8b93a1; font-size:13px; }
-label { display:block; margin:13px 0 5px; font-size:13px; color:#a8b0bd; }
-input { width:100%; padding:13px; background:#22262b; color:#e6e6e6;
-        border:1px solid #363b42; border-radius:6px; font-size:16px; }
-button { width:100%; margin-top:20px; padding:14px; background:#4CAF50; color:#fff;
-         border:none; border-radius:6px; font-size:16px; cursor:pointer; min-height:48px; }
-.err { background:#3a1a1a; border-left:4px solid #ef4444; padding:11px 14px;
+body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+       background:radial-gradient(1200px 600px at 20% -10%, rgba(34,211,238,.14), transparent 60%),
+                  radial-gradient(900px 500px at 110% 110%, rgba(37,99,235,.16), transparent 60%), #0B0E14;
+       color:#E3E8EF; font-family:system-ui, -apple-system, "Segoe UI", Arial, sans-serif; padding:16px; }
+.box { background:#141A23; border:1px solid #1F2733; border-radius:14px;
+       padding:28px 30px; width:100%; max-width:400px; box-shadow:0 10px 40px rgba(0,0,0,.45); }
+.logo { display:block; height:58px; width:auto; margin:0 0 18px; }
+p.s { margin:0 0 18px; color:#8A94A6; font-size:13.5px; }
+label { display:block; margin:13px 0 5px; font-size:13px; color:#A8B0BD; }
+input { width:100%; padding:13px; background:#0F141C; color:#E3E8EF;
+        border:1px solid #2B3746; border-radius:8px; font-size:16px; }
+input:focus { outline:none; border-color:#22D3EE; box-shadow:0 0 0 3px rgba(34,211,238,.15); }
+button { width:100%; margin-top:20px; padding:14px; background:linear-gradient(135deg,#22D3EE,#2563EB);
+         color:#fff; font-weight:700; border:none; border-radius:8px; font-size:16px; cursor:pointer; min-height:48px; }
+button:active { transform:scale(.98); }
+.err { background:rgba(248,113,113,.12); border-left:4px solid #F87171; padding:11px 14px;
        border-radius:6px; margin-top:15px; font-size:14px; }
-.hint { margin-top:18px; color:#6b7280; font-size:12px; line-height:1.6; }
+.hint { margin-top:18px; color:#5D6879; font-size:12px; line-height:1.6; }
+.ban-quyen { margin-top:18px; color:#5D6879; font-size:12px; text-align:center; }
+.ban-quyen b span { color:#22D3EE; }
 </style>
 </head>
 <body>
 <div class="box">
-  <h1>🖥️ Console System</h1>
-  <p class="s">Đăng nhập bằng tài khoản Linux của thiết bị</p>
+  <img class="logo" src="/thuong-hieu/logo-full.svg" alt="zTieuYeuz - Console System">
+  <p class="s">Đăng nhập bằng tài khoản của thiết bị</p>
   <form method="POST">
     <label>Tài khoản</label>
     <input type="text" name="username" value="{{ username or '' }}" autofocus autocapitalize="off" autocomplete="username">
@@ -227,9 +236,10 @@ button { width:100%; margin-top:20px; padding:14px; background:#4CAF50; color:#f
     <button type="submit">Đăng nhập</button>
   </form>
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
-  <div class="hint">Dung chinh tai khoan SSH cua Pi (vi du <code>administrator</code>).
-  Khong co tai khoan rieng, khong luu mat khau tren dashboard.</div>
+  <div class="hint">Dùng chính tài khoản đăng nhập của máy (ví dụ <code>administrator</code>).
+  Giao diện không có tài khoản riêng và không lưu mật khẩu.</div>
 </div>
+<div class="ban-quyen">Console System &middot; phát triển bởi <b><span>z</span>TieuYeu<span>z</span></b> &middot; &copy; 2026</div>
 <script src="/vkeyboard.js"></script>
 </body>
 </html>"""
