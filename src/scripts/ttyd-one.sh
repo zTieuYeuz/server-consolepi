@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console Pi - Chay 1 ttyd cho 1 cong serial
 #
 # Port = 8001 + so thu tu cua ttyUSB (ttyUSB0 -> 8001, ttyUSB1 -> 8002)

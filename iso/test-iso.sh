@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # ===================================================================
 # Console System - test TU DONG anh dia ISO
 # ===================================================================

@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi Network Tools - MTU / Path MTU Discovery
 

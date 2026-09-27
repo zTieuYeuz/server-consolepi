@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi Network Tools - Kiem tra toan dien cong mang day (gop DHCP
 Testing + Kiem tra cong vat ly + Bang thong, theo yeu cau gop lam mot trang

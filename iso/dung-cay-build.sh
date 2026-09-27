@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # ===================================================================
 # Console System - dung lai CAY BUILD (live-build) tu repo
 # ===================================================================
@@ -37,6 +38,25 @@ dung_cay() {   # $1 = amd64 | i386
     rsync -a --exclude='__pycache__' --exclude='*.pyc' "$REPO/src/" "$R/opt/console-pi/"
     install -m 644 "$REPO/VERSION" "$R/opt/console-pi/VERSION"
     chmod 755 "$R/opt/console-pi/scripts/"*.sh "$R/opt/console-pi/scripts/"*.py 2>/dev/null || true
+
+    # --- 1b. Ban quyen + DAU AN ban build (27/09/2026, yeu cau cua tac gia).
+    # COPYRIGHT hien ro; .dau-an la chu ky HMAC-SHA256 bang KHOA RIENG chi nam
+    # tren may build (KHONG vao repo, KHONG vao ISO) - chi tac gia tao/xac minh
+    # duoc (tools/kiem-dau-an.py --iso ... --khoa ...). Chua co khoa thi tu sinh
+    # 1 lan va nhac sao luu - mat khoa la mat kha nang chung minh ban build cu.
+    mkdir -p "$R/usr/share/doc/console-system"
+    printf 'Console System\n(c) 2026 zTieuYeuz. All rights reserved.\nPhat trien boi zTieuYeuz - https://console-docs.home-server.id.vn\n' \
+        > "$R/usr/share/doc/console-system/COPYRIGHT"
+    local KHOA_DA=/root/.config/zt/dau-an.key
+    if [ ! -s "$KHOA_DA" ]; then
+        mkdir -p "$(dirname "$KHOA_DA")"; chmod 700 "$(dirname "$KHOA_DA")"
+        head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > "$KHOA_DA"; chmod 600 "$KHOA_DA"
+        echo "!!! Da sinh KHOA DAU AN moi: $KHOA_DA - SAO LUU file nay (chung minh ban quyen)"
+    fi
+    local ND; ND="ConsoleSystem|$(tr -d ' \r\n' < "$REPO/VERSION")|$ARCH|$(date -u +%Y-%m-%dT%H:%MZ)|zTieuYeuz"
+    local CK; CK="$(printf '%s' "$ND" | openssl dgst -sha256 -hmac "$(cat "$KHOA_DA")" -r | cut -d' ' -f1)"
+    printf '{"noi_dung": "%s", "chu_ky": "%s"}\n' "$ND" "$CK" > "$R/opt/console-pi/.dau-an"
+    cp "$R/opt/console-pi/.dau-an" "$R/usr/share/doc/console-system/.dau-an"
 
     # --- 2. Don vi systemd + cau hinh: hook 0100 cai tu day vao he thong
     local S="$R/usr/local/share/console-system"

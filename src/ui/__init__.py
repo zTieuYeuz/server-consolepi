@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """Console Pi - cac tab giao dien moi (bo cuc thanh trai + noi dung phai)."""
 from .layout import render_page, get_status_chips          # noqa: F401
 from .auth import register_auth                            # noqa: F401

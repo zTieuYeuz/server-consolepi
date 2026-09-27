@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """CHI DE TEST: tao bo kich ban test QUA CHINH trinh tu tren web (giong nguoi
 dung bam), chay NGAY TREN may Console System (cong kiosk 127.0.0.1:8880).
 

@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - NOI DUY NHAT khai bao duong dan.
 

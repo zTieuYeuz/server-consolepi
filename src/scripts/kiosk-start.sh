@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console Pi - Khoi dong giao dien kiosk tren man hinh cam ung gan truc tiep
 #
 # Chay chromium toan man hinh (khong thanh dia chi, khong tab) tro vao

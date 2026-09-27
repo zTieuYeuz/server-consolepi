@@ -1,3 +1,4 @@
+/* Console System - (c) 2026 zTieuYeuz. All rights reserved. */
 /*
  * Console Pi - Ban phim ao + tro giup che do kiosk
  *

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console Pi - Khoi dong 1 terminal web (ttyd gan vao phien tmux)
 #
 # BAO MAT: chi lang nghe tren 127.0.0.1, KHONG mo ra mang. Nguoi dung vao

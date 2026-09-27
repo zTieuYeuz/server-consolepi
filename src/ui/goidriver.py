@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - GOI DRIVER PHO BIEN cho anh boot (WinPE).
 

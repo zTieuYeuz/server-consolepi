@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Duong vao danh cho MAY (API + tai lieu tu mo ta).
 

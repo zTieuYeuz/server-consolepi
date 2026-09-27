@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """CHI DE TEST: sinh file cau hinh dnsmasq + menu.ipxe cho pxe-lab.sh bang
 CHINH code cua ui/pxe.py va ui/pxemenu.py (khong viet tay - test dung thu
 se chay that). Du lieu tam, khong dung toi /var/lib/console-pi.

@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi Network Tools - STP/LACP Detection (netool.io Phan 4) +
 VLAN Tag Detection (netool.io Phan 5), gop chung 1 lan sniff cho do

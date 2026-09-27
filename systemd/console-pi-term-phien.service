@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 [Unit]
 Description=Console System - Phien ket noi kieu MobaXterm (ttyd + tmux, nhieu phien)
 After=network.target console-pi-dashboard.service

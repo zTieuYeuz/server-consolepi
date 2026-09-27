@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Tab Cai dat (yeu cau so 3: nut xoay man hinh)
 

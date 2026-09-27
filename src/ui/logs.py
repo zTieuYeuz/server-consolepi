@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console System - Trang "Nhat ky" (yeu cau: "phai co he thong log lai ghi
 lai tat ca nhung loi, nhieu khi can check thi sao"; 27/09/2026: them tab Log

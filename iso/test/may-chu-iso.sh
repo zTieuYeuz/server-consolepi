@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # ===================================================================
 # CHI DE TEST (may build): "Console System cai tu ISO" chay trong may ao,
 # phuc vu PXE cho may khach trong 1 MANG LAB RIENG (bridge brlab, khong noi

@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console System - PHIEN KET NOI kieu MobaXterm (27/09/2026, anh Thoai: "lam lai
 phan console ssh de nguoi ta de cau hinh hon, giong MobaXterm").

@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Terminal local (yeu cau so 5) va SSH tuong tac (mot phan yeu cau 7)
 

@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Phat PXE that (giai doan ke tiep cua Deployment OS)
 

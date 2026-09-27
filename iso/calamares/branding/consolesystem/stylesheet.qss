@@ -1,3 +1,4 @@
+/* Console System - (c) 2026 zTieuYeuz. All rights reserved. */
 /* Nut bam va thanh tien trinh mang mau cyan cua Console System */
 QPushButton {
     background-color: #22D3EE;

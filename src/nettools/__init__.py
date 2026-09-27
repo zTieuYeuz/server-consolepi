@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Network Tools (port cac chuc nang netool.io Pro2)
 

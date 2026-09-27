@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # ===================================================================
 # CHI DE TEST: phong thi nghiem PXE hoan toan TACH BIET (network namespace),
 # khong dung toi mang that cua may build.

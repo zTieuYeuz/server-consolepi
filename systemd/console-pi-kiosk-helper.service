@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 [Unit]
 Description=Console Pi - Tiem nut Ve Dashboard + ban phim ao vao moi trang cua kiosk
 After=console-pi-kiosk.service

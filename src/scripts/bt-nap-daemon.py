@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Dang ky vai tro NAP (Network Access Point) va GIU dang ky do
 song suot doi tien trinh nay.

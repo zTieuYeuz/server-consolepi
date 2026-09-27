@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """Sua ban dich tieng Viet cua Calamares 3.3.14 cho trinh cai Console System.
 
 VI SAO CAN (22/09/2026, cai thu bang giao dien do hoa): ban dich goc

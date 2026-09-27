@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Che do cam thang thiet bi (iLO / iDRAC / switch quan ly).
 

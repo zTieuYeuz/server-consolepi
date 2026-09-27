@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console System - dung ISO ban 32-bit (Debian 12 / i386).
 #
 # Vi sao Debian 12 chu khong phai 13: Debian DA BO HAN kernel va trinh cai

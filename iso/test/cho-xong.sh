@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # cho-xong.sh <fw> "<ten may> · <dau IP>"   (may build) - cho trang Tien trinh bao xong, tat dung cach, doc ket qua
 FW=$1; MAY=$2; cd /build/test
 for i in $(seq 1 150); do

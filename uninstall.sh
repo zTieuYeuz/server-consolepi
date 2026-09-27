@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console Pi Toolkit - Go cai dat
 #   sudo /opt/console-pi/uninstall.sh            (giu lai cau hinh)
 #   sudo /opt/console-pi/uninstall.sh --purge    (xoa sach ca cau hinh)

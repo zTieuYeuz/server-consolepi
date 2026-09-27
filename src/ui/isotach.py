@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Tu dong tach boot.wim / install.wim tu file ISO Windows.
 

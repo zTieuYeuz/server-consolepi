@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Tab Giai tri (YouTube, TikTok...) luc ranh giua gio lam viec
 

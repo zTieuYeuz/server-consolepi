@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console System - chay 1 PHIEN KET NOI ben trong tmux (goi tu phien-mo.sh).
 

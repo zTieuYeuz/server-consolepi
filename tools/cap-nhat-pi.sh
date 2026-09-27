@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Cap nhat Console Pi dang chay len ban moi nhat trong repo
 # Chi thay ui/, nettools/, pxe-boot/, scripts/, VERSION - giong dung buoc copy cua install.sh.
 # KHONG dung toi mang, dich vu systemd, cau hinh. Chay: sudo bash ~/cap-nhat-pi.sh

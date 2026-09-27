@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console System - mo 1 PHIEN KET NOI (kieu MobaXterm) trong tmux.
 #
 # ttyd (console-pi-term-phien, cong 8012, chi 127.0.0.1) chay script nay voi

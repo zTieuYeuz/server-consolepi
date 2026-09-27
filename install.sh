@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 #
 # Console Pi Toolkit - Bo cai dat mot lenh
 #

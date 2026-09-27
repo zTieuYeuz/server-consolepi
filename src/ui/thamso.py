@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Tra cuu THAM SO CAI DAT IM LANG cua phan mem.
 

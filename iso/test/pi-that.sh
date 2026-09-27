@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # ===================================================================
 # CHI DE TEST: may ao tren MAY BUILD boot qua mang tu CONSOLE PI THAT (che
 # do "mang co san DHCP") - may ao ra LAN that qua macvtap (khong doi cau

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console Pi - Tu kiem tra toan bo he thong.
 #
 # Muc dich: tra loi duoc cau hoi "sau khi khoi dong lai, moi thu con chay dung

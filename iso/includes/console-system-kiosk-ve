@@ -1,4 +1,5 @@
 #!/bin/sh
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console System - chon cach VE cho giao dien kiosk (GPU hay CPU) va canh gac.
 #
 # Goi tu drop-in cua console-pi-kiosk.service (do console-system-lan-dau

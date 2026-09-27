@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Nhan biet phan cung: cong mang nao, may gi, nhiet do o dau.
 

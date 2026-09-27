@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # chay-khach.sh <fw> <so lan bam down trong danh sach kich ban>  (chay tren may build)
 FW=$1; XUONG=$2; cd /build/test
 # Moc thoi gian THEO DONG HO MAY CHU (may build lech mui gio) - chi dem lan tai

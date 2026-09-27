@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Tab "Deployment OS" (trien khai he dieu hanh qua mang)
 

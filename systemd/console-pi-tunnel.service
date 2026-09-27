@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 [Unit]
 Description=Console Pi - Cloudflare Tunnel (truy cap tu xa)
 After=network-online.target

@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi Network Tools - LLDP/CDP Discovery (netool.io Phan 1)
 Kem theo PoE passive detection qua LLDP-MED (netool.io Phan 11) - cung

@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - ket noi toi "Kho luu tru trung tam" (kho-console-pi), du an
 web rieng chay tren may chu rieng cua nha phat trien, xem

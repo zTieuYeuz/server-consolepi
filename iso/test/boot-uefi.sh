@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # CHI DE TEST: boot o ao da cai bang cai-uefi.sh (card man hinh std-VGA de
 # kiosk ve bang CPU nhu may ao that), SSH qua cong 18022, man hinh qua
 # monitor: echo "screendump /build/test/uefi/x.ppm" | socat - UNIX-CONNECT:/build/test/uefi/mon.sock

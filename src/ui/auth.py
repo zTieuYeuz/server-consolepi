@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Dang nhap bang tai khoan Linux cua chinh may (qua PAM)
 
@@ -239,7 +240,7 @@ button:active { transform:scale(.98); }
   <div class="hint">Dùng chính tài khoản đăng nhập của máy (ví dụ <code>administrator</code>).
   Giao diện không có tài khoản riêng và không lưu mật khẩu.</div>
 </div>
-<div class="ban-quyen">Console System &middot; phát triển bởi <b><span>z</span>TieuYeu<span>z</span></b> &middot; &copy; 2026</div>
+<div class="ban-quyen">Console System{{ dau_an }} &middot; phát triển bởi <b><span>z</span>TieuYeu<span>z</span></b> &middot; &copy; 2026</div>
 <script src="/vkeyboard.js"></script>
 </body>
 </html>"""
@@ -305,7 +306,8 @@ def register_auth(app):
                 session["user"] = username
                 return redirect("/")
             error = msg
-        return render_template_string(LOGIN_TEMPLATE, error=error, username=username)
+        from .gioithieu import dau_an_an
+        return render_template_string(LOGIN_TEMPLATE, error=error, username=username, dau_an=dau_an_an())
 
     @app.route("/logout")
     def logout():

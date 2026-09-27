@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # ===================================================================
 # CHI DUNG DE TEST TREN MAY AO BO DI - KHONG PHAI PRESEED PHAT HANH.
 # ===================================================================

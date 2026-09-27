@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - tab GOP Y (26/09/2026, anh Thoai: "them 1 tab gop y ben trai,
 sau khi ho gui thong tin va gop y no se sync len kho, toi se len do xem; gop

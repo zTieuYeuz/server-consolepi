@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # ===================================================================
 # CHI DE TEST: chung minh chuoi boot iPXE (ban ky) + wimboot chay tren ca
 # 3 kieu may - BIOS, UEFI, UEFI + Secure Boot - trong phong thi nghiem

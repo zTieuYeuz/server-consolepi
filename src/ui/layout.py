@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Khung giao dien dung chung (thanh dieu huong trai + noi dung phai)
 
@@ -105,6 +106,7 @@ BASE_CSS = """
    khong phan biet duoc dau la viec chinh dau la viec phu.
 */
 :root {
+  --zt:       "7a546965755965757a7c436f6e736f6c6553797374656d";
   --nen:      #0B0E14;   /* nen trang */
   --nen-noi:  #10151D;   /* thanh menu, thanh trang thai */
   --the:      #141A23;   /* the noi dung */
@@ -624,6 +626,10 @@ def _xong_chips(chips):
     return chips
 
 
+from .gioithieu import dau_an_an as _dau_an_an
+_DAU_AN = _dau_an_an()
+
+
 def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""):
     """
     Dung 1 trang hoan chinh voi khung chung.
@@ -694,7 +700,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     <div class="nav">{nav_html}</div>
     <div class="foot">
       <a href="/logout">Đăng xuất</a>
-      <div style="font-size:11px;color:#5D6879;margin-top:6px;">&copy; 2026 <b style="color:#8A94A6;"><span style="color:#22D3EE;">z</span>TieuYeu<span style="color:#22D3EE;">z</span></b></div>
+      <div style="font-size:11px;color:#5D6879;margin-top:6px;">&copy; 2026{_DAU_AN} <b style="color:#8A94A6;"><span style="color:#22D3EE;">z</span>TieuYeu<span style="color:#22D3EE;">z</span></b></div>
     </div>
   </div>
   <div class="main">

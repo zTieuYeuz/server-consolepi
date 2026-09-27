@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - MENU PXE: may khach boot qua mang thay menu de TU CHON kich ban.
 

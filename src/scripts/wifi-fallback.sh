@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console Pi - WiFi fallback (AP <-> Client)
 # Ban va: them 2 chot chan de KHONG pha ket noi dang chay tot.
 

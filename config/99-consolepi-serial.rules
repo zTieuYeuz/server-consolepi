@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console Pi - tu nhan moi loai cap console
 #
 # Truoc day phai `systemctl enable console-pi-ttyd@ttyUSB0` san cho tung

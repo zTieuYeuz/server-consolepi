@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 [Unit]
 Description=Console Pi - dnsmasq (DHCP) rieng cho Bluetooth PAN (pan0)
 After=bt-pan0.service

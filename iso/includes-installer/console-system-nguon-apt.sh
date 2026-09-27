@@ -1,4 +1,5 @@
 #!/bin/sh
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console System - ghi nguon goi Debian cho may cai bang TRINH CAI CHU (d-i).
 # Chay TRONG he thong vua cai (in-target) o cuoi qua trinh cai, qua
 # preseed/late_command.

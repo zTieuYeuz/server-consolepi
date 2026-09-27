@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Agent ghep cap Bluetooth
 

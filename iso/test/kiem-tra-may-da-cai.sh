@@ -1,4 +1,5 @@
 #!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # ===================================================================
 # CHI DE TEST: chay BEN TRONG may vua cai tu ISO (bang sudo) - kiem tra
 # "hang dem ban": moi dong la 1 dieu nguoi mua mong doi, in DAT / LOI.

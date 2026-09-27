@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - Tro giup kiosk: tiem nut "Ve Dashboard" + ban phim ao vao MOI
 trang web ma kiosk dang mo (khong rieng gi trang cua Console Pi)

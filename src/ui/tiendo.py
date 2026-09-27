@@ -1,3 +1,4 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """
 Console Pi - THEO DOI TIEN TRINH cai dat tren may dich (thoi gian thuc).
 
