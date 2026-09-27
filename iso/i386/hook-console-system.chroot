@@ -96,6 +96,15 @@ fi
     install -m 644 /usr/local/share/console-system/config/99-consolepi-serial.rules /etc/udev/rules.d/
 [ -f /usr/local/share/console-system/config/smb.conf ] && \
     install -m 644 /usr/local/share/console-system/config/smb.conf /etc/samba/smb.conf
+# Nhat ky: TOAN BO chi giu 7 ngay (journal + file log Console System + nginx)
+if [ -f /usr/local/share/console-system/config/journald-console-pi.conf ]; then
+    mkdir -p /etc/systemd/journald.conf.d
+    install -m 644 /usr/local/share/console-system/config/journald-console-pi.conf \
+        /etc/systemd/journald.conf.d/60-console-pi.conf
+fi
+[ -f /usr/local/share/console-system/config/logrotate-console-pi ] && \
+    install -m 644 /usr/local/share/console-system/config/logrotate-console-pi /etc/logrotate.d/console-pi
+[ -f /etc/logrotate.d/nginx ] && sed -i -E 's/^([[:space:]]*)rotate [0-9]+/\1rotate 7/' /etc/logrotate.d/nginx
 
 # --- 5. Mat khau kho Samba: SINH NGAU NHIEN o lan khoi dong DAU TIEN ---
 #

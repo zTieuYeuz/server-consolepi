@@ -296,7 +296,7 @@ def _switch_worker(ssid, password, do_save):
         saved = save_wifi_permanently(ssid, password) if do_save else False
         _, _, ip = get_net_status()
         WIFI_STATUS.update(state="connected", ssid=ssid, ip=ip, saved=saved,
-                           msg=f"Đã kết nối '{ssid}'" + (" va da luu." if saved else " (khong luu)."))
+                           msg=f"Đã kết nối '{ssid}'" + (" và đã lưu." if saved else " (không lưu)."))
     else:
         restore_ap_mode()
         WIFI_STATUS.update(state="failed", ssid=ssid, ip=AP_IP, saved=False,
@@ -886,8 +886,8 @@ def wifi_disconnect():
     time.sleep(1)
     subprocess.run(["networkctl", "reconfigure", cong_wifi()],
                    capture_output=True, timeout=15)
-    return True, ("Da ngat WiFi. Pi se tu danh gia lai trong vong 2 phut: "
-                  "thay mang quen thi noi lai, khong thay thi bat AP ConsolePi.")
+    return True, ("Đã ngắt WiFi. Máy sẽ tự đánh giá lại trong vòng 2 phút: "
+                  "thấy mạng quen thì nối lại, không thấy thì bật AP ConsolePi.")
 
 
 def client_via_wlan():
@@ -976,20 +976,20 @@ def bat_gia_mac(iface=None):
     if iface is None:
         iface = cong_wifi()
     if dang_gia_mac():
-        return True, "Da bat san."
+        return True, "Đã bật sẵn."
     mac_moi = _tao_mac_gia()
     try:
         with open(MAC_SPOOF_FLAG, "w") as f:
             f.write(mac_moi + "\n")
     except OSError as e:
-        return False, f"Khong luu duoc: {e}"
+        return False, f"Không lưu được: {e}"
 
     ok, msg = _ap_dung_mac(iface, mac_moi)
     if ok:
-        return True, f"Da bat gia MAC ({mac_moi}) va ap dung ngay."
-    return True, (f"Da bat gia MAC ({mac_moi}), nhung ap dung ngay khong thanh "
-                  f"cong ({msg}) - se tu ap dung o lan ket noi lai WiFi ke tiep "
-                  f"(toi da 2 phut).")
+        return True, f"Đã bật giả MAC ({mac_moi}) và áp dụng ngay."
+    return True, (f"Đã bật giả MAC ({mac_moi}), nhưng áp dụng ngay không thành "
+                  f"công ({msg}) - sẽ tự áp dụng ở lần kết nối lại WiFi kế tiếp "
+                  f"(tối đa 2 phút).")
 
 
 def tat_gia_mac(iface=None):
@@ -1002,11 +1002,11 @@ def tat_gia_mac(iface=None):
         pass
     that = mac_that(iface)
     if not that:
-        return True, "Da tat gia MAC (khong doc duoc MAC goc de tra ve ngay - se dung MAC that o lan ket noi sau)."
+        return True, "Đã tắt giả MAC (không đọc được MAC gốc để trả về ngay - sẽ dùng MAC thật ở lần kết nối sau)."
     ok, msg = _ap_dung_mac(iface, that)
     if ok:
-        return True, f"Da tat gia MAC, tra lai MAC that ({that}) ngay."
-    return True, f"Da tat gia MAC, nhung tra ve ngay khong thanh cong ({msg}) - se tu dung MAC that o lan ket noi sau."
+        return True, f"Đã tắt giả MAC, trả lại MAC thật ({that}) ngay."
+    return True, f"Đã tắt giả MAC, nhưng trả về ngay không thành công ({msg}) - sẽ tự dùng MAC thật ở lần kết nối sau."
 
 
 def _ap_dung_mac(iface, mac):
@@ -1069,13 +1069,13 @@ def _wifi_page(msg="", ok=True):
       <h3>Chế độ phát sóng (AP ConsolePi)</h3>
       {ap_tt}
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-        {"Dang KHOA o che do AP - Pi se khong tu chuyen sang WiFi." if locked
+        {"Đang KHÓA ở chế độ AP - máy sẽ không tự chuyển sang WiFi." if locked
          else "Pi tự chuyển sang WiFi quen thuộc khi tìm thấy. Khóa AP để giữ nguyên sóng ConsolePi."}
       </p>
       <form method="POST" action="{'/release-ap' if locked else '/force-ap'}"
-            onsubmit="return confirm('{'Go khoa AP?' if locked else 'Bat va KHOA AP ConsolePi? Neu dang ket noi qua WiFi se bi dut - nen lam khi dang cam day LAN.'}');">
+            onsubmit="return confirm('{'Gỡ khóa AP?' if locked else 'Bật và KHÓA AP ConsolePi? Nếu đang kết nối qua WiFi sẽ bị đứt - nên làm khi đang cắm dây LAN.'}');">
         <button type="submit" class="{'gray' if locked else 'blue'}">
-          {'🔓 Go khoa AP' if locked else '🔒 Phat AP ConsolePi (khoa)'}
+          {'🔓 Gỡ khóa AP' if locked else '🔒 Phát AP ConsolePi (khóa)'}
         </button>
       </form>
     </div>"""
@@ -1085,26 +1085,26 @@ def _wifi_page(msg="", ok=True):
     mac_dang_dung = mac_hien_tai()
     if gia_mac:
         mac_card_body = f"""
-        <p style="margin:0;"><span style="color:#6ee7a0;">🟢 Dang bat</span></p>
+        <p style="margin:0;"><span style="color:#6ee7a0;">🟢 Đang bật</span></p>
         <table style="max-width:420px;margin-top:9px;">
           <tr><td style="width:150px;">MAC đang dùng</td><td><code>{_esc(mac_dang_dung)}</code></td></tr>
           <tr><td>MAC thật (phần cứng)</td><td><code>{_esc(mac_goc)}</code></td></tr>
         </table>
         <form method="POST" action="/wifi-mac-tat" style="margin-top:13px;"
-              onsubmit="return confirm('Tat gia MAC va tra ve MAC that ngay?');">
-          <button type="submit" class="gray" data-busy="Dang tat...">Tắt, trả về MAC thật</button>
+              onsubmit="return confirm('Tắt giả MAC và trả về MAC thật ngay?');">
+          <button type="submit" class="gray" data-busy="Đang tắt...">Tắt, trả về MAC thật</button>
         </form>"""
     else:
         mac_card_body = f"""
-        <p style="margin:0;"><span style="color:#8b93a1;">⚪ Dang tat</span> - đang dùng MAC
-          that: <code>{_esc(mac_goc)}</code></p>
+        <p style="margin:0;"><span style="color:#8b93a1;">⚪ Đang tắt</span> - đang dùng MAC
+          thật: <code>{_esc(mac_goc)}</code></p>
         <form method="POST" action="/wifi-mac-bat" style="margin-top:13px;">
-          <button type="submit" class="gray" data-busy="Dang bat...">🎭 Bat gia MAC</button>
+          <button type="submit" class="gray" data-busy="Đang bật...">🎭 Bật giả MAC</button>
         </form>"""
 
     mac_card = f"""
     <div class="card">
-      <h3>Gia MAC WiFi <span style="color:#8b93a1;font-size:12px;font-weight:400;">
+      <h3>Giả MAC WiFi <span style="color:#8b93a1;font-size:12px;font-weight:400;">
           (dùng khi mạng chặn thiết bị lạ)</span></h3>
       <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
         Một số mạng công ty từ chối kết nối ngay từ đầu với thiết bị có địa chỉ MAC
@@ -1125,30 +1125,30 @@ def _wifi_page(msg="", ok=True):
 
     def _connect_cell(s):
         if s == ssid:
-            return '<span style="color:#6ee7a0;font-size:13px;">● Dang dung</span>'
+            return '<span style="color:#6ee7a0;font-size:13px;">● Đang dùng</span>'
         if locked:
             return ('<button type="button" class="gray small" disabled '
-                     'title="AP dang khoa - go khoa AP truoc khi doi WiFi">'
-                     '⚪ Ket noi</button>')
+                     'title="AP đang khóa - gỡ khóa AP trước khi đổi WiFi">'
+                     '⚪ Kết nối</button>')
         if s in visible_ssids:
             return (f'<form method="POST" action="/wifi-connect-saved" style="display:inline;"'
-                     f' onsubmit="return confirm(\'Chuyen sang WiFi {_esc(s)}? '
-                     f'Ket noi hien tai (neu co) se bi ngat trong luc chuyen.\');">'
+                     f' onsubmit="return confirm(\'Chuyển sang WiFi {_esc(s)}? '
+                     f'Kết nối hiện tại (nếu có) sẽ bị ngắt trong lúc chuyển.\');">'
                      f'<input type="hidden" name="ssid" value="{_esc(s)}">'
-                     f'<button type="submit" data-busy="Dang ket noi...">'
-                     f'🟢 Ket noi</button></form>')
+                     f'<button type="submit" data-busy="Đang kết nối...">'
+                     f'🟢 Kết nối</button></form>')
         return ('<button type="button" class="gray small" disabled '
-                 'title="Khong thay mang nay trong lan quet gan nhat - co the dang '
-                 'ngoai vung phu song hoac dang tat">⚪ Ket noi</button>')
+                 'title="Không thấy mạng này trong lần quét gần nhất - có thể đang '
+                 'ngoài vùng phủ sóng hoặc đang tắt">⚪ Kết nối</button>')
 
     saved_rows = "".join(f"""
       <tr>
         <td>{_esc(s)}</td>
         <td>{_connect_cell(s)}</td>
         <td><form method="POST" action="/wifi-delete"
-                  onsubmit="return confirm('Xoa WiFi {_esc(s)}?');">
+                  onsubmit="return confirm('Xóa WiFi {_esc(s)}?');">
               <input type="hidden" name="ssid" value="{_esc(s)}">
-              <button type="submit" class="red small">Xoa</button>
+              <button type="submit" class="red small">Xóa</button>
             </form></td>
       </tr>""" for s in saved)
 
@@ -1158,18 +1158,18 @@ def _wifi_page(msg="", ok=True):
         age = scan_age()
         opts = "".join(f"<option>{_esc(s)}</option>" for s in ssids)
         if not ssids:
-            fresh = "Dang quet lan dau, bam Quet lai sau vai giay..."
+            fresh = "Đang quét lần đầu, bấm Quét lại sau vài giây..."
         elif age is None:
             fresh = ""
         elif age < 60:
             fresh = f"quét {age} giây trước"
         else:
-            fresh = f"quet {age // 60} phut truoc"
+            fresh = f"quét {age // 60} phút trước"
         scan_form = f"""
         <h2>Kết nối WiFi mới</h2>
         <div class="card">
           <form method="POST" action="/wifi-rescan" style="margin-bottom:12px;">
-            <button type="submit" class="gray small" data-busy="Dang quet WiFi...">🔄 Quet lai</button>
+            <button type="submit" class="gray small" data-busy="Đang quét WiFi...">🔄 Quét lại</button>
             <span style="color:#8b93a1;font-size:13px;margin-left:9px;">{fresh}</span>
           </form>
           <form method="POST" action="/connect-wifi">
@@ -1181,7 +1181,7 @@ def _wifi_page(msg="", ok=True):
               <input type="checkbox" name="save" value="1" checked style="width:20px;height:20px;">
               <span>Lưu để lần sau tự kết nối</span>
             </label>
-            <div class="row" style="margin-top:13px;"><button type="submit" data-busy="Dang ket noi, cho 20-30 giay...">Kết nối</button></div>
+            <div class="row" style="margin-top:13px;"><button type="submit" data-busy="Đang kết nối, chờ 20-30 giây...">Kết nối</button></div>
           </form>
           <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
             Nếu đang xem qua WiFi, kết nối sẽ đứt khi Pi chuyển mạng. Sau 20-30 giây
@@ -1194,13 +1194,13 @@ def _wifi_page(msg="", ok=True):
     if mode == "Client" and ssid:
         warn = ""
         if client_via_wlan():
-            warn = ('<div class="msg warn" style="margin:11px 0 0;">⚠️ Ban dang truy cap '
-                    'QUA chinh WiFi nay. Ngat se lam mat ket noi cua ban - hay cam day LAN '
-                    'hoac noi vao AP ConsolePi truoc.</div>')
+            warn = ('<div class="msg warn" style="margin:11px 0 0;">⚠️ Bạn đang truy cập '
+                    'QUA chính WiFi này. Ngắt sẽ làm mất kết nối của bạn - hãy cắm dây LAN '
+                    'hoặc nối vào AP ConsolePi trước.</div>')
         disconnect_html = f"""
         <form method="POST" action="/wifi-disconnect" style="margin-top:12px;"
               onsubmit="return confirm('Ngắt kết nối WiFi {_esc(ssid)}?');">
-          <button type="submit" class="red" data-busy="Dang ngat...">
+          <button type="submit" class="red" data-busy="Đang ngắt...">
             ⏏ Ngắt kết nối WiFi
           </button>
           <span style="color:#8b93a1;font-size:13px;margin-left:9px;">
@@ -1214,7 +1214,7 @@ def _wifi_page(msg="", ok=True):
       <h3>Trạng thái hiện tại</h3>
       <table style="max-width:470px;">
         <tr><th style="width:150px;">Chế độ</th><td>{mode}</td></tr>
-        <tr><th>Mang</th><td>{_esc(ssid) or '-'}</td></tr>
+        <tr><th>Mạng</th><td>{_esc(ssid) or '-'}</td></tr>
         <tr><th>Địa chỉ IP</th><td><code>{ip or '-'}</code></td></tr>
       </table>
       {disconnect_html}
@@ -1233,7 +1233,7 @@ def _wifi_page(msg="", ok=True):
       <p style="color:#8b93a1;font-size:13px;margin:0 0 9px;">
         Chỉ lưu vào danh sách, không kết nối ngay. Dùng khi biết trước WiFi nơi sắp đến.</p>
       <form method="POST" action="/wifi-add">
-        <label>Ten WiFi (SSID)</label><input type="text" name="ssid" required>
+        <label>Tên WiFi (SSID)</label><input type="text" name="ssid" required>
         <label>Mật khẩu</label><input type="password" name="password" required>
         <div class="row" style="margin-top:13px;"><button type="submit">Lưu vào danh sách</button></div>
       </form>
@@ -1325,7 +1325,7 @@ def _bt_page(msg="", ok=True, scanned=None):
             <form method="POST" action="/bt-unpair" style="display:inline;"
                   onsubmit="return confirm('Xoa ghep cap {_esc(i['name'])}?');">
               <input type="hidden" name="mac" value="{_esc(mac)}">
-              <button type="submit" class="red small">Xoa</button>
+              <button type="submit" class="red small">Xóa</button>
             </form>
           </td>
         </tr>"""
@@ -1530,13 +1530,13 @@ def _switching_page(ssid):
     mat khau)."""
     body = f"""
     <div class="msg warn">
-      <h3 style="margin:0 0 8px;">Dang chuyen sang '{_esc(ssid)}'</h3>
+      <h3 style="margin:0 0 8px;">Đang chuyển sang '{_esc(ssid)}'</h3>
       <p>Sau 20-30 giây: nối máy của anh vào WiFi <strong>{_esc(ssid)}</strong>
-      roi mo lai <a href="http://server-console.local">http://server-console.local</a>.</p>
-      <p>Nếu thất bại, Pi tự bật lại AP <strong>ConsolePi</strong> sau khoang 30 giay.</p>
+      rồi mở lại <a href="http://server-console.local">http://server-console.local</a>.</p>
+      <p>Nếu thất bại, Pi tự bật lại AP <strong>ConsolePi</strong> sau khoảng 30 giây.</p>
     </div>
-    <p><a class="btn" href="/wifi">← Quay lai trang WiFi</a></p>"""
-    return render_page(body, active="/wifi", title="Dang chuyen mang")
+    <p><a class="btn" href="/wifi">← Quay lại trang WiFi</a></p>"""
+    return render_page(body, active="/wifi", title="Đang chuyển mạng")
 
 
 def register_network(app):
@@ -1568,8 +1568,8 @@ def register_network(app):
         password = request.form.get("password")
         do_save = request.form.get("save") == "1"
         if ap_locked():
-            return _wifi_page(msg="AP dang bi KHOA. Go khoa truoc khi doi WiFi.", ok=False)
-        WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuan bi chuyen mang...")
+            return _wifi_page(msg="AP đang bị KHÓA. Gỡ khóa trước khi đổi WiFi.", ok=False)
+        WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuẩn bị chuyển mạng...")
         threading.Thread(target=_switch_worker, args=(ssid, password, do_save),
                          daemon=True).start()
         return _switching_page(ssid)
@@ -1584,11 +1584,11 @@ def register_network(app):
         """
         ssid = request.form.get("ssid", "")
         if ap_locked():
-            return _wifi_page(msg="AP dang bi KHOA. Go khoa truoc khi doi WiFi.", ok=False)
+            return _wifi_page(msg="AP đang bị KHÓA. Gỡ khóa trước khi đổi WiFi.", ok=False)
         creds = load_saved_wifi_with_psk()
         if ssid not in creds:
-            return _wifi_page(msg=f"Khong tim thay '{ssid}' trong danh sach da luu.", ok=False)
-        WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuan bi chuyen mang...")
+            return _wifi_page(msg=f"Không tìm thấy '{ssid}' trong danh sách đã lưu.", ok=False)
+        WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuẩn bị chuyển mạng...")
         threading.Thread(target=_switch_worker, args=(ssid, creds[ssid], False),
                          daemon=True).start()
         return _switching_page(ssid)
@@ -1612,7 +1612,7 @@ def register_network(app):
     def wifi_rescan():
         start_scan_async()
         time.sleep(3)      # cho quet mot chut de nguoi dung thay ket qua ngay
-        return _wifi_page(msg="Dang quet lai. Neu chua thay du, bam Quet lai lan nua.",
+        return _wifi_page(msg="Đang quét lại. Nếu chưa thấy đủ, bấm Quét lại lần nữa.",
                           ok=True)
 
     @app.route("/wifi-add", methods=["POST"])
@@ -1620,21 +1620,21 @@ def register_network(app):
         ssid = (request.form.get("ssid") or "").strip()
         pw = request.form.get("password") or ""
         if not ssid:
-            return _wifi_page(msg="Ten WiFi khong duoc de trong.", ok=False)
+            return _wifi_page(msg="Tên WiFi không được để trống.", ok=False)
         if len(pw) < 8:
-            return _wifi_page(msg="Mat khau WPA2 phai tu 8 ky tu tro len.", ok=False)
+            return _wifi_page(msg="Mật khẩu WPA2 phải từ 8 ký tự trở lên.", ok=False)
         if '"' in ssid or '"' in pw:
-            return _wifi_page(msg='Khong duoc chua dau nhay kep (").', ok=False)
+            return _wifi_page(msg='Không được chứa dấu nháy kép (").', ok=False)
         if save_wifi_permanently(ssid, pw):
-            return _wifi_page(msg=f"Da luu '{ssid}'.", ok=True)
-        return _wifi_page(msg=f"'{ssid}' da co trong danh sach.", ok=False)
+            return _wifi_page(msg=f"Đã lưu '{ssid}'.", ok=True)
+        return _wifi_page(msg=f"'{ssid}' đã có trong danh sách.", ok=False)
 
     @app.route("/wifi-delete", methods=["POST"])
     def wifi_delete():
         ssid = request.form.get("ssid", "")
         if delete_saved_wifi(ssid):
-            return _wifi_page(msg=f"Da xoa '{ssid}'.", ok=True)
-        return _wifi_page(msg=f"Khong tim thay '{ssid}'.", ok=False)
+            return _wifi_page(msg=f"Đã xóa '{ssid}'.", ok=True)
+        return _wifi_page(msg=f"Không tìm thấy '{ssid}'.", ok=False)
 
     @app.route("/force-ap", methods=["POST"])
     def force_ap():
@@ -1645,17 +1645,17 @@ def register_network(app):
             time.sleep(5)
             restore_ap_mode()
             WIFI_STATUS.update(state="ap_locked", ssid="ConsolePi", ip=AP_IP,
-                               msg="Da KHOA che do AP.")
+                               msg="Đã KHÓA chế độ AP.")
         threading.Thread(target=worker, daemon=True).start()
         body = f"""
         <div class="msg warn">
-          <h3 style="margin:0 0 8px;">Dang bat va KHOA AP "ConsolePi"</h3>
-          <p>Sau 15-20 giây, nối vào WiFi <strong>ConsolePi</strong> roi mo
+          <h3 style="margin:0 0 8px;">Đang bật và KHÓA AP "ConsolePi"</h3>
+          <p>Sau 15-20 giây, nối vào WiFi <strong>ConsolePi</strong> rồi mở
           <a href="http://{AP_IP}">http://{AP_IP}</a>.</p>
           <p>Nếu đang xem qua WiFi, kết nối sẽ đứt. Qua dây LAN thì không ảnh hưởng.</p>
         </div>
         <p><a class="btn" href="/wifi">← Trang WiFi</a></p>"""
-        return render_page(body, active="/wifi", title="Dang bat AP")
+        return render_page(body, active="/wifi", title="Đang bật AP")
 
     @app.route("/release-ap", methods=["POST"])
     def release_ap():
@@ -1668,7 +1668,7 @@ def register_network(app):
             time.sleep(3)
             _lenh(["/opt/console-pi/scripts/wifi-fallback.sh"], timeout=120)
         threading.Thread(target=worker, daemon=True).start()
-        return _wifi_page(msg="Da go khoa AP. Pi se quet lai va tu chon WiFi quen thuoc.", ok=True)
+        return _wifi_page(msg="Đã gỡ khóa AP. Máy sẽ quét lại và tự chọn WiFi quen thuộc.", ok=True)
 
     @app.route("/bt-scan", methods=["POST"])
     def bt_scan_route():

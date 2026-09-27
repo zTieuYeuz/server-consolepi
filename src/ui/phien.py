@@ -240,11 +240,11 @@ def go_mat_khau(ma, mk=None, cho_giay=15):
 TRANG = r"""
 <style>
 .ph-modal [hidden],.ph-cong[hidden],.ph-trong[hidden]{display:none !important;}
-.ph-khung{display:flex;gap:12px;height:calc(100vh - 170px);min-height:480px;}
+.ph-khung{display:flex;gap:10px;height:calc(100vh - 72px);min-height:420px;}
 .ph-trai{width:270px;flex:0 0 270px;display:flex;flex-direction:column;background:var(--card,#131a24);
   border:1px solid var(--border,#1f2733);border-radius:10px;overflow:hidden;}
-.ph-trai .dau{padding:10px;border-bottom:1px solid var(--border,#1f2733);display:flex;gap:6px;}
-.ph-trai input{margin:0;}
+.ph-trai .dau{padding:6px;border-bottom:1px solid var(--border,#1f2733);display:flex;gap:6px;}
+.ph-trai input{margin:0;padding:7px 10px;min-height:0;}
 .ph-ds{overflow:auto;flex:1;padding:6px 0;}
 .ph-nhom{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8A94A6;
   padding:10px 12px 4px;}
@@ -263,19 +263,21 @@ TRANG = r"""
 .ph-phai{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--card,#131a24);
   border:1px solid var(--border,#1f2733);border-radius:10px;overflow:hidden;}
 .ph-tabs{display:flex;gap:2px;padding:6px 6px 0;border-bottom:1px solid var(--border,#1f2733);overflow-x:auto;}
-.ph-tab{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px 8px 0 0;background:#0f151d;
+.ph-tab{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:8px 8px 0 0;background:#0f151d;
   cursor:pointer;white-space:nowrap;font-size:13px;border:1px solid transparent;border-bottom:none;}
 .ph-tab.on{background:#18212d;border-color:#2a3647;color:#fff;}
-.ph-tab .x{border:none;background:none;color:#8A94A6;cursor:pointer;font-size:15px;line-height:1;padding:0 2px;}
-.ph-cong{display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px;border-bottom:1px solid var(--border,#1f2733);align-items:center;}
-.ph-cong button{padding:6px 11px;font-size:13px;}
+.ph-tab .x{border:none;background:none;color:#8A94A6;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;min-height:0;min-width:0;}
+.ph-cong{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;padding:4px 8px;border-bottom:1px solid var(--border,#1f2733);align-items:center;}
+.ph-cong button{padding:4px 10px;font-size:12.5px;min-height:0;}
 .ph-than{flex:1;position:relative;background:#0f1114;}
 .ph-than iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;}
 .ph-than iframe.on{display:block;}
 .ph-trong{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
   color:#8A94A6;text-align:center;padding:20px;}
-.ph-nhanh{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
-.ph-nhanh input{flex:1;min-width:240px;margin:0;font-family:ui-monospace,monospace;}
+.ph-nhanh{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
+.ph-nhanh input{flex:1;min-width:240px;margin:0;font-family:ui-monospace,monospace;padding:8px 12px;min-height:0;}
+.ph-nhanh button{padding:8px 14px;min-height:0;}
+.ph-nhanh .tieude{font-weight:700;font-size:15px;margin-right:4px;white-space:nowrap;}
 .ph-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;
   z-index:50;overflow:auto;padding:16px 0 300px;}
 .ph-modal.on{display:flex;}
@@ -290,6 +292,7 @@ TRANG = r"""
 </style>
 
 <div class="ph-nhanh">
+  <span class="tieude">🗂️ Phiên kết nối</span>
   <input type="text" id="o-nhanh" placeholder="Kết nối nhanh:  ssh admin@192.168.1.1   ·   telnet 10.0.0.1   ·   ttyUSB0" autocomplete="off">
   <button id="nut-nhanh" type="button">⚡ Kết nối</button>
   <button id="nut-moi" type="button" class="gray">+ Phiên mới</button>
@@ -308,7 +311,7 @@ TRANG = r"""
       <button type="button" data-lam="log" class="gray" title="Tải toàn bộ nội dung màn hình về máy">💾 Lưu log</button>
       <button type="button" data-lam="full" class="gray">🔍 Toàn màn hình</button>
       <button type="button" data-lam="ngat" class="gray" title="Kết thúc hẳn phiên (không chỉ đóng tab)">✖ Ngắt phiên</button>
-      <span id="tt-tab" class="hint" style="margin-left:auto;"></span>
+      <span id="tt-tab" class="hint" style="margin-left:auto;flex:1 1 0;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
     </div>
     <div class="ph-than" id="than">
       <div class="ph-trong" id="trong">
@@ -566,11 +569,20 @@ JS = r"""
 """
 
 
+CSS_GON = """
+.main>.status{display:none;}
+.content{padding:10px 12px 10px;max-width:none;}
+.content>h1,.content>.sub{display:none;}
+"""
+
+
 def register_phien(app):
     @app.route("/phien")
     def phien_trang():
-        return render_page(TRANG + JS, active="/phien", title="Phiên kết nối",
-                           subtitle="SSH, Telnet, cổng console - nhiều tab cùng lúc, lưu thiết bị để dùng lại")
+        # Trang terminal: bo thanh trang thai + tieu de lon cua khung chung de
+        # khung terminal duoc cao toi da (yeu cau 27/09/2026 - phan tren chiem
+        # gan 1/3 man hinh cam ung). Tieu de thu nho nam cung hang Ket noi nhanh.
+        return render_page(TRANG + JS, active="/phien", title="Phiên kết nối", extra_css=CSS_GON)
 
     @app.route("/phien/api/ds")
     def phien_api_ds():

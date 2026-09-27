@@ -74,7 +74,7 @@ NAV_ITEMS = [
         ("/commands", "Thư viện lệnh", "📚"),
     ]),
 
-    ("/logs", "Nhật ký lỗi", "📋"),
+    ("/logs", "Nhật ký", "📋"),
     ("/power", "Nguồn điện", "⚡"),
     ("/giaitri", "Giải trí", "📺"),
     ("/gopy", "Góp ý", "💬"),
@@ -697,7 +697,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     <div class="status">
       {chips_html}
       <div class="spacer"></div>
-      <div class="act"><a href="{active}" class="btn gray small">🔃 Lam moi</a></div>
+      <div class="act"><a href="{active}" class="btn gray small">🔃 Làm mới</a></div>
     </div>
     <div class="content">
       <h1>{title}</h1>

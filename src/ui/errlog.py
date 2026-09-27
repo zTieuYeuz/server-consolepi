@@ -12,14 +12,10 @@ File nay:
   - `ghi_loi()`  : goi tu bat ky dau trong app de ghi 1 dong loi, kem
                    traceback day du neu co.
   - `doc_nhat_ky()`: doc lai de hien tren trang web /logs.
-  - XOAY VONG: KHONG con tu xoay vong o day (truoc dung RotatingFileHandler
-    cua Python). Ly do doi: yeu cau thuc te la giu it nhat 60 NGAY cho moi
-    nhat ky cua Console Pi (dung o hien truong khong SSH duoc, phai doi ve
-    nha moi xem lai). RotatingFileHandler chi xoay theo DUNG LUONG (2MB) -
-    khong dam bao thoi gian, ngay bi loi lap lai nhieu co the xoa mat du
-    lieu cu chi trong vai gio. Nay chi ghi them (append) don gian; viec
-    xoay vong + giu 60 ngay giao het cho logrotate (xem
-    config/logrotate-console-pi) - MOT co che duy nhat, tranh xung dot.
+  - XOAY VONG: KHONG tu xoay vong o day. Chi ghi them (append) don gian;
+    viec xoay vong + giu 7 NGAY (yeu cau 27/09/2026: moi nhat ky chi giu 7
+    ngay) giao het cho logrotate (config/logrotate-console-pi) - MOT co che
+    duy nhat, tranh xung dot.
 """
 import subprocess
 import time
@@ -31,7 +27,7 @@ LOG_FILE = "/var/log/console-pi-errors.log"
 # rieng cho tung dich vu, khong phai doc ca he thong.
 DICH_VU_CAN_THEO_DOI = [
     "console-pi-dashboard", "console-pi-tunnel", "console-pi-term-local",
-    "console-pi-term-ssh", "bluetooth", "bt-agent", "bt-nap", "nginx",
+    "console-pi-term-ssh", "console-pi-term-phien", "bluetooth", "bt-agent", "bt-nap", "nginx",
 ]
 
 

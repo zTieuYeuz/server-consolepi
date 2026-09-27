@@ -115,6 +115,10 @@ def sua(ma, muc):
                 return False, "Chưa điền tên phần mềm."
             for khoa, _nhan in CAC_COT:
                 x[khoa] = (muc.get(khoa) or "").strip()
+            if x.get("kho_ma"):
+                # Dong lay tu kho ma nguoi dung sua tay tren may: tu nay "Cap
+                # nhat tu kho" KHONG ghi de nua (ton trong chinh sua cua ho).
+                x["sua_tay"] = True
             ok, err = _ghi(ds)
             if not ok:
                 return False, f"Không lưu được: {err}"
@@ -153,3 +157,65 @@ def nap_lan_dau(cac_dong):
     if not ok:
         return False, err
     return True, f"Đã nạp {len(ds)} dòng."
+
+
+def _khoa(x):
+    return ((x.get("phan_mem") or "").strip().lower(), (x.get("cai_dat") or "").strip())
+
+
+def cap_nhat_tu_kho(ds_kho):
+    """
+    Dong bo bang tham so tu KHO TRUNG TAM (yeu cau 27/09/2026, anh Thoai duyet):
+      - dong MOI tren kho            -> THEM vao may (nhan "Tu kho")
+      - dong kho da SUA              -> cap nhat theo kho
+      - dong khach TU THEM tren may  -> giu nguyen (nhan "Tu them")
+      - dong kho da XOA              -> VAN GIU tren may (xoa hay khong la do
+                                        nguoi dung quyet), chi danh dau
+      - dong tu kho ma nguoi dung da SUA TAY tren may -> khong ghi de
+    Ghep noi bang ma dong cua kho (kho_ma). Lan dau (dong cu chua co kho_ma)
+    ghep theo ten phan mem + tham so cai de khong sinh dong trung.
+    Tra (ok, dict thong ke | loi).
+    """
+    ds = danh_sach()
+    theo_ma = {x["kho_ma"]: x for x in ds if x.get("kho_ma")}
+    chua_ghep = {}
+    for x in ds:
+        if not x.get("kho_ma"):
+            chua_ghep.setdefault(_khoa(x), x)
+    tk = {"them": 0, "sua": 0, "giu_sua_tay": 0, "kho_xoa": 0, "tong_kho": 0}
+    co_tren_kho = set()
+    for m in ds_kho:
+        ma = str(m.get("id") or "").strip()
+        if not ma or not (m.get("phan_mem") or "").strip():
+            continue
+        tk["tong_kho"] += 1
+        co_tren_kho.add(ma)
+        moi = {k: (m.get(k) or "").strip() for k, _n in CAC_COT}
+        x = theo_ma.get(ma)
+        if x is None:
+            x = chua_ghep.pop(_khoa(moi), None)
+            if x is not None:            # dong cu trung noi dung -> ghep voi kho
+                x["kho_ma"] = ma
+                theo_ma[ma] = x
+        if x is None:
+            x = dict(moi, id=_ma_moi(ds), kho_ma=ma)
+            ds.append(x)
+            theo_ma[ma] = x
+            tk["them"] += 1
+            continue
+        x.pop("kho_da_xoa", None)
+        if x.get("sua_tay"):
+            if any(x.get(k, "") != v for k, v in moi.items()):
+                tk["giu_sua_tay"] += 1
+            continue
+        if any(x.get(k, "") != v for k, v in moi.items()):
+            x.update(moi)
+            tk["sua"] += 1
+    for x in ds:
+        if x.get("kho_ma") and x["kho_ma"] not in co_tren_kho and not x.get("kho_da_xoa"):
+            x["kho_da_xoa"] = True
+            tk["kho_xoa"] += 1
+    ok, err = _ghi(ds)
+    if not ok:
+        return False, f"Không lưu được: {err}"
+    return True, tk

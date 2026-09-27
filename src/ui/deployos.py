@@ -1385,7 +1385,6 @@ def tabs_deployos(chinh, phu=""):
     tab_chinh = [
         ("kichban", "Kịch bản", "/deployos/kichban"),
         ("tainguyen", "Tài nguyên", "/deployos/os"),
-        ("thamso", "Tham số cài đặt", "/deployos/thamso"),
         ("kho", "Kho trung tâm", "/deployos/kho"),
         ("tiendo", "Tiến trình", "/deployos/tiendo"),
         ("caidat", "Cài đặt", "/deployos/caidat"),
@@ -1398,6 +1397,8 @@ def tabs_deployos(chinh, phu=""):
             ("drivers", "Driver", "/deployos/drivers"),
             ("scripts", "Script", "/deployos/console/scripts"),
             ("file", "File boot", "/deployos/console"),
+            # 27/09/2026: Tham so cai dat chuyen tu tab goc vao Tai nguyen
+            ("thamso", "Tham số cài đặt", "/deployos/thamso"),
         ],
         "caidat": [
             ("pxe", "Bật / Tắt PXE", "/deployos/caidat"),
@@ -1604,6 +1605,12 @@ def register_deployos(app):
       font-size:12.5px; color:#a8d8b0; background:#1f2429; padding:6px 8px;
       border-radius:5px; border:1px solid #2c3036; }
     .bang-ts code.chep { cursor:pointer; position:relative; }
+    .nhan-ng { display:inline-block; font-size:10.5px; font-weight:600; padding:1px 6px;
+      border-radius:5px; margin-top:4px; white-space:nowrap; }
+    .nhan-ng.kho { background:#12324a; color:#7cc8ff; }
+    .nhan-ng.tu { background:#2a2140; color:#c8a8ff; }
+    .nhan-ng.sua { background:#3a2a12; color:#ffcf7a; }
+    .nhan-ng.xoa { background:#3a1616; color:#ff9b9b; }
     .bang-ts code.chep:active { transform:scale(.99); }
     .bang-ts code.da-chep { border-color:#4CAF50; background:#1f3a26; }
     .nhan-chep { position:absolute; right:6px; top:5px; font-size:11px;
@@ -3728,6 +3735,13 @@ def register_deployos(app):
                           f'{_esc(gt)}</code></td>')
                 else:
                     o += f'<td data-cot="{_esc(nhan)}">{_esc(gt)}</td>'
+            if x.get("kho_ma"):
+                nhan_nguon = ('<span class="nhan-ng kho" title="Lấy từ kho trung tâm">Từ kho</span>'
+                              + (' <span class="nhan-ng sua" title="Đã sửa tay trên máy - Cập nhật từ kho sẽ không ghi đè">Đã sửa tay</span>' if x.get("sua_tay") else '')
+                              + (' <span class="nhan-ng xoa" title="Kho đã xoá dòng này - máy vẫn giữ, muốn bỏ thì bấm Xoá">Kho đã xoá</span>' if x.get("kho_da_xoa") else ''))
+            else:
+                nhan_nguon = '<span class="nhan-ng tu" title="Thêm trên máy này">Tự thêm</span>'
+            o = o.replace("</td>", "<br>" + nhan_nguon + "</td>", 1)
             hang += f"""
             <tr data-id="{ma}">
               {o}
@@ -3746,7 +3760,7 @@ def register_deployos(app):
             f'<textarea name="{k}" rows="2" placeholder="{_esc(n)}"></textarea>'
             for k, n in _ts.CAC_COT)
 
-        body = _tabs("thamso") + _msg(msg, ok) + f"""
+        body = tabs_deployos("tainguyen", "thamso") + _msg(msg, ok) + f"""
         <div class="card">
           <h3>Tra tham số cài đặt im lặng</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
@@ -3771,12 +3785,13 @@ def register_deployos(app):
         </div>
 
         <div class="card">
-          <h3>Lấy từ kho trung tâm</h3>
-          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">Kho trung tâm có bảng tham số
-            dùng chung cho mọi Console Pi. Bấm để thêm các dòng máy này chưa có (dòng đã có
-            giữ nguyên, không bị ghi đè).</p>
+          <h3>Cập nhật từ kho trung tâm</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">Lấy bảng tham số mới nhất trên kho
+            trung tâm về máy: dòng mới trên kho được <b>thêm</b>, dòng kho đã sửa được <b>cập nhật</b>.
+            Dòng <span class="nhan-ng tu">Tự thêm</span> trên máy và dòng bạn đã sửa tay luôn giữ nguyên;
+            dòng kho đã xoá vẫn giữ lại trên máy (muốn bỏ thì bấm Xoá).</p>
           <form method="POST" action="/deployos/thamso/tu-kho">
-            <button type="submit" class="gray" data-busy="Đang lấy...">⬇ Lấy tham số từ kho</button>
+            <button type="submit" data-busy="Đang cập nhật...">🔄 Cập nhật từ kho</button>
           </form>
         </div>
 
@@ -3912,8 +3927,7 @@ def register_deployos(app):
 
     @app.route("/deployos/thamso/tu-kho", methods=["POST"])
     def deployos_thamso_tu_kho():
-        """Keo bang tham so tu kho trung tam - chi THEM dong chua co (trung ten
-        phan mem + trung tham so cai thi bo qua), khong ghi de ghi chep cu."""
+        """Cap nhat bang tham so tu kho trung tam - quy tac xem thamso.cap_nhat_tu_kho()."""
         from . import khotrungtam as _kt, thamso as _ts
         cauhinh = _kt.doc_cauhinh()
         if not cauhinh:
@@ -3921,18 +3935,15 @@ def register_deployos(app):
         ok, kq = _kt.lay_tham_so(cauhinh)
         if not ok:
             return _trang_thamso(kq, False)
-        co = {((x.get("phan_mem") or "").strip().lower(), (x.get("cai_dat") or "").strip())
-              for x in _ts.danh_sach()}
-        them = 0
-        for m in kq:
-            khoa = ((m.get("phan_mem") or "").strip().lower(), (m.get("cai_dat") or "").strip())
-            if not khoa[0] or khoa in co:
-                continue
-            if _ts.them(m)[0]:
-                co.add(khoa)
-                them += 1
-        return _trang_thamso(f"Kho có {len(kq)} dòng - đã thêm {them} dòng mới, "
-                             f"{len(kq) - them} dòng máy này đã có.", True)
+        ok, tk = _ts.cap_nhat_tu_kho(kq)
+        if not ok:
+            return _trang_thamso(tk, False)
+        phan = [f"thêm {tk['them']} dòng mới", f"cập nhật {tk['sua']} dòng"]
+        if tk["giu_sua_tay"]:
+            phan.append(f"giữ nguyên {tk['giu_sua_tay']} dòng bạn đã sửa tay")
+        if tk["kho_xoa"]:
+            phan.append(f"{tk['kho_xoa']} dòng kho đã xoá (máy vẫn giữ)")
+        return _trang_thamso(f"Đã cập nhật từ kho ({tk['tong_kho']} dòng trên kho): " + ", ".join(phan) + ".", True)
 
     @app.route("/deployos/thamso/them", methods=["POST"])
     def deployos_thamso_them():

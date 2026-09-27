@@ -594,10 +594,10 @@ fi
 if [[ -f "$SRC_DIR/config/logrotate-console-pi" ]]; then
     install -m 644 "$SRC_DIR/config/logrotate-console-pi" \
             /etc/logrotate.d/console-pi
-    ok "Da bat xoay vong nhat ky (giu 60 ngay, khong lo day the nho)"
+    ok "Da bat xoay vong nhat ky (giu 7 ngay, khong lo day the nho)"
 fi
 
-# --- journald: giu nhat ky he thong it nhat 60 ngay ---
+# --- journald: nhat ky he thong chi giu 7 ngay ---
 # Mac dinh systemd-journald khong dam bao thoi gian giu lai (chi gioi han
 # theo dung luong). Can ep ro MaxRetentionSec de cac su co xay ra ngoai
 # hien truong (khong SSH vao duoc luc do) van con xem lai duoc khi ve nha.
@@ -614,15 +614,15 @@ if [[ -f "$SRC_DIR/config/journald-console-pi.conf" ]]; then
     # /run sang /var/log/journal chi bang restart - phai goi flush ro rang,
     # neu khong phai doi den lan reboot ke tiep moi that su ghi vao dia.
     journalctl --flush 2>/dev/null || true
-    ok "Da bat nhat ky he thong (journal) giu it nhat 60 ngay, ghi xuong dia ngay"
+    ok "Nhat ky he thong (journal) giu 7 ngay, ghi xuong dia ngay"
 fi
 
-# --- nginx: nhat ky truy cap/loi cung can giu 60 ngay (mac dinh Debian la
-# 14 ngay) - nginx la cua ngo mang chinh cua Console Pi, loi tunnel/proxy
-# thuong the hien o day truoc tien.
-if [[ -f /etc/logrotate.d/nginx ]] && grep -q "rotate 14" /etc/logrotate.d/nginx; then
-    sed -i 's/rotate 14/rotate 60/' /etc/logrotate.d/nginx
-    ok "Da tang thoi gian giu nhat ky nginx len 60 ngay"
+# --- nginx: nhat ky truy cap/loi cung chi giu 7 ngay (dong bo voi moi
+# nhat ky khac cua Console System). Chap ca so cu 14 (mac dinh Debian) lan
+# 60 (ban Console Pi cu) de may nang cap cung ve 7.
+if [[ -f /etc/logrotate.d/nginx ]]; then
+    sed -i -E 's/^([[:space:]]*)rotate [0-9]+/\1rotate 7/' /etc/logrotate.d/nginx
+    ok "Nhat ky nginx giu 7 ngay"
 fi
 
 
