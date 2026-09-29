@@ -7,6 +7,11 @@
 # lech 7 tieng vi BIOS de gio dia phuong, khong co NTP nen lech mai: log sai
 # gio, kho tu choi goi dang ky). Nho (~1 MB), khong nghe cong nao.
 systemd-timesyncd
+# May that Dell 29/09/2026: kernel bao thieu regulatory.db -> card WiFi phat AP
+# khong biet kenh/cong suat hop le. Va avahi bao thieu nss-mdns -> khong phan
+# giai duoc ten thiet bi ".local" trong mang. Ca 2 goi deu rat nho.
+wireless-regdb
+libnss-mdns
 
 # --- Loi Console System ---
 python3

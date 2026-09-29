@@ -20,6 +20,8 @@ cach thu lai toi 30 phut, trang Kho khong thu ngay va khong noi ly do.
   ethtool/arp-scan/LLDP chay that, khoi dong lai gio van dung, tu len kho.
   Loi tim ra: NHIET DO CPU doc nham cam bien bo mach (acpitz 27.8 do thay vi
   CPU 48 do) -> nay uu tien vung x86_pkg_temp / cpu-thermal / coretemp.
+  ISO them wireless-regdb (kernel bao thieu regulatory.db - can cho phat AP
+  dung kenh) va libnss-mdns (phan giai ten ".local").
 
 ## 1.7.0
 
