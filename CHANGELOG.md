@@ -10,6 +10,11 @@ cach thu lai toi 30 phut, trang Kho khong thu ngay va khong noi ly do.
   thi hien ro ly do ("May chua co Internet...") + nut Thu lai; o nhap ma de
   lai lam cach du phong.
 - Luong nen thu lai toi da moi 2 phut (truoc 30 phut).
+- LOI THAT thu 2 (may 192.168.110.43): dong ho lech nhanh 7 tieng (BIOS de
+  gio dia phuong) -> kho tu choi goi "lech qua 5 phut". Sua 2 lop: (1) ISO
+  them systemd-timesyncd - co mang la tu chinh gio (truoc do ISO KHONG co NTP
+  nao, lech la lech mai); (2) goi dang ky dong theo GIO CUA KHO (header Date)
+  -> dong ho may sai bao nhieu cung ket noi duoc, chong phat lai giu nguyen.
 
 ## 1.7.0
 

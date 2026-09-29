@@ -478,12 +478,35 @@ def _giai_ma_tra_loi(k, d):
     return json.loads(AESGCM(k).decrypt(n, ct, NHAN_GOI + b"/tra-loi"))
 
 
+def _lech_gio_voi_kho(url):
+    """
+    So giay can CONG vao dong ho may cho khop gio kho (lay tu header Date).
+
+    LOI THAT 29/09/2026: mini PC cua anh Thoai lech NHANH 7 TIENG (BIOS de
+    gio Viet Nam, Linux hieu la gio quoc te; ISO luc do lai thieu NTP) -> kho
+    tu choi moi goi dang ky vi "lech qua 5 phut" (chong phat lai). Dong goi
+    theo gio cua kho thi dong ho may sai bao nhieu cung ket noi duoc; chong
+    phat lai van giu nguyen (ma goi dung 1 lan). Khong lay duoc -> 0.
+    """
+    try:
+        from email.utils import parsedate_to_datetime
+        r = requests.get(f"{url}/api/thong-tin", timeout=TIMEOUT_DANH_SACH,
+                         headers=cf_access_headers())
+        lech = parsedate_to_datetime(r.headers["Date"]).timestamp() - time.time()
+        if abs(lech) > 120:
+            print(f"[tu-dang-ky-kho] Dong ho may lech {lech / 3600:+.1f} gio so voi kho - "
+                  f"dong goi theo gio kho", flush=True)
+        return lech
+    except Exception:
+        return 0
+
+
 def tu_dang_ky():
     """Gui goi thong tin da ma hoa len kho. Tra (ok, thong_diep)."""
     import secrets as _sec
     cu = doc_cauhinh()
     url = cu["url"] if cu else URL_KHO_MAC_DINH
-    du = {"ts": int(time.time()), "ma_goi": _sec.token_hex(16),
+    du = {"ts": int(time.time() + _lech_gio_voi_kho(url)), "ma_goi": _sec.token_hex(16),
           "token": cu["token"] if cu else "", "may": thong_tin_may()}
     try:
         phong_bi, k = _ma_hoa_goi(du)

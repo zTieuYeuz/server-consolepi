@@ -3,6 +3,11 @@
 # Nguyen tac: du de lam VIEC MANG tren moi may, khong mot goi thua.
 # Khong co desktop, khong do hoa, khong am thanh.
 
+# --- Dong ho: tu dong bo gio qua mang (29/09/2026 - may that cua anh Thoai
+# lech 7 tieng vi BIOS de gio dia phuong, khong co NTP nen lech mai: log sai
+# gio, kho tu choi goi dang ky). Nho (~1 MB), khong nghe cong nao.
+systemd-timesyncd
+
 # --- Loi Console System ---
 python3
 python3-flask
