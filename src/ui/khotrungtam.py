@@ -490,6 +490,8 @@ def tu_dang_ky():
         r = requests.post(f"{url}/api/dang-ky", json=phong_bi, timeout=TIMEOUT_DANH_SACH,
                           headers=cf_access_headers())
         d = r.json()
+    except (requests.ConnectionError, requests.Timeout):
+        return False, "Máy chưa có Internet, hoặc không tới được kho (kiểm tra dây mạng / WiFi)."
     except (requests.RequestException, ValueError) as e:
         return False, f"Chưa gửi được thông tin lên kho ({type(e).__name__})."
     if r.status_code == 404:
@@ -507,6 +509,25 @@ def tu_dang_ky():
     return luu_cauhinh(url, kq["token"])
 
 
+_KHOA_DANG_KY = threading.Lock()
+LAN_THU_CUOI = {"luc": 0, "ok": False, "msg": ""}
+
+
+def thu_dang_ky_ngay(cach_toi_thieu=0):
+    """Thu tu dang ky ngay (trang Kho trung tam goi khi chua co cau hinh).
+    Dung chung khoa voi luong nen -> khong bao gio 2 lan gui cung luc."""
+    if cach_toi_thieu and time.time() - LAN_THU_CUOI["luc"] < cach_toi_thieu:
+        return LAN_THU_CUOI["ok"], LAN_THU_CUOI["msg"]
+    with _KHOA_DANG_KY:
+        try:
+            ok, msg = tu_dang_ky()
+        except Exception as e:
+            ok, msg = False, f"{type(e).__name__}: {e}"
+        LAN_THU_CUOI.update(luc=time.time(), ok=ok, msg=msg)
+    print(f"[tu-dang-ky-kho] {msg}", flush=True)
+    return ok, msg
+
+
 def tu_dang_ky_nen():
     """
     Chay o luong nen ngay khi dashboard khoi dong (xem app.py): khong lam
@@ -517,16 +538,13 @@ def tu_dang_ky_nen():
     time.sleep(15)          # vua khoi dong: doi card mang nhan IP (tranh 1 lan loi vo ich)
     cho = 20
     while True:
-        try:
-            ok, msg = tu_dang_ky()
-        except Exception as e:
-            ok, msg = False, f"{type(e).__name__}: {e}"
-        # Ghi vao journal (xem trang Nhat ky -> Log) - truoc day loi bi nuot im
-        print(f"[tu-dang-ky-kho] {msg}", flush=True)
+        ok, msg = thu_dang_ky_ngay()
         if ok or "bị chặn" in msg or "bản cũ" in msg:
             return
+        # Toi da 2 phut/lan: cam day mang xong la ket noi gan nhu ngay (truoc
+        # day gian toi 30 phut - anh Thoai cai may that, cam mang roi van cho).
         time.sleep(cho)
-        cho = min(cho * 2, 1800)
+        cho = min(cho * 2, 120)
 
 
 def lay_tham_so(cauhinh):

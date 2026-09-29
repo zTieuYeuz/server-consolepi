@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.1
+
+Loi that anh Thoai gap 29/09/2026: cai 1.7.0 len may that, vao Kho trung tam
+van thay o nhap ma - may khoi dong khi CHUA CO MANG, luong tu dang ky gian
+cach thu lai toi 30 phut, trang Kho khong thu ngay va khong noi ly do.
+
+- Mo trang Kho trung tam ma chua ket noi -> thu tu ket noi NGAY; khong duoc
+  thi hien ro ly do ("May chua co Internet...") + nut Thu lai; o nhap ma de
+  lai lam cach du phong.
+- Luong nen thu lai toi da moi 2 phut (truoc 30 phut).
+
 ## 1.7.0
 
 Yeu cau cua anh Thoai 29/09/2026: "cu cho ket noi tu do, tren trang kho biet

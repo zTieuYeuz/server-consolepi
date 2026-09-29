@@ -3983,10 +3983,26 @@ def register_deployos(app):
         from . import khotrungtam as _kt
 
         cauhinh = _kt.doc_cauhinh()
+        if not cauhinh and not msg:
+            # 1.7.0: may tu ket noi kho - mo trang la thu ngay, khong bat
+            # nguoi dung doi luong nen (cach nhau toi thieu 5 giay)
+            tu_ok, tu_msg = _kt.thu_dang_ky_ngay(cach_toi_thieu=5)
+            cauhinh = _kt.doc_cauhinh()
+            if cauhinh:
+                msg, ok = "Máy đã tự kết nối kho trung tâm.", True
         if not cauhinh:
-            body = _tabs("kho") + _msg(msg, ok) + """
+            tu_msg = _kt.LAN_THU_CUOI.get("msg") or "Đang chờ kết nối..."
+            body = _tabs("kho") + _msg(msg, ok) + f"""
             <div class="card">
-              <h3>Kết nối tới Kho lưu trữ trung tâm</h3>
+              <h3>Máy đang tự kết nối kho</h3>
+              <p style="margin:0 0 10px;">Máy tự kết nối kho khi có Internet, không cần điền gì.
+                Lần thử gần nhất: <strong>{_esc(tu_msg)}</strong></p>
+              <a href="/deployos/kho"><button type="button">🔄 Thử lại ngay</button></a>
+              <p style="color:#8b93a1;font-size:13px;margin:10px 0 0;">Máy tự thử lại mỗi 2 phút.
+                Cắm dây mạng hoặc kết nối WiFi rồi bấm Thử lại.</p>
+            </div>""" + """
+            <div class="card">
+              <h3>Hoặc kết nối bằng mã</h3>
               <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
                 Kho trung tâm lưu sẵn phần mềm, script và hệ điều hành (ISO) dùng
                 chung cho mọi Console Pi. Trên trang kho vào mục
