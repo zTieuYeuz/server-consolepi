@@ -514,12 +514,15 @@ def tu_dang_ky_nen():
     -> thu lai, gian cach tang dan toi 30 phut, den khi gui duoc thi thoi
     (lan khoi dong sau gui lai de cap nhat IP/phan cung).
     """
+    time.sleep(15)          # vua khoi dong: doi card mang nhan IP (tranh 1 lan loi vo ich)
     cho = 20
     while True:
         try:
             ok, msg = tu_dang_ky()
         except Exception as e:
             ok, msg = False, f"{type(e).__name__}: {e}"
+        # Ghi vao journal (xem trang Nhat ky -> Log) - truoc day loi bi nuot im
+        print(f"[tu-dang-ky-kho] {msg}", flush=True)
         if ok or "bị chặn" in msg or "bản cũ" in msg:
             return
         time.sleep(cho)
