@@ -332,6 +332,86 @@ def tai_nen(cauhinh, muc, duong_dich, sau_khi_xong=None):
     return True, f'Đang tải "{muc["ten"]}" ở nền - xem tiến độ ngay trên trang này.'
 
 
+# --------------------------------------------------------- tu dang ky (khoa)
+# 29/09/2026 (anh Thoai: "iso cai xong ket noi luon...kho biet duoc ip, ten
+# may, seri may"): may CHINH ANH THOAI TU CAI truoc khi giao khach tu ket noi
+# kho ngay, khong can go ma 6 ky tu. CHI hoat dong khi ISO duoc build kem
+# khoa rieng (FILE_KHOI_TAO, may build dat vao tu /root/.config/zt/ - xem
+# iso/dung-cay-build.sh); ISO ai khac tu build lai KHONG co file nay -> vo
+# hieu, van phai ghep bang ma nhu cu. Khoa chi cho tu dang ky 1 token (nhu
+# go ma), KHONG mo them duong nao vao du lieu kho.
+FILE_KHOI_TAO = "/opt/console-pi/.kho-khoi-tao.key"
+URL_KHO_MAC_DINH = "https://kho-console.home-server.id.vn"
+
+
+def _khoa_khoi_tao():
+    try:
+        with open(FILE_KHOI_TAO, encoding="utf-8") as f:
+            k = f.read().strip()
+            return k if len(k) >= 20 else ""
+    except OSError:
+        return ""
+
+
+_CHUOI_SERI_RONG = ("", "none", "to be filled by o.e.m.", "default string",
+                    "not specified", "system serial number", "o.e.m.")
+
+
+def seri_may():
+    """So seri phan cung (dong may amd64/PC - doc tu DMI, can quyen root da
+    co san). Rong neu khong doc duoc (may ao khong co DMI that)."""
+    for p in ("/sys/class/dmi/id/product_serial", "/sys/class/dmi/id/board_serial"):
+        try:
+            s = open(p, encoding="utf-8", errors="replace").read().strip()
+        except OSError:
+            continue
+        if s and s.lower() not in _CHUOI_SERI_RONG:
+            return s[:64]
+    return ""
+
+
+def tu_dang_ky():
+    """Tu ket noi toi kho mac dinh cua nha san xuat. Tra (ok, thong_diep)."""
+    if doc_cauhinh():
+        return False, "Đã có cấu hình kho từ trước."
+    khoa = _khoa_khoi_tao()
+    if not khoa:
+        return False, "Máy này không có khóa tự đăng ký."
+    try:
+        r = requests.post(f"{URL_KHO_MAC_DINH}/api/tu-dang-ky", timeout=TIMEOUT_DANH_SACH,
+                          headers={"X-Khoi-Tao-Khoa": khoa, **cf_access_headers()},
+                          json={"ten_pi": socket.gethostname(), "phien_ban": _phien_ban(),
+                                "seri": seri_may()})
+        d = r.json()
+    except (requests.RequestException, ValueError) as e:
+        return False, f"Chưa tự đăng ký được ({type(e).__name__}) - sẽ thử lại."
+    if not d.get("ok"):
+        return False, d.get("loi") or f"Kho từ chối (HTTP {r.status_code})."
+    return luu_cauhinh(URL_KHO_MAC_DINH, d["token"])
+
+
+def tu_dang_ky_nen():
+    """
+    Chay o luong nen ngay khi dashboard khoi dong (xem app.py) - KHONG lam
+    cham thoi gian khoi dong, khong bao gio nem loi ra ngoai.
+
+    May moi cai xong co the CHUA CO MANG ngay (cam dien, chua cam day) - thu
+    lai vai lan, cach nhau tang dan, trong khoang 5 phut roi thoi. Neu khong
+    thanh cong lan nay, lan khoi dong sau (vd sau khi cam mang, khoi dong
+    lai) se thu tiep - khong lam gi neu da co cau hinh hoac khong co khoa.
+    """
+    if not _khoa_khoi_tao():
+        return
+    for lan in range(6):
+        try:
+            ok, _msg = tu_dang_ky()
+        except Exception:
+            ok = False
+        if ok or doc_cauhinh():
+            return
+        time.sleep(15 * (lan + 1))
+
+
 def lay_tham_so(cauhinh):
     """Bang tham so cai dat tren kho (/api/tham-so). Tra (ok, list | loi)."""
     try:

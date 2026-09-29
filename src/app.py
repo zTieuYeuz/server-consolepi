@@ -109,6 +109,16 @@ register_all(app)
 register_vkeyboard(app)
 register_no_cache_json(app)
 
+# Tu dang ky kho trung tam neu ISO co kem khoa (xem ui/khotrungtam.py) -
+# chay nen, khong lam cham khoi dong, khong lam gi neu khong co khoa.
+try:
+    import threading
+
+    from ui.khotrungtam import tu_dang_ky_nen
+    threading.Thread(target=tu_dang_ky_nen, daemon=True).start()
+except Exception:
+    pass
+
 
 @app.errorhandler(405)
 def _loi_sai_phuong_thuc(e):

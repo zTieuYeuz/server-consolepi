@@ -62,6 +62,13 @@ dung_cay() {   # $1 = amd64 | i386
         mkdir -p "$R/var/lib/console-pi"
         install -m 600 /root/.config/zt/cf-access.json "$R/var/lib/console-pi/cf-access.json"
     fi
+    # Khoa TU DANG KY kho trung tam (29/09/2026, tuy chon): chi may CHINH ANH
+    # THOAI TU CAI (truoc khi giao khach) moi nen mang khoa nay - ISO ai khac
+    # tu build lai se KHONG co, van phai ghep bang ma nhu binh thuong. Xem
+    # docs/HUONG-DAN-CLOUDFLARE-ACCESS-KHO.md va src/ui/khotrungtam.py.
+    if [ -s /root/.config/zt/kho-khoi-tao.key ]; then
+        install -m 600 /root/.config/zt/kho-khoi-tao.key "$R/opt/console-pi/.kho-khoi-tao.key"
+    fi
 
     # --- 2. Don vi systemd + cau hinh: hook 0100 cai tu day vao he thong
     local S="$R/usr/local/share/console-system"
