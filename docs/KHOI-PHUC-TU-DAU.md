@@ -87,7 +87,13 @@ bảng tham số cài im lặng và kịch bản thì CÓ trong sao lưu.
 
 ## C. Máy build hỏng
 
-Máy build dựng lại được hoàn toàn từ repo (`iso/dung-cay-build.sh`). Chỉ có 2
-thứ riêng cần giữ: khoá ký ISO `/root/.config/zt/dau-an.key` (đã có bản trên
-Pi: `~/.config/zt/`, và nằm trong sao lưu Pi) và thư mục `/root/sao-luu`
-(nên có bản trên Drive).
+Máy build dựng lại được hoàn toàn từ repo (`iso/dung-cay-build.sh`). Có 3 thứ
+riêng cần giữ ở `/root/.config/zt/` trên máy build:
+
+| File | Dùng để làm gì | Có bản dự phòng ở đâu |
+|---|---|---|
+| `dau-an.key` | Ký ISO (chứng minh bản build của mình) | Pi: `~/.config/zt/`, nằm trong sao lưu Pi |
+| `kho-khoi-tao.key` | Cho phép ISO **tự kết nối kho** không cần gõ mã (29/09/2026) — phải **giống hệt** file `khoi-tao.key` trên máy kho (`/var/lib/kho-console-pi/khoi-tao.key`), nếu không máy build ra sẽ không tự đăng ký được | **Chưa có bản dự phòng** — chỉ tồn tại ở 2 nơi này, mất là phải tạo mới VÀ đặt lại trên máy kho |
+| `cf-access.json` | Service Token Cloudflare (nếu dùng Cách B) | Không bắt buộc, anh tự đặt |
+
+Và thư mục `/root/sao-luu` (nên có bản trên Drive).
