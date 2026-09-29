@@ -87,13 +87,27 @@ bảng tham số cài im lặng và kịch bản thì CÓ trong sao lưu.
 
 ## C. Máy build hỏng
 
-Máy build dựng lại được hoàn toàn từ repo (`iso/dung-cay-build.sh`). Có 3 thứ
+Máy build dựng lại được hoàn toàn từ repo (`iso/dung-cay-build.sh`). Có 2 thứ
 riêng cần giữ ở `/root/.config/zt/` trên máy build:
 
 | File | Dùng để làm gì | Có bản dự phòng ở đâu |
 |---|---|---|
 | `dau-an.key` | Ký ISO (chứng minh bản build của mình) | Pi: `~/.config/zt/`, nằm trong sao lưu Pi |
-| `kho-khoi-tao.key` | Cho phép ISO **tự kết nối kho** không cần gõ mã (29/09/2026) — phải **giống hệt** file `khoi-tao.key` trên máy kho (`/var/lib/kho-console-pi/khoi-tao.key`), nếu không máy build ra sẽ không tự đăng ký được | **Chưa có bản dự phòng** — chỉ tồn tại ở 2 nơi này, mất là phải tạo mới VÀ đặt lại trên máy kho |
 | `cf-access.json` | Service Token Cloudflare (nếu dùng Cách B) | Không bắt buộc, anh tự đặt |
 
 Và thư mục `/root/sao-luu` (nên có bản trên Drive).
+
+## D. Khoá mã hoá của kho (tự đăng ký máy)
+
+Từ 29/09/2026 mỗi Console System tự gửi thông tin máy lên kho, mã hoá đầu-cuối
+bằng khoá công khai của kho **ghim cứng trong mã nguồn**
+(`KHOA_CONG_KHAI_KHO` trong `src/ui/khotrungtam.py`). Khoá riêng tương ứng nằm
+ở máy kho: `/var/lib/kho-console-pi/dang-ky-x25519.key` — có trong bản sao lưu
+`kho-*.tar.gz`.
+
+- Dựng lại kho **phải trả lại đúng file này** (bước B.4 đã bung nó ra). Nếu mất
+  file: kho tự sinh khoá mới, khi đó mọi máy đã bán sẽ **không gửi được thông
+  tin** (vẫn tải phần mềm bình thường bằng token cũ) cho tới khi cập nhật
+  `KHOA_CONG_KHAI_KHO` trong mã nguồn và phát hành bản mới.
+- Tuyệt đối không đưa file khoá riêng lên GitHub.
+

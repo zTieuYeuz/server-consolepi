@@ -332,84 +332,198 @@ def tai_nen(cauhinh, muc, duong_dich, sau_khi_xong=None):
     return True, f'Đang tải "{muc["ten"]}" ở nền - xem tiến độ ngay trên trang này.'
 
 
-# --------------------------------------------------------- tu dang ky (khoa)
-# 29/09/2026 (anh Thoai: "iso cai xong ket noi luon...kho biet duoc ip, ten
-# may, seri may"): may CHINH ANH THOAI TU CAI truoc khi giao khach tu ket noi
-# kho ngay, khong can go ma 6 ky tu. CHI hoat dong khi ISO duoc build kem
-# khoa rieng (FILE_KHOI_TAO, may build dat vao tu /root/.config/zt/ - xem
-# iso/dung-cay-build.sh); ISO ai khac tu build lai KHONG co file nay -> vo
-# hieu, van phai ghep bang ma nhu cu. Khoa chi cho tu dang ky 1 token (nhu
-# go ma), KHONG mo them duong nao vao du lieu kho.
-FILE_KHOI_TAO = "/opt/console-pi/.kho-khoi-tao.key"
+# ------------------------------------------------------- tu dang ky may
+# 29/09/2026 (anh Thoai: "cu cho ket noi tu do, nhung tren trang kho biet
+# may ten gi, IP WAN, seri... de loc ban hang hoac chan; gui thong tin len
+# thi ma hoa cang ky cang tot"). Moi may khi co mang tu gui 1 goi thong tin
+# len kho mac dinh, nhan token ve - khong can go ma 6 ky tu. May da ket noi
+# (ke ca ghep tay) thi moi lan khoi dong gui lai de kho co thong tin moi.
+#
+# MA HOA DAU-CUOI (them tren HTTPS - HTTPS bi "mo" tai Cloudflare):
+#   X25519 (khoa tam moi goi) + HKDF-SHA256 + AES-256-GCM, khoa cong khai
+#   cua kho GHIM duoi day (khong lay qua mang -> khong bi thay khoa giua
+#   duong). Goi co thoi diem + ma goi ngau nhien chong phat lai. Token tra
+#   ve cung ma hoa bang khoa phien -> chi may nay doc duoc. Chi tiet phia
+#   kho: kho-console-pi/src/dangky.py.
 URL_KHO_MAC_DINH = "https://kho-console.home-server.id.vn"
+KHOA_CONG_KHAI_KHO = "KBKZrsAjnPc4SHWUw+vOIQNRkNM+0Ye2K8yNiqAry1E="   # kho: dang-ky-x25519.key
+NHAN_GOI = b"ConsoleSystem/dang-ky/v1"
 
 
-def _khoa_khoi_tao():
+def _doc(p, dai=120):
     try:
-        with open(FILE_KHOI_TAO, encoding="utf-8") as f:
-            k = f.read().strip()
-            return k if len(k) >= 20 else ""
+        with open(p, encoding="utf-8", errors="replace") as f:
+            return f.read().replace("\x00", "").strip()[:dai]
     except OSError:
         return ""
 
 
-_CHUOI_SERI_RONG = ("", "none", "to be filled by o.e.m.", "default string",
-                    "not specified", "system serial number", "o.e.m.")
+_CHUOI_RONG = {"", "none", "to be filled by o.e.m.", "default string", "not specified",
+               "system serial number", "o.e.m.", "not applicable", "0", "0123456789",
+               "default", "unknown", "n/a", "chassis serial number"}
+
+
+def _sach(s):
+    return "" if (s or "").strip().lower() in _CHUOI_RONG else (s or "").strip()
 
 
 def seri_may():
-    """So seri phan cung (dong may amd64/PC - doc tu DMI, can quyen root da
-    co san). Rong neu khong doc duoc (may ao khong co DMI that)."""
-    for p in ("/sys/class/dmi/id/product_serial", "/sys/class/dmi/id/board_serial"):
-        try:
-            s = open(p, encoding="utf-8", errors="replace").read().strip()
-        except OSError:
-            continue
-        if s and s.lower() not in _CHUOI_SERI_RONG:
-            return s[:64]
+    """Seri phan cung: PC/mini PC doc DMI; Raspberry Pi doc seri chip."""
+    for p in ("/sys/class/dmi/id/product_serial", "/sys/class/dmi/id/board_serial",
+              "/sys/class/dmi/id/chassis_serial", "/sys/firmware/devicetree/base/serial-number"):
+        s = _sach(_doc(p, 64))
+        if s:
+            return s
+    for dong in _doc("/proc/cpuinfo", 100000).splitlines():
+        if dong.lower().startswith("serial"):
+            return _sach(dong.split(":", 1)[-1])
     return ""
 
 
-def tu_dang_ky():
-    """Tu ket noi toi kho mac dinh cua nha san xuat. Tra (ok, thong_diep)."""
-    if doc_cauhinh():
-        return False, "Đã có cấu hình kho từ trước."
-    khoa = _khoa_khoi_tao()
-    if not khoa:
-        return False, "Máy này không có khóa tự đăng ký."
+def thong_tin_may():
+    """Gom thong tin phan cung/he thong de kho quan ly (khong gom du lieu
+    nguoi dung, mat khau hay noi dung gi cua khach)."""
+    import platform
+    d = {"ten_may": socket.gethostname(), "seri": seri_may(),
+         "machine_id": _doc("/etc/machine-id", 64), "phien_ban": _phien_ban(),
+         "kien_truc": platform.machine()}
+    hang, model = _sach(_doc("/sys/class/dmi/id/sys_vendor")), _sach(_doc("/sys/class/dmi/id/product_name"))
+    if not model:
+        model = _doc("/sys/firmware/devicetree/base/model")      # Raspberry Pi
+        hang = hang or ("Raspberry Pi" if "raspberry" in model.lower() else "")
+    d["hang"], d["model"] = hang, model
+    d["bo_mach"] = " ".join(x for x in (_sach(_doc("/sys/class/dmi/id/board_vendor")),
+                                        _sach(_doc("/sys/class/dmi/id/board_name"))) if x)
+    loai = _doc("/sys/class/dmi/id/chassis_type", 4)
+    d["loai_may"] = {"3": "Desktop", "4": "Desktop", "6": "Mini Tower", "7": "Tower",
+                     "8": "Portable", "9": "Laptop", "10": "Notebook", "13": "All-in-One",
+                     "14": "Sub Notebook", "30": "Tablet", "31": "Convertible", "32": "Detachable",
+                     "35": "Mini PC", "36": "Stick PC"}.get(loai, "")
+    for dong in _doc("/proc/cpuinfo", 200000).splitlines():
+        if dong.startswith("model name") and ":" in dong:
+            d["cpu"] = dong.split(":", 1)[1].strip()
+            break
+    if not d.get("cpu"):                     # ARM (Pi): khong co "model name"
+        try:
+            import subprocess
+            for dong in subprocess.run(["lscpu"], capture_output=True, text=True,
+                                       timeout=5).stdout.splitlines():
+                if dong.startswith("Model name:"):
+                    d["cpu"] = dong.split(":", 1)[1].strip()
+                    break
+        except (OSError, subprocess.SubprocessError):
+            pass
+    d["so_nhan"] = os.cpu_count() or 0
     try:
-        r = requests.post(f"{URL_KHO_MAC_DINH}/api/tu-dang-ky", timeout=TIMEOUT_DANH_SACH,
-                          headers={"X-Khoi-Tao-Khoa": khoa, **cf_access_headers()},
-                          json={"ten_pi": socket.gethostname(), "phien_ban": _phien_ban(),
-                                "seri": seri_may()})
+        for dong in _doc("/proc/meminfo", 5000).splitlines():
+            if dong.startswith("MemTotal:"):
+                d["ram_mb"] = int(dong.split()[1]) // 1024
+        st = os.statvfs("/")
+        d["dia_gb"] = st.f_blocks * st.f_frsize // (1024 ** 3)
+    except (OSError, ValueError):
+        pass
+    for dong in _doc("/etc/os-release", 5000).splitlines():
+        if dong.startswith("PRETTY_NAME="):
+            d["he_dieu_hanh"] = dong.split("=", 1)[1].strip('"')
+    try:
+        d["mui_gio"] = os.path.realpath("/etc/localtime").split("zoneinfo/")[-1]
+    except OSError:
+        pass
+    mac, ip_lan = [], []
+    try:
+        import fcntl
+        import struct
+        for ten in sorted(os.listdir("/sys/class/net")):
+            if ten == "lo" or not os.path.exists(f"/sys/class/net/{ten}/device"):
+                continue                     # chi card that, bo cau/ao
+            m = _doc(f"/sys/class/net/{ten}/address", 20)
+            if m and m != "00:00:00:00:00:00":
+                mac.append(f"{ten}={m}")
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sk:
+                    kq = fcntl.ioctl(sk.fileno(), 0x8915, struct.pack("256s", ten[:15].encode()))
+                    ip_lan.append(f"{ten}={socket.inet_ntoa(kq[20:24])}")
+            except OSError:
+                pass
+    except OSError:
+        pass
+    d["mac"], d["ip_lan"] = mac, ip_lan
+    return d
+
+
+def _ma_hoa_goi(du):
+    """Tra (phong_bi dict, khoa_phien). Xem chu thich dau muc."""
+    import base64
+    import secrets as _sec
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric.x25519 import (
+        X25519PrivateKey, X25519PublicKey)
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+    pub_kho = base64.b64decode(KHOA_CONG_KHAI_KHO)
+    tam = X25519PrivateKey.generate()
+    epk = tam.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    chung = tam.exchange(X25519PublicKey.from_public_bytes(pub_kho))
+    k = HKDF(algorithm=hashes.SHA256(), length=32, salt=epk + pub_kho, info=NHAN_GOI).derive(chung)
+    n = _sec.token_bytes(12)
+    ct = AESGCM(k).encrypt(n, json.dumps(du, ensure_ascii=False).encode(), NHAN_GOI)
+    b64 = lambda b: base64.b64encode(b).decode()
+    return {"v": 1, "epk": b64(epk), "n": b64(n), "ct": b64(ct)}, k
+
+
+def _giai_ma_tra_loi(k, d):
+    import base64
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    n, ct = base64.b64decode(d["n"]), base64.b64decode(d["ct"])
+    return json.loads(AESGCM(k).decrypt(n, ct, NHAN_GOI + b"/tra-loi"))
+
+
+def tu_dang_ky():
+    """Gui goi thong tin da ma hoa len kho. Tra (ok, thong_diep)."""
+    import secrets as _sec
+    cu = doc_cauhinh()
+    url = cu["url"] if cu else URL_KHO_MAC_DINH
+    du = {"ts": int(time.time()), "ma_goi": _sec.token_hex(16),
+          "token": cu["token"] if cu else "", "may": thong_tin_may()}
+    try:
+        phong_bi, k = _ma_hoa_goi(du)
+        r = requests.post(f"{url}/api/dang-ky", json=phong_bi, timeout=TIMEOUT_DANH_SACH,
+                          headers=cf_access_headers())
         d = r.json()
     except (requests.RequestException, ValueError) as e:
-        return False, f"Chưa tự đăng ký được ({type(e).__name__}) - sẽ thử lại."
-    if not d.get("ok"):
+        return False, f"Chưa gửi được thông tin lên kho ({type(e).__name__})."
+    if r.status_code == 404:
+        return False, "Kho bản cũ, chưa hỗ trợ tự đăng ký."
+    if "ct" not in d:
         return False, d.get("loi") or f"Kho từ chối (HTTP {r.status_code})."
-    return luu_cauhinh(URL_KHO_MAC_DINH, d["token"])
+    try:
+        kq = _giai_ma_tra_loi(k, d)
+    except Exception:
+        return False, "Trả lời của kho không giải mã được (sai khoá kho?)."
+    if not kq.get("ok"):
+        return False, kq.get("loi") or "Kho từ chối."
+    if cu and cu.get("token") == kq.get("token") and cu["url"] == url:
+        return True, "Đã cập nhật thông tin máy lên kho."
+    return luu_cauhinh(url, kq["token"])
 
 
 def tu_dang_ky_nen():
     """
-    Chay o luong nen ngay khi dashboard khoi dong (xem app.py) - KHONG lam
-    cham thoi gian khoi dong, khong bao gio nem loi ra ngoai.
-
-    May moi cai xong co the CHUA CO MANG ngay (cam dien, chua cam day) - thu
-    lai vai lan, cach nhau tang dan, trong khoang 5 phut roi thoi. Neu khong
-    thanh cong lan nay, lan khoi dong sau (vd sau khi cam mang, khoi dong
-    lai) se thu tiep - khong lam gi neu da co cau hinh hoac khong co khoa.
+    Chay o luong nen ngay khi dashboard khoi dong (xem app.py): khong lam
+    cham khoi dong, khong nem loi ra ngoai. May moi cai co the chua co mang
+    -> thu lai, gian cach tang dan toi 30 phut, den khi gui duoc thi thoi
+    (lan khoi dong sau gui lai de cap nhat IP/phan cung).
     """
-    if not _khoa_khoi_tao():
-        return
-    for lan in range(6):
+    cho = 20
+    while True:
         try:
-            ok, _msg = tu_dang_ky()
-        except Exception:
-            ok = False
-        if ok or doc_cauhinh():
+            ok, msg = tu_dang_ky()
+        except Exception as e:
+            ok, msg = False, f"{type(e).__name__}: {e}"
+        if ok or "bị chặn" in msg or "bản cũ" in msg:
             return
-        time.sleep(15 * (lan + 1))
+        time.sleep(cho)
+        cho = min(cho * 2, 1800)
 
 
 def lay_tham_so(cauhinh):

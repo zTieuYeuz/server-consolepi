@@ -69,6 +69,9 @@ def khoi_gioi_thieu():
         <tr><th>Phiên bản</th><td><code>{_phien_ban()}</code></td></tr>
         <tr><th>Phát triển bởi</th><td><b class="gt-ten"><span>z</span>TieuYeu<span>z</span></b></td></tr>
         <tr><th>Bản quyền</th><td>&copy; 2026 {TAC_GIA}. Mọi quyền được bảo lưu.</td></tr>
+        <tr><th>Đăng ký máy</th><td>Khi có Internet, máy tự gửi thông tin phần cứng (tên máy, số seri,
+          cấu hình, địa chỉ mạng) đã mã hoá về nhà phát triển để hỗ trợ, bảo hành và cập nhật.
+          Không gửi dữ liệu, mật khẩu hay nội dung làm việc của bạn.</td></tr>
       </table>
       <div class="row" style="margin-top:14px;">
         <a class="btn" href="{TRANG_TAI_LIEU}" target="_blank" rel="noopener">📖 Mở trang hướng dẫn sử dụng</a>

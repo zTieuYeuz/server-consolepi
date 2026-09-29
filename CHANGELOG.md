@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.7.0
+
+Yeu cau cua anh Thoai 29/09/2026: "cu cho ket noi tu do, tren trang kho biet
+may ten gi, IP WAN, seri... de loc ban hang hoac chan; gui thong tin thi ma
+hoa cang ky cang tot".
+
+- TU DANG KY KHO: may moi cai (ISO hoac Pi) khi co mang tu ket noi kho trung
+  tam, KHONG can go ma 6 ky tu. May da ket noi (ke ca ghep tay) moi lan khoi
+  dong gui lai thong tin moi. Chua co mang -> thu lai gian cach tang dan.
+- THONG TIN GUI LEN: ten may, seri (DMI tren PC, chip tren Pi), machine-id,
+  hang/model/bo mach/loai may, CPU, so nhan, RAM, o dia, he dieu hanh, phien
+  ban, mui gio, MAC + IP LAN tung card. IP WAN + quoc gia do kho tu lay
+  (Cloudflare). Khong gui du lieu/mat khau cua nguoi dung.
+- MA HOA DAU-CUOI (them tren HTTPS): X25519 khoa tam moi goi + HKDF-SHA256 +
+  AES-256-GCM; khoa cong khai kho GHIM trong ma nguon; chong sua goi, chong
+  phat lai (thoi diem + ma goi), token tra ve cung ma hoa. Da test: goi sua 1
+  bit / phat lai / goi cu 1 gio / khoa gia deu bi tu choi.
+- TRANG KHO "Ket noi Console Pi": bang may day du, loc theo tu khoa (khong
+  dau) / trang thai (dang ket noi, moi 7 ngay, bi chan) / hang / quoc gia, xuat
+  CSV (Excel doc dung tieng Viet), ghi chu tung may (khach hang, don hang),
+  CHAN may theo seri/machine-id (cai lai van bi chan), Ngat = xoa token.
+- Gioi thieu: them dong cong khai viec may tu gui thong tin da ma hoa.
+
 ## 1.6.0
 
 Yeu cau cua anh Thoai 27/09/2026 (6 muc: Nhat ky, Cai dat/tai lieu, WiFi,
