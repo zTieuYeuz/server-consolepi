@@ -195,6 +195,33 @@ def nhiet_do_cpu():
     Thu ca hai thay vi gia dinh mot cai - khong thi o nhiet do tren trang
     Tong quan se trong tren moi may khong phai Pi.
     """
+    # May thuong: UU TIEN vung cua CPU theo "type", roi moi toi vung bat ky.
+    # LOI THAT 29/09/2026 (Dell OptiPlex 3070 that): zone0 la "acpitz" (cam
+    # bien bo mach, 27.8 do) trong khi CPU (x86_pkg_temp) 41-49 do -> trang
+    # Tong quan bao nhiet do CPU thap sai. Pi: zone0 = "cpu-thermal" (dung).
+    goc = "/sys/class/thermal"
+    uu_tien = ("x86_pkg_temp", "cpu-thermal", "cpu_thermal", "soc_thermal", "cpu")
+    vung = []
+    try:
+        for v in sorted(os.listdir(goc)):
+            if not v.startswith("thermal_zone"):
+                continue
+            try:
+                with open(os.path.join(goc, v, "type")) as f:
+                    loai = f.read().strip().lower()
+                with open(os.path.join(goc, v, "temp")) as f:
+                    do = int(f.read().strip()) / 1000.0
+            except (OSError, ValueError):
+                continue
+            if 0 < do < 150:              # loc gia tri vo ly cua vai cam bien
+                hang = next((i for i, t in enumerate(uu_tien) if loai.startswith(t)), None)
+                vung.append((hang, loai, round(do, 1)))
+    except OSError:
+        pass
+    cpu = sorted(x for x in vung if x[0] is not None)
+    if cpu:
+        return cpu[0][2]
+    # Pi doi cu khong co vung cpu-thermal: hoi vcgencmd
     import subprocess
     try:
         r = subprocess.run(["vcgencmd", "measure_temp"], capture_output=True,
@@ -203,21 +230,9 @@ def nhiet_do_cpu():
             return float(r.stdout.split("=")[1].split("'")[0])
     except (OSError, ValueError, subprocess.SubprocessError):
         pass
-    # May thuong: lay vung nhiet do dau tien doc duoc
-    goc = "/sys/class/thermal"
-    try:
-        for v in sorted(os.listdir(goc)):
-            if not v.startswith("thermal_zone"):
-                continue
-            try:
-                with open(os.path.join(goc, v, "temp")) as f:
-                    do = int(f.read().strip()) / 1000.0
-                if 0 < do < 150:          # loc gia tri vo ly cua vai cam bien
-                    return round(do, 1)
-            except (OSError, ValueError):
-                continue
-    except OSError:
-        pass
+    # Khong vung nao cua CPU: thu hwmon coretemp/k10temp (ben duoi) truoc,
+    # cuoi cung moi lay vung bat ky
+    vung_bat_ky = vung[0][2] if vung else None
     # Nhieu may ban/laptop KHONG co thermal_zone nhung co hwmon cua chip CPU
     # (Intel coretemp, AMD k10temp/zenpower). Lay cam bien "Package"/"Tctl"
     # (nhiet do ca con chip) truoc, khong co thi lay cam bien dau tien.
@@ -251,7 +266,7 @@ def nhiet_do_cpu():
                     continue
     except OSError:
         pass
-    return None
+    return vung_bat_ky
 
 
 if __name__ == "__main__":

@@ -53,12 +53,10 @@ def cpu_temp():
     khong co thermal_zone0 thi tim tiep (cac vung khac, hwmon coretemp/
     k10temp) - xem phancung.nhiet_do_cpu. Khong co cam bien nao (vd may ao)
     -> None, giao dien noi ro "khong co cam bien" thay vi "? do C"."""
-    try:
-        with open("/sys/class/thermal/thermal_zone0/temp") as f:
-            return round(int(f.read().strip()) / 1000.0, 1)
-    except Exception:
-        from .phancung import nhiet_do_cpu
-        return nhiet_do_cpu()
+    # KHONG doc mu zone0: tren may x86 (Dell OptiPlex that) zone0 la cam bien
+    # bo mach (acpitz), khong phai CPU - phancung.nhiet_do_cpu chon dung vung.
+    from .phancung import nhiet_do_cpu
+    return nhiet_do_cpu()
 
 
 def throttle_status():

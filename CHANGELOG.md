@@ -15,6 +15,11 @@ cach thu lai toi 30 phut, trang Kho khong thu ngay va khong noi ly do.
   them systemd-timesyncd - co mang la tu chinh gio (truoc do ISO KHONG co NTP
   nao, lech la lech mai); (2) goi dang ky dong theo GIO CUA KHO (header Date)
   -> dong ho may sai bao nhieu cung ket noi duoc, chong phat lai giu nguyen.
+- Kiem tra tren MAY THAT Dell OptiPlex 3070 (i5-9500T, SSD SATA, HDMI,
+  Realtek r8169): bang kiem 35/35, khoi dong 27s, kiosk ve bang GPU i915,
+  ethtool/arp-scan/LLDP chay that, khoi dong lai gio van dung, tu len kho.
+  Loi tim ra: NHIET DO CPU doc nham cam bien bo mach (acpitz 27.8 do thay vi
+  CPU 48 do) -> nay uu tien vung x86_pkg_temp / cpu-thermal / coretemp.
 
 ## 1.7.0
 
