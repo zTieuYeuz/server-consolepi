@@ -22,6 +22,9 @@ cach thu lai toi 30 phut, trang Kho khong thu ngay va khong noi ly do.
   CPU 48 do) -> nay uu tien vung x86_pkg_temp / cpu-thermal / coretemp.
   ISO them wireless-regdb (kernel bao thieu regulatory.db - can cho phat AP
   dung kenh) va libnss-mdns (phan giai ten ".local").
+- MENU BOOT USB (UEFI) tren man hinh that bi phong to, tran mep (live-build
+  ep 800x600, man 16:9 keo gian). Nay dung do phan giai goc man hinh
+  (gfxmode=auto) giong he thong da cai. iso/bootloader-grub/config.cfg.
 
 ## 1.7.0
 
