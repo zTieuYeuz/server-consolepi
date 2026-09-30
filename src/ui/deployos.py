@@ -1422,7 +1422,7 @@ def tabs_deployos(chinh, phu=""):
 
 def register_deployos(app):
     from flask import (request, redirect, send_from_directory, abort, jsonify,
-                       flash, get_flashed_messages)
+                       flash, get_flashed_messages, session)
     from .layout import render_page
     from .home import _esc
 
@@ -4206,7 +4206,7 @@ def register_deployos(app):
                 + '<button type="submit" class="small gray">Ẩn các việc đã xong</button></form>';
             document.getElementById('ds-tai').innerHTML = h;
             // Vua xong 1 viec -> tai lai trang de cot "Đã có" cap nhat
-            if (coViecDang && !dang) location.reload();
+            if (coViecDang && !dang) location.replace('/deployos/kho');
             coViecDang = dang;
             return dang;
           }}
@@ -4221,28 +4221,42 @@ def register_deployos(app):
         </script>"""
         return _trang(body, "Deployment OS", "Kho trung tâm")
 
+    def _kho_chuyen(msg, ok=True):
+        """
+        POST -> luu thong bao roi CHUYEN HUONG ve GET /deployos/kho (mau
+        Post/Redirect/Get). LOI THAT 30/09/2026 (may ao .19): tai Windows 11 8,4GB
+        xong, tach ISO xong, roi LAI TAI TIEP tu dau - lap di lap lai. Nguyen
+        nhan: POST /deployos/kho/tai tra thang trang (khong chuyen huong) nen
+        dia chi trinh duyet van la /deployos/kho/tai; khi 1 viec tai xong, JS
+        "location.reload()" tai lai trang -> trinh duyet GUI LAI CA POST -> bat dau
+        tai lan nua (log: 4 lan POST cach nhau ~12 phut, dung bang 1 chu ky tai).
+        """
+        session["kho_tb"] = [str(msg)[:600], bool(ok)]
+        return redirect("/deployos/kho")
+
     @app.route("/deployos/kho")
     def deployos_kho():
-        return _trang_kho()
+        tb = session.pop("kho_tb", None)
+        return _trang_kho(*tb) if tb else _trang_kho()
 
     @app.route("/deployos/kho/ghep", methods=["POST"])
     def deployos_kho_ghep():
         from . import khotrungtam as _kt
         ok, msg = _kt.ghep_noi(request.form.get("url", ""), request.form.get("ma", ""))
-        return _trang_kho(msg, ok)
+        return _kho_chuyen(msg, ok)
 
     @app.route("/deployos/kho/cauhinh", methods=["POST"])
     def deployos_kho_cauhinh():
         from . import khotrungtam as _kt
         ok, msg = _kt.luu_cauhinh(request.form.get("url", ""),
                                   request.form.get("token", ""))
-        return _trang_kho(msg, ok)
+        return _kho_chuyen(msg, ok)
 
     @app.route("/deployos/kho/xoa-cauhinh", methods=["POST"])
     def deployos_kho_xoa_cauhinh():
         from . import khotrungtam as _kt
         _kt.xoa_cauhinh()
-        return _trang_kho("Đã xoá kết nối. Nhập mã kết nối mới để kết nối lại.", True)
+        return _kho_chuyen("Đã xoá kết nối. Nhập mã kết nối mới để kết nối lại.", True)
 
     @app.route("/deployos/kho/tien-do")
     def deployos_kho_tien_do():
@@ -4277,14 +4291,14 @@ def register_deployos(app):
         from . import khotrungtam as _kt
         cauhinh = _kt.doc_cauhinh()
         if not cauhinh:
-            return _trang_kho("Chưa kết nối tới kho.", False)
+            return _kho_chuyen("Chưa kết nối tới kho.", False)
         muc_id = (request.form.get("id") or "").strip()
         ok_ds, ds = _kt.danh_sach(cauhinh)
         if not ok_ds:
-            return _trang_kho(ds, False)
+            return _kho_chuyen(ds, False)
         m = next((x for x in ds if x.get("id") == muc_id), None)
         if not m:
-            return _trang_kho("Không tìm thấy mục này trên kho (có thể vừa bị xoá).", False)
+            return _kho_chuyen("Không tìm thấy mục này trên kho (có thể vừa bị xoá).", False)
         loai, ten_hien_thi = m.get("loai", ""), m.get("ten", "")
         ten_an = ten_an_toan(m.get("ten_file", ""))
         ext = os.path.splitext(ten_an)[1].lower()
@@ -4295,10 +4309,10 @@ def register_deployos(app):
             thu_muc_dich = APPS_DIR if loai == "phanmem" else SCRIPTS_DIR
             duoi = EXT_APP if loai == "phanmem" else EXT_SCRIPT
             if not ten_an or ext not in duoi:
-                return _trang_kho(f"Console Pi chỉ nhận {'/'.join(sorted(duoi))} cho mục "
+                return _kho_chuyen(f"Console Pi chỉ nhận {'/'.join(sorted(duoi))} cho mục "
                                   f"{TEN_LOAI_KHO[loai]} - không tải \"{ten_hien_thi}\".", False)
             if kich * 1.05 + 200 * 1024 * 1024 > _con_trong(thu_muc_dich):
-                return _trang_kho(f"Không đủ chỗ trống để tải \"{ten_hien_thi}\" "
+                return _kho_chuyen(f"Không đủ chỗ trống để tải \"{ten_hien_thi}\" "
                                   f"({co_kich_thuoc(kich)}).", False)
             du_lieu = (m.get("du_lieu") or "").strip()
 
@@ -4311,15 +4325,15 @@ def register_deployos(app):
                 return True, f"Đã tải về {TEN_LOAI_KHO[loai]}."
 
             ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(thu_muc_dich, ten_an), sau)
-            return _trang_kho(msg, ok)
+            return _kho_chuyen(msg, ok)
 
         if loai == "os":
             if ext != ".iso":
-                return _trang_kho("Mục hệ điều hành phải là file .iso.", False)
+                return _kho_chuyen("Mục hệ điều hành phải là file .iso.", False)
             # ISO + boot.wim + install.wim nam cung luc truoc khi xoa ISO ->
             # can khoang 2 lan kich thuoc ISO.
             if kich * 2.1 + 500 * 1024 * 1024 > _con_trong(OS_DIR if os.path.isdir(OS_DIR) else DEPLOY_DIR):
-                return _trang_kho(
+                return _kho_chuyen(
                     f"Không đủ chỗ trống: ISO {co_kich_thuoc(kich)} cần khoảng "
                     f"{co_kich_thuoc(int(kich * 2.1))} trống (ISO + boot.wim + install.wim "
                     f"trong lúc tách). Còn {co_kich_thuoc(_con_trong(OS_DIR if os.path.isdir(OS_DIR) else DEPLOY_DIR))}.", False)
@@ -4332,7 +4346,7 @@ def register_deployos(app):
                     if ok_t:
                         break
                     if "Da co" not in msg_t or so > 20:
-                        return _trang_kho(msg_t, False)
+                        return _kho_chuyen(msg_t, False)
                     ten_os, so = f"{ten_hien_thi} ({so})", so + 1
                 f_meta = os.path.join(OS_DIR, os_id, "_thongtin.json")
                 with open(f_meta, encoding="utf-8") as f:
@@ -4361,9 +4375,9 @@ def register_deployos(app):
                 return False, f"Tách ISO thất bại: {t.get('loi') or '?'}"
 
             ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(OS_DIR, os_id, ten_an), sau_iso)
-            return _trang_kho(msg, ok)
+            return _kho_chuyen(msg, ok)
 
-        return _trang_kho("Loại mục không hỗ trợ.", False)
+        return _kho_chuyen("Loại mục không hỗ trợ.", False)
 
     # ------------------------- ung dung thu muc (mo hinh MDT: "Application
     # with source files" - xem chi tiet trong docstring cua danh_sach_ungdung()

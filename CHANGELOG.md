@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.2
+
+- LOI THAT (may ao .19, 30/09/2026): tai Windows 11 (8,4 GB) tu kho xong, tach
+  ISO xong, roi LAI TAI TIEP tu dau, lap di lap lai. Nguyen nhan: POST
+  /deployos/kho/tai tra thang trang ket qua (dia chi trinh duyet van la URL
+  POST); khi 1 viec tai xong, JS "location.reload()" tai lai trang -> trinh duyet
+  GUI LAI ca POST -> bat dau tai lan nua. Log: 4 lan POST cach nhau ~12 phut =
+  dung 1 chu ky tai + tach. Sua theo mau Post/Redirect/Get: moi POST cua
+  trang Kho trung tam (tai, ghep ma, luu token, xoa ket noi) luu thong bao roi
+  chuyen huong ve GET /deployos/kho; JS chuyen bang location.replace.
+
 ## 1.7.1
 
 Loi that anh Thoai gap 29/09/2026: cai 1.7.0 len may that, vao Kho trung tam
