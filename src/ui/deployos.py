@@ -48,6 +48,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import time
 
 # ---------------------------------------------------------------- duong dan
@@ -4105,6 +4106,10 @@ def register_deployos(app):
         body = _tabs("kho") + _msg(msg, ok) + f"""
         <div class="card" id="khung-tai" hidden>
           <h3>Đang tải</h3>
+          <div id="canh-bao-tai" hidden style="background:#3a2f12;border:1px solid #6b5418;color:#ffd98a;
+               border-radius:8px;padding:8px 12px;margin:0 0 8px;font-size:13px;">
+            ⚠ Đang tải — <b>xin đừng tải lại trang (F5) hoặc đóng trang này</b> cho đến khi xong.
+            Khi hoàn tất sẽ có bảng thông báo.</div>
           <div id="ds-tai"></div>
         </div>
 
@@ -4173,7 +4178,43 @@ def register_deployos(app):
             return (i < 2 ? n.toFixed(0) : n.toFixed(1)) + ' ' + d[i];
           }}
           function esc(s) {{ var e = document.createElement('div'); e.textContent = s || ''; return e.innerHTML; }}
-          var coViecDang = false;
+          var coViecDang = false, dangHienTai = false, tenTheoId = {{}}, daThayDang = {{}};
+          // Bam Huy -> hoi lai truoc (xoa sach nhung gi da tai + dang xu ly)
+          document.getElementById('ds-tai').addEventListener('submit', function(e) {{
+            var f = e.target;
+            if (f.getAttribute('action') !== '/deployos/kho/huy') return;
+            var id = f.elements['id'] ? f.elements['id'].value : '';
+            var ten = tenTheoId[id] || 'mục này';
+            if (!confirm('HUỶ TẢI "' + ten + '"?\\n\\nMọi thứ đã tải về và đang xử lý cho mục này sẽ bị XOÁ SẠCH.\\nMuốn dùng lại phải tải lại từ đầu.'))
+              e.preventDefault();
+          }});
+          // Dang tai ma bam F5 / dong tab -> trinh duyet hoi lai
+          window.addEventListener('beforeunload', function(e) {{
+            if (dangHienTai) {{ e.preventDefault(); e.returnValue = ''; }}
+          }});
+          function bangXong(ds) {{
+            var dong = '', loi = false, huy = false, xong = false;
+            Object.keys(daThayDang).forEach(function(id) {{
+              var v = ds.filter(function(x) {{ return x.id === id; }})[0];
+              if (!v) return;
+              var daHuy = !v.ok && (v.thong_bao || '').indexOf('Đã huỷ') === 0;
+              if (v.ok) xong = true; else if (daHuy) huy = true; else loi = true;
+              dong += '<div style="margin:8px 0;">' + (v.ok ? '✅ ' : (daHuy ? '🛑 ' : '❌ ')) + '<b>' + esc(v.ten)
+                   + '</b><div style="color:#8A94A6;font-size:13px;">' + esc(v.thong_bao) + '</div></div>';
+            }});
+            daThayDang = {{}};
+            var bg = document.createElement('div');
+            bg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;'
+              + 'display:flex;align-items:center;justify-content:center;padding:16px;';
+            bg.innerHTML = '<div style="background:#111823;border:1px solid ' + (loi ? '#7a2e2e' : (huy && !xong ? '#6b5418' : '#2e5a3a'))
+              + ';border-radius:12px;padding:20px 22px;max-width:440px;width:100%;color:#E6EDF7;">'
+              + '<h3 style="margin:0 0 6px;">' + (loi ? 'Có việc chưa thành công' : (huy && !xong ? '🛑 Đã huỷ' : '✅ Đã xong tất cả')) + '</h3>'
+              + dong + '<button type="button" id="dong-bang-xong" style="margin-top:10px;">Đóng</button></div>';
+            document.body.appendChild(bg);
+            document.getElementById('dong-bang-xong').addEventListener('click', function() {{
+              location.replace('/deployos/kho');
+            }});
+          }}
           function ve(ds) {{
             var khung = document.getElementById('khung-tai');
             khung.hidden = ds.length === 0;
@@ -4181,7 +4222,8 @@ def register_deployos(app):
             ds.forEach(function(v) {{
               var pt = v.tong ? Math.min(100, 100 * v.da / v.tong) : 0;
               var mau = v.dang ? '#38BDF8' : (v.ok ? '#4ADE80' : '#F87171');
-              if (v.dang) dang = true;
+              if (v.dang) {{ dang = true; daThayDang[v.id] = true; }}
+              tenTheoId[v.id] = v.ten;
               var conLai = (v.dang && v.toc_do > 0 && v.tong > v.da)
                 ? ' · còn khoảng ' + Math.max(1, Math.round((v.tong - v.da) / v.toc_do / 60)) + ' phút' : '';
               h += '<div style="padding:8px 0;border-bottom:1px solid #1F2733;">'
@@ -4205,8 +4247,11 @@ def register_deployos(app):
               h += '<form method="POST" action="/deployos/kho/xoa-xong" style="margin-top:8px;">'
                 + '<button type="submit" class="small gray">Ẩn các việc đã xong</button></form>';
             document.getElementById('ds-tai').innerHTML = h;
-            // Vua xong 1 viec -> tai lai trang de cot "Đã có" cap nhat
-            if (coViecDang && !dang) location.replace('/deployos/kho');
+            document.getElementById('canh-bao-tai').hidden = !dang;
+            dangHienTai = dang;
+            // Vua xong TAT CA viec -> hien bang nho "da xong"; bam Dong moi tai lai
+            // trang (GET) de cot "Đã co" cap nhat
+            if (coViecDang && !dang) bangXong(ds);
             coViecDang = dang;
             return dang;
           }}
@@ -4339,11 +4384,13 @@ def register_deployos(app):
                     f"trong lúc tách). Còn {co_kich_thuoc(_con_trong(OS_DIR if os.path.isdir(OS_DIR) else DEPLOY_DIR))}.", False)
             # Dung lai he dieu hanh da tai do dang tu kho (tai tiep file .part).
             os_id = next((o["id"] for o in danh_sach_os() if o["kho_id"] == muc_id), None)
+            os_moi = False            # True: thu muc OS nay do CHINH lan tai nay tao ra
             if not os_id:
                 ten_os, so = ten_hien_thi, 2
                 while True:
                     ok_t, msg_t, os_id = tao_os_moi(ten_os)
                     if ok_t:
+                        os_moi = True
                         break
                     if "Da co" not in msg_t or so > 20:
                         return _kho_chuyen(msg_t, False)
@@ -4358,23 +4405,48 @@ def register_deployos(app):
 
             def sau_iso(duong):
                 from . import isotach as _it
-                # Dang tach ISO khac -> doi (moi luc chi tach 1 file).
+                # Dang tach ISO khac -> doi (moi luc chi tach 1 file). Kiem tra
+                # co Huy moi 2 giay de bam Huy la dung ngay, khong doi het.
                 cho = 0
                 while _it.dang_chay() and cho < 6 * 3600:
-                    time.sleep(10)
-                    cho += 10
+                    if _kt.da_huy(muc_id):
+                        return False, "Đã huỷ."
+                    time.sleep(2)
+                    cho += 2
+                if _kt.da_huy(muc_id):
+                    return False, "Đã huỷ."
                 ok_t, msg_t = _it.bat_dau_tach(os_id, duong)
                 if not ok_t:
                     return False, f"Tải xong nhưng không tách được ISO: {msg_t}"
+                if _kt.da_huy(muc_id):            # Huy rot dung luc vua bat dau tach
+                    _it.huy_tach()
                 time.sleep(2)
                 while _it.dang_chay():
-                    time.sleep(3)
+                    time.sleep(1)
                 t = _it.trang_thai()
                 if t.get("xong"):
                     return True, "Đã tải và tách xong - hệ điều hành sẵn sàng để cài."
                 return False, f"Tách ISO thất bại: {t.get('loi') or '?'}"
 
-            ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(OS_DIR, os_id, ten_an), sau_iso)
+            def khi_huy_os():
+                """Bam Huy: ngat ngay tien trinh tach ISO cua HE DIEU HANH NAY."""
+                from . import isotach as _it
+                if _it.dang_chay() and _it.trang_thai().get("os_id") == os_id:
+                    _it.huy_tach()
+
+            def don_dep_os():
+                """Sau khi huy: xoa thu tam; OS do lan tai nay tao ra ma chua co
+                file nao dung duoc thi xoa luon ca thu muc (khong de OS rong)."""
+                from . import isotach as _it
+                d = os.path.join(OS_DIR, os_id)
+                _it.don_thu_muc_tam(d)
+                if os_moi and os.path.isdir(d) and not any(
+                        os.path.isfile(os.path.join(d, x))
+                        for x in ("boot.wim", "install.wim", "install.esd")):
+                    shutil.rmtree(d, ignore_errors=True)
+
+            ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(OS_DIR, os_id, ten_an), sau_iso,
+                                  khi_huy_os, don_dep_os)
             return _kho_chuyen(msg, ok)
 
         return _kho_chuyen("Loại mục không hỗ trợ.", False)

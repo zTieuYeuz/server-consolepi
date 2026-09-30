@@ -187,7 +187,22 @@ def danh_sach(cauhinh):
     return True, d["muc"]
 
 
-def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None):
+def _bam_file(duong, dung=None):
+    """SHA-256 cua file (doc khoi 8 MB). dung() True -> huy, tra None."""
+    h = hashlib.sha256()
+    with open(duong, "rb") as f:
+        while True:
+            k = f.read(8 * 1024 * 1024)
+            if not k:
+                break
+            h.update(k)
+            if dung and dung():
+                return None
+    return h
+
+
+def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None,
+           kich_thuoc=0):
     """
     Tai 1 file tu kho ve duong_dich. TAI TIEP duoc: ghi vao
     "<duong_dich>.part"; neu file .part da co (lan truoc dut mang) thi xin
@@ -195,12 +210,40 @@ def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None):
     SO_LAN_THU_LAI lan, moi lan tiep tu cho da co. Xong thi kiem SHA-256
     (neu kho da tinh) roi moi doi ten thanh file that.
     bao_tien_do(da, tong): goi dinh ky. dung(): tra True thi huy.
+
+    30/09/2026 (anh Thoai: "lam nhanh nhat co the"):
+      - SHA-256 duoc BAM NGAY TRONG LUC TAI (moi khoi ghi ra dia cung dua vao
+        bo bam) thay vi doc lai ca file 8 GB lan nua sau khi tai xong - truoc
+        day buoc "Dang kiem tra SHA-256" ton them 1-3 phut (the nho Pi cham
+        hon nua). Tai tiep tu .part thi bam phan da co 1 lan roi bam tiep.
+      - File dich DA CO san, dung kich thuoc va dung SHA-256 -> KHONG tai lai.
     """
     tam = duong_dich + ".part"
+    if (kich_thuoc and sha256 and os.path.isfile(duong_dich)
+            and os.path.getsize(duong_dich) == kich_thuoc):
+        if bao_tien_do:
+            bao_tien_do(kich_thuoc, kich_thuoc, "File đã có sẵn trên máy - đang kiểm tra...")
+        hh = _bam_file(duong_dich, dung)
+        if hh is None:
+            return False, "Đã huỷ."
+        if hh.hexdigest() == sha256.lower():
+            return True, "File đã có sẵn và đúng SHA-256 - không cần tải lại."
     lan_loi = 0
     tong = 0
+    bo_bam = hashlib.sha256() if sha256 else None
+    da_bam = 0                 # bo_bam dang bao phu bao nhieu byte DAU cua .part
     while True:
         da = os.path.getsize(tam) if os.path.exists(tam) else 0
+        if bo_bam is not None and da_bam != da:
+            # .part co san tu truoc (tai tiep): bam phan da co 1 lan
+            bo_bam, da_bam = hashlib.sha256(), 0
+            if da > 0:
+                if bao_tien_do:
+                    bao_tien_do(da, da, "Đang kiểm tra phần đã tải trước đó...")
+                bo_bam = _bam_file(tam, dung)
+                if bo_bam is None:
+                    return False, "Đã huỷ."
+                da_bam = da
         h = _headers(cauhinh)
         if da:
             h["Range"] = f"bytes={da}-"
@@ -217,6 +260,8 @@ def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None):
                     if r.status_code == 200:        # kho khong tra Range -> tai lai tu dau
                         da = 0
                         tong = int(r.headers.get("Content-Length") or 0)
+                        if bo_bam is not None:
+                            bo_bam, da_bam = hashlib.sha256(), 0
                     else:
                         tong = da + int(r.headers.get("Content-Length") or 0)
                     moc = time.time()
@@ -226,6 +271,9 @@ def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None):
                                 return False, "Đã huỷ."
                             if chunk:
                                 f.write(chunk)
+                                if bo_bam is not None:
+                                    bo_bam.update(chunk)
+                                    da_bam += len(chunk)
                                 da += len(chunk)
                                 if bao_tien_do and time.time() - moc > 0.5:
                                     bao_tien_do(da, tong)
@@ -241,17 +289,14 @@ def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None):
                 bao_tien_do(os.path.getsize(tam) if os.path.exists(tam) else 0, tong,
                             f"Mất kết nối, thử lại lần {lan_loi}...")
             time.sleep(min(30, 3 * lan_loi))
-    if bao_tien_do:
-        bao_tien_do(os.path.getsize(tam), tong, "Đang kiểm tra SHA-256...")
     if sha256:
-        h = hashlib.sha256()
-        with open(tam, "rb") as f:
-            while True:
-                k = f.read(4 * 1024 * 1024)
-                if not k:
-                    break
-                h.update(k)
-        if h.hexdigest() != sha256.lower():
+        if bo_bam is None or da_bam != os.path.getsize(tam):
+            if bao_tien_do:
+                bao_tien_do(os.path.getsize(tam), tong, "Đang kiểm tra SHA-256...")
+            bo_bam = _bam_file(tam, dung)
+            if bo_bam is None:
+                return False, "Đã huỷ."
+        if bo_bam.hexdigest() != sha256.lower():
             os.remove(tam)
             return False, "File tải về KHÔNG khớp SHA-256 của kho (hỏng trên đường truyền) - đã xoá, tải lại."
     os.replace(tam, duong_dich)
@@ -279,13 +324,31 @@ def _dat(muc_id, **kw):
         _VIEC[muc_id].update(kw)
 
 
+_CB_HUY = {}               # muc_id -> ham goi NGAY khi bam Huy (vd dung tien trinh tach ISO)
+
+
 def huy_tai(muc_id):
+    """Bam Huy: dat co huy + bao tien trinh dang chay (tach ISO...) dung lai.
+    Viec don dep (xoa du lieu da tai) do luong tai tu lam khi thay co huy."""
     with _KHOA:
         v = _VIEC.get(muc_id)
-        if v and v["dang"]:
-            v["huy"] = True
-            return True
-    return False
+        if not (v and v["dang"]):
+            return False
+        v["huy"] = True
+        v["thong_bao"] = "Đang huỷ và xoá dữ liệu đã tải..."
+        cb = _CB_HUY.get(muc_id)
+    if cb:
+        try:
+            cb()
+        except Exception:
+            pass
+    return True
+
+
+def da_huy(muc_id):
+    with _KHOA:
+        v = _VIEC.get(muc_id)
+        return bool(v and v["huy"])
 
 
 def xoa_viec_xong():
@@ -294,11 +357,17 @@ def xoa_viec_xong():
             del _VIEC[k]
 
 
-def tai_nen(cauhinh, muc, duong_dich, sau_khi_xong=None):
+def tai_nen(cauhinh, muc, duong_dich, sau_khi_xong=None, khi_huy=None, don_dep=None):
     """
     Bat dau tai 1 muc o nen. sau_khi_xong(duong_dich) -> (ok, thong_bao):
     buoc tiep theo (ghi tham so cai dat, tach ISO...), chay trong cung luong.
+    khi_huy(): goi NGAY khi nguoi dung bam Huy (vd ngat tien trinh tach ISO).
+    don_dep(): goi sau khi huy xong de xoa phan con lai rieng cua loai muc nay.
     Tra ve (ok, thong_bao) ngay lap tuc.
+
+    HUY = XOA SACH (anh Thoai 30/09/2026): file dang tai (.part), file da tai
+    xong do LAN NAY tao ra, va phan dang lam do deu bi xoa. File da co san
+    tu truoc (vd "Tai lai") thi KHONG dung toi.
     """
     muc_id = muc["id"]
     with _KHOA:
@@ -308,24 +377,49 @@ def tai_nen(cauhinh, muc, duong_dich, sau_khi_xong=None):
                          "da": 0, "tong": int(muc.get("kich_thuoc") or 0), "dang": True,
                          "ok": None, "thong_bao": "Đang bắt đầu...", "bat_dau": time.time(),
                          "toc_do": 0, "huy": False}
+        _CB_HUY[muc_id] = khi_huy
 
     def bao(da, tong, tb=None):
         with _KHOA:
             v = _VIEC[muc_id]
+            if v["huy"]:
+                return
             g = time.time() - v["bat_dau"]
             v["toc_do"] = int(da / g) if g > 1 else 0
             v["da"], v["tong"] = da, tong or v["tong"]
             v["thong_bao"] = tb or "Đang tải..."
 
+    def don_sach_khi_huy(co_san_truoc):
+        try:
+            os.remove(duong_dich + ".part")
+        except OSError:
+            pass
+        if not co_san_truoc:
+            try:
+                os.remove(duong_dich)
+            except OSError:
+                pass
+        if don_dep:
+            try:
+                don_dep()
+            except Exception:
+                pass
+
     def chay():
-        ok, tb = tai_ve(cauhinh, muc_id, duong_dich, muc.get("sha256", ""), bao,
-                        lambda: _VIEC[muc_id]["huy"])
-        if ok and sau_khi_xong:
-            _dat(muc_id, thong_bao="Đang xử lý sau khi tải...")
+        co_san_truoc = os.path.exists(duong_dich)
+        huy = lambda: _VIEC[muc_id]["huy"]
+        ok, tb = tai_ve(cauhinh, muc_id, duong_dich, muc.get("sha256", ""), bao, huy,
+                        int(muc.get("kich_thuoc") or 0))
+        if ok and sau_khi_xong and not huy():
+            _dat(muc_id, thong_bao="Đang xử lý sau khi tải...", da=_VIEC[muc_id]["tong"])
             try:
                 ok, tb = sau_khi_xong(duong_dich)
             except Exception as e:          # khong de luong chet im lang
                 ok, tb = False, f"Lỗi sau khi tải: {e}"
+        if huy():
+            don_sach_khi_huy(co_san_truoc)
+            ok, tb = False, "Đã huỷ - đã xoá toàn bộ dữ liệu đã tải và đang xử lý."
+        _CB_HUY.pop(muc_id, None)
         _dat(muc_id, dang=False, ok=ok, thong_bao=tb)
 
     threading.Thread(target=chay, daemon=True).start()

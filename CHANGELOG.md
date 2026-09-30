@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.7.3
+
+Yeu cau anh Thoai 30/09/2026 (4 muc, trang Deployment OS -> Kho trung tam):
+
+- HUY = XOA SACH. Bam Huy luc dang tai HOAC dang tach ISO: hien bang xac nhan
+  ("Moi thu da tai va dang xu ly se bi XOA SACH"); dong y thi dung NGAY (ke ca
+  ngat tien trinh 7z dang giai nen, ~2 giay), xoa file .part, ISO da tai,
+  thu muc tach tam, va thu muc OS vua tao cho lan tai nay. "Tai lai" mot OS da
+  co roi huy thi OS cu giu nguyen (khong mat, khong tron phien ban).
+- CHI GIU FILE CAN: sau khi tai + tach chi con boot.wim, install.wim va
+  _thongtin.json; ISO va moi file tam bi xoa; file tach luc nao cung ra THU MUC
+  TAM, kiem chung xong moi doi ten vao cho that (loi giua chung khong de lai
+  file nua chung, khong ghi de OS dang dung). Doi dinh dang install.wim <->
+  install.esd cung don ban cu.
+- NHANH HON: (1) SHA-256 bam ngay trong luc tai, bo buoc doc lai ca file sau khi
+  tai (tiet kiem 1-3 phut voi ISO 8 GB, nhieu hon tren the nho Pi); (2) boot.wim
+  va install.wim giai nen SONG SONG, uu tien o dia + CPU cao nhat (ionice/nice),
+  2 file kiem chung song song (do tren may ao: 37s -> 28s, bi gioi han boi toc
+  do ghi o dia); (3) ISO da co san dung kich thuoc + dung SHA-256 thi KHONG tai
+  lai.
+- TRONG LUC TAI: canh bao "xin dung tai lai trang (F5) hoac dong trang"; bam F5
+  / dong tab thi trinh duyet hoi lai. Khi XONG TAT CA hien bang nho "Da xong"
+  (hoac "Co viec chua thanh cong" / "Da huy"), bam Dong moi tai lai danh sach.
+- Kiem thu tren may ao .19 voi kho gia: 22/22 (tai+tach, huy luc tai, huy luc
+  tach, tai lai roi huy, ISO co san, tai tiep .part, SHA sai).
+
 ## 1.7.2
 
 - LOI THAT (may ao .19, 30/09/2026): tai Windows 11 (8,4 GB) tu kho xong, tach

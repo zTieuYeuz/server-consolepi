@@ -85,9 +85,10 @@ LOI_THIEU_7Z = ("máy thiếu lệnh 7z/7zz (gói 7zip) - cài bằng lệnh: "
 # _PAIR trong ui/network.py (mau da chay on dinh tu lau).
 _TIEN = {
     "chay": False,
+    "huy": False,          # nguoi dung bam Huy -> dung ngay, don sach
     "os_id": "",
     "buoc": 0,
-    "tong_buoc": 6,
+    "tong_buoc": 5,
     "ten_buoc": "",
     "phan_tram": 0,
     "xong": None,          # None = chua xong, True/False = ket qua
@@ -110,6 +111,29 @@ def trang_thai():
 def dang_chay():
     with _KHOA:
         return _TIEN["chay"]
+
+
+_PROCS = []                # cac tien trinh 7z dang chay (de Huy ngat duoc ngay)
+
+
+def da_huy():
+    with _KHOA:
+        return _TIEN["huy"]
+
+
+def huy_tach():
+    """Bam Huy: dat co huy va ngat ngay cac tien trinh 7z dang giai nen."""
+    with _KHOA:
+        if not _TIEN["chay"]:
+            return False
+        _TIEN["huy"] = True
+        procs = list(_PROCS)
+    for p in procs:
+        try:
+            p.terminate()
+        except OSError:
+            pass
+    return True
 
 
 def _dat(**kw):
@@ -190,72 +214,118 @@ def _co(n):
 
 
 # ------------------------------------------------------------------- worker
-def _theo_doi_kich_thuoc(duong_ra, mong_doi, moc_dau, moc_cuoi, dung_lai):
+def _uu_tien_cao():
     """
-    Cap nhat % THAT trong luc giai nen: doc kich thuoc file dang duoc ghi va
-    so voi kich thuoc ghi trong muc luc ISO.
+    Tien to lenh de tien trinh giai nen duoc uu tien o dia + CPU cao nhat co
+    the (anh Thoai 30/09/2026: "tan dung toi da suc manh cua may"). Chay duoi
+    root nen nang duoc muc uu tien; khong co ionice/nice thi bo qua.
+    """
+    t = []
+    if shutil.which("ionice"):
+        t += ["ionice", "-c2", "-n0"]
+    if os.geteuid() == 0 and shutil.which("nice"):
+        t += ["nice", "-n", "-5"]
+    return t
 
-    Khong doan theo thoi gian - da co bai hoc that o man hinh cho kiosk
-    (thanh tien trinh doan theo thoi gian dung o 92% nhin y het bi treo).
+
+def _chay_huy(cmd, timeout):
+    """
+    Chay lenh nhu _chay() nhung NGAT DUOC ngay khi nguoi dung bam Huy
+    (kiem tra moi 0,5 giay). Tra (ma, stdout, stderr); ma 130 = da huy.
+    """
+    try:
+        p = subprocess.Popen(_uu_tien_cao() + cmd, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, text=True)
+    except OSError as e:
+        return 127, "", str(e)
+    with _KHOA:
+        _PROCS.append(p)
+    t0 = time.time()
+    try:
+        while True:
+            try:
+                ra, loi = p.communicate(timeout=0.5)
+                return p.returncode, ra or "", loi or ""
+            except subprocess.TimeoutExpired:
+                if da_huy():
+                    p.terminate()
+                    try:
+                        p.wait(5)
+                    except subprocess.TimeoutExpired:
+                        p.kill()
+                    return 130, "", "da-huy"
+                if time.time() - t0 > timeout:
+                    p.kill()
+                    return 124, "", "qua-thoi-gian-cho"
+    finally:
+        with _KHOA:
+            if p in _PROCS:
+                _PROCS.remove(p)
+
+
+def _theo_doi_kich_thuoc(duong_ra, cap_nhat, dung_lai):
+    """
+    Bao so byte THAT da ghi ra (doc kich thuoc file dang duoc ghi) - khong doan
+    theo thoi gian (bai hoc tu man hinh cho kiosk: thanh doan theo thoi gian
+    dung o 92% nhin y het bi treo).
     """
     while not dung_lai.is_set():
         try:
-            hien = os.path.getsize(duong_ra)
-            if mong_doi > 0:
-                ty = min(1.0, hien / mong_doi)
-                _dat(phan_tram=int(moc_dau + (moc_cuoi - moc_dau) * ty))
+            cap_nhat(os.path.getsize(duong_ra))
         except OSError:
             pass
         dung_lai.wait(1.0)
 
 
-def _giai_nen_1_file(duong_iso, duong_trong_iso, thu_muc_ra, ten_dich,
-                     mong_doi, moc_dau, moc_cuoi):
-    """Giai nen DUNG 1 file tu ISO ra thu_muc_ra/ten_dich."""
-    tam = os.path.join(thu_muc_ra, ten_dich + ".dangtach")
-    for cu in (tam,):
-        try:
-            os.remove(cu)
-        except OSError:
-            pass
-
+def _giai_nen_1_file(duong_iso, duong_trong_iso, thu_muc_ra, ten_dich, cap_nhat):
+    """
+    Giai nen DUNG 1 file tu ISO ra thu_muc_ra/ten_dich. Moi file co thu muc
+    tam RIENG (.tach-tam-<ten>) de 2 file giai nen SONG SONG khong dam nhau.
+    """
     lenh = _lenh_7z()
     if not lenh:
         return False, LOI_THIEU_7Z
-
-    dung_lai = threading.Event()
-    # 7z `e` giai nen PHANG (bo thu muc) va tu dat ten theo ten goc trong
-    # ISO, nen phai giai ra thu muc tam rieng roi doi ten - neu khong se
-    # de len chinh file cu dang dung khi tach lai lan hai.
-    thu_muc_tam = os.path.join(thu_muc_ra, ".tach-tam")
+    thu_muc_tam = os.path.join(thu_muc_ra, ".tach-tam-" + ten_dich)
     shutil.rmtree(thu_muc_tam, ignore_errors=True)
     os.makedirs(thu_muc_tam, exist_ok=True)
+    # 7z `e` giai nen PHANG (bo thu muc) va tu dat ten theo ten goc trong
+    # ISO, nen phai giai ra thu muc tam roi doi ten - neu khong se de len
+    # chinh file cu dang dung khi tach lai lan hai.
     ten_goc = duong_trong_iso.split("/")[-1]
     duong_theo_doi = os.path.join(thu_muc_tam, ten_goc)
 
-    t = threading.Thread(target=_theo_doi_kich_thuoc,
-                         args=(duong_theo_doi, mong_doi, moc_dau, moc_cuoi, dung_lai),
-                         daemon=True)
-    t.start()
+    dung_lai = threading.Event()
+    threading.Thread(target=_theo_doi_kich_thuoc,
+                     args=(duong_theo_doi, cap_nhat, dung_lai), daemon=True).start()
     try:
-        ma, ra, loi = _chay([lenh, "e", f"-o{thu_muc_tam}", "-y",
-                             duong_iso, duong_trong_iso], timeout=HAN_GIO_7Z)
+        ma, ra, loi = _chay_huy([lenh, "e", f"-o{thu_muc_tam}", "-y",
+                                 duong_iso, duong_trong_iso], HAN_GIO_7Z)
     finally:
         dung_lai.set()
 
-    if ma != 0:
+    def don():
         shutil.rmtree(thu_muc_tam, ignore_errors=True)
+
+    if ma == 130:
+        don()
+        return False, "Đã huỷ."
+    if ma != 0:
+        don()
         return False, (loi or ra or "7z bao loi")[-200:]
     if not os.path.isfile(duong_theo_doi):
-        shutil.rmtree(thu_muc_tam, ignore_errors=True)
+        don()
         return False, "giai nen xong nhung khong thay file dau ra"
+    # KHONG dua vao cho that ngay: file van nam trong thu muc tam cho toi khi
+    # CA 2 file giai nen xong va qua kiem chung (xem _worker) - neu 1 file loi
+    # giua chung thi file OS dang dung (vd "Tai lai") van nguyen ven, khong bi
+    # tron 2 phien ban.
+    duong_tam = os.path.join(thu_muc_tam, ten_dich)
     try:
-        os.replace(duong_theo_doi, os.path.join(thu_muc_ra, ten_dich))
+        os.replace(duong_theo_doi, duong_tam)
     except OSError as e:
-        shutil.rmtree(thu_muc_tam, ignore_errors=True)
+        don()
         return False, f"khong doi ten duoc: {e}"
-    shutil.rmtree(thu_muc_tam, ignore_errors=True)
-    return True, ""
+    return True, duong_tam
 
 
 def kiem_chung_wim(duong, mong_doi):
@@ -283,6 +353,23 @@ def kiem_chung_wim(duong, mong_doi):
             tho = tho[-90:]
         return False, f"ruột file hỏng - {tho}"
     return True, f"{_co(thuc)}, wimlib đọc được mục lục bên trong"
+
+
+def don_thu_muc_tam(thu_muc):
+    """Xoa moi thu tam cua viec tach (.tach-tam*, *.dangtach) trong thu muc OS."""
+    try:
+        for ten in os.listdir(thu_muc):
+            if ten.startswith(".tach-tam") or ten.endswith(".dangtach"):
+                x = os.path.join(thu_muc, ten)
+                if os.path.isdir(x):
+                    shutil.rmtree(x, ignore_errors=True)
+                else:
+                    try:
+                        os.remove(x)
+                    except OSError:
+                        pass
+    except OSError:
+        pass
 
 
 def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
@@ -322,31 +409,60 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
             return
         _xong_buoc("ok", f"cần {_co(can)}, còn {_co(trong)}")
 
-        # --- 3. Tach boot.wim
-        _buoc(3, "Tách boot.wim (ảnh WinPE)", 6)
-        ok, loi = _giai_nen_1_file(duong_iso, d_boot, thu_muc, "boot.wim",
-                                   cd_boot, 6, 20)
-        if not ok:
-            _xong_buoc("loi", loi)
-            _dat(xong=False, loi=f"Tách boot.wim thất bại: {loi}")
-            return
-        _xong_buoc("ok", _co(cd_boot))
-
-        # --- 4. Tach install.wim (file nang nhat - chiem phan lon thoi gian)
+        # --- 3. Tach boot.wim VA install.wim SONG SONG (30/09/2026, anh Thoai:
+        # "tan dung toi da suc manh cua may de lam nhanh nhat"): 2 tien trinh 7z
+        # chay cung luc, uu tien o dia + CPU cao nhat. install.wim chiem ~93%
+        # thoi gian nen loi thuc te nam o viec khong de o dia roi; boot.wim di
+        # kem mien phi.
         ten_dich = "install.esd" if la_esd else "install.wim"
-        _buoc(4, f"Tách {ten_dich} (ảnh cài đặt - lâu nhất)", 20)
-        ok, loi = _giai_nen_1_file(duong_iso, d_inst, thu_muc, ten_dich,
-                                   cd_inst, 20, 88)
-        if not ok:
-            _xong_buoc("loi", loi)
-            _dat(xong=False, loi=f"Tách {ten_dich} thất bại: {loi}")
-            return
-        _xong_buoc("ok", _co(cd_inst))
+        _buoc(3, f"Tách boot.wim và {ten_dich} cùng lúc", 6)
+        da_ghi = {"boot": 0, "inst": 0}
+        tong_can = max(1, cd_boot + cd_inst)
 
-        # --- 5. Kiem chung TRUOC khi dam xoa bat cu thu gi
-        _buoc(5, "Kiểm chứng 2 file vừa tách", 90)
-        ok_b, ct_b = kiem_chung_wim(os.path.join(thu_muc, "boot.wim"), cd_boot)
-        ok_i, ct_i = kiem_chung_wim(os.path.join(thu_muc, ten_dich), cd_inst)
+        def cap_nhat(khoa):
+            def f(n):
+                da_ghi[khoa] = n
+                _dat(phan_tram=int(6 + 82 * min(1.0, (da_ghi["boot"] + da_ghi["inst"]) / tong_can)))
+            return f
+
+        kq = {}
+
+        def lam(khoa, duong_trong, dich):
+            kq[khoa] = _giai_nen_1_file(duong_iso, duong_trong, thu_muc, dich, cap_nhat(khoa))
+
+        cac_luong = [threading.Thread(target=lam, args=("boot", d_boot, "boot.wim")),
+                     threading.Thread(target=lam, args=("inst", d_inst, ten_dich))]
+        for lg in cac_luong:
+            lg.start()
+        for lg in cac_luong:
+            lg.join()
+        if da_huy():
+            _xong_buoc("loi", "đã huỷ")
+            _dat(xong=False, loi="Đã huỷ.")
+            return
+        for khoa, ten in (("boot", "boot.wim"), ("inst", ten_dich)):
+            ok, loi = kq.get(khoa, (False, "khong chay"))
+            if not ok:
+                _xong_buoc("loi", f"{ten}: {loi}")
+                _dat(xong=False, loi=f"Tách {ten} thất bại: {loi}")
+                return
+        _xong_buoc("ok", f"boot.wim {_co(cd_boot)} · {ten_dich} {_co(cd_inst)}")
+
+        # --- 4. Kiem chung TRUOC khi dam xoa/ghi de bat cu thu gi (2 file song
+        # song). Kiem chung ngay tren file TAM - chua dong toi file that.
+        _buoc(4, "Kiểm chứng 2 file vừa tách", 90)
+        kc = {}
+
+        def kiem(khoa, duong, chuan):
+            kc[khoa] = kiem_chung_wim(duong, chuan)
+
+        cac_luong = [threading.Thread(target=kiem, args=("boot", kq["boot"][1], cd_boot)),
+                     threading.Thread(target=kiem, args=("inst", kq["inst"][1], cd_inst))]
+        for lg in cac_luong:
+            lg.start()
+        for lg in cac_luong:
+            lg.join()
+        (ok_b, ct_b), (ok_i, ct_i) = kc["boot"], kc["inst"]
         if not (ok_b and ok_i):
             # DON SACH file vua tach ra khi kiem chung truot.
             #
@@ -359,22 +475,35 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
             # luc dang cai that cho khach - dung kieu loi te nhat.
             # Xoa di thi trang thai hien dung: "Chua co", moi nguoi biet
             # phai lam lai. ISO VAN GIU NGUYEN de tach lai.
-            for x in ("boot.wim", ten_dich):
-                try:
-                    os.remove(os.path.join(thu_muc, x))
-                except OSError:
-                    pass
+            # (Nay file tach nam trong thu muc TAM nen khong co gi o cho that de
+            # xoa; thu muc tam duoc don o khoi finally. File OS dang dung, neu co,
+            # van nguyen ven.)
             _xong_buoc("loi", f"boot.wim: {ct_b} | {ten_dich}: {ct_i}")
             _dat(xong=False, loi=(
-                "File tách ra KHÔNG qua được kiểm chứng. Đã xoá 2 file hỏng "
-                "đó đi và GIỮ NGUYÊN file ISO để bạn tách lại. "
+                "File tách ra KHÔNG qua được kiểm chứng. Đã bỏ 2 file hỏng "
+                "đó và GIỮ NGUYÊN file ISO để bạn tách lại. "
                 f"Lý do - boot.wim: {ct_b}; {ten_dich}: {ct_i}."))
+            return
+        # Qua kiem chung -> moi dua vao cho that (doi ten nguyen tu, cung o dia)
+        try:
+            os.replace(kq["boot"][1], os.path.join(thu_muc, "boot.wim"))
+            os.replace(kq["inst"][1], os.path.join(thu_muc, ten_dich))
+        except OSError as e:
+            _xong_buoc("loi", f"không đưa được file vào chỗ: {e}")
+            _dat(xong=False, loi=f"Không đưa được file vào thư mục hệ điều hành: {e}")
             return
         _xong_buoc("ok", f"boot.wim: {ct_b} · {ten_dich}: {ct_i}")
 
         # --- 6. Don dep
-        _buoc(6, "Dọn file không cần nữa", 95)
+        _buoc(5, "Dọn file không cần nữa", 95)
         da_xoa = []
+        for thua in ("install.wim", "install.esd"):
+            if thua != ten_dich and os.path.isfile(os.path.join(thu_muc, thua)):
+                try:
+                    os.remove(os.path.join(thu_muc, thua))
+                    da_xoa.append(f"{thua} cũ")
+                except OSError:
+                    pass
         if xoa_iso_sau_khi_xong:
             cd_iso = os.path.getsize(duong_iso)
             try:
@@ -384,8 +513,8 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
                 _xong_buoc("loi", f"không xoá được ISO: {e}")
                 _dat(xong=True, phan_tram=100, loi="")
                 return
-        # Thu muc tam cua lan tach truoc (neu co) - khong bao gio de lai rac
-        shutil.rmtree(os.path.join(thu_muc, ".tach-tam"), ignore_errors=True)
+        # Thu muc tam + file do cua moi lan tach - khong bao gio de lai rac
+        don_thu_muc_tam(thu_muc)
         _xong_buoc("ok", ("đã xoá " + ", ".join(da_xoa)) if da_xoa
                           else "giữ lại file ISO theo yêu cầu")
 
@@ -394,6 +523,7 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
         _xong_buoc("loi", f"{type(e).__name__}: {e}")
         _dat(xong=False, loi=f"Lỗi bất ngờ: {type(e).__name__}: {e}")
     finally:
+        don_thu_muc_tam(thu_muc)
         # BAI HOC TU _pair_worker (ui/network.py): dong nay PHAI nam trong
         # finally ngoai cung. Neu khong, mot loi bat ngo se lam trang thai
         # ket cung o "dang chay" MAI MAI, moi lan tach sau deu bi tu choi ma
@@ -410,7 +540,7 @@ def bat_dau_tach(os_id, duong_iso, xoa_iso_sau_khi_xong=True):
             return False, (f"Đang tách ISO cho \"{_TIEN['os_id']}\" - "
                            "đợi xong rồi làm tiếp cái này.")
         _TIEN.update({
-            "chay": True, "os_id": os_id, "buoc": 0, "ten_buoc": "",
+            "chay": True, "huy": False, "os_id": os_id, "buoc": 0, "ten_buoc": "",
             "phan_tram": 0, "xong": None, "loi": "", "nhat_ky": [],
             "bat_dau": time.time(),
         })
