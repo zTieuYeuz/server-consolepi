@@ -111,3 +111,22 @@ bằng khoá công khai của kho **ghim cứng trong mã nguồn**
   `KHOA_CONG_KHAI_KHO` trong mã nguồn và phát hành bản mới.
 - Tuyệt đối không đưa file khoá riêng lên GitHub.
 
+## E. Tài khoản kho và MFA (30/09/2026)
+
+Trang kho có mục **Tài khoản**: đổi tên/mật khẩu và bật xác thực 2 bước (MFA, mã 6 số).
+Mật khẩu lưu dạng băm scrypt, thông tin MFA nằm trong `/var/lib/kho-console-pi/admin.json`
+(có trong bản sao lưu `kho-*.tar.gz`). Dựng lại kho thì trả lại đúng file này là giữ nguyên
+mật khẩu + MFA. Kho cần thêm thư viện `qrcode` (đã có trong `requirements.txt`).
+
+**Mất điện thoại và hết mã khôi phục** — tắt MFA từ máy kho (không qua web):
+
+```bash
+sudo -u www-data KHO_DATA_DIR=/var/lib/kho-console-pi /opt/kho-console-pi/venv/bin/python3 /opt/kho-console-pi/src/auth.py tat-mfa
+```
+
+**Quên mật khẩu** — đặt lại từ máy kho:
+
+```bash
+sudo -u www-data KHO_DATA_DIR=/var/lib/kho-console-pi /opt/kho-console-pi/venv/bin/python3 /opt/kho-console-pi/src/auth.py dat-mat-khau
+```
+
