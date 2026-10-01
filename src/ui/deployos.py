@@ -3582,10 +3582,20 @@ def register_deployos(app):
                      f"<td style='width:90px;'>{co_kich_thuoc(g.get('dung_luong', 0))}</td>"
                      f"<td style='width:230px;'>{tt}</td><td style='width:90px;'>{nut}</td></tr>")
         lam_moi = '<meta http-equiv="refresh" content="4">' if dang else ""
+        so_co = sum(1 for g in ds if g["da_tai"])
+        # Mac dinh: dang tai / con goi chua co -> MO (de thay can lam gi); da co du ->
+        # THU GON cho trang ngan. Nguoi dung bam tieu de de thu gon / mo rong, lua chon duoc
+        # nho (localStorage) - trang tu lam moi luc dang tai khong lam mat lua chon do.
+        mo = " open" if (dang or so_co < len(ds)) else ""
         return f"""{lam_moi}
         <div class="card">
-          <h3>Gói driver phổ biến cho ảnh boot (tải từ Microsoft)</h3>
-          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
+         <details id="goi-pho-bien"{mo}>
+          <summary style="cursor:pointer;">
+            <h3 style="display:inline;">Gói driver phổ biến cho ảnh boot (tải từ Microsoft)</h3>
+            <span style="color:#8b93a1;font-size:13px;margin-left:10px;">{so_co}/{len(ds)} gói đã có
+              &middot; bấm vào đây để thu gọn / mở rộng</span>
+          </summary>
+          <p style="color:#8b93a1;font-size:13px;margin:10px 0 10px;">
             WinPE của Windows 10/11 KHÔNG có sẵn driver cho các card mạng / bộ
             điều khiển ổ đĩa dưới đây - máy dùng chúng sẽ không có mạng hoặc
             không thấy ổ cứng khi cài. Bấm <strong>Tải</strong>: Console Pi tự tải
@@ -3608,7 +3618,21 @@ def register_deployos(app):
             hoặc <strong>VMware Paravirtual</strong> (tải gói PVSCSI ở trên).
             Card mạng nên chọn <strong>E1000E</strong> hoặc
             <strong>VMXNET3</strong> (tải gói ở trên), tránh E1000.</p>
-        </div>"""
+         </details>
+        </div>
+        <script>
+        (function() {{
+          var d = document.getElementById('goi-pho-bien');
+          if (!d) return;
+          try {{
+            var v = localStorage.getItem('goi-pho-bien');
+            if (v === '1') d.open = true; else if (v === '0') d.open = false;
+          }} catch (e) {{}}
+          d.addEventListener('toggle', function() {{
+            try {{ localStorage.setItem('goi-pho-bien', d.open ? '1' : '0'); }} catch (e) {{}}
+          }});
+        }})();
+        </script>"""
 
     @app.route("/deployos/drivers/goi-pho-bien/tai", methods=["POST"])
     def deployos_drivers_goi_tai():

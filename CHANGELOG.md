@@ -17,6 +17,9 @@ Anh Thoai 01/10/2026: "bo tham so cai dat tren Console Pi va file ISO, chi giu t
 - Ham bo dau tieng Viet (tim kiem khong dau) chuyen tu thamso.py sang deployos.py.
 - Bo o "Nang cao: ket noi bang token (kho ban cu)" tren trang Kho trung tam (va the "tao
   token thu cong" tren trang kho): tu dang ky + ma 6 ky tu da thay the.
+- Trang Driver: khung "Goi driver pho bien" co the THU GON / MO RONG (bam vao tieu de);
+  mac dinh thu gon khi da co du goi, mo khi con goi chua co hoac dang tai; lua chon duoc
+  nho tren trinh duyet.
 - Trang Driver: bo 3 khung gioi thieu (Hai loai driver, canh bao WinPE thieu driver LAN,
   ghi chu DriverPaths). Giu nguyen: Goi driver pho bien, Them goi driver, danh sach.
 
