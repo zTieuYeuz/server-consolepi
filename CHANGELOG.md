@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.5 (dang phat trien)
+
+- Trinh tao/sua kich ban: bam thang vao o buoc bat ky tren thanh tien do de nhay toi do (luu buoc dang lam truoc; thieu du lieu bat buoc thi o lai bao loi), khong con bi ep bam "Tiep theo" tung buoc.
+
 ## 1.7.4
 
 Anh Thoai 01/10/2026: "bo tham so cai dat tren Console Pi va file ISO, chi giu tren kho".

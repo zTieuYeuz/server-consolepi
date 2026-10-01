@@ -1655,6 +1655,8 @@ def register_deployos(app):
     .buoc-o { flex:1; min-width:92px; padding:9px 8px; border-radius:6px;
       background:#22262b; border:1px solid #2c3036; text-align:center;
       font-size:12px; color:#8b93a1; }
+    .buoc-o[data-den] { cursor:pointer; }
+    .buoc-o[data-den]:hover { border-color:#4CAF50; color:#fff; }
     .buoc-o.qua { border-color:#4CAF50; color:#a8d5ab; }
     .buoc-o.nay { background:#1f3a26; border-color:#4CAF50; color:#fff; font-weight:600; }
     .buoc-o .so { display:block; font-size:15px; font-weight:700; margin-bottom:1px; }
@@ -1974,6 +1976,10 @@ def register_deployos(app):
                 return redirect(f"/deployos/wizard/{ma}/{max(BUOC_DAU, buoc - 1)}")
             if loi:
                 return _ve_buoc(ma, d, buoc, loi=loi)
+            # Bam thang vao o buoc tren thanh tien do: luu buoc dang lam (neu hop le) roi nhay toi do
+            den = request.form.get("den", "")
+            if den.isdigit() and BUOC_DAU <= int(den) <= SO_BUOC:
+                return redirect(f"/deployos/wizard/{ma}/{int(den)}")
             if buoc < SO_BUOC:
                 return redirect(f"/deployos/wizard/{ma}/{buoc + 1}")
             return redirect(f"/deployos/wizard/{ma}/{SO_BUOC}")
@@ -2139,9 +2145,24 @@ def register_deployos(app):
         h = '<div class="buoc-bar">'
         for so, ten in TEN_BUOC:
             cls = "nay" if so == buoc else ("qua" if so < buoc else "")
-            h += (f'<div class="buoc-o {cls}"><span class="so">{so_hien_thi(so)}'
-                  f'</span>{_esc(ten)}</div>')
-        return h + "</div>"
+            h += (f'<div class="buoc-o {cls}" role="button" tabindex="0" data-den="{so}" '
+                  f'title="Bấm để chuyển tới bước này (lưu bước đang làm)">'
+                  f'<span class="so">{so_hien_thi(so)}</span>{_esc(ten)}</div>')
+        h += """</div>
+        <script>
+        document.querySelectorAll('.buoc-o[data-den]').forEach(function(o){
+          function di(){
+            var f = document.querySelector('form[method="POST"][action^="/deployos/wizard/"]');
+            if(!f || o.classList.contains('nay')){ return; }
+            var i = document.createElement('input');
+            i.type='hidden'; i.name='den'; i.value=o.dataset.den; f.appendChild(i);
+            if(f.requestSubmit){ f.requestSubmit(); } else { f.submit(); }
+          }
+          o.addEventListener('click', di);
+          o.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); di(); }});
+        });
+        </script>"""
+        return h
 
     def _nut_dieu_huong(buoc, nhan_tiep="Tiếp theo &rarr;"):
         lui = ('<button type="submit" name="huong" value="lui" class="gray">'
