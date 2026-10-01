@@ -20,9 +20,10 @@ Anh Thoai 01/10/2026: "bo tham so cai dat tren Console Pi va file ISO, chi giu t
 - DRIVER WINPE "NAP SAN": (1) 3 goi VirtIO (NetKVM, viostor, vioscsi - Red Hat, BSD-3-Clause,
   ky WHQL) NHUNG SAN trong ISO (iso/dung-cay-build.sh lay tu Microsoft Update Catalog, kiem
   sha256, dung build neu sai), khoi dong lan dau tu nap vao thu muc driver - dung duoc khi khong
-  co mang; (2) 7 goi con lai (VMXNET3, PVSCSI, Intel I219, Intel I225/I226, Intel RST VMD, Realtek
-  PCIe, Realtek USB-LAN) MAY TU TAI ngam ngay khi co Internet (tong ~3,5 MB, thu lai toi da moi
-  2 phut). Moi goi chi tu nap 1 LAN - nguoi dung xoa goi thi khong hoi sinh. KHONG nhung file
+  co mang; (2) 12 goi con lai (VMXNET3, PVSCSI, Intel I219, Intel I225/I226, Realtek PCIe + USB-LAN, va 5 goi
+  O DIA moi: AMD RAID rcraid, Broadcom MegaRAID 7.x megasas35, Broadcom Tri-Mode 8.x mpi3, HPE/
+  Adaptec SmartPQI, Intel RST VMD 21.x) MAY TU TAI ngam ngay khi co Internet (tong ~6 MB, thu lai
+  toi da moi 2 phut). Moi goi chi tu nap 1 LAN - nguoi dung xoa goi thi khong hoi sinh. KHONG nhung file
   Intel/VMware/Realtek vao ISO (giay phep khong cho phan phoi lai kem san pham).
 - Phia Linux (Console System tren Dell/HP/Acer/Asus/Lenovo/may ao): da kiem chung bang ma phan
   cung that trong ISO 1.7.3 - Intel I219 moi doi/I225/I226/I210, Realtek 8111/8168/8125/8126,

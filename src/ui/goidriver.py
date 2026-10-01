@@ -257,7 +257,7 @@ def tai_goi(cac_ma):
 def tai_ngam():
     """
     TU TAI cac goi driver pho bien CON THIEU ngay lan dau may co Internet (anh Thoai
-    30/09/2026: "nap het driver cua cac may cho anh"). Tong chi khoang 3,5 MB. May
+    30/09/2026: "nap het driver cua cac may cho anh"). 15 goi (card mang + o dia: Intel/Realtek/VMware/VirtIO, AMD RAID, MegaRAID, SmartPQI, Intel RST VMD), tong khoang 6 MB. May
     TU keo tu Microsoft Update Catalog (giong Windows Update) - Console System KHONG
     nhung file Intel/VMware/Realtek vao ISO (giay phep khong cho phan phoi lai); chi
     nhung san VirtIO (xem nap_san).

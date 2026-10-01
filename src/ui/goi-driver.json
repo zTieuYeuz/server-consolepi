@@ -102,5 +102,61 @@
   "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2026/03/b31a098d-9115-45a0-8546-bc346dcfcbce_fd9927ee6024afff0600f5f09e1cbdb937060463.cab",
   "sha256": "4d5639b7f09755ce4480b0bd94adb07ea3aa48fec91ded54c9e1ecb2117fddda",
   "nguon": "Microsoft Update Catalog — Red Hat, Inc. Driver Update (100.102.104.29500) (Windows 10, Vibranium and later)"
+ },
+ {
+  "ma": "amd_raid",
+  "ten_hien_thi": "Bộ điều khiển AMD RAID (rcraid) - máy AMD bật chế độ RAID",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa — thiếu thì WinPE không thấy ổ cứng khi BIOS để chế độ RAID (Ryzen Acer/Asus/Lenovo/HP). Bản 9.3.3.329.",
+  "dung_luong": 269673,
+  "url": "https://catalog.s.download.windowsupdate.com/c/msdownload/update/driver/drvs/2026/05/e0342b93-5994-4214-8744-72a2f7485507_1c1110794da2f12d6a00ca88839642b78f31d7a5.cab",
+  "sha256": "f01de79b2a10cadde8a2135cad9c29489b298f8879d5743cd0f46fa450b1ac18",
+  "nguon": "Microsoft Update Catalog — Advanced Micro Devices, Inc. - SCSIAdapter - 9.3.3.329"
+ },
+ {
+  "ma": "megaraid_7",
+  "ten_hien_thi": "Broadcom MegaRAID 9460/9560 (megasas35) - Dell PERC / HPE / Lenovo",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa RAID — thiếu thì WinPE không thấy ổ cứng. Bản 7.730.2.0.",
+  "dung_luong": 87134,
+  "url": "https://catalog.s.download.windowsupdate.com/c/msdownload/update/driver/drvs/2025/02/2ffc75a1-ef6f-4d2c-9106-85f58d562e99_c6c47ef5b9f3ef2aa5307c83d8e80e69dace415f.cab",
+  "sha256": "c34a12a3d0c57db91931054cc9ada9c18f9faa58f06372a4cf0302457c1a1f1b",
+  "nguon": "Microsoft Update Catalog — Broadcom Inc. - SCSIAdapter - 7.730.2.0 (Windows 10, Vibranium and later)",
+  "bo_file": [
+   "nodev.inf"
+  ]
+ },
+ {
+  "ma": "megaraid_mpi3",
+  "ten_hien_thi": "Broadcom Tri-Mode 9600 (mpi3) - MegaRAID 9600 / PERC H965",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa RAID đời mới — thiếu thì WinPE không thấy ổ cứng. Bản 8.12.9.0.",
+  "dung_luong": 97546,
+  "url": "https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2025/10/45437e65-9004-4c28-a925-196ddccdb2ae_ac6ddde8598243d0a9636f491521a3571212a75e.cab",
+  "sha256": "03f18fd7b40bd6e864d939a375ae7ebee4f240968ad957c8d4cf7024d0db9f34",
+  "nguon": "Microsoft Update Catalog — Broadcom Limited - SCSIAdapter - 8.12.9.0 (Windows 10, Vibranium and later)",
+  "bo_file": [
+   "mpi3nodrv.inf"
+  ]
+ },
+ {
+  "ma": "smartpqi",
+  "ten_hien_thi": "HPE Smart Array / Microchip Adaptec SmartPQI",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa RAID (HPE ProLiant, Adaptec) — thiếu thì WinPE không thấy ổ cứng. Bản 63.32.0.64.",
+  "dung_luong": 444111,
+  "url": "https://catalog.s.download.windowsupdate.com/c/msdownload/update/driver/drvs/2017/09/cb90113f-000c-49d0-bead-51fbaa1a18e6_f1ce529aed17eedd1d10a6e6a17d33d4dfb12bc2.cab",
+  "sha256": "95dcb8c497e5af18c957c0ed8a639fcbe6a92883b12baffd21de981eeb30b09f",
+  "nguon": "Microsoft Update Catalog — Microsemi Corporation - SCSIAdapter - 63.32.0.64 (Windows 10 Anniversary Update and later)"
+ },
+ {
+  "ma": "intel_rst_vmd_21",
+  "ten_hien_thi": "Intel RST VMD bản mới 21.x (Core Ultra / đời 14-15)",
+  "loai": "o_dia",
+  "mo_ta": "Bộ điều khiển ổ đĩa — thiếu thì WinPE không thấy ổ cứng trên máy Intel đời mới bật VMD. Bản 21.1.0.1006.",
+  "dung_luong": 1246558,
+  "url": "https://catalog.s.download.windowsupdate.com/c/msdownload/update/driver/drvs/2026/07/8ae95234-3c07-4618-9038-721a3ac0d30f_eb04251de2d1587ce3e71d17a25b8de6691e3f74.cab",
+  "sha256": "8e78a14952eb3b1a48d5fcf33953dacc9978d8b2cfe5ed4afc031e66ce3828c6",
+  "nguon": "Microsoft Update Catalog — Intel Corporation - SCSIAdapter - 21.1.0.1006 (Windows 11 Client)"
  }
 ]

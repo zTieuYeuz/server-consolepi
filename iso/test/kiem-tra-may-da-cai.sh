@@ -52,11 +52,11 @@ kt "3 goi VirtIO da duoc nap san vao thu muc driver"          test -s /var/lib/c
 
 # May co Internet -> tu tai not cac goi con thieu (toi da ~3 phut)
 for _i in $(seq 36); do
-    [ "$(ls /var/lib/console-pi/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 10 ] && break
+    [ "$(ls /var/lib/console-pi/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 15 ] && break
     sleep 5
 done
-kt "du 10 goi driver pho bien (3 VirtIO nhung san + 7 tu tai khi co Internet)" \
-   test "$(ls /var/lib/console-pi/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 10
+kt "du 15 goi driver pho bien (3 VirtIO nhung san + 12 tu tai khi co Internet)" \
+   test "$(ls /var/lib/console-pi/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 15
 
 echo "== Cong cu Deployment OS"
 for c in parted wimlib-imagex mkfs.vfat mcopy genisoimage; do

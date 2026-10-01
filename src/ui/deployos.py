@@ -3603,7 +3603,7 @@ def register_deployos(app):
             Catalog, giải nén và đánh dấu nạp vào ảnh boot. Windows sau khi cài
             cũng dùng luôn các driver này.
             <strong>Máy tự tải các gói còn thiếu ngay khi có Internet</strong>
-            (tổng khoảng 3,5 MB); riêng 3 gói <strong>VirtIO</strong> đã có sẵn
+            (15 gói card mạng + ổ đĩa, tổng khoảng 6 MB); riêng 3 gói <strong>VirtIO</strong> đã có sẵn
             trong ISO, dùng được cả khi không có mạng.</p>
           <form method="POST" action="/deployos/drivers/goi-pho-bien/tai" style="margin-bottom:10px;">
             <input type="hidden" name="ma" value="__tat_ca__">
