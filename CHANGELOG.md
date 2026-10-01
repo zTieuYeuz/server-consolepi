@@ -15,6 +15,8 @@ Anh Thoai 01/10/2026: "bo tham so cai dat tren Console Pi va file ISO, chi giu t
 - Truoc khi xoa du lieu tren Pi da doi chieu voi kho: 1 dong tu them chua co tren
   kho (WindowsInstaller-KB893803) da duoc dua len kho, khong mat dong nao.
 - Ham bo dau tieng Viet (tim kiem khong dau) chuyen tu thamso.py sang deployos.py.
+- Trang Driver: bo 3 khung gioi thieu (Hai loai driver, canh bao WinPE thieu driver LAN,
+  ghi chu DriverPaths). Giu nguyen: Goi driver pho bien, Them goi driver, danh sach.
 
 ## 1.7.3
 

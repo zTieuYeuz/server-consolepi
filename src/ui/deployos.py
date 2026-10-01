@@ -3539,57 +3539,6 @@ def register_deployos(app):
         body = (_tabs("tainguyen", "drivers") + _msg(msg, ok) + _khoi_goi_pho_bien()
                 + f"""
         <div class="card">
-          <h3>Hai loại driver - khác nhau ở thời điểm nạp</h3>
-          <table class="tt-bang">
-            <tr><td style="width:180px;">Driver thường</td>
-                <td>Tiêm cho <strong>Windows sau khi đã cài xong</strong>.
-                Lúc đó máy đã có mạng rồi. Dùng cho card màn hình, âm thanh,
-                vân tay, chipset...</td></tr>
-            <tr><td>Nạp vào ảnh boot</td>
-                <td>Nạp vào <strong>WinPE ngay lúc mới boot</strong>, trước
-                khi máy xin IP. <strong>Cho card mạng (LAN) và bộ điều khiển
-                ổ đĩa</strong> (máy không thấy ổ cứng lúc cài). Driver này cũng
-                được tiêm luôn vào Windows vừa cài.
-                Nếu WinPE không có driver LAN của máy đó thì máy không có
-                mạng, không tải được ảnh cài đặt và sẽ đứng ngay từ đầu.</td></tr>
-          </table>
-        </div>
-
-        <div class="msg warn" style="font-size:13px;">
-          <strong>Ảnh WinPE hiện tại thiếu driver LAN của máy đời mới.</strong>
-          Đã kiểm chứng bằng cách đọc mã phần cứng thật trong chính
-          <code>boot.wim</code> đang dùng:
-          <br><br>
-          <strong>Đã có sẵn</strong> - không cần làm gì: Intel I219 đời
-          2016-2019, Realtek RTL8111/8168 và RTL8125, Broadcom NetXtreme,
-          và card USB-LAN (ASIX AX88179, Realtek RTL8153).
-          <br><br>
-          <strong>Thiếu</strong>: <strong>Intel I219 từ đời 2020 trở đi</strong>
-          (Comet Lake, Tiger Lake, Alder Lake, Raptor Lake, Meteor Lake),
-          <strong>toàn bộ Intel I225/I226 2.5G</strong>, VMware VMXNET3/PVSCSI,
-          virtio, Intel RST VMD. Đây là card LAN của hầu hết máy HP / Dell /
-          Lenovo đời 2020 trở lại đây - đúng nguyên nhân làm máy boot vào
-          nhưng không nhận mạng. <strong>Cách nhanh nhất: bấm "Tải tất cả gói
-          chưa có" ở khung Gói driver phổ biến phía trên.</strong>
-          <br><br>
-          <strong>Máy khác vẫn thiếu driver thì lấy ở đâu:</strong> Dell và HP có sẵn gói riêng cho
-          WinPE (Dell "WinPE Driver Pack", HP "WinPE Driver Pack") - tải về,
-          giải nén, lấy thư mục network. Lenovo có driver pack theo từng dòng
-          máy. Asus thì tải driver LAN theo model trên trang hỗ trợ. Chỉ cần
-          phần <strong>LAN/Ethernet</strong>, không cần cả gói.
-          <br><br>
-          <strong>Mẹo đỡ phải làm:</strong> dùng một cái USB-LAN loại
-          ASIX AX88179 hoặc Realtek RTL8153 - hai loại này WinPE đã có sẵn
-          driver, cắm vào là chạy được trên mọi máy, kể cả laptop không có
-          cổng mạng.
-        </div>
-
-        <div class="msg info" style="font-size:13px;">
-          Driver thường được TIÊM vào lúc cài (không sửa boot.wim/install.wim) qua
-          <code>DriverPaths</code> của unattend.xml - Windows Setup tự quét
-          và cài driver phù hợp trong lúc chạy, giống đúng cơ chế
-          "Out-of-Box Drivers" của MDT.</div>
-        <div class="card">
           <h3>Thêm gói driver mới</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
             Đặt tên để nhận biết (vd "Dell Latitude 5420 - LAN+WiFi"). Sau
