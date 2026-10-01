@@ -1245,6 +1245,27 @@ def thieu_gi(d):
     return thieu
 
 
+def loi_bat_buoc(d):
+    """
+    Nhung cho SAI/THIEU bat buoc, kem buoc can sua: [(buoc, thong_bao)]. Rong = luu duoc.
+    Truoc day moi buoc tu chan "Tiep theo" nen khong can; tu khi bam nhay tu do giua cac
+    buoc (01/10/2026) thi buoc Tong ket + luu kich ban phai kiem lai o day.
+    """
+    ra = []
+    if not d.get("os_id"):
+        ra.append((2, "chưa chọn hệ điều hành"))
+    tm = d.get("ten_may") or ""
+    if not tm:
+        ra.append((3, "chưa điền tên máy"))
+    elif not re.fullmatch(r"[A-Za-z0-9-]{1,15}", tm):
+        ra.append((3, "tên máy chỉ dùng chữ không dấu, số, dấu gạch ngang, tối đa 15 ký tự"))
+    if not d.get("username"):
+        ra.append((3, "chưa điền tên đăng nhập"))
+    if d.get("os_ho") != "linux" and d.get("bat_admin") and not d.get("mk_admin"):
+        ra.append((3, "đã bật tài khoản Administrator nhưng chưa đặt mật khẩu"))
+    return ra
+
+
 def _wizard_lay(ma):
     d = _WIZARD.get(ma)
     if d is not None:
@@ -1974,12 +1995,19 @@ def register_deployos(app):
             huong = request.form.get("huong", "tiep")
             if huong == "lui":
                 return redirect(f"/deployos/wizard/{ma}/{max(BUOC_DAU, buoc - 1)}")
-            if loi:
-                return _ve_buoc(ma, d, buoc, loi=loi)
-            # Bam thang vao o buoc tren thanh tien do: luu buoc dang lam (neu hop le) roi nhay toi do
+            # Bam thang vao o buoc tren thanh tien do (anh Thoai 01/10/2026: "linh hoat
+            # bam vao o muon toi"): LUON nhay, KHONG giu lai vi thieu du lieu - phan da
+            # nhap van duoc ghi. Cho thieu/sai chi nhac o trang dich, va buoc Tong ket
+            # chan luu cho toi khi sua xong (xem loi_bat_buoc).
             den = request.form.get("den", "")
             if den.isdigit() and BUOC_DAU <= int(den) <= SO_BUOC:
+                if loi:
+                    from flask import flash
+                    flash(f"Bước {so_hien_thi(buoc)} ({dict(TEN_BUOC)[buoc]}) còn lỗi: {loi} "
+                          "- quay lại sửa trước khi lưu.", "loi")
                 return redirect(f"/deployos/wizard/{ma}/{int(den)}")
+            if loi:
+                return _ve_buoc(ma, d, buoc, loi=loi)
             if buoc < SO_BUOC:
                 return redirect(f"/deployos/wizard/{ma}/{buoc + 1}")
             return redirect(f"/deployos/wizard/{ma}/{SO_BUOC}")
@@ -2146,17 +2174,18 @@ def register_deployos(app):
         for so, ten in TEN_BUOC:
             cls = "nay" if so == buoc else ("qua" if so < buoc else "")
             h += (f'<div class="buoc-o {cls}" role="button" tabindex="0" data-den="{so}" '
-                  f'title="Bấm để chuyển tới bước này (lưu bước đang làm)">'
+                  f'title="Bấm để chuyển tới bước này ">'
                   f'<span class="so">{so_hien_thi(so)}</span>{_esc(ten)}</div>')
         h += """</div>
         <script>
         document.querySelectorAll('.buoc-o[data-den]').forEach(function(o){
           function di(){
+            if(o.classList.contains('nay')){ return; }
             var f = document.querySelector('form[method="POST"][action^="/deployos/wizard/"]');
-            if(!f || o.classList.contains('nay')){ return; }
+            if(!f){ location.href = location.pathname.replace(/\\/\\d+$/, '/' + o.dataset.den); return; }
             var i = document.createElement('input');
             i.type='hidden'; i.name='den'; i.value=o.dataset.den; f.appendChild(i);
-            if(f.requestSubmit){ f.requestSubmit(); } else { f.submit(); }
+            f.submit();   // khong dung requestSubmit: o 'required' chua dien se chan, khong nhay duoc
           }
           o.addEventListener('click', di);
           o.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); di(); }});
@@ -2817,6 +2846,17 @@ def register_deployos(app):
           <a class="btn gray" href="/deployos/wizard/{ma}/6">&larr; Quay lại bước 5</a>
         </div>"""
 
+        loi_bb = loi_bat_buoc(d)
+        if loi_bb:
+            dong_loi = "".join(
+                f'<li>{_esc(nd)} &mdash; <a href="/deployos/wizard/{ma}/{b}">sửa ở bước '
+                f'{so_hien_thi(b)} ({_esc(dict(TEN_BUOC)[b])})</a></li>' for b, nd in loi_bb)
+            return f"""
+            {bang}
+            <div class="msg err"><strong>Chưa lưu được kịch bản</strong> - còn chỗ thiếu/sai:
+              <ul style="margin:6px 0 0 18px;padding:0;">{dong_loi}</ul></div>
+            {sua_lai}"""
+
         # --- che do LUU: dat ten kich ban ---
         if d.get("che_do") == "luu":
             thieu = _thieu_gi(d)
@@ -3117,6 +3157,8 @@ def register_deployos(app):
         d = _wizard_lay(ma)
         if d is None:
             return _het_han()
+        if loi_bat_buoc(d):
+            return redirect(f"/deployos/wizard/{ma}/{SO_BUOC}")
         cauhinh = {k: v for k, v in d.items() if not k.startswith("_")}
         cauhinh.pop("che_do", None)
         # "tu_kichban" chi la dau vet cho biet trinh tu nay duoc nap tu

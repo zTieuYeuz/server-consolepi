@@ -2,7 +2,7 @@
 
 ## 1.7.5 (dang phat trien)
 
-- Trinh tao/sua kich ban: bam thang vao o buoc bat ky tren thanh tien do de nhay toi do (luu buoc dang lam truoc; thieu du lieu bat buoc thi o lai bao loi), khong con bi ep bam "Tiep theo" tung buoc.
+- Trinh tao/sua kich ban: bam thang vao o buoc bat ky tren thanh tien do de nhay toi do, LUON nhay (phan da nhap van luu). Buoc con thieu/sai chi nhac o trang dich; buoc Tong ket liet ke cho can sua (kem link toi dung buoc) va chan luu cho toi khi du.
 
 ## 1.7.4
 
