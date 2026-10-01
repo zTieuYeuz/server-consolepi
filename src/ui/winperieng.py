@@ -18,8 +18,9 @@ CACH LAM:
     .wim, chon image co "Boot Index" (giong het muc cuu ho dang chay o BIOS/UEFI/SB).
 
 GIOI HAN THAT:
-  - File .wim phai la WinPE that (co Windows\\Boot\\PXE\\bootmgr.exe) - kiem luc them,
-    thieu thi tu choi, khong de may khach dung o man hinh den.
+  - File .wim phai la anh boot Windows that (co winload) - kiem luc them. WinPE rut gon
+    KHONG kem bootmgr (kieu WDS) thi muon bootmgr.exe/bootmgfw.efi ky Microsoft tu 1 bo
+    Windows da co (_bao_dam_bootmgr) va dua kem qua wimboot.
   - UEFI + Secure Boot: WinPE phai ky boi Microsoft (ban ADK, Hiren's dung bootmgr
     goc thi duoc); ban tu che sua bootmgr se bi firmware chan - Console System khong
     vuot qua duoc.
@@ -35,6 +36,12 @@ import time
 from . import deployos as _d
 
 FILE_DS = os.path.join(_d.DEPLOY_DIR, "winpe-rieng.json")
+# bootmgr MUON cho WinPE rut gon (xem _bao_dam_bootmgr) - ngoai BOOT_DIR de khong hien o "File boot"
+DIR_BOOTMGR = os.path.join(_d.DEPLOY_DIR, "winpe-bootmgr")
+# WDS tu cap ca bo nay cho WinPE; W11x64.wim cua anh Thoai thieu het (lab 01/10/2026: thieu
+# bootmgr -> tu choi; them bootmgr -> UEFI bao "\\EFI\\Microsoft\\Boot\\BCD 0xc000000f").
+# EFI/ va PCAT/ = BCD + boot.sdi cua dia cai Windows (Windows\\Boot\\DVD\\...) cho UEFI / BIOS.
+FILE_MUON = ("bootmgr.exe", "bootmgfw.efi", "EFI/BCD", "EFI/boot.sdi", "PCAT/BCD", "PCAT/boot.sdi")
 _KHOA = threading.Lock()
 # Trang thai tach ISO dang chay (chi 1 viec 1 luc)
 _TACH = {"chay": False, "file": "", "ten": "", "loi": "", "xong": "", "luc": 0}
@@ -65,7 +72,7 @@ def danh_sach():
         p = _d._duong_dan_trong(_d.BOOT_DIR, m["file"])
         if p and os.path.isfile(p):
             ra.append({"ten": m.get("ten") or m["file"], "file": m["file"],
-                       "cd": os.path.getsize(p)})
+                       "cd": os.path.getsize(p), "muon_bootmgr": bool(m.get("muon_bootmgr"))})
     return ra
 
 
@@ -87,15 +94,20 @@ def file_co_the_them():
 # ------------------------------------------------------------ kiem file .wim
 def kiem_wim(p):
     """
-    (ok, thong_bao). File .wim phai: doc duoc, co image boot duoc (Boot Index, hoac
-    chi 1 image) va image do co Windows\\Boot\\PXE\\bootmgr.exe (wimboot can file nay).
+    (ok, thong_bao, can_muon). File .wim phai: doc duoc, co image boot duoc (Boot Index,
+    hoac chi 1 image) va image do co winload (la anh boot Windows that).
+
+    can_muon=True: image KHONG kem bootmgr (Windows\\Boot\\PXE\\bootmgr.exe /
+    Windows\\Boot\\EFI\\bootmgfw.efi) - WinPE rut gon kieu WDS (anh Thoai 01/10/2026,
+    W11x64.wim: "trong WDS chi can quang file nay vo la boot"). WDS tu cap bootmgr cua no;
+    o day muon bootmgr cua 1 bo Windows da co (xem _bao_dam_bootmgr).
     """
     try:
         r = subprocess.run(["wiminfo", p], capture_output=True, text=True, timeout=60)
     except (OSError, subprocess.TimeoutExpired) as e:
-        return False, f"Không đọc được file .wim ({e})."
+        return False, f"Không đọc được file .wim ({e}).", False
     if r.returncode != 0:
-        return False, "File không phải ảnh .wim hợp lệ (wiminfo báo lỗi)."
+        return False, "File không phải ảnh .wim hợp lệ (wiminfo báo lỗi).", False
     so = re.search(r"^Image Count:\s*(\d+)", r.stdout, re.M)
     bi = re.search(r"^Boot Index:\s*(\d+)", r.stdout, re.M)
     so = int(so.group(1)) if so else 0
@@ -103,17 +115,59 @@ def kiem_wim(p):
     if not bi:
         if so != 1:
             return False, (f"File .wim có {so} image nhưng không đánh dấu image nào để boot "
-                           "(Boot Index = 0) - không phải ảnh WinPE boot được.")
+                           "(Boot Index = 0) - không phải ảnh WinPE boot được."), False
         bi = 1
     try:
-        r = subprocess.run(["wimlib-imagex", "dir", p, str(bi), "--path=/Windows/Boot/PXE"],
-                           capture_output=True, text=True, timeout=60)
+        r = subprocess.run(["wimlib-imagex", "dir", p, str(bi), "--path=/Windows"],
+                           capture_output=True, text=True, timeout=120)
     except (OSError, subprocess.TimeoutExpired) as e:
-        return False, f"Không đọc được bên trong file .wim ({e})."
-    if "bootmgr.exe" not in r.stdout.lower():
-        return False, ("Image boot không có Windows\\Boot\\PXE\\bootmgr.exe - không boot qua "
-                       "mạng được (wimboot cần file này). Có thể đây không phải WinPE.")
-    return True, f"Ảnh WinPE hợp lệ (image {bi}/{so})."
+        return False, f"Không đọc được bên trong file .wim ({e}).", False
+    ds = r.stdout.lower()
+    if not re.search(r"^/windows/system32/(boot/)?winload\.(efi|exe)$", ds, re.M):
+        return False, ("Image boot không có winload (Windows\\System32\\winload.efi) - "
+                       "không phải ảnh WinPE / boot.wim."), False
+    co = ("/windows/boot/pxe/bootmgr.exe" in ds and "/windows/boot/efi/bootmgfw.efi" in ds)
+    return True, (f"Ảnh WinPE hợp lệ (image {bi}/{so})."
+                  + ("" if co else " File không kèm bootmgr (kiểu WDS) - dùng bootmgr ký "
+                                   "Microsoft lấy từ bộ Windows đã có.")), not co
+
+
+def _bao_dam_bootmgr():
+    """
+    (ok, thong_bao). Bao dam DIR_BOOTMGR co bootmgr.exe (BIOS) + bootmgfw.efi (UEFI,
+    ky Microsoft - chay ca Secure Boot), lay tu boot.wim cua bo Windows co BUILD MOI
+    NHAT trong "Tai nguyen > He dieu hanh". Chi lam 1 lan; xoa thu muc de lay lai.
+    """
+    if all(os.path.isfile(os.path.join(DIR_BOOTMGR, f)) for f in FILE_MUON):
+        return True, ""
+    ung = []
+    for o in _d.danh_sach_os():
+        p = _d.duong_boot_wim(o["id"])
+        if not os.path.isfile(p):
+            continue
+        try:
+            r = subprocess.run(["wiminfo", p], capture_output=True, text=True, timeout=60)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        bi = re.search(r"^Boot Index:\s*(\d+)", r.stdout, re.M)
+        bd = re.findall(r"^Build:\s*(\d+)", r.stdout, re.M)
+        ung.append((int(bd[-1]) if bd else 0, p, int(bi.group(1)) if bi and bi.group(1) != "0" else 1))
+    for _bd, p, bi in sorted(ung, reverse=True):
+        tam = DIR_BOOTMGR + ".tam"
+        shutil.rmtree(tam, ignore_errors=True)
+        os.makedirs(tam)
+        r = subprocess.run(["wimlib-imagex", "extract", p, str(bi),
+                            "/Windows/Boot/PXE/bootmgr.exe", "/Windows/Boot/EFI/bootmgfw.efi",
+                            "/Windows/Boot/DVD/EFI", "/Windows/Boot/DVD/PCAT",
+                            f"--dest-dir={tam}", "--no-acls", "--no-attributes"],
+                           capture_output=True, text=True, timeout=300)
+        if r.returncode == 0 and all(os.path.isfile(os.path.join(tam, f)) for f in FILE_MUON):
+            shutil.rmtree(DIR_BOOTMGR, ignore_errors=True)
+            os.replace(tam, DIR_BOOTMGR)
+            return True, ""
+        shutil.rmtree(tam, ignore_errors=True)
+    return False, ("File WinPE này không kèm bootmgr (kiểu WDS). Cần ít nhất 1 bộ Windows có "
+                   "boot.wim ở \"Tài nguyên > Hệ điều hành\" để lấy bootmgr ký Microsoft.")
 
 
 # ------------------------------------------------------------- them / bo
@@ -127,17 +181,21 @@ def them(file, ten):
         return _bat_dau_tach(p, ten)
     if not p.lower().endswith(".wim"):
         return False, "Chỉ nhận file .wim hoặc .iso."
-    ok, tb = kiem_wim(p)
+    ok, tb, can_muon = kiem_wim(p)
     if not ok:
         return False, tb
-    _them_vao_ds(os.path.basename(p), ten)
+    if can_muon:
+        ok, loi = _bao_dam_bootmgr()
+        if not ok:
+            return False, loi
+    _them_vao_ds(os.path.basename(p), ten, can_muon)
     return True, f'Đã đưa "{ten}" vào menu PXE. {tb}'
 
 
-def _them_vao_ds(file, ten):
+def _them_vao_ds(file, ten, muon=False):
     with _KHOA:
         ds = [m for m in _doc() if m["file"] != file]
-        ds.append({"file": file, "ten": ten})
+        ds.append({"file": file, "ten": ten, "muon_bootmgr": bool(muon)})
         _ghi(ds)
 
 
@@ -205,11 +263,15 @@ def _tach(iso, ten):
         ra = os.path.join(tam, os.path.basename(trong.replace("\\", "/")))
         if r.returncode != 0 or not os.path.isfile(ra):
             raise RuntimeError("Tách file .wim khỏi ISO thất bại (đĩa đầy?).")
-        ok, tb = kiem_wim(ra)
+        ok, tb, can_muon = kiem_wim(ra)
         if not ok:
             raise RuntimeError(f'"{trong}": {tb}')
+        if can_muon:
+            ok, loi = _bao_dam_bootmgr()
+            if not ok:
+                raise RuntimeError(loi)
         os.replace(ra, dich)
-        _them_vao_ds(dich_ten, ten)
+        _them_vao_ds(dich_ten, ten, can_muon)
         try:
             from . import pxe as _pxe
             _pxe.cap_nhat_menu()

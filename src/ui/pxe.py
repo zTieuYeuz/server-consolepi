@@ -920,6 +920,16 @@ def register_pxe(app):
             abort(404)
         return send_from_directory(_d.BOOT_DIR, ten)
 
+    @app.route("/deployos/pxeboot/winpe-bootmgr/<path:ten>")
+    def deployos_pxeboot_winpe_bootmgr(ten):
+        """bootmgr muon cho WinPE rut gon kieu WDS (ui/winperieng.py)."""
+        from . import winperieng as _wr
+        if not dang_bat() or ten not in _wr.FILE_MUON:
+            abort(404)
+        if not os.path.isfile(os.path.join(_wr.DIR_BOOTMGR, ten)):
+            abort(404)
+        return send_from_directory(_wr.DIR_BOOTMGR, ten)
+
     def _ve_lai(msg, ok):
         """
         LOI THAT DA GAP (anh Thoai bam "Bat PXE" xong khong thay gi ca -

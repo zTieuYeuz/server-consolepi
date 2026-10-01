@@ -351,8 +351,24 @@ def sinh_script(goc):
             # URL PHAI ket thuc bang "/boot.wim" (UEFI dat ten file theo cuoi URL, bootmgr
             # tim boot.wim) - xem pxe.deployos_pxeboot_winpe_rieng
             dong += [f":wr{i}", f"echo Dang nap WinPE: {_chu_ipxe(m['ten'])}",
-                     f"kernel {goc}/wimboot || goto loi",
-                     f"initrd {goc}/winpe/{quote(m['file'])}/boot.wim boot.wim || goto loi",
+                     f"kernel {goc}/wimboot || goto loi"]
+            if m["muon_bootmgr"]:
+                # WinPE rut gon kieu WDS: dua kem bootmgr ky Microsoft (wimboot tu chon
+                # bootmgr.exe cho BIOS, bootmgfw.efi cho UEFI) - xem winperieng._bao_dam_bootmgr
+                # BCD + boot.sdi: UEFI va BIOS khac BCD -> re nhanh theo ${platform}.
+                # URL ket thuc dung ten file (UEFI dat ten theo cuoi URL).
+                b = f"{goc}/winpe-bootmgr"
+                dong += [f"initrd {b}/bootmgr.exe bootmgr.exe || goto loi",
+                         f"initrd {b}/bootmgfw.efi bootmgfw.efi || goto loi",
+                         f"iseq ${{platform}} efi && goto wr{i}efi ||",
+                         f"initrd {b}/PCAT/BCD BCD || goto loi",
+                         f"initrd {b}/PCAT/boot.sdi boot.sdi || goto loi",
+                         f"goto wr{i}wim",
+                         f":wr{i}efi",
+                         f"initrd {b}/EFI/BCD BCD || goto loi",
+                         f"initrd {b}/EFI/boot.sdi boot.sdi || goto loi",
+                         f":wr{i}wim"]
+            dong += [f"initrd {goc}/winpe/{quote(m['file'])}/boot.wim boot.wim || goto loi",
                      "boot || goto loi", ""]
     for i, (nhan, thu_muc, os_id) in enumerate(muc):
         # wimboot (Microsoft ky) nap boot.wim GOC + file nhung - chay tren

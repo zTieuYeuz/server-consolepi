@@ -9,6 +9,10 @@
   co thi file .wim lon nhat (kieu Strelec). Kiem file luc them: phai co image boot duoc va
   Windows\Boot\PXE\bootmgr.exe, khong thi tu choi. URL phuc vu luon ket thuc "/boot.wim"
   (UEFI dat ten file theo cuoi URL - ".../Ten.wim" thi bootmgr bao 0xc000000f, lab da gap).
+- WinPE rut gon kieu WDS (chi co than WinPE, khong kem bootmgr/BCD/boot.sdi - vd W11x64.wim
+  NASIBOOT cua anh Thoai): tu muon bootmgr.exe + bootmgfw.efi (ky Microsoft) + BCD/boot.sdi
+  (EFI va PCAT) tu boot.wim cua bo Windows co build moi nhat trong Tai nguyen > He dieu hanh,
+  giong WDS tu cap. Lab: W11x64.wim len desktop tren BIOS, UEFI va UEFI + Secure Boot.
 - Trinh tao/sua kich ban: bam thang vao o buoc bat ky tren thanh tien do de nhay toi do, LUON nhay (phan da nhap van luu). Buoc con thieu/sai chi nhac o trang dich; buoc Tong ket liet ke cho can sua (kem link toi dung buoc) va chan luu cho toi khi du.
 
 ## 1.7.4
