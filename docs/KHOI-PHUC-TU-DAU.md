@@ -62,7 +62,7 @@ bảng tham số cài im lặng và kịch bản thì CÓ trong sao lưu.
    sudo /opt/console-pi/scripts/selftest.sh
    ```
    Truy cập từ xa qua tunnel, đăng nhập bằng mật khẩu cũ, Kho trung tâm hiện
-   danh sách, Tham số cài đặt còn đủ dòng.
+   danh sách.
 8. Xoá file tạm: `rm -rf ~/khoi-phuc ~/pi-*.tar.gz`.
 
 ## B. Dựng lại máy kho

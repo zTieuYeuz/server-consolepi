@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.7.4
+
+Anh Thoai 01/10/2026: "bo tham so cai dat tren Console Pi va file ISO, chi giu tren kho".
+
+- BO tab Deployment OS -> Tai nguyen -> "Tham so cai dat" (bang tra, them/sua/xoa,
+  nut "Cap nhat tu kho"), module ui/thamso.py, file du lieu tham-so-cai-dat.json,
+  muc sao luu tuong ung va ham khotrungtam.lay_tham_so. Link cu /deployos/thamso
+  chuyen ve Tai nguyen.
+- GIU: bang tra tham so chi quan ly tren TRANG KHO (muc "Tham so cai dat" va
+  /api/tham-so cua kho van chay cho cac may dung ban cu). Tham so cua TUNG phan
+  mem van dat o tab "Phan mem" (co goi y theo loai bo cai) hoac di kem khi tai
+  tu kho - khong doi.
+- Truoc khi xoa du lieu tren Pi da doi chieu voi kho: 1 dong tu them chua co tren
+  kho (WindowsInstaller-KB893803) da duoc dua len kho, khong mat dong nao.
+- Ham bo dau tieng Viet (tim kiem khong dau) chuyen tu thamso.py sang deployos.py.
+
 ## 1.7.3
 
 Yeu cau anh Thoai 30/09/2026 (4 muc, trang Deployment OS -> Kho trung tam):

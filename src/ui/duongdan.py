@@ -50,7 +50,6 @@ DEPLOY_DIR = _duong("deploy")
 STORAGE_DIR = _duong("storage")
 
 # Bang tra tham so cai dat im lang (tab "Tham so cai dat")
-FILE_THAM_SO = _duong("tham-so-cai-dat.json")
 
 # Thu vien lenh thiet bi mang cua nguoi dung (tab "Thu vien lenh")
 FILE_THU_VIEN_LENH = _duong("command-library.json")

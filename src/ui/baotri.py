@@ -37,7 +37,6 @@ from .duongdan import THU_MUC_DU_LIEU, DEPLOY_DIR
 # Cac duong DUOI THU MUC DU LIEU duoc dua vao ban sao luu. Deu la file cau
 # hinh nho; moi thu khac (anh OS, bo cai) co the tai lai tu nguon goc.
 CAC_MUC_SAO_LUU = [
-    "tham-so-cai-dat.json",      # bang tra tham so cai im lang
     "command-library.json",      # thu vien lenh thiet bi mang
     "kho-trungtam.json",         # ket noi kho luu tru trung tam (co token)
     "tien-trinh.json",           # lich su tien trinh cai dat

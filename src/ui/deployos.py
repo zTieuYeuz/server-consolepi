@@ -50,6 +50,7 @@ import re
 import secrets
 import shutil
 import time
+import unicodedata
 
 # ---------------------------------------------------------------- duong dan
 # Duong dan du lieu khai bao tap trung o duongdan.py (xem ly do that o do:
@@ -169,15 +170,26 @@ def _bao_dam_thu_muc():
         pass
 
 
+def bo_dau(s):
+    """
+    Bo dau tieng Viet + ha chu thuong, de tim kiem khong phu thuoc dau (go tieng
+    Viet co dau tren man hinh cam ung rat cham - moi o tim trong du an deu phai
+    tim duoc bang chu khong dau). Phai thay tay 'đ'/'Đ': unicodedata khong tach duoc.
+    (Chuyen tu ui/thamso.py khi bo tab Tham so cai dat.)
+    """
+    if not s:
+        return ""
+    s = str(s).replace("đ", "d").replace("Đ", "D")
+    s = unicodedata.normalize("NFD", s)
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    return s.lower().strip()
+
+
 def _bo_dau_py(s):
     """
-    Bo dau tieng Viet de tim kiem khong phu thuoc dau. Goi thang ham da
-    kiem chung tu ui/thamso.py thay vi viet lai lan hai - go tieng Viet co
-    dau tren man hinh cam ung rat cham, nen moi o tim trong du an deu phai
-    tim duoc bang chu khong dau.
+    Bo dau tieng Viet de tim kiem khong phu thuoc dau (xem bo_dau ben tren).
     """
-    from . import thamso as _ts
-    return _ts.bo_dau(s)
+    return bo_dau(s)
 
 
 def ten_an_toan(name):
@@ -1399,8 +1411,6 @@ def tabs_deployos(chinh, phu=""):
             ("drivers", "Driver", "/deployos/drivers"),
             ("scripts", "Script", "/deployos/console/scripts"),
             ("file", "File boot", "/deployos/console"),
-            # 27/09/2026: Tham so cai dat chuyen tu tab goc vao Tai nguyen
-            ("thamso", "Tham số cài đặt", "/deployos/thamso"),
         ],
         "caidat": [
             ("pxe", "Bật / Tắt PXE", "/deployos/caidat"),
@@ -3683,287 +3693,13 @@ def register_deployos(app):
                                       request.form.get("bat") == "1")
         return _trang_drivers(msg, ok)
 
-    # ============================================ TAB "THAM SO CAI DAT"
-    # Bang tra tham so cai im lang cua tung phan mem (/S, /qn,
-    # /VERYSILENT...). Xem ly do va mo ta du lieu trong ui/thamso.py.
+    # 01/10/2026 (anh Thoai: "bo tham so cai dat tren Console Pi va ISO, chi giu tren
+    # kho"): tab "Tham so cai dat" da bo. Bang tra tham so cai im lang gio chi quan ly
+    # tren trang kho (muc "Tham so cai dat"); tham so cua TUNG phan mem van dat o
+    # tab "Phan mem" hoac di kem luc tai tu kho. Link cu chuyen ve Tai nguyen.
     @app.route("/deployos/thamso")
-    def deployos_thamso():
-        return _trang_thamso(sua_ma=request.args.get("sua", ""))
-
-    def _trang_thamso(msg="", ok=True, sua_ma=""):
-        from . import thamso as _ts
-        ds = _ts.danh_sach()
-
-        # Du lieu cho JS tim kiem: kem san ban DA BO DAU de khoi phai bo
-        # dau lai moi lan go phim (bang co the len hang tram dong).
-        du_lieu_js = json.dumps([
-            {"id": x.get("id", ""),
-             "tim": "  ".join(_ts.bo_dau(x.get(k, ""))
-                                    for k, _n in _ts.CAC_COT)}
-            for x in ds], ensure_ascii=False)
-
-        hang = ""
-        for x in ds:
-            ma = _esc(x.get("id", ""))
-            if x.get("id") == sua_ma:
-                # Dong dang sua: bien thanh form ngay tai cho
-                o = ""
-                for khoa, nhan in _ts.CAC_COT:
-                    o += (f'<td data-cot="{_esc(nhan)}">'
-                          f'<textarea name="{khoa}" rows="2" class="o-sua"'
-                          f' placeholder="{_esc(nhan)}">'
-                          f'{_esc(x.get(khoa, ""))}</textarea></td>')
-                hang += f"""
-                <tr class="dang-sua">
-                  <form method="POST" action="/deployos/thamso/sua">
-                    <input type="hidden" name="id" value="{ma}">
-                    {o}
-                    <td class="cot-nut">
-                      <button type="submit" class="nho">Lưu</button>
-                      <a href="/deployos/thamso" class="nut-huy">Huỷ</a>
-                    </td>
-                  </form>
-                </tr>"""
-                continue
-            o = ""
-            for khoa, nhan in _ts.CAC_COT:
-                gt = x.get(khoa, "")
-                # Cot tham so: cho bam de chep nhanh - day la thu nguoi
-                # dung thuc su can lam sau khi tra duoc (dan vao o tham so
-                # cua phan mem), go tay lai rat de sai 1 ky tu.
-                if khoa in ("cai_dat", "go_cai") and gt:
-                    o += (f'<td data-cot="{_esc(nhan)}">'
-                          f'<code class="chep" title="Bấm để chép">'
-                          f'{_esc(gt)}</code></td>')
-                else:
-                    o += f'<td data-cot="{_esc(nhan)}">{_esc(gt)}</td>'
-            if x.get("kho_ma"):
-                nhan_nguon = ('<span class="nhan-ng kho" title="Lấy từ kho trung tâm">Từ kho</span>'
-                              + (' <span class="nhan-ng sua" title="Đã sửa tay trên máy - Cập nhật từ kho sẽ không ghi đè">Đã sửa tay</span>' if x.get("sua_tay") else '')
-                              + (' <span class="nhan-ng xoa" title="Kho đã xoá dòng này - máy vẫn giữ, muốn bỏ thì bấm Xoá">Kho đã xoá</span>' if x.get("kho_da_xoa") else ''))
-            else:
-                nhan_nguon = '<span class="nhan-ng tu" title="Thêm trên máy này">Tự thêm</span>'
-            o = o.replace("</td>", "<br>" + nhan_nguon + "</td>", 1)
-            hang += f"""
-            <tr data-id="{ma}">
-              {o}
-              <td class="cot-nut">
-                <a href="/deployos/thamso?sua={ma}" class="nut-sua">Sửa</a>
-                <form method="POST" action="/deployos/thamso/xoa"
-                      onsubmit="return confirm('Xoá dòng này?');">
-                  <input type="hidden" name="id" value="{ma}">
-                  <button type="submit" class="nho do">Xoá</button>
-                </form>
-              </td>
-            </tr>"""
-
-        tieu_de = "".join(f"<th>{_esc(n)}</th>" for _k, n in _ts.CAC_COT)
-        o_them = "".join(
-            f'<textarea name="{k}" rows="2" placeholder="{_esc(n)}"></textarea>'
-            for k, n in _ts.CAC_COT)
-
-        body = tabs_deployos("tainguyen", "thamso") + _msg(msg, ok) + f"""
-        <div class="card">
-          <h3>Cập nhật từ kho trung tâm</h3>
-          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">Lấy bảng tham số mới nhất trên kho
-            trung tâm về máy: dòng mới trên kho được <b>thêm</b>, dòng kho đã sửa được <b>cập nhật</b>.
-            Dòng <span class="nhan-ng tu">Tự thêm</span> trên máy và dòng bạn đã sửa tay luôn giữ nguyên;
-            dòng kho đã xoá vẫn giữ lại trên máy (muốn bỏ thì bấm Xoá).</p>
-          <form method="POST" action="/deployos/thamso/tu-kho">
-            <button type="submit" data-busy="Đang cập nhật...">🔄 Cập nhật từ kho</button>
-          </form>
-        </div>
-
-        <div class="card">
-          <h3>Tra tham số cài đặt im lặng</h3>
-          <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
-            Mỗi bộ cài có một kiểu tham số cài im lặng riêng - không đoán được,
-            chỉ tra. Bấm vào ô tham số để chép, rồi dán vào mục
-            <a href="/deployos/console/apps">Phần mềm</a>.</p>
-
-          <div class="hang-tim">
-            <input type="search" id="o-tim" autocomplete="off"
-                   placeholder="Tìm: tên phần mềm, tham số, ghi chú... (gõ không dấu cũng được)">
-            <button type="button" id="nut-xoa-tim" class="gray">Xoá</button>
-          </div>
-          <div id="ket-qua-tim" class="ket-qua"></div>
-
-          <div class="bang-cuon">
-            <table class="bang-ts" id="bang">
-              <thead><tr>{tieu_de}<th class="cot-nut">&nbsp;</th></tr></thead>
-              <tbody>{hang}</tbody>
-            </table>
-          </div>
-          <div id="khong-thay" class="khong-thay" hidden></div>
-        </div>
-
-        <div class="card">
-          <h3>Thêm dòng mới</h3>
-          <form method="POST" action="/deployos/thamso/them">
-            <div class="luoi-them">{o_them}</div>
-            <button type="submit" style="margin-top:12px;">Thêm vào bảng</button>
-          </form>
-        </div>
-
-        <script>
-        (function() {{
-          var DU_LIEU = {du_lieu_js};
-          var oTim = document.getElementById('o-tim');
-          var bang = document.getElementById('bang');
-          var kq = document.getElementById('ket-qua-tim');
-          var khongThay = document.getElementById('khong-thay');
-          var tong = DU_LIEU.length;
-
-          // Bo dau tieng Viet - phai khop y het ham bo_dau() ben Python,
-          // ke ca viec thay 'd' truoc (NFD khong tach duoc chu 'd').
-          function boDau(s) {{
-            return (s || '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
-              .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
-              .toLowerCase().trim();
-          }}
-
-          // Khoang cach sua doi (Levenshtein) co GIOI HAN: chi dung de
-          // goi y khi khong tim thay gi, nen khong can chinh xac tuyet doi
-          // va phai dung som de khong lam cham may.
-          function gan(a, b, toiDa) {{
-            if (Math.abs(a.length - b.length) > toiDa) return toiDa + 1;
-            var truoc = [], nay = [], i, j;
-            for (j = 0; j <= b.length; j++) truoc[j] = j;
-            for (i = 1; i <= a.length; i++) {{
-              nay[0] = i; var nhoNhat = i;
-              for (j = 1; j <= b.length; j++) {{
-                nay[j] = Math.min(truoc[j] + 1, nay[j-1] + 1,
-                         truoc[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
-                if (nay[j] < nhoNhat) nhoNhat = nay[j];
-              }}
-              if (nhoNhat > toiDa) return toiDa + 1;
-              truoc = nay.slice();
-            }}
-            return truoc[b.length];
-          }}
-
-          // 1 tu khoa khop neu: nam trong chuoi, HOAC gan giong mot tu nao
-          // do trong chuoi (go sai 1-2 ky tu van ra).
-          function tuKhop(tu, chuoi) {{
-            if (chuoi.indexOf(tu) !== -1) return true;
-            if (tu.length < 4) return false;   // tu qua ngan thi de khop bua
-            var toiDa = tu.length >= 7 ? 2 : 1;
-            var cacTu = chuoi.split(/[^a-z0-9]+/);
-            for (var i = 0; i < cacTu.length; i++) {{
-              if (cacTu[i].length >= 3 && gan(tu, cacTu[i], toiDa) <= toiDa)
-                return true;
-            }}
-            return false;
-          }}
-
-          function loc() {{
-            var q = boDau(oTim.value);
-            var hang = bang.tBodies[0].rows;
-            if (!q) {{
-              for (var i = 0; i < hang.length; i++) hang[i].hidden = false;
-              kq.textContent = tong + ' dòng';
-              khongThay.hidden = true;
-              return;
-            }}
-            var tuKhoa = q.split(/\\s+/).filter(Boolean);
-            var hienId = {{}}, soHien = 0, gapGanDung = false;
-            for (var k = 0; k < DU_LIEU.length; k++) {{
-              var m = DU_LIEU[k], hop = true, canGan = false;
-              for (var t = 0; t < tuKhoa.length; t++) {{
-                if (m.tim.indexOf(tuKhoa[t]) !== -1) continue;
-                if (tuKhop(tuKhoa[t], m.tim)) {{ canGan = true; continue; }}
-                hop = false; break;
-              }}
-              if (hop) {{ hienId[m.id] = true; soHien++; if (canGan) gapGanDung = true; }}
-            }}
-            for (var i = 0; i < hang.length; i++) {{
-              var id = hang[i].getAttribute('data-id');
-              hang[i].hidden = !(id && hienId[id]);
-            }}
-            kq.textContent = soHien + ' / ' + tong + ' dòng khớp'
-                           + (gapGanDung ? '  (có kết quả gần đúng)' : '');
-            khongThay.hidden = soHien > 0;
-            if (soHien === 0)
-              khongThay.textContent = 'Không tìm thấy "' + oTim.value
-                + '". Thử bớt từ khoá, hoặc thêm dòng mới ở dưới.';
-          }}
-
-          oTim.addEventListener('input', loc);
-          document.getElementById('nut-xoa-tim').addEventListener('click',
-            function() {{ oTim.value = ''; loc(); oTim.focus(); }});
-          loc();
-
-          // Bam vao tham so = chep. Dung clipboard API neu co, khong thi
-          // quay ve cach cu (textarea + execCommand) - trinh duyet kiosk
-          // chay qua HTTP thuong khong cho dung clipboard API.
-          document.addEventListener('click', function(e) {{
-            var el = e.target.closest('.chep');
-            if (!el) return;
-            var s = el.textContent;
-            var xong = function() {{
-              var cu = el.getAttribute('data-cu') || el.textContent;
-              el.classList.add('da-chep');
-              var nhan = document.createElement('span');
-              nhan.className = 'nhan-chep'; nhan.textContent = 'đã chép';
-              el.appendChild(nhan);
-              setTimeout(function() {{
-                el.classList.remove('da-chep');
-                if (nhan.parentNode) nhan.parentNode.removeChild(nhan);
-              }}, 1200);
-            }};
-            if (navigator.clipboard && window.isSecureContext) {{
-              navigator.clipboard.writeText(s).then(xong, function() {{}});
-            }} else {{
-              var t = document.createElement('textarea');
-              t.value = s; t.style.position = 'fixed'; t.style.opacity = '0';
-              document.body.appendChild(t); t.select();
-              try {{ document.execCommand('copy'); xong(); }} catch (err) {{}}
-              document.body.removeChild(t);
-            }}
-          }});
-        }})();
-        </script>"""
-        return _trang(body, "Tham số cài đặt",
-                      "Tra tham số cài im lặng của từng phần mềm",
-                      active="/deployos")
-
-    @app.route("/deployos/thamso/tu-kho", methods=["POST"])
-    def deployos_thamso_tu_kho():
-        """Cap nhat bang tham so tu kho trung tam - quy tac xem thamso.cap_nhat_tu_kho()."""
-        from . import khotrungtam as _kt, thamso as _ts
-        cauhinh = _kt.doc_cauhinh()
-        if not cauhinh:
-            return _trang_thamso("Máy này chưa kết nối kho trung tâm (Deployment OS → Kho trung tâm).", False)
-        ok, kq = _kt.lay_tham_so(cauhinh)
-        if not ok:
-            return _trang_thamso(kq, False)
-        ok, tk = _ts.cap_nhat_tu_kho(kq)
-        if not ok:
-            return _trang_thamso(tk, False)
-        phan = [f"thêm {tk['them']} dòng mới", f"cập nhật {tk['sua']} dòng"]
-        if tk["giu_sua_tay"]:
-            phan.append(f"giữ nguyên {tk['giu_sua_tay']} dòng bạn đã sửa tay")
-        if tk["kho_xoa"]:
-            phan.append(f"{tk['kho_xoa']} dòng kho đã xoá (máy vẫn giữ)")
-        return _trang_thamso(f"Đã cập nhật từ kho ({tk['tong_kho']} dòng trên kho): " + ", ".join(phan) + ".", True)
-
-    @app.route("/deployos/thamso/them", methods=["POST"])
-    def deployos_thamso_them():
-        from . import thamso as _ts
-        ok, msg = _ts.them(request.form)
-        return _trang_thamso(msg, ok)
-
-    @app.route("/deployos/thamso/sua", methods=["POST"])
-    def deployos_thamso_sua():
-        from . import thamso as _ts
-        ok, msg = _ts.sua(request.form.get("id", ""), request.form)
-        return _trang_thamso(msg, ok)
-
-    @app.route("/deployos/thamso/xoa", methods=["POST"])
-    def deployos_thamso_xoa():
-        from . import thamso as _ts
-        ok, msg = _ts.xoa(request.form.get("id", ""))
-        return _trang_thamso(msg, ok)
+    def deployos_thamso_da_bo():
+        return redirect("/deployos/os")
 
     # ==================================== TAB "KHO TRUNG TÂM"
     # Xem ui/khotrungtam.py cho phan goi HTTP thuc su. O day chi la giao
@@ -4048,10 +3784,9 @@ def register_deployos(app):
 
         ds = ket_qua
         cac_os = danh_sach_os()
-        from . import thamso as _ts
         du_lieu_js = json.dumps([
             {"id": m.get("id", ""),
-             "tim": _ts.bo_dau(" ".join(str(m.get(k, "")) for k in
+             "tim": bo_dau(" ".join(str(m.get(k, "")) for k in
                                         ("ten", "mo_ta", "du_lieu", "ten_file")))}
             for m in ds], ensure_ascii=False)
 

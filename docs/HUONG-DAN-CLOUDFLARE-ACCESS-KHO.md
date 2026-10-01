@@ -56,9 +56,8 @@ Cloudflare luôn ưu tiên đường dẫn **cụ thể hơn**. Vì thế `/api/
 ### Bước 4. Kiểm tra
 1. Mở trình duyệt ẩn danh, vào trang kho. Phải thấy trang **Cloudflare Access** hỏi email.
 2. Nhập email của anh, lấy mã trong hộp thư và nhập vào. Lúc này mới thấy trang đăng nhập của kho; đăng nhập như cũ.
-3. Trên Console System, vào **Deployment OS → Tài nguyên → Tham số cài đặt → 🔄 Cập nhật từ kho**. Phải báo "Đã cập nhật từ kho (… dòng trên kho)".
-4. Trên Console System, vào **Deployment OS → Kho trung tâm**. Danh sách phần mềm phải hiện bình thường.
-5. Nếu bước 3 hoặc 4 báo lỗi: kiểm tra lại Path ở Bước 2 phải đúng `api/*` (không có dấu `/` ở đầu).
+3. Trên Console System, vào **Deployment OS → Kho trung tâm**. Danh sách phần mềm phải hiện bình thường.
+4. Nếu bước 3 báo lỗi: kiểm tra lại Path ở Bước 2 phải đúng `api/*` (không có dấu `/` ở đầu).
 
 Chụp màn hình từng bước gửi em, em kiểm tra giúp.
 
