@@ -3706,20 +3706,7 @@ def register_deployos(app):
                 <div><button type="submit" style="margin-top:12px;"
                         data-busy="Đang kết nối...">Kết nối</button></div>
               </form>
-            </div>
-            <details class="card">
-              <summary style="cursor:pointer;color:#8b93a1;">Nâng cao: kết nối bằng token
-                (kho bản cũ)</summary>
-              <form method="POST" action="/deployos/kho/cauhinh" style="margin-top:12px;">
-                <label>Địa chỉ kho (URL)</label>
-                <input type="text" name="url" placeholder="Ví dụ: https://kho.congty.vn"
-                       autocapitalize="off">
-                <label style="margin-top:10px;display:block;">Token của máy này</label>
-                <input type="text" name="token" placeholder="Dán token tạo trên trang kho"
-                       autocapitalize="off">
-                <button type="submit" style="margin-top:12px;">Kết nối</button>
-              </form>
-            </details>"""
+            </div>"""
             return _trang(body, "Deployment OS", "Kho trung tâm - chưa kết nối")
 
         ok_ds, ket_qua = _kt.danh_sach(cauhinh)
@@ -3972,13 +3959,6 @@ def register_deployos(app):
     def deployos_kho_ghep():
         from . import khotrungtam as _kt
         ok, msg = _kt.ghep_noi(request.form.get("url", ""), request.form.get("ma", ""))
-        return _kho_chuyen(msg, ok)
-
-    @app.route("/deployos/kho/cauhinh", methods=["POST"])
-    def deployos_kho_cauhinh():
-        from . import khotrungtam as _kt
-        ok, msg = _kt.luu_cauhinh(request.form.get("url", ""),
-                                  request.form.get("token", ""))
         return _kho_chuyen(msg, ok)
 
     @app.route("/deployos/kho/xoa-cauhinh", methods=["POST"])
