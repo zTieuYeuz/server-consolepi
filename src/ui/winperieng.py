@@ -192,6 +192,38 @@ def them(file, ten):
     return True, f'Đã đưa "{ten}" vào menu PXE. {tb}'
 
 
+def them_dong_bo(file, ten):
+    """
+    Nhu them() nhung file .iso thi TACH NGAY trong luong dang goi (dung cho tai tu kho
+    trung tam - da chay o luong nen, xong moi bao "xong"). Cap nhat menu PXE luon.
+    """
+    p = _d._duong_dan_trong(_d.BOOT_DIR, file)
+    if not p or not os.path.isfile(p):
+        return False, "Không tìm thấy file vừa tải."
+    ten = (ten or "").strip()[:60] or os.path.splitext(os.path.basename(p))[0]
+    if p.lower().endswith(".iso"):
+        with _KHOA:
+            if _TACH["chay"]:
+                return False, "Đang tách một ISO WinPE khác - đợi xong rồi tải lại."
+            _TACH.update(chay=True, file=os.path.basename(p), ten=ten, loi="", xong="",
+                         luc=time.time())
+        _tach(p, ten)                       # tu cap nhat menu PXE khi xong
+        return (False, _TACH["loi"]) if _TACH["loi"] else (True, _TACH["xong"])
+    ok, msg = them(file, ten)
+    if ok:
+        try:
+            from . import pxe as _pxe
+            msg += _pxe.cap_nhat_menu()
+        except Exception:
+            pass
+    return ok, msg
+
+
+def ten_wim_tu_iso(ten_iso):
+    """Ten file .wim tach ra tu 1 ISO (cung quy tac voi _tach)."""
+    return _d.ten_an_toan(os.path.splitext(os.path.basename(ten_iso))[0] + ".wim")
+
+
 def _them_vao_ds(file, ten, muon=False):
     with _KHOA:
         ds = [m for m in _doc() if m["file"] != file]
@@ -253,7 +285,7 @@ def _tach(iso, ten):
     tam = None
     try:
         trong = _chon_wim(iso)
-        dich_ten = _d.ten_an_toan(os.path.splitext(os.path.basename(iso))[0] + ".wim")
+        dich_ten = ten_wim_tu_iso(iso)
         dich = os.path.join(_d.BOOT_DIR, dich_ten)
         tam = os.path.join(_d.BOOT_DIR, f".winpe-tach-{os.getpid()}")
         shutil.rmtree(tam, ignore_errors=True)

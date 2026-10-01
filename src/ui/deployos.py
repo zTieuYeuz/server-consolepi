@@ -3744,13 +3744,20 @@ def register_deployos(app):
     # Xem ui/khotrungtam.py cho phan goi HTTP thuc su. O day chi la giao
     # dien: ket noi (ma 6 ky tu), tim/loc, tai o nen vao dung thu muc cuc
     # bo (APPS_DIR / SCRIPTS_DIR / 1 he dieu hanh moi trong OS_DIR).
-    TEN_LOAI_KHO = {"phanmem": "Phần mềm", "script": "Script", "os": "Hệ điều hành"}
+    TEN_LOAI_KHO = {"phanmem": "Phần mềm", "script": "Script", "os": "Hệ điều hành",
+                    "winpe": "WinPE"}
 
     def _da_co_tu_kho(m, cac_os):
         """Muc kho nay da co tren Console Pi chua (de hien "Đã có")."""
         loai = m.get("loai", "")
         if loai == "os":
             return any(o["kho_id"] == m.get("id") and o["san_sang"] for o in cac_os)
+        if loai == "winpe":
+            from . import winperieng as _wr
+            ten = ten_an_toan(m.get("ten_file", ""))
+            if ten.lower().endswith(".iso"):
+                ten = _wr.ten_wim_tu_iso(ten)
+            return any(x["file"] == ten for x in _wr.danh_sach())
         thu_muc = {"phanmem": APPS_DIR, "script": SCRIPTS_DIR}.get(loai)
         return bool(thu_muc and os.path.isfile(
             os.path.join(thu_muc, ten_an_toan(m.get("ten_file", "")))))
@@ -3823,7 +3830,8 @@ def register_deployos(app):
             ext = os.path.splitext(m.get("ten_file", ""))[1].lower()
             hop_le = ((loai == "phanmem" and ext in EXT_APP) or
                       (loai == "script" and ext in EXT_SCRIPT) or
-                      (loai == "os" and ext == ".iso"))
+                      (loai == "os" and ext == ".iso") or
+                      (loai == "winpe" and ext in (".wim", ".iso")))
             nhan_loai = TEN_LOAI_KHO.get(loai, loai)
             cap_nhat = m.get("cap_nhat_luc") or 0
             luc = time.strftime("%d/%m/%Y %H:%M", time.localtime(cap_nhat)) if cap_nhat else ""
@@ -3842,7 +3850,7 @@ def register_deployos(app):
                               if da_co else "")
             phu = _esc(m.get("mo_ta", ""))
             if m.get("du_lieu"):
-                nhan_dl = "Phiên bản" if loai == "os" else "Tham số"
+                nhan_dl = {"os": "Phiên bản", "winpe": "Tên trong menu PXE"}.get(loai, "Tham số")
                 phu += (f'<br><span style="color:#8ad4a0;">{nhan_dl}: '
                         f'{_esc(m["du_lieu"])}</span>')
             hang += f"""
@@ -4201,6 +4209,31 @@ def register_deployos(app):
 
             ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(OS_DIR, os_id, ten_an), sau_iso,
                                   khi_huy_os, don_dep_os)
+            return _kho_chuyen(msg, ok)
+
+        if loai == "winpe":
+            # WinPE rieng (ui/winperieng.py): tai vao tab File boot roi TU dua vao menu
+            # PXE "3. WinPE rieng". ISO: tach .wim ra roi XOA ISO (kho tai lai duoc).
+            if ext not in (".wim", ".iso"):
+                return _kho_chuyen("Mục WinPE phải là file .wim hoặc .iso.", False)
+            can = kich * (2.1 if ext == ".iso" else 1.05) + 200 * 1024 * 1024
+            if can > _con_trong(BOOT_DIR):
+                return _kho_chuyen(f"Không đủ chỗ trống để tải \"{ten_hien_thi}\" "
+                                   f"(cần khoảng {co_kich_thuoc(int(can))}).", False)
+            ten_menu = (m.get("du_lieu") or "").strip() or ten_hien_thi
+
+            def sau_winpe(duong):
+                from . import winperieng as _wr
+                ok_w, msg_w = _wr.them_dong_bo(os.path.basename(duong), ten_menu)
+                if ok_w and ext == ".iso":
+                    try:
+                        os.remove(duong)
+                    except OSError:
+                        pass
+                    msg_w = f'Đã tải, tách WinPE và đưa "{ten_menu}" vào menu PXE (3. WinPE riêng).'
+                return ok_w, msg_w
+
+            ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(BOOT_DIR, ten_an), sau_winpe)
             return _kho_chuyen(msg, ok)
 
         return _kho_chuyen("Loại mục không hỗ trợ.", False)

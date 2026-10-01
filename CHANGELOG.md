@@ -2,6 +2,9 @@
 
 ## 1.7.5 (01/10/2026)
 
+- Kho trung tam: loai muc moi **WinPE** (.wim/.iso). Trang Kho cua Console System bam "Tai ve"
+  la file tu vao tab File boot va menu PXE "3. WinPE rieng" (.iso: tach .wim roi xoa ISO).
+  Ten trong menu = o "Ten trong menu PXE" tren kho (trong thi dung Ten hien thi).
 - WinPE RIENG trong menu PXE (anh Thoai 01/10/2026): Sergei Strelec, Hiren's BootCD PE, ban
   tu build bang ADK... Tai file .wim (hoac .iso) len tab File boot -> khung "WinPE rieng trong
   menu PXE" -> "Dua vao menu PXE". May khach chon "3. WinPE rieng" -> boot NGUYEN BAN (wimboot
