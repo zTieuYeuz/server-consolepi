@@ -4528,9 +4528,77 @@ def register_deployos(app):
           Windows có Windows ADK - Pi không tự tạo được, chỉ lưu và phục vụ.</p>"""
         body = (_tabs("tainguyen", "file") + _msg(msg, ok) +
                 _khoi_tai_len("/deployos/console/file/len", "file boot", EXT_BOOT, ghi_chu, "file") +
+                _khoi_winpe_rieng() +
                 f"<h2>File boot đang có ({len(ds)})</h2>" +
                 _bang_file(ds, "/deployos/console/file/xoa", "/deployos/console/file/tai"))
         return _trang(body, "Deployment OS", "2.1 - File boot")
+
+    def _khoi_winpe_rieng():
+        """Khung WinPE RIENG (Strelec, Hiren's, ban ADK) trong menu PXE - xem ui/winperieng.py."""
+        from . import winperieng as _wr
+        ds = _wr.danh_sach()
+        t = _wr.trang_thai_tach()
+        tach = ""
+        if t["chay"]:
+            tach = (f'<div class="msg info">Đang tách WinPE từ <strong>{_esc(t["file"])}</strong>'
+                    f' ({int(time.time() - t["luc"])} giây)... trang tự làm mới.</div>'
+                    '<script>setTimeout(function(){location.reload();}, 4000);</script>')
+        elif t["loi"]:
+            tach = _msg(f'Tách WinPE từ "{t["file"]}" thất bại: {t["loi"]}', False)
+        elif t["xong"] and time.time() - t["luc"] < 900:
+            tach = _msg(t["xong"], True)
+        hang = "".join(f"""
+            <tr><td><strong>{_esc(m['ten'])}</strong></td>
+              <td style="color:#8b93a1;">{_esc(m['file'])}</td><td>{co_kich_thuoc(m['cd'])}</td>
+              <td><form method="POST" action="/deployos/winpe-rieng/bo" style="display:inline;"
+                        onsubmit="return confirm('Bỏ {_esc(m['ten'])} khỏi menu PXE? (file vẫn giữ)');">
+                <input type="hidden" name="file" value="{_esc(m['file'])}">
+                <button type="submit" class="gray small">Bỏ khỏi menu</button></form></td></tr>"""
+            for m in ds)
+        bang = (f'<div class="tbl-scroll"><table><tr><th>Tên trong menu</th><th>File</th>'
+                f'<th style="width:100px;">Kích thước</th><th style="width:130px;"></th></tr>{hang}</table></div>'
+                if ds else '<p style="color:#8b93a1;margin:0 0 10px;">Chưa có WinPE riêng nào trong menu.</p>')
+        chon = _wr.file_co_the_them()
+        form = (f"""
+          <form method="POST" action="/deployos/winpe-rieng/them" style="margin-top:12px;">
+            <div class="row" style="gap:10px;align-items:flex-end;flex-wrap:wrap;">
+              <div style="flex:1;min-width:200px;"><label>File (.wim hoặc .iso đã tải lên ở trên)</label>
+                <select name="file">{''.join(f'<option>{_esc(n)}</option>' for n in chon)}</select></div>
+              <div style="flex:1;min-width:200px;"><label>Tên hiện trong menu</label>
+                <input type="text" name="ten" maxlength="60" placeholder="ví dụ: Hiren's BootCD PE"></div>
+              <button type="submit" data-busy="Đang kiểm tra file...">Đưa vào menu PXE</button>
+            </div>
+          </form>""" if chon else
+            '<p class="hint" style="margin:8px 0 0;">Tải file .wim (hoặc .iso) WinPE lên bằng khung ở trên '
+            'rồi quay lại đây chọn.</p>')
+        return f"""
+        <div class="card">
+          <h3>WinPE riêng trong menu PXE</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+            Sergei Strelec, Hiren's BootCD PE, bản tự build bằng Windows ADK...
+            Máy khách boot qua mạng chọn <strong>3. WinPE riêng</strong>: boot
+            <strong>nguyên bản</strong>, không chèn gì. File .iso thì Console System tự tách
+            file .wim bên trong ra. Máy UEFI bật Secure Boot chỉ boot được WinPE ký bởi Microsoft.</p>
+          {tach}{bang}{form}
+        </div>"""
+
+    @app.route("/deployos/winpe-rieng/them", methods=["POST"])
+    def deployos_winpe_rieng_them():
+        from . import winperieng as _wr
+        ok, msg = _wr.them(request.form.get("file", ""), request.form.get("ten", ""))
+        if ok and not _wr.trang_thai_tach()["chay"]:
+            from . import pxe as _pxe
+            msg += _pxe.cap_nhat_menu()
+        return _trang_file_boot(msg, ok)
+
+    @app.route("/deployos/winpe-rieng/bo", methods=["POST"])
+    def deployos_winpe_rieng_bo():
+        from . import winperieng as _wr
+        ok, msg = _wr.bo(request.form.get("file", ""))
+        if ok:
+            from . import pxe as _pxe
+            msg += _pxe.cap_nhat_menu()
+        return _trang_file_boot(msg, ok)
 
     @app.route("/deployos/console/file/len", methods=["POST"])
     def deployos_boot_len():

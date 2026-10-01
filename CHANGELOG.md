@@ -2,6 +2,13 @@
 
 ## 1.7.5 (dang phat trien)
 
+- WinPE RIENG trong menu PXE (anh Thoai 01/10/2026): Sergei Strelec, Hiren's BootCD PE, ban
+  tu build bang ADK... Tai file .wim (hoac .iso) len tab File boot -> khung "WinPE rieng trong
+  menu PXE" -> "Dua vao menu PXE". May khach chon "3. WinPE rieng" -> boot NGUYEN BAN (wimboot
+  + file .wim, khong chen winpeshl/startnet/driver). File .iso: tu tach sources/boot.wim, khong
+  co thi file .wim lon nhat (kieu Strelec). Kiem file luc them: phai co image boot duoc va
+  Windows\Boot\PXE\bootmgr.exe, khong thi tu choi. URL phuc vu luon ket thuc "/boot.wim"
+  (UEFI dat ten file theo cuoi URL - ".../Ten.wim" thi bootmgr bao 0xc000000f, lab da gap).
 - Trinh tao/sua kich ban: bam thang vao o buoc bat ky tren thanh tien do de nhay toi do, LUON nhay (phan da nhap van luu). Buoc con thieu/sai chi nhac o trang dich; buoc Tong ket liet ke cho can sua (kem link toi dung buoc) va chan luu cho toi khi du.
 
 ## 1.7.4

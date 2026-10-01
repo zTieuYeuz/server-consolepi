@@ -907,6 +907,19 @@ def register_pxe(app):
             abort(404)
         return send_from_directory(os.path.dirname(p), os.path.basename(p))
 
+    @app.route("/deployos/pxeboot/winpe/<path:ten>/boot.wim")
+    def deployos_pxeboot_winpe_rieng(ten):
+        """
+        WinPE RIENG (ui/winperieng.py), boot nguyen ban. URL PHAI ket thuc bang
+        "/boot.wim": iPXE UEFI dat ten file theo phan cuoi URL, ma bootmgr (BCD do
+        wimboot sinh) tim dung "boot.wim" - lab 01/10/2026: URL ".../Ten.wim" thi UEFI
+        dung o "Windows Boot Manager 0xc000000f", BIOS van chay.
+        """
+        from . import winperieng as _wr
+        if not dang_bat() or ten not in {m["file"] for m in _wr.danh_sach()}:
+            abort(404)
+        return send_from_directory(_d.BOOT_DIR, ten)
+
     def _ve_lai(msg, ok):
         """
         LOI THAT DA GAP (anh Thoai bam "Bat PXE" xong khong thay gi ca -

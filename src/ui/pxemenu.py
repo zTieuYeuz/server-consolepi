@@ -285,6 +285,8 @@ def sinh_script(goc):
     c = doc_cauhinh()
     muc = muc_menu()
     pe = muc_winpe()
+    from . import winperieng as _wr
+    rieng = _wr.danh_sach()
     # --timeout tinh bang mili giay; 0 giay = cho mai den khi co nguoi bam.
     cho = f"--timeout {c['cho_giay'] * 1000} " if c["cho_giay"] > 0 else ""
     dong = ["#!ipxe", ":menu",
@@ -293,8 +295,10 @@ def sinh_script(goc):
             "item --gap -- ",
             ("item pe 1. Win PE - cuu ho may >" if pe else
              "item --gap -- 1. Win PE (chua co boot.wim nao)"),
-            f"item win 2. Install Windows > ({len(muc)} kich ban)",
-            "item --gap -- ",
+            f"item win 2. Install Windows > ({len(muc)} kich ban)"]
+    if rieng:
+        dong.append(f"item rieng 3. WinPE rieng > ({len(rieng)})")
+    dong += ["item --gap -- ",
             "item odia Khoi dong o cung (KHONG cai gi)",
             "item lai Khoi dong lai may",
             f"choose {cho}--default odia chon || goto odia",
@@ -334,6 +338,22 @@ def sinh_script(goc):
                         f"{_u.TEN_NHUNG_DRIVER} || goto loi")
         dong += [f"initrd {goc}/os/{os_id}/boot.wim boot.wim || goto loi",
                  "boot || goto loi", ""]
+    # ---- WinPE RIENG (Strelec, Hiren's, ban ADK...): boot NGUYEN BAN - chi
+    # wimboot + file .wim, KHONG chen winpeshl/startnet/driver (xem ui/winperieng.py).
+    if rieng:
+        from urllib.parse import quote
+        dong += [":rieng", "menu WinPE rieng - boot nguyen ban"]
+        for i, m in enumerate(rieng):
+            dong.append(f"item wr{i} {_chu_ipxe(m['ten'])}")
+        dong += ["item --gap -- ", "item menu < Quay lai menu chinh",
+                 "choose --default wr0 chon || goto menu", "goto ${chon}", ""]
+        for i, m in enumerate(rieng):
+            # URL PHAI ket thuc bang "/boot.wim" (UEFI dat ten file theo cuoi URL, bootmgr
+            # tim boot.wim) - xem pxe.deployos_pxeboot_winpe_rieng
+            dong += [f":wr{i}", f"echo Dang nap WinPE: {_chu_ipxe(m['ten'])}",
+                     f"kernel {goc}/wimboot || goto loi",
+                     f"initrd {goc}/winpe/{quote(m['file'])}/boot.wim boot.wim || goto loi",
+                     "boot || goto loi", ""]
     for i, (nhan, thu_muc, os_id) in enumerate(muc):
         # wimboot (Microsoft ky) nap boot.wim GOC + file nhung - chay tren
         # BIOS, UEFI va UEFI + Secure Boot (xem unattend: FILE NHUNG QUA
@@ -381,7 +401,11 @@ def _xem_truoc(c, muc):
              "    Chon bang phim mui ten + Enter:", "",
              ("    1. Win PE - cuu ho may >" if muc_winpe() else
               "    1. Win PE (chua co boot.wim nao)"),
-             f"    2. Install Windows > ({len(muc)} kich ban)", "",
+             f"    2. Install Windows > ({len(muc)} kich ban)"]
+    from . import winperieng as _wr
+    if _wr.danh_sach():
+        chinh.append(f"    3. WinPE rieng > ({len(_wr.danh_sach())})")
+    chinh += ["",
              "  > Khoi dong o cung (KHONG cai gi)",
              "    Khoi dong lai may"]
     con = ["  Install Windows - chon kich ban cai dat", ""]
