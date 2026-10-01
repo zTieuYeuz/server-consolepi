@@ -46,6 +46,18 @@ echo "== Kiosk (man hinh)"
 kt "kiosk dang chay"                      systemctl is-active --quiet console-pi-kiosk
 kt "trinh duyet kiosk dang mo dashboard"  sh -c "curl -s http://127.0.0.1:9222/json | grep -q 8880"
 
+echo "== Driver VirtIO nhung san trong ISO (khong can mang)"
+kt "co 3 file .cab VirtIO trong /opt/console-pi/driver-san"  test "$(ls /opt/console-pi/driver-san/virtio_*.cab 2>/dev/null | wc -l)" = 3
+kt "3 goi VirtIO da duoc nap san vao thu muc driver"          test -s /var/lib/console-pi/deploy/drivers/goi-virtio_netkvm/_thongtin.json -a -s /var/lib/console-pi/deploy/drivers/goi-virtio_viostor/_thongtin.json -a -s /var/lib/console-pi/deploy/drivers/goi-virtio_vioscsi/_thongtin.json
+
+# May co Internet -> tu tai not cac goi con thieu (toi da ~3 phut)
+for _i in $(seq 36); do
+    [ "$(ls /var/lib/console-pi/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 10 ] && break
+    sleep 5
+done
+kt "du 10 goi driver pho bien (3 VirtIO nhung san + 7 tu tai khi co Internet)" \
+   test "$(ls /var/lib/console-pi/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 10
+
 echo "== Cong cu Deployment OS"
 for c in parted wimlib-imagex mkfs.vfat mcopy genisoimage; do
     kt "co lenh $c" sh -c "PATH=\$PATH:/usr/sbin command -v $c"

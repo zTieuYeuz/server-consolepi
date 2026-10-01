@@ -3601,7 +3601,10 @@ def register_deployos(app):
             không thấy ổ cứng khi cài. Bấm <strong>Tải</strong>: Console Pi tự tải
             gói driver chính thức (đã được Microsoft ký) từ Microsoft Update
             Catalog, giải nén và đánh dấu nạp vào ảnh boot. Windows sau khi cài
-            cũng dùng luôn các driver này.</p>
+            cũng dùng luôn các driver này.
+            <strong>Máy tự tải các gói còn thiếu ngay khi có Internet</strong>
+            (tổng khoảng 3,5 MB); riêng 3 gói <strong>VirtIO</strong> đã có sẵn
+            trong ISO, dùng được cả khi không có mạng.</p>
           <form method="POST" action="/deployos/drivers/goi-pho-bien/tai" style="margin-bottom:10px;">
             <input type="hidden" name="ma" value="__tat_ca__">
             <button type="submit"{' disabled' if dang else ''}>Tải tất cả gói chưa có</button>

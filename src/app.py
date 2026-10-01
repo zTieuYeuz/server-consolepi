@@ -119,6 +119,18 @@ try:
 except Exception:
     pass
 
+# Nap san driver VirtIO nhung trong ISO (neu co) - khong can mang, chay nen, khong lam gi tren Pi.
+try:
+    from ui.goidriver import nap_san, tai_ngam
+
+    def _driver_nen():
+        nap_san()           # truoc: VirtIO nhung san (khong can mang)
+        tai_ngam()          # sau: cac goi con thieu, tu tai khi co Internet
+
+    threading.Thread(target=_driver_nen, daemon=True).start()
+except Exception:
+    pass
+
 
 @app.errorhandler(405)
 def _loi_sai_phuong_thuc(e):

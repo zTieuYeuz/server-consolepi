@@ -63,6 +63,35 @@ dung_cay() {   # $1 = amd64 | i386
         install -m 600 /root/.config/zt/cf-access.json "$R/var/lib/console-pi/cf-access.json"
     fi
 
+    # --- 1c. Driver VirtIO NHUNG SAN (30/09/2026, anh Thoai: "de san driver card mang, o cung").
+    # Chi nhung goi giay phep cho phep phan phoi lai (VirtIO cua Red Hat, BSD-3-Clause). Lay tu
+    # Microsoft Update Catalog theo url + sha256 trong src/ui/goi-driver.json (KHONG co file
+    # nhi phan nao trong repo). Intel / VMware / Realtek khong nhung (giay phep khong cho).
+    # Sai sha256 hoac khong tai duoc -> DUNG build, khong am tham ban ISO thieu driver.
+    mkdir -p "$R/opt/console-pi/driver-san" /var/cache/zt-driver-san
+    python3 - "$REPO/src/ui/goi-driver.json" "$R/opt/console-pi/driver-san" <<'PYEOF'
+import hashlib, json, os, shutil, sys, urllib.request
+ds, dich = sys.argv[1], sys.argv[2]
+cache = "/var/cache/zt-driver-san"
+for g in json.load(open(ds)):
+    if not g["ma"].startswith("virtio_"):
+        continue
+    f = os.path.join(cache, g["ma"] + ".cab")
+    def ok(p):
+        return os.path.isfile(p) and hashlib.sha256(open(p, "rb").read()).hexdigest() == g["sha256"].lower()
+    if not ok(f):
+        urllib.request.urlretrieve(g["url"], f + ".tmp")
+        os.replace(f + ".tmp", f)
+    if not ok(f):
+        sys.exit("DUNG BUILD: goi " + g["ma"] + " sai sha256 - khong nhung vao ISO")
+    shutil.copy(f, os.path.join(dich, g["ma"] + ".cab"))
+    print("driver san:", g["ma"], os.path.getsize(f), "byte, sha256 dung")
+open(os.path.join(dich, "README.txt"), "w").write(
+    "Driver VirtIO (NetKVM, viostor, vioscsi) cua Red Hat, Inc. - giay phep BSD-3-Clause, "
+    "ky boi Microsoft (WHQL). Lay tu Microsoft Update Catalog, kiem sha256 luc build.\n"
+    "Console System (c) 2026 zTieuYeuz chi nhung san de dung khi may khong co mang.\n")
+PYEOF
+
     # --- 2. Don vi systemd + cau hinh: hook 0100 cai tu day vao he thong
     local S="$R/usr/local/share/console-system"
     mkdir -p "$S/systemd" "$S/config"

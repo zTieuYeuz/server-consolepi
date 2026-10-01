@@ -51,6 +51,10 @@ STORAGE_DIR = _duong("storage")
 
 # Bang tra tham so cai dat im lang (tab "Tham so cai dat")
 
+# Danh dau cac goi driver nhung SAN trong ISO da nap roi (xem goidriver.nap_san) -
+# nguoi dung xoa goi thi KHONG tu nap lai
+FILE_DRIVER_SAN = _duong("driver-san.da-nap.json")
+
 # Thu vien lenh thiet bi mang cua nguoi dung (tab "Thu vien lenh")
 FILE_THU_VIEN_LENH = _duong("command-library.json")
 

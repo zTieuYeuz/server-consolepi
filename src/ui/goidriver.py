@@ -88,6 +88,21 @@ def _tai_mot(g):
                     _dat(ma, True, f"Đang tải... {_d.co_kich_thuoc(da)}")
         if g.get("sha256") and h.hexdigest() != g["sha256"].lower():
             return False, "File tải về KHÔNG khớp mã kiểm tra (sha256) - đã bỏ, không dùng."
+        return _giai_nen_va_cai(g, f_tai, tam, da)
+    except Exception as e:  # mang dut, het cho...
+        return False, f"Lỗi: {e}"
+    finally:
+        shutil.rmtree(tam, ignore_errors=True)
+
+
+def _giai_nen_va_cai(g, f_tai, tam, da, tu_san=False):
+    """
+    Giai nen goi (da co o f_tai, da kiem sha256) + dua vao DRIVERS_DIR. Dung chung
+    cho goi vua TAI tu Microsoft va goi NHUNG SAN trong ISO (tu_san=True).
+    """
+    ma = g["ma"]
+    z = _lenh_7z()
+    try:
         _dat(ma, True, "Đang giải nén...")
         ra_dir = os.path.join(tam, "ra")
         os.makedirs(ra_dir)
@@ -117,8 +132,9 @@ def _tai_mot(g):
             return False, "Gói tải về không có file .inf nào - bỏ."
         with open(os.path.join(ra_dir, "_thongtin.json"), "w", encoding="utf-8") as f:
             json.dump({"ten_hien_thi": g["ten_hien_thi"], "cho_boot": True,
-                       "nguon": g.get("nguon") or g["url"], "url": g["url"],
-                       "tu_goi_pho_bien": ma},
+                       "nguon": ("Có sẵn trong ISO (Red Hat, BSD-3-Clause) - " if tu_san else "")
+                                + (g.get("nguon") or g["url"]),
+                       "url": g["url"], "tu_goi_pho_bien": ma},
                       f, ensure_ascii=False, indent=1)
         dich = os.path.join(_d.DRIVERS_DIR, TIEN_TO + ma)
         cu = dich + ".cu"
@@ -127,11 +143,92 @@ def _tai_mot(g):
             os.replace(dich, cu)
         shutil.move(ra_dir, dich)
         shutil.rmtree(cu, ignore_errors=True)
-        return True, f"Đã tải ({_d.co_kich_thuoc(da)}, {so_inf} file .inf) - đã đánh dấu nạp vào ảnh boot."
-    except Exception as e:  # mang dut, het cho...
+        return True, (f"{'Nạp sẵn từ ISO' if tu_san else 'Đã tải'} ({_d.co_kich_thuoc(da)}, "
+                      f"{so_inf} file .inf) - đã đánh dấu nạp vào ảnh boot.")
+    except Exception as e:
         return False, f"Lỗi: {e}"
-    finally:
-        shutil.rmtree(tam, ignore_errors=True)
+
+
+# ------------------------------------------------- goi NHUNG SAN trong ISO
+# 30/09/2026 (anh Thoai: "de san driver card mang, o cung trong ISO"). Chi nhung nhung
+# goi giay phep CHO PHEP phan phoi lai: VirtIO cua Red Hat (BSD-3-Clause, ky WHQL).
+# Intel / VMware / Realtek KHONG nhung (giay phep khong cho kem san pham ban ra) - van
+# tai bang nut. File .cab nam o DIR_SAN do may build bo vao (iso/dung-cay-build.sh, da
+# kiem sha256); khoi dong dashboard lan dau thi giai nen vao DRIVERS_DIR - khong can mang.
+DIR_SAN = "/opt/console-pi/driver-san"
+
+
+_khoa_nap = threading.Lock()
+
+
+def _doc_da_nap():
+    from .duongdan import FILE_DRIVER_SAN
+    try:
+        with open(FILE_DRIVER_SAN, encoding="utf-8") as f:
+            return list(json.load(f))
+    except (OSError, ValueError):
+        return []
+
+
+def _them_da_nap(cac_ma):
+    """Ghi them vao danh sach 'da nap 1 lan' (nguoi dung xoa goi thi khong tu hoi sinh)."""
+    from .duongdan import FILE_DRIVER_SAN
+    with _khoa_nap:
+        ds = _doc_da_nap()
+        for m in cac_ma:
+            if m not in ds:
+                ds.append(m)
+        os.makedirs(os.path.dirname(FILE_DRIVER_SAN), exist_ok=True)
+        with open(FILE_DRIVER_SAN, "w", encoding="utf-8") as f:
+            json.dump(ds, f)
+
+
+def nap_san():
+    """Nap cac goi nhung san (neu co). Moi goi chi nap 1 LAN - nguoi dung xoa di khong tu
+    hoi sinh. Khong bao gio nem loi (chay o luong nen luc khoi dong)."""
+    try:
+        if not os.path.isdir(DIR_SAN):
+            return []
+        da_nap = _doc_da_nap()
+        ds = {g["ma"]: g for g in danh_sach_goi()}
+        xong = []
+        for ten in sorted(os.listdir(DIR_SAN)):
+            ma, duoi = os.path.splitext(ten)
+            g = ds.get(ma)
+            if not g or duoi != ".cab" or ma in da_nap or g["da_tai"]:
+                continue
+            nguon = os.path.join(DIR_SAN, ten)
+            h = hashlib.sha256()
+            with open(nguon, "rb") as f:
+                for khoi in iter(lambda: f.read(1 << 20), b""):
+                    h.update(khoi)
+            if g.get("sha256") and h.hexdigest() != g["sha256"].lower():
+                print(f"[driver-san] {ma}: sai sha256 - bo qua", flush=True)
+                continue
+            os.makedirs(_d.DRIVERS_DIR, exist_ok=True)
+            tam = tempfile.mkdtemp(prefix="goidrv-", dir=_d.DEPLOY_DIR)
+            try:
+                f_tai = os.path.join(tam, "goi.cab")
+                shutil.copy(nguon, f_tai)
+                ok, tb = _giai_nen_va_cai(g, f_tai, tam, os.path.getsize(f_tai), tu_san=True)
+            finally:
+                shutil.rmtree(tam, ignore_errors=True)
+            print(f"[driver-san] {ma}: {tb}", flush=True)
+            _dat(ma, False, ("✔ " if ok else "✘ ") + tb)
+            if ok:
+                da_nap.append(ma)
+                xong.append(ma)
+        if xong:
+            _them_da_nap(xong)
+            try:
+                from . import pxe as _pxe
+                _pxe.cap_nhat_menu()
+            except Exception:
+                pass
+        return xong
+    except Exception as e:
+        print(f"[driver-san] loi: {type(e).__name__}: {e}", flush=True)
+        return []
 
 
 def tai_goi(cac_ma):
@@ -155,3 +252,56 @@ def tai_goi(cac_ma):
 
     threading.Thread(target=chay, daemon=True).start()
     return True, f"Đang tải {len(chon)} gói ở nền - trang tự cập nhật tiến độ."
+
+
+def tai_ngam():
+    """
+    TU TAI cac goi driver pho bien CON THIEU ngay lan dau may co Internet (anh Thoai
+    30/09/2026: "nap het driver cua cac may cho anh"). Tong chi khoang 3,5 MB. May
+    TU keo tu Microsoft Update Catalog (giong Windows Update) - Console System KHONG
+    nhung file Intel/VMware/Realtek vao ISO (giay phep khong cho phan phoi lai); chi
+    nhung san VirtIO (xem nap_san).
+
+    Moi goi chi tu tai 1 LAN: nguoi dung xoa goi thi khong tu hoi sinh. Chua co mang ->
+    thu lai gian cach tang dan toi 2 phut. Chay o luong nen, khong nem loi.
+    """
+    cho = 20
+    try:
+        while True:
+            da_nap = _doc_da_nap()
+            can = [g for g in danh_sach_goi()
+                   if not g["da_tai"] and not g["dang_tai"] and g["ma"] not in da_nap]
+            if not can:
+                return
+            try:
+                import requests
+                requests.head("https://catalog.s.download.windowsupdate.com/", timeout=8)
+                co_mang = True
+            except Exception:
+                co_mang = False
+            if not co_mang:
+                time.sleep(cho)
+                cho = min(cho * 2, 120)
+                continue
+            xong = []
+            for g in can:
+                _dat(g["ma"], True, "Đang tự tải (có Internet)...")
+                ok, tb = _tai_mot(g)
+                _dat(g["ma"], False, ("✔ " if ok else "✘ ") + tb)
+                print(f"[driver-tu-tai] {g['ma']}: {tb}", flush=True)
+                if ok:
+                    xong.append(g["ma"])
+            if xong:
+                _them_da_nap(xong)
+                try:
+                    from . import pxe as _pxe
+                    _pxe.cap_nhat_menu()
+                except Exception:
+                    pass
+            if len(xong) < len(can):          # co goi that bai (mang chap chon...) -> thu lai sau
+                time.sleep(cho)
+                cho = min(cho * 2, 120)
+                continue
+            return
+    except Exception as e:
+        print(f"[driver-tu-tai] loi: {type(e).__name__}: {e}", flush=True)
