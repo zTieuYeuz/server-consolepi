@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.7.5 (dang phat trien)
+## 1.7.5 (01/10/2026)
 
 - WinPE RIENG trong menu PXE (anh Thoai 01/10/2026): Sergei Strelec, Hiren's BootCD PE, ban
   tu build bang ADK... Tai file .wim (hoac .iso) len tab File boot -> khung "WinPE rieng trong
