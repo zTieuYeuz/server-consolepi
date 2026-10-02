@@ -2,12 +2,15 @@
 
 ## 1.7.5 (01/10/2026)
 
+- Menu PXE con 2 dong (anh Thoai 02/10/2026: "chi can 1 dong WinPE"): **1. Install Windows**,
+  **2. Boot WinPE** (WinPE tu them). Bo muc "Win PE - cuu ho" (boot.wim cua bo cai + cua so lenh)
+  va file startnet.cmd/winpeshl.ini cua no.
 - Kho trung tam: loai muc moi **WinPE** (.wim/.iso). Trang Kho cua Console System bam "Tai ve"
-  la file tu vao tab File boot va menu PXE "3. WinPE rieng" (.iso: tach .wim roi xoa ISO).
+  la file tu vao tab File boot va menu PXE "2. Boot WinPE" (.iso: tach .wim roi xoa ISO).
   Ten trong menu = o "Ten trong menu PXE" tren kho (trong thi dung Ten hien thi).
 - WinPE RIENG trong menu PXE (anh Thoai 01/10/2026): Sergei Strelec, Hiren's BootCD PE, ban
   tu build bang ADK... Tai file .wim (hoac .iso) len tab File boot -> khung "WinPE rieng trong
-  menu PXE" -> "Dua vao menu PXE". May khach chon "3. WinPE rieng" -> boot NGUYEN BAN (wimboot
+  menu PXE" -> "Dua vao menu PXE". May khach chon "2. Boot WinPE" -> boot NGUYEN BAN (wimboot
   + file .wim, khong chen winpeshl/startnet/driver). File .iso: tu tach sources/boot.wim, khong
   co thi file .wim lon nhat (kieu Strelec). Kiem file luc them: phai co image boot duoc va
   Windows\Boot\PXE\bootmgr.exe, khong thi tu choi. URL phuc vu luon ket thuc "/boot.wim"

@@ -3,7 +3,7 @@
 Console Pi - WINPE RIENG trong menu PXE (Sergei Strelec, Hiren's BootCD PE, ban
 tu build bang Windows ADK...).
 
-VI SAO (anh Thoai 01/10/2026: "loai 2 em nha"): muc "1. Win PE - cuu ho" chi dung
+VI SAO (anh Thoai 01/10/2026: "loai 2 em nha"): muc WinPE cuu ho cu chi dung
 boot.wim CUA BO CAI WINDOWS va THAY man hinh khoi dong bang cua so lenh cua Console
 System. WinPE rieng thi phai boot NGUYEN BAN - giu giao dien, cong cu cua no.
 

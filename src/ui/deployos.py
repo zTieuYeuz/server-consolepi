@@ -3106,7 +3106,7 @@ def register_deployos(app):
             <summary>Xem trước màn hình máy khách</summary>
             <div style="color:#8b93a1;font-size:13px;margin-top:10px;">Menu chính:</div>
             <pre style="{kieu_pre}">{_esc(man_chinh)}</pre>
-            <div style="color:#8b93a1;font-size:13px;">Sau khi chọn "2. Install Windows":</div>
+            <div style="color:#8b93a1;font-size:13px;">Sau khi chọn "1. Install Windows":</div>
             <pre style="{kieu_pre}">{_esc(man_con)}</pre>
           </details>
         </div>"""
@@ -4213,7 +4213,7 @@ def register_deployos(app):
 
         if loai == "winpe":
             # WinPE rieng (ui/winperieng.py): tai vao tab File boot roi TU dua vao menu
-            # PXE "3. WinPE rieng". ISO: tach .wim ra roi XOA ISO (kho tai lai duoc).
+            # PXE "2. Boot WinPE". ISO: tach .wim ra roi XOA ISO (kho tai lai duoc).
             if ext not in (".wim", ".iso"):
                 return _kho_chuyen("Mục WinPE phải là file .wim hoặc .iso.", False)
             can = kich * (2.1 if ext == ".iso" else 1.05) + 200 * 1024 * 1024
@@ -4230,7 +4230,7 @@ def register_deployos(app):
                         os.remove(duong)
                     except OSError:
                         pass
-                    msg_w = f'Đã tải, tách WinPE và đưa "{ten_menu}" vào menu PXE (3. WinPE riêng).'
+                    msg_w = f'Đã tải, tách WinPE và đưa "{ten_menu}" vào menu PXE (2. Boot WinPE).'
                 return ok_w, msg_w
 
             ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(BOOT_DIR, ten_an), sau_winpe)
@@ -4590,7 +4590,7 @@ def register_deployos(app):
             for m in ds)
         bang = (f'<div class="tbl-scroll"><table><tr><th>Tên trong menu</th><th>File</th>'
                 f'<th style="width:100px;">Kích thước</th><th style="width:130px;"></th></tr>{hang}</table></div>'
-                if ds else '<p style="color:#8b93a1;margin:0 0 10px;">Chưa có WinPE riêng nào trong menu.</p>')
+                if ds else '<p style="color:#8b93a1;margin:0 0 10px;">Chưa có WinPE nào trong menu.</p>')
         chon = _wr.file_co_the_them()
         form = (f"""
           <form method="POST" action="/deployos/winpe-rieng/them" style="margin-top:12px;">
@@ -4606,10 +4606,10 @@ def register_deployos(app):
             'rồi quay lại đây chọn.</p>')
         return f"""
         <div class="card">
-          <h3>WinPE riêng trong menu PXE</h3>
+          <h3>Boot WinPE (menu PXE)</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
             Sergei Strelec, Hiren's BootCD PE, bản tự build bằng Windows ADK...
-            Máy khách boot qua mạng chọn <strong>3. WinPE riêng</strong>: boot
+            Máy khách boot qua mạng chọn <strong>2. Boot WinPE</strong>: boot
             <strong>nguyên bản</strong>, không chèn gì. File .iso thì Console System tự tách
             file .wim bên trong ra. Máy UEFI bật Secure Boot chỉ boot được WinPE ký bởi Microsoft.</p>
           {tach}{bang}{form}

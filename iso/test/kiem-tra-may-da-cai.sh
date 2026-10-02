@@ -80,7 +80,7 @@ for p in $links; do
 done
 kt "mo duoc ca $so trang co link (hong:${hong:- khong})" test -z "$hong"
 kt "trang chu co nut Home/menu"           sh -c "curl -s -H 'X-ConsolePi-Local: 1' http://127.0.0.1:8880/deployos/caidat | grep -q 'href=\"/\"'"
-kt "1.7.5: trang File boot co khung WinPE rieng"  sh -c "curl -s -H 'X-ConsolePi-Local: 1' http://127.0.0.1:8880/deployos/console | grep -q 'WinPE riêng trong menu PXE'"
+kt "1.7.5: trang File boot co khung Boot WinPE"  sh -c "curl -s -H 'X-ConsolePi-Local: 1' http://127.0.0.1:8880/deployos/console | grep -q 'Boot WinPE (menu PXE)'"
 kt "1.7.5: o buoc kich ban bam duoc (data-den)"    sh -c "L=\$(curl -s -i -H 'X-ConsolePi-Local: 1' 'http://127.0.0.1:8880/deployos/wizard/bat-dau?che_do=luu' | sed -n 's/^[Ll]ocation: *//p' | tr -d '\r'); curl -s -H 'X-ConsolePi-Local: 1' \"http://127.0.0.1:8880\${L#http://127.0.0.1:8880}\" | grep -c 'data-den=' | grep -q '^[1-9]'"
 kt "dashboard tra loi qua cong 80"        sh -c "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/ | grep -qE '200|302'"
 kt "khong co traceback trong log web"     khong sh -c "journalctl -u console-pi-dashboard -b | grep -q Traceback"
