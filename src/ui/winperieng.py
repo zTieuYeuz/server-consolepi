@@ -132,11 +132,24 @@ def kiem_wim(p):
                                    "Microsoft lấy từ bộ Windows đã có.")), not co
 
 
-def _bao_dam_bootmgr():
+def _build_wim(p):
+    """So build Windows cua image boot trong file .wim (0 neu khong doc duoc)."""
+    try:
+        r = subprocess.run(["wiminfo", p], capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return 0
+    bd = re.findall(r"^Build:\s*(\d+)", r.stdout, re.M)
+    if not bd:
+        bd = re.findall(r"10\.0\.(\d{5})", r.stdout)
+    return int(bd[-1]) if bd else 0
+
+
+def _bao_dam_bootmgr(build_pe=0):
     """
     (ok, thong_bao). Bao dam DIR_BOOTMGR co bootmgr.exe (BIOS) + bootmgfw.efi (UEFI,
     ky Microsoft - chay ca Secure Boot), lay tu boot.wim cua bo Windows co BUILD MOI
-    NHAT trong "Tai nguyen > He dieu hanh". Chi lam 1 lan; xoa thu muc de lay lai.
+    NHAT trong "Tai nguyen > He dieu hanh"; may chua co bo Windows nao thi tai tu kho trung
+    tam (kho tach tu ISO Windows cua kho). Chi lam 1 lan; xoa thu muc de lay lai.
     """
     if all(os.path.isfile(os.path.join(DIR_BOOTMGR, f)) for f in FILE_MUON):
         return True, ""
@@ -152,7 +165,12 @@ def _bao_dam_bootmgr():
         bi = re.search(r"^Boot Index:\s*(\d+)", r.stdout, re.M)
         bd = re.findall(r"^Build:\s*(\d+)", r.stdout, re.M)
         ung.append((int(bd[-1]) if bd else 0, p, int(bi.group(1)) if bi and bi.group(1) != "0" else 1))
-    for _bd, p, bi in sorted(ung, reverse=True):
+    # 1. bo Windows co tren may - chon build GAN build WinPE nhat (lab 02/10/2026: bootmgr
+    #    26H2 + WinPE 22000 -> Secure Boot 0xc000000f; bootmgr 19041 chay ca 3 kieu may).
+    #    Khong biet build WinPE thi lay ban moi nhat nhu truoc.
+    thu_tu = (sorted(ung, key=lambda x: abs(x[0] - build_pe)) if build_pe
+              else sorted(ung, reverse=True))
+    for _bd, p, bi in thu_tu:
         tam = DIR_BOOTMGR + ".tam"
         shutil.rmtree(tam, ignore_errors=True)
         os.makedirs(tam)
@@ -166,8 +184,37 @@ def _bao_dam_bootmgr():
             os.replace(tam, DIR_BOOTMGR)
             return True, ""
         shutil.rmtree(tam, ignore_errors=True)
-    return False, ("File WinPE này không kèm bootmgr (kiểu WDS). Cần ít nhất 1 bộ Windows có "
-                   "boot.wim ở \"Tài nguyên > Hệ điều hành\" để lấy bootmgr ký Microsoft.")
+    # 2. May chua co bo Windows nao (anh Thoai 02/10/2026: "tai NASIBOOT ve thi bao phai co
+    #    1 Windows san") -> lay tu KHO TRUNG TAM (kho tu tach tu ISO Windows tren kho).
+    #    Khong nhung san vao ISO: file cua Microsoft, khong duoc phan phoi kem san pham.
+    loi_kho = "máy chưa kết nối kho trung tâm"
+    try:
+        from . import khotrungtam as _kt
+        import zipfile
+        ch = _kt.doc_cauhinh()
+        if ch:
+            tam = DIR_BOOTMGR + ".tam"
+            shutil.rmtree(tam, ignore_errors=True)
+            os.makedirs(tam)
+            ok, loi_kho = _kt.tai_bo_khoi_dong(ch, os.path.join(tam, "bo.zip"))
+            if ok:
+                with zipfile.ZipFile(os.path.join(tam, "bo.zip")) as z:
+                    for f in FILE_MUON:              # CHI lay dung 6 ten biet truoc
+                        dich = os.path.join(tam, *f.split("/"))
+                        os.makedirs(os.path.dirname(dich), exist_ok=True)
+                        with z.open(f) as nguon, open(dich, "wb") as ra:
+                            shutil.copyfileobj(nguon, ra)
+                os.remove(os.path.join(tam, "bo.zip"))
+                shutil.rmtree(DIR_BOOTMGR, ignore_errors=True)
+                os.replace(tam, DIR_BOOTMGR)
+                return True, ""
+            shutil.rmtree(tam, ignore_errors=True)
+    except Exception as e:
+        loi_kho = f"{type(e).__name__}: {e}"
+        shutil.rmtree(DIR_BOOTMGR + ".tam", ignore_errors=True)
+    return False, ("File WinPE này không kèm bootmgr (kiểu WDS). Cần 1 bộ Windows có boot.wim "
+                   "ở \"Tài nguyên > Hệ điều hành\", hoặc kết nối kho trung tâm có ISO Windows "
+                   f"(lần thử kho: {loi_kho}).")
 
 
 # ------------------------------------------------------------- them / bo
@@ -185,7 +232,7 @@ def them(file, ten):
     if not ok:
         return False, tb
     if can_muon:
-        ok, loi = _bao_dam_bootmgr()
+        ok, loi = _bao_dam_bootmgr(_build_wim(p))
         if not ok:
             return False, loi
     _them_vao_ds(os.path.basename(p), ten, can_muon)
@@ -299,7 +346,7 @@ def _tach(iso, ten):
         if not ok:
             raise RuntimeError(f'"{trong}": {tb}')
         if can_muon:
-            ok, loi = _bao_dam_bootmgr()
+            ok, loi = _bao_dam_bootmgr(_build_wim(ra))
             if not ok:
                 raise RuntimeError(loi)
         os.replace(ra, dich)

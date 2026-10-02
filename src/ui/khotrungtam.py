@@ -187,6 +187,27 @@ def danh_sach(cauhinh):
     return True, d["muc"]
 
 
+def tai_bo_khoi_dong(cauhinh, duong_dich):
+    """
+    Tai bootmgr + BCD + boot.sdi (zip) kho tu tach tu ISO Windows tren kho - cho WinPE
+    rut gon kieu WDS khi may chua co bo Windows nao (xem ui/winperieng._bao_dam_bootmgr).
+    (ok, loi).
+    """
+    try:
+        r = requests.get(f"{cauhinh['url']}/api/bo-khoi-dong", headers=_headers(cauhinh),
+                         timeout=180)
+        if r.status_code != 200:
+            try:
+                return False, r.json().get("loi") or f"HTTP {r.status_code}"
+            except ValueError:
+                return False, f"HTTP {r.status_code}"
+        with open(duong_dich, "wb") as f:
+            f.write(r.content)
+        return True, ""
+    except requests.RequestException as e:
+        return False, f"Không tới được kho ({type(e).__name__})."
+
+
 def _bam_file(duong, dung=None):
     """SHA-256 cua file (doc khoi 8 MB). dung() True -> huy, tra None."""
     h = hashlib.sha256()

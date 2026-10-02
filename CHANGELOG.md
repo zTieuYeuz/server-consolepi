@@ -19,6 +19,13 @@
   NASIBOOT cua anh Thoai): tu muon bootmgr.exe + bootmgfw.efi (ky Microsoft) + BCD/boot.sdi
   (EFI va PCAT) tu boot.wim cua bo Windows co build moi nhat trong Tai nguyen > He dieu hanh,
   giong WDS tu cap. Lab: W11x64.wim len desktop tren BIOS, UEFI va UEFI + Secure Boot.
+- May CHUA co bo Windows nao (anh Thoai 02/10/2026: tai NASIBOOT tu kho thi bao "can 1 bo
+  Windows san"): tu lay bootmgr/BCD/boot.sdi tu KHO TRUNG TAM - kho tach tu ISO Windows dang
+  co tren kho (/api/bo-khoi-dong, kho-console-pi/src/bokhoidong.py). Khong nhung vao ISO
+  Console System vi la file cua Microsoft (khong duoc phan phoi kem san pham).
+  Chon bootmgr CUNG DOI voi WinPE (build gan nhat): lab - bootmgr 26H2 + WinPE 22000 bi
+  Secure Boot chan (0xc000000f), bootmgr Windows 10 19041 chay ca BIOS/UEFI/UEFI+SB. Kho uu
+  tien bo co dinh co-dinh.zip (bo 19041 da test) neu co.
 - Trinh tao/sua kich ban: bam thang vao o buoc bat ky tren thanh tien do de nhay toi do, LUON nhay (phan da nhap van luu). Buoc con thieu/sai chi nhac o trang dich; buoc Tong ket liet ke cho can sua (kem link toi dung buoc) va chan luu cho toi khi du.
 
 ## 1.7.4
