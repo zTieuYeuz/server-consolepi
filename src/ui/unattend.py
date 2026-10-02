@@ -631,24 +631,31 @@ def _muc_kiem_tra(d):
 
 def _danh_sach_buoc_nguoi_dung(d):
     """
-    Danh sach cac buoc se chay SAU KHI dang nhap, dang (ten_hien_thi, lenh).
+    Danh sach cac buoc se chay SAU KHI dang nhap, dang (ten_hien_thi, lenh, he_thong).
 
     Ten hien thi la thu nguoi dung doc tren bang tien trinh, nen phai la
     tieng Viet de hieu ("Cài Google Chrome") chu khong phai dong lenh tho.
+
+    he_thong=True (buoc CAI phan mem / ung dung): chay ngam bang quyen SYSTEM (tac vu
+    hen gio) trong khi bang tien trinh cho. LOI THAT (lab 03/10/2026, bo che do "cai cho
+    May"): TeamViewer_Setup /S chay TRONG phien nguoi dung cai xong roi tu mo TeamViewer
+    va KHONG thoat -> buoc "dang chay" toi luc qua gio (45 phut). Chay bang SYSTEM (nhu
+    che do May cu, da chay on) thi khong co man hinh de mo, bo cai thoat gon.
+    Tuy chon / script / lenh them van chay trong phien nguoi dung (can HKCU).
     """
     ra = []
 
     for nhan, lenh in zip(_nhan_tuy_chon(d, "nguoi_dung"),
                           _lenh_theo_pha(d, "nguoi_dung")):
-        ra.append((nhan, lenh))
+        ra.append((nhan, lenh, False))
 
     if d.get("go_app"):
         for lenh in _lenh_go_app(d):
-            ra.append((f"Gỡ {len(d['go_app'])} ứng dụng kèm sẵn", lenh))
+            ra.append((f"Gỡ {len(d['go_app'])} ứng dụng kèm sẵn", lenh, False))
 
     for a in _d.chuan_hoa_apps(d.get("apps")):
         if a.get("dich") == "nguoi_dung":
-            ra.append((f"Cài {a['ten']}", _lenh_cai_app(a)))
+            ra.append((f"Cài {a['ten']}", _lenh_cai_app(a), True))
 
     for u in _d.chuan_hoa_ungdung(d.get("ungdung")):
         if u.get("dich") != "nguoi_dung":
@@ -656,15 +663,15 @@ def _danh_sach_buoc_nguoi_dung(d):
         lenh = _lenh_cai_ungdung(u)
         if lenh:
             o = _d.lay_ungdung(u["id"]) or {}
-            ra.append((f"Cài {o.get('ten_hien_thi') or u['id']}", lenh))
+            ra.append((f"Cài {o.get('ten_hien_thi') or u['id']}", lenh, True))
 
     for ten in (d.get("scripts") or []):
-        ra.append((f"Chạy script {ten}", _lenh_mot_script(ten)))
+        ra.append((f"Chạy script {ten}", _lenh_mot_script(ten), False))
 
     for dong in (d.get("lenh_them") or "").splitlines():
         dong = dong.strip()
         if dong and not dong.startswith("#"):
-            ra.append(("Lệnh thêm", dong))
+            ra.append(("Lệnh thêm", dong, False))
 
     return ra
 
@@ -723,8 +730,9 @@ def sinh_script_tien_trinh(d, dia_chi_pi):
     """
     buoc = _danh_sach_buoc_nguoi_dung(d)
     dong = []
-    for ten, lenh in buoc:
-        dong.append(f"  @{{ Ten={_ps_chuoi(ten)}; Lenh={_ps_chuoi(lenh)} }}")
+    for ten, lenh, he_thong in buoc:
+        dong.append(f"  @{{ Ten={_ps_chuoi(ten)}; Lenh={_ps_chuoi(lenh)}; "
+                    f"HeThong=${'true' if he_thong else 'false'} }}")
     mang_buoc = ",\n".join(dong) if dong else ""
 
     ten_kb = d.get("tu_kichban") or d.get("ten_kichban") or "(khong ten)"
@@ -882,6 +890,87 @@ foreach ($b in $Buoc) {{
     $t0 = Get-Date
     $tt = 'xong'; $ghiChu = ''
     try {{
+      if ($b.HeThong) {{
+        # Buoc CAI phan mem: chay ngam bang SYSTEM qua tac vu hen gio, cho file ma
+        # thoat (xem _danh_sach_buoc_nguoi_dung: bo cai tu mo app trong phien nguoi
+        # dung thi khong bao gio thoat). ">file echo" (khong phai "echo 0>file": 0> la
+        # chuyen huong luong 0 cua cmd).
+        $fCmd = Join-Path $ThuMuc "buoc-$i.cmd"; $fMa = Join-Path $ThuMuc "buoc-$i.ma"
+        Remove-Item $fMa -Force -EA SilentlyContinue
+        Set-Content -Path $fCmd -Encoding Default -Value ("@echo off`r`n" + $b.Lenh +
+            "`r`n>""$fMa"" echo %ERRORLEVEL%")
+        $tn = "ConsolePi-Cai-$i"
+        $act = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument ('/c "' + $fCmd + '"')
+        $pri = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+        $set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+               -ExecutionTimeLimit (New-TimeSpan -Seconds ($HanGioGiay + 120))
+        Register-ScheduledTask -TaskName $tn -Action $act -Principal $pri -Settings $set -Force | Out-Null
+        # Danh sach phan mem da cai TRUOC buoc nay (de nhan ra phan mem moi)
+        $kUn = @('HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+                 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall')
+        $unTruoc = @($kUn | ForEach-Object {{ Get-ChildItem $_ -EA SilentlyContinue }} | ForEach-Object {{ $_.PSChildName }})
+        Start-ScheduledTask -TaskName $tn
+        $lan = 0; $sigCu = -1; $tDung = Get-Date; $daDong = $false
+        while (-not (Test-Path $fMa)) {{
+            Start-Sleep -Milliseconds 300
+            $gi = [int]((Get-Date) - $t0).TotalSeconds
+            $lv.Items[$i].SubItems[3].Text = "$gi"
+            [System.Windows.Forms.Application]::DoEvents()
+            if ($gi -ge $HanGioGiay) {{
+                Stop-ScheduledTask -TaskName $tn -EA SilentlyContinue
+                $tt = 'qua_gio'
+                $ghiChu = "Quá $HanGioGiay giây — đã dừng bước này để đi tiếp"
+                break
+            }}
+            # BO CAI KHONG TU THOAT (lab 03/10/2026: TeamViewer_Setup /S khi da co nguoi
+            # dang nhap cai xong, mo TeamViewer roi DUNG DO mai, ca khi chay bang SYSTEM).
+            # Coi la XONG khi CA HAI: (1) Windows da ghi nhan phan mem MOI (khoa Uninstall
+            # moi) va (2) chinh bo cai dung yen 60 giay (khong CPU, khong doc/ghi) - chi
+            # xay ra khi da cai xong that, khong dong nham bo cai dang chay do.
+            if ($lan % 15 -eq 0 -and $gi -ge 60) {{
+                $pCmd = @(Get-CimInstance Win32_Process -Filter "Name='cmd.exe'" -EA SilentlyContinue |
+                          Where-Object {{ $_.CommandLine -like "*buoc-$i.cmd*" }})
+                $pCai = @()
+                foreach ($c in $pCmd) {{
+                    $pCai += @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($c.ProcessId)" -EA SilentlyContinue)
+                }}
+                $sig = 0
+                foreach ($q in $pCai) {{
+                    $sig += [double]$q.KernelModeTime + [double]$q.UserModeTime +
+                            [double]$q.ReadTransferCount + [double]$q.WriteTransferCount + [double]$q.OtherTransferCount
+                }}
+                if ($sig -ne $sigCu) {{ $sigCu = $sig; $tDung = Get-Date }}
+                elseif ($pCai.Count -gt 0 -and ((Get-Date) - $tDung).TotalSeconds -ge 60) {{
+                    $unMoi = @($kUn | ForEach-Object {{ Get-ChildItem $_ -EA SilentlyContinue }} |
+                               Where-Object {{ $unTruoc -notcontains $_.PSChildName }})
+                    if ($unMoi.Count -gt 0) {{
+                        # Dong cmd TRUOC (khong thi cmd kip ghi ma thoat cua bo cai bi dong
+                        # = 1 -> bao nham "loi", lab 03/10/2026), roi moi dong bo cai
+                        foreach ($c in $pCmd) {{ & taskkill /PID $c.ProcessId /F 2>&1 | Out-Null }}
+                        foreach ($q in $pCai) {{ & taskkill /PID $q.ProcessId /F 2>&1 | Out-Null }}
+                        $daDong = $true
+                        Stop-ScheduledTask -TaskName $tn -EA SilentlyContinue
+                        $ghiChu = 'Đã cài xong (bộ cài không tự thoát - đã đóng bộ cài)'
+                        break
+                    }}
+                }}
+            }}
+            # Tac vu ket thuc ma khong ghi ma (cmd bi giet...) -> loi, khong cho mai
+            $lan++
+            if ($lan % 10 -eq 0 -and $gi -gt 5 -and
+                (Get-ScheduledTask -TaskName $tn -EA SilentlyContinue).State -ne 'Running') {{
+                Start-Sleep -Milliseconds 800
+                if (-not (Test-Path $fMa)) {{ $tt = 'loi'; $ghiChu = 'Bộ cài dừng bất thường'; break }}
+            }}
+        }}
+        if ($tt -eq 'xong' -and -not $daDong -and (Test-Path $fMa)) {{
+            $ma = 0; [int]::TryParse(((Get-Content $fMa -Raw -EA SilentlyContinue) + '').Trim(), [ref]$ma) | Out-Null
+            # 3010 = cai xong, can khoi dong lai (msiexec) - van tinh la xong
+            if ($ma -ne 0 -and $ma -ne 3010) {{ $tt = 'loi'; $ghiChu = "Mã lỗi: $ma" }}
+        }}
+        Unregister-ScheduledTask -TaskName $tn -Confirm:$false -EA SilentlyContinue
+        Remove-Item $fCmd, $fMa -Force -EA SilentlyContinue
+      }} else {{
         $p = Start-Process -FilePath 'cmd.exe' `
              -ArgumentList '/c', $b.Lenh -PassThru -WindowStyle Hidden
         # Vong cho NGAN + DoEvents: giu cua so song va dem giay. Neu dung
@@ -902,6 +991,7 @@ foreach ($b in $Buoc) {{
         if ($tt -eq 'xong' -and $p.ExitCode -ne 0) {{
             $tt = 'loi'; $ghiChu = "Mã lỗi: $($p.ExitCode)"
         }}
+      }}
     }} catch {{
         $tt = 'loi'; $ghiChu = $_.Exception.Message
     }}
@@ -2495,12 +2585,6 @@ def _lenh_cai_app(a):
     return f'"{duong}" {tham_so}'.strip()
 
 
-def _lenh_app_theo_dich(d, dich):
-    """Lenh cai cac phan mem da chon co dung dich (may / nguoi_dung)."""
-    return [_lenh_cai_app(a) for a in _d.chuan_hoa_apps(d.get("apps"))
-            if a["dich"] == dich]
-
-
 THU_MUC_UNGDUNG_TREN_MAY = f"{THU_MUC_TREN_MAY}\\ungdung"
 
 
@@ -2521,20 +2605,6 @@ def _lenh_cai_ungdung(u):
         return None
     thu_muc = f"{THU_MUC_UNGDUNG_TREN_MAY}\\{u['id']}"
     return f'cd /d "{thu_muc}" && {lenh_cai}'
-
-
-def _lenh_ungdung_theo_dich(d, dich):
-    """Lenh cai cac ung dung (thu muc) da chon co dung dich (may/nguoi_dung).
-    Bo qua am tham ung dung nao chua dat lenh cai - da canh bao ngay tren
-    giao dien buoc 5, khong lam vo ca chuoi trien khai vi 1 muc thieu."""
-    ra = []
-    for u in _d.chuan_hoa_ungdung(d.get("ungdung")):
-        if u["dich"] != dich:
-            continue
-        lenh = _lenh_cai_ungdung(u)
-        if lenh:
-            ra.append(lenh)
-    return ra
 
 
 def _lenh_mot_script(ten):
@@ -2583,15 +2653,14 @@ def _lenh_bat_administrator(d):
 
 def _khoi_runsync_specialize(d):
     """
-    Component Microsoft-Windows-Deployment chay cac lenh cap MAY:
-    tuy chon Windows + cai cac phan mem chon "cai cho May" (chay voi
-    quyen he thong, TRUOC khi co ai dang nhap).
+    Component Microsoft-Windows-Deployment chay cac lenh cap MAY: tuy chon Windows
+    (quyen he thong, TRUOC khi co ai dang nhap). Phan mem KHONG cai o day nua - tu
+    02/10/2026 moi phan mem cai o phien dang nhap dau (co bang tien trinh).
     """
     lenh = (_lenh_bat_administrator(d)
             + ([f"powershell -NoProfile -ExecutionPolicy Bypass -File {DUONG_PS_GO_APP}"]
                if _ds_go_app(d) else [])
-            + _lenh_theo_pha(d, "may") + _lenh_app_theo_dich(d, "may")
-            + _lenh_ungdung_theo_dich(d, "may"))
+            + _lenh_theo_pha(d, "may"))
     if not lenh:
         return ""
     muc = "".join(f"""

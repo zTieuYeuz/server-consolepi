@@ -2,6 +2,14 @@
 
 ## 1.7.5 (01/10/2026)
 
+- Phan mem (anh Thoai 02/10/2026): MOI phan mem / ung dung nhieu file cai khi DANG NHAP LAN
+  DAU - bo che do "Cai cho: May" (truoc dang nhap, quyen he thong, khong co bang tien trinh).
+  Luc cai hien bang tien trinh tren may + trang Tien trinh cua Console System. Kich ban cu
+  luu "may" tu chuyen sang cai khi dang nhap, khong can sua.
+  Moi bo cai chay ngam bang SYSTEM (tac vu hen gio) trong luc bang tien trinh cho. Bo cai
+  KHONG tu thoat (lab: TeamViewer_Setup /S khi da co nguoi dang nhap cai xong roi dung mai)
+  -> coi la xong khi Windows da ghi nhan phan mem moi (khoa Uninstall) VA bo cai dung yen
+  60 giay; dong bo cai, di tiep. Ma 3010 (can khoi dong lai) tinh la xong.
 - Menu PXE con 2 dong (anh Thoai 02/10/2026: "chi can 1 dong WinPE"): **1. Install Windows**,
   **2. Boot WinPE** (WinPE tu them). Bo muc "Win PE - cuu ho" (boot.wim cua bo cai + cua so lenh)
   va file startnet.cmd/winpeshl.ini cua no.

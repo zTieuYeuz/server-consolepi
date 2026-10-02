@@ -536,20 +536,19 @@ def tham_so_mac_dinh_app(ten):
 def chuan_hoa_apps(apps):
     """
     Dua danh sach phan mem cua kich ban ve dang chuan:
-        [{"ten": "chrome.msi", "dich": "may" | "nguoi_dung"}, ...]
+        [{"ten": "chrome.msi", "dich": "nguoi_dung"}, ...]
 
-    Kich ban CU luu dang danh sach TEN FILE (chuoi) - van doc duoc binh
-    thuong (mac dinh coi la cai cap may), khong lam hong kich ban da luu.
+    02/10/2026 anh Thoai: "tat ca phan mem khi dang nhap lan dau moi bat dau cai, bo
+    che do cai theo may" - MOI phan mem cai o phien dang nhap dau (co bang tien trinh
+    tren may + trang Tien trinh cua Console System, xem unattend.sinh_script_tien_trinh).
+    Kich ban CU luu "may" (hoac dang chuoi ten file) van doc duoc, tu chuyen sang
+    "nguoi_dung" - khong lam hong kich ban da luu.
     """
     ra = []
     for a in apps or []:
-        if isinstance(a, str):
-            ra.append({"ten": a, "dich": "may"})
-        elif isinstance(a, dict) and a.get("ten"):
-            ra.append({
-                "ten": a["ten"],
-                "dich": "nguoi_dung" if a.get("dich") == "nguoi_dung" else "may",
-            })
+        ten = a if isinstance(a, str) else (a.get("ten") if isinstance(a, dict) else None)
+        if ten:
+            ra.append({"ten": ten, "dich": "nguoi_dung"})
     return ra
 
 
@@ -762,15 +761,10 @@ def xoa_muc_trong_ungdung(ung_id, ten_muc):
 
 def chuan_hoa_ungdung(ds):
     """Dua danh sach ung dung (thu muc) cua kich ban ve dang chuan:
-        [{"id": "office365", "dich": "may" | "nguoi_dung"}, ...]"""
-    ra = []
-    for a in ds or []:
-        if isinstance(a, dict) and a.get("id"):
-            ra.append({
-                "id": a["id"],
-                "dich": "nguoi_dung" if a.get("dich") == "nguoi_dung" else "may",
-            })
-    return ra
+        [{"id": "office365", "dich": "nguoi_dung"}, ...] - luon cai o phien dang nhap
+        dau, giong chuan_hoa_apps (bo che do cai theo may 02/10/2026)."""
+    return [{"id": a["id"], "dich": "nguoi_dung"}
+            for a in ds or [] if isinstance(a, dict) and a.get("id")]
 
 
 # --------------------------------------- he dieu hanh (mo hinh MDT: "Operating Systems")
@@ -2125,23 +2119,10 @@ def register_deployos(app):
                 d["phan_vung"] = pv
 
         elif buoc == 5:
-            # Moi phan mem duoc chon kem 1 lua chon "cai cho ai": cap MAY
-            # (moi nguoi dung deu dung duoc, chay truoc khi co ai dang
-            # nhap) hay cap NGUOI DUNG (chay trong phien dang nhap dau).
-            d["apps"] = [
-                {"ten": ten,
-                 "dich": ("nguoi_dung"
-                          if form.get(f"dich_{ten}") == "nguoi_dung" else "may")}
-                for ten in form.getlist("app")
-            ]
-            # Ung dung kieu thu muc (mo hinh MDT) - xem giai thich trong
-            # danh_sach_ungdung() o deployos.py.
-            d["ungdung"] = [
-                {"id": uid,
-                 "dich": ("nguoi_dung"
-                          if form.get(f"dich_ud_{uid}") == "nguoi_dung" else "may")}
-                for uid in form.getlist("ungdung")
-            ]
+            # Moi phan mem/ung dung cai o phien dang nhap DAU (xem chuan_hoa_apps).
+            d["apps"] = chuan_hoa_apps(form.getlist("app"))
+            # Ung dung kieu thu muc (mo hinh MDT) - xem danh_sach_ungdung().
+            d["ungdung"] = chuan_hoa_ungdung([{"id": uid} for uid in form.getlist("ungdung")])
 
         elif buoc == 6:
             d["scripts"] = form.getlist("script")
@@ -2529,8 +2510,7 @@ def register_deployos(app):
                 Bỏ qua bước này cũng được - lúc đó máy chỉ cài OS, không cài
                 thêm phần mềm.</div>"""
             else:
-                da_chon = {a["ten"]: a["dich"]
-                           for a in chuan_hoa_apps(d.get("apps"))}
+                da_chon = {a["ten"] for a in chuan_hoa_apps(d.get("apps"))}
                 o = ""
                 for a in ds:
                     ch = " checked" if a["ten"] in da_chon else ""
@@ -2539,39 +2519,20 @@ def register_deployos(app):
                           else '<span style="color:#f59e0b;">chưa điền tham số '
                                'cài im lặng - bộ cài có thể hiện giao diện và '
                                'làm treo quá trình cài</span>')
-                    dich = da_chon.get(a["ten"], "may")
                     o += f"""
                     <label class="chon">
                       <input type="checkbox" name="app" value="{_esc(a['ten'])}"{ch}>
                       <span class="t">{_esc(a['ten'])}</span>
                       <div class="d">{co_kich_thuoc(a['cd'])} &middot; tham so: {ts}</div>
-                      <div class="d" style="margin-top:6px;">
-                        Cài cho:
-                        <select name="dich_{_esc(a['ten'])}"
-                                style="width:auto;display:inline-block;padding:3px 6px;">
-                          <option value="may"{' selected' if dich == 'may' else ''}
-                            >Máy (mọi người dùng)</option>
-                          <option value="nguoi_dung"{' selected' if dich == 'nguoi_dung' else ''}
-                            >Chỉ người dùng đăng nhập đầu</option>
-                        </select>
-                      </div>
                     </label>"""
                 than = f"""
                 <div class="card"><h3>Chọn phần mềm sẽ cài</h3>{o}</div>
                 <div class="card">
-                  <h3>Cài cho "Máy" và "Người dùng" khác nhau chỗ nào</h3>
-                  <table class="tt-bang">
-                    <tr><td style="width:150px;">Máy</td>
-                        <td>Chạy TRƯỚC khi có ai đăng nhập, với quyền hệ thống.
-                        Mọi người dùng trên máy đều dùng được phần mềm. Hợp
-                        với .msi và các bộ cài im lặng. <strong>Nếu bộ cài đòi
-                        hiện giao diện thì sẽ làm treo</strong> - lúc đó chọn
-                        mục dưới.</td></tr>
-                    <tr><td>Người dùng</td>
-                        <td>Chạy khi người dùng đầu tiên đăng nhập. Hợp với
-                        phần mềm chỉ cài riêng cho 1 người, hoặc bộ cài cần
-                        môi trường đăng nhập đầy đủ.</td></tr>
-                  </table>
+                  <h3>Khi nào phần mềm được cài</h3>
+                  <p style="margin:0;">Mọi phần mềm và ứng dụng được cài <strong>khi
+                    đăng nhập Windows lần đầu</strong>. Lúc đó trên máy hiện <strong>bảng
+                    tiến trình</strong> (đang cài gì, còn bao nhiêu), đồng thời theo dõi
+                    được từ xa ở tab <a href="/deployos/tiendo">Tiến trình</a>.</p>
                   <p style="color:#8b93a1;font-size:12.5px;margin:10px 0 0;">
                     Tham số cài im lặng đặt ở tab
                     <a href="/deployos/console/apps">Phần mềm</a> (theo từng
@@ -2581,12 +2542,10 @@ def register_deployos(app):
             ds_ud = danh_sach_ungdung()
             khoi_ungdung = ""
             if ds_ud:
-                da_chon_ud = {u["id"]: u["dich"]
-                             for u in chuan_hoa_ungdung(d.get("ungdung"))}
+                da_chon_ud = {u["id"] for u in chuan_hoa_ungdung(d.get("ungdung"))}
                 o_ud = ""
                 for u in ds_ud:
                     ch = " checked" if u["id"] in da_chon_ud else ""
-                    dich_ud = da_chon_ud.get(u["id"], "may")
                     lenh = (f'<code>{_esc(u["lenh_cai"])}</code>' if u["lenh_cai"]
                             else '<span style="color:#f59e0b;">chưa đặt lệnh cài - '
                                  'vào Ứng dụng để đặt trước khi dùng</span>')
@@ -2596,16 +2555,6 @@ def register_deployos(app):
                       <span class="t">{_esc(u['ten_hien_thi'])}</span>
                       <div class="d">{u['so_file']} file &middot; {_esc(u['kich_thuoc'])}
                         &middot; lệnh: {lenh}</div>
-                      <div class="d" style="margin-top:6px;">
-                        Cài cho:
-                        <select name="dich_ud_{_esc(u['id'])}"
-                                style="width:auto;display:inline-block;padding:3px 6px;">
-                          <option value="may"{' selected' if dich_ud == 'may' else ''}
-                            >Máy (mọi người dùng)</option>
-                          <option value="nguoi_dung"{' selected' if dich_ud == 'nguoi_dung' else ''}
-                            >Chỉ người dùng đăng nhập đầu</option>
-                        </select>
-                      </div>
                     </label>"""
                 khoi_ungdung = f"""
                 <div class="card">
@@ -2760,21 +2709,13 @@ def register_deployos(app):
                      f"(GPT/MBR tu nhan theo may)<div style='margin-top:6px;'>{dong}</div>")
 
         ds_app = chuan_hoa_apps(d.get("apps"))
-        apps = ("<br>".join(
-            "&bull; " + _esc(a["ten"]) +
-            (" <span style='color:#8b93a1;'>(cài cho máy)</span>"
-             if a["dich"] == "may"
-             else " <span style='color:#8b93a1;'>(chỉ người dùng đầu)</span>")
-            for a in ds_app)
+        apps = ("<br>".join("&bull; " + _esc(a["ten"]) for a in ds_app)
             if ds_app else
             "<span style='color:#8b93a1;'>Không cài thêm phần mềm</span>")
         ds_ud = chuan_hoa_ungdung(d.get("ungdung"))
         ung_dung_html = ("<br>".join(
             "&bull; " + _esc(lay_ungdung(u["id"])["ten_hien_thi"]
-                             if lay_ungdung(u["id"]) else u["id"]) +
-            (" <span style='color:#8b93a1;'>(cài cho máy)</span>"
-             if u["dich"] == "may"
-             else " <span style='color:#8b93a1;'>(chỉ người dùng đầu)</span>")
+                             if lay_ungdung(u["id"]) else u["id"])
             for u in ds_ud)
             if ds_ud else
             "<span style='color:#8b93a1;'>Không có</span>")
@@ -2830,7 +2771,7 @@ def register_deployos(app):
                              if ma_tc in (d.get('tuy_chon') or []))
                  or "<span style='color:#8b93a1;'>Không bật tùy chọn nào</span>")}</td></tr>
             <tr><td>Ổ đĩa</td><td>{o_dia}</td></tr>
-            <tr><td>Phần mềm</td><td>{apps}</td></tr>
+            <tr><td>Phần mềm<br><small style="color:#8b93a1;">cài khi đăng nhập lần đầu</small></td><td>{apps}</td></tr>
             <tr><td>Ứng dụng (nhiều file)</td><td>{ung_dung_html}</td></tr>
             <tr><td>Script sau cài</td><td>{scripts}</td></tr>
             <tr><td>Lệnh thêm</td><td>{lenh}</td></tr>
