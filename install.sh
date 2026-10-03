@@ -498,7 +498,7 @@ if [[ "$WANT_SCREEN" == "yes" ]]; then
     if command -v wlr-randr >/dev/null 2>&1; then
         LIVE_ROT="$(sudo -n -u "$MAIN_USER" env WAYLAND_DISPLAY=wayland-0 \
             XDG_RUNTIME_DIR="/run/user/$(id -u "$MAIN_USER")" wlr-randr 2>/dev/null \
-            | awk '/[Tt]ransform:/ {print $2; exit}')"
+            | awk '/[Tt]ransform:/ {print $2; exit}' || true)"
     fi
     CFG_ROT="$(python3 -c "
 import json
@@ -658,7 +658,8 @@ if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
         useradd --system --no-create-home --shell /usr/sbin/nologin consolepi-deploy
     KHOA_SAMBA="$DATA_DIR/samba-deploy.key"
     if [[ ! -s "$KHOA_SAMBA" ]]; then
-        MAT_KHAU_MOI=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)
+        MAT_KHAU_MOI=$(tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 24 || true)
+        [[ ${#MAT_KHAU_MOI} -eq 24 ]] || die "Khong sinh duoc mat khau Samba"
         old_umask=$(umask); umask 077
         printf '%s' "$MAT_KHAU_MOI" > "$KHOA_SAMBA"
         umask "$old_umask"
@@ -762,6 +763,10 @@ fi
 
 say "Kiem tra sau cai dat"
 FAIL=0
+# Trong chroot (dung anh the nho Pi) dich vu khong chay that -> bo qua kiem tra
+if systemd-detect-virt --chroot -q 2>/dev/null; then
+    ok "Dang trong chroot - bo qua kiem tra dich vu (se chay o lan khoi dong dau)"
+else
 for s in nginx console-pi-dashboard console-pi-term-local console-pi-term-ssh console-pi-term-phien; do
     if systemctl is-active --quiet "$s"; then
         ok "$s: dang chay"
@@ -777,10 +782,11 @@ else
     warn "Dashboard chua phan hoi - xem 'journalctl -u console-pi-dashboard -n 30'"
     FAIL=$((FAIL+1))
 fi
+fi  # het nhanh khong-chroot
 
 # ------------------------------------------------- Ket thuc
-IP_ETH="$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)"
-IP_WLAN="$(ip -4 -o addr show wlan0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)"
+IP_ETH="$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1 || true)"
+IP_WLAN="$(ip -4 -o addr show wlan0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1 || true)"
 HOSTN="$(hostname)"
 
 echo
