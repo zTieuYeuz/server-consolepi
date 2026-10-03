@@ -22,6 +22,7 @@ MUC = [
     ("Bảo trì và nhật ký", "bao-tri", "Nguồn điện, dung lượng, sao lưu, nhật ký"),
     ("Xử lý sự cố", "su-co", "Lỗi hay gặp và cách xử lý"),
     ("Tài liệu kỹ thuật", "ky-thuat", "Cách hoạt động bên trong, giới hạn, sự cố thật"),
+    ("Miễn trừ trách nhiệm", "mien-tru-trach-nhiem", "Phạm vi trách nhiệm và lời cảm ơn"),
 ]
 
 CSS = CSS_GIOI_THIEU + """
