@@ -120,8 +120,9 @@ PKGS_SCREEN=( cage chromium wlr-randr fonts-noto-color-emoji
 #   dosfstools : mkfs.vfat - format FAT32 anh dia do (unattend.py:
 #                dung_dia_gpt_tu_dong)
 #   mtools     : mformat, mcopy - tao dia mem ao chua autounattend.xml
+#   python3-hivex : sua registry offline cua WinPE (ui/winperieng.py - Apps qua mang)
 # Giong danh sach goi cua ban ISO x86 (iso/danh-sach-goi.txt).
-PKGS_DEPLOY=( wimtools 7zip parted dosfstools mtools )
+PKGS_DEPLOY=( wimtools 7zip parted dosfstools mtools python3-hivex )
 
 export DEBIAN_FRONTEND=noninteractive
 

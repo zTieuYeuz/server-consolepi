@@ -41,6 +41,10 @@ DIR_BOOTMGR = os.path.join(_d.DEPLOY_DIR, "winpe-bootmgr")
 # WDS tu cap ca bo nay cho WinPE; W11x64.wim cua anh Thoai thieu het (lab 01/10/2026: thieu
 # bootmgr -> tu choi; them bootmgr -> UEFI bao "\\EFI\\Microsoft\\Boot\\BCD 0xc000000f").
 # EFI/ va PCAT/ = BCD + boot.sdi cua dia cai Windows (Windows\\Boot\\DVD\\...) cho UEFI / BIOS.
+# Thu muc Apps cua WinPE kieu USB cuu ho, phuc vu QUA MANG (share [deploy] cua Samba)
+DIR_APPS = os.path.join(_d.DEPLOY_DIR, "winpe-apps")
+O_APPS = "Y:"
+
 FILE_MUON = ("bootmgr.exe", "bootmgfw.efi", "EFI/BCD", "EFI/boot.sdi", "PCAT/BCD", "PCAT/boot.sdi")
 _KHOA = threading.Lock()
 # Trang thai tach ISO dang chay (chi 1 viec 1 luc)
@@ -77,7 +81,8 @@ def danh_sach():
         p = _d._duong_dan_trong(_d.BOOT_DIR, m["file"])
         if p and os.path.isfile(p):
             ra.append({"ten": m.get("ten") or m["file"], "file": m["file"],
-                       "cd": os.path.getsize(p), "muon_bootmgr": bool(m.get("muon_bootmgr"))})
+                       "cd": os.path.getsize(p), "muon_bootmgr": bool(m.get("muon_bootmgr")),
+                       "apps_mang": m.get("apps_mang") or ""})
     return ra
 
 
@@ -276,10 +281,10 @@ def ten_wim_tu_iso(ten_iso):
     return _d.ten_an_toan(os.path.splitext(os.path.basename(ten_iso))[0] + ".wim")
 
 
-def _them_vao_ds(file, ten, muon=False):
+def _them_vao_ds(file, ten, muon=False, apps_mang=""):
     with _KHOA:
         ds = [m for m in _doc() if m["file"] != file]
-        ds.append({"file": file, "ten": ten, "muon_bootmgr": bool(muon)})
+        ds.append({"file": file, "ten": ten, "muon_bootmgr": bool(muon), "apps_mang": apps_mang})
         _ghi(ds)
 
 
@@ -291,6 +296,11 @@ def bo(file):
         if len(moi) == len(ds):
             return False, "Mục này không có trong menu."
         _ghi(moi)
+        # thu muc Apps qua mang cua muc nay (khong muc nao khac dung) -> xoa cho do ton cho
+        for m in ds:
+            ten_apps = m.get("apps_mang") or ""
+            if m["file"] == file and ten_apps and not any(x.get("apps_mang") == ten_apps for x in moi):
+                shutil.rmtree(os.path.join(DIR_APPS, _d.ten_an_toan(ten_apps)), ignore_errors=True)
     return True, "Đã bỏ khỏi menu PXE (file vẫn còn ở danh sách File WinPE)."
 
 
@@ -323,36 +333,144 @@ def _chon_wim(iso):
     return max(cac, key=lambda x: x[1])[0]
 
 
-def _gop_apps(iso, wim, tam):
+def _co_thu_muc_apps(iso):
+    r = subprocess.run([_7z(), "l", "-slt", iso], capture_output=True, text=True, timeout=120)
+    return any(dong.strip().replace("\\", "/") in ("Path = Apps", "Path = apps", "Path = APPS")
+               for dong in r.stdout.splitlines())
+
+
+def _tach_apps(iso, dich):
+    """7z x thu muc Apps cua ISO ra dich/Apps. Tra ve duong dan thu muc Apps."""
+    shutil.rmtree(dich, ignore_errors=True)
+    os.makedirs(dich)
+    r = subprocess.run([_7z(), "x", "-y", f"-o{dich}", iso, "Apps"],
+                       capture_output=True, text=True, timeout=3600)
+    goc = next((os.path.join(dich, n) for n in os.listdir(dich) if n.lower() == "apps"), None)
+    if r.returncode != 0 or not goc:
+        shutil.rmtree(dich, ignore_errors=True)
+        raise RuntimeError("Không tách được thư mục Apps khỏi ISO (đĩa đầy?).")
+    return goc
+
+
+def _sua_khoi_dong_apps_mang(wim, tam):
+    """
+    Sua registry offline cua WinPE de truoc khi shell cua no chay, gan thu muc Apps tren
+    Console System thanh o Y: (cs-apps.cmd do wimboot chen vao luc boot - xem
+    noi_dung_cs_apps). Tra ve "" neu xong, nguoc lai ly do (de lui ve cach gop).
+      - Setup\\CmdLine "PECMD.EXE MAIN <kich ban>" (Anhdv...) -> PECMD chay kich ban rieng:
+        "EXEC !=" (an cua so, cho xong) cs-khoi-dong.cmd roi "LOAD <kich ban goc>". Lab
+        03/10/2026: chay bang cmd.exe thi cua so den nam de len desktop, dong la WinPE
+        khoi dong lai.
+      - Shell khac -> cmd.exe /c cs-khoi-dong.cmd, cuoi file chay lai CmdLine goc.
+      - LmCompatibilityLevel = 3 (NTLMv2): Anhdv dat 1 (NTLMv1) -> Samba "ntlmv2-only"
+        tu choi, net use bao "System error 86 - sai mat khau" du mat khau dung (lab).
+    """
+    try:
+        import hivex
+    except ImportError:
+        return "thiếu gói python3-hivex"
+    r = subprocess.run(["wimlib-imagex", "extract", wim, "1", "/Windows/System32/config/SYSTEM",
+                        f"--dest-dir={tam}", "--no-acls"], capture_output=True, text=True, timeout=300)
+    hv = os.path.join(tam, "SYSTEM")
+    if r.returncode != 0 or not os.path.isfile(hv):
+        return "không đọc được registry của WinPE"
+    h = hivex.Hivex(hv, write=True)
+    setup = h.node_get_child(h.root(), "Setup")
+    if not setup:
+        return "WinPE không có khoá Setup"
+    goc = next((h.value_string(v) for v in h.node_values(setup) if h.value_key(v) == "CmdLine"), "")
+    if not goc:
+        return "WinPE không có Setup\\CmdLine"
+    sys32 = "X:\\Windows\\System32"
+    cmd = ["@echo off", f"if exist {sys32}\\cs-apps.cmd call {sys32}\\cs-apps.cmd"]
+    m = re.match(r"^\s*\"?(?:[^\"\s]*\\)?pecmd(?:\.exe)?\"?\s+main\s+(.+)$", goc, re.I)
+    them = {}
+    if m:
+        moi = f"PECMD.EXE MAIN {sys32}\\cs-khoi-dong.wcs"
+        them["cs-khoi-dong.wcs"] = f"EXEC !=cmd.exe /c {sys32}\\cs-khoi-dong.cmd\r\nLOAD {m.group(1).strip()}\r\n"
+    else:
+        moi = f"cmd.exe /c {sys32}\\cs-khoi-dong.cmd"
+        cmd.append(goc)
+    them["cs-khoi-dong.cmd"] = "\r\n".join(cmd) + "\r\n"
+    h.node_set_value(setup, {"key": "CmdLine", "t": 1, "value": (moi + "\0").encode("utf-16-le")})
+    sel = h.node_get_child(h.root(), "Select")
+    so = 1
+    if sel:
+        v = next((v for v in h.node_values(sel) if h.value_key(v) == "Current"), None)
+        if v:
+            so = int.from_bytes(h.value_value(v)[1][:4], "little") or 1
+    lsa = h.root()
+    for phan in (f"ControlSet{so:03d}", "Control", "Lsa"):
+        lsa = h.node_get_child(lsa, phan) if lsa else None
+    if lsa:
+        h.node_set_value(lsa, {"key": "LmCompatibilityLevel", "t": 4, "value": (3).to_bytes(4, "little")})
+    h.commit(None)
+    lenh = [f"add {hv} /Windows/System32/config/SYSTEM"]
+    for ten, nd in them.items():
+        f = os.path.join(tam, ten)
+        with open(f, "w", newline="") as fh:
+            fh.write(nd)
+        lenh.append(f"add {f} /Windows/System32/{ten}")
+    r = subprocess.run(["wimlib-imagex", "update", wim, "1"], input="\n".join(lenh) + "\n",
+                       capture_output=True, text=True, timeout=1800)
+    return "" if r.returncode == 0 else "không ghi lại được WinPE: " + (r.stderr or "")[-150:]
+
+
+def noi_dung_cs_apps(file, dia_chi_pi):
+    """
+    cs-apps.cmd chen vao WinPE luc boot (wimboot): bat mang, gan \\\\<Pi>\\deploy\\winpe-apps\\<ten>
+    thanh o Y: (thu lai ~2 phut - card mang can vai giay moi len). None neu muc khong dung
+    Apps qua mang. Mat khau = tai khoan Samba chi doc cua kho trien khai (giong deploy.cmd).
+    """
+    m = next((x for x in danh_sach() if x["file"] == file and x["apps_mang"]), None)
+    if not m:
+        return None
+    from .duongdan import FILE_KHOA_SAMBA
+    try:
+        with open(FILE_KHOA_SAMBA, encoding="utf-8") as f:
+            mk = f.read().strip()
+    except OSError:
+        return None
+    # share [winpe-apps] (config/smb.conf): bat oplock cho may khach giu dem - chay cong cu nhanh hon
+    unc = f"\\\\{dia_chi_pi}\\winpe-apps\\{_d.ten_an_toan(m['apps_mang'])}"
+    dong = ["@echo off", "wpeinit",
+            "for /l %%i in (1,1,40) do (",
+            f'  net use {O_APPS} "{unc}" /user:consolepi-deploy {mk} >nul 2>&1 && goto xong',
+            "  ping -n 3 127.0.0.1 >nul", ")", ":xong"]
+    return "\r\n".join(dong) + "\r\n"
+
+
+def _xu_ly_apps(iso, wim, tam, ten_apps):
     """
     Bo cuu ho kieu USB (Anhdv Boot...) de phan lon cong cu NGOAI file .wim, trong thu muc
     \\Apps o goc USB - WinPE khoi dong xong tu quet cac o tim \\Apps\\ppApps. Boot qua mang
-    khong co USB -> chi con ~10 cong cu (lab 03/10/2026, Anhdv Boot Free 26.2). WinPE do CO
-    quet ca o X:, nen GOP thu muc Apps vao chinh file .wim (X:\\Apps) la du bo ~40 cong cu,
-    khong can USB hay chia se mang (da boot that trong lab). True neu co gop.
-    RAM may khach (lab 03/10/2026, file 1.9 GB): 3 GB va 4 GB -> bootmgr 0xc0000017 "khong du
-    bo nho tao ramdisk"; 5 GB va 6 GB chay. Thuc te can may 8 GB.
+    khong co USB -> chi con ~10 cong cu (lab 03/10/2026, Anhdv Boot Free 26.2).
+    Tra ve "mang" / "gop" / "" (ISO khong co Apps).
+
+    MAC DINH "mang": Apps dat o DIR_APPS/<ten>/Apps, phuc vu qua share [deploy]; WinPE gan
+    thanh o Y: truoc khi shell cua no quet (_sua_khoi_dong_apps_mang). WinPE van nho
+    (~430 MB) -> may khach 3 GB RAM chay du bo ~40 cong cu (lab).
+    LUI VE "gop" (khi khong sua duoc registry): gop Apps vao chinh file .wim (X:\\Apps) - chay
+    khong can mang/Samba nhung file 1.9 GB nap vao RAM: lab 3 GB va 4 GB -> bootmgr
+    0xc0000017 "khong du bo nho tao ramdisk", 5-6 GB chay (thuc te may 8 GB).
     """
-    r = subprocess.run([_7z(), "l", "-slt", iso], capture_output=True, text=True, timeout=120)
-    co = any(dong.strip().replace("\\", "/") in ("Path = Apps", "Path = apps", "Path = APPS")
-             for dong in r.stdout.splitlines())
-    if not co:
-        return False
+    if not _co_thu_muc_apps(iso):
+        return ""
     _TACH["buoc"] = "Tách thư mục công cụ Apps (vài phút)..."
-    thu = os.path.join(tam, "apps")
-    r = subprocess.run([_7z(), "x", "-y", f"-o{thu}", iso, "Apps"],
-                       capture_output=True, text=True, timeout=3600)
-    goc = next((os.path.join(thu, n) for n in os.listdir(thu) if n.lower() == "apps"), None) \
-        if os.path.isdir(thu) else None
-    if r.returncode != 0 or not goc:
-        raise RuntimeError("Không tách được thư mục Apps khỏi ISO (đĩa đầy?).")
+    dich = os.path.join(DIR_APPS, _d.ten_an_toan(ten_apps))
+    goc = _tach_apps(iso, dich)
+    _TACH["buoc"] = "Sửa phần khởi động WinPE để nạp Apps qua mạng..."
+    loi = _sua_khoi_dong_apps_mang(wim, tam)
+    if not loi:
+        return "mang"
+    print(f"[winpe] khong dung duoc Apps qua mang ({loi}) - gop vao .wim", flush=True)
     _TACH["buoc"] = "Gộp thư mục Apps vào WinPE (Pi nén lại, có thể 10-20 phút)..."
     r = subprocess.run(["wimlib-imagex", "update", wim, "1", f"--command=add '{goc}' /Apps"],
                        capture_output=True, text=True, timeout=7200)
-    shutil.rmtree(thu, ignore_errors=True)
+    shutil.rmtree(dich, ignore_errors=True)
     if r.returncode != 0:
         raise RuntimeError("Gộp thư mục Apps vào WinPE thất bại: " + (r.stderr or "")[-200:])
-    return True
+    return "gop"
 
 
 def _bat_dau_tach(iso, ten):
@@ -387,20 +505,23 @@ def _tach(iso, ten):
             ok, loi = _bao_dam_bootmgr(_build_wim(ra))
             if not ok:
                 raise RuntimeError(loi)
-        co_apps = _gop_apps(iso, ra, tam)
+        ten_apps = os.path.splitext(dich_ten)[0]
+        kieu_apps = _xu_ly_apps(iso, ra, tam, ten_apps)
         os.replace(ra, dich)
-        _them_vao_ds(dich_ten, ten, can_muon)
+        _them_vao_ds(dich_ten, ten, can_muon, ten_apps if kieu_apps == "mang" else "")
         try:
             from . import pxe as _pxe
             _pxe.cap_nhat_menu()
         except Exception:
             pass
-        _TACH.update(xong=f'Đã tách "{trong}"'
-                          + (' và gộp thư mục công cụ Apps' if co_apps else '')
-                          + f' thành {dich_ten} ({_d.co_kich_thuoc(os.path.getsize(dich))}), '
-                          f'đưa "{ten}" vào menu PXE. Có thể xóa file ISO gốc để đỡ tốn chỗ.'
-                          + (' Máy khách cần RAM từ 5 GB (thực tế máy 8 GB) - cả bộ công cụ nạp vào RAM.'
-                             if co_apps else ''))
+        _TACH.update(xong=f'Đã tách "{trong}" thành {dich_ten} '
+                          f'({_d.co_kich_thuoc(os.path.getsize(dich))}), đưa "{ten}" vào menu PXE.'
+                          + {"mang": " Thư mục công cụ Apps nạp qua mạng từ Console System "
+                                     "(máy khách từ 3 GB RAM).",
+                             "gop": " Thư mục công cụ Apps đã gộp vào WinPE - máy khách cần "
+                                    "RAM từ 5 GB (thực tế máy 8 GB).",
+                             "": ""}[kieu_apps]
+                          + ' Có thể xóa file ISO gốc để đỡ tốn chỗ.')
     except Exception as e:
         _TACH.update(loi=str(e) or type(e).__name__)
     finally:

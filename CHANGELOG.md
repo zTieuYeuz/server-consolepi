@@ -7,6 +7,15 @@
   Anhdv Boot Free 26.2 boot qua PXE chi ~10 cong cu, gop Apps thi du ~40 (nhu chay tu USB).
   Pi 4 tach + gop ~7 phut, file 1.8 GB. RAM may khach (lab): 3-4 GB loi 0xc0000017 (khong du
   bo nho tao ramdisk), 5-6 GB chay -> thuc te can may 8 GB. Tu 7z/7zz (ISO 32-bit).
+- WinPE kieu USB: MAC DINH nap Apps QUA MANG (thay cho gop vao .wim). Apps dat o deploy/
+  winpe-apps/<ten>, share Samba moi [winpe-apps] (chi doc, bat oplock + sendfile). Sua registry
+  offline cua WinPE (python3-hivex, goi moi): Setup\CmdLine -> PECMD chay an cs-khoi-dong.cmd
+  (gan o Y:) roi LOAD kich ban goc; LmCompatibilityLevel=3 (Anhdv dat 1 = NTLMv1, Samba
+  ntlmv2-only -> net use bao "sai mat khau" du dung). cs-apps.cmd sinh luc boot voi IP Pi that.
+  Lab: may khach 3 GB len du ~40 cong cu, ~105 giay tu luc chon menu. Khong sua duoc registry
+  thi lui ve gop vao .wim (can may 8 GB).
+- PXE: file lon (boot.wim, WinPE...) do nginx gui thang tu dia (X-Accel-Redirect + sendfile,
+  location /_tep_pxe/ internal) thay vi Flask doc file: lab 42 -> 80 MB/s.
 - Tai lieu: trang "Mien tru trach nhiem va loi cam on".
 - Deployment OS > Tai nguyen: tab "File boot" doi ten **WinPE** (anh Thoai 03/10/2026). Chi nhan va
   hien file WinPE (.wim/.iso); file he thong cua PXE (iPXE, wimboot, BCD, autounattend...) tu quan

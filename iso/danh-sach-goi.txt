@@ -55,6 +55,7 @@ openssh-server
 
 # --- Trien khai Windows (Deployment OS) ---
 wimtools
+python3-hivex
 # parted (+ dosfstools): Deployment OS dung anh dia GPT+FAT32 de may khach
 # boot qua mang (ui/unattend.py: dung_dia_gpt_tu_dong - parted mklabel gpt,
 # mkfs.vfat). LOI THAT (24/09/2026, test menu PXE tren ban ISO): ISO THIEU

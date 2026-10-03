@@ -279,6 +279,10 @@ def sinh_script(goc):
                          f"initrd {b}/EFI/BCD BCD || goto loi",
                          f"initrd {b}/EFI/boot.sdi boot.sdi || goto loi",
                          f":wr{i}wim"]
+            if m.get("apps_mang"):
+                # Bo cuu ho kieu USB: lenh gan thu muc Apps tren Console System (Y:) truoc
+                # khi shell cua WinPE quet tim cong cu - xem winperieng._xu_ly_apps
+                dong.append(f"initrd {goc}/winpe-apps/{quote(m['file'])}/cs-apps.cmd cs-apps.cmd || goto loi")
             dong += [f"initrd {goc}/winpe/{quote(m['file'])}/boot.wim boot.wim || goto loi",
                      "boot || goto loi", ""]
     for i, (nhan, thu_muc, os_id) in enumerate(muc):

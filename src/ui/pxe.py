@@ -834,13 +834,31 @@ def _tat_pxe_that():
 
 # ==================================================================== web
 def register_pxe(app):
-    from flask import request, redirect, send_from_directory, abort, flash
+    from flask import request, redirect, send_from_directory, abort, flash, Response
     from .layout import render_page
     from .home import _esc
 
     EXT_PHUC_VU = {".kpxe", ".efi", ".ipxe", ".wim", ".exe", ".img", ".xml",
                    ".iso", "", }
     TEN_PHUC_VU_RIENG = {"wimboot", TEN_BCD_BIOS, TEN_BCD_UEFI}
+
+    _GOC_NGINX = "/var/lib/console-pi/deploy"
+
+    def _gui_tep(thu_muc, ten):
+        """
+        Gui 1 file PXE. Neu file nam trong kho trien khai VA request di qua nginx thi
+        tra X-Accel-Redirect de nginx gui thang tu dia (xem location /_tep_pxe/ trong
+        config/nginx-console-pi.conf) - nhanh hon nhieu so voi Flask tu doc file.
+        """
+        from urllib.parse import quote
+        p = os.path.realpath(os.path.join(thu_muc, ten))
+        goc = os.path.realpath(_d.DEPLOY_DIR)
+        if (goc == os.path.realpath(_GOC_NGINX) and p.startswith(goc + os.sep)
+                and request.headers.get("X-Real-IP")):
+            r = Response(status=200, mimetype="application/octet-stream")
+            r.headers["X-Accel-Redirect"] = "/_tep_pxe/" + quote(os.path.relpath(p, goc))
+            return r
+        return send_from_directory(thu_muc, ten)
 
     @app.route("/deployos/pxeboot/<ten>")
     def deployos_pxeboot_file(ten):
@@ -875,7 +893,7 @@ def register_pxe(app):
         if ten_sach == "menu.ipxe":
             _don_phien_smb_cu(request.remote_addr)
 
-        return send_from_directory(_d.BOOT_DIR, ten_sach)
+        return _gui_tep(_d.BOOT_DIR, ten_sach)
 
     # Ten thu muc/file cua duong wimboot: chi ky tu an toan, khong ".." -
     # cung la ten do pxemenu.ten_thu_muc() sinh ra.
@@ -895,7 +913,7 @@ def register_pxe(app):
             ten = _u.TEN_WIM_DRIVER      # xem pxemenu: ten cuoi URL = ten file
         if not os.path.isfile(os.path.join(goc, ten)):
             abort(404)
-        return send_from_directory(goc, ten)
+        return _gui_tep(goc, ten)
 
     @app.route("/deployos/pxeboot/os/<os_id>/boot.wim")
     def deployos_pxeboot_bootwim(os_id):
@@ -905,7 +923,7 @@ def register_pxe(app):
         p = _d.duong_boot_wim(os_id)
         if not os.path.isfile(p):
             abort(404)
-        return send_from_directory(os.path.dirname(p), os.path.basename(p))
+        return _gui_tep(os.path.dirname(p), os.path.basename(p))
 
     @app.route("/deployos/pxeboot/winpe/<path:ten>/boot.wim")
     def deployos_pxeboot_winpe_rieng(ten):
@@ -918,7 +936,19 @@ def register_pxe(app):
         from . import winperieng as _wr
         if not dang_bat() or ten not in {m["file"] for m in _wr.danh_sach()}:
             abort(404)
-        return send_from_directory(_d.BOOT_DIR, ten)
+        return _gui_tep(_d.BOOT_DIR, ten)
+
+    @app.route("/deployos/pxeboot/winpe-apps/<path:ten>/cs-apps.cmd")
+    def deployos_pxeboot_winpe_apps(ten):
+        """cs-apps.cmd cho WinPE dung Apps qua mang (ui/winperieng.py) - sinh luc boot voi
+        DUNG dia chi Pi ma may khach dang noi toi (che do mang nao cung dung)."""
+        from . import winperieng as _wr
+        if not dang_bat():
+            abort(404)
+        nd = _wr.noi_dung_cs_apps(ten, request.host.split(":")[0])
+        if nd is None:
+            abort(404)
+        return Response(nd, mimetype="text/plain")
 
     @app.route("/deployos/pxeboot/winpe-bootmgr/<path:ten>")
     def deployos_pxeboot_winpe_bootmgr(ten):
@@ -928,7 +958,7 @@ def register_pxe(app):
             abort(404)
         if not os.path.isfile(os.path.join(_wr.DIR_BOOTMGR, ten)):
             abort(404)
-        return send_from_directory(_wr.DIR_BOOTMGR, ten)
+        return _gui_tep(_wr.DIR_BOOTMGR, ten)
 
     def _ve_lai(msg, ok):
         """
