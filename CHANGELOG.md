@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.7.6 (04/10/2026)
+
+- deploy.cmd: sau dism in dong "Da bung xong anh he dieu hanh. Dang chuan bi buoc tiep theo..."
+  (truoc do man hinh dung im sau 100% nhu bi treo - anh Thoai 03/10/2026).
+- Tien trinh: moi lan bao buoc may khach gui kem ten buoc + ten kich ban + tong so buoc. Goi
+  "batdau" co the mat (lan dang nhap dau mang chua san sang, han 4 giay) -> truoc do trang
+  Tien trinh chi hien "Buoc 1, Buoc 2..." va kich ban "?".
+- Bao cao cuoi cai: ListView Dock=Fill phai BringToFront (WinForms dock control cuoi danh
+  sach truoc) - dai xanh tren va thanh nut duoi khong con de len dong dau / dong cuoi.
+- Buoc 5 (Chinh sua cai dat): bo nhom "ap dung cho nguoi dung dang nhap dau tien". 17 tuy chon
+  HKCU -> pha moi "ho_so": ghi vao ho so mac dinh (C:\Users\Default\NTUSER.DAT, HKCU\Software\
+  Classes -> UsrClass.dat) o pass specialize -> moi tai khoan, ca tai khoan tao sau, deu nhan.
+  Giao dien Toi: Windows tu ap chu de sang o lan dang nhap dau -> them 2 muc RunOnce trong ho
+  so mac dinh. Lenh RunSynchronous > 259 ky tu bi chan ngay luc sinh file (Windows Setup bao
+  "answer file is invalid").
+- Bao cao tu kiem them: loi tat Edge, disableLastAccess, Windows.old.
+- Kiosk: kiosk-helper giu 1 tab - tab moi (F1 tro giup Chrome, lien ket target=_blank) bi dong
+  hoac mo trong tab chinh (co nut Home); chan F1/F3/F6/F7/F10/F12 tren moi trang.
+- install.sh: chay duoc trong chroot (dung anh the nho Pi): bo SIGPIPE/pipefail, bo kiem tra
+  dich vu khi o chroot.
+
 ## 1.7.5 (01/10/2026)
 
 - WinPE kieu USB cuu ho (Anhdv Boot...): ISO co thu muc \Apps o goc (cong cu nam NGOAI file

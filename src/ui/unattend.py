@@ -2701,12 +2701,13 @@ def _lenh_ho_so_mac_dinh(d):
     # nhung tai khoan moi = 1). Them 1 lenh RunOnce vao ho so mac dinh -> MOI tai
     # khoan moi tu dat lai ngay sau khi Windows ap chu de xong.
     if "giao_dien_toi" in set(d.get("tuy_chon") or []):
-        k = r"HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
-        ps = ("powershell -NoProfile -WindowStyle Hidden -Command "
-              f"Set-ItemProperty -Path '{k}' -Name AppsUseLightTheme -Value 0;"
-              f"Set-ItemProperty -Path '{k}' -Name SystemUsesLightTheme -Value 0")
-        doi.append(rf'reg add "{_HIVE_HS}\Software\Microsoft\Windows\CurrentVersion\RunOnce"'
-                   rf' /v CPI_GiaoDienToi /t REG_SZ /d "{ps}" /f')
+        # 2 muc RunOnce rieng, lenh reg ngan: <Path> cua RunSynchronousCommand
+        # toi da 259 ky tu (lab 04/10/2026: ban dau 1 lenh powershell 423 ky tu
+        # -> "unattend answer file is invalid" o pass specialize).
+        for i, ten in enumerate(("AppsUseLightTheme", "SystemUsesLightTheme"), 1):
+            doi.append(rf'reg add "{_HIVE_HS}\Software\Microsoft\Windows\CurrentVersion\RunOnce"'
+                       rf' /v CPI_Toi{i} /t REG_SZ /d "reg add HKCU\Software\Microsoft\Windows'
+                       rf'\CurrentVersion\Themes\Personalize /v {ten} /t REG_DWORD /d 0 /f" /f')
     return ([rf'reg load {_HIVE_HS} "C:\Users\Default\NTUSER.DAT"',
              rf'reg load {_HIVE_HS_CLASS} '
              r'"C:\Users\Default\AppData\Local\Microsoft\Windows\UsrClass.dat"']
@@ -2727,6 +2728,10 @@ def _khoi_runsync_specialize(d):
             + _lenh_ho_so_mac_dinh(d))
     if not lenh:
         return ""
+    qua_dai = [c for c in lenh if len("cmd /c " + c) > 259]
+    if qua_dai:
+        raise ValueError("Lenh qua 259 ky tu (Windows Setup se bao unattend loi): "
+                         + qua_dai[0][:80])
     muc = "".join(f"""
         <RunSynchronousCommand wcm:action="add">
           <Order>{i}</Order>
