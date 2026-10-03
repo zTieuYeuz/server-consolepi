@@ -330,6 +330,8 @@ def _gop_apps(iso, wim, tam):
     khong co USB -> chi con ~10 cong cu (lab 03/10/2026, Anhdv Boot Free 26.2). WinPE do CO
     quet ca o X:, nen GOP thu muc Apps vao chinh file .wim (X:\\Apps) la du bo ~40 cong cu,
     khong can USB hay chia se mang (da boot that trong lab). True neu co gop.
+    RAM may khach (lab 03/10/2026, file 1.9 GB): 3 GB va 4 GB -> bootmgr 0xc0000017 "khong du
+    bo nho tao ramdisk"; 5 GB va 6 GB chay. Thuc te can may 8 GB.
     """
     r = subprocess.run([_7z(), "l", "-slt", iso], capture_output=True, text=True, timeout=120)
     co = any(dong.strip().replace("\\", "/") in ("Path = Apps", "Path = apps", "Path = APPS")
@@ -397,7 +399,7 @@ def _tach(iso, ten):
                           + (' và gộp thư mục công cụ Apps' if co_apps else '')
                           + f' thành {dich_ten} ({_d.co_kich_thuoc(os.path.getsize(dich))}), '
                           f'đưa "{ten}" vào menu PXE. Có thể xóa file ISO gốc để đỡ tốn chỗ.'
-                          + (' Máy khách cần RAM từ 4 GB (cả bộ công cụ nạp vào RAM).'
+                          + (' Máy khách cần RAM từ 5 GB (thực tế máy 8 GB) - cả bộ công cụ nạp vào RAM.'
                              if co_apps else ''))
     except Exception as e:
         _TACH.update(loi=str(e) or type(e).__name__)

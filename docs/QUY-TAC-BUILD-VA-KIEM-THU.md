@@ -136,6 +136,9 @@ journalctl -u b-all | grep -E "XONG|THAT BAI|E:"
    `iso/README.md`, `CHANGELOG.md`, `VERSION`. Trong máy không còn tài liệu:
    `src/ui/docs.py` chỉ là trang dẫn link sang console-docs (thêm trang mới thì
    thêm link vào danh sách `MUC` trong file đó).
+   **Mỗi bản ISO mới:** sửa `consolepi-docs/tai-ve.json` (phiên bản, ngày, dung lượng,
+   SHA256 lấy từ `/build/V1/SHA256SUMS.txt`), viết mục mới ở `pages/thay-doi.md`, rồi
+   `python3 build.py`. Ô `link` để anh Thoại tự dán link tải (trống = nút Liên hệ).
 
 Thay đổi chỉ ảnh hưởng Pi (không đụng ISO) vẫn làm bước 4–7, cộng thêm mục 7
 (cập nhật Pi) bên dưới.
