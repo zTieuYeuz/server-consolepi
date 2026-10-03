@@ -2,6 +2,11 @@
 
 ## 1.7.5 (01/10/2026)
 
+- WinPE kieu USB cuu ho (Anhdv Boot...): ISO co thu muc \Apps o goc (cong cu nam NGOAI file
+  .wim, WinPE quet o tim \Apps luc khoi dong) -> tu GOP Apps vao file .wim (X:\Apps). Lab:
+  Anhdv Boot Free 26.2 boot qua PXE chi ~10 cong cu, gop Apps thi du ~40 (nhu chay tu USB).
+  Pi 4 tach + gop ~7 phut, file 1.8 GB, may khach can RAM >= 4 GB. Tu 7z/7zz (ISO 32-bit).
+- Tai lieu: trang "Mien tru trach nhiem va loi cam on".
 - Deployment OS > Tai nguyen: tab "File boot" doi ten **WinPE** (anh Thoai 03/10/2026). Chi nhan va
   hien file WinPE (.wim/.iso); file he thong cua PXE (iPXE, wimboot, BCD, autounattend...) tu quan
   ly nen an di. Trang Tien trinh: moi may la 1 khung **thu gon mac dinh** (dong tieu de + thanh

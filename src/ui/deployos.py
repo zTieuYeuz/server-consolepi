@@ -4519,7 +4519,7 @@ def register_deployos(app):
         tach = ""
         if t["chay"]:
             tach = (f'<div class="msg info">Đang tách WinPE từ <strong>{_esc(t["file"])}</strong>'
-                    f' ({int(time.time() - t["luc"])} giây)... trang tự làm mới.</div>'
+                    f' ({int(time.time() - t["luc"])} giây)... {_esc(t.get("buoc") or "")} - trang tự làm mới.</div>'
                     '<script>setTimeout(function(){location.reload();}, 4000);</script>')
         elif t["loi"]:
             tach = _msg(f'Tách WinPE từ "{t["file"]}" thất bại: {t["loi"]}', False)

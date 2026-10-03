@@ -44,7 +44,12 @@ DIR_BOOTMGR = os.path.join(_d.DEPLOY_DIR, "winpe-bootmgr")
 FILE_MUON = ("bootmgr.exe", "bootmgfw.efi", "EFI/BCD", "EFI/boot.sdi", "PCAT/BCD", "PCAT/boot.sdi")
 _KHOA = threading.Lock()
 # Trang thai tach ISO dang chay (chi 1 viec 1 luc)
-_TACH = {"chay": False, "file": "", "ten": "", "loi": "", "xong": "", "luc": 0}
+_TACH = {"chay": False, "file": "", "ten": "", "loi": "", "xong": "", "luc": 0, "buoc": ""}
+
+
+def _7z():
+    """7z (trixie) hoac 7zz (bookworm - ISO 32-bit), giong ui/isotach.py."""
+    return shutil.which("7z") or shutil.which("7zz") or "7z"
 
 
 # ------------------------------------------------------------------ danh sach
@@ -253,7 +258,7 @@ def them_dong_bo(file, ten):
             if _TACH["chay"]:
                 return False, "Đang tách một ISO WinPE khác - đợi xong rồi tải lại."
             _TACH.update(chay=True, file=os.path.basename(p), ten=ten, loi="", xong="",
-                         luc=time.time())
+                         luc=time.time(), buoc="")
         _tach(p, ten)                       # tu cap nhat menu PXE khi xong
         return (False, _TACH["loi"]) if _TACH["loi"] else (True, _TACH["xong"])
     ok, msg = them(file, ten)
@@ -296,7 +301,7 @@ def trang_thai_tach():
 
 def _chon_wim(iso):
     """Duong dan file .wim WinPE trong ISO: sources/boot.wim, khong co thi .wim lon nhat."""
-    r = subprocess.run(["7z", "l", "-slt", iso], capture_output=True, text=True, timeout=120)
+    r = subprocess.run([_7z(), "l", "-slt", iso], capture_output=True, text=True, timeout=120)
     if r.returncode != 0:
         raise RuntimeError("Không đọc được mục lục ISO (7z báo lỗi).")
     cac = []
@@ -318,12 +323,42 @@ def _chon_wim(iso):
     return max(cac, key=lambda x: x[1])[0]
 
 
+def _gop_apps(iso, wim, tam):
+    """
+    Bo cuu ho kieu USB (Anhdv Boot...) de phan lon cong cu NGOAI file .wim, trong thu muc
+    \\Apps o goc USB - WinPE khoi dong xong tu quet cac o tim \\Apps\\ppApps. Boot qua mang
+    khong co USB -> chi con ~10 cong cu (lab 03/10/2026, Anhdv Boot Free 26.2). WinPE do CO
+    quet ca o X:, nen GOP thu muc Apps vao chinh file .wim (X:\\Apps) la du bo ~40 cong cu,
+    khong can USB hay chia se mang (da boot that trong lab). True neu co gop.
+    """
+    r = subprocess.run([_7z(), "l", "-slt", iso], capture_output=True, text=True, timeout=120)
+    co = any(dong.strip().replace("\\", "/") in ("Path = Apps", "Path = apps", "Path = APPS")
+             for dong in r.stdout.splitlines())
+    if not co:
+        return False
+    _TACH["buoc"] = "Tách thư mục công cụ Apps (vài phút)..."
+    thu = os.path.join(tam, "apps")
+    r = subprocess.run([_7z(), "x", "-y", f"-o{thu}", iso, "Apps"],
+                       capture_output=True, text=True, timeout=3600)
+    goc = next((os.path.join(thu, n) for n in os.listdir(thu) if n.lower() == "apps"), None) \
+        if os.path.isdir(thu) else None
+    if r.returncode != 0 or not goc:
+        raise RuntimeError("Không tách được thư mục Apps khỏi ISO (đĩa đầy?).")
+    _TACH["buoc"] = "Gộp thư mục Apps vào WinPE (Pi nén lại, có thể 10-20 phút)..."
+    r = subprocess.run(["wimlib-imagex", "update", wim, "1", f"--command=add '{goc}' /Apps"],
+                       capture_output=True, text=True, timeout=7200)
+    shutil.rmtree(thu, ignore_errors=True)
+    if r.returncode != 0:
+        raise RuntimeError("Gộp thư mục Apps vào WinPE thất bại: " + (r.stderr or "")[-200:])
+    return True
+
+
 def _bat_dau_tach(iso, ten):
     with _KHOA:
         if _TACH["chay"]:
             return False, "Đang tách một ISO WinPE khác - đợi xong rồi làm tiếp."
         _TACH.update(chay=True, file=os.path.basename(iso), ten=ten, loi="", xong="",
-                     luc=time.time())
+                     luc=time.time(), buoc="")
     threading.Thread(target=_tach, args=(iso, ten), daemon=True).start()
     return True, f'Đang tách WinPE từ "{os.path.basename(iso)}" - xong sẽ tự vào menu PXE.'
 
@@ -337,7 +372,8 @@ def _tach(iso, ten):
         tam = os.path.join(_d.BOOT_DIR, f".winpe-tach-{os.getpid()}")
         shutil.rmtree(tam, ignore_errors=True)
         os.makedirs(tam)
-        r = subprocess.run(["7z", "e", "-y", f"-o{tam}", iso, trong],
+        _TACH["buoc"] = f"Tách {trong}..."
+        r = subprocess.run([_7z(), "e", "-y", f"-o{tam}", iso, trong],
                            capture_output=True, text=True, timeout=3600)
         ra = os.path.join(tam, os.path.basename(trong.replace("\\", "/")))
         if r.returncode != 0 or not os.path.isfile(ra):
@@ -349,6 +385,7 @@ def _tach(iso, ten):
             ok, loi = _bao_dam_bootmgr(_build_wim(ra))
             if not ok:
                 raise RuntimeError(loi)
+        co_apps = _gop_apps(iso, ra, tam)
         os.replace(ra, dich)
         _them_vao_ds(dich_ten, ten, can_muon)
         try:
@@ -356,9 +393,12 @@ def _tach(iso, ten):
             _pxe.cap_nhat_menu()
         except Exception:
             pass
-        _TACH.update(xong=f'Đã tách "{trong}" thành {dich_ten} '
-                          f'({_d.co_kich_thuoc(os.path.getsize(dich))}) và đưa "{ten}" vào menu PXE. '
-                          f'Có thể xóa file ISO gốc để đỡ tốn chỗ.')
+        _TACH.update(xong=f'Đã tách "{trong}"'
+                          + (' và gộp thư mục công cụ Apps' if co_apps else '')
+                          + f' thành {dich_ten} ({_d.co_kich_thuoc(os.path.getsize(dich))}), '
+                          f'đưa "{ten}" vào menu PXE. Có thể xóa file ISO gốc để đỡ tốn chỗ.'
+                          + (' Máy khách cần RAM từ 4 GB (cả bộ công cụ nạp vào RAM).'
+                             if co_apps else ''))
     except Exception as e:
         _TACH.update(loi=str(e) or type(e).__name__)
     finally:
