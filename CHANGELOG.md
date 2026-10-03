@@ -2,6 +2,10 @@
 
 ## 1.7.5 (01/10/2026)
 
+- Deployment OS > Tai nguyen: tab "File boot" doi ten **WinPE** (anh Thoai 03/10/2026). Chi nhan va
+  hien file WinPE (.wim/.iso); file he thong cua PXE (iPXE, wimboot, BCD, autounattend...) tu quan
+  ly nen an di. Trang Tien trinh: moi may la 1 khung **thu gon mac dinh** (dong tieu de + thanh
+  tien do), bam de mo xem tung buoc; khung dang mo duoc giu khi bang tu lam moi.
 - Phan mem (anh Thoai 02/10/2026): MOI phan mem / ung dung nhieu file cai khi DANG NHAP LAN
   DAU - bo che do "Cai cho: May" (truoc dang nhap, quyen he thong, khong co bang tien trinh).
   Luc cai hien bang tien trinh tren may + trang Tien trinh cua Console System. Kich ban cu

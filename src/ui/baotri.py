@@ -50,7 +50,7 @@ THU_MUC_NANG = [
      "/deployos/os"),
     ("deploy/ungdung", "Ứng dụng nhiều file (Office...)", "/deployos/ungdung"),
     ("deploy/apps", "Phần mềm (.exe/.msi)", "/deployos/console/apps"),
-    ("deploy/boot", "File boot PXE + ảnh đĩa cài", "/deployos/console"),
+    ("deploy/boot", "WinPE + file boot PXE", "/deployos/console"),
     ("deploy/drivers", "Driver", "/deployos/drivers"),
     ("storage", "Kho file dùng chung", "/storage"),
 ]

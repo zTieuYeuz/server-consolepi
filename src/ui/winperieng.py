@@ -8,7 +8,7 @@ boot.wim CUA BO CAI WINDOWS va THAY man hinh khoi dong bang cua so lenh cua Cons
 System. WinPE rieng thi phai boot NGUYEN BAN - giu giao dien, cong cu cua no.
 
 CACH LAM:
-  - File WinPE tai len o tab "File boot" (BOOT_DIR - da co tai file lon + thanh tien
+  - File WinPE tai len o tab "WinPE" (BOOT_DIR - da co tai file lon + thanh tien
     trinh). Moi muc menu tro toi 1 file .wim trong BOOT_DIR; xoa file = muc tu mat.
   - File .iso: tach file .wim WinPE ben trong ra BOOT_DIR/<ten iso>.wim (uu tien
     sources/boot.wim - kieu Hiren's/ADK; khong co thi lay file .wim LON NHAT - kieu
@@ -36,7 +36,7 @@ import time
 from . import deployos as _d
 
 FILE_DS = os.path.join(_d.DEPLOY_DIR, "winpe-rieng.json")
-# bootmgr MUON cho WinPE rut gon (xem _bao_dam_bootmgr) - ngoai BOOT_DIR de khong hien o "File boot"
+# bootmgr MUON cho WinPE rut gon (xem _bao_dam_bootmgr) - ngoai BOOT_DIR de khong hien o tab WinPE
 DIR_BOOTMGR = os.path.join(_d.DEPLOY_DIR, "winpe-bootmgr")
 # WDS tu cap ca bo nay cho WinPE; W11x64.wim cua anh Thoai thieu het (lab 01/10/2026: thieu
 # bootmgr -> tu choi; them bootmgr -> UEFI bao "\\EFI\\Microsoft\\Boot\\BCD 0xc000000f").
@@ -222,7 +222,7 @@ def them(file, ten):
     """Them 1 file trong BOOT_DIR vao menu. .iso -> tach nen roi tu them."""
     p = _d._duong_dan_trong(_d.BOOT_DIR, file)
     if not p or not os.path.isfile(p):
-        return False, "Không tìm thấy file trong tab File boot."
+        return False, "Không tìm thấy file trong tab WinPE."
     ten = (ten or "").strip()[:60] or os.path.splitext(os.path.basename(p))[0]
     if p.lower().endswith(".iso"):
         return _bat_dau_tach(p, ten)
@@ -279,14 +279,14 @@ def _them_vao_ds(file, ten, muon=False):
 
 
 def bo(file):
-    """Bo khoi menu (KHONG xoa file - van nam o tab File boot)."""
+    """Bo khoi menu (KHONG xoa file - van nam o tab WinPE)."""
     with _KHOA:
         ds = _doc()
         moi = [m for m in ds if m["file"] != file]
         if len(moi) == len(ds):
             return False, "Mục này không có trong menu."
         _ghi(moi)
-    return True, "Đã bỏ khỏi menu PXE (file vẫn còn ở danh sách File boot)."
+    return True, "Đã bỏ khỏi menu PXE (file vẫn còn ở danh sách File WinPE)."
 
 
 # ------------------------------------------------------------- tach tu ISO

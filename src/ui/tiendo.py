@@ -273,20 +273,25 @@ def register_tiendo(app):
                          f'<td style="width:90px;color:{mau};">{ten_tt}</td>'
                          f'<td style="width:70px;color:#8b93a1;">{gio}</td></tr>')
 
+            # 03/10/2026 anh Thoai: "cac bang co the rut gon, mac dinh rut gon" - moi may
+            # la 1 <details> (dong san): dong tieu de + thanh tien do luon thay, bam de
+            # xem tung buoc. Trang tu lam moi 3 giay nen JS ben duoi nho may nao dang MO.
             ra += f"""
-            <div class="card">
-              <h3 style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                <span>{esc(m["ten_may"])}</span>
-                <small style="color:#8b93a1;font-weight:400;font-size:13px;">
-                  {esc(m["kichban"])}</small>
-                <span style="margin-left:auto;font-size:13.5px;font-weight:400;">
-                  {m["so_xong"]}/{m["tong"]} &mdash; {nhan}</span>
-              </h3>
-              <div style="background:#2c3036;border-radius:5px;height:9px;
-                          overflow:hidden;margin-bottom:12px;">
-                <div style="width:{pct}%;height:100%;background:#4CAF50;"></div>
-              </div>
-              <table>{hang}</table>
+            <details class="card tt-may" data-may="{esc(m["ten_may"])}">
+              <summary style="cursor:pointer;list-style:none;">
+                <h3 style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;">
+                  <span class="tt-mui">&#9656;</span>
+                  <span>{esc(m["ten_may"])}</span>
+                  <small style="color:#8b93a1;font-weight:400;font-size:13px;">
+                    {esc(m["kichban"])}</small>
+                  <span style="margin-left:auto;font-size:13.5px;font-weight:400;">
+                    {m["so_xong"]}/{m["tong"]} &mdash; {nhan}</span>
+                </h3>
+                <div style="background:#2c3036;border-radius:5px;height:9px;overflow:hidden;">
+                  <div style="width:{pct}%;height:100%;background:#4CAF50;"></div>
+                </div>
+              </summary>
+              <table style="margin-top:12px;">{hang}</table>
               <p style="color:#8b93a1;font-size:12.5px;margin:10px 0 0;">
                 Bắt đầu {_thoi_gian(m["bat_dau"])} &middot;
                 cập nhật {_thoi_gian(m["cap_nhat"])}</p>
@@ -295,7 +300,7 @@ def register_tiendo(app):
                 <input type="hidden" name="may" value="{esc(m["ten_may"])}">
                 <button type="submit" class="gray small">Xoá bản ghi</button>
               </form>
-            </div>"""
+            </details>"""
         return ra
 
     @app.route("/deployos/tiendo")
@@ -314,14 +319,28 @@ def register_tiendo(app):
         <p style="color:#8b93a1;font-size:13.5px;margin:0 0 14px;">
           Máy đang cài tự báo về đây sau mỗi bước. Bảng tự cập nhật, không
           cần bấm làm mới.</p>
+        <style>
+          .tt-may > summary::-webkit-details-marker {{ display:none; }}
+          .tt-may .tt-mui {{ display:inline-block; transition:transform .15s; color:#6b7280; }}
+          .tt-may[open] .tt-mui {{ transform:rotate(90deg); }}
+        </style>
         <div id="bang-tiendo">{_bang_tat_ca(_esc)}</div>
         <script>
         (function() {{
           var o = document.getElementById('bang-tiendo');
           function lamMoi() {{
+            // Nho may nao dang MO de giu nguyen sau khi thay noi dung (mac dinh: dong)
+            var mo = {{}};
+            o.querySelectorAll('details.tt-may[open]').forEach(function(d) {{
+              mo[d.getAttribute('data-may')] = true; }});
             fetch('/api/tiendo/data', {{cache: 'no-store'}})
               .then(function(r) {{ return r.json(); }})
-              .then(function(d) {{ if (d && d.html) o.innerHTML = d.html; }})
+              .then(function(d) {{
+                if (!(d && d.html)) return;
+                o.innerHTML = d.html;
+                o.querySelectorAll('details.tt-may').forEach(function(x) {{
+                  if (mo[x.getAttribute('data-may')]) x.open = true; }});
+              }})
               .catch(function() {{}});
           }}
           setInterval(lamMoi, 3000);

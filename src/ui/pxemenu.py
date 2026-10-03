@@ -228,7 +228,7 @@ def sinh_script(goc):
             "item --gap -- ",
             f"item win 1. Install Windows > ({len(muc)} kich ban)",
             # 02/10/2026 anh Thoai: "chi can 1 dong WinPE" - bo muc WinPE cuu ho (boot.wim
-            # cua bo cai), chi con WinPE anh tu them (tab File boot / kho), ten "Boot WinPE".
+            # cua bo cai), chi con WinPE anh tu them (tab WinPE / kho), ten "Boot WinPE".
             (f"item rieng 2. Boot WinPE > ({len(rieng)})" if rieng else
              "item --gap -- 2. Boot WinPE (chua co WinPE nao)"),
             "item --gap -- ",

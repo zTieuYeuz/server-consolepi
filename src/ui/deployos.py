@@ -70,6 +70,8 @@ APPS_META = os.path.join(APPS_DIR, "_thongtin.json")
 MIN_FREE_GB = 3
 
 EXT_BOOT = {".iso", ".wim", ".esd", ".img", ".vhd", ".vhdx", ".efi", ".kpxe", ".ipxe"}
+# Tab "WinPE" (truoc la "File boot", 03/10/2026): chi nhan va hien file WinPE
+EXT_WINPE = {".wim", ".iso"}
 EXT_APP = {".msi", ".exe"}
 EXT_SCRIPT = {".bat", ".ps1", ".cmd"}
 
@@ -1069,7 +1071,7 @@ def kiem_tra_san_sang(cauhinh):
         bool(ds_boot),
         "File boot đã tải lên",
         (f"{len(ds_boot)} file trong {BOOT_DIR}" if ds_boot else
-         "Chưa có file nào - vào tab \"Tài nguyên\" > \"File boot\" để tải lên"),
+         "Chưa có file nào - vào tab \"Tài nguyên\" > \"WinPE\" để tải lên"),
     ))
 
     # 2. Bootloader iPXE (giai doan 1 cua PXE: TFTP phat file nho nay truoc)
@@ -1425,7 +1427,7 @@ def tabs_deployos(chinh, phu=""):
             ("ungdung", "Ứng dụng (nhiều file)", "/deployos/ungdung"),
             ("drivers", "Driver", "/deployos/drivers"),
             ("scripts", "Script", "/deployos/console/scripts"),
-            ("file", "File boot", "/deployos/console"),
+            ("file", "WinPE", "/deployos/console"),
         ],
         "caidat": [
             ("pxe", "Bật / Tắt PXE", "/deployos/caidat"),
@@ -1454,7 +1456,7 @@ def register_deployos(app):
 
     # --- Khai bao cac duong tai len duoc phep ghi THANG ra dia dich ---
     THU_MUC_THEO_DUONG.update({
-        "/deployos/console/file/len": (BOOT_DIR, EXT_BOOT),
+        "/deployos/console/file/len": (BOOT_DIR, EXT_WINPE),
         "/deployos/console/apps/len": (APPS_DIR, EXT_APP),
         "/deployos/console/scripts/len": (SCRIPTS_DIR, EXT_SCRIPT),
     })
@@ -4153,7 +4155,7 @@ def register_deployos(app):
             return _kho_chuyen(msg, ok)
 
         if loai == "winpe":
-            # WinPE rieng (ui/winperieng.py): tai vao tab File boot roi TU dua vao menu
+            # WinPE rieng (ui/winperieng.py): tai vao tab WinPE roi TU dua vao menu
             # PXE "2. Boot WinPE". ISO: tach .wim ra roi XOA ISO (kho tai lai duoc).
             if ext not in (".wim", ".iso"):
                 return _kho_chuyen("Mục WinPE phải là file .wim hoặc .iso.", False)
@@ -4493,19 +4495,21 @@ def register_deployos(app):
 
     def _trang_file_boot(msg="", ok=True):
         _don_file_do_dang(BOOT_DIR)
-        ds = _liet_ke(BOOT_DIR, EXT_BOOT)
+        # Chi hien file WinPE (.wim/.iso); file he thong cua PXE (iPXE, wimboot, BCD,
+        # autounattend...) tu quan ly, an di (anh Thoai 03/10/2026).
+        ds = _liet_ke(BOOT_DIR, EXT_WINPE)
         ghi_chu = """
         <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
-          Nhận ảnh cài đặt (.iso/.wim/.esd/.img/.vhd). Bootloader iPXE +
-          wimboot đã <strong>kèm sẵn bản ký chính thức</strong> (tự chép vào
-          đây mỗi lần bật PXE) - không cần tải lên. Ảnh WinPE (boot.wim) phải tạo sẵn trên 1 máy
-          Windows có Windows ADK - Pi không tự tạo được, chỉ lưu và phục vụ.</p>"""
+          Nhận file WinPE: <code>.wim</code> hoặc <code>.iso</code> (Strelec, Hiren's, bản
+          tự build bằng Windows ADK...). Bootloader iPXE + wimboot đã
+          <strong>kèm sẵn bản ký chính thức</strong> - không cần tải lên. Tải lên xong, thêm
+          vào menu PXE ở khung <strong>Boot WinPE</strong> bên dưới.</p>"""
         body = (_tabs("tainguyen", "file") + _msg(msg, ok) +
-                _khoi_tai_len("/deployos/console/file/len", "file boot", EXT_BOOT, ghi_chu, "file") +
+                _khoi_tai_len("/deployos/console/file/len", "WinPE", EXT_WINPE, ghi_chu, "file") +
                 _khoi_winpe_rieng() +
-                f"<h2>File boot đang có ({len(ds)})</h2>" +
+                f"<h2>File WinPE đang có ({len(ds)})</h2>" +
                 _bang_file(ds, "/deployos/console/file/xoa", "/deployos/console/file/tai"))
-        return _trang(body, "Deployment OS", "2.1 - File boot")
+        return _trang(body, "Deployment OS", "2.1 - WinPE")
 
     def _khoi_winpe_rieng():
         """Khung WinPE RIENG (Strelec, Hiren's, ban ADK) trong menu PXE - xem ui/winperieng.py."""
@@ -4579,7 +4583,7 @@ def register_deployos(app):
         f = request.files.get("file")
         if not f:
             return _trang_file_boot("Chua chon file.", False)
-        ok, msg = _nhan_tai_len(BOOT_DIR, EXT_BOOT, "file boot")
+        ok, msg = _nhan_tai_len(BOOT_DIR, EXT_WINPE, "WinPE")
         return _trang_file_boot(msg, ok)
 
     @app.route("/deployos/console/file/xoa", methods=["POST"])
