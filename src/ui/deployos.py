@@ -2612,10 +2612,13 @@ def register_deployos(app):
                       <span class="t">{_esc(nhan)}</span>
                       <div class="d">{_esc(mo_ta)}</div>
                     </label>"""
-                    if pha == "may":
-                        o_may += o
-                    else:
+                    # Tu 03/10/2026 MOI muc deu tac dung cap may / moi tai
+                    # khoan - chia 2 nhom theo LOAI cho de tim, khong con
+                    # muc nao chi cho rieng 1 nguoi dung.
+                    if pha == "ho_so":
                         o_nd += o
+                    else:
+                        o_may += o
                 # Gap lai thanh 2 khoi bam-de-mo. LY DO THAT (anh Thoai:
                 # "nhieu cai no dai qua nguoi chon keo xuong duoi kha la
                 # met"): 44 tuy chon + 30 ung dung go = hon 70 o tich xep
@@ -2624,7 +2627,7 @@ def register_deployos(app):
                 # Dem san so da chon ngay tren tieu de de khong phai mo ra
                 # mới biết minh da chon gi.
                 so_may = sum(1 for m, *_x in _u_tuychon()
-                             if m in da_chon and _x[2] == "may")
+                             if m in da_chon and _x[2] != "ho_so")
                 so_nd = len(da_chon) - so_may
                 khoi_tuychon = f"""
               <div class="card">
@@ -2635,13 +2638,13 @@ def register_deployos(app):
                   dưới hoặc tải script riêng lên.</p>
 
                 <details class="gap"{' open' if so_may else ''}>
-                  <summary>Áp dụng cho MÁY &mdash; mọi người dùng
+                  <summary>Hệ thống &mdash; áp dụng cho cả máy
                     <span class="dem">{so_may} đã chọn</span></summary>
                   <div class="gap-trong">{o_may}</div>
                 </details>
 
                 <details class="gap"{' open' if so_nd else ''}>
-                  <summary>Áp dụng cho NGƯỜI DÙNG đăng nhập đầu tiên
+                  <summary>Giao diện &mdash; áp dụng cho MỌI tài khoản (cả tài khoản tạo sau)
                     <span class="dem">{so_nd} đã chọn</span></summary>
                   <div class="gap-trong">{o_nd}</div>
                 </details>

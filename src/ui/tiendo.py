@@ -104,7 +104,8 @@ def bat_dau(ten_may, ten_kichban, cac_buoc):
     return True
 
 
-def cap_nhat(ten_may, chi_so, trang_thai, giay=0, ghi_chu=""):
+def cap_nhat(ten_may, chi_so, trang_thai, giay=0, ghi_chu="", ten="",
+             kichban="", tong=0):
     """Cap nhat 1 buoc. Tao ban ghi tam neu chua co bat_dau (phong truong
     hop dashboard vua khoi dong lai giua chung lan cai)."""
     with _khoa:
@@ -113,10 +114,20 @@ def cap_nhat(ten_may, chi_so, trang_thai, giay=0, ghi_chu=""):
         if not m:
             m = {"kichban": "?", "bat_dau": time.time(), "buoc": []}
             _du_lieu[ten_may] = m
+        # Moi lan bao buoc may khach gui kem ten buoc + kich ban: goi "batdau"
+        # co the mat (lan dang nhap dau mang chua san sang, han 4 giay) -> loi
+        # that 03/10/2026: trang Tien trinh chi hien "Buoc 1, Buoc 2..." va "?".
+        if kichban and m.get("kichban") in (None, "", "?"):
+            m["kichban"] = kichban
+        while len(m["buoc"]) < min(int(tong or 0), 60):
+            m["buoc"].append({"ten": f"Bước {len(m['buoc']) + 1}",
+                              "trang_thai": "cho", "giay": 0, "ghi_chu": ""})
         while len(m["buoc"]) <= chi_so:
             m["buoc"].append({"ten": f"Bước {len(m['buoc']) + 1}",
                               "trang_thai": "cho", "giay": 0, "ghi_chu": ""})
         b = m["buoc"][chi_so]
+        if ten:
+            b["ten"] = ten[:120]
         if trang_thai in TRANG_THAI:
             b["trang_thai"] = trang_thai
         if giay:
@@ -213,6 +224,12 @@ def register_tiendo(app):
                 [str(t)[:120] for t in (g.get("buoc") or [])][:60])
         return jsonify({"ok": True})
 
+    def _so(v):
+        try:
+            return max(0, min(int(v or 0), 60))
+        except (TypeError, ValueError):
+            return 0
+
     @app.route("/api/tiendo/buoc", methods=["POST"])
     def api_tiendo_buoc():
         g = _goi()
@@ -222,7 +239,8 @@ def register_tiendo(app):
             chi_so = 0
         cap_nhat(_khoa_may(g), max(0, min(chi_so, 59)),
                  str(g.get("trang_thai") or ""), int(g.get("giay") or 0),
-                 str(g.get("ghi_chu") or ""))
+                 str(g.get("ghi_chu") or ""), str(g.get("ten") or ""),
+                 str(g.get("kichban") or "")[:120], _so(g.get("tong")))
         return jsonify({"ok": True})
 
     @app.route("/api/tiendo/ketthuc", methods=["POST"])

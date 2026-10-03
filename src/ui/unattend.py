@@ -470,6 +470,18 @@ def _phan_tich_lenh_reg(lenh):
 # ChiTiet='...'}. Muc nao khong co o day va cung khong phai reg add thi
 # bao cao ghi ro "khong tu kiem duoc" - KHONG bao bua la DAT.
 KIEM_TRA_DAC_BIET = {
+    "xoa_loi_tat_edge": """
+        $con = @("$env:PUBLIC\\Desktop\\Microsoft Edge.lnk", "$env:USERPROFILE\\Desktop\\Microsoft Edge.lnk") |
+               Where-Object { Test-Path $_ }
+        @{ Dat = (-not $con); ChiTiet = $(if ($con) { 'VAN CON: ' + ($con -join ', ') } else { 'khong con loi tat Edge' }) }
+    """,
+    "tat_last_access": """
+        $r = (fsutil behavior query disableLastAccess 2>&1 | Out-String)
+        @{ Dat = ($r -match '=\\s*(1|3)\\b'); ChiTiet = $r.Trim() }
+    """,
+    "xoa_windows_old": """
+        @{ Dat = (-not (Test-Path 'C:\\Windows.old')); ChiTiet = $(if (Test-Path 'C:\\Windows.old') { 'VAN CON C:\\Windows.old' } else { 'khong co Windows.old' }) }
+    """,
     "ping": """
         $r = (netsh advfirewall firewall show rule name="ICMPv4 vao" 2>&1 | Out-String)
         @{ Dat = ($r -notmatch 'No rules match'); ChiTiet = 'luat tuong lua ICMPv4' }
@@ -568,7 +580,7 @@ def _muc_kiem_tra(d):
     for ma, nhan, _mo_ta, pha, cac_lenh in TUY_CHON_WINDOWS:
         if ma not in da_chon:
             continue
-        nhom = "Tùy chọn máy" if pha == "may" else "Tùy chọn người dùng"
+        nhom = "Tùy chọn giao diện (mọi tài khoản)" if pha == "ho_so" else "Tùy chọn máy"
         if ma in KIEM_TRA_DAC_BIET:
             them(nhom, nhan, loai="ps", ma=KIEM_TRA_DAC_BIET[ma])
             continue
@@ -885,7 +897,8 @@ foreach ($b in $Buoc) {{
     $lblDay.Text = "Đang làm bước $($i + 1) / $($Buoc.Count)..."
     DatDong $i ">" "đang chạy..." "" $VANG
     Ghi ("[{{0}}/{{1}}] {{2}}" -f ($i + 1), $Buoc.Count, $b.Ten)
-    BaoPi 'buoc' @{{ may = $TenMay; chi_so = $i; trang_thai = 'dang' }}
+    BaoPi 'buoc' @{{ may = $TenMay; chi_so = $i; trang_thai = 'dang';
+                     ten = $b.Ten; kichban = $KichBan; tong = $Buoc.Count }}
 
     $t0 = Get-Date
     $tt = 'xong'; $ghiChu = ''
@@ -1010,7 +1023,8 @@ foreach ($b in $Buoc) {{
     $KetQuaBuoc.Add([PSCustomObject]@{{ Ten = $b.Ten; TrangThai = $tt;
                                          Giay = $giay; GhiChu = $ghiChu }})
     BaoPi 'buoc' @{{ may = $TenMay; chi_so = $i; trang_thai = $tt;
-                     giay = $giay; ghi_chu = $ghiChu }}
+                     giay = $giay; ghi_chu = $ghiChu;
+                     ten = $b.Ten; kichban = $KichBan; tong = $Buoc.Count }}
 
     $thanh.Value = [Math]::Min($thanh.Maximum, $i + 1)
     [System.Windows.Forms.Application]::DoEvents()
@@ -1331,6 +1345,9 @@ $lv = New-Object System.Windows.Forms.ListView
 $lv.View = 'Details'; $lv.FullRowSelect = $true; $lv.GridLines = $false
 $lv.Dock = 'Fill'; $lv.Font = New-Object System.Drawing.Font('Segoe UI', 10)
 $lv.BorderStyle = 'None'
+# WinForms dock control CUOI danh sach truoc -> Fill them sau cung lai bi dock
+# truoc va chiem ca form, dai tren/duoi de len chu. BringToFront dua no len
+# dau danh sach = dock SAU CUNG, chi chiem phan con lai (xem duoi).
 $lv.Columns.Add('Trang thai', 110) | Out-Null
 $lv.Columns.Add('Hang muc', 400) | Out-Null
 $lv.Columns.Add('Thuc te tren may', 380) | Out-Null
@@ -1377,6 +1394,7 @@ function DoNhom($tieuDe, $mau, $cacMuc) {
 DoNhom 'ĐÃ LÀM XONG' ([System.Drawing.Color]::FromArgb(214, 240, 222)) `
        @($ketQua | Where-Object { $_.Dat -eq $true })
 $frm.Controls.Add($lv)
+$lv.BringToFront()
 
 $frm.AcceptButton = $btnDong
 [void]$frm.ShowDialog()
@@ -1875,6 +1893,9 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "if errorlevel 1 goto loi_bung",
         "",
         "echo.",
+        "echo  Da bung xong anh he dieu hanh. Dang chuan bi buoc tiep theo"
+        " (nap driver, phan mem, cau hinh tu dong) - xin doi...",
+        "echo.",
     ] + _lenh_tiem_driver_offline(d) + _lenh_chep_go_app(d) + [
         "echo  [5/6] Chep cau hinh tu dong - ten may, tai khoan, mui gio...",
         "if not exist W:\\Windows\\Panther mkdir W:\\Windows\\Panther",
@@ -2040,9 +2061,15 @@ def sinh_autounattend_goi_script():
 # Moi muc: (ma, nhan hien thi, mo ta, pha, [cac lenh])
 #   pha = "may"       -> chay o pass specialize, quyen SYSTEM, TRUOC khi
 #                        co nguoi dang nhap (thiet lap cap may)
-#   pha = "nguoi_dung"-> chay o FirstLogonCommands, trong phien cua
-#                        nguoi dung dau tien (thiet lap cap nguoi dung,
-#                        vi ghi vao HKCU)
+#   pha = "ho_so"     -> thiet lap giao dien (HKCU) cho MOI tai khoan: ghi vao
+#                        ho so mac dinh (C:\Users\Default) o pass specialize,
+#                        TRUOC khi tao tai khoan nao -> tai khoan dau tien va
+#                        moi tai khoan tao sau deu nhan (xem _lenh_ho_so_mac_dinh).
+#                        Anh Thoai 03/10/2026: "ap dung cho nguoi dung dang
+#                        nhap dau tien" phai ap dung duoc cho ca may.
+#   pha = "nguoi_dung"-> chay o lan dang nhap dau (can mang / can phien
+#                        Windows) nhung tac dung CAP MAY (.NET 3.5, loi tat
+#                        Edge chung).
 # =====================================================================
 TUY_CHON_WINDOWS = [
     ("rdp", "Bật Remote Desktop",
@@ -2080,12 +2107,12 @@ TUY_CHON_WINDOWS = [
          r' /v AllowTelemetry /t REG_DWORD /d 0 /f',
      ]),
     ("hien_duoi_file", "Hiện phần mở rộng tập tin",
-     "Thấy .exe .bat .pdf... thay vì giấu đi", "nguoi_dung", [
+     "Thấy .exe .bat .pdf... thay vì giấu đi", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
          r' /v HideFileExt /t REG_DWORD /d 0 /f',
      ]),
     ("hien_file_an", "Hiện tập tin ẩn",
-     "Hiện cả file/thư mục bị đánh dấu ẩn", "nguoi_dung", [
+     "Hiện cả file/thư mục bị đánh dấu ẩn", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
          r' /v Hidden /t REG_DWORD /d 1 /f',
      ]),
@@ -2128,26 +2155,26 @@ TUY_CHON_WINDOWS = [
      ]),
     ("tat_bing_start", "Tắt tìm kiếm Bing trong menu Start",
      "Gõ tìm chương trình thì chỉ tìm trong máy, không lẫn kết quả web",
-     "nguoi_dung", [
+     "ho_so", [
          r'reg add "HKCU\Software\Policies\Microsoft\Windows\Explorer"'
          r' /v DisableSearchBoxSuggestions /t REG_DWORD /d 1 /f',
      ]),
     ("mo_this_pc", "Mở Explorer vào This PC thay vì Quick Access",
-     "Bấm vào Explorer là thấy ngay danh sách ổ đĩa", "nguoi_dung", [
+     "Bấm vào Explorer là thấy ngay danh sách ổ đĩa", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
          r' /v LaunchTo /t REG_DWORD /d 1 /f',
      ]),
     ("menu_chuot_cu", "Menu chuột phải kiểu cũ (Windows 11)",
      "Bỏ menu rút gọn của Windows 11, hiện thẳng menu đầy đủ như Windows 10 - "
      "không phải bấm thêm \"Show more options\". Không ảnh hưởng Windows 10",
-     "nguoi_dung", [
+     "ho_so", [
          r'reg add "HKCU\Software\Classes\CLSID'
          r'\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}'
          r'\InprocServer32" /f /ve',
      ]),
     ("taskbar_trai", "Thanh tác vụ căn trái (Windows 11)",
      "Nút Start về góc trái như Windows 10. Không ảnh hưởng Windows 10",
-     "nguoi_dung", [
+     "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
          r' /v TaskbarAl /t REG_DWORD /d 0 /f',
      ]),
@@ -2164,7 +2191,7 @@ TUY_CHON_WINDOWS = [
      ]),
     ("tat_goi_y_app", "Tắt gợi ý ứng dụng và quảng cáo",
      "Windows không tự cài app gợi ý, không hiện quảng cáo trong Start và "
-     "màn hình khoá", "nguoi_dung", [
+     "màn hình khoá", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion'
          r'\ContentDeliveryManager" /v SilentInstalledAppsEnabled'
          r' /t REG_DWORD /d 0 /f',
@@ -2176,7 +2203,7 @@ TUY_CHON_WINDOWS = [
     # ---- Bo sung dot 3
     ("hien_icon_desktop", "Hiện This PC và Network ngoài desktop",
      "Bỏ desktop trống trơn - có sẵn biểu tượng máy tính và mạng để bấm vào",
-     "nguoi_dung", [
+     "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer'
          r'\HideDesktopIcons\NewStartPanel"'
          r' /v {20D04FE0-3AEA-1069-A2D8-08002B30309D} /t REG_DWORD /d 0 /f',
@@ -2186,7 +2213,7 @@ TUY_CHON_WINDOWS = [
      ]),
     ("uu_tien_hieu_nang", "Ưu tiên hiệu năng thay vì giao diện đẹp",
      "Tắt hiệu ứng mờ, đổ bóng, cửa sổ bay - máy cũ / máy yếu chạy mượt hơn "
-     "rõ rệt", "nguoi_dung", [
+     "rõ rệt", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer'
          r'\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f',
      ]),
@@ -2259,7 +2286,7 @@ TUY_CHON_WINDOWS = [
 
     ("bat_numlock", "Bật sẵn Num Lock khi khởi động",
      "Khỏi phải bấm Num Lock mỗi lần bật máy mới gõ được số ở bàn phím "
-     "phải. Thứ nhỏ nhưng ngày nào cũng gặp", "nguoi_dung", [
+     "phải. Thứ nhỏ nhưng ngày nào cũng gặp", "ho_so", [
          # 2 = Num Lock bat. Dat o .DEFAULT nen ap dung ca man hinh dang
          # nhap, khong chi sau khi vao desktop.
          r'reg add "HKU\.DEFAULT\Control Panel\Keyboard"'
@@ -2298,29 +2325,29 @@ TUY_CHON_WINDOWS = [
      ]),
     ("tat_am_thanh", "Tắt âm thanh hệ thống",
      "Máy không kêu \"beng\" mỗi lần có thông báo hay cắm/rút USB. Hợp "
-     "cho máy đặt ở quầy, phòng họp, phòng máy", "nguoi_dung", [
+     "cho máy đặt ở quầy, phòng họp, phòng máy", "ho_so", [
          r'reg add "HKCU\AppEvents\Schemes" /ve /t REG_SZ /d ".None" /f',
      ]),
     ("hien_het_khay", "Luôn hiện mọi biểu tượng khay hệ thống",
      "Không giấu biểu tượng vào mũi tên nữa - thấy ngay phần mềm nào "
      "đang chạy. Rất cần khi đi kiểm tra máy cho người khác",
-     "nguoi_dung", [
+     "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer"'
          r' /v EnableAutoTray /t REG_DWORD /d 0 /f',
      ]),
     ("an_nut_taskview", "Ẩn nút Task View trên thanh tác vụ",
-     "Bớt một nút ít dùng, thanh tác vụ gọn hơn", "nguoi_dung", [
+     "Bớt một nút ít dùng, thanh tác vụ gọn hơn", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
          r' /v ShowTaskViewButton /t REG_DWORD /d 0 /f',
      ]),
     ("thu_o_tim_kiem", "Thu nhỏ ô tìm kiếm thành biểu tượng",
      "Ô tìm kiếm dài chiếm gần nửa thanh tác vụ - thu lại thành một biểu "
-     "tượng nhỏ, còn chỗ cho cửa sổ đang mở", "nguoi_dung", [
+     "tượng nhỏ, còn chỗ cho cửa sổ đang mở", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"'
          r' /v SearchboxTaskbarMode /t REG_DWORD /d 1 /f',
      ]),
     ("tat_mo_ta_thu_muc", "Tắt bảng chú thích khi rê chuột vào thư mục",
-     "Bỏ ô vàng hiện ra che mất tên file khi rê chuột", "nguoi_dung", [
+     "Bỏ ô vàng hiện ra che mất tên file khi rê chuột", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'
          r' /v ShowInfoTip /t REG_DWORD /d 0 /f',
      ]),
@@ -2344,14 +2371,14 @@ TUY_CHON_WINDOWS = [
      ]),
     ("tat_tang_toc_chuot", "Tắt tăng tốc con trỏ chuột",
      "Chuột đi đúng quãng tay di, không bị nhanh chậm theo tốc độ vẩy. "
-     "Người quen dùng chuột chính xác sẽ thấy dễ chịu hơn", "nguoi_dung", [
+     "Người quen dùng chuột chính xác sẽ thấy dễ chịu hơn", "ho_so", [
          r'reg add "HKCU\Control Panel\Mouse" /v MouseSpeed /t REG_SZ /d 0 /f',
          r'reg add "HKCU\Control Panel\Mouse" /v MouseThreshold1 /t REG_SZ /d 0 /f',
          r'reg add "HKCU\Control Panel\Mouse" /v MouseThreshold2 /t REG_SZ /d 0 /f',
      ]),
     ("giao_dien_toi", "Dùng giao diện Tối (Dark mode)",
      "Nền tối cho cả Windows và ứng dụng - đỡ chói khi làm việc trong "
-     "phòng thiếu sáng hoặc ban đêm", "nguoi_dung", [
+     "phòng thiếu sáng hoặc ban đêm", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes'
          r'\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f',
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes'
@@ -2651,6 +2678,42 @@ def _lenh_bat_administrator(d):
             "| Enable-LocalUser\""]
 
 
+# Ho so mac dinh: moi tai khoan moi duoc tao bang cach chep C:\Users\Default.
+# HKCU\Software\Classes KHONG nam trong NTUSER.DAT ma trong UsrClass.dat (vd
+# menu chuot phai kieu cu cua Windows 11) - phai nap rieng file do.
+_HIVE_HS = r"HKU\CPI_MACDINH"
+_HIVE_HS_CLASS = r"HKU\CPI_MACDINH_CLASSES"
+
+
+def _lenh_ho_so_mac_dinh(d):
+    """Lenh cac tuy chon pha "ho_so", ghi vao ho so mac dinh (chay o specialize,
+    quyen SYSTEM, chua co tai khoan nao) -> ap dung cho MOI tai khoan."""
+    goc = _lenh_theo_pha(d, "ho_so")
+    if not goc:
+        return []
+    doi = []
+    for c in goc:
+        c = c.replace("HKCU\\Software\\Classes\\", _HIVE_HS_CLASS + "\\")
+        c = c.replace("HKCU\\", _HIVE_HS + "\\")
+        doi.append(c)
+    # Giao dien Toi: Windows tu ap chu de SANG o lan dang nhap dau cua moi tai
+    # khoan, de len gia tri trong ho so mac dinh (lab 03/10/2026: Default = 0
+    # nhung tai khoan moi = 1). Them 1 lenh RunOnce vao ho so mac dinh -> MOI tai
+    # khoan moi tu dat lai ngay sau khi Windows ap chu de xong.
+    if "giao_dien_toi" in set(d.get("tuy_chon") or []):
+        k = r"HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+        ps = ("powershell -NoProfile -WindowStyle Hidden -Command "
+              f"Set-ItemProperty -Path '{k}' -Name AppsUseLightTheme -Value 0;"
+              f"Set-ItemProperty -Path '{k}' -Name SystemUsesLightTheme -Value 0")
+        doi.append(rf'reg add "{_HIVE_HS}\Software\Microsoft\Windows\CurrentVersion\RunOnce"'
+                   rf' /v CPI_GiaoDienToi /t REG_SZ /d "{ps}" /f')
+    return ([rf'reg load {_HIVE_HS} "C:\Users\Default\NTUSER.DAT"',
+             rf'reg load {_HIVE_HS_CLASS} '
+             r'"C:\Users\Default\AppData\Local\Microsoft\Windows\UsrClass.dat"']
+            + doi
+            + [f"reg unload {_HIVE_HS_CLASS}", f"reg unload {_HIVE_HS}"])
+
+
 def _khoi_runsync_specialize(d):
     """
     Component Microsoft-Windows-Deployment chay cac lenh cap MAY: tuy chon Windows
@@ -2660,7 +2723,8 @@ def _khoi_runsync_specialize(d):
     lenh = (_lenh_bat_administrator(d)
             + ([f"powershell -NoProfile -ExecutionPolicy Bypass -File {DUONG_PS_GO_APP}"]
                if _ds_go_app(d) else [])
-            + _lenh_theo_pha(d, "may"))
+            + _lenh_theo_pha(d, "may")
+            + _lenh_ho_so_mac_dinh(d))
     if not lenh:
         return ""
     muc = "".join(f"""

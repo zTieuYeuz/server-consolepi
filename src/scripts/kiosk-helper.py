@@ -57,6 +57,7 @@ bo khac nhau va xac nhan nut/ban phim van con moi lan; tat/bat lai kiosk de
 mo phong Chromium bi restart va xac nhan tu ket noi lai thanh cong.
 """
 import json
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -70,6 +71,15 @@ DASHBOARD_ORIGIN = "http://127.0.0.1:8880"
 # .format() cho toan bo khoi JS nay vi no co qua nhieu dau { } that su cua
 # JavaScript, de nham voi cu phap the cho cua Python.
 INJECT_JS_TEMPLATE = r"""
+// Chan cac phim chuc nang mo hop thoai/trang rieng cua Chromium (F1 tro giup,
+// F3 tim kiem, F6/F10 thanh menu, F7 caret, F12 cong cu) tren MOI trang, ke ca
+// dashboard. Phong tuyen 2 la giu_mot_tab() ben Python.
+(function() {
+  var CHAN = {F1:1, F3:1, F6:1, F7:1, F10:1, F12:1};
+  window.addEventListener("keydown", function(e) {
+    if (CHAN[e.key]) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+})();
 (function() {
   if (location.origin === "__DASHBOARD_ORIGIN__") return;   // trang cua minh, da co san moi thu
   if (window.__cpKioskHelper) return;
@@ -347,6 +357,7 @@ def _find_page_target():
         targets = json.loads(r.read())
     for t in targets:
         if t.get("type") == "page":
+            _TAB_CHINH["id"] = t.get("id")
             return t.get("webSocketDebuggerUrl")
     return None
 
@@ -378,7 +389,81 @@ def run_once():
     return True
 
 
+# ---------------------------------------------------------------------------
+# GIU KIOSK CHI CO 1 TAB. LOI THAT 03/10/2026 (anh Thoai): bam nham F1/F2 tren
+# ban phim -> Chromium mo trang tro giup Google Chrome o TAB MOI, che kin man
+# hinh, tab moi KHONG co nut "Ve Dashboard" (nut chi tiem vao tab dau) va
+# kiosk khong co thanh tab de quay lai -> ket cung. Cac lien ket target=_blank
+# cua dashboard (Tai lieu, Huong dan...) cung bi y het.
+# Cach xu ly: thay tab moi la xu ly ngay -
+#   - trang noi bo cua trinh duyet / tro giup Chrome: dong luon, o lai dashboard;
+#   - trang khac (vd Tai lieu): mo trong TAB CHINH (co nut Ve Dashboard) roi
+#     dong tab moi.
+# ---------------------------------------------------------------------------
+_TAB_CHINH = {"id": None}
+_DONG_LUON = ("chrome://", "chrome-search://", "devtools://", "chrome-error://",
+              "https://support.google.com/", "http://support.google.com/")
+
+
+def _cac_tab():
+    with urllib.request.urlopen(f"{CDP_BASE}/json", timeout=3) as r:
+        return [t for t in json.loads(r.read()) if t.get("type") == "page"]
+
+
+def _dong_tab(tid):
+    try:
+        urllib.request.urlopen(f"{CDP_BASE}/json/close/{tid}", timeout=3).read()
+    except Exception:
+        pass
+
+
+def _mo_trong_tab_chinh(ws_url, url):
+    ws = websocket.create_connection(ws_url, timeout=5, suppress_origin=True)
+    try:
+        _cdp_call(ws, 1, "Page.navigate", {"url": url})
+    finally:
+        ws.close()
+
+
+def giu_mot_tab():
+    thay_luc = {}
+    while True:
+        time.sleep(0.7)
+        try:
+            tabs = _cac_tab()
+        except Exception:
+            continue
+        if len(tabs) <= 1:
+            if tabs:
+                _TAB_CHINH["id"] = tabs[0]["id"]
+            thay_luc.clear()
+            continue
+        chinh = next((t for t in tabs if t["id"] == _TAB_CHINH["id"]), None)
+        if not chinh:
+            continue
+        for t in tabs:
+            if t["id"] == chinh["id"]:
+                continue
+            url = t.get("url") or ""
+            # Tab vua mo con about:blank - doi toi 2 giay cho no co dia chi that
+            if url in ("", "about:blank") and time.time() - thay_luc.setdefault(t["id"], time.time()) < 2:
+                continue
+            if url and url != "about:blank" and not url.startswith(_DONG_LUON):
+                try:
+                    _mo_trong_tab_chinh(chinh["webSocketDebuggerUrl"], url)
+                except Exception:
+                    pass
+            _dong_tab(t["id"])
+            thay_luc.pop(t["id"], None)
+            print(f"Da dong tab moi: {url[:80]}", flush=True)
+        try:
+            urllib.request.urlopen(f"{CDP_BASE}/json/activate/{chinh['id']}", timeout=3).read()
+        except Exception:
+            pass
+
+
 def main():
+    threading.Thread(target=giu_mot_tab, daemon=True).start()
     while True:
         try:
             run_once()
