@@ -1,0 +1,30 @@
+#!/bin/bash
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
+#
+# Lan khoi dong DAU cua anh the nho Raspberry Pi (iso/pi/dung-anh-pi.sh).
+#
+# Anh the nho da cai SAN moi goi (install.sh chay trong chroot luc dung anh), nhung
+# luc do CHUA co tai khoan nguoi dung - tai khoan do Raspberry Pi Imager tao khi ghi
+# the (muc "Tuy chinh he dieu hanh"), hoac trinh hoi tai khoan cua Pi OS tren man hinh.
+# Script nay cho toi khi co tai khoan uid 1000 roi chay lai install.sh MOT LAN tren
+# chinh may: gan tai khoan cho giao dien, sinh bi mat rieng cua may nay (mat khau AP,
+# khoa Samba...), bat dich vu. Goi da co san nen KHONG can mang (~1-2 phut).
+set -u
+DAU=/var/lib/console-pi/.pi-da-thiet-lap
+NGUON=/opt/console-system-src
+[ -f "$DAU" ] && exit 0
+# Khoa SSH rieng cua may nay (anh the nho da xoa khoa luc dung - khong dung chung)
+ls /etc/ssh/ssh_host_*_key >/dev/null 2>&1 || { ssh-keygen -A && systemctl restart ssh 2>/dev/null; }
+until getent passwd 1000 >/dev/null 2>&1; do
+    sleep 5
+done
+sleep 5
+echo "[console-system] tai khoan: $(getent passwd 1000 | cut -d: -f1) - bat dau thiet lap lan dau"
+if bash "$NGUON/install.sh" --local "$NGUON"; then
+    mkdir -p "$(dirname "$DAU")" && touch "$DAU"
+    systemctl disable console-system-pi-lan-dau.service >/dev/null 2>&1 || true
+    echo "[console-system] thiet lap lan dau xong"
+else
+    echo "[console-system] install.sh bao loi - se thu lai o lan khoi dong sau"
+    exit 1
+fi

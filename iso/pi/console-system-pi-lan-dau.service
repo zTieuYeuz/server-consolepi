@@ -1,0 +1,13 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
+[Unit]
+Description=Console System - thiet lap lan dau tren Raspberry Pi
+After=local-fs.target network-pre.target cloud-init.target userconfig.service
+Wants=network-pre.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/console-system-pi-lan-dau
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
