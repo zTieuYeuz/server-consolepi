@@ -231,3 +231,19 @@ Lịch sử:
 
 Chỉ cập nhật khi anh Thoại yêu cầu. Khi cập nhật: tăng số phiên bản quy tắc
 ở đầu file, ghi ngày và thay đổi.
+
+## Thu nhanh 1 phan mem cai im lang (khong cai lai Windows)
+
+Dung khi chi can biet 1 bo cai chay im lang voi tham so nao (hoac co chay duoc khong):
+
+    bash tools/thu-phan-mem.sh <bo cai | ten trong deploy/apps> "/S"
+    bash tools/thu-phan-mem.sh <bo cai> --tu-do      # doan loai bo cai, thu lan luot
+
+Co che (iso/test/thu-silent.sh tren may build): 1 "may mau" Windows 10 Pro da cai san
+(/build/test/vang, tu dang nhap Administrator). Moi lan thu = 1 o dia phu qcow2 (tuc thi),
+chep bo cai vao, bat may, bo cai chay bang quyen SYSTEM y het Console System that, doc
+`ket-qua.json`, xoa o phu. ~3-5 phut. Ket luan: xong / khong_tu_thoat = im lang dung;
+qua_gio = bo cai van mo cho nguoi bam nut = tham so khong im lang.
+Dung lai may mau khi doi ban Windows: cai 1 may bang kich ban co "Tat Fast Startup", tat sach
+roi `thu-silent.sh tao-vang <o dia> <mat khau Administrator>`.
+KHONG kiem duoc bang cach nay: bang hoi luc dang nhap dau (mang, OOBE) - can cai moi.

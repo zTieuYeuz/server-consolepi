@@ -670,7 +670,12 @@ def _danh_sach_buoc_nguoi_dung(d):
     che do May cu, da chay on) thi khong co man hinh de mo, bo cai thoat gon.
     Tuy chon / script / lenh them van chay trong phien nguoi dung (can HKCU).
     """
-    ra = []
+    # Mang dat Private (thay cho bang hoi Yes/No da tat o specialize). Chay dau tien,
+    # ngay luc dang nhap dau, khi card mang da co ket noi.
+    ra = [("Đặt mạng ở chế độ riêng tư",
+           'powershell -NoProfile -ExecutionPolicy Bypass -Command '
+           '"Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private"',
+           True)]
 
     for nhan, lenh in zip(_nhan_tuy_chon(d, "nguoi_dung"),
                           _lenh_theo_pha(d, "nguoi_dung")):
@@ -2734,13 +2739,26 @@ def _lenh_ho_so_mac_dinh(d):
             + [f"reg unload {_HIVE_HS_CLASS}", f"reg unload {_HIVE_HS}"])
 
 
+def _lenh_tat_hoi_mang():
+    """
+    Tat bang hoi "Do you want to allow your PC to be discoverable by other PCs and
+    devices on this network? Yes/No" (Network Location Wizard) hien o goc phai man hinh
+    lan dang nhap dau. Anh Thoai 04/10/2026: "van hien bang hoi yes no, dau phai silent".
+    <NetworkLocation>Work</NetworkLocation> trong unattend khong chan duoc bang nay
+    (SkipMachineOOBE). Khoa NewNetworkWindowOff la cach chinh thuc de tat no; mang se
+    duoc dat sang Private bang buoc dau o phien dang nhap (xem _danh_sach_buoc_nguoi_dung).
+    """
+    return [r'reg add "HKLM\SYSTEM\CurrentControlSet\Control\Network\NewNetworkWindowOff" /f']
+
+
 def _khoi_runsync_specialize(d):
     """
     Component Microsoft-Windows-Deployment chay cac lenh cap MAY: tuy chon Windows
     (quyen he thong, TRUOC khi co ai dang nhap). Phan mem KHONG cai o day nua - tu
     02/10/2026 moi phan mem cai o phien dang nhap dau (co bang tien trinh).
     """
-    lenh = (_lenh_bat_administrator(d)
+    lenh = (_lenh_tat_hoi_mang()
+            + _lenh_bat_administrator(d)
             + ([f"powershell -NoProfile -ExecutionPolicy Bypass -File {DUONG_PS_GO_APP}"]
                if _ds_go_app(d) else [])
             + _lenh_theo_pha(d, "may")
