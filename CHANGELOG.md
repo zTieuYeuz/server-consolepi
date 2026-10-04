@@ -18,6 +18,20 @@
 - Bao cao tu kiem them: loi tat Edge, disableLastAccess, Windows.old.
 - Kiosk: kiosk-helper giu 1 tab - tab moi (F1 tro giup Chrome, lien ket target=_blank) bi dong
   hoac mo trong tab chinh (co nut Home); chan F1/F3/F6/F7/F10/F12 tren moi trang.
+- Windows (buoc 3): KHONG tao user rieng nua - chi dung Administrator co san, luon mo, BAT BUOC
+  dat mat khau (anh Thoai 04/10/2026). unattend: bo LocalAccounts, giu AdministratorPassword + AutoLogon
+  Administrator; tai khoan SID -500 duoc doi ten ve "Administrator" neu image ngon ngu khac. Kich ban
+  Linux khong doi.
+- Luon cai ban Windows Pro: deploy.cmd tu tim chi so anh co Edition ID "Professional" trong install.wim/
+  esd (ISO nhieu phien ban: chi so 1 thuong la Home). Khong tao tuy chon chon phien ban.
+- Tat bang hoi "cho phep may tinh nay duoc tim thay tren mang? Yes/No" luc dang nhap dau
+  (HKLM\SYSTEM\CurrentControlSet\Control\Network\NewNetworkWindowOff) + buoc dau "Dat mang o che do
+  rieng tu" (Set-NetConnectionProfile Private). Lab 04/10/2026: khong con bang.
+- Tien trinh: them `call` truoc lenh .cmd/.bat (khong co thi cmd khong quay lai ghi ma thoat -> bao
+  "Bo cai dung bat thuong" du ung dung chay dung).
+- Cong cu thu nhanh 1 phan mem cai im lang (iso/test/thu-silent.sh, tools/thu-phan-mem.sh): may mau
+  Windows + o dia phu qcow2, ~3 phut/lan thay cho 40 phut cai lai Windows.
+- Kho: thay file VLC khong ro nguon (Inno 2 MB, khong nhan /S) bang vlc-3.0.23-win64.exe chinh hang.
 - install.sh: chay duoc trong chroot (dung anh the nho Pi): bo SIGPIPE/pipefail, bo kiem tra
   dich vu khi o chroot.
 
