@@ -507,11 +507,16 @@ def ghi_thongtin_app(d):
         return False
 
 
+# Tham so GO CAI DAT luu cung file voi tham so cai, khoa "<ten file>::go" (04/10/2026).
+HAU_TO_GO = "::go"
+
+
 def danh_sach_app():
     meta = doc_thongtin_app()
     ra = _liet_ke(APPS_DIR, EXT_APP)
     for a in ra:
         a["tham_so"] = meta.get(a["ten"], "")
+        a["go_cai"] = meta.get(a["ten"] + HAU_TO_GO, "")
         a["la_msi"] = a["ten"].lower().endswith(".msi")
     return ra
 
@@ -3832,6 +3837,9 @@ def register_deployos(app):
                 nhan_dl = {"os": "Phiên bản", "winpe": "Tên trong menu PXE"}.get(loai, "Tham số")
                 phu += (f'<br><span style="color:#8ad4a0;">{nhan_dl}: '
                         f'{_esc(m["du_lieu"])}</span>')
+            if loai == "phanmem" and m.get("go_cai"):
+                phu += (f'<br><span style="color:#e8c898;">Tham số gỡ: '
+                        f'{_esc(m["go_cai"])}</span>')
             hang += f"""
             <tr data-id="{mid}" data-loai="{_esc(loai)}">
               <td>{nhan_loai}</td>
@@ -4104,9 +4112,13 @@ def register_deployos(app):
 
             def sau(duong):
                 # Phan mem: gan luon tham so cai im lang di kem (neu kho co).
-                if loai == "phanmem" and du_lieu:
+                go_cai = (m.get("go_cai") or "").strip()
+                if loai == "phanmem" and (du_lieu or go_cai):
                     meta = doc_thongtin_app()
-                    meta[ten_an] = du_lieu[:200]
+                    if du_lieu:
+                        meta[ten_an] = du_lieu[:200]
+                    if go_cai:
+                        meta[ten_an + HAU_TO_GO] = go_cai[:400]
                     ghi_thongtin_app(meta)
                 return True, f"Đã tải về {TEN_LOAI_KHO[loai]}."
 
@@ -4706,6 +4718,16 @@ def register_deployos(app):
                     </form>
                   </td>
                   <td>
+                    <form method="POST" action="/deployos/console/apps/thamso" class="row" style="gap:8px;">
+                      <input type="hidden" name="ten" value="{_esc(a['ten'])}">
+                      <input type="hidden" name="kieu" value="go">
+                      <input type="text" name="go_cai" value="{_esc(a['go_cai'])}"
+                             placeholder="vd: msiexec /x {{GUID}} /qn" style="max-width:290px;"
+                             autocapitalize="off">
+                      <button type="submit" class="small gray">Lưu</button>
+                    </form>
+                  </td>
+                  <td>
                     <a class="btn small gray" href="/deployos/console/apps/tai/{_esc(a['ten'])}">Tải về</a>
                     <form method="POST" action="/deployos/console/apps/xoa" style="display:inline;"
                           onsubmit="return confirm('Xoa {_esc(a['ten'])}?');">
@@ -4717,6 +4739,7 @@ def register_deployos(app):
             bang = f"""
             <div class="tbl-scroll"><table id="bang-apps">
               <thead><tr><th>Phần mềm</th><th style="width:340px;">Tham số cài im lặng</th>
+                  <th style="width:380px;">Tham số gỡ cài đặt</th>
                   <th style="width:180px;">Thao tác</th></tr></thead>
               <tbody>{hang}</tbody>
             </table></div>
@@ -4794,6 +4817,13 @@ def register_deployos(app):
         if not ten or not os.path.isfile(os.path.join(APPS_DIR, ten)):
             return _trang_apps("Khong tim thay phan mem do.", False)
         meta = doc_thongtin_app()
+        if request.form.get("kieu") == "go":
+            go = (request.form.get("go_cai") or "").strip()[:400]
+            if go:
+                meta[ten + HAU_TO_GO] = go
+            else:
+                meta.pop(ten + HAU_TO_GO, None)
+            return _trang_apps("Đã lưu tham số gỡ cài đặt." if ghi_thongtin_app(meta) else "Không ghi được.", True)
         ts = (request.form.get("tham_so") or "").strip()[:200]
         if ts:
             meta[ten] = ts
@@ -4808,7 +4838,9 @@ def register_deployos(app):
         ok, msg = _xoa_file(APPS_DIR, ten)
         if ok:
             meta = doc_thongtin_app()
-            if meta.pop(ten, None) is not None:
+            da_co = meta.pop(ten, None) is not None
+            da_co = (meta.pop(ten + HAU_TO_GO, None) is not None) or da_co
+            if da_co:
                 ghi_thongtin_app(meta)
         return _trang_apps(msg, ok)
 

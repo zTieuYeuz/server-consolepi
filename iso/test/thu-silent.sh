@@ -17,6 +17,9 @@
 #   thu-silent.sh <bo cai> --tu-do [giay toi da = 420]
 #       Tu doan loai bo cai (NSIS/Inno/MSI/WiX...) va thu LAN LUOT cac tham so thuong
 #       gap tren cac o phu moi, dung o tham so dau tien chay im lang thanh cong.
+#   Them bien GO_CAI=auto (hoac GO_CAI="<lenh go>") de thu luon pha GO CAI DAT sau khi cai:
+#       "auto" doc UninstallString cua cac muc moi roi suy ra lenh go im lang (in ra "go goi y"),
+#       chay thu lenh do va kiem tra go sach chua. Ket qua luu o /build/test/ket-qua-phan-mem/.
 #
 # Ket qua: ket_luan = xong | khong_tu_thoat | loi | qua_gio | dung_bat_thuong
 #   xong / khong_tu_thoat + co muc go cai dat moi = IM LANG DUNG.
@@ -87,10 +90,10 @@ thu_mot() {   # $1=tham so  $2=toi da  -> in ket qua, tra 0 neu im lang dung
   rm -rf /mnt/vang/ConsolePi/thu; mkdir -p /mnt/vang/ConsolePi/thu
   cp "$BO_CAI" "/mnt/vang/ConsolePi/thu/$ten"
   cp "$GUEST" /mnt/vang/ConsolePi/thu/cs-thu.ps1
-  TS="$ts" TD="$td" TEN="$ten" python3 - <<'E'
+  TS="$ts" TD="$td" TEN="$ten" GO="${GO_CAI:-}" python3 - <<'E'
 import json, os
 json.dump({"tep": "C:\\ConsolePi\\thu\\" + os.environ["TEN"], "tham_so": os.environ["TS"],
-           "toi_da": int(os.environ["TD"])},
+           "toi_da": int(os.environ["TD"]), "go_cai": os.environ.get("GO", "")},
           open("/mnt/vang/ConsolePi/thu/cau-hinh.json", "w"), ensure_ascii=True)
 E
   mkdir -p "/mnt/vang/ProgramData/Microsoft/Windows/Start Menu/Programs/StartUp"
@@ -114,6 +117,8 @@ E
   mount -o ro /dev/nbd0p3 /mnt/vang 2>/dev/null
   local kq=/mnt/vang/ConsolePi/thu/ket-qua.json rc=1
   if [ -f $kq ]; then
+    mkdir -p /build/test/ket-qua-phan-mem
+    cp $kq "/build/test/ket-qua-phan-mem/$(basename "$BO_CAI")-$(date +%m%d-%H%M%S).json"
     python3 - "$kq" <<'E'
 import json, sys
 d = json.load(open(sys.argv[1], encoding="utf-8-sig"))
@@ -122,6 +127,12 @@ print(f"  ket luan: {d['ket_luan']}   ma thoat: {d['ma_thoat']}   {d['giay']} gi
 if d.get("ghi_chu"): print(f"  ghi chu : {d['ghi_chu']}")
 for k, nhan in (("muc_go_cai_moi", "go cai dat moi"), ("thu_muc_moi", "thu muc moi"), ("loi_tat_moi", "loi tat moi")):
     for x in d.get(k) or []: print(f"  + {nhan}: {x}")
+for g in d.get("goi_y_go") or []:
+    print(f"  go goi y: {g['ten']} -> {g['goi_y_go_im_lang']}")
+for g in d.get("go") or []:
+    print(f"  GO: {g['lenh']}  => {g['ket_luan']} (ma {g['ma_thoat']}, {g['giay']} giay) {g.get('ghi_chu') or ''}")
+if d.get("sau_go"):
+    print("  sau go: " + ("SACH" if d["sau_go"]["sach"] else f"CON LAI {d['sau_go']['muc_go_cai_con_lai']} {d['sau_go']['thu_muc_con_lai']}"))
 ok = d["ket_luan"] in ("xong", "khong_tu_thoat") and bool(d.get("muc_go_cai_moi") or d.get("thu_muc_moi"))
 print("  => IM LANG DUNG" if ok else "  => KHONG DAT")
 sys.exit(0 if ok else 1)
