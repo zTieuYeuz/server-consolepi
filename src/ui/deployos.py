@@ -49,6 +49,7 @@ import os
 import re
 import secrets
 import shutil
+import subprocess
 import time
 import unicodedata
 
@@ -824,6 +825,48 @@ def duong_install_wim(os_id):
     return os.path.join(OS_DIR, ten_an_toan(os_id), "install.wim")
 
 
+_CACHE_CHI_SO_PRO = {}
+
+
+def chi_so_anh_pro(os_id):
+    """
+    Chi so cua phien ban **Windows Pro** trong install.wim/esd. ISO Windows chinh hang
+    chua nhieu phien ban (Home, Home N, Pro, Education...) trong 1 file; deploy.cmd
+    truoc day luon bung chi so 1 nen co ISO ra Home thay vi Pro. Anh Thoai 04/10/2026:
+    "tat ca cac ban Windows deu cai Pro" - nen tu tim ban Pro (Edition ID = Professional),
+    khong tao lua chon. Khong co ban Pro nao (hoac wiminfo loi) thi giu chi so 1 nhu cu.
+    """
+    thu_muc = os.path.join(OS_DIR, ten_an_toan(os_id))
+    for ten in ("install.wim", "install.esd"):
+        p = os.path.join(thu_muc, ten)
+        if os.path.isfile(p):
+            break
+    else:
+        return 1
+    try:
+        st = os.stat(p)
+    except OSError:
+        return 1
+    khoa = (p, st.st_mtime, st.st_size)
+    if khoa in _CACHE_CHI_SO_PRO:
+        return _CACHE_CHI_SO_PRO[khoa]
+    chi_so = 1
+    try:
+        r = subprocess.run(["wiminfo", p], capture_output=True, text=True, timeout=120)
+        if r.returncode == 0:
+            for khoi in r.stdout.split("\n\n"):
+                m_so = re.search(r"^Index:\s*(\d+)", khoi, re.M)
+                m_ed = re.search(r"^Edition ID:\s*(\S+)", khoi, re.M)
+                if m_so and m_ed and m_ed.group(1) == "Professional":
+                    chi_so = int(m_so.group(1))
+                    break
+            _CACHE_CHI_SO_PRO.clear()
+            _CACHE_CHI_SO_PRO[khoa] = chi_so
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return chi_so
+
+
 def tao_os_moi(ten_hien_thi, os_ho="windows"):
     _bao_dam_thu_muc()
     ten_hien_thi = (ten_hien_thi or "").strip()
@@ -1232,10 +1275,14 @@ def thieu_gi(d):
         thieu.append("chưa chọn OS")
     if not d["ten_may"]:
         thieu.append("chưa có tên máy")
-    if not d["username"]:
-        thieu.append("chưa có tên đăng nhập")
-    if not d["password"]:
-        thieu.append("chưa đặt mật khẩu")
+    if d["os_ho"] == "linux":
+        if not d["username"]:
+            thieu.append("chưa có tên đăng nhập")
+        if not d["password"]:
+            thieu.append("chưa đặt mật khẩu")
+    elif not d.get("mk_admin"):
+        # Windows: chi dung tai khoan Administrator (khong tao user rieng)
+        thieu.append("chưa đặt mật khẩu Administrator")
     if not d.get("os_id"):
         thieu.append("chưa chọn hệ điều hành")
     return thieu
@@ -1255,10 +1302,11 @@ def loi_bat_buoc(d):
         ra.append((3, "chưa điền tên máy"))
     elif not re.fullmatch(r"[A-Za-z0-9-]{1,15}", tm):
         ra.append((3, "tên máy chỉ dùng chữ không dấu, số, dấu gạch ngang, tối đa 15 ký tự"))
-    if not d.get("username"):
-        ra.append((3, "chưa điền tên đăng nhập"))
-    if d.get("os_ho") != "linux" and d.get("bat_admin") and not d.get("mk_admin"):
-        ra.append((3, "đã bật tài khoản Administrator nhưng chưa đặt mật khẩu"))
+    if d.get("os_ho") == "linux":
+        if not d.get("username"):
+            ra.append((3, "chưa điền tên đăng nhập"))
+    elif not d.get("mk_admin"):
+        ra.append((3, "chưa đặt mật khẩu cho tài khoản Administrator"))
     return ra
 
 
@@ -1347,11 +1395,6 @@ def _dong_tongket_windows(d, esc):
     else:
         o_key = ('<span style="color:#8b93a1;">Key KMS mặc định &mdash; '
                  'máy sẽ ở trạng thái chưa kích hoạt</span>')
-    if d.get("bat_admin"):
-        o_admin = ('<span style="color:#f59e0b;">Đã mở &mdash; có đặt mật '
-                   'khẩu riêng</span>')
-    else:
-        o_admin = '<span style="color:#8b93a1;">Khoá (mặc định của Windows)</span>'
     if d.get("tu_dang_nhap"):
         o_tdn = ('<span style="color:#f59e0b;">Bật &mdash; bật máy vào thẳng '
                  'desktop, không hỏi mật khẩu</span>')
@@ -1368,7 +1411,6 @@ def _dong_tongket_windows(d, esc):
     return (f"<tr><td>Ngôn ngữ Windows</td><td>{esc(ten_nn)}</td></tr>\n"
             f"            <tr><td>Kiểu bàn phím</td><td>{esc(ten_bp)}</td></tr>\n"
             f"            <tr><td>Key Windows</td><td>{o_key}</td></tr>\n"
-            f"            <tr><td>Tài khoản Administrator</td><td>{o_admin}</td></tr>\n"
             f"            <tr><td>Tự động đăng nhập</td><td>{o_tdn}</td></tr>\n"
             f"            <tr><td>Gỡ ứng dụng kèm sẵn</td><td>{o_go}</td></tr>")
 
@@ -2035,13 +2077,18 @@ def register_deployos(app):
 
         elif buoc == 3:
             d["ten_may"] = (form.get("ten_may") or "").strip()
-            d["username"] = (form.get("username") or "").strip()
+            # Linux: tai khoan thuong (username/password). Windows: KHONG tao user,
+            # chi dung Administrator co san (anh Thoai 04/10/2026) - mat khau o mk_admin.
+            if d.get("os_ho") == "linux":
+                d["username"] = (form.get("username") or "").strip()
+            else:
+                d["username"] = "Administrator"
             # Chi ghi de mat khau khi nguoi dung go moi. Ly do: o mat khau
             # KHONG duoc dien san gia tri cu ra trang (xem _noi_dung_buoc) -
             # neu o day cu ghi de bang chuoi rong thi moi lan quay lui roi
             # tiep tuc la mat khau da nhap bi xoa mat ma khong ai biet.
             mk_moi = form.get("password") or ""
-            if mk_moi:
+            if mk_moi and d.get("os_ho") == "linux":
                 d["password"] = mk_moi
             d["ssh"] = bool(form.get("ssh")) if d.get("os_ho") == "linux" else False
             mg = form.get("mui_gio", MUI_GIO[0])
@@ -2067,22 +2114,18 @@ def register_deployos(app):
                 d["product_key"] = pk
 
                 d["tu_dang_nhap"] = bool(form.get("tu_dang_nhap"))
-                d["bat_admin"] = bool(form.get("bat_admin"))
+                # Administrator LUON mo, bat buoc co mat khau (khong con tuy chon tat)
+                d["bat_admin"] = True
                 mk_ad_moi = form.get("mk_admin") or ""
                 if mk_ad_moi:
                     d["mk_admin"] = mk_ad_moi
-                if not d["bat_admin"]:
-                    # Bo tich thi xoa luon mat khau da luu - khong giu lai
-                    # mat khau cua mot tai khoan dang tat.
-                    d["mk_admin"] = ""
-                elif not d["mk_admin"]:
-                    return ("Đã chọn mở tài khoản Administrator thì phải đặt "
-                            "mật khẩu cho nó. Tài khoản này có toàn quyền và "
-                            "không bị giới hạn như tài khoản thường.")
+                if not d["mk_admin"]:
+                    return ("Phải đặt mật khẩu cho tài khoản Administrator. Đây là "
+                            "tài khoản duy nhất để đăng nhập vào máy sau khi cài.")
 
             if not d["ten_may"]:
                 return "Chua dien ten may."
-            if not d["username"]:
+            if d.get("os_ho") == "linux" and not d["username"]:
                 return "Chua dien ten dang nhap."
             # Ten may: theo quy tac chung cua ca Windows lan Linux (chu, so,
             # dau gach ngang; khong dau cach) - de tranh loi luc cai
@@ -2342,22 +2385,16 @@ def register_deployos(app):
                   (cài được nhưng máy ở trạng thái CHƯA kích hoạt cho tới khi
                   anh nhập key thật hoặc máy gặp máy chủ KMS của công ty).</p>
 
-                <label class="chon" style="margin-top:14px;">
-                  <input type="checkbox" name="bat_admin" value="1"{ad_ch}
-                         id="o_bat_admin">
-                  <span class="t">Mở tài khoản Administrator có sẵn</span>
-                  <div class="d">Windows vốn khoá sẵn tài khoản này. Mở ra thì
-                  có một tài khoản toàn quyền dự phòng - vào được máy kể cả khi
-                  tài khoản chính hỏng hoặc quên mật khẩu.</div>
-                </label>
-                <div id="khoi_mk_admin"{an_mk}>
-                  <label>Mật khẩu cho Administrator</label>
-                  <input type="password" name="mk_admin" value=""
+                <div id="khoi_mk_admin">
+                  <label>Tài khoản đăng nhập: <strong>Administrator</strong> (mặc định, luôn mở)</label>
+                  <input type="password" name="mk_admin" value="" required
                          autocomplete="new-password"
                          placeholder="{nhac_mk_ad}">
                   <p style="color:#f59e0b;font-size:12.5px;margin:7px 0 0;">
-                    Tài khoản này có toàn quyền và KHÔNG bị khoá sau nhiều lần
-                    nhập sai như tài khoản thường - hãy đặt mật khẩu mạnh.</p>
+                    Máy sau khi cài chỉ có tài khoản Administrator, vào thẳng
+                    tài khoản này. Bắt buộc đặt mật khẩu. Tài khoản này có toàn
+                    quyền và KHÔNG bị khoá sau nhiều lần nhập sai - hãy đặt mật
+                    khẩu mạnh.</p>
                 </div>
 
                 <label class="chon" style="margin-top:14px;">
@@ -2370,23 +2407,11 @@ def register_deployos(app):
                   trưng bày, nhưng ai chạm vào máy cũng dùng được. Không tích
                   thì từ lần thứ hai trở đi máy hỏi mật khẩu bình thường.</div>
                 </label>
-                <script>
-                (function() {{
-                  var o = document.getElementById('o_bat_admin');
-                  var k = document.getElementById('khoi_mk_admin');
-                  if (o && k) o.addEventListener('change', function() {{
-                    k.hidden = !o.checked;
-                  }});
-                }})();
-                </script>"""
+"""
 
-            return f"""
-            <form method="POST" {act}>
-              <div class="card">
-                <h3>Thông tin máy sẽ cài</h3>
-                <label>Tên máy (hostname)</label>
-                <input type="text" name="ten_may" value="{_esc(d['ten_may'])}"
-                       placeholder="ví dụ: PC-KETOAN-01" autocapitalize="off">
+            khoi_tk_linux = ""
+            if la_linux:
+                khoi_tk_linux = f"""
                 <label>Tên đăng nhập (username)</label>
                 <input type="text" name="username" value="{_esc(d['username'])}"
                        placeholder="ví dụ: admin" autocapitalize="off">
@@ -2397,7 +2422,15 @@ def register_deployos(app):
                   Đây là mật khẩu cho tài khoản SẼ TẠO trên máy đang cài lại,
                   không phải mật khẩu của Console Pi. Nếu lưu thành kịch bản,
                   file kịch bản được để quyền chỉ root đọc được (600).
-                  {'<br>Da co mat khau - de trong o nay thi giu nguyen cai cu.' if d['password'] else ''}</p>
+                  {'<br>Da co mat khau - de trong o nay thi giu nguyen cai cu.' if d['password'] else ''}</p>"""
+            return f"""
+            <form method="POST" {act}>
+              <div class="card">
+                <h3>Thông tin máy sẽ cài</h3>
+                <label>Tên máy (hostname)</label>
+                <input type="text" name="ten_may" value="{_esc(d['ten_may'])}"
+                       placeholder="ví dụ: PC-KETOAN-01" autocapitalize="off">
+                {khoi_tk_linux}
                 <!-- O mat khau KHONG dien san gia tri cu: dien san thi mat
                      khau nam thang trong ma nguon trang, ai xem nguon (hoac
                      anh chup man hinh dev tools) deu doc duoc. -->
@@ -2759,8 +2792,8 @@ def register_deployos(app):
                 (', '.join(_esc(x) for x in d.get('driver_ids') or [])
                  or "<span style='color:#8b93a1;'>Không có</span>")}</td></tr>
             <tr><td>Tên máy</td><td>{_esc(d['ten_may'])}</td></tr>
-            <tr><td>Tài khoản</td><td>{_esc(d['username'])}</td></tr>
-            <tr><td>Mật khẩu</td><td>{'&bull;' * 8 + ' <span style="color:#8b93a1;">(đã đặt)</span>' if d['password'] else '<span style="color:#f59e0b;">Chưa đặt</span>'}</td></tr>
+            <tr><td>Tài khoản</td><td>{_esc(d['username'] if d['os_ho'] == 'linux' else 'Administrator')}</td></tr>
+            <tr><td>Mật khẩu</td><td>{'&bull;' * 8 + ' <span style="color:#8b93a1;">(đã đặt)</span>' if (d['password'] if d['os_ho'] == 'linux' else d.get('mk_admin')) else '<span style="color:#f59e0b;">Chưa đặt</span>'}</td></tr>
             <tr><td>SSH</td><td>{'Bật' if d.get('ssh') else ('Tắt' if d['os_ho'] == 'linux' else '<span style="color:#8b93a1;">Không áp dụng cho Windows</span>')}</td></tr>
             <tr><td>Múi giờ</td><td>{_esc(d['mui_gio'])}</td></tr>
             {_dong_tongket_windows(d, _esc)}
@@ -4885,7 +4918,8 @@ def _tom_tat_day_du(k, esc):
     # con thuoc kich ban - xem ui/pxemenu.py.)
     them("Hệ điều hành", esc(_ten_os(k)))
     them("Tên máy", esc(k.get("ten_may") or ""))
-    them("Tài khoản", esc(k.get("username") or ""))
+    them("Tài khoản", esc(k.get("username") or "") if k.get("os_ho") == "linux"
+         else "Administrator")
     them("Múi giờ", esc(k.get("mui_gio") or ""))
 
     if k.get("os_ho") != "linux":
@@ -4895,8 +4929,6 @@ def _tom_tat_day_du(k, esc):
         them("Bàn phím", esc(ten_bp))
         them("Key Windows", "đã nhập" if k.get("product_key")
              else "<span style='color:#8b93a1;'>key KMS mặc định</span>")
-        them("Administrator", "<span style='color:#f59e0b;'>đã mở</span>"
-             if k.get("bat_admin") else "khoá (mặc định)")
         them("Tự đăng nhập", "mãi mãi" if k.get("tu_dang_nhap")
              else "chỉ lần đầu (sau đó hỏi mật khẩu)")
 

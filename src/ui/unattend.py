@@ -550,14 +550,8 @@ def _muc_kiem_tra(d):
         $t = (Get-CimInstance Win32_ComputerSystem).Name
         @{{ Dat = ($t -eq {_ps_chuoi((d.get('ten_may') or '')[:15])}); ChiTiet = $t }}
     """)
-    if d.get("username"):
-        them("May", "Tài khoản chính", loai="ps", ma=f"""
-            $u = Get-LocalUser -Name {_ps_chuoi(d['username'])} -EA SilentlyContinue
-            @{{ Dat = ($u -ne $null); ChiTiet = $(if ($u) {{ 'da tao, Enabled=' + $u.Enabled }} else {{ 'KHONG thay tai khoan' }}) }}
-        """)
-
-    # Tai khoan Administrator: tim theo SID -500 (ten doi theo ngon ngu)
-    if d.get("bat_admin"):
+    # Tai khoan Administrator (duy nhat): tim theo SID -500 (ten doi theo ngon ngu)
+    if d.get("mk_admin"):
         them("May", "Tài khoản Administrator đã mở", loai="ps", ma="""
             $a = Get-LocalUser -EA SilentlyContinue | Where-Object { $_.SID.Value -like '*-500' }
             if ($a) { @{ Dat = $a.Enabled; ChiTiet = "$($a.Name) - Enabled=$($a.Enabled)" } }
@@ -641,6 +635,27 @@ def _muc_kiem_tra(d):
     return muc
 
 
+_RE_BAT_CMD = re.compile(r'^("[^"]+\.(?:cmd|bat)"|[^\s"]+\.(?:cmd|bat))(\s|$)', re.I)
+
+
+def _them_call(lenh):
+    """
+    Them `call` truoc moi lenh goi file .cmd/.bat. Moi buoc chay trong 1 file
+    buoc-N.cmd roi ghi ma thoat o dong SAU; goi file .cmd khac KHONG co `call` thi
+    quyen dieu khien chuyen sang no va KHONG BAO GIO quay lai -> khong ghi duoc ma
+    thoat -> tien trinh bao "Bo cai dung bat thuong" du ung dung chay dung (lab
+    04/10/2026: "Kiem tra ung dung nhieu file" - cai.cmd chay du 4 muc [ DAT ] ma van bao loi).
+    """
+    cac = [x for x in re.split(r"(&&|&|\|\|)", lenh)]
+    for i, seg in enumerate(cac):
+        t = seg.strip()
+        if t in ("&&", "&", "||") or t.lower().startswith("call "):
+            continue
+        if _RE_BAT_CMD.match(t):
+            cac[i] = seg.replace(t, "call " + t, 1)
+    return "".join(cac)
+
+
 def _danh_sach_buoc_nguoi_dung(d):
     """
     Danh sach cac buoc se chay SAU KHI dang nhap, dang (ten_hien_thi, lenh, he_thong).
@@ -685,7 +700,7 @@ def _danh_sach_buoc_nguoi_dung(d):
         if dong and not dong.startswith("#"):
             ra.append(("Lệnh thêm", dong, False))
 
-    return ra
+    return [(ten, _them_call(lenh), ht) for ten, lenh, ht in ra]
 
 
 def _nhan_tuy_chon(d, pha):
@@ -1676,6 +1691,8 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
     """
     os_id = d.get("os_id", "")
     duong_wim = f"Z:\\os\\{os_id}\\install.wim"
+    # Luon cai phien ban Pro (ISO nhieu phien ban: chi so 1 thuong la Home).
+    chi_so_anh = _d.chi_so_anh_pro(os_id)
 
     return "\r\n".join([
         "@echo off",
@@ -1888,7 +1905,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "",
         "echo  [4/6] Bung anh he dieu hanh - buoc nay lau nhat, xin doi...",
         "echo.",
-        f"dism /apply-image /imagefile:{duong_wim} /index:1 /applydir:W:\\ "
+        f"dism /apply-image /imagefile:{duong_wim} /index:{chi_so_anh} /applydir:W:\\ "
         "/logpath:X:\\dism_log.txt",
         "if errorlevel 1 goto loi_bung",
         "",
@@ -2671,11 +2688,13 @@ def _lenh_bat_administrator(d):
     la cach duy nhat dung chac. Vi buoc 3 cho chon ngon ngu Windows nen
     truong hop nay la co that, khong phai lo xa.
     """
-    if not (d.get("bat_admin") and d.get("mk_admin")):
+    if not d.get("mk_admin"):
         return []
+    # Doi ten ve "Administrator" neu image ngon ngu khac (AutoLogon goi theo ten).
     return ["powershell -NoProfile -ExecutionPolicy Bypass -Command "
-            "\"Get-LocalUser | Where-Object { $_.SID.Value -like '*-500' } "
-            "| Enable-LocalUser\""]
+            "\"$a = Get-LocalUser | Where-Object { $_.SID.Value -like '*-500' }; "
+            "$a | Enable-LocalUser; "
+            "if ($a.Name -ne 'Administrator') { Rename-LocalUser $a -NewName Administrator }\""]
 
 
 # Ho so mac dinh: moi tai khoan moi duoc tao bang cach chep C:\Users\Default.
@@ -2807,8 +2826,10 @@ def sinh_unattend_offline_xml(d):
     cau hinh no luc boot lan dau.
     """
     ten_may = (d.get("ten_may") or "PC-CONSOLEPI")[:15]
-    username = d.get("username") or "admin"
-    password = d.get("password") or ""
+    # Khong tao user rieng: chi dung Administrator co san (anh Thoai 04/10/2026).
+    # Mat khau o mk_admin (bat buoc, xem thieu_gi); AutoLogon vao Administrator.
+    username = "Administrator"
+    password = d.get("mk_admin") or ""
     mui_gio = d.get("mui_gio") or "SE Asia Standard Time"
     BANG_TIMEZONE_WINDOWS = {
         "Asia/Ho_Chi_Minh": "SE Asia Standard Time",
@@ -2835,7 +2856,7 @@ def sinh_unattend_offline_xml(d):
     # <AdministratorPassword> chi dat mat khau CHU KHONG mo khoa - phai
     # co them 1 lenh bat len (xem _lenh_bat_administrator).
     khoi_mk_admin = ""
-    if d.get("bat_admin") and d.get("mk_admin"):
+    if d.get("mk_admin"):
         khoi_mk_admin = f"""
         <AdministratorPassword>
           <Value>{_esc(d['mk_admin'])}</Value>
@@ -2905,17 +2926,7 @@ def sinh_unattend_offline_xml(d):
     <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
         publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
         xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-      <UserAccounts>
-        <LocalAccounts>
-          <LocalAccount wcm:action="add">
-            <Name>{_esc(username)}</Name>
-            <Group>Administrators</Group>
-            <Password>
-              <Value>{_esc(password)}</Value>
-              <PlainText>true</PlainText>
-            </Password>
-          </LocalAccount>
-        </LocalAccounts>{khoi_mk_admin}
+      <UserAccounts>{khoi_mk_admin}
       </UserAccounts>{khoi_autologon}
       <OOBE>
         <HideEULAPage>true</HideEULAPage>
