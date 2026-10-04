@@ -494,6 +494,19 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
             return
         _xong_buoc("ok", f"boot.wim: {ct_b} · {ten_dich}: {ct_i}")
 
+        # --- 5b. Goi .NET 3.5 offline (sources/sxs/*.cab, ~70 MB): giu lai de luc cai Windows bat
+        # NetFx3 OFFLINE ~1 phut thay vi tai qua mang ~9 phut. Co gang het suc, loi thi bo qua.
+        try:
+            cab = [k for k in muc if k.lower().startswith("sources/sxs/") and k.lower().endswith(".cab")]
+            lenh7 = _lenh_7z()
+            if cab and lenh7:
+                thu_muc_sxs = os.path.join(thu_muc, "sxs")
+                os.makedirs(thu_muc_sxs, exist_ok=True)
+                for k in cab:
+                    _chay_huy([lenh7, "e", f"-o{thu_muc_sxs}", "-y", duong_iso, k], 900)
+        except Exception:
+            pass
+
         # --- 6. Don dep
         _buoc(5, "Dọn file không cần nữa", 95)
         da_xoa = []

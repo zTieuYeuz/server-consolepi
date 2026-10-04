@@ -1918,7 +1918,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "echo  Da bung xong anh he dieu hanh. Dang chuan bi buoc tiep theo"
         " (nap driver, phan mem, cau hinh tu dong) - xin doi...",
         "echo.",
-    ] + _lenh_tiem_driver_offline(d) + _lenh_chep_go_app(d) + [
+    ] + _lenh_tiem_driver_offline(d) + _lenh_net35_offline(d) + _lenh_chep_go_app(d) + [
         "echo  [5/6] Chep cau hinh tu dong - ten may, tai khoan, mui gio...",
         "if not exist W:\\Windows\\Panther mkdir W:\\Windows\\Panther",
         "copy /y %NHUNG%\\unattend.xml W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
@@ -2550,6 +2550,32 @@ def _lenh_tiem_driver_offline(d):
         dong.append(f'if exist "Z:\\drivers\\{driver_id}" dism /image:W:\\ /add-driver '
                     f'/driver:"Z:\\drivers\\{driver_id}" /recurse >> %LOG% 2>&1')
     return dong
+
+
+def _lenh_net35_offline(d):
+    r"""
+    Bat .NET Framework 3.5 OFFLINE ngay luc bung anh (dism /image:W:\ /enable-feature NetFx3
+    /source:...\sxs /limitaccess) neu he dieu hanh co goi sxs\*.cab. ~1 phut, thay cho tai qua
+    mang ~9 phut o buoc sau dang nhap (lab 04/10/2026: 523 giay). Cach MDT lam.
+    Loi (goi sai ban Windows...) KHONG dung cai dat: ghi log roi buoc sau dang nhap van tu tai
+    qua mang nhu cu (lenh `dism /online` o do la no-op neu da bat san).
+    Thu muc tam o o W: vi X: (RAM cua WinPE) rat nho.
+    """
+    if "bat_net_framework35" not in (d.get("tuy_chon") or []):
+        return []
+    os_id = d.get("os_id", "")
+    if not os_id or not _d.co_sxs(os_id):
+        return []
+    nguon = f"Z:\\os\\{os_id}\\sxs"
+    return [
+        "echo === bat .NET Framework 3.5 offline === >> %LOG%",
+        "echo  Bat .NET Framework 3.5 tu goi offline - khoang 1-2 phut...",
+        f'if exist "{nguon}" mkdir W:\\cs-scratch',
+        f'if exist "{nguon}" dism /image:W:\\ /enable-feature /featurename:NetFx3 /all '
+        f'/source:"{nguon}" /limitaccess /scratchdir:W:\\cs-scratch /logpath:X:\\dism_net35.txt >> %LOG% 2>&1',
+        "if exist W:\\cs-scratch rd /s /q W:\\cs-scratch",
+        "echo.",
+    ]
 
 
 def _lenh_chep_go_app(d):

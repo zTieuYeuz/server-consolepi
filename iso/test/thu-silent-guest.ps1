@@ -16,12 +16,16 @@ $cfg = Get-Content "$D\cau-hinh.json" -Raw -Encoding UTF8 | ConvertFrom-Json
 $toiDa = [int]$cfg.toi_da
 $tep = $cfg.tep
 
+# Windows tu cai nen "Microsoft Edge WebView2 Runtime" (va cap nhat Edge) vao luc nao do sau khi
+# bat may -> lan vao ket qua cua moi phan mem (lab 04/10/2026: bao "cai duoc" chi vi WebView2 moi
+# xuat hien, bo cai that bi giet nham o giay thu 60). Loai han ra khoi moi phep so sanh.
+$LoaiTru = 'WebView2|Microsoft Edge'
 function Lay-Un-Chi-Tiet {
     foreach ($k in 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
                    'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall') {
         Get-ChildItem $k -EA SilentlyContinue | ForEach-Object {
             $p = Get-ItemProperty $_.PSPath -EA SilentlyContinue
-            if ($p.DisplayName) {
+            if ($p.DisplayName -and $p.DisplayName -notmatch $LoaiTru) {
                 [pscustomobject]@{ khoa = $_.PSChildName; ten = $p.DisplayName; ban = $p.DisplayVersion
                                    go = $p.UninstallString; go_im = $p.QuietUninstallString
                                    msi = ($p.WindowsInstaller -eq 1) }
@@ -74,7 +78,7 @@ function Chay-Buoc($lenh, $gioiHan, $tenTac) {
             if ($sig -ne $sigCu) { $sigCu = $sig; $tDung = Get-Date }
             elseif ($pCai.Count -gt 0 -and ((Get-Date) - $tDung).TotalSeconds -ge 60) {
                 $moi = @(Lay-Un-Chi-Tiet | Where-Object { $unTruoc -notcontains $_.khoa })
-                if ($moi.Count -gt 0 -or $tenTac -eq 'go') {
+                if ($moi.Count -gt 0 -or $tenTac -like 'go*') {
                     $cl = @($pCai | ForEach-Object { $_.Name })
                     foreach ($c in $pCmd) { & taskkill /PID $c.ProcessId /F 2>&1 | Out-Null }
                     foreach ($q in $pCai) { & taskkill /PID $q.ProcessId /F 2>&1 | Out-Null }
@@ -98,6 +102,7 @@ function Chay-Buoc($lenh, $gioiHan, $tenTac) {
 }
 
 # ------------------------------------------------ pha 1: cai
+Start-Sleep -Seconds 45     # cho Windows xong cac viec nen luc moi bat may roi moi chup "truoc"
 $unTruocCT = @(Lay-Un-Chi-Tiet); $pfTruoc = @(Lay-Thu-Muc); $lnkTruoc = @(Lay-Lnk)
 $khoaTruoc = @($unTruocCT | ForEach-Object { $_.khoa })
 if ($tep -like '*.msi') { $lenhCai = 'msiexec /i "' + $tep + '" ' + $cfg.tham_so }
@@ -125,26 +130,64 @@ $goiY = @($unMoi | ForEach-Object { [ordered]@{ ten = $_.ten; ban = $_.ban; unin
                                                  goi_y_go_im_lang = (Suy-Lenh-Go $_) } })
 
 # ------------------------------------------------ pha 2: go
-$cacGo = @(); $sachKhong = $null; $conLaiSauGo = @()
+# Thu lan luot cac ung vien lenh go IM LANG cho tung muc moi, dung o ung vien lam khoa Uninstall
+# bien mat. go_cai: "auto" = suy tu UninstallString; "<lenh>" = chay dung lenh do ({BOCAI} = bo cai;
+# bat dau bang / hoac - thi la tham so cua chinh bo cai); nhieu muc ngan cach bang " ;; ".
+function Ung-Vien-Go($e) {
+    $c = @()
+    if ($e.go_im) { $c += $e.go_im }
+    $u = $e.go
+    if ($u) {
+        if ($e.msi -or $u -match 'msiexec') {
+            $g = [regex]::Match($u, '\{[0-9A-Fa-f-]{36}\}').Value
+            if ($g) { $c += "msiexec /x $g /qn /norestart" }
+        } elseif ($u -match 'unins\d*\.exe') {
+            $c += "$u /VERYSILENT /NORESTART /SUPPRESSMSGBOXES"; $c += "$u /SILENT /NORESTART"
+        } else {
+            $duong = [regex]::Match($u, '^"?([^"]+?\.exe)"?').Groups[1].Value
+            $thuMuc = if ($duong) { Split-Path $duong } else { '' }
+            if ($u -match '/uninstall|--uninstall') { $c += "$u /quiet /norestart"; $c += "$u /S" }
+            $c += "$u /S"
+            if ($thuMuc) { $c += "$u /S _?=$thuMuc" }
+            $c += "$u /quiet /norestart"; $c += "$u /silent"; $c += "$u /VERYSILENT /NORESTART"; $c += "$u /qn"
+        }
+    }
+    return ($c | Select-Object -Unique)
+}
+$cacGo = @(); $sachKhong = $null
 $goCai = $cfg.go_cai
 if ($goCai -and $rCai.ket_luan -in 'xong', 'khong_tu_thoat') {
-    $lenhGo = @()
-    if ($goCai -eq 'auto') {
-        foreach ($e in $unMoi) {
-            if ($e.ten -match 'WebView2|Visual C\+\+|\.NET|Windows Driver') { continue }
-            $l = Suy-Lenh-Go $e; if ($l) { $lenhGo += $l }
-        }
-    } else {
-        $l = $goCai.Replace('{BOCAI}', '"' + $tep + '"')
-        if ($l.StartsWith('/') -or $l.StartsWith('-')) { $l = '"' + $tep + '" ' + $l }
-        $lenhGo += $l
-    }
+    $phan = @($goCai -split ' ;; ' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $tuDong = ($phan -contains 'auto'); $rieng = @($phan | Where-Object { $_ -ne 'auto' })
+    $gioiHanGo = [Math]::Min($toiDa, 150)
     $n = 0
-    foreach ($l in $lenhGo) { $n++; $cacGo += (Chay-Buoc $l ([Math]::Min($toiDa, 300)) "go$n") }
-    Start-Sleep -Seconds 3
+    # muc "goi lon" (bundle/uninstall) go truoc; bo qua runtime dung chung cua he thong
+    $ds = @($unMoi | Where-Object { $_.ten -notmatch 'WebView2|\.NET|Windows Driver' } |
+            Sort-Object { if (($_.go -match '/uninstall|Package Cache') -or $_.go_im) { 0 } else { 1 } })
+    $dsRieng = @($rieng | ForEach-Object { $_.Replace('{BOCAI}', '"' + $tep + '"') } |
+                 ForEach-Object { if ($_.StartsWith('/') -or $_.StartsWith('-')) { '"' + $tep + '" ' + $_ } else { $_ } })
+    $thuLenh = {
+        param($lenh, $khoa)
+        $script:n++
+        $r = Chay-Buoc $lenh $gioiHanGo ("go" + $script:n)
+        Start-Sleep -Seconds 2
+        $con = @(Lay-Un-Chi-Tiet | Where-Object { $khoa -contains $_.khoa })
+        $r['con_lai'] = $con.Count
+        $script:cacGo += $r
+        return ($con.Count -eq 0)
+    }
     $khoaMoi = @($unMoi | ForEach-Object { $_.khoa })
+    foreach ($l in $dsRieng) { if (& $thuLenh $l $khoaMoi) { break } }       # lenh anh dat truoc
+    if ($tuDong) {
+        foreach ($e in $ds) {
+            if (-not (Lay-Un-Chi-Tiet | Where-Object { $_.khoa -eq $e.khoa })) { continue }   # da bi go cung muc khac
+            foreach ($l in (Ung-Vien-Go $e)) { if (& $thuLenh $l @($e.khoa)) { break } }
+        }
+    }
+    Start-Sleep -Seconds 3
     $conLaiSauGo = @(Lay-Un-Chi-Tiet | Where-Object { $khoaMoi -contains $_.khoa } | ForEach-Object { $_.ten })
-    $thuMucCon = @($pfMoi | Where-Object { Test-Path $_ })
+    # thu muc con lai chi tinh khi con FILE ben trong (thu muc hang rong khong tinh)
+    $thuMucCon = @($pfMoi | Where-Object { (Test-Path $_) -and (@(Get-ChildItem $_ -Recurse -File -EA SilentlyContinue).Count -gt 0) })
     $sachKhong = [ordered]@{ muc_go_cai_con_lai = $conLaiSauGo; thu_muc_con_lai = $thuMucCon
                              sach = (($conLaiSauGo.Count -eq 0) -and ($thuMucCon.Count -eq 0)) }
 }

@@ -72,6 +72,9 @@ E
   echo "MAY MAU SAN SANG: $VANG"; exit 0
 fi
 
+# Chi 1 lan thu tai 1 thoi diem (dung chung /dev/nbd0 va /mnt/vang): xep hang bang khoa.
+exec 9>/build/test/thu-silent.lock
+flock 9
 BO_CAI=${1:?thieu duong dan bo cai}; THAMSO=${2:?thieu tham so hoac --tu-do}; TOIDA=${3:-}
 [ -f "$BO_CAI" ] || { echo "Khong thay $BO_CAI"; exit 1; }
 [ -f $VANG/disk.qcow2 ] || { echo "Chua co may mau - chay: $0 tao-vang <o dia> <mat khau>"; exit 1; }
@@ -81,12 +84,20 @@ modprobe nbd max_part=8
 thu_mot() {   # $1=tham so  $2=toi da  -> in ket qua, tra 0 neu im lang dung
   local ts="$1" td="$2" ten tep
   ten=$(basename "$BO_CAI")
-  mkdir -p $LAM; rm -f $LAM/o.qcow2
+  mkdir -p $LAM
+  # don sach moi thu con sot tu lan truoc (nbd/mount) roi moi tao o phu moi
+  umount /mnt/vang 2>/dev/null; qemu-nbd -d /dev/nbd0 >/dev/null 2>&1; sleep 1
+  rm -f $LAM/o.qcow2
   qemu-img create -q -f qcow2 -b $VANG/disk.qcow2 -F qcow2 $LAM/o.qcow2
   cp $VANG/vars.fd $LAM/vars.fd
   qemu-nbd -c /dev/nbd0 $LAM/o.qcow2; sleep 2
   mkdir -p /mnt/vang
-  mount -t ntfs-3g -o rw,remove_hiberfile /dev/nbd0p3 /mnt/vang || { qemu-nbd -d /dev/nbd0; echo "mount loi"; return 2; }
+  local lan_mount=0
+  until mount -t ntfs-3g -o rw,remove_hiberfile /dev/nbd0p3 /mnt/vang 2>/dev/null; do
+    lan_mount=$((lan_mount + 1))
+    [ $lan_mount -ge 5 ] && { qemu-nbd -d /dev/nbd0 >/dev/null 2>&1; echo "mount loi"; return 2; }
+    sleep 4
+  done
   rm -rf /mnt/vang/ConsolePi/thu; mkdir -p /mnt/vang/ConsolePi/thu
   cp "$BO_CAI" "/mnt/vang/ConsolePi/thu/$ten"
   cp "$GUEST" /mnt/vang/ConsolePi/thu/cs-thu.ps1
@@ -133,8 +144,29 @@ for g in d.get("go") or []:
     print(f"  GO: {g['lenh']}  => {g['ket_luan']} (ma {g['ma_thoat']}, {g['giay']} giay) {g.get('ghi_chu') or ''}")
 if d.get("sau_go"):
     print("  sau go: " + ("SACH" if d["sau_go"]["sach"] else f"CON LAI {d['sau_go']['muc_go_cai_con_lai']} {d['sau_go']['thu_muc_con_lai']}"))
-ok = d["ket_luan"] in ("xong", "khong_tu_thoat") and bool(d.get("muc_go_cai_moi") or d.get("thu_muc_moi"))
-print("  => IM LANG DUNG" if ok else "  => KHONG DAT")
+# BANG CHUNG DA CAI THAT (anh Thoai 04/10/2026: "chay xong ma khong cai gi thi chet" - phan mem se ban):
+# ma thoat 0 khong du. Phai co it nhat 1: muc go cai dat MOI trong registry, thu muc moi co chua
+# chuong trinh (.exe/.dll that, khong chi thu muc rong), hoac loi tat moi tro toi file con ton tai.
+import os
+def duong(p): return "/mnt/vang/" + p[3:].replace("\\", "/")
+bang_chung = []
+for m in d.get("muc_go_cai_moi") or []:
+    bang_chung.append(f"muc go cai dat: {m}")
+for f in d.get("thu_muc_moi") or []:
+    tong = chuong_trinh = 0
+    for r, _ds, fs in os.walk(duong(f)):
+        for x in fs:
+            tong += 1
+            if x.lower().endswith((".exe", ".dll")) and not x.lower().startswith("unins"): chuong_trinh += 1
+    if chuong_trinh: bang_chung.append(f"thu muc {f}: {tong} file, {chuong_trinh} exe/dll")
+for l in d.get("loi_tat_moi") or []:
+    if os.path.exists(duong(l)): bang_chung.append(f"loi tat: {l}")
+for b in bang_chung: print(f"  bang chung: {b}")
+chay_ok = d["ket_luan"] in ("xong", "khong_tu_thoat")
+ok = chay_ok and bool(bang_chung)
+if chay_ok and not bang_chung:
+    print("  !! CHAY XONG NHUNG KHONG THAY GI DUOC CAI (khong co muc go cai dat, thu muc, loi tat moi)")
+print("  => IM LANG DUNG, DA CAI THAT" if ok else "  => KHONG DAT")
 sys.exit(0 if ok else 1)
 E
     rc=$?

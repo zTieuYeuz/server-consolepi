@@ -284,6 +284,7 @@ THU_MUC_THEO_DUONG = {}          # {duong_dan_URL: (thu_muc, duoi_cho_phep)}
 
 EXT_OS_WIM = {".wim"}
 EXT_OS_ISO = {".iso"}
+EXT_SXS = {".cab"}      # goi .NET 3.5 offline (sources\\sxs cua ISO) - xem co_sxs()
 EXT_DRIVER = {".inf", ".sys", ".cat", ".zip", ".dll"}
 
 
@@ -301,6 +302,10 @@ def _thu_muc_os_theo_duong(duong_url):
     # Tai len ca file ISO Windows (Pi tu tach boot.wim/install.wim ra - xem
     # ui/isotach.py). File ISO 5-6GB nen BAT BUOC phai ghi thang ra dia y
     # nhu .wim, khong duoc di duong mac dinh cua Werkzeug.
+    if len(phan) == 4 and phan[0] == "deployos" and phan[1] == "os" and phan[3] == "len-sxs":
+        os_id = ten_an_toan(phan[2])
+        if os_id:
+            return os.path.join(OS_DIR, os_id, "sxs"), EXT_SXS
     if len(phan) == 4 and phan[0] == "deployos" and phan[1] == "os" and phan[3] == "len-iso":
         os_id = ten_an_toan(phan[2])
         if os_id:
@@ -813,6 +818,16 @@ def danh_sach_os():
     except OSError:
         pass
     return ra
+
+
+def co_sxs(os_id):
+    """Danh sach file .cab goi .NET 3.5 offline cua he dieu hanh (os/<id>/sxs/*.cab), rong neu khong co.
+    Co thi luc bung anh Windows (WinPE) bat NetFx3 OFFLINE ~1 phut thay vi tai qua mang ~9 phut."""
+    d = os.path.join(OS_DIR, ten_an_toan(os_id), "sxs")
+    try:
+        return sorted(n for n in os.listdir(d) if n.lower().endswith(".cab"))
+    except OSError:
+        return []
 
 
 def lay_os(os_id):
@@ -1608,9 +1623,11 @@ def register_deployos(app):
         # Thieu nhanh nay thi thanh tien trinh cua trang He dieu hanh (ke ca
         # duong tai ISO 5GB moi them) luon bao "da ghi 0" du may dang ghi
         # binh thuong - nhin y het bi treo.
-        if loai in ("os", "os-iso"):
+        if loai in ("os", "os-iso", "os-sxs"):
             os_id = ten_an_toan(request.args.get("os_id", ""))
             thu_muc = os.path.join(OS_DIR, os_id) if os_id else None
+            if thu_muc and loai == "os-sxs":
+                thu_muc = os.path.join(thu_muc, "sxs")
         else:
             thu_muc = {"file": BOOT_DIR, "apps": APPS_DIR,
                        "scripts": SCRIPTS_DIR}.get(loai)
@@ -3319,6 +3336,12 @@ def register_deployos(app):
                           else '<span style="color:#e0a030;">Chưa có</span>')
             hang += f"""
             <tr><td>{nhan}</td><td>{trang_thai}</td><td>{kich_thuoc}</td></tr>"""
+        cab = co_sxs(os_id)
+        hang += ("""
+            <tr><td>sxs\\*.cab (.NET 3.5 offline, không bắt buộc)</td><td>""" +
+                 ('<span style="color:#4CAF50;">Đã có</span>' if cab else
+                  '<span style="color:#8b93a1;">Chưa có</span>') +
+                 "</td><td>" + (", ".join(_esc(x) for x in cab) if cab else "-") + "</td></tr>")
         body = (_tabs("tainguyen", "os") + f"""
         <p><a href="/deployos/os">&larr; Về danh sách hệ điều hành</a></p>
         <h2>{_esc(o['ten_hien_thi'])}</h2>
@@ -3380,6 +3403,24 @@ def register_deployos(app):
           </div>
         </div>
 
+        <div class="card" style="margin-top:14px;">
+          <h3>Gói .NET Framework 3.5 offline (không bắt buộc)</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+            Có gói này thì khi cài Windows, tuỳ chọn <strong>"Bật .NET Framework 3.5"</strong>
+            chỉ mất khoảng 1 phút (bật ngay lúc bung ảnh) thay vì tải qua mạng gần 9 phút.
+            Tải ISO lên ở trên thì Pi tự lấy sẵn. Nếu anh tải sẵn 2 file wim thì chép thư mục
+            <code>sources\\sxs</code> trong ISO ra, tải file
+            <code>microsoft-windows-netfx3-ondemand-package~31bf3856ad364e35~amd64~~.cab</code>
+            vào đây. <strong>Phải đúng bản Windows</strong> (bản Windows 10 dùng cho Windows 10,
+            bản Windows 11 dùng cho Windows 11) — sai bản thì tự quay về tải qua mạng.</p>
+          <form method="POST" action="/deployos/os/{_esc(os_id)}/len-sxs"
+                enctype="multipart/form-data" class="form-tai-len"
+                data-loai="os-sxs" data-os="{_esc(os_id)}" data-busy="Đang tải lên...">
+            <input type="file" name="file" accept=".cab" required>
+            <button type="submit">Tải gói .cab lên</button>
+          </form>
+        </div>
+
         <script>
         (function() {{
           var sel = document.getElementById('kieu-tai');
@@ -3396,6 +3437,24 @@ def register_deployos(app):
         }})();
         </script>""")
         return _trang(body, "Deployment OS", f"Hệ điều hành - {o['ten_hien_thi']}")
+
+    @app.route("/deployos/os/<os_id>/len-sxs", methods=["POST"])
+    def deployos_os_len_sxs(os_id):
+        f = request.files.get("file")
+        if not f or not getattr(f, "filename", ""):
+            return redirect(f"/deployos/os/{os_id}")
+        duong = getattr(getattr(f, "stream", None), "_cp_duong_dan", None)
+        ten_goc = ten_an_toan(f.filename)
+        if not duong:
+            return _trang_os("Chỉ nhận file .cab (gói .NET 3.5 trong thư mục sources\\sxs của ISO).", False)
+        try:
+            f.stream.flush()
+            os.fsync(f.stream.fileno())
+        except Exception:
+            pass
+        thu_muc = os.path.join(OS_DIR, ten_an_toan(os_id), "sxs")
+        ok, msg, _d = _hoan_tat_ghi_thang(duong, thu_muc, ten_goc)
+        return redirect(f"/deployos/os/{os_id}") if ok else _trang_os(msg, ok)
 
     @app.route("/deployos/os/<os_id>/len", methods=["POST"])
     def deployos_os_len(os_id):
