@@ -42,6 +42,10 @@
 - Kho: da test cai + go im lang tren Windows 10 Pro cho ~70 phan mem, bang chung phai thay phan mem that
   (muc go cai dat / thu muc / loi tat), khong chi ma thoat 0.
 
+- Kiosk: neu man hinh cho (kiosk-loading.html) ket o trang trang qua 15 giay trong khi dashboard da song
+  thi kiosk-helper tu mo dashboard (lan khoi dong dau sau khi cai ISO, Chromium bao network service crashed
+  dung luc chuyen trang -> man hinh trang; lab 06/10/2026 lap lai 2/2 lan).
+
 ## 1.7.5 (01/10/2026)
 
 - WinPE kieu USB cuu ho (Anhdv Boot...): ISO co thu muc \Apps o goc (cong cu nam NGOAI file

@@ -462,8 +462,44 @@ def giu_mot_tab():
             pass
 
 
+def cuu_man_hinh_cho():
+    """Man hinh cho (kiosk-loading.html) ket mai o trang trang du dashboard da san sang.
+
+    LOI THAT 06/10/2026 (cai moi ISO 64-bit tren may ao, lan khoi dong DAU TIEN, lap lai 2/2 lan):
+    Chromium bao "Network service crashed or was terminated" luc mang vua cau hinh xong; trang
+    cho goi window.location.href = dashboard dung luc do thi dieu huong bi huy -> tab con
+    about:blank (man hinh trang) va kiosk-loading.html khong chay lai. /healthz van tra 200,
+    khoi dong lai may lan 2 thi binh thuong. Sua: neu tab chinh o trang cho / about:blank
+    qua 15 giay MA dashboard da song thi mo dashboard tu ben ngoai.
+    """
+    ket_tu = None
+    while True:
+        time.sleep(3)
+        try:
+            tabs = _cac_tab()
+            if len(tabs) != 1:
+                ket_tu = None
+                continue
+            url = tabs[0].get("url") or ""
+            if not (url in ("", "about:blank") or url.endswith("kiosk-loading.html")):
+                ket_tu = None
+                continue
+            ket_tu = ket_tu or time.time()
+            if time.time() - ket_tu < 15:
+                continue
+            with urllib.request.urlopen("http://127.0.0.1:8880/healthz", timeout=3) as r:
+                if r.status != 200:
+                    continue
+            _mo_trong_tab_chinh(tabs[0]["webSocketDebuggerUrl"], "http://127.0.0.1:8880/")
+            print("Man hinh cho bi ket - da mo dashboard", flush=True)
+            ket_tu = None
+        except Exception:
+            continue
+
+
 def main():
     threading.Thread(target=giu_mot_tab, daemon=True).start()
+    threading.Thread(target=cuu_man_hinh_cho, daemon=True).start()
     while True:
         try:
             run_once()
