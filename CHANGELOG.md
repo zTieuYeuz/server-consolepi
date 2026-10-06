@@ -35,6 +35,13 @@
 - install.sh: chay duoc trong chroot (dung anh the nho Pi): bo SIGPIPE/pipefail, bo kiem tra
   dich vu khi o chroot.
 
+- Bat .NET 3.5 OFFLINE (sources/sxs giu lai luc tach ISO, tai .cab o trang HDH): ~1 phut thay vi ~9 phut qua mang.
+- Phan mem trong kho co them o "Tham so go cai dat" (cot rieng, tai kem khi ve Pi); trang Phan mem chia cot gon.
+- Bo cai im lang: phat hien "dung yen" tinh ca tien trinh chau va msiexec (truoc co the giet nham bo cai kieu
+  setup.exe goi MSI: OpenOffice, Acrobat); bo WebView2/Edge khoi phep so sanh.
+- Kho: da test cai + go im lang tren Windows 10 Pro cho ~70 phan mem, bang chung phai thay phan mem that
+  (muc go cai dat / thu muc / loi tat), khong chi ma thoat 0.
+
 ## 1.7.5 (01/10/2026)
 
 - WinPE kieu USB cuu ho (Anhdv Boot...): ISO co thu muc \Apps o goc (cong cu nam NGOAI file
