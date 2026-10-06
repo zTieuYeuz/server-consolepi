@@ -3,7 +3,7 @@
 # ====================================================================
 # THU HANG LOAT nhieu phan mem cai im lang + go cai dat (chay tren MAY BUILD).
 # Moi dong cua file danh sach (ngan cach bang dau |, dong bat dau # bi bo qua):
-#     ten | url tai ve | ten file luu | tham so cai | lenh go (de trong hoac "auto")
+#     ten | url tai ve | ten file luu | tham so cai | lenh go ("auto" hoac lenh, nhieu lenh ngan cach " ;; ") | lenh truoc khi cai | file them (duong dan tren may build)
 # Voi moi phan mem: tai tu URL chinh hang -> thu-silent.sh (cai + go, GO_CAI) -> neu cai KHONG DAT
 # thi tu thu --tu-do (cac tham so thuong gap) -> ghi 1 dong vao tong-hop.tsv -> XOA bo cai (do day o).
 # Ket qua day du: /build/test/ket-qua-phan-mem/ (log + json tung phan mem).
@@ -18,7 +18,7 @@ mkdir -p $KQ $TAM
 TH=$KQ/tong-hop.tsv
 [ -f $TH ] || printf 'ten\tfile\tkich_thuoc\tsha256\tket_qua\tgo_cai_that_su\tsach_sau_go\tthong_bao\n' > $TH
 
-while IFS='|' read -r TEN URL FILE THAMSO GOCAI; do
+while IFS='|' read -r TEN URL FILE THAMSO GOCAI TRUOCCAI FILETHEM; do
   [ -z "${TEN// }" ] && continue
   case $TEN in \#*) continue;; esac
   [ -n "$FILE" ] || FILE=$(basename "${URL%%\?*}")
@@ -32,18 +32,24 @@ while IFS='|' read -r TEN URL FILE THAMSO GOCAI; do
   fi
   SZ=$(stat -c %s "$F"); SHA=$(sha256sum "$F" | cut -d' ' -f1)
   # file tai ve phai la bo cai (MZ) hoac .msi (D0CF) - khong phai trang HTML bao loi
-  case $(head -c 2 "$F" | od -An -c | tr -d ' ') in
-    MZ|\\320\\317) ;;
+  case $(head -c 4 "$F" | od -An -tx1 | tr -d ' ') in
+    4d5a*|d0cf11e0) ;;
     *) printf '%s\t%s\t%s\t%s\tKHONG_PHAI_BO_CAI\t\t\t%s\n' "$TEN" "$FILE" "$SZ" "$SHA" "$URL" >> $TH
        echo "  khong phai bo cai (HTML?)" | tee -a "$LOG"; rm -f "$F"; continue;;
   esac
   GO=${GOCAI:-auto}
-  OUT=$(GO_CAI="$GO" bash /build/test/thu-silent.sh "$F" "$THAMSO" 420 2>&1 </dev/null); RC=$?
+  OUT=$(GO_CAI="$GO" TRUOC_CAI="$TRUOCCAI" FILE_THEM="$FILETHEM" bash /build/test/thu-silent.sh "$F" "$THAMSO" ${TOIDA:-420} 2>&1 </dev/null); RC=$?
   echo "$OUT" | tee -a "$LOG"
   KQ_TXT=OK; DUNG="$THAMSO"
+  # bo cai treo cho nguoi bam (qua gio) thi thu them tham so khac cung vo ich (da ton hon 1 gio voi Brave) -> bo qua
+  if [ $RC -ne 0 ] && echo "$OUT" | grep -q "ket luan: qua_gio"; then
+    echo "  -> bo cai treo cho nguoi bam, khong thu them" | tee -a "$LOG"
+    printf '%s\t%s\t%s\t%s\tKHONG_IM_LANG:\t\t\t%s\n' "$TEN" "$FILE" "$SZ" "$SHA" "treo (qua gio) voi $THAMSO" >> $TH
+    rm -f "$F"; continue
+  fi
   if [ $RC -ne 0 ]; then
     echo "  -> tham so '$THAMSO' KHONG DAT, thu --tu-do" | tee -a "$LOG"
-    OUT=$(GO_CAI="$GO" bash /build/test/thu-silent.sh "$F" --tu-do 300 2>&1 </dev/null); RC=$?
+    OUT=$(GO_CAI="$GO" TRUOC_CAI="$TRUOCCAI" FILE_THEM="$FILETHEM" bash /build/test/thu-silent.sh "$F" --tu-do 300 2>&1 </dev/null); RC=$?
     echo "$OUT" | tee -a "$LOG"
     if [ $RC -eq 0 ]; then
       DUNG=$(echo "$OUT" | sed -n 's/^THAM SO IM LANG: //p' | tail -1); KQ_TXT=SUA_THAM_SO

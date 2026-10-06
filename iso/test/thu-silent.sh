@@ -101,10 +101,12 @@ thu_mot() {   # $1=tham so  $2=toi da  -> in ket qua, tra 0 neu im lang dung
   rm -rf /mnt/vang/ConsolePi/thu; mkdir -p /mnt/vang/ConsolePi/thu
   cp "$BO_CAI" "/mnt/vang/ConsolePi/thu/$ten"
   cp "$GUEST" /mnt/vang/ConsolePi/thu/cs-thu.ps1
-  TS="$ts" TD="$td" TEN="$ten" GO="${GO_CAI:-}" python3 - <<'E'
+  for ft in ${FILE_THEM:-}; do cp "$ft" /mnt/vang/ConsolePi/thu/; done
+  TS="$ts" TD="$td" TEN="$ten" GO="${GO_CAI:-}" TRUOC="${TRUOC_CAI:-}" python3 - <<'E'
 import json, os
 json.dump({"tep": "C:\\ConsolePi\\thu\\" + os.environ["TEN"], "tham_so": os.environ["TS"],
-           "toi_da": int(os.environ["TD"]), "go_cai": os.environ.get("GO", "")},
+           "toi_da": int(os.environ["TD"]), "go_cai": os.environ.get("GO", ""),
+           "truoc_cai": os.environ.get("TRUOC", "")},
           open("/mnt/vang/ConsolePi/thu/cau-hinh.json", "w"), ensure_ascii=True)
 E
   mkdir -p "/mnt/vang/ProgramData/Microsoft/Windows/Start Menu/Programs/StartUp"
@@ -149,17 +151,17 @@ if d.get("sau_go"):
 # chuong trinh (.exe/.dll that, khong chi thu muc rong), hoac loi tat moi tro toi file con ton tai.
 import os
 def duong(p): return "/mnt/vang/" + p[3:].replace("\\", "/")
-bang_chung = []
-for m in d.get("muc_go_cai_moi") or []:
+bang_chung = list(d.get("bang_chung") or [])   # guest chup truoc khi go (go xong thi mat)
+for m in ([] if bang_chung else (d.get("muc_go_cai_moi") or [])):
     bang_chung.append(f"muc go cai dat: {m}")
-for f in d.get("thu_muc_moi") or []:
+for f in ([] if d.get("bang_chung") else (d.get("thu_muc_moi") or [])):
     tong = chuong_trinh = 0
     for r, _ds, fs in os.walk(duong(f)):
         for x in fs:
             tong += 1
             if x.lower().endswith((".exe", ".dll")) and not x.lower().startswith("unins"): chuong_trinh += 1
     if chuong_trinh: bang_chung.append(f"thu muc {f}: {tong} file, {chuong_trinh} exe/dll")
-for l in d.get("loi_tat_moi") or []:
+for l in ([] if d.get("bang_chung") else (d.get("loi_tat_moi") or [])):
     if os.path.exists(duong(l)): bang_chung.append(f"loi tat: {l}")
 for b in bang_chung: print(f"  bang chung: {b}")
 chay_ok = d["ket_luan"] in ("xong", "khong_tu_thoat")

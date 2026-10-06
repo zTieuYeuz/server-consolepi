@@ -798,6 +798,15 @@ function Ghi($t) {{
 # ISO-8859-1 -> ten buoc tieng Viet thanh byte khong hop le UTF-8, Pi khong
 # doc duoc goi "batdau" (loi that 25/09/2026: trang Tien trinh hien ban ghi
 # "?" 0/0 va cac buoc chi con ten "Buoc 1, Buoc 2...").
+# Moi tien trinh con/chau cua 1 tien trinh (bo cai co the de ra nhieu tang)
+function LayConChau($idCha) {{
+    $ra = @()
+    foreach ($c in @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$idCha" -EA SilentlyContinue)) {{
+        $ra += $c; $ra += @(LayConChau $c.ProcessId)
+    }}
+    return $ra
+}}
+
 function BaoPi($duong, $goi) {{
     try {{
         $byte = [System.Text.Encoding]::UTF8.GetBytes(($goi | ConvertTo-Json -Compress))
@@ -964,18 +973,21 @@ foreach ($b in $Buoc) {{
                 $pCmd = @(Get-CimInstance Win32_Process -Filter "Name='cmd.exe'" -EA SilentlyContinue |
                           Where-Object {{ $_.CommandLine -like "*buoc-$i.cmd*" }})
                 $pCai = @()
-                foreach ($c in $pCmd) {{
-                    $pCai += @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($c.ProcessId)" -EA SilentlyContinue)
-                }}
+                foreach ($c in $pCmd) {{ $pCai += @(LayConChau $c.ProcessId) }}
+                # Hieu hoat dong = bo cai + moi con chau + CA dich vu msiexec: bo cai kieu setup.exe goi
+                # MSI thi tien trinh con dung yen cho msiexec lam viec -> neu khong tinh msiexec se
+                # tuong nham "dung yen" roi giet bo cai giua chung (lab 04/10/2026: OpenOffice, Acrobat).
                 $sig = 0
-                foreach ($q in $pCai) {{
+                foreach ($q in ($pCai + @(Get-CimInstance Win32_Process -Filter "Name='msiexec.exe'" -EA SilentlyContinue))) {{
                     $sig += [double]$q.KernelModeTime + [double]$q.UserModeTime +
                             [double]$q.ReadTransferCount + [double]$q.WriteTransferCount + [double]$q.OtherTransferCount
                 }}
                 if ($sig -ne $sigCu) {{ $sigCu = $sig; $tDung = Get-Date }}
                 elseif ($pCai.Count -gt 0 -and ((Get-Date) - $tDung).TotalSeconds -ge 60) {{
+                    # Bo qua WebView2/Edge: Windows tu cai chung ngam, khong phai phan mem cua buoc nay
                     $unMoi = @($kUn | ForEach-Object {{ Get-ChildItem $_ -EA SilentlyContinue }} |
-                               Where-Object {{ $unTruoc -notcontains $_.PSChildName }})
+                               Where-Object {{ ($unTruoc -notcontains $_.PSChildName) -and
+                                   ((Get-ItemProperty $_.PSPath -EA SilentlyContinue).DisplayName -notmatch 'WebView2|Microsoft Edge') }})
                     if ($unMoi.Count -gt 0) {{
                         # Dong cmd TRUOC (khong thi cmd kip ghi ma thoat cua bo cai bi dong
                         # = 1 -> bao nham "loi", lab 03/10/2026), roi moi dong bo cai

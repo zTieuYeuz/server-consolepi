@@ -39,6 +39,15 @@ function Lay-Lnk {
         ForEach-Object { $_.FullName }
 }
 
+# Tat ca tien trinh con/chau cua 1 tien trinh (bo cai co the de ra nhieu tang: setup.exe -> msiexec...)
+function Lay-Con-Chau($idCha) {
+    $ra = @()
+    foreach ($c in @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$idCha" -EA SilentlyContinue)) {
+        $ra += $c; $ra += @(Lay-Con-Chau $c.ProcessId)
+    }
+    return $ra
+}
+
 # Chay 1 lenh bang SYSTEM nhu Console System that. Tra ve {ket_luan, ma, giay, ghi_chu}
 function Chay-Buoc($lenh, $gioiHan, $tenTac) {
     $fMa = "$D\ma-$tenTac.txt"; Remove-Item $fMa -EA SilentlyContinue
@@ -60,7 +69,7 @@ function Chay-Buoc($lenh, $gioiHan, $tenTac) {
         $gi = ((Get-Date) - $t0).TotalSeconds
         $pCmd = @(Get-CimInstance Win32_Process -Filter "Name='cmd.exe'" -EA SilentlyContinue |
                   Where-Object { $_.CommandLine -like "*chay-$tenTac.cmd*" })
-        $pCai = @(); foreach ($c in $pCmd) { $pCai += @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($c.ProcessId)" -EA SilentlyContinue) }
+        $pCai = @(); foreach ($c in $pCmd) { $pCai += @(Lay-Con-Chau $c.ProcessId) }
         if ($gi -ge $gioiHan) {
             $cl = @($pCai | ForEach-Object { $_.Name })
             foreach ($c in $pCmd) { & taskkill /PID $c.ProcessId /F 2>&1 | Out-Null }
@@ -70,8 +79,12 @@ function Chay-Buoc($lenh, $gioiHan, $tenTac) {
             break
         }
         if ($lan % 15 -eq 0 -and $gi -ge 60) {
+            # Hieu hoat dong = bo cai + moi con chau + CA dich vu msiexec (bo cai kieu setup.exe goi MSI:
+            # tien trinh con dung yen cho msiexec lam viec -> neu khong tinh msiexec se tuong nham
+            # "dung yen" va giet bo cai giua chung, lab 04/10/2026: OpenOffice/Acrobat bi giet, msiexec
+            # sau do bao 1618 "dang co cai dat khac")
             $sig = 0
-            foreach ($q in $pCai) {
+            foreach ($q in ($pCai + @(Get-CimInstance Win32_Process -Filter "Name='msiexec.exe'" -EA SilentlyContinue))) {
                 $sig += [double]$q.KernelModeTime + [double]$q.UserModeTime + [double]$q.ReadTransferCount +
                         [double]$q.WriteTransferCount + [double]$q.OtherTransferCount
             }
@@ -103,15 +116,34 @@ function Chay-Buoc($lenh, $gioiHan, $tenTac) {
 
 # ------------------------------------------------ pha 1: cai
 Start-Sleep -Seconds 45     # cho Windows xong cac viec nen luc moi bat may roi moi chup "truoc"
-$unTruocCT = @(Lay-Un-Chi-Tiet); $pfTruoc = @(Lay-Thu-Muc); $lnkTruoc = @(Lay-Lnk)
-$khoaTruoc = @($unTruocCT | ForEach-Object { $_.khoa })
 if ($tep -like '*.msi') { $lenhCai = 'msiexec /i "' + $tep + '" ' + $cfg.tham_so }
 else { $lenhCai = '"' + $tep + '" ' + $cfg.tham_so }
+# Lenh chuan bi truoc khi cai (vd tin cay chung chi nha phat hanh driver): cfg.truoc_cai, ngan cach " ;; "
+$truoc = @()
+if ($cfg.truoc_cai) {
+    $n0 = 0
+    foreach ($l in @($cfg.truoc_cai -split ' ;; ' | ForEach-Object { $_.Trim() } | Where-Object { $_ })) {
+        $n0++; $truoc += (Chay-Buoc $l 120 "truoc$n0")
+    }
+}
+# chup "truoc" SAU cac lenh chuan bi (vd go ban co san trong may vang) de bang chung chi tinh phan bo cai them vao
+$unTruocCT = @(Lay-Un-Chi-Tiet); $pfTruoc = @(Lay-Thu-Muc); $lnkTruoc = @(Lay-Lnk)
+$khoaTruoc = @($unTruocCT | ForEach-Object { $_.khoa })
 $rCai = Chay-Buoc $lenhCai $toiDa 'cai'
 Start-Sleep -Seconds 3
 $unMoi = @(Lay-Un-Chi-Tiet | Where-Object { $khoaTruoc -notcontains $_.khoa })
 $pfMoi = @(Lay-Thu-Muc | Where-Object { $pfTruoc -notcontains $_ })
 $lnkMoi = @(Lay-Lnk | Where-Object { $lnkTruoc -notcontains $_ })
+
+# BANG CHUNG DA CAI THAT - chup NGAY SAU KHI CAI, TRUOC khi go (go xong thi file/loi tat deu mat)
+$bangChung = @()
+foreach ($m in $unMoi) { $bangChung += "muc go cai dat: $($m.ten)" }
+foreach ($f in $pfMoi) {
+    $tep0 = @(Get-ChildItem $f -Recurse -File -EA SilentlyContinue)
+    $ct = @($tep0 | Where-Object { ($_.Extension -eq '.exe' -or $_.Extension -eq '.dll') -and $_.Name -notlike 'unins*' })
+    if ($ct.Count -gt 0) { $bangChung += "thu muc ${f}: $($tep0.Count) file, $($ct.Count) exe/dll" }
+}
+foreach ($l in $lnkMoi) { if (Test-Path $l) { $bangChung += "loi tat: $l" } }
 
 # lenh go im lang goi y (tu UninstallString cua cac muc moi) - luon tinh, de ghi vao kho
 function Suy-Lenh-Go($e) {
@@ -159,7 +191,7 @@ $goCai = $cfg.go_cai
 if ($goCai -and $rCai.ket_luan -in 'xong', 'khong_tu_thoat') {
     $phan = @($goCai -split ' ;; ' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
     $tuDong = ($phan -contains 'auto'); $rieng = @($phan | Where-Object { $_ -ne 'auto' })
-    $gioiHanGo = [Math]::Min($toiDa, 150)
+    $gioiHanGo = [Math]::Min($toiDa, 300)
     $n = 0
     # muc "goi lon" (bundle/uninstall) go truoc; bo qua runtime dung chung cua he thong
     $ds = @($unMoi | Where-Object { $_.ten -notmatch 'WebView2|\.NET|Windows Driver' } |
@@ -198,6 +230,8 @@ $kq = [ordered]@{
     muc_go_cai_moi = @($unMoi | ForEach-Object { $_.ten })
     thu_muc_moi = $pfMoi
     loi_tat_moi = $lnkMoi
+    bang_chung = $bangChung
+    truoc_cai = $truoc
     goi_y_go = $goiY
     go = $cacGo
     sau_go = $sachKhong
