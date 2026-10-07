@@ -281,17 +281,6 @@ def ts_quen_thiet_bi():
 
 
 # =============================================================== giao dien web
-def _goc_ngoai():
-    """
-    Dia chi ma nguoi NGOAI dung de vao. Qua Cloudflare thi la ten mien that,
-    con vao truc tiep trong mang thi la IP/hostname - lay tu chinh request nen
-    luon dung voi duong ma nguoi dung dang di.
-    """
-    from flask import request as _rq
-    proto = _rq.headers.get("X-Forwarded-Proto", "http")
-    return f"{proto}://{_rq.host}"
-
-
 def register_remote(app):
     from flask import request
     from .layout import render_page
@@ -536,84 +525,6 @@ def register_remote(app):
           {ts_khoi}
         </div>"""
 
-        # --- Duong vao danh cho may / AI ---
-        from . import api as capi
-        ai = capi.api_info()
-        token_moi = request.args.get("_token_moi", "")
-
-        if token_moi:
-            # Hien DUY NHAT mot lan ngay sau khi tao. Trong may chi luu ban bam
-            # SHA256 nen khong the hien lai - dong nen chep ngay
-            ai_khoi = f"""
-            <div class="msg ok" style="margin:0 0 13px;">Đã tạo token. <strong>Chép ngay
-              bây giờ</strong> - rời khỏi trang này là không xem lại được nữa.</div>
-            <label>Token (chỉ hiện một lần)</label>
-            <textarea readonly rows="2" onclick="this.select();"
-                      style="width:100%;font-family:monospace;font-size:13px;">{_esc(token_moi)}</textarea>
-            <p style="margin:13px 0 5px;">Đưa nguyên đoạn này cho AI bên kia:</p>
-            <textarea readonly rows="4" onclick="this.select();"
-                      style="width:100%;font-family:monospace;font-size:13px;">Tôi có một thiết bị Console System ở xa. Hãy đọc tài liệu hướng dẫn tại:
-{_esc(_goc_ngoai())}/ai
-Dùng header: Authorization: Bearer {_esc(token_moi)}
-Đọc tài liệu đó trước, rồi giúp tôi làm việc với thiết bị mạng đang cắm vào nó.</textarea>"""
-        elif ai["has_token"]:
-            ai_khoi = f"""
-            <table style="max-width:470px;margin-bottom:12px;">
-              <tr><th style="width:150px;">Trạng thái</th>
-                  <td><span style="color:#6ee7a0;">🟢 Đang bật</span></td></tr>
-              <tr><th>Quyền</th><td><code>{_esc(ai['scope'])}</code>
-                  {'&mdash; chỉ đọc' if ai['scope'] == 'read'
-                    else '&mdash; đọc và gõ được lệnh vào thiết bị mạng'}</td></tr>
-              <tr><th>Tạo lúc</th><td>{_esc(ai['created'])}</td></tr>
-              <tr><th>Dùng lần cuối</th>
-                  <td>{_esc(ai['last_used']) or '<span style="color:#8b93a1;">chưa dùng</span>'}</td></tr>
-            </table>
-            <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
-              Token thật không hiện lại được (trong máy chỉ lưu bản băm SHA256).
-              Mất thì tạo cái mới - cái cũ tự hết hiệu lực.</p>
-            <div class="row" style="gap:10px;flex-wrap:wrap;">
-              <form method="POST" action="/remote/api-token">
-                <input type="hidden" name="scope" value="read">
-                <button type="submit" class="gray" data-busy="Đang tạo...">Tạo token mới (chỉ đọc)</button>
-              </form>
-              <form method="POST" action="/remote/api-token">
-                <input type="hidden" name="scope" value="full">
-                <button type="submit" class="gray" data-busy="Đang tạo...">Tạo token mới (đầy đủ)</button>
-              </form>
-              <form method="POST" action="/remote/api-thu-hoi"
-                    onsubmit="return confirm('Thu hồi token? AI bên kia sẽ mất quyền truy cập ngay lập tức.');">
-                <button type="submit" class="red">Thu hồi</button>
-              </form>
-            </div>"""
-        else:
-            ai_khoi = """
-            <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">
-              Đang <strong>tắt</strong>. Tạo token để một AI (hoặc phần mềm khác) đọc
-              được trạng thái thiết bị và làm việc với switch/router đang cắm.
-              AI chỉ cần một đường dẫn <code>/ai</code> là tự biết phải gọi gì.</p>
-            <div class="row" style="gap:10px;flex-wrap:wrap;">
-              <form method="POST" action="/remote/api-token">
-                <input type="hidden" name="scope" value="read">
-                <button type="submit" class="blue" data-busy="Đang tạo...">
-                  🔍 Tạo token CHỈ ĐỌC</button>
-              </form>
-              <form method="POST" action="/remote/api-token"
-                    onsubmit="return confirm('Token quyền đầy đủ cho phép GÕ LỆNH vào switch/router đang cắm.\\n\\nChỉ tạo khi thật sự cần, và thu hồi ngay khi xong việc.');">
-                <input type="hidden" name="scope" value="full">
-                <button type="submit" data-busy="Đang tạo...">
-                  ⌨️ Tạo token ĐẦY ĐỦ (gõ được lệnh)</button>
-              </form>
-            </div>
-            <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
-              Nên bắt đầu bằng <strong>chỉ đọc</strong>. Chỉ nâng lên đầy đủ khi thật
-              sự cần gõ lệnh, và thu hồi ngay khi xong.</p>"""
-
-        ai_card = f"""
-        <div class="card">
-          <h3>Cho AI / máy khác truy cập</h3>
-          {ai_khoi}
-        </div>"""
-
         log_html = ""
         if cai and tok:
             log_html = f"""
@@ -634,8 +545,6 @@ Dùng header: Authorization: Bearer {_esc(token_moi)}
 
         {ts_card}
 
-        {ai_card}
-
         <div class="card" style="border-left:4px solid #ffb74d;">
           <h3 style="color:#ffb74d;">Lưu ý bảo mật</h3>
           <ul style="margin:0;padding-left:19px;line-height:1.75;color:#c9cfda;">
@@ -646,9 +555,6 @@ Dùng header: Authorization: Bearer {_esc(token_moi)}
             <li>Token được lưu quyền 600, chỉ root đọc được. Bất kỳ ai có token đều
                 dùng lại được đường hầm - đừng gửi qua chat/email</li>
             <li>Xong việc thì <strong>tắt đường hầm</strong>, đừng để mở thường xuyên</li>
-            <li>Token cho AI mặc định <strong>tắt</strong>. Token quyền đầy đủ gõ được
-                lệnh vào switch/router - chỉ tạo khi cần, thu hồi ngay khi xong.
-                Mỗi lần máy gọi vào đều được ghi nhật ký (xem ở menu Nhật ký).</li>
           </ul>
         </div>
 
@@ -683,25 +589,6 @@ Dùng header: Authorization: Bearer {_esc(token_moi)}
     def remote_off():
         ok_o, msg = tat_tunnel()
         return page(msg=msg, ok=ok_o)
-
-    @app.route("/remote/api-token", methods=["POST"])
-    def remote_api_token():
-        from . import api as capi
-        from flask import redirect as _rd
-        scope = request.form.get("scope", "read")
-        token = capi.tao_token(scope)
-        # Chuyen huong kem token tren URL de sau khi bam F5 no khong tao lai
-        # token moi. Token chi song trong thanh dia chi cua chinh may nay -
-        # da qua nginx tren localhost, khong di dau ca.
-        from urllib.parse import quote
-        return _rd(f"/remote?_token_moi={quote(token)}")
-
-    @app.route("/remote/api-thu-hoi", methods=["POST"])
-    def remote_api_revoke():
-        from . import api as capi
-        capi.thu_hoi_token()
-        return page(msg="Đã thu hồi token. Máy/AI bên kia mất quyền truy cập ngay.",
-                    ok=True)
 
     @app.route("/remote/xoa-token", methods=["POST"])
     def remote_clear():

@@ -266,31 +266,6 @@ def register_auth(app):
         if _bao_tien_trinh_cong_khai():
             return None          # may vua cai xong bao tien trinh - xem duoi
 
-        # Duong vao thu ba: token API, danh cho may (vi du mot AI o dau xa
-        # dieu khien giup). Phai kiem tra o day chu khong o rieng cac route
-        # /api, vi before_request nay chay TRUOC moi thu - neu khong thi
-        # request cua may bi day ve /login truoc khi kip toi noi.
-        #
-        # Mac dinh API TAT. Chi khi chu thiet bi tu bat va tu tao token trong
-        # dashboard thi nhanh nay moi cho ai di qua.
-        from .api import kiem_tra_truy_cap
-        kq = kiem_tra_truy_cap()
-        if kq == "ok":
-            return None
-        if kq is not None:
-            return kq            # co gui token nhung bi tu choi (401 / 403)
-
-        # Chua co token: tra ve huong dan lay token, KHONG lo bat ky thong
-        # tin nao ve he thong
-        if request.path == "/ai":
-            from flask import Response
-            from .api import TAI_LIEU_CHUA_CO_TOKEN
-            return Response(TAI_LIEU_CHUA_CO_TOKEN,
-                            mimetype="text/markdown", status=401)
-        if request.path.startswith("/api/"):
-            from flask import jsonify
-            return jsonify({"error": "Can token. Xem huong dan tai /ai"}), 401
-
         return redirect("/login")
 
     @app.route("/login", methods=["GET", "POST"])
@@ -349,11 +324,6 @@ def register_auth(app):
         mat khau rieng nua.
         """
         if session.get("user") or _is_local_screen():
-            return "", 200
-        # Token API cung duoc di qua, de may goi duoc ca cac duong terminal
-        # va console ma nginx dang canh
-        from .api import quyen_cua_request
-        if quyen_cua_request():
             return "", 200
         return "", 401
 

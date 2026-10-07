@@ -1,0 +1,24 @@
+#!/bin/sh
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
+# Chay o giai doan binary (sau khi live-build dung kho goi tren ISO, truoc khi tao ISO).
+# --firmware-binary true nhet MOI goi firmware cua Debian vao kho goi, ke ca 2 goi
+# vo dung tren PC/laptop: firmware-marvell-prestera (chip switch trung tam du lieu, 58 MB)
+# va firmware-nvidia-tesla-535-gsp (card tinh toan Tesla, 37 MB). 2 goi nay KHONG co trong
+# he thong da cai (Calamares chi cai tu kho: grub/shim/efibootmgr; bo cai Debian da dat
+# hw-detect/load_firmware false) nen bo di khong lam mat tinh nang nao.
+# GIU firmware-nvidia-graphics (card do hoa Nvidia doi moi).
+set -e
+# live-build chay hook voi thu muc hien tai = <cay build>/binary
+[ -d pool ] || { echo "hook 0300: khong thay pool (cwd=$(pwd))"; exit 1; }
+for P in firmware-marvell-prestera firmware-nvidia-tesla-535-gsp; do
+    find pool firmware \( -type f -o -type l \) -name "${P}_*.deb" -delete
+done
+# Dung lai chi muc Packages cho cac khu vuc kho (de apt khong thay goi da xoa)
+for A in $(ls pool); do
+    for IDX in dists/*/"$A"/binary-*; do
+        [ -d "$IDX" ] || continue
+        apt-ftparchive packages "pool/$A" > "$IDX/Packages"
+        gzip -9 -c "$IDX/Packages" > "$IDX/Packages.gz"
+    done
+done
+echo "da bo firmware thua khoi kho goi: con $(du -sh pool | cut -f1)"

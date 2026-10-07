@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.7.7 (07/10/2026)
+
+- Go tinh nang "Cho AI / may khac truy cap" (anh Thoai 07/10/2026: khong can): bo the tren trang
+  Truy cap tu xa, ui/api.py (/ai, /api/system, /api/console), 2 route tao/thu hoi token, 2 cho
+  cho token di qua trong auth.py, dong bao trong selftest.sh. cap-nhat-pi.sh don file api.py cu,
+  khoa api_* trong config.json va log console-pi-api.log tren Pi.
+- ISO amd64: bo 2 goi firmware khoi kho goi tren ISO (hook iso/hooks/0300-bo-firmware-thua.hook.binary):
+  firmware-marvell-prestera (58 MB, chip switch trung tam du lieu) va firmware-nvidia-tesla-535-gsp
+  (37 MB, card Tesla). Hai goi nay KHONG co trong he thong da cai (Calamares chi cai grub/shim/efibootmgr
+  tu kho, bo cai Debian dat load_firmware false), live-build chi nhet vao vi --firmware-binary true.
+  ISO amd64 1440 MB -> 1345 MB (-95 MB, toan bo tu kho goi); i386 khong doi (1043 MB). Giu nguyen moi firmware mang/do hoa,
+  initrd MODULES=most, mesa/llvm (ve bang CPU cho may khong co GPU), firmware-nvidia-graphics.
+- Do tren may ao (2 CPU, khong KVM): boot lan 2 51.8s -> 52.1s, RAM 508 -> 500 MB (khong doi: thoi gian boot
+  chu yeu la kernel + NetworkManager, dich vu tat them khong nam tren duong gang).
+- Kiem chung: danh sach file trong filesystem.squashfs giong het 1.7.6 (chi khac VERSION, api.py, remote.py,
+  auth.py); cai that UEFI amd64 -> kiem-tra-may-da-cai.sh 40 dat 0 loi; 163 route khong loi 5xx; duong
+  cong khai PXE/tien trinh dung ca khi PXE bat/tat; boot live i386 BIOS 1 GB RAM; Pi 1.7.7 chay, 21 trang
+  khong loi. CHUA test lai: PXE lab 3 che do x BIOS/UEFI va cai Windows that (ma PXE/Deployment khong doi),
+  may that (Dell, card Nvidia roi), i386 cai that len o dia.
+
 ## 1.7.6 (04/10/2026)
 
 - deploy.cmd: sau dism in dong "Da bung xong anh he dieu hanh. Dang chuan bi buoc tiep theo..."

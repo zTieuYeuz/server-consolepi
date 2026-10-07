@@ -25,6 +25,26 @@ install -m 644 "$SRC/VERSION" "$DST/VERSION"
 find "$DST" -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
 chown -R administrator:administrator "$DST/ui" "$DST/nettools"
 
+# 1.7.7: da go tinh nang "Cho AI / may khac truy cap" (token + /ai + /api). cp -r khong xoa
+# file da bi go khoi repo nen don tay: file code, khoa token trong config, nhat ky cu.
+rm -f "$DST/ui/api.py"
+if [ -f "$DST/config.json" ]; then
+    python3 - "$DST/config.json" <<'PYEOF'
+import json, os, sys
+p = sys.argv[1]
+c = json.load(open(p))
+da = [k for k in list(c) if k.startswith("api_")]
+for k in da:
+    c.pop(k)
+if da:
+    json.dump(c, open(p + ".tmp", "w"), indent=2, ensure_ascii=False)
+    os.chmod(p + ".tmp", 0o600)
+    os.replace(p + ".tmp", p)
+    print("Da xoa khoa token API cu khoi config:", ", ".join(da))
+PYEOF
+fi
+rm -f /var/log/console-pi-api.log
+
 # Kiem tra cu phap truoc khi khoi dong lai - loi thi tra ban cu, khong de web chet
 if ! python3 -m py_compile "$DST"/ui/*.py "$DST"/nettools/*.py "$DST"/app.py; then
     echo "LOI cu phap - tra lai ban cu"

@@ -86,13 +86,6 @@ for f in /etc/wpa_supplicant/wpa_supplicant-wlan0.conf /etc/hostapd/hostapd.conf
     fi
 done
 
-if grep -q '"api_enabled": *true' /opt/console-pi/config.json 2>/dev/null; then
-    QUYEN=$(grep -o '"api_token_scope": *"[a-z]*"' /opt/console-pi/config.json 2>/dev/null | grep -o '[a-z]*"$' | tr -d '"')
-    luu "API cho may/AI dang BAT (quyen: ${QUYEN:-?}). Thu hoi token khi xong viec."
-else
-    dat "API cho may/AI dang tat"
-fi
-
 # ---------------------------------------------------------------- console
 muc "Cong console"
 PORTS=$(ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null)

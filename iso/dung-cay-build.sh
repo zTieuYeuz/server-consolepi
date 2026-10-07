@@ -126,6 +126,7 @@ PYEOF
 
     if [ "$ARCH" = amd64 ]; then
         install -m 755 "$I/hooks/0100-console-system.hook.chroot" "$C/hooks/live/"
+        install -m 755 "$I/hooks/0300-bo-firmware-thua.hook.binary" "$C/hooks/live/"
         install -m 644 "$I/danh-sach-goi.txt" "$C/package-lists/console-pi.list.chroot"
         install -m 755 "$I/dung-iso.sh" "$T/dung-iso.sh"
         # Menu boot UEFI (GRUB). CO Y khong chep splash.svg sang grub-pc:
