@@ -191,7 +191,7 @@ $goCai = $cfg.go_cai
 if ($goCai -and $rCai.ket_luan -in 'xong', 'khong_tu_thoat') {
     $phan = @($goCai -split ' ;; ' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
     $tuDong = ($phan -contains 'auto'); $rieng = @($phan | Where-Object { $_ -ne 'auto' })
-    $gioiHanGo = [Math]::Min($toiDa, 300)
+    $gioiHanGo = [Math]::Min($toiDa, 900)
     $n = 0
     # muc "goi lon" (bundle/uninstall) go truoc; bo qua runtime dung chung cua he thong
     $ds = @($unMoi | Where-Object { $_.ten -notmatch 'WebView2|\.NET|Windows Driver' } |
