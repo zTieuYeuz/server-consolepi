@@ -47,6 +47,7 @@ for p in "${DS[@]}"; do [ -e "$p" ] && CO+=("$p"); done
 sudo tar -czf "$TAM/pi-$NGAY.tar.gz" \
   --exclude=/var/lib/console-pi/deploy/os \
   --exclude=/var/lib/console-pi/deploy/ungdung \
+  --exclude=/var/lib/console-pi/deploy/fonts \
   --exclude='/var/lib/console-pi/deploy/apps/*.exe' \
   --exclude='/var/lib/console-pi/deploy/apps/*.msi' \
   --exclude='/var/lib/console-pi/deploy/apps/*.zip' \

@@ -65,6 +65,7 @@ KICHBAN_DIR = os.path.join(DEPLOY_DIR, "kichban")
 OS_DIR = os.path.join(DEPLOY_DIR, "os")
 DRIVERS_DIR = os.path.join(DEPLOY_DIR, "drivers")
 UNGDUNG_DIR = os.path.join(DEPLOY_DIR, "ungdung")
+FONTS_DIR = os.path.join(DEPLOY_DIR, "fonts")      # moi "bo font" = 1 thu muc (xem muc BO FONT)
 APPS_META = os.path.join(APPS_DIR, "_thongtin.json")
 
 # Con lai duoi muc nay thi khong cho tai them (giong ui/storage.py)
@@ -161,7 +162,7 @@ def so_hien_thi(buoc):
 def _bao_dam_thu_muc():
     """Tao san cac thu muc. Kich ban de 700 vi co the chua mat khau."""
     for d in (DEPLOY_DIR, BOOT_DIR, APPS_DIR, SCRIPTS_DIR, OS_DIR, DRIVERS_DIR,
-              UNGDUNG_DIR):
+              UNGDUNG_DIR, FONTS_DIR):
         try:
             os.makedirs(d, exist_ok=True)
         except OSError:
@@ -780,6 +781,244 @@ def chuan_hoa_ungdung(ds):
             for a in ds or [] if isinstance(a, dict) and a.get("id")]
 
 
+# ------------------------------------------------ BO FONT (font chu cai cho may Windows)
+# Cong ty co nhieu font rieng (thuong hang tram file) can co san tren moi may. 1 "bo font"
+# la 1 thu muc trong FONTS_DIR chua cac file .ttf/.otf/.ttc/.otc (+ _thongtin.json ten
+# hien thi, + _fonts.json do ui/fontinfo.py sinh ra: ten that cua tung font va ten gia tri
+# registry). Kich ban chon cac bo can cai; luc trien khai Windows, deploy.cmd chep ca
+# thu muc sang may dich va 1 buoc sau dang nhap (cai-font.ps1, quyen SYSTEM) cai tung font.
+# Moi file tai len deu duoc DOC THAT bang fontinfo: file doi duoi (vd .txt thanh .ttf), file
+# hong, web font .woff khong cai duoc vao Windows -> bi tu choi ngay, noi ro ly do, khong
+# de den luc cai may moi phat hien.
+MAX_FONT_BYTE = 300 * 1024 * 1024        # 1 font that khong bao gio lon the
+MAX_ZIP_FONT_BYTE = 4 * 1024 * 1024 * 1024
+
+
+def _id_bo_font_tu_ten(ten):
+    """Ten hien thi (co dau) -> id ASCII: 'Phông công ty' -> 'phong_cong_ty'."""
+    t = unicodedata.normalize("NFKD", (ten or "").replace("đ", "d").replace("Đ", "D"))
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    return ten_an_toan(re.sub(r"\s+", "_", t.strip())).lower()
+
+
+def duong_bo_font(bo_id):
+    """Duong dan that cua 1 bo font neu id hop le va thu muc ton tai, nguoc lai None."""
+    bo_id = ten_an_toan(bo_id or "").lower()
+    if not bo_id:
+        return None
+    p = os.path.join(FONTS_DIR, bo_id)
+    return p if os.path.isdir(p) else None
+
+
+def _doc_meta_bo_font(p):
+    try:
+        with open(os.path.join(p, "_thongtin.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def danh_sach_bo_font():
+    from . import fontinfo as _fi
+    _bao_dam_thu_muc()
+    ra = []
+    try:
+        for bo_id in sorted(os.listdir(FONTS_DIR)):
+            p = os.path.join(FONTS_DIR, bo_id)
+            if not os.path.isdir(p):
+                continue
+            ds = _fi.lam_moi_danh_sach(p)
+            ra.append({
+                "id": bo_id,
+                "ten_hien_thi": _doc_meta_bo_font(p).get("ten_hien_thi") or bo_id,
+                "so_font": len(ds),
+                "kich_thuoc": co_kich_thuoc(sum(m["byte"] for m in ds)) if ds else "0 B",
+                "fonts": ds,
+            })
+    except OSError:
+        pass
+    return ra
+
+
+def lay_bo_font(bo_id):
+    for b in danh_sach_bo_font():
+        if b["id"] == bo_id:
+            return b
+    return None
+
+
+def tao_bo_font(ten_hien_thi):
+    _bao_dam_thu_muc()
+    ten_hien_thi = (ten_hien_thi or "").strip()[:80]
+    if not ten_hien_thi:
+        return False, "Chưa đặt tên bộ font.", None
+    bo_id = _id_bo_font_tu_ten(ten_hien_thi)
+    if not bo_id:
+        return False, "Tên không hợp lệ.", None
+    p = os.path.join(FONTS_DIR, bo_id)
+    if os.path.isdir(p):
+        return False, "Đã có bộ font cùng tên.", None
+    try:
+        os.makedirs(p)
+        with open(os.path.join(p, "_thongtin.json"), "w", encoding="utf-8") as f:
+            json.dump({"ten_hien_thi": ten_hien_thi}, f, ensure_ascii=False, indent=1)
+    except OSError as e:
+        return False, f"Không tạo được: {e}", None
+    return True, f'Đã tạo bộ font "{ten_hien_thi}".', bo_id
+
+
+def xoa_bo_font(bo_id):
+    p = duong_bo_font(bo_id)
+    if not p:
+        return False, "Không tìm thấy bộ font."
+    try:
+        shutil.rmtree(p)
+    except OSError as e:
+        return False, f"Không xóa được: {e}"
+    return True, "Đã xóa bộ font."
+
+
+def xoa_font_trong_bo(bo_id, ten):
+    from . import fontinfo as _fi
+    p = duong_bo_font(bo_id)
+    ten = _fi.ten_file_an_toan(ten)
+    if not p or not ten or not _fi.la_duoi_font(ten):
+        return False, "Không tìm thấy font cần xóa."
+    fp = os.path.join(p, ten)
+    if not os.path.isfile(fp):
+        return False, "Không tìm thấy font cần xóa."
+    try:
+        os.remove(fp)
+    except OSError as e:
+        return False, f"Không xóa được: {e}"
+    _fi.lam_moi_danh_sach(p)
+    return True, "Đã xóa font."
+
+
+def _luu_font_hop_le(p, tam, ten):
+    """Kiem tra file tam la font that roi dat vao bo. Tra (ok, thong_bao)."""
+    from . import fontinfo as _fi
+    if not _fi.la_font_hop_le(tam):
+        try:
+            os.remove(tam)
+        except OSError:
+            pass
+        return False, f'"{ten}": không phải font thật (file hỏng, sai định dạng hoặc chỉ đổi đuôi).'
+    os.replace(tam, os.path.join(p, ten))
+    return True, ""
+
+
+def them_font_vao_bo(bo_id, fileobj):
+    """
+    Nhan 1 file tai len vao bo font. Chap nhan font (.ttf/.otf/.ttc/.otc) HOAC .zip
+    chua font (giai nen PHANG - bo qua thu muc, chi lay file font, bo qua rac nhu
+    __MACOSX). Tra (ok, thong_bao, so_font_them, [ly_do_bo_qua...]).
+    """
+    from . import fontinfo as _fi
+    p = duong_bo_font(bo_id)
+    if not p:
+        return False, "Không tìm thấy bộ font.", 0, []
+    if _con_trong_gb() < MIN_FREE_GB:
+        return False, (f"Chỉ còn {_con_trong_gb()} GB trống - cần ít nhất {MIN_FREE_GB} GB. "
+                       "Xóa bớt file trước khi tải thêm."), 0, []
+    ten = _fi.ten_file_an_toan(getattr(fileobj, "filename", ""))
+    duoi = os.path.splitext(ten)[1].lower()
+    if not ten:
+        return False, "Chưa chọn file.", 0, []
+    if duoi in (".woff", ".woff2"):
+        return False, (f'"{ten}" là web font (dùng cho trang web), Windows không cài được. '
+                       "Cần bản .ttf hoặc .otf."), 0, []
+    tam = os.path.join(p, ".tam-" + secrets.token_hex(4))
+    if duoi == ".zip":
+        try:
+            fileobj.save(tam)
+        except OSError as e:
+            return False, f"Không lưu được: {e}", 0, []
+        return _giai_nen_font_zip(p, tam, ten)
+    if duoi not in _fi.DUOI_FONT:
+        return False, (f'"{ten}": không nhận đuôi này. Chỉ nhận font .ttf, .otf, .ttc, .otc '
+                       "hoặc .zip chứa font."), 0, []
+    try:
+        fileobj.save(tam)
+    except OSError as e:
+        return False, f"Không lưu được: {e}", 0, []
+    ok, lydo = _luu_font_hop_le(p, tam, ten)
+    if not ok:
+        return False, lydo, 0, []
+    _fi.lam_moi_danh_sach(p)
+    return True, f'Đã thêm "{ten}".', 1, []
+
+
+def _giai_nen_font_zip(p, tam_zip, ten_zip):
+    import zipfile
+    from . import fontinfo as _fi
+    them, bo_qua, tong = 0, [], 0
+    try:
+        with zipfile.ZipFile(tam_zip) as z:
+            for info in z.infolist():
+                goc = info.filename.replace("\\", "/")
+                if info.is_dir() or "__MACOSX/" in goc or goc.rsplit("/", 1)[-1].startswith("._"):
+                    continue
+                ten = _fi.ten_file_an_toan(goc)
+                if not ten or not _fi.la_duoi_font(ten):
+                    if goc.lower().endswith((".woff", ".woff2")):
+                        bo_qua.append(f'"{ten}": web font, Windows không cài được')
+                    continue
+                if info.file_size > MAX_FONT_BYTE:
+                    bo_qua.append(f'"{ten}": lớn bất thường ({co_kich_thuoc(info.file_size)})')
+                    continue
+                tong += info.file_size
+                if tong > MAX_ZIP_FONT_BYTE:
+                    bo_qua.append("Dừng giải nén: tổng dung lượng font trong zip quá lớn (> 4 GB)")
+                    break
+                tam = os.path.join(p, ".tam-" + secrets.token_hex(4))
+                da_ghi, vuot = 0, False
+                with z.open(info) as src, open(tam, "wb") as dst:
+                    while True:
+                        khoi = src.read(1024 * 1024)
+                        if not khoi:
+                            break
+                        da_ghi += len(khoi)
+                        if da_ghi > MAX_FONT_BYTE:
+                            vuot = True
+                            break
+                        dst.write(khoi)
+                if vuot:
+                    os.remove(tam)
+                    bo_qua.append(f'"{ten}": lớn bất thường')
+                    continue
+                ok, lydo = _luu_font_hop_le(p, tam, ten)
+                if ok:
+                    them += 1
+                else:
+                    bo_qua.append(lydo)
+    except zipfile.BadZipFile:
+        return False, f'"{ten_zip}" không phải file .zip hợp lệ (hoặc bị hỏng khi tải lên).', 0, []
+    except OSError as e:
+        return False, f"Lỗi khi giải nén: {e}", them, bo_qua
+    finally:
+        try:
+            os.remove(tam_zip)
+        except OSError:
+            pass
+    _fi.lam_moi_danh_sach(p)
+    if not them:
+        return False, f'Trong "{ten_zip}" không có font nào cài được.', 0, bo_qua
+    return True, f'Đã thêm {them} font từ "{ten_zip}".', them, bo_qua
+
+
+def chuan_hoa_fonts(ds):
+    """Danh sach id bo font cua kich ban -> list id (chuoi, khong trung, giu thu tu).
+    KHONG loc bo font da bi xoa: kich ban phai bao ro "bo font X khong con" thay vi
+    am tham bo qua (xem unattend va man hinh tong ket)."""
+    ra = []
+    for x in ds or []:
+        x = x.get("id") if isinstance(x, dict) else x
+        if isinstance(x, str) and x and x not in ra:
+            ra.append(ten_an_toan(x).lower())
+    return ra
+
+
 # --------------------------------------- he dieu hanh (mo hinh MDT: "Operating Systems")
 def danh_sach_os():
     """Danh sach cac bo OS da tai len - moi bo la 1 thu muc rieng chua
@@ -1249,7 +1488,7 @@ def _cauhinh_mac_dinh(che_do):
         "product_key": "",
         "o_dia_che_do": "tu_dong", "o_dia_so": "0", "o_dia_bang": "tu_dong",
         "phan_vung": [],
-        "apps": [], "ungdung": [], "scripts": [], "lenh_them": "",
+        "apps": [], "ungdung": [], "fonts": [], "scripts": [], "lenh_them": "",
         # Gia nhap domain + cac tuy chon Windows sau khi cai (mo hinh MDT).
         # Xem ui/unattend.py: TUY_CHON_WINDOWS, _khoi_gia_nhap_domain().
         "domain": "", "domain_ou": "", "domain_user": "", "domain_pass": "",
@@ -1261,7 +1500,7 @@ def _cauhinh_mac_dinh(che_do):
 _TRUONG_KICHBAN = (
     "kieu_boot", "os_ho", "os_id", "driver_ids", "ten_may",
     "username", "password", "ssh", "mui_gio", "o_dia_che_do",
-    "o_dia_so", "o_dia_bang", "phan_vung", "apps", "ungdung",
+    "o_dia_so", "o_dia_bang", "phan_vung", "apps", "ungdung", "fonts",
     "scripts", "lenh_them",
     "domain", "domain_ou", "domain_user", "domain_pass",
     "tuy_chon",
@@ -1487,6 +1726,7 @@ def tabs_deployos(chinh, phu=""):
             ("os", "Hệ điều hành", "/deployos/os"),
             ("apps", "Phần mềm", "/deployos/console/apps"),
             ("ungdung", "Ứng dụng (nhiều file)", "/deployos/ungdung"),
+            ("font", "Font chữ", "/deployos/font"),
             ("drivers", "Driver", "/deployos/drivers"),
             ("scripts", "Script", "/deployos/console/scripts"),
             ("file", "WinPE", "/deployos/console"),
@@ -1508,6 +1748,113 @@ def tabs_deployos(chinh, phu=""):
                   f'{nhan}</a>')
         h += "</div>"
     return h
+
+
+_JS_TAI_FONT = """
+<script>
+(function () {
+  "use strict";
+  var URL_LEN = "__URL__";
+  var DUOI = /\\.(ttf|otf|ttc|otc|zip|woff2?)$/i;
+  var hang = [], dang = false, tong = 0, xong = 0, them = 0, loi = [], batDau = 0;
+  var tha = document.getElementById("fo-tha"), tt = document.getElementById("fo-tt"),
+      thanh = document.getElementById("fo-thanh"), chu = document.getElementById("fo-chu"),
+      kq = document.getElementById("fo-ketqua");
+  function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
+  function co(n) {
+    if (n < 1048576) return Math.round(n / 1024) + " KB";
+    return (n / 1048576).toFixed(1) + " MB";
+  }
+  function hien() {
+    var pt = tong ? Math.round(xong * 100 / tong) : 0;
+    thanh.style.width = pt + "%";
+    chu.textContent = "Đang tải: " + xong + " / " + tong + " file (đã thêm " + them + " font)";
+  }
+  function them_vao(files) {
+    var bo = [];
+    Array.prototype.forEach.call(files, function (f) {
+      if (DUOI.test(f.name)) { hang.push(f); tong++; } else { bo.push(f.name); }
+    });
+    if (bo.length) loi.push("Bỏ qua " + bo.length + " file không phải font: " +
+      bo.slice(0, 5).join(", ") + (bo.length > 5 ? "..." : ""));
+    if (!hang.length && !dang) { ketThuc(); return; }
+    if (!dang) { dang = true; batDau = Date.now(); tt.style.display = "block"; kq.innerHTML = ""; hien(); tiep(); }
+  }
+  function tiep() {
+    var f = hang.shift();
+    if (!f) { ketThuc(); return; }
+    var x = new XMLHttpRequest();
+    x.open("POST", URL_LEN, true);
+    x.onload = function () {
+      var r;
+      try { r = JSON.parse(x.responseText); }
+      catch (e) { r = { ok: false, msg: f.name + ": máy trả lời lạ (mã " + x.status + ")", them: 0, bo_qua: [] }; }
+      if (r.ok) them += r.them; else loi.push(r.msg);
+      (r.bo_qua || []).forEach(function (m) { loi.push(m); });
+      xong++; hien(); tiep();
+    };
+    x.onerror = function () { loi.push(f.name + ": mất kết nối tới máy, file này chưa được lưu"); xong++; hien(); tiep(); };
+    var fd = new FormData();
+    fd.append("file", f, f.name);
+    x.send(fd);
+  }
+  function ketThuc() {
+    dang = false;
+    var giay = Math.max(1, Math.round((Date.now() - batDau) / 1000));
+    var h = '<div style="color:' + (them ? "#6ee7a0" : "#f59e0b") + ';">Xong: đã thêm <strong>' + them +
+            "</strong> font (" + giay + " giây).</div>";
+    if (loi.length) {
+      h += '<div style="color:#f59e0b;margin-top:6px;">Có ' + loi.length + " thông báo:</div><ul style='margin:4px 0 0;padding-left:20px;color:#fbbf24;'>" +
+           loi.slice(0, 40).map(function (m) { return "<li>" + esc(m) + "</li>"; }).join("") +
+           (loi.length > 40 ? "<li>... và " + (loi.length - 40) + " thông báo nữa</li>" : "") + "</ul>";
+    }
+    if (them) h += '<div style="margin-top:10px;"><a class="btn" href="">Tải lại trang để xem danh sách</a></div>';
+    kq.innerHTML = h;
+    tt.style.display = "none";
+    tong = xong = them = 0; loi = [];
+    if (!kq.querySelector("li") && h.indexOf("btn") > -1) setTimeout(function () { location.reload(); }, 1500);
+  }
+  document.getElementById("fo-file").addEventListener("change", function () { them_vao(this.files); this.value = ""; });
+  document.getElementById("fo-thumuc").addEventListener("change", function () { them_vao(this.files); this.value = ""; });
+
+  function layFiles(entry) {
+    return new Promise(function (res) {
+      if (entry.isFile) { entry.file(function (f) { res([f]); }, function () { res([]); }); return; }
+      var r = entry.createReader(), tat = [];
+      (function doc() {
+        r.readEntries(async function (es) {
+          if (!es.length) { res(tat); return; }
+          for (var i = 0; i < es.length; i++) tat = tat.concat(await layFiles(es[i]));
+          doc();
+        }, function () { res(tat); });
+      })();
+    });
+  }
+  ["dragenter", "dragover"].forEach(function (ev) {
+    tha.addEventListener(ev, function (e) { e.preventDefault(); tha.classList.add("keo"); });
+  });
+  ["dragleave", "drop"].forEach(function (ev) {
+    tha.addEventListener(ev, function (e) { e.preventDefault(); tha.classList.remove("keo"); });
+  });
+  tha.addEventListener("drop", async function (e) {
+    var items = e.dataTransfer && e.dataTransfer.items, tat = [];
+    if (items && items.length && items[0].webkitGetAsEntry) {
+      var entries = [];
+      for (var i = 0; i < items.length; i++) { var en = items[i].webkitGetAsEntry(); if (en) entries.push(en); }
+      for (var j = 0; j < entries.length; j++) tat = tat.concat(await layFiles(entries[j]));
+    } else { tat = Array.prototype.slice.call(e.dataTransfer.files); }
+    them_vao(tat);
+  });
+  var loc = document.getElementById("fo-loc");
+  if (loc) loc.addEventListener("input", function () {
+    var q = loc.value.toLowerCase().trim();
+    Array.prototype.forEach.call(document.querySelectorAll("#fo-bang tr[data-t]"), function (tr) {
+      tr.style.display = (!q || tr.getAttribute("data-t").indexOf(q) > -1) ? "" : "none";
+    });
+  });
+})();
+</script>
+"""
 
 
 def register_deployos(app):
@@ -2190,6 +2537,8 @@ def register_deployos(app):
             d["apps"] = chuan_hoa_apps(form.getlist("app"))
             # Ung dung kieu thu muc (mo hinh MDT) - xem danh_sach_ungdung().
             d["ungdung"] = chuan_hoa_ungdung([{"id": uid} for uid in form.getlist("ungdung")])
+            # Bo font chu (xem muc BO FONT) - cai cho MOI tai khoan tren may
+            d["fonts"] = chuan_hoa_fonts(form.getlist("font"))
 
         elif buoc == 6:
             d["scripts"] = form.getlist("script")
@@ -2626,10 +2975,47 @@ def register_deployos(app):
                   cần cài Office 365 hoặc bộ cài nhiều file khác.
                 </div>"""
 
+            ds_font = danh_sach_bo_font()
+            da_chon_font = set(chuan_hoa_fonts(d.get("fonts")))
+            o_font = ""
+            for b in ds_font:
+                ch = " checked" if b["id"] in da_chon_font else ""
+                o_font += f"""
+                    <label class="chon">
+                      <input type="checkbox" name="font" value="{_esc(b['id'])}"{ch}>
+                      <span class="t">{_esc(b['ten_hien_thi'])}</span>
+                      <div class="d">{b['so_font']} font &middot; {_esc(b['kich_thuoc'])}</div>
+                    </label>"""
+            # Bo font da chon nhung da bi xoa: bao do, khong am tham bo qua
+            for mat in sorted(da_chon_font - {b["id"] for b in ds_font}):
+                o_font += f"""
+                    <label class="chon">
+                      <input type="checkbox" name="font" value="{_esc(mat)}" checked>
+                      <span class="t">{_esc(mat)}</span>
+                      <div class="d" style="color:#ef4444;">Bộ font này không còn - bỏ tick
+                        (hoặc tạo lại cùng tên ở tab Font chữ)</div>
+                    </label>"""
+            if o_font:
+                khoi_font = f"""
+                <div class="card">
+                  <h3>Font chữ</h3>
+                  <p style="color:#8b93a1;font-size:13px;margin:0 0 9px;">
+                    Cài sẵn các font này cho <strong>mọi tài khoản</strong> trên máy.
+                    Thêm font ở tab <a href="/deployos/font">Font chữ</a>.</p>
+                  {o_font}
+                </div>"""
+            else:
+                khoi_font = """
+                <div class="msg info" style="font-size:13px;">
+                  Chưa có bộ font nào. Nếu máy cần font riêng của công ty, tạo bộ font ở tab
+                  <a href="/deployos/font">Font chữ</a> rồi quay lại tick chọn ở đây.
+                </div>"""
+
             return f"""
             <form method="POST" {act}>
               {than}
               {khoi_ungdung}
+              {khoi_font}
               {_nut_dieu_huong(buoc)}
             </form>"""
 
@@ -2779,6 +3165,13 @@ def register_deployos(app):
             for u in ds_ud)
             if ds_ud else
             "<span style='color:#8b93a1;'>Không có</span>")
+        font_html = ("<br>".join(
+            "&bull; " + (_esc(lay_bo_font(b)["ten_hien_thi"]) + f" ({lay_bo_font(b)['so_font']} font)"
+                         if lay_bo_font(b) else
+                         f"<span style='color:#ef4444;'>{_esc(b)} - bộ font không còn</span>")
+            for b in chuan_hoa_fonts(d.get("fonts")))
+            if chuan_hoa_fonts(d.get("fonts")) else
+            "<span style='color:#8b93a1;'>Không có</span>")
         scripts = ("<br>".join("&bull; " + _esc(s) for s in d["scripts"])
                    if d["scripts"] else "<span style='color:#8b93a1;'>Không có</span>")
         lenh = (f"<pre style='margin:6px 0 0;'>{_esc(d['lenh_them'])}</pre>"
@@ -2833,6 +3226,7 @@ def register_deployos(app):
             <tr><td>Ổ đĩa</td><td>{o_dia}</td></tr>
             <tr><td>Phần mềm<br><small style="color:#8b93a1;">cài khi đăng nhập lần đầu</small></td><td>{apps}</td></tr>
             <tr><td>Ứng dụng (nhiều file)</td><td>{ung_dung_html}</td></tr>
+            <tr><td>Font chữ</td><td>{font_html}</td></tr>
             <tr><td>Script sau cài</td><td>{scripts}</td></tr>
             <tr><td>Lệnh thêm</td><td>{lenh}</td></tr>
           </table>
@@ -4524,6 +4918,156 @@ def register_deployos(app):
             return _trang_ungdung(f"Không lưu được: {e}", False)
         return redirect(f"/deployos/ungdung/{ung_id}")
 
+    # ------------------------- bo font chu (xem muc BO FONT o dau file).
+    # Font chu rieng cua cong ty, thuong hang tram file: tai len NHIEU FILE / ca THU MUC /
+    # file .zip trong 1 lan (trinh duyet gui TUNG file mot, co thanh tien trinh), moi file
+    # duoc doc that de kiem tra la font hop le.
+    @app.route("/deployos/font")
+    def deployos_font():
+        return _trang_font()
+
+    def _trang_font(msg="", ok=True):
+        ds = danh_sach_bo_font()
+        hang = ""
+        for b in ds:
+            hang += f"""
+            <tr>
+              <td><strong>{_esc(b['ten_hien_thi'])}</strong></td>
+              <td>{b['so_font']} font &middot; {_esc(b['kich_thuoc'])}</td>
+              <td>
+                <a class="btn small" href="/deployos/font/{_esc(b['id'])}">Quản lý</a>
+                <form method="POST" action="/deployos/font/xoa" style="display:inline;"
+                      onsubmit="return confirm('Xóa toàn bộ bộ font này ({b['so_font']} font)?');">
+                  <input type="hidden" name="bo_id" value="{_esc(b['id'])}">
+                  <button type="submit" class="red small">Xóa</button>
+                </form>
+              </td>
+            </tr>"""
+        bang = (f"""<div class="tbl-scroll"><table>
+              <tr><th>Tên bộ font</th><th style="width:190px;">Nội dung</th>
+                  <th style="width:150px;">Thao tác</th></tr>
+              {hang}
+            </table></div>""" if ds else
+            '<p style="color:#8b93a1;">Chưa có bộ font nào.</p>')
+        body = (_tabs("tainguyen", "font") + _msg(msg, ok) + f"""
+        <div class="card">
+          <h3>Font chữ cho máy Windows</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0;">
+            Gom font của công ty thành các <strong>bộ font</strong> (ví dụ "Font nhận diện
+            thương hiệu", "Font in ấn"). Mỗi kịch bản cài Windows chọn bộ nào cần dùng ở
+            bước <em>Phần mềm</em> &mdash; máy cài xong là có sẵn font cho <strong>mọi tài
+            khoản</strong>, các ứng dụng (Word, Photoshop...) thấy ngay. Nhận file
+            <code>.ttf</code> <code>.otf</code> <code>.ttc</code> <code>.otc</code>, hoặc
+            nén cả thư mục font thành <code>.zip</code> rồi tải lên một lần.</p>
+        </div>
+        {bang}
+        <div class="card">
+          <h3>Tạo bộ font mới</h3>
+          <form method="POST" action="/deployos/font/tao">
+            <input type="text" name="ten_hien_thi" maxlength="80" required
+                   placeholder="ví dụ: Font công ty" style="max-width:420px;">
+            <button type="submit">Tạo</button>
+          </form>
+        </div>""")
+        return _trang(body, "Deployment OS", "Font chữ")
+
+    @app.route("/deployos/font/tao", methods=["POST"])
+    def deployos_font_tao():
+        ok, msg, bo_id = tao_bo_font(request.form.get("ten_hien_thi", ""))
+        if ok:
+            return redirect(f"/deployos/font/{bo_id}")
+        return _trang_font(msg, ok)
+
+    @app.route("/deployos/font/xoa", methods=["POST"])
+    def deployos_font_xoa():
+        ok, msg = xoa_bo_font(request.form.get("bo_id", ""))
+        return _trang_font(msg, ok)
+
+    @app.route("/deployos/font/<bo_id>")
+    def deployos_font_chitiet(bo_id):
+        b = lay_bo_font(bo_id)
+        if b is None:
+            return _trang_font("Không tìm thấy bộ font.", False)
+        hang = ""
+        for m in b["fonts"]:
+            hang += f"""
+            <tr data-t="{_esc((m['ten'] + ' ' + m['ho'] + ' ' + m['file']).lower())}">
+              <td><strong>{_esc(m['ten'])}</strong></td>
+              <td>{_esc(m['kieu'])}</td>
+              <td>{_esc(m['loai'])}</td>
+              <td><code>{_esc(m['file'])}</code></td>
+              <td>{_esc(co_kich_thuoc(m['byte']))}</td>
+              <td><form method="POST" action="/deployos/font/{_esc(b['id'])}/xoa-font"
+                        style="display:inline;"
+                        onsubmit="return confirm('Xóa font {_esc(m["ten"])}?');">
+                    <input type="hidden" name="ten" value="{_esc(m['file'])}">
+                    <button type="submit" class="red small">Xóa</button>
+                  </form></td>
+            </tr>"""
+        bang = (f"""
+        <input type="search" id="fo-loc" placeholder="Lọc theo tên font..."
+               style="max-width:340px;margin:0 0 10px;">
+        <div class="tbl-scroll"><table id="fo-bang">
+          <tr><th>Tên font</th><th>Kiểu</th><th>Loại</th><th>File</th>
+              <th style="width:90px;">Dung lượng</th><th style="width:80px;">Thao tác</th></tr>
+          {hang}
+        </table></div>""" if b["fonts"] else
+            '<p style="color:#8b93a1;">Bộ font đang trống. Tải font lên ở khung trên.</p>')
+        js = _JS_TAI_FONT.replace("__URL__", f"/deployos/font/{b['id']}/len")
+        body = (_tabs("tainguyen", "font") + f"""
+        <p><a href="/deployos/font">&larr; Về danh sách bộ font</a></p>
+        <h2>{_esc(b['ten_hien_thi'])}</h2>
+        <p style="color:#8b93a1;margin-top:-6px;">{b['so_font']} font &middot; {_esc(b['kich_thuoc'])}</p>
+
+        <div class="card">
+          <h3>Thêm font</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
+            Chọn nhiều file cùng lúc, chọn cả thư mục, hoặc kéo thả vào khung. File
+            <code>.zip</code> chứa font cũng được (tự giải nén, bỏ qua file không phải
+            font). Mỗi file được kiểm tra là font thật; file hỏng hoặc web font
+            (<code>.woff</code>) sẽ bị báo và bỏ qua. Font trùng tên file sẽ được thay mới.</p>
+          <div id="fo-tha" class="fo-tha">
+            <div style="margin-bottom:10px;">Kéo thả font / thư mục / file .zip vào đây</div>
+            <label class="btn">Chọn file
+              <input type="file" id="fo-file" multiple hidden
+                     accept=".ttf,.otf,.ttc,.otc,.zip"></label>
+            <label class="btn gray">Chọn cả thư mục
+              <input type="file" id="fo-thumuc" multiple hidden webkitdirectory></label>
+          </div>
+          <div id="fo-tt" style="display:none;margin-top:12px;">
+            <div style="background:#1b2430;border-radius:6px;height:14px;overflow:hidden;">
+              <div id="fo-thanh" style="background:#3dd3ff;height:100%;width:0%;"></div></div>
+            <div id="fo-chu" style="margin-top:7px;font-size:13px;color:#a8b0bd;"></div>
+          </div>
+          <div id="fo-ketqua" style="margin-top:10px;font-size:13px;"></div>
+        </div>
+
+        <h3>Font trong bộ</h3>
+        {bang}
+        <style>
+          .fo-tha {{ border:2px dashed #3a4656;border-radius:10px;padding:22px;text-align:center; }}
+          .fo-tha.keo {{ border-color:#3dd3ff;background:rgba(61,211,255,.07); }}
+        </style>
+        {js}""")
+        return _trang(body, "Deployment OS", f"Font chữ - {b['ten_hien_thi']}")
+
+    @app.route("/deployos/font/<bo_id>/len", methods=["POST"])
+    def deployos_font_len(bo_id):
+        """Nhan 1 file (font hoac .zip) - tra JSON de trang tai len hien ket qua tung file."""
+        from flask import jsonify
+        f = request.files.get("file")
+        if not f or not getattr(f, "filename", ""):
+            return jsonify({"ok": False, "msg": "Chưa chọn file.", "them": 0, "bo_qua": []}), 400
+        ok, msg, them, bo_qua = them_font_vao_bo(bo_id, f)
+        return jsonify({"ok": ok, "msg": msg, "them": them, "bo_qua": bo_qua})
+
+    @app.route("/deployos/font/<bo_id>/xoa-font", methods=["POST"])
+    def deployos_font_xoa_font(bo_id):
+        ok, msg = xoa_font_trong_bo(bo_id, request.form.get("ten", ""))
+        if not ok:
+            return _trang_font(msg, ok)
+        return redirect(f"/deployos/font/{bo_id}")
+
     @app.route("/deployos/drivers/<driver_id>")
     def deployos_drivers_chitiet(driver_id):
         ds = danh_sach_driver()
@@ -5043,6 +5587,13 @@ def _tom_tat_day_du(k, esc):
             f"({'máy' if u.get('dich') == 'may' else 'người dùng'})</small>"
             for u in ds_ud))
 
+    ds_font = chuan_hoa_fonts(k.get("fonts"))
+    if ds_font:
+        them("Font chữ", "<br>".join(
+            esc(lay_bo_font(b)["ten_hien_thi"]) if lay_bo_font(b)
+            else f"{esc(b)} <small style='color:#ef4444;'>(bộ font không còn)</small>"
+            for b in ds_font))
+
     if k.get("scripts"):
         them("Script", "<br>".join(esc(s) for s in k["scripts"]))
 
@@ -5110,6 +5661,10 @@ def _mo_ta_ngan(k):
     ds_ud = chuan_hoa_ungdung(k.get("ungdung"))
     if ds_ud:
         phan.append("ứng dụng: " + ", ".join(u["id"] for u in ds_ud))
+
+    ds_font = chuan_hoa_fonts(k.get("fonts"))
+    if ds_font:
+        phan.append("font: " + ", ".join(ds_font))
 
     n_sc = len(k.get("scripts") or [])
     if n_sc:

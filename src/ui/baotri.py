@@ -49,6 +49,7 @@ THU_MUC_NANG = [
     ("deploy/os", "Ảnh hệ điều hành (boot.wim / install.wim)",
      "/deployos/os"),
     ("deploy/ungdung", "Ứng dụng nhiều file (Office...)", "/deployos/ungdung"),
+    ("deploy/fonts", "Font chữ (bộ font công ty)", "/deployos/font"),
     ("deploy/apps", "Phần mềm (.exe/.msi)", "/deployos/console/apps"),
     ("deploy/boot", "WinPE + file boot PXE", "/deployos/console"),
     ("deploy/drivers", "Driver", "/deployos/drivers"),

@@ -626,6 +626,27 @@ def _muc_kiem_tra(d):
                 } else { @{ Dat = $false; ChiTiet = 'chua cai (khong co khoa ClickToRun)' } }
             """)
 
+    # --- Font chu
+    cai_duoc, mat = _bo_font_cai_duoc(d)
+    for b in cai_duoc:
+        them("Font", b["ten_hien_thi"], loai="ps", ma=f"""
+            $f = 'C:\\ConsolePi\\fonts\\ket-qua-' + {_ps_chuoi(b['id'])} + '.json'
+            if (-not (Test-Path $f)) {{ @{{ Dat = $false; ChiTiet = 'chua co ket qua cai font (buoc cai font khong chay?)' }} }}
+            else {{
+                $k = Get-Content -Raw -Encoding UTF8 $f | ConvertFrom-Json
+                $thieu = @($k.da_cai | Where-Object {{ -not (Test-Path (Join-Path $env:windir ('Fonts\\' + $_))) }})
+                $ct = "$(@($k.da_cai).Count)/$($k.tong) font da cai"
+                if (@($k.canh_bao).Count) {{ $ct += ", $(@($k.canh_bao).Count) canh bao (trung ten file voi font may)" }}
+                if (@($k.loi).Count) {{ $ct += ", LOI: " + (@($k.loi) -join '; ') }}
+                if ($thieu.Count) {{ $ct += ", $($thieu.Count) file khong thay trong Fonts" }}
+                @{{ Dat = (@($k.loi).Count -eq 0 -and $thieu.Count -eq 0); ChiTiet = $ct }}
+            }}
+        """)
+    for bo_id in mat:
+        them("Font", bo_id, loai="ps", ma="""
+            @{ Dat = $false; ChiTiet = 'bo font da chon khong con (hoac dang trong) tren Console Pi luc tao kich ban' }
+        """)
+
     # --- File noi bo cua Console Pi khong duoc lot sang may khach
     them("Vệ sinh", "File nội bộ _thongtin.json không lọt sang", loai="ps", ma=f"""
         $l = @(Get-ChildItem {_ps_chuoi(THU_MUC_UNGDUNG_TREN_MAY)} -Recurse -Filter '_thongtin.json' -EA SilentlyContinue)
@@ -684,6 +705,11 @@ def _danh_sach_buoc_nguoi_dung(d):
     if d.get("go_app"):
         for lenh in _lenh_go_app(d):
             ra.append((f"Gỡ {len(d['go_app'])} ứng dụng kèm sẵn", lenh, False))
+
+    # Font chu: cai TRUOC phan mem, de ung dung vua cai da thay font (quyen SYSTEM, he_thong=True)
+    for b in _bo_font_cai_duoc(d)[0]:
+        ra.append((f"Cài bộ font {b['ten_hien_thi']} ({b['so_font']} font)",
+                   _lenh_cai_bo_font(b), True))
 
     for a in _d.chuan_hoa_apps(d.get("apps")):
         if a.get("dich") == "nguoi_dung":
@@ -1619,7 +1645,8 @@ def _lenh_chep_app_script(d):
     scripts = d.get("scripts") or []
     ungdung = [u for u in _d.chuan_hoa_ungdung(d.get("ungdung"))
                if _lenh_cai_ungdung(u)]  # bo qua ung dung chua dat lenh cai
-    if not apps and not scripts and not ungdung:
+    fonts = _bo_font_cai_duoc(d)[0]
+    if not apps and not scripts and not ungdung and not fonts:
         return []
 
     dong = ["echo     ... chep them phan mem va script sang may dich..."]
@@ -1663,6 +1690,18 @@ def _lenh_chep_app_script(d):
             dong.append(
                 f'robocopy "Z:\\ungdung\\{u["id"]}" "{dich}" /E /R:2 /W:2 '
                 "/XF _thongtin.json >> %LOG% 2>&1")
+            dong.append("if errorlevel 8 goto loi_chep_app")
+    if fonts:
+        # Bo font chu: chep CA THU MUC (nhieu file) bang robocopy - nho ma thoat 0-7 la
+        # thanh cong. cai-font.ps1 lay tu X:\ (da nhung trong boot.wim), khong qua Samba.
+        dong.append("if not exist W:\\ConsolePi mkdir W:\\ConsolePi")
+        dong.append(f"copy /y %NHUNG%\\{TEN_PS_CAI_FONT} W:\\ConsolePi\\{TEN_PS_CAI_FONT} >> %LOG% 2>&1")
+        dong.append("if errorlevel 1 goto loi_chep_app")
+        for b in fonts:
+            dong.append(f'echo     ... dang chep bo font "{b["id"]}" ({b["so_font"]} font)...')
+            dong.append(
+                f'robocopy "Z:\\fonts\\{b["id"]}" "W:\\ConsolePi\\fonts\\{b["id"]}" '
+                "/E /R:2 /W:2 /XF _thongtin.json >> %LOG% 2>&1")
             dong.append("if errorlevel 8 goto loi_chep_app")
     dong.append("")
     return dong
@@ -2674,6 +2713,110 @@ def _lenh_cai_app(a):
 
 THU_MUC_UNGDUNG_TREN_MAY = f"{THU_MUC_TREN_MAY}\\ungdung"
 
+# ----------------------------------------------------------------- BO FONT
+# Kich ban chon cac "bo font" (xem deployos: muc BO FONT). Deploy.cmd chep thu muc bo font
+# sang C:\ConsolePi\fonts\<id> (con o WinPE), con cai-font.ps1 chay bang quyen SYSTEM o 1 buoc
+# sau khi dang nhap: chep tung font vao C:\Windows\Fonts + ghi registry HKLM (cho MOI tai
+# khoan) + AddFontResource. Danh sach + ten registry nam trong _fonts.json (ui/fontinfo.py).
+TEN_PS_CAI_FONT = "cai-font.ps1"
+
+
+def _bo_font_cai_duoc(d):
+    """(cai_duoc, mat): cai_duoc = [{"id","ten_hien_thi","so_font"}] cua cac bo font da chon
+    VA con ton tai VA co font; mat = id da chon nhung bo font khong con / dang trong - de bao
+    cao RO thay vi am tham bo qua."""
+    cai_duoc, mat = [], []
+    for bo_id in _d.chuan_hoa_fonts(d.get("fonts")):
+        b = _d.lay_bo_font(bo_id)
+        if b and b["so_font"]:
+            cai_duoc.append({"id": b["id"], "ten_hien_thi": b["ten_hien_thi"],
+                             "so_font": b["so_font"]})
+        else:
+            mat.append(bo_id)
+    return cai_duoc, mat
+
+
+_PS_CAI_FONT = r"""
+# Console System - cai 1 bo font cho TOAN MAY (chay bang quyen SYSTEM, sau khi dang nhap lan dau).
+# Cach Windows cai font: chep file vao %windir%\Fonts + ghi 1 gia tri vao HKLM\...\Fonts.
+param([Parameter(Mandatory=$true)][string]$Bo)
+$ErrorActionPreference = 'Continue'
+$goc    = 'C:\ConsolePi\fonts'
+$nguon  = Join-Path $goc $Bo
+$dsFile = Join-Path $nguon '_fonts.json'
+$dichF  = Join-Path $env:windir 'Fonts'
+$reg    = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+$kqFile = Join-Path $goc ('ket-qua-' + $Bo + '.json')
+
+$daCai = New-Object System.Collections.Generic.List[string]
+$loi   = New-Object System.Collections.Generic.List[string]
+$canh  = New-Object System.Collections.Generic.List[string]
+$tong  = 0
+function Ghi-KetQua {
+    $o = [ordered]@{ bo = $Bo; tong = $tong; da_cai = @($daCai); loi = @($loi); canh_bao = @($canh) }
+    try { $o | ConvertTo-Json -Depth 3 | Out-File $kqFile -Encoding UTF8 } catch { }
+}
+
+try {
+    Add-Type -Namespace CS -Name FontApi -MemberDefinition @'
+[DllImport("gdi32.dll", CharSet=CharSet.Unicode)] public static extern int AddFontResourceW(string f);
+[DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern IntPtr SendMessageTimeout(IntPtr h, uint m, UIntPtr w, IntPtr l, uint f, uint t, out UIntPtr r);
+'@ -ErrorAction Stop
+    $coApi = $true
+} catch { $coApi = $false }
+
+if (-not (Test-Path -LiteralPath $dsFile)) {
+    $loi.Add("Khong thay danh sach font: $dsFile (chep bo font sang may that bai?)")
+    Ghi-KetQua; Write-Output $loi[0]; exit 2
+}
+$ds = @((Get-Content -Raw -Encoding UTF8 -LiteralPath $dsFile | ConvertFrom-Json).fonts)
+$tong = $ds.Count
+foreach ($m in $ds) {
+    $src = Join-Path $nguon $m.file
+    $dst = Join-Path $dichF $m.file
+    try {
+        if (-not (Test-Path -LiteralPath $src)) { throw 'thieu file nguon' }
+        if (Test-Path -LiteralPath $dst) {
+            $a = (Get-FileHash -LiteralPath $src -Algorithm SHA256).Hash
+            $b = (Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash
+            if ($a -ne $b) {
+                # Trung TEN FILE voi 1 font KHAC dang co tren may (thuong la font he thong,
+                # dang bi khoa nen cung khong ghi de duoc): giu nguyen, chi canh bao.
+                $canh.Add($m.file + ': trung ten file voi font khac da co tren may - giu nguyen font cua may')
+                continue
+            }
+        } else {
+            Copy-Item -LiteralPath $src -Destination $dst -Force -ErrorAction Stop
+        }
+        New-ItemProperty -Path $reg -Name $m.reg -Value $m.file -PropertyType String -Force -ErrorAction Stop | Out-Null
+        if ($coApi) { [void][CS.FontApi]::AddFontResourceW($dst) }
+        $daCai.Add($m.file)
+    } catch {
+        $loi.Add($m.file + ': ' + $_.Exception.Message)
+    }
+}
+if ($coApi) {
+    try { $r = [UIntPtr]::Zero; [void][CS.FontApi]::SendMessageTimeout([IntPtr]0xffff, 0x1D, [UIntPtr]::Zero, [IntPtr]::Zero, 2, 1000, [ref]$r) } catch { }
+}
+Ghi-KetQua
+Write-Output ("Bo font {0}: {1}/{2} font da cai, {3} canh bao, {4} loi" -f $Bo, $daCai.Count, $tong, $canh.Count, $loi.Count)
+foreach ($x in $canh) { Write-Output ('CANH BAO ' + $x) }
+foreach ($x in $loi)  { Write-Output ('LOI ' + $x) }
+if ($loi.Count -gt 0) { exit 1 }
+exit 0
+"""
+
+
+def sinh_ps_cai_font():
+    return _PS_CAI_FONT.lstrip("\n")
+
+
+def _lenh_cai_bo_font(b):
+    return ('powershell.exe -NoProfile -ExecutionPolicy Bypass -File '
+            f'"{THU_MUC_TREN_MAY}\\{TEN_PS_CAI_FONT}" -Bo "{b["id"]}"')
+
+
+
 
 def _lenh_cai_ungdung(u):
     r"""
@@ -3309,6 +3452,8 @@ def sinh_file_nhung(d, dia_chi_pi):
     }
     if _ds_go_app(d):
         ra[TEN_PS_GO_APP] = sinh_ps_go_app(d)
+    if _bo_font_cai_duoc(d)[0]:
+        ra[TEN_PS_CAI_FONT] = sinh_ps_cai_font()
     return ra
 
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.8.0 (08/10/2026)
+
+- Tinh nang MOI: **Font chu** cho may Windows (anh Thoai 07/10/2026: cong ty co nhieu font rieng, can cai
+  san tren moi may). Tab Deployment OS -> Tai nguyen -> "Font chu": tao "bo font", tai len NHIEU file /
+  ca THU MUC / file .zip trong 1 lan (trinh duyet gui tung file, co thanh tien trinh, keo tha duoc).
+  Moi file duoc DOC THAT (ui/fontinfo.py, khong them goi he thong): file doi duoi, file hong, web font
+  .woff bi tu choi ngay va noi ro ly do; hien danh sach ten font that (ho chu, kieu, TrueType/OpenType),
+  loc theo ten, xoa tung font. .zip giai nen PHANG, chan zip-slip + zip bomb, bo rac __MACOSX.
+- Kich ban Windows: buoc 5 co the "Font chu" - chon cac bo font. deploy.cmd chep thu muc bo font + cai-font.ps1
+  sang may dich (robocopy); sau dang nhap lan dau 1 buoc "Cai bo font ..." chay bang SYSTEM: chep font vao
+  C:\Windows\Fonts + ghi HKLM\...\Fonts (moi tai khoan thay) + AddFontResource. Chay lap lai an toan; font
+  trung TEN FILE voi font khac dang co tren may (vd arial.ttf) thi giu nguyen font cua may va CANH BAO.
+  Bo font da chon nhung bi xoa -> bao do tren man hinh kich ban + muc "LOI" trong bao cao cuoi cai (khong im lang).
+  Bao cao cuoi cai co them muc kiem "Font" cho tung bo.
+- Font co hieu luc day du voi ung dung sau lan khoi dong lai / dang nhap lai dau tien.
+- Sao luu: deploy/fonts them vao muc "du lieu nang" cua Bao tri; sao-luu-sang-may-build.sh khong chep font cong ty
+  sang may build.
+- Kiem chung: doc 323 font that tren may build (ttf/otf, ke ca emoji mau) + file .ttc tu dung + file gia/cut/woff/exe;
+  31 kiem tra logic (tao/tai len/zip/xoa/chan duong dan/kich ban/deploy.cmd/buoc/bao cao) dat; trinh dung kich ban
+  buoc 5 + tong ket; **may mau Windows 10 that** (iso/test/thu-font.sh): cai bo 17 font (gom .ttc, ten file tieng Viet,
+  arial.ttf trung ten) bang SYSTEM 2 lan -> on dinh, khoi dong lai -> 16 font co file + registry, ung dung thay du 8 ho chu,
+  arial.ttf he thong con nguyen. CHUA test: cai Windows tron ven tu PXE kem bo font (chi test script cai tren may mau),
+  Windows 11, bo font hang tram file / nhieu tram MB.
+
 ## 1.7.7 (07/10/2026)
 
 - Go tinh nang "Cho AI / may khac truy cap" (anh Thoai 07/10/2026: khong can): bo the tren trang
