@@ -647,6 +647,8 @@ fi
 # nguyen qua cac lan chay lai install.sh sau nay (khong sinh lai neu da
 # co). ui/unattend.py doc dung file nay luc sinh unattend.xml.
 if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
+    # Bao cao "Do o dia" (share [cs-o-dia] ghi bang user nobody - xem config/smb.conf)
+    mkdir -p "$DATA_DIR/o-dia" && chown nobody:nogroup "$DATA_DIR/o-dia"
     install -m 644 "$SRC_DIR/config/smb.conf" /etc/samba/smb.conf
     if testparm -s >/dev/null 2>&1; then
         ok "Cau hinh Samba hop le"

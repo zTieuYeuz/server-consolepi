@@ -1722,6 +1722,10 @@ def tabs_deployos(chinh, phu=""):
         ("caidat", "Cài đặt", "/deployos/caidat"),
     ]
     phu_theo_chinh = {
+        "kichban": [
+            ("ds", "Kịch bản", "/deployos/kichban"),
+            ("odia", "Ổ đĩa đã dò", "/deployos/o-dia"),
+        ],
         "tainguyen": [
             ("os", "Hệ điều hành", "/deployos/os"),
             ("apps", "Phần mềm", "/deployos/console/apps"),
@@ -1855,6 +1859,71 @@ _JS_TAI_FONT = """
 })();
 </script>
 """
+
+
+def ve_bao_cao_o_dia(kq, nut_chon=False):
+    """HTML cho 1 bao cao "Do o dia" (ui/doodia.py). nut_chon=True: moi o co nut dien so o
+    vao o "O dia so" cua buoc chia o (kich ban)."""
+    from .home import _esc
+    from . import doodia as _od
+    may = " ".join(x for x in (kq.get("hang"), kq.get("model")) if x) or "Máy không rõ tên"
+    phu = [f"MAC {', '.join(kq['mac'])}" if kq.get("mac") else "",
+           f"IP {', '.join(kq['ip'])}" if kq.get("ip") else "",
+           kq.get("firmware") or "", "dò lúc " + _od.gio(kq["luc"])]
+    hang = ""
+    for o in kq.get("o", []):
+        vol = "<br>".join(
+            f"<code>{_esc(v['chu'] + ':') if v['chu'] else '&nbsp;&nbsp;'}</code> "
+            f"{_esc(v['nhan'] or '(không nhãn)')} &middot; {_esc(v['fs'] or '?')} &middot; "
+            f"{_esc(v['dung_luong'])}" + (f" <small style='color:#8b93a1;'>{_esc(v['info'])}</small>"
+                                          if v['info'] else "")
+            for v in o["volume"])
+        if not vol:
+            vol = ("<span style='color:#8b93a1;'>Không có phân vùng nào có hệ thống file</span>"
+                   if not o["phan_vung"] else
+                   f"<span style='color:#8b93a1;'>{len(o['phan_vung'])} phân vùng, không có ổ đọc được "
+                   "(BitLocker / Linux / chưa định dạng?)</span>")
+        pv = ", ".join(f"{p['kieu']} {p['dung_luong']}" for p in o["phan_vung"])
+        loai = (o.get("loai") or "").upper()
+        canh = ""
+        if loai in ("USB", "SD", "MMC"):
+            canh = ("<div style='color:#f59e0b;font-size:12px;'>Ổ USB/thẻ nhớ - thường KHÔNG "
+                    "phải ổ để cài Windows</div>")
+        if o["volume"] and any((v.get("fs") or "").upper() == "NTFS" for v in o["volume"]):
+            canh += ("<div style='color:#fca5a5;font-size:12px;'>Đang có dữ liệu Windows/NTFS - "
+                     "cài lên ổ này sẽ XÓA SẠCH</div>")
+        nut = (f'<button type="button" class="small" onclick="var i=document.querySelector(\'[name=o_dia_so]\');'
+               f'if(i){{i.value={o["so"]};i.focus();}}">Dùng ổ {o["so"]}</button>' if nut_chon else "")
+        hang += f"""
+          <tr>
+            <td style="font-size:20px;font-weight:700;text-align:center;">{o['so']}</td>
+            <td><strong>{_esc(o['model'] or '?')}</strong><br>
+                <small style="color:#8b93a1;">{_esc(o.get('loai') or '?')} &middot;
+                {'GPT' if o.get('gpt') else ('MBR / chưa chia' if o['phan_vung'] or o['volume'] else 'chưa chia')}
+                &middot; còn trống {_esc(o.get('trong') or '?')}</small>{canh}</td>
+            <td style="white-space:nowrap;">{_esc(o.get('dung_luong') or '?')}</td>
+            <td>{vol}<br><small style="color:#6b7280;">{_esc(pv)}</small></td>
+            {'<td>' + nut + '</td>' if nut_chon else ''}
+          </tr>"""
+    if not hang:
+        hang = ('<tr><td colspan="5" style="color:#f59e0b;">Không thấy ổ đĩa nào - máy thiếu '
+                'driver ổ cứng (Intel RST/VMD?) - xem bản gốc bên dưới.</td></tr>')
+    return f"""
+      <div class="card">
+        <h3 style="margin-bottom:2px;">{_esc(may)}</h3>
+        <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
+          {_esc(' · '.join(x for x in phu if x))}</p>
+        <div class="tbl-scroll"><table>
+          <tr><th style="width:56px;">Ổ số</th><th>Ổ đĩa</th><th style="width:90px;">Dung lượng</th>
+              <th>Phân vùng (chữ ổ · tên · định dạng · dung lượng)</th>
+              {'<th style="width:90px;"></th>' if nut_chon else ''}</tr>
+          {hang}
+        </table></div>
+        <details style="margin-top:8px;"><summary style="cursor:pointer;color:#8b93a1;font-size:13px;">
+          Bản gốc (diskpart)</summary>
+          <pre style="max-height:320px;overflow:auto;font-size:12px;">{_esc(kq['noi_dung'])}</pre>
+        </details>
+      </div>"""
 
 
 def register_deployos(app):
@@ -2320,7 +2389,7 @@ def register_deployos(app):
         flash_html = "".join(
             _msg(nd, cat == "ok")
             for cat, nd in get_flashed_messages(with_categories=True))
-        body = _tabs("kichban") + flash_html + _khoi_dang_phuc_vu() + f"""
+        body = _tabs("kichban", "ds") + flash_html + _khoi_dang_phuc_vu() + f"""
         <div class="card">
           <h3>Tạo kịch bản mới</h3>
           <p style="color:#8b93a1;font-size:13.5px;margin:0 0 13px;">
@@ -2845,8 +2914,8 @@ def register_deployos(app):
                 <label class="chon">
                   <input type="radio" name="o_dia_che_do" value="tu_dong"{tu_dong_ch}>
                   <span class="t">Phân chia tự động</span>
-                  <div class="d">Dùng ổ đĩa số 0 (ổ đầu tiên máy nhìn thấy),
-                  xóa sạch và chia theo bộ phân vùng chuẩn của hệ điều hành
+                  <div class="d">Dùng "ổ đĩa số" ở dưới (mặc định 0 - ổ đầu tiên máy
+                  nhìn thấy), xóa sạch và chia theo bộ phân vùng chuẩn của hệ điều hành
                   đã chọn.</div>
                 </label>
                 <label class="chon">
@@ -2857,6 +2926,8 @@ def register_deployos(app):
                   riêng.</div>
                 </label>
               </div>
+
+              {_khoi_o_dia_da_do()}
 
               <div class="card">
                 <h3>Thông số ổ đĩa</h3>
@@ -4181,7 +4252,7 @@ def register_deployos(app):
     # Xem ui/khotrungtam.py cho phan goi HTTP thuc su. O day chi la giao
     # dien: ket noi (ma 6 ky tu), tim/loc, tai o nen vao dung thu muc cuc
     # bo (APPS_DIR / SCRIPTS_DIR / 1 he dieu hanh moi trong OS_DIR).
-    TEN_LOAI_KHO = {"phanmem": "Phần mềm", "script": "Script", "os": "Hệ điều hành",
+    TEN_LOAI_KHO = {"phanmem": "Phần mềm", "ungdung": "Ứng dụng nhiều file", "script": "Script", "os": "Hệ điều hành",
                     "winpe": "WinPE"}
 
     def _da_co_tu_kho(m, cac_os):
@@ -4189,6 +4260,14 @@ def register_deployos(app):
         loai = m.get("loai", "")
         if loai == "os":
             return any(o["kho_id"] == m.get("id") and o["san_sang"] for o in cac_os)
+        if loai == "ungdung":
+            # Da tai VA giai nen xong (con file .zip/.part = dang tai do dang, chua tinh)
+            for u in danh_sach_ungdung():
+                if _doc_meta_ungdung(u["id"]).get("kho_id") == m.get("id"):
+                    d = os.path.join(UNGDUNG_DIR, u["id"])
+                    return any(not x.endswith((".zip", ".part")) and x != "_thongtin.json"
+                               for x in os.listdir(d))
+            return False
         if loai == "winpe":
             from . import winperieng as _wr
             ten = ten_an_toan(m.get("ten_file", ""))
@@ -4268,7 +4347,8 @@ def register_deployos(app):
             hop_le = ((loai == "phanmem" and ext in EXT_APP) or
                       (loai == "script" and ext in EXT_SCRIPT) or
                       (loai == "os" and ext == ".iso") or
-                      (loai == "winpe" and ext in (".wim", ".iso")))
+                      (loai == "winpe" and ext in (".wim", ".iso")) or
+                      (loai == "ungdung" and ext == ".zip"))
             nhan_loai = TEN_LOAI_KHO.get(loai, loai)
             cap_nhat = m.get("cap_nhat_luc") or 0
             luc = time.strftime("%d/%m/%Y %H:%M", time.localtime(cap_nhat)) if cap_nhat else ""
@@ -4287,7 +4367,8 @@ def register_deployos(app):
                               if da_co else "")
             phu = _esc(m.get("mo_ta", ""))
             if m.get("du_lieu"):
-                nhan_dl = {"os": "Phiên bản", "winpe": "Tên trong menu PXE"}.get(loai, "Tham số")
+                nhan_dl = {"os": "Phiên bản", "winpe": "Tên trong menu PXE",
+                           "ungdung": "Lệnh cài"}.get(loai, "Tham số")
                 phu += (f'<br><span style="color:#8ad4a0;">{nhan_dl}: '
                         f'{_esc(m["du_lieu"])}</span>')
             if loai == "phanmem" and m.get("go_cai"):
@@ -4655,6 +4736,56 @@ def register_deployos(app):
                                   khi_huy_os, don_dep_os)
             return _kho_chuyen(msg, ok)
 
+        if loai == "ungdung":
+            # Ung dung NHIEU FILE (Office 2019/365...): .zip + dong lenh cai (du_lieu). Tai vao 1
+            # ung dung kieu thu muc (mo hinh MDT), TU giai nen roi dat dong lenh. Tai lai lan sau:
+            # dung lai DUNG ung dung cu (kho_id) - giai nen de len, khong tao ban trung.
+            if ext != ".zip":
+                return _kho_chuyen("Mục ứng dụng nhiều file phải là file .zip.", False)
+            can = kich * 2.1 + 300 * 1024 * 1024        # zip + ban giai nen cung luc
+            if can > _con_trong(UNGDUNG_DIR):
+                return _kho_chuyen(f"Không đủ chỗ trống để tải \"{ten_hien_thi}\" "
+                                   f"(cần khoảng {co_kich_thuoc(int(can))}).", False)
+            ung_id = next((u["id"] for u in danh_sach_ungdung()
+                           if _doc_meta_ungdung(u["id"]).get("kho_id") == muc_id), None)
+            ung_moi = False
+            if not ung_id:
+                ten_u, so = ten_hien_thi, 2
+                while True:
+                    ok_t, msg_t, ung_id = tao_ungdung_moi(ten_u)
+                    if ok_t:
+                        ung_moi = True
+                        break
+                    if "Đã có" not in msg_t or so > 20:
+                        return _kho_chuyen(msg_t, False)
+                    ten_u, so = f"{ten_hien_thi} ({so})", so + 1
+                meta = _doc_meta_ungdung(ung_id)
+                meta.update({"kho_id": muc_id, "nguon": "kho"})
+                _ghi_meta_ungdung(ung_id, meta)
+            lenh_kho = (m.get("du_lieu") or "").strip()
+
+            def sau_ungdung(duong):
+                ok_g, msg_g = giai_nen_ungdung(ung_id, duong)     # tu xoa .zip sau khi giai nen
+                if not ok_g:
+                    return False, msg_g
+                if lenh_kho:
+                    dat_lenh_cai_ungdung(ung_id, lenh_kho)
+                    return True, (f'Đã tải và giải nén "{ten_hien_thi}" vào Ứng dụng (nhiều file), '
+                                  "lệnh cài đã đặt sẵn.")
+                return True, (f'Đã tải và giải nén "{ten_hien_thi}" - kho chưa có dòng lệnh cài, '
+                              "vào tab Ứng dụng (nhiều file) để đặt.")
+
+            def don_dep_ungdung():
+                """Huy giua chung: ung dung do CHINH lan tai nay tao ra ma chua co gi -> xoa luon."""
+                d = os.path.join(UNGDUNG_DIR, ung_id)
+                if ung_moi and os.path.isdir(d) and not any(
+                        x != "_thongtin.json" and not x.endswith(".part") for x in os.listdir(d)):
+                    shutil.rmtree(d, ignore_errors=True)
+
+            ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(UNGDUNG_DIR, ung_id, ten_an),
+                                  sau_ungdung, None, don_dep_ungdung)
+            return _kho_chuyen(msg, ok)
+
         if loai == "winpe":
             # WinPE rieng (ui/winperieng.py): tai vao tab WinPE roi TU dua vao menu
             # PXE "2. Boot WinPE". ISO: tach .wim ra roi XOA ISO (kho tai lai duoc).
@@ -4922,6 +5053,70 @@ def register_deployos(app):
     # Font chu rieng cua cong ty, thuong hang tram file: tai len NHIEU FILE / ca THU MUC /
     # file .zip trong 1 lan (trinh duyet gui TUNG file mot, co thanh tien trinh), moi file
     # duoc doc that de kiem tra la font hop le.
+    def _khoi_o_dia_da_do():
+        """The o buoc chia o: 3 bao cao "Do o dia" moi nhat, nut dien so o."""
+        from . import doodia as _od
+        ds = _od.danh_sach_bao_cao()[:3]
+        if not ds:
+            return """<div class="msg info" style="font-size:13px;">Chưa biết máy có những ổ nào?
+              Cho máy boot qua mạng, chọn <strong>3. Do o dia</strong> trong menu PXE (chỉ đọc,
+              không xóa gì) - kết quả hiện ở <a href="/deployos/o-dia">Ổ đĩa đã dò</a> và ngay
+              tại đây để chọn đúng ổ.</div>"""
+        return ("""<div class="card" style="border-left:4px solid #3dd3ff;"><h3>Ổ đĩa đã dò
+              (bấm "Dùng ổ ..." để điền số ổ)</h3>
+              <p style="color:#8b93a1;font-size:13px;margin:0;">3 lần dò gần nhất - xem tất cả ở
+              <a href="/deployos/o-dia">Ổ đĩa đã dò</a>.</p></div>""" +
+                "".join(ve_bao_cao_o_dia(kq, nut_chon=True) for kq in ds))
+
+    # ------------------------- o dia da do (ui/doodia.py): may khach boot muc PXE "Do o dia",
+    # gui ve danh sach o dia + phan vung -> ky su xem roi chon DUNG so o cho kich ban.
+    @app.route("/deployos/o-dia")
+    def deployos_o_dia():
+        return _trang_o_dia()
+
+    def _trang_o_dia(msg="", ok=True):
+        from . import doodia as _od
+        ds = _od.danh_sach_bao_cao()
+        khoi = "".join(ve_bao_cao_o_dia(kq) + f"""
+          <form method="POST" action="/deployos/o-dia/xoa" style="margin:-6px 0 18px;">
+            <input type="hidden" name="ten" value="{_esc(kq['ten'])}">
+            <button type="submit" class="red small">Xóa báo cáo này</button>
+          </form>""" for kq in ds)
+        if not ds:
+            khoi = """<div class="msg info">Chưa có báo cáo nào. Bật PXE, cho máy cần cài boot
+              qua mạng, chọn <strong>3. Do o dia</strong> trong menu - máy chỉ ĐỌC thông tin ổ đĩa
+              (không xóa gì), hiện trên màn hình và gửi về đây.</div>"""
+        xoa_het = ("""<form method="POST" action="/deployos/o-dia/xoa-het" style="display:inline;"
+              onsubmit="return confirm('Xóa tất cả báo cáo ổ đĩa?');">
+              <button type="submit" class="red small">Xóa tất cả</button></form>""" if ds else "")
+        body = (_tabs("kichban", "odia") + _msg(msg, ok) + f"""
+        <div class="card">
+          <h3>Ổ đĩa đã dò</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 8px;">
+            Trước khi tạo kịch bản cho máy có nhiều ổ (SSD + HDD, ổ USB...), cho máy boot qua mạng
+            và chọn <strong>3. Do o dia</strong> trong menu PXE. Máy chỉ <strong>đọc</strong> -
+            không xóa, không chia, không ghi gì vào ổ - rồi hiện danh sách ổ ngay trên màn hình
+            và gửi về đây. Số ở cột <strong>Ổ số</strong> là số cần nhập vào bước
+            <em>Chia ổ đĩa</em> của kịch bản (ở bước đó cũng có nút "Dùng ổ ..." điền sẵn).</p>
+          <p style="color:#8b93a1;font-size:13px;margin:0;">Lưu ý: số ổ do thứ tự cắm cáp/khe
+            quyết định - <strong>dò lại</strong> nếu đã tháo lắp ổ, cắm thêm USB, hoặc máy khác đời.
+            {xoa_het}</p>
+        </div>
+        {khoi}""")
+        return _trang(body, "Deployment OS", "Ổ đĩa đã dò")
+
+    @app.route("/deployos/o-dia/xoa", methods=["POST"])
+    def deployos_o_dia_xoa():
+        from . import doodia as _od
+        ok, msg = _od.xoa_bao_cao(request.form.get("ten", ""))
+        return _trang_o_dia(msg, ok)
+
+    @app.route("/deployos/o-dia/xoa-het", methods=["POST"])
+    def deployos_o_dia_xoa_het():
+        from . import doodia as _od
+        ok, msg = _od.xoa_het()
+        return _trang_o_dia(msg, ok)
+
     @app.route("/deployos/font")
     def deployos_font():
         return _trang_font()

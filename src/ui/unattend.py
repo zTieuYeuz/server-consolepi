@@ -1026,12 +1026,21 @@ foreach ($b in $Buoc) {{
                     }}
                 }}
             }}
-            # Tac vu ket thuc ma khong ghi ma (cmd bi giet...) -> loi, khong cho mai
+            # Tac vu ket thuc ma khong ghi ma (cmd bi giet...) -> loi, khong cho mai.
+            # CHI tin trang thai DUNG RO RANG (Ready/Disabled), 2 lan cach nhau 2 giay. LOI THAT (thu
+            # may mau 08/10/2026, buoc "Dat mang rieng tu"): luc Windows doi cau hinh mang, Get-ScheduledTask
+            # tra ve RONG 1 lan -> ban cu coi rong la "khong chay" -> bao nham "Bo cai dung bat thuong" du
+            # buoc chay xong, ma thoat 0. Rong / Queued = chua biet -> cho tiep (van con han gio o tren).
             $lan++
-            if ($lan % 10 -eq 0 -and $gi -gt 5 -and
-                (Get-ScheduledTask -TaskName $tn -EA SilentlyContinue).State -ne 'Running') {{
-                Start-Sleep -Milliseconds 800
-                if (-not (Test-Path $fMa)) {{ $tt = 'loi'; $ghiChu = 'Bộ cài dừng bất thường'; break }}
+            if ($lan % 10 -eq 0 -and $gi -gt 5) {{
+                $st = [string](Get-ScheduledTask -TaskName $tn -EA SilentlyContinue).State
+                if ($st -eq 'Ready' -or $st -eq 'Disabled') {{
+                    Start-Sleep -Milliseconds 2000
+                    $st2 = [string](Get-ScheduledTask -TaskName $tn -EA SilentlyContinue).State
+                    if (-not (Test-Path $fMa) -and ($st2 -eq 'Ready' -or $st2 -eq 'Disabled')) {{
+                        $tt = 'loi'; $ghiChu = 'Bộ cài dừng bất thường'; break
+                    }}
+                }}
             }}
         }}
         if ($tt -eq 'xong' -and -not $daDong -and (Test-Path $fMa)) {{
@@ -1098,6 +1107,63 @@ try {{
         Out-File (Join-Path $ThuMuc 'ket-qua-tien-trinh.json') -Encoding UTF8
 }} catch {{ }}
 
+# ------------------------------------------------- bao cao tong ket
+#
+# 1 CUA SO DUY NHAT moi luc (anh Thoai 08/10/2026): dang cai -> cua so tien trinh; cai xong -> cua so
+# tien trinh TU DONG, chi con POPUP tong ket. Bao cao chay o TIEN TRINH RIENG, KHONG CO console
+# (conhost --headless), sau khi vong lap cac buoc da xong han.
+#
+# Vi sao van la tien trinh rieng ma khong goi ngay trong script nay: bao-cao.ps1 mat ~30 giay de kiem
+# lai may; chay chung luong thi cua so tien trinh dung hinh ("Not Responding"). Trong luc cho, cua so
+# tien trinh noi ro "dang kiem tra lai".
+#
+# LOI THAT DA GAP (13/09): bao-cao tung la 1 FirstLogonCommand rieng -> hien ra khi tien trinh moi
+# toi buoc 6/11. Nen bao cao CHI duoc goi tu day, sau vong lap.
+$lblTo.Text = "Đã cài xong - đang kiểm tra lại kết quả"
+$lblDay.Text = "Đang kiểm tra lại toàn bộ máy (khoảng 30 giây). Bảng tổng kết sẽ hiện ngay sau đó..."
+$lblDay.ForeColor = $XAM
+$thanh.Value = $thanh.Maximum
+[System.Windows.Forms.Application]::DoEvents()
+
+# Chay 1 script PowerShell KHONG co cua so console nao (xem LENH_MO_TIEN_TRINH ben Python)
+function ChayAn($ps1) {{
+    $ps = Join-Path $env:windir 'System32\\WindowsPowerShell\\v1.0\\powershell.exe'
+    $ch = Join-Path $env:windir 'System32\\conhost.exe'
+    $tham = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', $ps1)
+    if ([Environment]::OSVersion.Version.Build -ge {BUILD_TOI_THIEU_HEADLESS} -and (Test-Path $ch)) {{
+        return Start-Process -FilePath $ch -ArgumentList (@('--headless', $ps) + $tham) -PassThru
+    }}
+    return Start-Process -FilePath $ps -ArgumentList $tham -PassThru -WindowStyle Hidden
+}}
+
+$daBao = $false
+$coPopup = $false
+$baoCao = Join-Path $ThuMuc 'bao-cao.ps1'
+if (Test-Path $baoCao) {{
+    $fBaoCao = Join-Path $ThuMuc 'bao-cao-day-du.json'
+    Remove-Item $fBaoCao -ErrorAction SilentlyContinue
+    try {{
+        $pBc = ChayAn $baoCao
+        # bao-cao.ps1 GHI FILE KET QUA xong roi moi mo popup -> co file = popup sap hien
+        for ($k = 0; $k -lt 600 -and -not (Test-Path $fBaoCao) -and -not $pBc.HasExited; $k++) {{
+            Start-Sleep -Milliseconds 300
+            [System.Windows.Forms.Application]::DoEvents()
+        }}
+        if ((Test-Path $fBaoCao) -and -not $pBc.HasExited) {{
+            $coPopup = $true
+            Start-Sleep -Milliseconds 700          # de popup kip ve len truoc khi cua so nay dong
+            $frm.Close(); $frm.Dispose()           # chi con popup tong ket
+        }}
+        BaoPi 'ketthuc' @{{ may = $TenMay }}
+        $daBao = $true
+        if ($coPopup) {{ $pBc.WaitForExit() }}
+    }} catch {{ Ghi "Khong mo duoc bao cao: $($_.Exception.Message)" }}
+}}
+if (-not $daBao) {{ BaoPi 'ketthuc' @{{ may = $TenMay }} }}
+if ($coPopup) {{ exit 0 }}
+
+# KHONG mo duoc popup tong ket (thieu bao-cao.ps1, bao cao loi...): GIU cua so tien trinh lam ket qua,
+# co nut Dong - nguoi di cai may van phai doc duoc buoc nao hong (ly do cua ca cua so nay).
 if ($soLoi -eq 0) {{
     $lblDay.Text = "Xong tất cả $($Buoc.Count) bước. Không có lỗi."
     $lblDay.ForeColor = $XANH
@@ -1109,56 +1175,7 @@ $lblTo.Text = "Đã cài đặt xong"
 $btnDong.Enabled = $true
 $frm.ControlBox = $true
 $frm.TopMost = $false
-[System.Windows.Forms.Application]::DoEvents()
-
-# ------------------------------------------------- bao cao tong ket
-#
-# CHAY BAO CAO NGAY TRONG SCRIPT NAY, khong de Windows goi rieng.
-#
-# LOI THAT DA GAP (anh Thoai chup man hinh 13/09): bao-cao.ps1 tung la
-# mot FirstLogonCommand RIENG dat sau tien-trinh.ps1. Tren ly thuyet
-# Windows chay lan luot va cho tung cai xong, nhung thuc te bang bao cao
-# HIEN RA khi tien trinh moi chay toi buoc 6/11 - hai cua so cmd cung
-# song mot luc. Khong kiem chung duoc ben trong Windows vi sao, nen cach
-# chac chan la KHONG PHU THUOC vao no nua: goi bao cao tu chinh day, sau
-# khi vong lap cac buoc da chay xong han. Thu tu do chinh script nay
-# quyet dinh, Windows khong xen vao duoc.
-$daBao = $false
-$baoCao = Join-Path $ThuMuc 'bao-cao.ps1'
-if (Test-Path $baoCao) {{
-    $lblDay.Text = "Đang mở bảng báo cáo tổng kết..."
-    [System.Windows.Forms.Application]::DoEvents()
-    $fBaoCao = Join-Path $ThuMuc 'bao-cao-day-du.json'
-    Remove-Item $fBaoCao -ErrorAction SilentlyContinue
-    try {{
-        $pBc = Start-Process -FilePath 'powershell.exe' -PassThru -ArgumentList `
-            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $baoCao
-        # bao-cao.ps1 ghi file xong roi moi mo cua so (cho nguoi bam Dong)
-        for ($k = 0; $k -lt 180 -and -not (Test-Path $fBaoCao) -and -not $pBc.HasExited; $k++) {{
-            Start-Sleep -Seconds 1
-            [System.Windows.Forms.Application]::DoEvents()
-        }}
-        Start-Sleep -Seconds 2
-        BaoPi 'ketthuc' @{{ may = $TenMay }}
-        $daBao = $true
-        $pBc.WaitForExit()
-    }} catch {{ Ghi "Khong mo duoc bao cao: $($_.Exception.Message)" }}
-    if ($soLoi -eq 0) {{
-        $lblDay.Text = "Xong tất cả $($Buoc.Count) bước. Không có lỗi."
-    }} else {{
-        $lblDay.Text = "Xong, nhưng có $soLoi bước không đạt — xem dòng màu đỏ."
-    }}
-}}
-if (-not $daBao) {{ BaoPi 'ketthuc' @{{ may = $TenMay }} }}
-
-# Dung yen cho toi khi bam Dong. Khong tu dong dong: nguoi di cai may
-# phai co co hoi doc xem buoc nao hong - day la ly do cua ca cua so nay.
-#
-# KHONG duoc dung ShowDialog() o day! Cua so nay DA hien bang Show() o
-# tren, ma .NET nem loi "Form that is already visible cannot be displayed
-# as a modal dialog box" neu goi ShowDialog() len mot form dang hien.
-# Loi do lam script chet ngay, cua so bien mat. Dung vong lap bom thong
-# diep la cach dung cho form da Show().
+# KHONG dung ShowDialog() len form da Show() (.NET nem loi, script chet, cua so bien mat) - bom thong diep.
 while (-not $frm.IsDisposed) {{
     [System.Windows.Forms.Application]::DoEvents()
     Start-Sleep -Milliseconds 120
@@ -1707,6 +1724,25 @@ def _lenh_chep_app_script(d):
     return dong
 
 
+def _lenh_chon_unattend():
+    r"""
+    Dong deploy.cmd: doc so build cua Windows VUA BUNG (hive SOFTWARE offline, chi reg.exe + find -
+    WinPE khong co findstr/powershell) roi chon unattend.xml (conhost --headless, khong console) hay
+    unattend-cu.xml (cmd /c powershell) cho Windows < 1809. Doc khong duoc -> CSBUILD=0 -> kieu cu
+    (chac chan chay duoc, chi la co cua so console).
+    """
+    return [
+        "set CSBUILD=0",
+        "reg load HKLM\\CSOFF W:\\Windows\\System32\\config\\SOFTWARE >> %LOG% 2>&1",
+        'for /f "tokens=3" %%a in (\'reg query "HKLM\\CSOFF\\Microsoft\\Windows NT\\CurrentVersion" '
+        '/v CurrentBuildNumber 2^>nul ^| find "CurrentBuildNumber"\') do set CSBUILD=%%a',
+        "reg unload HKLM\\CSOFF >> %LOG% 2>&1",
+        "set CSUNA=unattend.xml",
+        f"if %CSBUILD% LSS {BUILD_TOI_THIEU_HEADLESS} set CSUNA=unattend-cu.xml",
+        "echo Windows build %CSBUILD% - dung %CSUNA% >> %LOG%",
+    ]
+
+
 def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
     r"""
     Sinh script trien khai chay NGAY TRONG WinPE - mo phong dung cach
@@ -1972,7 +2008,8 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
     ] + _lenh_tiem_driver_offline(d) + _lenh_net35_offline(d) + _lenh_chep_go_app(d) + [
         "echo  [5/6] Chep cau hinh tu dong - ten may, tai khoan, mui gio...",
         "if not exist W:\\Windows\\Panther mkdir W:\\Windows\\Panther",
-        "copy /y %NHUNG%\\unattend.xml W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
+    ] + _lenh_chon_unattend() + [
+        "copy /y %NHUNG%\\%CSUNA% W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
         "if errorlevel 1 goto loi_chep",
         "",
         # Chep phan mem + script sang THANG o dia may dich NGAY BAY GIO,
@@ -2063,7 +2100,8 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
     ]) + "\r\n"
 
 
-def sinh_autounattend_goi_script():
+def sinh_autounattend_goi_script(ten_script="deploy.cmd",
+                                 mo_ta="Console Pi - trien khai he dieu hanh"):
     r"""
     autounattend.xml TOI GIAN - chi lam DUNG 1 viec: goi script trien khai
     cua Console Pi (X:\deploy.cmd), khong khai bao DiskConfiguration hay
@@ -2113,8 +2151,8 @@ def sinh_autounattend_goi_script():
       <RunSynchronous>
         <RunSynchronousCommand wcm:action="add">
           <Order>1</Order>
-          <Path>cmd /c X:\\Windows\\System32\\deploy.cmd</Path>
-          <Description>Console Pi - trien khai he dieu hanh</Description>
+          <Path>cmd /c X:\\Windows\\System32\\""" + ten_script + """</Path>
+          <Description>""" + mo_ta + """</Description>
         </RunSynchronousCommand>
       </RunSynchronous>
     </component>
@@ -2964,7 +3002,21 @@ def _khoi_runsync_specialize(d):
     </component>"""
 
 
-def _khoi_firstlogon(d):
+# Lenh mo tien-trinh.ps1 o lan dang nhap dau. KHONG qua `cmd /c` va KHONG de lo cua so console:
+# anh Thoai 08/10/2026 "chi hien bang popup, khong hien bang powershell dang sau". `-WindowStyle
+# Hidden` khong du: Windows 11 (Windows Terminal la terminal mac dinh) van mo 1 cua so Terminal rong,
+# Windows 10 thi chop console. `conhost.exe --headless` chay powershell KHONG co cua so console nao
+# (co tu Windows 10 1809 / build 17763). Windows cu hon (deu het ho tro) khong hieu --headless ->
+# deploy.cmd doc build cua anh vua bung va chep unattend-cu.xml (kieu cu) thay vao - xem _lenh_chon_unattend.
+BUILD_TOI_THIEU_HEADLESS = 17763
+_LENH_PS_TIEN_TRINH = ("powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "
+                       f"{THU_MUC_TREN_MAY}\\tien-trinh.ps1")
+LENH_MO_TIEN_TRINH = ("C:\\Windows\\System32\\conhost.exe --headless "
+                      "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\" + _LENH_PS_TIEN_TRINH)
+LENH_MO_TIEN_TRINH_CU = "cmd /c " + _LENH_PS_TIEN_TRINH
+
+
+def _khoi_firstlogon(d, kieu_cu=False):
     """
     FirstLogonCommands - chay trong phien dang nhap DAU TIEN, theo thu tu:
       1. Tuy chon Windows cap nguoi dung
@@ -2985,8 +3037,7 @@ def _khoi_firstlogon(d):
     #     toi cai nao trong so 10 cai.
     # Script dieu phoi lo ca hai, va van chay dung nhung dong lenh cu
     # (qua cmd /c) nen khong phai viet lai cu phap cai dat nao.
-    lenh = ["powershell -NoProfile -ExecutionPolicy Bypass -File "
-            f"{THU_MUC_TREN_MAY}\\tien-trinh.ps1"]
+    lenh = [LENH_MO_TIEN_TRINH_CU if kieu_cu else LENH_MO_TIEN_TRINH]
 
     # BAO CAO TONG KET: KHONG dat o day nua.
     #
@@ -3006,14 +3057,14 @@ def _khoi_firstlogon(d):
     muc = "".join(f"""
         <SynchronousCommand wcm:action="add">
           <Order>{i}</Order>
-          <CommandLine>cmd /c {_esc(c)}</CommandLine>
+          <CommandLine>{_esc(c)}</CommandLine>
         </SynchronousCommand>""" for i, c in enumerate(lenh, start=1))
     return f"""
       <FirstLogonCommands>{muc}
       </FirstLogonCommands>"""
 
 
-def sinh_unattend_offline_xml(d):
+def sinh_unattend_offline_xml(d, kieu_cu=False):
     """
     Sinh unattend.xml dat vao W:\\Windows\\Panther sau khi dism apply -
     CHI con pass specialize + oobeSystem (dat ten may, mui gio, tai
@@ -3136,7 +3187,7 @@ def sinh_unattend_offline_xml(d):
         <ProtectYourPC>3</ProtectYourPC>
         <SkipMachineOOBE>true</SkipMachineOOBE>
         <SkipUserOOBE>true</SkipUserOOBE>
-      </OOBE>{_khoi_firstlogon(d)}
+      </OOBE>{_khoi_firstlogon(d, kieu_cu)}
       <TimeZone>{_esc(tz_windows)}</TimeZone>
     </component>
   </settings>
@@ -3445,6 +3496,8 @@ def sinh_file_nhung(d, dia_chi_pi):
         "diskpart-mbr.txt": sinh_diskpart_txt(d, mbr=True),
         # unattend.xml : cau hinh Windows sau khi bung (chep vao Panther)
         "unattend.xml": sinh_unattend_offline_xml(d),
+        # ban cho Windows < 1809 (khong co conhost --headless) - deploy.cmd tu chon
+        "unattend-cu.xml": sinh_unattend_offline_xml(d, kieu_cu=True),
         # Bao cao + tien trinh: nam trong chinh luc boot, KHONG qua Samba -
         # co mat ke ca khi mang chap chon.
         "bao-cao.ps1": sinh_script_bao_cao(d),

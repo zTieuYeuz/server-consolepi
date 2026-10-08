@@ -45,6 +45,21 @@ PYEOF
 fi
 rm -f /var/log/console-pi-api.log
 
+# 1.8.0: share Samba [cs-o-dia] nhan bao cao "Do o dia". Chi cai smb.conf khi KHAC ban dang
+# chay, kiem testparm truoc - loi thi tra ban cu (khong de Samba hong). smbd chi chay khi PXE bat.
+mkdir -p /var/lib/console-pi/o-dia && chown nobody:nogroup /var/lib/console-pi/o-dia
+if [ -f "$SRC/config/smb.conf" ] && ! cmp -s "$SRC/config/smb.conf" /etc/samba/smb.conf; then
+    cp -a /etc/samba/smb.conf "/etc/samba/smb.conf.truoc-$(date +%Y%m%d-%H%M)"
+    install -m 644 "$SRC/config/smb.conf" /etc/samba/smb.conf
+    if testparm -s >/dev/null 2>&1; then
+        echo "Da cap nhat smb.conf (them share cs-o-dia)"
+        systemctl is-active --quiet smbd && smbcontrol smbd reload-config
+    else
+        echo "LOI smb.conf moi - tra ban cu"
+        cp -a "$(ls -t /etc/samba/smb.conf.truoc-* | head -1)" /etc/samba/smb.conf
+    fi
+fi
+
 # Kiem tra cu phap truoc khi khoi dong lai - loi thi tra ban cu, khong de web chet
 if ! python3 -m py_compile "$DST"/ui/*.py "$DST"/nettools/*.py "$DST"/app.py; then
     echo "LOI cu phap - tra lai ban cu"

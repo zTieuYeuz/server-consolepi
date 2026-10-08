@@ -15,6 +15,33 @@
   Bo font da chon nhung bi xoa -> bao do tren man hinh kich ban + muc "LOI" trong bao cao cuoi cai (khong im lang).
   Bao cao cuoi cai co them muc kiem "Font" cho tung bo.
 - Font co hieu luc day du voi ung dung sau lan khoi dong lai / dang nhap lai dau tien.
+- Tinh nang MOI: **Do o dia** (anh Thoai 08/10/2026: ky su IT phai biet dung o truoc khi tao kich ban).
+  Menu PXE co muc "3. Do o dia": may boot WinPE (boot.wim cua he dieu hanh dau tien), nap driver o cung/mang
+  (cpi-drivers.bin, nhu deploy.cmd), diskpart CHI LENH DOC (list disk / select / detail disk / list partition),
+  hien GON 1 man hinh (chi tiet tung o + bang tom tat) va gui ve Console System qua share Samba RIENG
+  [cs-o-dia] (ghi duoc, chi file .txt, cung tai khoan consolepi-deploy; [deploy] van chi doc). Trang moi
+  Deployment OS -> Kich ban -> "O dia da do" (hang/model may, MAC, IP, UEFI/BIOS, tung o: so o, model, loai
+  NVMe/SATA/USB, dung luong, GPT/MBR, phan vung C:/D:..., canh bao o USB va o dang co NTFS). Buoc "Chia o dia"
+  cua kich ban hien 3 lan do gan nhat voi nut "Dung o N" dien san so o. Console System giu 100 bao cao moi nhat,
+  xoa file > 512 KB. install.sh / hook ISO / cap-nhat-pi.sh tao /var/lib/console-pi/o-dia (chu nobody) va cai
+  smb.conf moi (kiem testparm, loi thi tra ban cu).
+- Cua so tien trinh tren Windows (anh Thoai 08/10/2026): CHI 1 cua so luc dang cai; cai xong cua so tien trinh TU
+  DONG va chi con POPUP tong ket; KHONG con cua so PowerShell/console nao. FirstLogonCommands chay
+  `conhost.exe --headless powershell ... tien-trinh.ps1` (khong qua cmd /c; Windows 11 khong mo Windows Terminal
+  rong). Windows < 1809 (build 17763, khong co --headless, deu het ho tro): deploy.cmd doc CurrentBuildNumber cua anh
+  vua bung (reg load hive offline) va chep unattend-cu.xml (kieu cu) - may nao cung chay duoc buoc sau cai.
+  Khong mo duoc popup -> giu cua so tien trinh co nut Dong nhu cu (khong bao gio mat ket qua).
+- SUA LOI THAT (thu may mau 08/10/2026): buoc chay bang SYSTEM bi bao nham "Bo cai dung bat thuong" khi
+  Get-ScheduledTask tra ve RONG 1 lan (Windows dang doi cau hinh mang) - buoc "Dat mang rieng tu" chay xong ma thoat 0
+  van bao loi. Nay chi ket luan khi trang thai DUNG RO RANG (Ready/Disabled) 2 lan cach 2 giay.
+- Kho trung tam: loai MOI "Ung dung nhieu file" (.zip + dong lenh cai, vd Office). Console System tai ve TU giai nen vao
+  "Ung dung (nhieu file)" va dat san lenh cai; tai lai dung lai DUNG ung dung cu (kho_id), huy giua chung khong de lai
+  ung dung rong; trang Kho hien nut Tai ve/Tai lai + "Da co" + "Lenh cai". (Lan dau, trang Kho bao "Khong ho tro
+  (.zip)" - bat duoc trong luc test, da sua.)
+- Kho: **Office 2019 ProPlus Volume (English, x64)** ban 16.0.10417.20211, tai CHINH HANG bang Office Deployment Tool
+  cua Microsoft (setup.exe tu officecdn trung SHA256 voi goi officedeploymenttool_20326-20112.exe tren trang
+  Microsoft), kenh PerpetualVL2019, bo Skype for Business + OneDrive cu, TAT tu cap nhat, KHONG kem key (chua kich
+  hoat - IT tu kich hoat bang key/KMS hop le cua cong ty). Lenh cai: setup.exe /configure configuration.xml.
 - Sao luu: deploy/fonts them vao muc "du lieu nang" cua Bao tri; sao-luu-sang-may-build.sh khong chep font cong ty
   sang may build.
 - Kiem chung: doc 323 font that tren may build (ttf/otf, ke ca emoji mau) + file .ttc tu dung + file gia/cut/woff/exe;

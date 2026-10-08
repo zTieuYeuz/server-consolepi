@@ -166,6 +166,23 @@ def chuan_bi_menu(dia_chi_pi, kieu_boot):
     ok, loi = _u.dung_wim_driver(_duong_pxe(_u.TEN_WIM_DRIVER))
     if not ok:
         ket_qua.append(loi)
+    # Muc "Do o dia" (ui/doodia.py): chi can 1 boot.wim bat ky + file nhung rieng
+    from . import doodia as _od
+    if os_cho_do_o_dia():
+        try:
+            _od.bao_dam_thu_muc()
+            d_od = _duong_pxe(_od.THU_MUC_NHUNG_PXE)
+            tam = d_od + ".moi"
+            shutil.rmtree(tam, ignore_errors=True)
+            os.makedirs(tam)
+            for ten, nd in _od.sinh_file_nhung(dia_chi_pi).items():
+                with open(os.path.join(tam, ten), "w", encoding="utf-8", newline="") as f:
+                    f.write(nd)
+            shutil.rmtree(d_od, ignore_errors=True)
+            os.replace(tam, d_od)
+            can_giu.add(_od.THU_MUC_NHUNG_PXE)
+        except OSError as e:
+            ket_qua.append(f"Muc Do o dia: LOI - {e}")
     try:
         for n in os.listdir(_duong_pxe()):
             p = _duong_pxe(n)
@@ -189,6 +206,24 @@ def _chu_ipxe(s, dai=60):
     s = re.sub(r"[^A-Za-z0-9 .,_()+:/-]", " ", s)
     s = re.sub(r" +", " ", s).strip()
     return s[:dai] or "(khong ten)"
+
+
+def os_cho_do_o_dia():
+    """os_id co boot.wim dau tien (theo ten) - muc "Do o dia" chi can 1 WinPE bat ky de chay
+    diskpart. Khong co he dieu hanh nao -> khong hien muc nay."""
+    try:
+        for o in sorted(os.listdir(_d.OS_DIR)):
+            if os.path.isfile(_d.duong_boot_wim(o)):
+                return o
+    except OSError:
+        pass
+    return ""
+
+
+def co_do_o_dia():
+    from . import doodia as _od
+    return bool(os_cho_do_o_dia()) and os.path.isfile(
+        _duong_pxe(_od.THU_MUC_NHUNG_PXE, "do-o-dia.cmd"))
 
 
 def muc_menu():
@@ -231,6 +266,8 @@ def sinh_script(goc):
             # cua bo cai), chi con WinPE anh tu them (tab WinPE / kho), ten "Boot WinPE".
             (f"item rieng 2. Boot WinPE > ({len(rieng)})" if rieng else
              "item --gap -- 2. Boot WinPE (chua co WinPE nao)"),
+            ("item doodia 3. Do o dia (xem o dia + phan vung, KHONG xoa gi)" if co_do_o_dia() else
+             "item --gap -- 3. Do o dia (can 1 he dieu hanh co boot.wim)"),
             "item --gap -- ",
             "item odia Khoi dong o cung (KHONG cai gi)",
             "item lai Khoi dong lai may",
@@ -305,6 +342,17 @@ def sinh_script(goc):
             dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_NHUNG_DRIVER} "
                         f"{_u.TEN_NHUNG_DRIVER} || goto loi")
         dong += [f"initrd {goc}/os/{os_id}/boot.wim boot.wim || goto loi",
+                 "boot || goto loi", ""]
+    if co_do_o_dia():
+        from . import doodia as _od
+        dong += [":doodia", "echo Dang nap WinPE de do o dia (chi doc, khong xoa gi)...",
+                 f"kernel {goc}/wimboot || goto loi"]
+        for f in sorted(os.listdir(_duong_pxe(_od.THU_MUC_NHUNG_PXE))):
+            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_od.THU_MUC_NHUNG_PXE}/{f} {f} || goto loi")
+        if co_driver:
+            dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_u.TEN_NHUNG_DRIVER} "
+                        f"{_u.TEN_NHUNG_DRIVER} || goto loi")
+        dong += [f"initrd {goc}/os/{os_cho_do_o_dia()}/boot.wim boot.wim || goto loi",
                  "boot || goto loi", ""]
     dong += [":odia",
              "echo Khoi dong tu o cung...",
