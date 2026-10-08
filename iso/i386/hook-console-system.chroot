@@ -12,6 +12,8 @@ echo "[console-system] bat dau thiet lap"
 
 # --- 1. Thu muc du lieu (tach khoi ma nguon - xem ui/duongdan.py) ---
 mkdir -p /var/lib/console-pi/deploy /var/lib/console-pi/storage
+# Bao cao "Do o dia" (share [cs-o-dia] ghi bang user nobody - xem config/smb.conf)
+mkdir -p /var/lib/console-pi/o-dia && chown nobody:nogroup /var/lib/console-pi/o-dia
 chmod 755 /var/lib/console-pi
 
 # --- 1b. ttyd (KHONG co trong kho Debian - phai tai ban binary) ---
