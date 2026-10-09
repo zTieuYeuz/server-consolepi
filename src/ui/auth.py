@@ -9,6 +9,7 @@ deu chiem duoc may.
 Dung PAM nen KHONG luu mat khau o dau ca - moi lan dang nhap deu hoi lai
 he dieu hanh. Tai khoan chinh la tai khoan Linux (vd: administrator).
 """
+import ipaddress
 import os
 import secrets
 
@@ -145,6 +146,55 @@ def _is_local_screen():
     return request.headers.get("X-ConsolePi-Local") == "1"
 
 
+def _mang_cuc_bo():
+    """Cac mang IPv4 cua chinh may nay (de nhan ra khach PXE trong cung mang, ke ca khi mang dung
+    dai IP cong khai). Nho 30 giay - ham nay duoc goi moi lan may khach tai 1 file."""
+    import json
+    import subprocess
+    import time
+    c = _mang_cuc_bo.__dict__
+    if time.time() - c.get("luc", 0) < 30:
+        return c.get("ds", [])
+    ds = []
+    try:
+        ra = subprocess.run(["ip", "-j", "-4", "addr"], capture_output=True, text=True, timeout=3).stdout
+        for nic in json.loads(ra or "[]"):
+            for a in nic.get("addr_info", []):
+                if a.get("local") and a.get("prefixlen") is not None:
+                    ds.append(ipaddress.ip_network(f"{a['local']}/{a['prefixlen']}", strict=False))
+    except Exception:
+        ds = []
+    c["luc"], c["ds"] = time.time(), ds
+    return ds
+
+
+def _khach_trong_mang_noi_bo():
+    """
+    True khi request den TRUC TIEP tu 1 may trong mang noi bo (khach PXE / may vua cai xong).
+
+    Vi sao can: /deployos/pxeboot/* va /api/tiendo/* khong can dang nhap (may dang boot chua co gi de
+    dang nhap), ma file kich ban co chua mat khau Administrator. Truoc day chi can PXE dang bat la AI toi
+    duoc cong 80 cung tai duoc - ke ca nguoi di qua duong ham Cloudflare (cloudflared goi tu 127.0.0.1).
+    Nay tu choi khi:
+      - co dau vet cua Cloudflare/proxy (CF-Connecting-IP, CF-Ray, X-Forwarded-For nhieu hon 1 phan tu -
+        nginx chi them 1 phan tu la dia chi nguoi goi);
+      - dia chi nguoi goi khong thuoc mang rieng/loopback/link-local VA khong cung mang voi cong nao cua Pi.
+    """
+    h = request.headers
+    if h.get("CF-Connecting-IP") or h.get("CF-Ray") or h.get("CF-Visitor"):
+        return False
+    xff = [x for x in (h.get("X-Forwarded-For") or "").split(",") if x.strip()]
+    if len(xff) > 1:
+        return False
+    try:
+        ip = ipaddress.ip_address((h.get("X-Real-IP") or request.remote_addr or "").strip())
+    except ValueError:
+        return False
+    if ip.is_private or ip.is_loopback or ip.is_link_local:
+        return True
+    return any(ip in n for n in _mang_cuc_bo() if n.version == ip.version)
+
+
 def _pxe_boot_cong_khai():
     """
     Duong /deployos/pxeboot/<file> phai KHONG can dang nhap - may dang boot
@@ -159,6 +209,8 @@ def _pxe_boot_cong_khai():
     duoc), khong phai mo rong dien rui ro moi.
     """
     if not request.path.startswith("/deployos/pxeboot/"):
+        return False
+    if not _khach_trong_mang_noi_bo():
         return False
     try:
         from . import pxe as _pxe
@@ -186,6 +238,8 @@ def _bao_tien_trinh_cong_khai():
     if not request.path.startswith("/api/tiendo/"):
         return False
     if request.path == "/api/tiendo/data":
+        return False
+    if not _khach_trong_mang_noi_bo():
         return False
     try:
         from . import pxe as _pxe

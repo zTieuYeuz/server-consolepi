@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.8.2 (09/10/2026)
+
+- BAO MAT PXE: `/deployos/pxeboot/*` va `/api/tiendo/*` khong can dang nhap (may dang boot chua co gi de dang nhap) nhung
+  kich ban chua mat khau Administrator. Truoc day chi can PXE dang bat la AI toi duoc cong 80 deu tai duoc, ke ca nguoi di qua
+  duong ham Cloudflare (cloudflared goi tu 127.0.0.1). Nay (ui/auth.py `_khach_trong_mang_noi_bo`) chi nhan khach TRUC TIEP
+  trong mang noi bo: tu choi khi co dau vet Cloudflare/proxy (CF-Connecting-IP, CF-Ray, X-Forwarded-For nhieu hon 1 phan tu),
+  hoac dia chi khong thuoc mang rieng/loopback/link-local VA khong cung mang voi cong nao cua Pi (de mang dung dai IP cong khai
+  van cai duoc). 11 tinh huong thu dat.
+- O dia da do: khung CANH BAO cho ky su IT (ui/doodia.py `canh_bao_may`): khong thay o nao / chi thay USB (nghi Intel RST/VMD, RAID:
+  huong dan doi AHCI hoac nap driver vao anh boot), nhieu o cung ben trong, so o co the doi khi cam/rut USB, phan vung khong doc duoc
+  he thong file (nghi BITLOCKER: cai lai se xoa sach, luu khoa khoi phuc truoc). 9 tinh huong thu dat + 2 bao cao lab that.
+  CHUA test: BitLocker that trong WinPE (chi nhan dien gian tiep qua he thong file RAW/khong doc duoc).
+- Kho trung tam (may .34): SAO LUU TU DONG moi ngay 03:30 (kho-sao-luu.timer: co so du lieu sao luu an toan khi dang chay + khoa dang ky
+  thiet bi + tai khoan + gop y + bo khoi dong, ~4 MB, giu 14 ban, quyen 600) va may build keo them 1 ban ve moi ngay 05:00
+  (tools/keo-sao-luu-kho.sh, giu 30 ban) -> mat ca may kho van con khoa. Da thu khoi phuc ra thu muc tam: 53 muc, 16 token, 120 tham so.
+
 ## 1.8.1 (09/10/2026)
 
 - Font chu: SUA LOI that khi kiem tra bao mat/do ben - tai len bi loi giua chung (day o, mat dien...) truoc day de lai

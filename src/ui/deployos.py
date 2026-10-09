@@ -1942,13 +1942,19 @@ def ve_bao_cao_o_dia(kq, nut_chon=False):
             {'<td>' + nut + '</td>' if nut_chon else ''}
           </tr>"""
     if not hang:
-        hang = ('<tr><td colspan="5" style="color:#f59e0b;">Không thấy ổ đĩa nào - máy thiếu '
-                'driver ổ cứng (Intel RST/VMD?) - xem bản gốc bên dưới.</td></tr>')
+        hang = ('<tr><td colspan="5" style="color:#f59e0b;">Không thấy ổ đĩa nào - xem cảnh báo '
+                'phía trên và bản gốc bên dưới.</td></tr>')
+    khung = ""
+    for muc, nd in _od.canh_bao_may(kq):
+        mau = ("#7f1d1d", "#fecaca") if muc == "do" else ("#78350f", "#fde68a")
+        khung += (f'<div style="background:{mau[0]}33;border:1px solid {mau[0]};color:{mau[1]};border-radius:8px;'
+                  f'padding:8px 12px;margin:0 0 8px;font-size:13px;">{"⛔" if muc == "do" else "⚠️"} {_esc(nd)}</div>')
     return f"""
       <div class="card">
         <h3 style="margin-bottom:2px;">{_esc(may)}</h3>
         <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
           {_esc(' · '.join(x for x in phu if x))}</p>
+        {khung}
         <div class="tbl-scroll"><table>
           <tr><th style="width:56px;">Ổ số</th><th>Ổ đĩa</th><th style="width:90px;">Dung lượng</th>
               <th>Phân vùng (chữ ổ · tên · định dạng · dung lượng)</th>

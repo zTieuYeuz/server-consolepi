@@ -1,0 +1,6 @@
+[Unit]
+Description=Keo ban sao luu kho trung tam ve may build
+
+[Service]
+Type=oneshot
+ExecStart=/root/consolepi-toolkit/tools/keo-sao-luu-kho.sh

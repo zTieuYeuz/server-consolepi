@@ -305,6 +305,45 @@ def phan_tich(noi_dung):
     return kq
 
 
+def canh_bao_may(kq):
+    """
+    Phan tich ket qua `phan_tich` -> danh sach canh bao cho ky su IT: [(muc, noi_dung)], muc la
+    "do" (nguy co mat du lieu / khong cai duoc), "cam" (can luu y). Khong doan bua: chi nhan xet khi
+    bao cao co dau hieu ro rang. Dung chung cho trang "O dia da do" va buoc chia o cua kich ban.
+    """
+    ra = []
+    o_ds = kq.get("o") or []
+    trong = [o for o in o_ds if (o.get("loai") or "").upper() not in ("USB", "SD", "MMC")]
+    if not o_ds:
+        ra.append(("do", "Không thấy ổ đĩa nào. Thường do máy dùng Intel RST/VMD hoặc RAID mà WinPE chưa có "
+                         "driver: vào BIOS đổi chế độ SATA/NVMe sang AHCI, hoặc nạp driver Intel RST/VMD vào ảnh "
+                         "boot (Tài nguyên → Driver → bật \"Nạp vào ảnh boot\"), rồi dò lại."))
+    elif not trong:
+        ra.append(("do", "Chỉ thấy ổ USB/thẻ nhớ, KHÔNG thấy ổ cứng bên trong. Có thể máy dùng Intel RST/VMD hoặc RAID "
+                         "chưa có driver (xem hướng dẫn ở trên: đổi AHCI hoặc nạp driver vào ảnh boot)."))
+    if len(trong) > 1:
+        ra.append(("cam", f"Máy có {len(trong)} ổ cứng bên trong. Đối chiếu kỹ model và dung lượng để chọn đúng ổ cài "
+                          "Windows; ổ còn lại sẽ giữ nguyên."))
+    if any((o.get("loai") or "").upper() in ("USB", "SD", "MMC") for o in o_ds) and trong:
+        ra.append(("cam", "Có ổ USB đang cắm: SỐ Ổ có thể đổi khi rút/cắm USB (ví dụ ổ cứng từ 0 thành 1). "
+                          "Dò lại lúc cài thật, hoặc rút USB khỏi máy trước khi cài."))
+    nghi_bl = []
+    for o in o_ds:
+        for v in o.get("volume") or []:
+            fs = (v.get("fs") or "").strip().upper()
+            if fs in ("", "RAW") and not (v.get("info") or "").strip():
+                nghi_bl.append(f"ổ {o['so']}")
+                break
+        else:
+            if o.get("phan_vung") and not o.get("volume") and (o.get("loai") or "").upper() not in ("USB", "SD", "MMC"):
+                nghi_bl.append(f"ổ {o['so']}")
+    if nghi_bl:
+        ra.append(("do", f"Phân vùng không đọc được hệ thống file ({', '.join(nghi_bl)}): có thể đã mã hóa BITLOCKER "
+                         "(hoặc Linux / chưa định dạng). Nếu là BitLocker: cài lại sẽ XÓA SẠCH dữ liệu, không khôi phục "
+                         "được nếu không có khóa — lưu khóa khôi phục và/hoặc giải mã ổ trong Windows cũ trước khi cài."))
+    return ra
+
+
 def danh_sach_bao_cao(gioi_han=GIU_TOI_DA):
     """Cac bao cao da nhan, MOI NHAT truoc: [{"ten", "luc", "noi_dung", ...phan_tich}]."""
     ra = []
