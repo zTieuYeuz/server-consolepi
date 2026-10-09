@@ -711,10 +711,17 @@ def giai_nen_ungdung(ung_id, duong_zip):
     if not os.path.isdir(p):
         return False, "Không tìm thấy ứng dụng."
     try:
+        import shutil
         with zipfile.ZipFile(duong_zip) as z:
-            for info in z.infolist():
-                if not _an_toan_trong_zip(info.filename):
-                    continue
+            hop_le = [i for i in z.infolist() if _an_toan_trong_zip(i.filename)]
+            # Kiem tra CHO TRUOC: giai nen ra se chiem bao nhieu, o con du khong (chua tru file
+            # .zip dang nam tren o). Tranh giai nen nua chung roi day o lam hong ca may.
+            can = sum(i.file_size for i in hop_le)
+            con = shutil.disk_usage(UNGDUNG_DIR).free
+            if can > con - 1024 ** 3:
+                return False, (f"Không đủ chỗ trống để giải nén: cần {co_kich_thuoc(can)}, "
+                               f"ổ còn {co_kich_thuoc(con)} (phải chừa lại ít nhất 1 GB).")
+            for info in hop_le:
                 z.extract(info, p)
     except zipfile.BadZipFile:
         return False, "File không phải .zip hợp lệ (hoặc bị hỏng khi tải lên)."
@@ -791,7 +798,7 @@ def chuan_hoa_ungdung(ds):
 # hong, web font .woff khong cai duoc vao Windows -> bi tu choi ngay, noi ro ly do, khong
 # de den luc cai may moi phat hien.
 MAX_FONT_BYTE = 300 * 1024 * 1024        # 1 font that khong bao gio lon the
-MAX_ZIP_FONT_BYTE = 4 * 1024 * 1024 * 1024
+MAX_ZIP_FONT_BYTE = 1024 * 1024 * 1024        # tong font giai nen tu 1 zip (the nho Pi chi vai chuc GB)
 
 
 def _id_bo_font_tu_ten(ten):
@@ -895,6 +902,25 @@ def xoa_font_trong_bo(bo_id, ten):
     return True, "Đã xóa font."
 
 
+def _xoa_tam(tam):
+    try:
+        os.remove(tam)
+    except OSError:
+        pass
+
+
+def _don_tam_cu(p, tuoi_giay=3600):
+    """Xoa file .tam-* bi bo lai (tai len loi giua chung, mat dien...) cu hon 1 gio."""
+    try:
+        for n in os.listdir(p):
+            if n.startswith(".tam-"):
+                f = os.path.join(p, n)
+                if time.time() - os.path.getmtime(f) > tuoi_giay:
+                    _xoa_tam(f)
+    except OSError:
+        pass
+
+
 def _luu_font_hop_le(p, tam, ten):
     """Kiem tra file tam la font that roi dat vao bo. Tra (ok, thong_bao)."""
     from . import fontinfo as _fi
@@ -928,11 +954,13 @@ def them_font_vao_bo(bo_id, fileobj):
     if duoi in (".woff", ".woff2"):
         return False, (f'"{ten}" là web font (dùng cho trang web), Windows không cài được. '
                        "Cần bản .ttf hoặc .otf."), 0, []
+    _don_tam_cu(p)
     tam = os.path.join(p, ".tam-" + secrets.token_hex(4))
     if duoi == ".zip":
         try:
             fileobj.save(tam)
         except OSError as e:
+            _xoa_tam(tam)
             return False, f"Không lưu được: {e}", 0, []
         return _giai_nen_font_zip(p, tam, ten)
     if duoi not in _fi.DUOI_FONT:
@@ -941,6 +969,7 @@ def them_font_vao_bo(bo_id, fileobj):
     try:
         fileobj.save(tam)
     except OSError as e:
+        _xoa_tam(tam)
         return False, f"Không lưu được: {e}", 0, []
     ok, lydo = _luu_font_hop_le(p, tam, ten)
     if not ok:
@@ -969,20 +998,27 @@ def _giai_nen_font_zip(p, tam_zip, ten_zip):
                     continue
                 tong += info.file_size
                 if tong > MAX_ZIP_FONT_BYTE:
-                    bo_qua.append("Dừng giải nén: tổng dung lượng font trong zip quá lớn (> 4 GB)")
+                    bo_qua.append("Dừng giải nén: tổng dung lượng font trong zip quá lớn (> 1 GB). Chia nhỏ file zip rồi tải lại.")
+                    break
+                if _con_trong_gb() < 1:
+                    bo_qua.append("Dừng giải nén: ổ đĩa sắp đầy")
                     break
                 tam = os.path.join(p, ".tam-" + secrets.token_hex(4))
                 da_ghi, vuot = 0, False
-                with z.open(info) as src, open(tam, "wb") as dst:
-                    while True:
-                        khoi = src.read(1024 * 1024)
-                        if not khoi:
-                            break
-                        da_ghi += len(khoi)
-                        if da_ghi > MAX_FONT_BYTE:
-                            vuot = True
-                            break
-                        dst.write(khoi)
+                try:
+                    with z.open(info) as src, open(tam, "wb") as dst:
+                        while True:
+                            khoi = src.read(1024 * 1024)
+                            if not khoi:
+                                break
+                            da_ghi += len(khoi)
+                            if da_ghi > MAX_FONT_BYTE:
+                                vuot = True
+                                break
+                            dst.write(khoi)
+                except BaseException:
+                    _xoa_tam(tam)          # loi giua chung (day o, mat dien...): khong de file do dang
+                    raise
                 if vuot:
                     os.remove(tam)
                     bo_qua.append(f'"{ten}": lớn bất thường')

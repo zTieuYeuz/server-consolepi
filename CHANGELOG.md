@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.1 (09/10/2026)
+
+- Font chu: SUA LOI that khi kiem tra bao mat/do ben - tai len bi loi giua chung (day o, mat dien...) truoc day de lai
+  file tam `.tam-*` trong bo font (an dung luong, khong ai thay). Nay xoa ngay khi loi va tu don file tam cu hon 1 gio.
+  Gioi han tong dung luong font giai nen tu 1 file .zip ha 4 GB -> 1 GB (the nho Pi chi vai chuc GB) va dung giai nen khi
+  o con duoi 1 GB trong.
+- Ung dung nhieu file (Office...): kiem tra CHO TRUOC dung luong sau giai nen so voi cho trong cua o (chua lai 1 GB); thieu
+  cho thi bao ro, khong giai nen nua chung roi day o.
+- Kiem chung: zip-slip (../, duong dan tuyet doi, \\), zip hong, file doi duoi, ten dai/ky tu la, mat khoi hoat dong khi day o
+  deu bi chan/khong de rac; doc 1000 font mat 0,13 s (cache 0,03 s); **may mau Windows 10 that: cai bo 53 font** (gom .ttc, ten
+  tieng Viet, arial.ttf trung ten) bang SYSTEM 2 lan on dinh, sau khoi dong lai du 52 font + 18 ho chu, font he thong con nguyen.
+  Nginx: gia header X-ConsolePi-Local qua cong 80 van bi dua ve trang dang nhap; cong 8880 khong vao duoc tu ngoai.
+
 ## 1.8.0 (08/10/2026)
 
 - Tinh nang MOI: **Font chu** cho may Windows (anh Thoai 07/10/2026: cong ty co nhieu font rieng, can cai
