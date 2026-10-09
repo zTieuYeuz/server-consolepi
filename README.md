@@ -10,10 +10,10 @@ Lấy cảm hứng từ netool.io Pro2 ($299), làm lại bằng phần cứng s
 
 ## Cài đặt
 
-Repo để private nên cài bằng `git clone` qua SSH key có quyền đọc repo:
+Cài lên Raspberry Pi OS / Debian bằng `git clone`:
 
 ```bash
-git clone git@github.com:zTieuYeuz/server-consolepi.git consolepi-toolkit
+git clone https://github.com/zTieuYeuz/server-consolepi.git consolepi-toolkit
 sudo bash consolepi-toolkit/install.sh --local consolepi-toolkit
 ```
 
@@ -177,3 +177,7 @@ thì chấp nhận được. Nếu mở ra internet, mật khẩu Linux sẽ tru
 lúc đó cần thêm HTTPS hoặc chỉ truy cập qua VPN.
 
 Tab Terminal và SSH cho **quyền root đầy đủ**. Đó là lý do có lớp đăng nhập.
+
+---
+
+© 2026 zTieuYeuz. All rights reserved. Mã nguồn công khai để tham khảo; muốn dùng lại hoặc phân phối, vui lòng liên hệ tác giả.
