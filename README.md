@@ -5,6 +5,7 @@ Cắm cáp console vào switch/router, truy cập qua web để điều khiển 
 không cần laptop, không cần PuTTY.
 
 Lấy cảm hứng từ netool.io Pro2 ($299), làm lại bằng phần cứng sẵn có.
+Link hướng dẫn : https://console-docs.home-server.id.vn
 
 ---
 
