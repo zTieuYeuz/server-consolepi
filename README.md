@@ -12,7 +12,6 @@ Raspberry Pi hoặc trên laptop / máy bàn.
 · ⬇️ **Tải bản cài:** https://console-docs.home-server.id.vn/tai-ve
 
 Lấy cảm hứng từ netool.io Pro2 ($299), làm lại bằng phần cứng sẵn có.
-Link hướng dẫn : https://console-docs.home-server.id.vn
 
 ---
 
