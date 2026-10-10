@@ -1,8 +1,15 @@
-# Console Pi Toolkit
+# Console System (Console Pi)
 
-Biến Raspberry Pi thành **console server + bộ công cụ chẩn đoán mạng** di động.
-Cắm cáp console vào switch/router, truy cập qua web để điều khiển từ xa —
-không cần laptop, không cần PuTTY.
+**Console server kiêm trạm cài Windows hàng loạt qua mạng (PXE)** — chạy trên
+Raspberry Pi hoặc trên laptop / máy bàn.
+
+- **Console server:** cắm cáp console vào switch/router, điều khiển từ trình duyệt,
+  không cần laptop, không cần PuTTY. Kèm bộ công cụ chẩn đoán mạng.
+- **Deployment OS:** tạo kịch bản một lần, máy khách boot qua mạng (PXE) rồi tự chia ổ,
+  cài Windows, phần mềm, font, và báo tiến trình + kết quả về web.
+
+📖 **Tài liệu hướng dẫn đầy đủ (tiếng Việt):** https://console-docs.home-server.id.vn
+· ⬇️ **Tải bản cài:** https://console-docs.home-server.id.vn/tai-ve
 
 Lấy cảm hứng từ netool.io Pro2 ($299), làm lại bằng phần cứng sẵn có.
 Link hướng dẫn : https://console-docs.home-server.id.vn
@@ -11,19 +18,37 @@ Link hướng dẫn : https://console-docs.home-server.id.vn
 
 ## Cài đặt
 
-Cài lên Raspberry Pi OS / Debian bằng `git clone`:
+Có 3 cách, chọn theo thiết bị của bạn. File cài (ISO, ảnh thẻ nhớ) **không nằm trong
+repo này** — tải ở trang [Tải về](https://console-docs.home-server.id.vn/tai-ve),
+có SHA-256 để đối chiếu.
+
+| Thiết bị | Cách cài | Hướng dẫn chi tiết |
+|---|---|---|
+| **Laptop / máy bàn** (Intel/AMD, 64-bit hoặc 32-bit) | Tải file `.iso`, ghi ra USB bằng Rufus (chế độ **DD Image**), boot từ USB, chạy thử hoặc cài lên ổ cứng bằng trình cài đồ hoạ | [Cài trên máy tính](https://console-docs.home-server.id.vn/cai-dat-may-tinh) |
+| **Raspberry Pi 3 / 4 / 5** | Tải file `…-raspberrypi.img.xz`, ghi ra thẻ nhớ bằng Raspberry Pi Imager (**Use custom**), cắm vào Pi, cấp nguồn | [Cài trên Raspberry Pi](https://console-docs.home-server.id.vn/cai-dat-pi) |
+| **Raspberry Pi OS / Debian có sẵn** | Cài từ mã nguồn bằng `install.sh` (bên dưới) | [Cài trên Raspberry Pi](https://console-docs.home-server.id.vn/cai-dat-pi) |
+
+> File `.iso` chỉ dành cho chip Intel/AMD. Raspberry Pi dùng chip ARM nên cần file ảnh thẻ nhớ riêng.
+
+### Cài từ mã nguồn (Raspberry Pi OS Lite 64-bit hoặc Debian 12/13)
 
 ```bash
 git clone https://github.com/zTieuYeuz/server-consolepi.git consolepi-toolkit
 sudo bash consolepi-toolkit/install.sh --local consolepi-toolkit
 ```
 
-Thiết bị **không gắn màn hình** (bỏ qua giao diện kiosk, tiết kiệm ~500MB): thêm `--no-screen`.
+Thiết bị **không gắn màn hình** (bỏ giao diện kiosk, tiết kiệm ~500MB): thêm `--no-screen`.
+Quá trình cài mất 5–15 phút tuỳ tốc độ mạng và thẻ nhớ; cài xong nên khởi động lại.
+
+Sau khi cài, mở trình duyệt vào địa chỉ của máy (xem bảng *Kết nối* bên dưới) và
+đăng nhập bằng tài khoản Linux của máy đó.
 
 Dựng lại máy hỏng (kèm dữ liệu + bí mật từ bản sao lưu): xem `docs/KHOI-PHUC-TU-DAU.md`.
+Tự dựng file ISO / ảnh Pi từ mã nguồn: xem `iso/README.md`.
 
 > **Chạy lại được nhiều lần.** Cài đè bản mới không làm mất: WiFi đã lưu,
-> thư viện lệnh, tên cổng console, rule IF/THEN, cấu hình AP, hướng màn hình.
+> thư viện lệnh, tên cổng console, rule IF/THEN, cấu hình AP, kịch bản cài Windows,
+> hướng màn hình.
 
 ---
 
@@ -81,6 +106,15 @@ Netmiko (SSH cấu hình switch) · 802.1X Testing · IF/THEN Automation
 Cảnh báo **sụt áp** (`vcgencmd get_throttled`) — nguyên nhân phổ biến nhất làm Pi
 treo hoặc hỏng thẻ nhớ, và nó báo *trước* khi hỏng. Kèm nhiệt độ CPU, tải, RAM,
 đĩa, thời gian chạy. Nút **Tắt máy / Khởi động lại** có hộp xác nhận.
+
+### Deployment OS — cài Windows hàng loạt qua mạng (PXE)
+Tạo **kịch bản cài máy** 6 bước (hệ điều hành, thông tin máy, chia ổ, phần mềm, tuỳ chọn
+Windows, tổng kết). Máy khách boot qua mạng (iPXE + WinPE) — BIOS, UEFI và UEFI Secure
+Boot — tự chia ổ, bung ảnh Windows, cài phần mềm, font, ứng dụng nhiều file (ví dụ Office),
+gia nhập domain. Theo dõi tiến trình từng máy theo thời gian thực và nhận báo cáo tổng kết.
+Có mục **dò ổ đĩa chỉ đọc** để chọn đúng ổ trước khi viết kịch bản, và chế độ boot WinPE
+riêng (Hiren's, Strelec…). DHCP/TFTP/Samba **không tự chạy** — chỉ bật khi bạn bật PXE.
+Xem [hướng dẫn](https://console-docs.home-server.id.vn/deployment-os).
 
 ### Kho file (ISO, firmware)
 Mang theo bộ cài OS, firmware switch, file cấu hình để dùng khi không có internet.
@@ -145,18 +179,22 @@ uninstall.sh            Gỡ cài đặt
 src/app.py              Lắp ráp Flask
 src/ui/                 layout · auth · home · health · network · terminal
                         ssh · commands · storage · direct · remote · docs · settings
+                        deployos · pxe · tiendo · doodia · fontinfo · khotrungtam
 src/nettools/           14 công cụ chẩn đoán mạng + static/
 src/scripts/            wifi-fallback · ttyd-one · term-launch · kiosk-start
                         selftest · bt-auto-agent · bt-nap-daemon · bt-pan0-setup
                         console-bashrc · grc-cisco.conf
 config/                 nginx · udev (serial, wifi, cảm ứng)
-systemd/                13 unit
+systemd/                19 unit
+iso/                    Dựng ISO 64/32-bit và ảnh Raspberry Pi (xem iso/README.md)
+docs/                   Quy tắc build + kiểm thử, khôi phục từ đầu
+tools/                  Sao lưu, đồng bộ kho
 ```
 
 ## Yêu cầu
 
-- Raspberry Pi 3 / 4 / 5 (đã kiểm chứng trên Pi 4)
-- Raspberry Pi OS Lite (Debian 12/13) 64-bit
+- Raspberry Pi 3 / 4 / 5 (đã kiểm chứng trên Pi 4), hoặc laptop/máy bàn Intel/AMD (ISO 64-bit; ISO 32-bit chạy được trên máy 1 GB RAM)
+- Raspberry Pi OS Lite (Debian 12/13) 64-bit nếu cài từ mã nguồn
 - Cáp USB-serial (FTDI/Prolific) cho chức năng console
 - Màn hình HDMI + cảm ứng USB (tuỳ chọn)
 
