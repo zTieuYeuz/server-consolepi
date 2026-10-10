@@ -69,10 +69,10 @@ SOAN_JS = """
       o.focus(); o.select();
       var ok = document.execCommand("copy");
       noi(ok ? "Đã copy nội dung ô lệnh."
-             : "Trinh duyet khong cho copy tu dong - noi dung da duoc boi den, copy tay giup em.",
+             : "Trình duyệt không cho copy tự động - nội dung đã được bôi đen, bấm Ctrl+C để copy.",
           ok ? "ok" : "warn");
     } catch (e) {
-      noi("Trinh duyet khong cho copy tu dong - noi dung da duoc boi den, copy tay giup em.", "warn");
+      noi("Trình duyệt không cho copy tự động - nội dung đã được bôi đen, bấm Ctrl+C để copy.", "warn");
     }
   }
 
@@ -92,8 +92,8 @@ SOAN_JS = """
         noi("Trinh duyet chan doc clipboard. Cham vao o roi dan tay, hoac dung ban phim ao.", "warn");
       });
     } else {
-      noi("Vao bang HTTP nen trinh duyet khong cho doc clipboard. Cham vao o roi dan tay, " +
-          "hoac dung ban phim ao.", "warn");
+      noi("Vào bằng HTTP nên trình duyệt không cho đọc clipboard. Chạm vào ô rồi dán tay, " +
+          "hoặc dùng bàn phím ảo.", "warn");
     }
   });
 
@@ -178,8 +178,8 @@ COPY_TERM_JS = """
     var ok = false;
     try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
     document.body.removeChild(o);
-    noi(ok ? "Da copy " + chu.length + " ky tu." :
-        "Trinh duyet khong cho copy tu dong. Giu Shift roi boi den bang chuot va copy tay giup em.",
+    noi(ok ? "Đã copy " + chu.length + " ký tự." :
+        "Trình duyệt không cho copy tự động. Giữ Shift rồi bôi đen bằng chuột và bấm Ctrl+C.",
         ok ? "ok" : "warn");
   }
 
@@ -187,7 +187,7 @@ COPY_TERM_JS = """
     if (!chu) return;
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(chu).then(
-        function () { noi("Da copy " + chu.length + " ky tu.", "ok"); },
+        function () { noi("Đã copy " + chu.length + " ký tự.", "ok"); },
         function () { chepCachCu(chu); });
     } else { chepCachCu(chu); }
   }
@@ -197,8 +197,8 @@ COPY_TERM_JS = """
     if (!t) { noi("Khung terminal chua san sang - doi no hien chu roi bam lai.", "warn"); return; }
     var chu = t.getSelection();
     if (!chu) {
-      noi("Chua boi den chu nao. GIU PHIM SHIFT trong luc keo chuot de boi den " +
-          "(khong giu Shift thi tmux giu chuot de cuon man hinh), roi bam lai nut nay.", "warn");
+      noi("Chưa bôi đen chữ nào. GIỮ PHÍM SHIFT trong lúc kéo chuột để bôi đen " +
+          "(không giữ Shift thì tmux giữ chuột để cuộn màn hình), rồi bấm lại nút này.", "warn");
       return;
     }
     chep(chu);

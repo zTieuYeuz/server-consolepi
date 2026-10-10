@@ -109,7 +109,7 @@ def bat_che_do():
 
     open(STATE_FLAG, "w").close()
     return True, (f"Đã bật chế độ cắm thẳng. Pi là {PI_IP}, sẽ cấp IP "
-                  f"192.168.99.50-99 cho thiet bi cam vao cong LAN. "
+                  f"192.168.99.50-99 cho thiết bị cắm vào cổng LAN. "
                   f"Cắm dây rồi bấm Quét - thiết bị thường mất 15-30 giây để lên.")
 
 
@@ -222,9 +222,9 @@ def register_direct(app):
 
         canh_bao = ""
         if not bat and khach_qua_eth0():
-            canh_bao = ('<div class="msg warn">⚠️ Ban dang truy cap QUA chinh cong LAN nay. '
-                        'Bật chế độ cắm thẳng se doi IP cua cong do va lam mat ket noi cua ban. '
-                        'Hay vao bang WiFi hoac man hinh gan tren Pi truoc.</div>')
+            canh_bao = ('<div class="msg warn">⚠️ Bạn đang truy cập QUA chính cổng LAN này. '
+                        'Bật chế độ cắm thẳng sẽ đổi IP của cổng đó và làm mất kết nối của bạn. '
+                        'Hãy vào bằng WiFi hoặc màn hình gắn trên Pi trước.</div>')
 
         # Khoi quet dung duoc o CA HAI che do: cam thang vao iLO, hay cam vao
         # mang co san DHCP roi tim thiet bi - deu la viec thuong lam.
@@ -270,8 +270,8 @@ def register_direct(app):
 
         if bat:
             dieu_khien = f"""
-            <div class="msg ok">🟢 Dang bat. Pi la <code>{PI_IP}</code> tren cong LAN,
-            cap IP <code>192.168.99.50-99</code>.</div>
+            <div class="msg ok">🟢 Đang bật. Pi là <code>{PI_IP}</code> trên cổng LAN,
+            cấp IP <code>192.168.99.50-99</code>.</div>
             <div class="row" style="gap:10px;margin-top:12px;flex-wrap:wrap;">
               <form method="POST" action="/direct/tat">
                 <button type="submit" class="red" data-busy="Đang trả về DHCP...">⏏ Tat che do</button>
@@ -317,7 +317,7 @@ def register_direct(app):
           <tr><th style="width:150px;">Dia chi IP</th><th style="width:160px;">MAC</th>
               <th style="width:170px;">Hang</th><th style="width:150px;">Tim thay qua</th>
               <th>Giao dien web</th></tr>''' + rows + '</table>' if ds else ''}
-        {'<p style="color:#8b93a1;">Khong thay thiet bi nao. Kiem tra day da cam chua, den cong LAN co sang khong, va thiet bi da khoi dong xong chua (iLO mat 30-60 giay).</p>' if ds is not None and not ds else ''}"""
+        {'<p style="color:#8b93a1;">Không thấy thiết bị nào. Kiểm tra dây đã cắm chưa, đèn cổng LAN có sáng không, và thiết bị đã khởi động xong chưa (iLO mất 30-60 giây).</p>' if ds is not None and not ds else ''}"""
 
         return render_page(body, active="/direct", title="Cắm thẳng thiết bị",
                            subtitle="Vào iLO / iDRAC / IPMI khi không có mạng sẵn")

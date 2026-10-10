@@ -82,18 +82,18 @@ def _bao_tien_do(phan_tram, thong_diep):
         pass   # khong duoc de loi ghi tien do lam hong ca dashboard
 
 
-_bao_tien_do(10, "Dang nap khung giao dien...")
+_bao_tien_do(10, "Đang nạp khung giao diện...")
 
 from flask import Flask, redirect, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-_bao_tien_do(25, "Dang nap cac cong cu chan doan mang (co the mat vai chuc giay)...")
+_bao_tien_do(25, "Đang nạp các công cụ chẩn đoán mạng (có thể mất vài chục giây)...")
 from nettools import nettools_bp, register_no_cache_json, register_vkeyboard
 
-_bao_tien_do(70, "Dang nap giao dien cac tab...")
+_bao_tien_do(70, "Đang nạp giao diện các tab...")
 from ui import register_all
 
-_bao_tien_do(90, "Dang khoi dong may chu web...")
+_bao_tien_do(90, "Đang khởi động máy chủ web...")
 
 app = Flask(__name__)
 

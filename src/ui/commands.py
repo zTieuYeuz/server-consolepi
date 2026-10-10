@@ -327,7 +327,7 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.25, toi_da_dong=120):
                              capture_output=True, timeout=5)
         if has.returncode != 0:
             return False, (f"Chưa có phiên terminal '{session_name}'. "
-                           f"Mo khung terminal truoc roi bam lai.")
+                           f"Mở khung terminal trước rồi bấm lại.")
 
         han_chot = time.time() + 180          # tran tong: khong treo mai mai
         da_gui = 0

@@ -141,7 +141,7 @@ def nhat_ky(n=25):
     r = subprocess.run(["journalctl", "-u", SERVICE, "-n", str(n),
                         "--no-pager", "-o", "cat"],
                        capture_output=True, text=True, timeout=15)
-    return r.stdout.strip() or "(chua co nhat ky)"
+    return r.stdout.strip() or "(chưa có nhật ký)"
 
 
 def ten_mien():

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.8.3 (10/10/2026)
+
+- Lam theo docs nhu NGUOI DUNG MOI tren may ao that (iso/test/nguoi-dung-vm.sh): boot ISO nhu USB -> menu GRUB -> Calamares tieng Viet
+  (Chao mung, Vi tri, Phan vung, Nguoi dung, Tong quan, Cai dat, Hoan thanh) -> khoi dong lan dau (vao thang dashboard, bang IP) ->
+  dang nhap web bang tai khoan vua tao (dung/sai deu dung) -> tao he dieu hanh -> tao kich ban 6 buoc -> kho trung tam TU KET NOI khong can
+  nhap gi, tai SumatraPDF ve kem tham so cai im lang -> 15/15 goi driver tu tai khi co Internet -> bat PXE. Moi buoc khop docs,
+  tru nhung cho duoi day (da sua).
+- SUA CHU TIENG VIET KHONG DAU hien tren giao dien (lan trong chu co dau): "Mui gio", "Tu dong tren o dia so", "Chia tay tren o dia so",
+  danh sach kich ban (Chinh sua, Ngay tao, Thao tac, Ve danh sach kich ban, "Chua co kich ban nao"), mo ta che do "co san DHCP"
+  o trang PXE, tin nhan loi/thanh cong (Da tao, Da luu tham so, thieu dung luong, trinh tu het han, ten may khong hop le...),
+  man hinh nap luc khoi dong, JS tien do tai len va nut copy trong terminal, cac trang Bluetooth/Cam thang/SSH/Nhat ky. Man hinh
+  WinPE va menu iPXE giu nguyen khong dau (bat buoc ASCII).
+- Docs: sua cho khong khop (menu PXE la "1. Install Windows", ten 3 che do PXE "Boot OS ...", "Chia bang tay", nut "Luu kich ban", muc
+  Giai tri trong menu, meo sau khi cai xong).
+- Chua test: chuot ao trong Calamares (dung phim tat), ghi USB bang Rufus that, Raspberry Pi Imager that, may that.
+
 ## 1.8.2 (09/10/2026)
 
 - BAO MAT PXE: `/deployos/pxeboot/*` va `/api/tiendo/*` khong can dang nhap (may dang boot chua co gi de dang nhap) nhung

@@ -599,11 +599,11 @@ def _pair_worker(mac):
         if not thay:
             steps.append(("quet", False,
                           f"Không tìm thấy thiết bị sau {TONG_GIAY_QUET}s quét. Bàn phím "
-                          "gan nhu chac chan CHUA o che do ghep cap: giu nut Connect/"
-                          "pairing tren ban phim cho den khi den nhap nhay NHANH (nhap "
-                          "nhay cham la dang tim lai may cu, khong phai che do ghep cap), "
-                          "roi bam Ghep cap lai ngay. Ban phim chi giu che do nay 1-3 "
-                          "phut. Neu van khong thay: thu thay pin."))
+                          "gần như chắc chắn CHƯA ở chế độ ghép cặp: giữ nút Connect/"
+                          "pairing trên bàn phím cho đến khi đèn nhấp nháy NHANH (nhấp "
+                          "nháy chậm là đang tìm lại máy cũ, không phải chế độ ghép cặp), "
+                          "rồi bấm Ghép cặp lại ngay. Bàn phím chỉ giữ chế độ này 1-3 "
+                          "phút. Nếu vẫn không thấy: thử thay pin."))
         else:
             for action, limit in (("pair", 60), ("trust", 10), ("connect", 25)):
                 _PAIR["step"] = action
@@ -618,7 +618,7 @@ def _pair_worker(mac):
                     break
     except subprocess.TimeoutExpired:
         steps.append((_PAIR["step"], False,
-                      "Qua thoi gian cho - ban phim khong phan hoi hoac chua go ma"))
+                      "Quá thời gian chờ - bàn phím không phản hồi hoặc chưa gõ mã"))
     except Exception as e:
         steps.append((_PAIR["step"], False, str(e)[:120]))
     finally:
@@ -646,14 +646,14 @@ def _pair_worker(mac):
             sau = bt_device_info(mac)
             if not sau.get("bonded", False):
                 _PAIR["ok"] = False
-                _PAIR["detail"] += (" | CANH BAO: ghep xong nhung khong luu duoc khoa "
-                                    "lien ket (Bonded: no). Ban phim se khong go duoc. "
-                                    "Hay xoa ghep cap tren CHINH BAN PHIM (thuong giu "
-                                    "nut Connect vai giay cho den khi den nhap nhay) "
-                                    "roi ghep lai.")
+                _PAIR["detail"] += (" | CẢNH BÁO: ghép xong nhưng không lưu được khóa "
+                                    "liên kết (Bonded: no). Bàn phím sẽ không gõ được. "
+                                    "Hãy xóa ghép cặp trên CHÍNH BÀN PHÍM (thường giữ "
+                                    "nút Connect vài giây cho đến khi đèn nhấp nháy) "
+                                    "rồi ghép lại.")
     except Exception as e:
         _PAIR["ok"] = False
-        _PAIR["detail"] = (_PAIR.get("detail") or "") + f" | Loi khi kiem tra lai sau ghep: {str(e)[:120]}"
+        _PAIR["detail"] = (_PAIR.get("detail") or "") + f" | Lỗi khi kiểm tra lại sau ghép: {str(e)[:120]}"
     finally:
         _PAIR["step"] = "xong"
         _PAIR["running"] = False
@@ -701,8 +701,8 @@ def bt_connect_profile(mac, want=""):
     ten = info["name"]
 
     if not info.get("bonded", False):
-        return False, (f"{ten} chua ghep cap that su (thieu khoa lien ket). "
-                       "Bam 'Ghep cap lai' thay vi 'Ket noi'.")
+        return False, (f"{ten} chưa ghép cặp thật sự (thiếu khóa liên kết). "
+                       "Bấm 'Ghép cặp lại' thay vì 'Kết nối'.")
 
     subprocess.run(["bluetoothctl", "trust", mac], capture_output=True, timeout=10)
 
@@ -775,7 +775,7 @@ def bt_unpair(mac):
 # ---------------------------------------------------------------------------
 
 MAJOR_CLASSES = {
-    0: ("Khong ro", "🔗"),
+    0: ("Không rõ", "🔗"),
     1: ("May tinh", "💻"),
     2: ("Dien thoai", "📱"),
     3: ("Thiet bi mang", "🌐"),
@@ -816,7 +816,7 @@ def classify_bt(cod, uuids=None, icon=""):
 
     major = (cod >> 8) & 0x1F
     minor = (cod >> 2) & 0x3F
-    label, emoji = MAJOR_CLASSES.get(major, ("Khong ro", "🔗"))
+    label, emoji = MAJOR_CLASSES.get(major, ("Không rõ", "🔗"))
 
     if major == 1 and minor in MINOR_COMPUTER:
         label = MINOR_COMPUTER[minor]
@@ -1264,7 +1264,7 @@ def _bt_page(msg="", ok=True, scanned=None):
         # xanh -> nguoi dung ngoi cho mai khong hieu tai sao. Da gap that.
         hong_bond = i["connected"] and not i.get("bonded", False)
         if hong_bond:
-            state = ('<span style="color:#ff6b6b;">🔴 Noi duoc nhung KHONG dung duoc'
+            state = ('<span style="color:#ff6b6b;">🔴 Nối được nhưng KHÔNG dùng được'
                      '<br><small>Thiếu khóa liên kết (Bonded: no) - phải ghép cặp lại</small></span>')
         elif i["connected"] and c["kind"] == "net":
             # May tinh/dien thoai: "Connected" MOI CHI la ket noi Bluetooth,
@@ -1280,7 +1280,7 @@ def _bt_page(msg="", ok=True, scanned=None):
                          '<strong>ConsolePi</strong> &rarr; Connect using &rarr; '
                          'Access point. Máy không tự ép vào mạng được.</small></span>')
         elif i["connected"]:
-            state = "🟢 dang ket noi"
+            state = "🟢 đang kết nối"
         elif i["paired"]:
             state = "⚪ đã ghép, chưa nối"
         else:
@@ -1355,9 +1355,9 @@ def _bt_page(msg="", ok=True, scanned=None):
             </tr>"""
         scan_html = f"""
         <h2>Thiet bi tim thay ({len([1 for m,_ in scanned if m not in paired_macs])} chua ghep)</h2>
-        <table><tr><th>Thiết bị</th><th style="width:150px;">Loai</th>
+        <table><tr><th>Thiết bị</th><th style="width:150px;">Loại</th>
                    <th style="width:120px;">Thao tác</th></tr>{new_rows}</table>
-        {'<p style="color:#8b93a1;">Khong thay thiet bi moi nao. Nho bật chế độ ghép cặp trên bàn phím (thuong giu nut Connect vai giay den khi den nhap nhay).</p>' if not new_rows else ''}"""
+        {'<p style="color:#8b93a1;">Không thấy thiết bị mới nào. Nhớ bật chế độ ghép cặp trên bàn phím (thường giữ nút Connect vài giây đến khi đèn nhấp nháy).</p>' if not new_rows else ''}"""
 
     # --- Khoi hien ma so / trang thai ghep cap ---
     ag = bt_agent_state()
@@ -1373,7 +1373,7 @@ def _bt_page(msg="", ok=True, scanned=None):
         kieu_cu = ag.get("kind") == "pin"
         pair_html = f"""
         <div class="card" style="border-left:4px solid #ffd166;background:#2a2519;">
-          <h3 style="color:#ffd166;">⌨️ Go ma nay TREN BAN PHIM Bluetooth</h3>
+          <h3 style="color:#ffd166;">⌨️ Gõ mã này TRÊN BÀN PHÍM Bluetooth</h3>
           <div style="font-size:44px;font-weight:700;letter-spacing:9px;
                       font-family:ui-monospace,monospace;color:#fff;
                       text-align:center;padding:14px 0;">{_esc(ag.get('value'))}</div>
@@ -1382,9 +1382,9 @@ def _bt_page(msg="", ok=True, scanned=None):
             <strong>{_esc(ag.get('device'))}</strong>.
           </p>
           <p style="text-align:center;color:#8b93a1;font-size:13px;margin-top:9px;">
-            {'Ban phim doi cu (ghep cap kieu PIN) - van go y het nhu tren.'
-             if kieu_cu else f"Da go {ag.get('entered', 0)} ky tu"}
-            &middot; trang tu lam moi moi 3 giay
+            {'Bàn phím đời cũ (ghép cặp kiểu PIN) - vẫn gõ y hệt như trên.'
+             if kieu_cu else f"Đã gõ {ag.get('entered', 0)} ký tự"}
+            &middot; trang tự làm mới mỗi 3 giây
           </p>
           <p style="text-align:center;color:#8b93a1;font-size:12px;margin-top:6px;">
             Ban phim chua ket noi van go duoc ma nay - do la cach ghep cap chuan
@@ -1398,9 +1398,9 @@ def _bt_page(msg="", ok=True, scanned=None):
         pair_html = f"""
         <div class="card" style="border-left:4px solid #6cb6ff;">
           <h3>Đang dùng mã PIN <code style="font-size:20px;">{_esc(ag.get('value'))}</code></h3>
-          <p style="color:#8b93a1;margin:0;">Thiet bi <strong>{_esc(ag.get('device'))}</strong>
-          khong phai ban phim nen khong go duoc ma. Pi dung ma mac dinh cua nha san xuat.
-          Neu that bai, tra cuu ma PIN in tren thiet bi (hay gap: 0000, 1234, 8888).</p>
+          <p style="color:#8b93a1;margin:0;">Thiết bị <strong>{_esc(ag.get('device'))}</strong>
+          không phải bàn phím nên không gõ được mã. Pi dùng mã mặc định của nhà sản xuất.
+          Nếu thất bại, tra cứu mã PIN in trên thiết bị (hay gặp: 0000, 1234, 8888).</p>
         </div>
         <meta http-equiv="refresh" content="3">"""
     elif ag and ag.get("kind") == "need-passkey":
@@ -1408,18 +1408,18 @@ def _bt_page(msg="", ok=True, scanned=None):
         <div class="msg err">
           <strong>Thiết bị này đòi Pi nhập mã do chính nó hiện ra.</strong><br>
           <span style="font-size:13px;">
-          <strong>{_esc(ag.get('device'))}</strong> dang cho mot ma so ma no hien tren man
-          hinh cua no - Pi khong doc duoc ma do nen buoc nay se that bai. Ban phim/chuot
-          thong thuong KHONG dung kieu nay; neu gap, nhieu kha nang thiet bi dang o sai
-          che do ghep cap. Tat roi bat lai che do ghep cap tren thiet bi va thu lai.
+          <strong>{_esc(ag.get('device'))}</strong> đang chờ một mã số mà nó hiện trên màn
+          hình của nó - Pi không đọc được mã đó nên bước này sẽ thất bại. Bàn phím/chuột
+          thông thường KHÔNG dùng kiểu này; nếu gặp, nhiều khả năng thiết bị đang ở sai
+          chế độ ghép cặp. Tắt rồi bật lại chế độ ghép cặp trên thiết bị và thử lại.
           </span>
         </div>
         <meta http-equiv="refresh" content="3">"""
     elif ag and ag.get("kind") == "cancelled":
         pair_html = """
-        <div class="msg err">Thiet bi da HUY ghep cap giua chung. Thuong do het thoi gian
-        cho tren thiet bi, hoac ma go vao bi sai. Bat lai che do ghep cap tren thiet bi
-        roi bam Ghep cap lai.</div>"""
+        <div class="msg err">Thiết bị đã HỦY ghép cặp giữa chừng. Thường do hết thời gian
+        chờ trên thiết bị, hoặc mã gõ vào bị sai. Bật lại chế độ ghép cặp trên thiết bị
+        rồi bấm Ghép cặp lại.</div>"""
     elif ag and ag.get("kind") == "confirm":
         pair_html = f"""
         <div class="card" style="border-left:4px solid #6cb6ff;">
@@ -1431,9 +1431,9 @@ def _bt_page(msg="", ok=True, scanned=None):
     elif ps.get("running"):
         pair_html = f"""
         <div class="card" style="border-left:4px solid #6cb6ff;">
-          <h3>⏳ Dang ghep cap {_esc(ps.get('mac'))}</h3>
+          <h3>⏳ Đang ghép cặp {_esc(ps.get('mac'))}</h3>
           <p style="color:#8b93a1;margin:0;">Bước hiện tại: <code>{_esc(ps.get('step'))}</code>.
-          Neu la ban phim, hay <strong>bật chế độ ghép cặp trên bàn phím</strong>
+          Nếu là bàn phím, hãy <strong>bật chế độ ghép cặp trên bàn phím</strong>
           (thường giữ nút Connect đến khi đèn nhấp nháy) và chờ mã số hiện ra.</p>
         </div>
         <meta http-equiv="refresh" content="3">"""
@@ -1467,7 +1467,7 @@ def _bt_page(msg="", ok=True, scanned=None):
     {scan_html}
 
     <h2>Thiết bị đã ghép cặp ({len(devs)})</h2>
-    <table><tr><th>Thiết bị</th><th style="width:150px;">Loai</th>
+    <table><tr><th>Thiết bị</th><th style="width:150px;">Loại</th>
                <th style="width:160px;">Trạng thái</th>
                <th style="width:230px;">Thao tác</th></tr>{rows}</table>
     {'<p style="color:#8b93a1;">Chưa ghép cặp thiết bị nào.</p>' if not devs else ''}
@@ -1724,9 +1724,9 @@ def register_network(app):
     def bt_reset_route():
         forget = request.form.get("forget") == "1"
         removed = bt_reset(forget_devices=forget)
-        m = "Da khoi dong lai Bluetooth."
+        m = "Đã khởi động lại Bluetooth."
         if forget:
-            m += f" Da quen {len(removed)} thiet bi - can ghep cap lai tu dau."
+            m += f" Đã quên {len(removed)} thiết bị - cần ghép cặp lại từ đầu."
         return _bt_page(msg=m, ok=True)
 
     @app.route("/wifi-status")

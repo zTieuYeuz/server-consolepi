@@ -98,10 +98,10 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
     # ky ky tu dac biet nao khac).
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:\-]{0,254}", host):
         return False, ("Địa chỉ không hợp lệ (phải bắt đầu bằng chữ/số, sau đó cho "
-                       "them cac dau . - _ :).")
+                       "thêm các dấu . - _ :).")
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._\-\\]{0,63}", user):
         return False, ("Tài khoản không hợp lệ (phải bắt đầu bằng chữ/số, sau đó cho "
-                       "them cac dau . - _ \\).")
+                       "thêm các dấu . - _ \\).")
     try:
         cong = int(port or 22)
     except (TypeError, ValueError):
@@ -119,7 +119,7 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
     if _la_dau_nhac_mat_khau(_dong_cuoi(truoc)):
         return False, ("Khung terminal đang dừng ở dấu nhắc mật khẩu của lần trước. "
                        "Vào khung terminal xử lý xong (nhập mật khẩu hoặc bấm Ctrl+C) "
-                       "roi bam Ket noi lai.")
+                       "rồi bấm Kết nối lại.")
 
     cmd = f"ssh -o StrictHostKeyChecking=accept-new -p {cong} {user}@{host}"
     try:
@@ -130,7 +130,7 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
 
     if not password:
         return True, (f"Đã gửi lệnh kết nối tới {host}. "
-                      f"Nhap mat khau trong khung terminal ben duoi.")
+                      f"Nhập mật khẩu trong khung terminal bên dưới.")
 
     if not _cho_dau_nhac_mat_khau(SSH_SESSION, truoc, 12):
         return True, (f"Đã gửi lệnh kết nối tới {host} nhưng sau 12 giây không thấy dấu "
@@ -282,7 +282,7 @@ def register_ssh(app):
     def ssh_paste():
         noi_dung = request.form.get("noi_dung", "")
         if not noi_dung.strip():
-            return _tra_ve(False, "O lenh dang trong - chua co gi de dan.", noi_dung)
+            return _tra_ve(False, "Ô lệnh đang trống - chưa có gì để dán.", noi_dung)
         # Tu chon cach dan cho dung voi thu dang chay trong terminal (dang
         # SSH vao thiet bi thi gui tung dong; con dang o shell thi dan ca
         # khoi, khong dong nao chay). Xem dan_thong_minh().

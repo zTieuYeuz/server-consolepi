@@ -69,7 +69,7 @@ def doc_nhat_ky(so_dong=300):
     except FileNotFoundError:
         return ""
     except Exception as e:
-        return f"(khong doc duoc nhat ky: {e})"
+        return f"(không đọc được nhật ký: {e})"
 
 
 def doc_journal_dich_vu(ten_dich_vu, so_dong=60):
@@ -83,6 +83,6 @@ def doc_journal_dich_vu(ten_dich_vu, so_dong=60):
             ["journalctl", "-u", ten_dich_vu, "-p", "warning", "-n", str(so_dong),
              "--no-pager", "-o", "short-iso"],
             capture_output=True, text=True, timeout=10)
-        return r.stdout.strip() or "(khong co canh bao/loi nao gan day)"
+        return r.stdout.strip() or "(không có cảnh báo/lỗi nào gần đây)"
     except Exception as e:
-        return f"(khong doc duoc journal: {e})"
+        return f"(không đọc được journal: {e})"

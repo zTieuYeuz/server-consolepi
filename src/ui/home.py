@@ -298,7 +298,7 @@ def register_home(app):
             net_rows += f"""
             <tr>
               <td><strong>{label}</strong><br><code style="font-size:12px;">{ifname}</code></td>
-              <td>{'<code>' + d['ip'] + '</code>' if d['ip'] else '<span style="color:#8b93a1;">chua co IP</span>'}</td>
+              <td>{'<code>' + d['ip'] + '</code>' if d['ip'] else '<span style="color:#8b93a1;">chưa có IP</span>'}</td>
               <td><code style="font-size:12px;">{d['mac']}</code></td>
               <td>{d['state']}{' &middot; ' + d['speed'] if d['speed'] else ''}</td>
               <td>{'🟢' if up else '⚪'}</td>

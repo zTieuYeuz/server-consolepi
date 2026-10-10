@@ -182,7 +182,7 @@ def doc_muc_luc_iso(duong_iso):
         return None, LOI_THIEU_7Z
     ma, ra, loi = _chay([lenh, "l", "-slt", duong_iso], timeout=600)
     if ma != 0:
-        return None, (loi or ra or "khong doc duoc ISO")[:200]
+        return None, (loi or ra or "không đọc được ISO")[:200]
     muc = {}
     duong = None
     for dong in ra.split("\n"):
@@ -314,7 +314,7 @@ def _giai_nen_1_file(duong_iso, duong_trong_iso, thu_muc_ra, ten_dich, cap_nhat)
         return False, (loi or ra or "7z bao loi")[-200:]
     if not os.path.isfile(duong_theo_doi):
         don()
-        return False, "giai nen xong nhung khong thay file dau ra"
+        return False, "giải nén xong nhưng không thấy file đầu ra"
     # KHONG dua vao cho that ngay: file van nam trong thu muc tam cho toi khi
     # CA 2 file giai nen xong va qua kiem chung (xem _worker) - neu 1 file loi
     # giua chung thi file OS dang dung (vd "Tai lai") van nguyen ven, khong bi
@@ -324,7 +324,7 @@ def _giai_nen_1_file(duong_iso, duong_trong_iso, thu_muc_ra, ten_dich, cap_nhat)
         os.replace(duong_theo_doi, duong_tam)
     except OSError as e:
         don()
-        return False, f"khong doi ten duoc: {e}"
+        return False, f"không đổi tên được: {e}"
     return True, duong_tam
 
 

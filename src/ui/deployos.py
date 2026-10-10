@@ -86,8 +86,8 @@ KIEU_BOOT = [
      "Pi và máy cần cài cùng cắm vào 1 switch, nhưng mạng đó KHÔNG có "
      "DHCP server nào. Pi đóng luôn vai trò cấp IP và chỉ đường boot."),
     ("mang_co_dhcp", "Boot OS qua mạng có sẵn DHCP",
-     "Mang da co DHCP san (router cong ty). Pi chi chay proxyDHCP - CHI "
-     "tra loi 'file boot o dau', KHONG cap IP, tranh dung do 2 DHCP."),
+     "Mạng đã có DHCP sẵn (router công ty). Pi chỉ chạy proxyDHCP - CHỈ "
+     "trả lời 'file boot ở đâu', KHÔNG cấp IP, tránh đụng độ 2 DHCP."),
 ]
 
 DANH_SACH_OS = [
@@ -438,10 +438,10 @@ def _luu_tai_len(fileobj, thu_muc, duoi_cho_phep, nhan):
         can_gb = (can * 2) / (1024 ** 3) + 1        # +1GB de du an toan
         if _con_trong_gb() < can_gb:
             return False, (
-                f"File nay {co_kich_thuoc(can)} nen can khoang "
-                f"{can_gb:.1f} GB trong (file tam + ban luu that), nhung chi "
-                f"con {_con_trong_gb()} GB. Xoa bot file cu, hoac cam USB va "
-                f"chuyen bot du lieu sang do truoc.")
+                f"File này {co_kich_thuoc(can)} nên cần khoảng "
+                f"{can_gb:.1f} GB trống (file tạm + bản lưu thật), nhưng chỉ "
+                f"còn {_con_trong_gb()} GB. Xóa bớt file cũ, hoặc cắm USB và "
+                f"chuyển bớt dữ liệu sang đó trước.")
 
     dich = os.path.join(thu_muc, ten)
     if os.path.exists(dich):
@@ -462,7 +462,7 @@ def _luu_tai_len(fileobj, thu_muc, duoi_cho_phep, nhan):
                 # Kiem tra moi ~200MB (goi statvfs moi khoi rat ton)
                 if da_ghi % (200 * 1024 * 1024) < 1024 * 1024:
                     if _con_trong_gb() < 1:
-                        raise OSError("Het dung luong trong luc dang ghi")
+                        raise OSError("Hết dung lượng trong lúc đang ghi")
         os.replace(tam, dich)
     except Exception as e:
         try:
@@ -1180,7 +1180,7 @@ def tao_os_moi(ten_hien_thi, os_ho="windows"):
                       ensure_ascii=False)
     except OSError as e:
         return False, f"Không tạo được: {e}", None
-    return True, f'Da tao "{ten_hien_thi}".', os_id
+    return True, f'Đã tạo "{ten_hien_thi}".', os_id
 
 
 def xoa_os(os_id):
@@ -1292,7 +1292,7 @@ def tao_driver_moi(ten_hien_thi):
             json.dump({"ten_hien_thi": ten_hien_thi}, f, ensure_ascii=False)
     except OSError as e:
         return False, f"Không tạo được: {e}", None
-    return True, f'Da tao "{ten_hien_thi}".', driver_id
+    return True, f'Đã tạo "{ten_hien_thi}".', driver_id
 
 
 def xoa_driver(driver_id):
@@ -2030,10 +2030,10 @@ def register_deployos(app):
             thu_muc = cau_hinh[0]
             return _trang(
                 _tabs("tainguyen", "file") +
-                f'<div class="msg err">File nay {co_kich_thuoc(can)} nen can '
-                f'khoang {can_gb:.1f} GB trong, nhung chi con '
-                f'{_con_trong_gb()} GB. Da dung lai NGAY, chua ton thoi gian '
-                f'tai len cua anh. Xoa bot file cu hoac cam USB roi thu lai.</div>',
+                f'<div class="msg err">File này {co_kich_thuoc(can)} nên cần '
+                f'khoảng {can_gb:.1f} GB trống, nhưng chỉ còn '
+                f'{_con_trong_gb()} GB. Đã dừng lại NGAY, chưa tốn thời gian '
+                f'tải lên của anh. Xóa bớt file cũ hoặc cắm USB rồi thử lại.</div>',
                 "Deployment OS", "Không đủ dung lượng"), 413
         return None
 
@@ -2285,7 +2285,7 @@ def register_deployos(app):
           try {
             var d = JSON.parse(q.responseText);
             if (d.da_ghi > 0) {
-              diaO.textContent = "Da ghi xuong dia: " + co(d.da_ghi) +
+              diaO.textContent = "Đã ghi xuống đĩa: " + co(d.da_ghi) +
                 " / " + co(file.size);
             }
           } catch (err) { /* bo qua, khong lam hong viec tai len */ }
@@ -2325,8 +2325,8 @@ def register_deployos(app):
       };
       xhr.onerror = function () {
         clearInterval(hen);
-        diaO.innerHTML = '<span style="color:#ef4444;">Mat ket noi toi may. ' +
-          'File chua duoc luu - thu lai.</span>';
+        diaO.innerHTML = '<span style="color:#ef4444;">Mất kết nối tới máy. ' +
+          'File chưa được lưu - thử lại.</span>';
       };
       xhr.onabort = function () {
         clearInterval(hen);
@@ -2494,10 +2494,10 @@ def register_deployos(app):
     def _het_han():
         return _trang(
             _tabs("kichban") +
-            '<div class="msg warn">Trinh tu nay da het han hoac dashboard vua '
-            'khoi dong lai nen khong con giu duoc lua chon dang do. '
-            '<a href="/deployos/boot">Bat dau lai</a> - kich ban da luu tren '
-            'dia thi khong mat.</div>',
+            '<div class="msg warn">Trình tự này đã hết hạn hoặc dashboard vừa '
+            'khởi động lại nên không còn giữ được lựa chọn đang dở. '
+            '<a href="/deployos/boot">Bắt đầu lại</a> - kịch bản đã lưu trên '
+            'đĩa thì không mất.</div>',
             "Deployment OS")
 
     @app.route("/deployos/wizard/<ma>/<int:buoc>", methods=["GET", "POST"])
@@ -2604,15 +2604,15 @@ def register_deployos(app):
                             "tài khoản duy nhất để đăng nhập vào máy sau khi cài.")
 
             if not d["ten_may"]:
-                return "Chua dien ten may."
+                return "Chưa điền tên máy."
             if d.get("os_ho") == "linux" and not d["username"]:
-                return "Chua dien ten dang nhap."
+                return "Chưa điền tên đăng nhập."
             # Ten may: theo quy tac chung cua ca Windows lan Linux (chu, so,
             # dau gach ngang; khong dau cach) - de tranh loi luc cai
             if not re.fullmatch(r"[A-Za-z0-9-]{1,15}", d["ten_may"]):
-                return ("Ten may chi duoc dung chu khong dau, so va dau gach "
-                        "ngang, toi da 15 ky tu (quy tac chung cua ca Windows "
-                        "lan Linux).")
+                return ("Tên máy chỉ được dùng chữ không dấu, số và dấu gạch "
+                        "ngang, tối đa 15 ký tự (quy tắc chung của cả Windows "
+                        "lẫn Linux).")
 
         elif buoc == 4:
             che = form.get("o_dia_che_do", "tu_dong")
@@ -2719,7 +2719,7 @@ def register_deployos(app):
                              for cat, nd in get_flashed_messages(with_categories=True))
         than = (_tabs("kichban") + _thanh_buoc(buoc) + _msg(loi, False) +
                 flash_html + _noi_dung_buoc(ma, d, buoc))
-        tieu_de = ("Tao kich ban" if d.get("che_do") == "luu"
+        tieu_de = ("Tạo kịch bản" if d.get("che_do") == "luu"
                    else "Deployment OS")
         return _trang(than, tieu_de,
                       f"Bước {so_hien_thi(buoc)}/{len(TEN_BUOC)}: {dict(TEN_BUOC)[buoc]}",
@@ -2904,7 +2904,7 @@ def register_deployos(app):
                   Đây là mật khẩu cho tài khoản SẼ TẠO trên máy đang cài lại,
                   không phải mật khẩu của Console Pi. Nếu lưu thành kịch bản,
                   file kịch bản được để quyền chỉ root đọc được (600).
-                  {'<br>Da co mat khau - de trong o nay thi giu nguyen cai cu.' if d['password'] else ''}</p>"""
+                  {'<br>Đã có mật khẩu - để trống ô này thì giữ nguyên cái cũ.' if d['password'] else ''}</p>"""
             return f"""
             <form method="POST" {act}>
               <div class="card">
@@ -2917,7 +2917,7 @@ def register_deployos(app):
                      khau nam thang trong ma nguon trang, ai xem nguon (hoac
                      anh chup man hinh dev tools) deu doc duoc. -->
 
-                <label>Mui gio</label>
+                <label>Múi giờ</label>
                 <select name="mui_gio">{opt_tz}</select>
                 {khoi_windows}
                 {o_ssh}
@@ -3256,16 +3256,16 @@ def register_deployos(app):
         os_ten = _ten_os(d)
 
         if d["o_dia_che_do"] == "tu_dong":
-            o_dia = f"Tu dong tren o dia so {_esc(d['o_dia_so'])} (GPT/MBR tu nhan theo may)"
+            o_dia = f"Tự động trên ổ đĩa số {_esc(d['o_dia_so'])} (GPT/MBR tự nhận theo máy)"
         else:
             pv = d["phan_vung"] or _phan_vung_mac_dinh(d["os_ho"])
             dong = "".join(
                 f"<div>&bull; {_esc(p['nhan'])} &mdash; "
-                f"{'het cho con lai' if p['cd'] == 'con_lai' else _esc(p['cd']) + ' MB'} "
+                f"{'hết chỗ còn lại' if p['cd'] == 'con_lai' else _esc(p['cd']) + ' MB'} "
                 f"&mdash; {_esc(p['fs'])} &mdash; {_esc(p['gan'])}</div>"
                 for p in pv)
-            o_dia = (f"Chia tay tren o dia so {_esc(d['o_dia_so'])} "
-                     f"(GPT/MBR tu nhan theo may)<div style='margin-top:6px;'>{dong}</div>")
+            o_dia = (f"Chia bằng tay trên ổ đĩa số {_esc(d['o_dia_so'])} "
+                     f"(GPT/MBR tự nhận theo máy)<div style='margin-top:6px;'>{dong}</div>")
 
         ds_app = chuan_hoa_apps(d.get("apps"))
         apps = ("<br>".join("&bull; " + _esc(a["ten"]) for a in ds_app)
@@ -3684,8 +3684,8 @@ def register_deployos(app):
         body = (_tabs("kichban") + _msg(msg, ok) +
                 _bang_kichban(ds, _esc) +
                 '<div class="row" style="margin-top:8px;">'
-                '<a class="btn" href="/deployos/kichban">Ve danh sach kich ban</a></div>')
-        return _trang(body, "Deployment OS", "Kich ban")
+                '<a class="btn" href="/deployos/kichban">Về danh sách kịch bản</a></div>')
+        return _trang(body, "Deployment OS", "Kịch bản")
 
     # ================================================ 2. TAB "CONSOLE BOOT"
     def _khoi_tai_len(hanh_dong, nhan, duoi, ghi_chu="", loai=""):
@@ -5363,8 +5363,8 @@ def register_deployos(app):
             thu_muc = os.path.join(DRIVERS_DIR, ten_an_toan(driver_id))
             ok, msg, _duong_dich = _hoan_tat_ghi_thang(duong, thu_muc, f.filename)
         else:
-            ok, msg = False, ("Duoi file khong duoc nhan (.inf/.sys/.cat/"
-                              ".dll/.zip) hoac khong ghi thang duoc.")
+            ok, msg = False, ("Đuôi file không được nhận (.inf/.sys/.cat/"
+                              ".dll/.zip) hoặc không ghi thẳng được.")
         if ok:
             return redirect(f"/deployos/drivers/{driver_id}")
         return _trang_drivers(msg, ok)
@@ -5599,7 +5599,7 @@ def register_deployos(app):
         </div>"""
 
         body = (_tabs("tainguyen", "apps") + _msg(msg, ok) +
-                _khoi_tai_len("/deployos/console/apps/len", "phan mem", EXT_APP, ghi_chu, "apps") +
+                _khoi_tai_len("/deployos/console/apps/len", "phần mềm", EXT_APP, ghi_chu, "apps") +
                 f"<h2>Phần mềm đang có ({len(ds)})</h2>" + thanh_cong_cu + bang +
                 """
                 <div class="msg info">Các file này KHÔNG bao giờ được chạy trên
@@ -5641,21 +5641,21 @@ def register_deployos(app):
                   loc();
                 })();
                 </script>""")
-        return _trang(body, "Deployment OS", "2.2 - Phan mem")
+        return _trang(body, "Deployment OS", "2.2 - Phần mềm")
 
     @app.route("/deployos/console/apps/len", methods=["POST"])
     def deployos_apps_len():
         f = request.files.get("file")
         if not f:
             return _trang_apps("Chua chon file.", False)
-        ok, msg = _nhan_tai_len(APPS_DIR, EXT_APP, "phan mem")
+        ok, msg = _nhan_tai_len(APPS_DIR, EXT_APP, "phần mềm")
         return _trang_apps(msg, ok)
 
     @app.route("/deployos/console/apps/thamso", methods=["POST"])
     def deployos_apps_thamso():
         ten = ten_an_toan(request.form.get("ten", ""))
         if not ten or not os.path.isfile(os.path.join(APPS_DIR, ten)):
-            return _trang_apps("Khong tim thay phan mem do.", False)
+            return _trang_apps("Không tìm thấy phần mềm đó.", False)
         meta = doc_thongtin_app()
         if request.form.get("kieu") == "go":
             go = (request.form.get("go_cai") or "").strip()[:400]
@@ -5670,7 +5670,7 @@ def register_deployos(app):
         else:
             meta.pop(ten, None)
         ok = ghi_thongtin_app(meta)
-        return _trang_apps("Da luu tham so." if ok else "Khong ghi duoc.", ok)
+        return _trang_apps("Đã lưu tham số." if ok else "Không ghi được.", ok)
 
     @app.route("/deployos/console/apps/xoa", methods=["POST"])
     def deployos_apps_xoa():
@@ -5734,8 +5734,8 @@ def register_deployos(app):
     # -------------------------------------------------------- 2.4 kich ban
     def _bang_kichban(ds, esc):
         if not ds:
-            return ('<p style="color:#8b93a1;">Chua co kich ban nao. Bam '
-                    '"Tao kich ban moi" de tao cai dau tien.</p>')
+            return ('<p style="color:#8b93a1;">Chưa có kịch bản nào. Bấm '
+                    '"Tạo kịch bản mới" để tạo cái đầu tiên.</p>')
         hang = ""
         for k in ds:
             hang += f"""
@@ -5744,7 +5744,7 @@ def register_deployos(app):
               <td>{_o_tom_tat(k, esc)}</td>
               <td style="color:#8b93a1;">{esc(k.get('_ngay', ''))}</td>
               <td>
-                <a class="btn small gray" href="/deployos/kichban/sua/{esc(k['_file'])}">Chinh sua</a>
+                <a class="btn small gray" href="/deployos/kichban/sua/{esc(k['_file'])}">Chỉnh sửa</a>
                 <form method="POST" action="/deployos/kichban/xoa" style="display:inline;"
                       onsubmit="return confirm('Xóa kịch bản này?');">
                   <input type="hidden" name="ten" value="{esc(k['_file'])}">
@@ -5755,7 +5755,7 @@ def register_deployos(app):
         return f"""
         <div class="tbl-scroll"><table>
           <tr><th>Tên kịch bản</th><th>Tóm tắt</th>
-              <th style="width:140px;">Ngay tao</th><th style="width:150px;">Thao tac</th></tr>
+              <th style="width:140px;">Ngày tạo</th><th style="width:150px;">Thao tác</th></tr>
           {hang}
         </table></div>"""
 
