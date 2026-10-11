@@ -10,6 +10,8 @@ Raspberry Pi hoặc trên laptop / máy bàn.
 
 📖 **Tài liệu hướng dẫn đầy đủ (tiếng Việt):** https://console-docs.home-server.id.vn
 · ⬇️ **Tải bản cài:** https://console-docs.home-server.id.vn/tai-ve
+· 🎬 **Video hướng dẫn:** https://www.youtube.com/watch?v=LQasd3Jcggk
+(kênh [IT-Technology VN](https://www.youtube.com/@IT-TechnologyVN))
 
 Lấy cảm hứng từ netool.io Pro2 ($299), làm lại bằng phần cứng sẵn có.
 
