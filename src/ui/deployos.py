@@ -2663,6 +2663,29 @@ def register_deployos(app):
             mk_domain = form.get("domain_pass") or ""
             if mk_domain:
                 d["domain_pass"] = mk_domain
+            # Kiem tra + chuan hoa thong tin domain (de TRONG ca 4 o = khong vao domain).
+            # Windows tu choi gia nhap neu Username co dang CONGTY\user hoac user@congty.local
+            # nen cat bo phan thua thay vi de may cai xong roi moi bao loi.
+            if d["domain"]:
+                if not re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?", d["domain"]):
+                    return ("Tên domain không hợp lệ (chỉ gồm chữ, số, dấu chấm và gạch ngang, "
+                            "ví dụ: congty.local).")
+                u = d["domain_user"]
+                if "\\" in u:
+                    u = u.split("\\", 1)[1]
+                elif "@" in u:
+                    u = u.split("@", 1)[0]
+                d["domain_user"] = u.strip()
+                if not d["domain_user"]:
+                    return "Đã điền domain thì phải điền Tài khoản gia nhập (chỉ tên, ví dụ: svc-join)."
+                if not d.get("domain_pass"):
+                    return "Đã điền domain thì phải điền Mật khẩu của tài khoản gia nhập."
+                if d["domain_ou"] and not re.fullmatch(
+                        r"(?:(?:OU|CN|DC)=[^,=]+)(?:,\s*(?:OU|CN|DC)=[^,=]+)*", d["domain_ou"], re.I):
+                    return ("OU không đúng dạng. Ví dụ: OU=May tram,DC=congty,DC=local "
+                            "(để trống nếu không cần).")
+            else:
+                d["domain_ou"] = d["domain_user"] = ""
             hop_le = {ma for ma, _n, _m, _p, _l in _u_tuychon()}
             d["tuy_chon"] = [t for t in form.getlist("tuy_chon") if t in hop_le]
 
@@ -3213,6 +3236,13 @@ def register_deployos(app):
                   phải có quyền THÊM MÁY vào domain (không nhất thiết phải
                   là Domain Admin). Windows tự làm việc này lúc cài - giống
                   hệt cách MDT làm.</p>
+                <p style="color:#fbbf24;font-size:13px;margin:0 0 9px;">
+                  <b>Lưu ý DNS:</b> máy đang cài phải tìm được domain qua DNS.
+                  Hãy dùng PXE chế độ <b>"Mạng đã có DHCP sẵn"</b> (DNS lấy từ
+                  mạng công ty, trỏ về máy chủ domain). Nếu Console System tự
+                  cấp IP thì máy sẽ <b>không tìm thấy domain</b> và gia nhập
+                  thất bại. Tài khoản gia nhập chỉ điền <b>tên</b> (svc-join),
+                  không điền CONGTY\\svc-join; tên máy tối đa 15 ký tự.</p>
                 <label>Tên domain</label>
                 <input type="text" name="domain" value="{_esc(d.get('domain',''))}"
                        placeholder="ví dụ: congty.local" autocapitalize="off">

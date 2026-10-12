@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.4 - 12/10/2026
+
+**Gia nhập domain chắc tay hơn** (`ui/deployos.py`, bước tùy chọn của kịch bản):
+- Kiểm tra khi lưu: tên domain, OU (dạng `OU=..,DC=..`), bắt buộc có tài khoản + mật khẩu khi đã điền domain; tự cắt `CONGTY\user` / `user@domain` thành `user` (Windows từ chối Username kèm domain). Xoá domain thì xoá luôn OU + tài khoản.
+- Thẻ "Gia nhập domain" có cảnh báo DNS (PXE chế độ có sẵn DHCP), tên máy <= 15 ký tự.
+- Chưa thử với máy chủ AD thật (anh Thoai sẽ dựng AD để thử sau).
+
 ## 1.8.3 (10/10/2026)
 
 - Lam theo docs nhu NGUOI DUNG MOI tren may ao that (iso/test/nguoi-dung-vm.sh): boot ISO nhu USB -> menu GRUB -> Calamares tieng Viet
