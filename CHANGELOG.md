@@ -1,11 +1,11 @@
 # Changelog
 
-## Chưa phát hành (sửa sau 1.8.4)
+## 1.8.5 - 12/10/2026
 
 **WinPE kiểu Anhdv Boot: bỏ khỏi menu rồi thêm lại không còn mất hết công cụ** (`ui/winperieng.py`, `ui/deployos.py`):
 - Trước: "Bỏ khỏi menu" xoá luôn thư mục Apps nạp qua mạng; thêm lại file .wim đã tách thì WinPE chỉ còn ~10 công cụ (các app của Anhdv nằm trong `\Apps`, không nằm trong .wim).
 - Nay: "Bỏ khỏi menu" giữ thư mục Apps; thêm lại .wim tự nối lại Apps; xoá hẳn file .wim ở tab WinPE thì mới dọn Apps đi kèm.
-- Đã sửa trên Pi (khôi phục Apps của Anhdv Boot Free 26.2); chưa đóng gói ISO.
+- Đã sửa trên Pi (khôi phục Apps của Anhdv Boot Free 26.2); đóng gói ISO + ảnh Pi 1.8.5.
 
 ## 1.8.4 - 12/10/2026
 
