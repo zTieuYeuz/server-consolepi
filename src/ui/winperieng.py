@@ -245,8 +245,11 @@ def them(file, ten):
         ok, loi = _bao_dam_bootmgr(_build_wim(p))
         if not ok:
             return False, loi
-    _them_vao_ds(os.path.basename(p), ten, can_muon)
-    return True, f'Đã đưa "{ten}" vào menu PXE. {tb}'
+    ten_apps = os.path.splitext(os.path.basename(p))[0]
+    co_apps = os.path.isdir(os.path.join(DIR_APPS, _d.ten_an_toan(ten_apps), "Apps"))
+    _them_vao_ds(os.path.basename(p), ten, can_muon, ten_apps if co_apps else "")
+    return True, f'Đã đưa "{ten}" vào menu PXE. {tb}' + (
+        " Thư mục công cụ Apps nạp qua mạng từ Console System." if co_apps else "")
 
 
 def them_dong_bo(file, ten):
@@ -296,11 +299,8 @@ def bo(file):
         if len(moi) == len(ds):
             return False, "Mục này không có trong menu."
         _ghi(moi)
-        # thu muc Apps qua mang cua muc nay (khong muc nao khac dung) -> xoa cho do ton cho
-        for m in ds:
-            ten_apps = m.get("apps_mang") or ""
-            if m["file"] == file and ten_apps and not any(x.get("apps_mang") == ten_apps for x in moi):
-                shutil.rmtree(os.path.join(DIR_APPS, _d.ten_an_toan(ten_apps)), ignore_errors=True)
+        # KHONG xoa thu muc Apps qua mang: file .wim van con, them lai se tu noi lai Apps
+        # (12/10/2026: bo roi them lai file .wim -> mat het cong cu, WinPE chi con ~10 app)
     return True, "Đã bỏ khỏi menu PXE (file vẫn còn ở danh sách File WinPE)."
 
 

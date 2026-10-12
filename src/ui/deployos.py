@@ -5506,7 +5506,14 @@ def register_deployos(app):
 
     @app.route("/deployos/console/file/xoa", methods=["POST"])
     def deployos_boot_xoa():
-        ok, msg = _xoa_file(BOOT_DIR, request.form.get("ten", ""))
+        ten = request.form.get("ten", "")
+        ok, msg = _xoa_file(BOOT_DIR, ten)
+        if ok:
+            # xoa file .wim that su -> don luon thu muc Apps qua mang di kem (winperieng.bo giu lai)
+            from . import winperieng as _wr
+            if not any(m["file"] == ten for m in _wr.danh_sach()):
+                shutil.rmtree(os.path.join(_wr.DIR_APPS, ten_an_toan(os.path.splitext(os.path.basename(ten))[0])),
+                              ignore_errors=True)
         return _trang_file_boot(msg, ok)
 
     @app.route("/deployos/console/file/tai/<ten>")
