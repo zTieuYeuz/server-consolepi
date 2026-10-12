@@ -5,7 +5,7 @@
 **Gia nhập domain chắc tay hơn** (`ui/deployos.py`, bước tùy chọn của kịch bản):
 - Kiểm tra khi lưu: tên domain, OU (dạng `OU=..,DC=..`), bắt buộc có tài khoản + mật khẩu khi đã điền domain; tự cắt `CONGTY\user` / `user@domain` thành `user` (Windows từ chối Username kèm domain). Xoá domain thì xoá luôn OU + tài khoản.
 - Thẻ "Gia nhập domain" có cảnh báo DNS (PXE chế độ có sẵn DHCP), tên máy <= 15 ký tự.
-- Chưa thử với máy chủ AD thật (anh Thoai sẽ dựng AD để thử sau).
+- ĐÃ thử với AD thật (12/10/2026, `iso/test/thu-domain.sh`): UnattendedJoin do `_khoi_gia_nhap_domain` sinh ra vào domain `home-server.com`, đúng OU chỉ định (PartOfDomain=True). Tài khoản chỉ có quyền Create computer objects thì cài lại máy trùng tên bị 0x5 (Access is denied); cần delegate `Join a computer to the domain`. Chưa thử cả chuỗi PXE cài Windows từ đầu + domain.
 
 ## 1.8.3 (10/10/2026)
 
