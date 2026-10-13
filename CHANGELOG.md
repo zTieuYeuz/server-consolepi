@@ -1,5 +1,14 @@
 # Changelog
 
+## Chưa phát hành (sau 1.8.5)
+
+**Danh sách dài chia trang, tối đa 25 mục mỗi trang** (`ui/deployos.py`, chạy ở trình duyệt, không đổi dữ liệu):
+- Áp dụng cho: Kho trung tâm, tab Phần mềm, Script, Hệ điều hành, File WinPE; trong trình tạo kịch bản: chọn hệ điều hành, phần mềm, ứng dụng nhiều file, font, script, tuỳ chọn Windows, gỡ app kèm sẵn.
+- Thanh trang: « ‹ Trước 1 2 3 … Sau › », có dòng "Hiện 26-50 / 153 mục". Danh sách ≤ 25 mục thì giữ nguyên, không hiện thanh trang.
+- Danh sách có ô tick hiện thêm "Đã chọn: N"; mục đã tick ở trang khác vẫn được lưu khi bấm Tiếp. Danh sách > 25 mục có ô tìm (gõ không dấu cũng được).
+- Bộ lọc loại và ô tìm sẵn có của Kho / Phần mềm chạy cùng phân trang (lọc xong tự về trang 1).
+- ĐÃ thử: trang Kho thật trên Pi (153 mục: chuyển trang, trang cuối 3 mục, lọc Script 100 mục, tìm), các bước 2/5/6 của trình tạo kịch bản với 60 phần mềm + 100 script + 44 tuỳ chọn Windows (trình duyệt Chromium không giao diện). Chưa thử trên màn hình cảm ứng kiosk và điện thoại.
+
 ## 1.8.5 - 12/10/2026
 
 **WinPE kiểu Anhdv Boot: bỏ khỏi menu rồi thêm lại không còn mất hết công cụ** (`ui/winperieng.py`, `ui/deployos.py`):

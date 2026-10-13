@@ -1662,7 +1662,7 @@ def _khoi_go_app(d, esc):
                 <details class="gap">
                   <summary>Chọn ứng dụng cần gỡ
                     <span class="dem">{len(da_chon)} / {len(_u.APP_RAC)} đã chọn</span></summary>
-                  <div class="gap-trong">{o}</div>
+                  <div class="gap-trong" data-pt="25" data-pt-tim="1">{o}</div>
                 </details>
               </div>"""
 
@@ -2121,6 +2121,14 @@ def register_deployos(app):
         padding:3px 10px; border-radius:20px; white-space:nowrap; }
     .gap-trong { padding:0 12px 12px; }
 
+    /* ---- Phan trang danh sach dai (toi da 25 muc / trang) ---- */
+    .pt-an { display:none !important; }
+    .pt-thanh { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:8px 0; }
+    .pt-thanh .pt-tt { color:#8b93a1; font-size:13px; margin-right:auto; }
+    .pt-thanh button { min-width:34px; }
+    .pt-thanh .pt-cham { color:#8b93a1; padding:0 2px; }
+    .pt-tim { width:100%; max-width:380px; margin:6px 0 4px; }
+
     /* ---- O "Tom tat" trong bang danh sach kich ban ----
        Cat dung 2 DONG roi them "..." bang -webkit-line-clamp, khong cat
        theo so KY TU: cat theo ky tu thi tren man hinh rong se thua cho
@@ -2230,6 +2238,116 @@ def register_deployos(app):
     """
 
     # JS cua thanh tien trinh - chi chen vao cac trang co form tai len
+    JS_PHAN_TRANG = r"""
+    <script>
+    (function () {
+      var PER = 25;
+      function boDau(s) {
+        return (s || '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+          .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+      }
+      function mucCua(c) {
+        var ds = [], i, j;
+        if (c.tagName === 'TABLE') {
+          for (i = 0; i < c.rows.length; i++) {
+            var r = c.rows[i], chiTh = r.cells.length > 0;
+            for (j = 0; j < r.cells.length; j++) if (r.cells[j].tagName !== 'TH') { chiTh = false; break; }
+            if (!chiTh) ds.push(r);
+          }
+        } else {
+          for (i = 0; i < c.children.length; i++) {
+            var e = c.children[i];
+            if (e.classList.contains('chon') || e.hasAttribute('data-pt-muc')) ds.push(e);
+          }
+        }
+        return ds;
+      }
+      function nutBam(st, thanh, nhan, trang, dangO, tat) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'small' + (dangO ? '' : ' gray');
+        b.textContent = nhan; b.disabled = !!tat;
+        b.addEventListener('click', function () {
+          st.trang = trang; ve(st);
+          if (thanh === st.duoi) (st.tim || st.tren).scrollIntoView({block: 'start'});
+        });
+        return b;
+      }
+      function veThanh(st, thanh, tong, tu, den, trangMax, chon) {
+        thanh.innerHTML = '';
+        thanh.hidden = trangMax <= 1 && !st.q.length;
+        if (thanh.hidden) return;
+        var tt = document.createElement('span'); tt.className = 'pt-tt';
+        tt.textContent = tong ? ('Hiện ' + (tu + 1) + '–' + den + ' / ' + tong + ' mục') : 'Không có mục nào khớp';
+        if (chon !== null) tt.textContent += ' · Đã chọn: ' + chon;
+        thanh.appendChild(tt);
+        if (trangMax <= 1) return;
+        var t = st.trang;
+        thanh.appendChild(nutBam(st, thanh, '«', 1, false, t === 1));
+        thanh.appendChild(nutBam(st, thanh, '‹ Trước', t - 1, false, t === 1));
+        var last = 0;
+        for (var n = 1; n <= trangMax; n++) {
+          if (n === 1 || n === trangMax || Math.abs(n - t) <= 2) {
+            if (n - last > 1) { var c = document.createElement('span'); c.className = 'pt-cham'; c.textContent = '…'; thanh.appendChild(c); }
+            thanh.appendChild(nutBam(st, thanh, String(n), n, n === t, false));
+            last = n;
+          }
+        }
+        thanh.appendChild(nutBam(st, thanh, 'Sau ›', t + 1, false, t === trangMax));
+        thanh.appendChild(nutBam(st, thanh, '»', trangMax, false, t === trangMax));
+      }
+      function ve(st, chiDem) {
+        var ds = mucCua(st.c), khop = [], i, k;
+        for (i = 0; i < ds.length; i++) {
+          var e = ds[i];
+          if (e.__tim === undefined) e.__tim = boDau(e.textContent);
+          var ok = !e.hasAttribute('data-loc');
+          for (k = 0; ok && k < st.q.length; k++) if (e.__tim.indexOf(st.q[k]) === -1) ok = false;
+          if (ok) khop.push(e);
+        }
+        var tong = khop.length, trangMax = Math.max(1, Math.ceil(tong / st.per));
+        if (st.trang > trangMax) st.trang = trangMax;
+        if (st.trang < 1) st.trang = 1;
+        var tu = (st.trang - 1) * st.per, den = Math.min(tong, tu + st.per);
+        if (!chiDem) {
+          for (i = 0; i < ds.length; i++) ds[i].classList.add('pt-an');
+          for (i = tu; i < den; i++) khop[i].classList.remove('pt-an');
+        }
+        var coO = st.c.querySelector('input[type=checkbox]');
+        var chon = coO ? st.c.querySelectorAll('input[type=checkbox]:checked').length : null;
+        if (st.tim) st.tim.hidden = ds.length <= st.per;
+        veThanh(st, st.tren, tong, tu, den, trangMax, chon);
+        veThanh(st, st.duoi, tong, tu, den, trangMax, chon);
+      }
+      function tao(c) {
+        var st = {c: c, per: parseInt(c.getAttribute('data-pt'), 10) || PER, trang: 1, q: [], tim: null};
+        var goc = (c.tagName === 'TABLE' && c.parentNode.classList.contains('tbl-scroll')) ? c.parentNode : c;
+        st.tren = document.createElement('div'); st.tren.className = 'pt-thanh';
+        st.duoi = document.createElement('div'); st.duoi.className = 'pt-thanh';
+        if (c.hasAttribute('data-pt-tim')) {
+          st.tim = document.createElement('input');
+          st.tim.type = 'search'; st.tim.className = 'pt-tim'; st.tim.autocomplete = 'off';
+          st.tim.placeholder = 'Tìm trong danh sách... (gõ không dấu cũng được)';
+          st.tim.addEventListener('input', function () {
+            st.q = boDau(st.tim.value).split(/\s+/).filter(Boolean); st.trang = 1; ve(st);
+          });
+          goc.parentNode.insertBefore(st.tim, goc);
+        }
+        goc.parentNode.insertBefore(st.tren, goc);
+        goc.parentNode.insertBefore(st.duoi, goc.nextSibling);
+        c.addEventListener('change', function () { ve(st, true); });
+        c.__pt = st;
+        return st;
+      }
+      window.csPT = {capNhat: function (c, veTrang1) {
+        var st = c.__pt || tao(c);
+        if (veTrang1) st.trang = 1;
+        ve(st);
+      }};
+      var ds = document.querySelectorAll('[data-pt]');
+      for (var i = 0; i < ds.length; i++) window.csPT.capNhat(ds[i], true);
+    })();
+    </script>"""
+
     JS_TIEN_DO = """
 <script>
 (function () {
@@ -2354,6 +2472,8 @@ def register_deployos(app):
     def _trang(body, title, subtitle="", active="/deployos"):
         if 'class="form-tai-len"' in body:
             body += JS_TIEN_DO
+        if "data-pt=" in body:
+            body += JS_PHAN_TRANG
         return render_page(body, active=active, title=title,
                            subtitle=subtitle, extra_css=CSS)
 
@@ -2787,7 +2907,7 @@ def register_deployos(app):
                 Vào <a href="/deployos/os">Tài nguyên &gt; Hệ điều hành</a>
                 để thêm trước.</div>""")
             else:
-                khoi_os = f'<div class="card"><h3>Chọn hệ điều hành</h3>{muc_os}</div>'
+                khoi_os = f'<div class="card"><h3>Chọn hệ điều hành</h3><div data-pt="25" data-pt-tim="1">{muc_os}</div></div>'
 
             ds_driver = danh_sach_driver()
             da_chon_driver = set(d.get("driver_ids") or [])
@@ -3068,7 +3188,7 @@ def register_deployos(app):
                       <div class="d">{co_kich_thuoc(a['cd'])} &middot; tham so: {ts}</div>
                     </label>"""
                 than = f"""
-                <div class="card"><h3>Chọn phần mềm sẽ cài</h3>{o}</div>
+                <div class="card"><h3>Chọn phần mềm sẽ cài</h3><div data-pt="25" data-pt-tim="1">{o}</div></div>
                 <div class="card">
                   <h3>Khi nào phần mềm được cài</h3>
                   <p style="margin:0;">Mọi phần mềm và ứng dụng được cài <strong>khi
@@ -3101,7 +3221,7 @@ def register_deployos(app):
                 khoi_ungdung = f"""
                 <div class="card">
                   <h3>Ứng dụng nhiều file (Office 365, bộ cài phức tạp)</h3>
-                  {o_ud}
+                  <div data-pt="25" data-pt-tim="1">{o_ud}</div>
                 </div>"""
             else:
                 khoi_ungdung = """
@@ -3138,7 +3258,7 @@ def register_deployos(app):
                   <p style="color:#8b93a1;font-size:13px;margin:0 0 9px;">
                     Cài sẵn các font này cho <strong>mọi tài khoản</strong> trên máy.
                     Thêm font ở tab <a href="/deployos/font">Font chữ</a>.</p>
-                  {o_font}
+                  <div data-pt="25" data-pt-tim="1">{o_font}</div>
                 </div>"""
             else:
                 khoi_font = """
@@ -3168,7 +3288,7 @@ def register_deployos(app):
                       <span class="t">{_esc(s['ten'])}</span>
                       <div class="d">{co_kich_thuoc(s['cd'])} &middot; tai len {_esc(s['ngay'])}</div>
                     </label>"""
-                khoi_script = f'<div class="card"><h3>Script chạy sau khi cài xong</h3>{o}</div>'
+                khoi_script = f'<div class="card"><h3>Script chạy sau khi cài xong</h3><div data-pt="25" data-pt-tim="1">{o}</div></div>'
             else:
                 khoi_script = """
                 <div class="msg warn">Chưa có script nào. Tải lên ở tab
@@ -3217,13 +3337,13 @@ def register_deployos(app):
                 <details class="gap"{' open' if so_may else ''}>
                   <summary>Hệ thống &mdash; áp dụng cho cả máy
                     <span class="dem">{so_may} đã chọn</span></summary>
-                  <div class="gap-trong">{o_may}</div>
+                  <div class="gap-trong" data-pt="25">{o_may}</div>
                 </details>
 
                 <details class="gap"{' open' if so_nd else ''}>
                   <summary>Giao diện &mdash; áp dụng cho MỌI tài khoản (cả tài khoản tạo sau)
                     <span class="dem">{so_nd} đã chọn</span></summary>
-                  <div class="gap-trong">{o_nd}</div>
+                  <div class="gap-trong" data-pt="25">{o_nd}</div>
                 </details>
               </div>
               {_khoi_go_app(d, _esc)}"""
@@ -3785,7 +3905,7 @@ def register_deployos(app):
               </td>
             </tr>"""
         return f"""
-        <div class="tbl-scroll"><table>
+        <div class="tbl-scroll"><table data-pt="25" data-pt-tim="1">
           <tr><th>Tên file</th><th style="width:110px;">Kích thước</th>
               <th style="width:140px;">Ngày tải lên</th><th style="width:180px;">Thao tác</th></tr>
           {hang}
@@ -3818,7 +3938,7 @@ def register_deployos(app):
                 </form>
               </td>
             </tr>"""
-        bang = (f"""<div class="tbl-scroll"><table>
+        bang = (f"""<div class="tbl-scroll"><table data-pt="25" data-pt-tim="1">
               <tr><th>Tên</th><th>Họ</th><th>Trạng thái</th><th>Dung lượng</th>
                   <th style="width:190px;">Thao tác</th></tr>
               {hang}
@@ -4456,7 +4576,7 @@ def register_deployos(app):
               <td id="nut-{mid}" style="white-space:nowrap;">{nut}</td>
             </tr>"""
 
-        bang = (f'<div class="tbl-scroll"><table id="bang-kho"><thead><tr>'
+        bang = (f'<div class="tbl-scroll"><table id="bang-kho" data-pt="25"><thead><tr>'
                 f'<th>Loại</th><th>Tên</th><th>Kích thước</th><th>Cập nhật</th>'
                 f'<th class="cot-nut">&nbsp;</th></tr></thead>'
                 f'<tbody>{hang}</tbody></table></div>'
@@ -4514,8 +4634,9 @@ def register_deployos(app):
             for (var i = 0; i < hang.length; i++) {{
               var h = hang[i], hien = hienId[h.getAttribute('data-id')] &&
                 (!loaiChon || h.getAttribute('data-loai') === loaiChon);
-              h.hidden = !hien; if (hien) so++;
+              if (hien) h.removeAttribute('data-loc'); else h.setAttribute('data-loc', '1'); if (hien) so++;
             }}
+            if (window.csPT) window.csPT.capNhat(bang, true);
             kq.textContent = so + ' / ' + hang.length + ' mục';
           }}
           var nutLoc = document.querySelectorAll('.loc-loai');
@@ -5614,7 +5735,7 @@ def register_deployos(app):
                   </td>
                 </tr>"""
             bang = f"""
-            <div class="tbl-scroll"><table id="bang-apps">
+            <div class="tbl-scroll"><table id="bang-apps" data-pt="25">
               <thead><tr><th>Phần mềm</th><th style="width:340px;">Tham số cài im lặng</th>
                   <th style="width:380px;">Tham số gỡ cài đặt</th>
                   <th style="width:180px;">Thao tác</th></tr></thead>
@@ -5664,9 +5785,10 @@ def register_deployos(app):
                     for (var i = 0; i < hang.length; i++) {
                       var t = hang[i].getAttribute('data-ten') || '';
                       var khop = !q || t.indexOf(q) !== -1;
-                      hang[i].hidden = !khop;
+                      if (khop) hang[i].removeAttribute('data-loc'); else hang[i].setAttribute('data-loc', '1');
                       if (khop) hien++;
                     }
+                    if (window.csPT) window.csPT.capNhat(bang, true);
                     if (dem) dem.textContent = q ? (hien + '/' + hang.length + ' phần mềm')
                                                  : (hang.length + ' phần mềm');
                     if (trong) {
