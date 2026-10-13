@@ -1,2 +1,2 @@
-import def_a, def_b, gen_core
+import def_a, def_b, def_c, gen_core
 gen_core.build()
