@@ -1,6 +1,6 @@
 # Changelog
 
-## Chưa phát hành (sau 1.8.5)
+## 1.8.6 - 14/10/2026
 
 **Danh sách dài chia trang, tối đa 25 mục mỗi trang** (`ui/deployos.py`, chạy ở trình duyệt, không đổi dữ liệu):
 - Áp dụng cho: Kho trung tâm, tab Phần mềm, Script, Hệ điều hành, File WinPE; trong trình tạo kịch bản: chọn hệ điều hành, phần mềm, ứng dụng nhiều file, font, script, tuỳ chọn Windows, gỡ app kèm sẵn.
