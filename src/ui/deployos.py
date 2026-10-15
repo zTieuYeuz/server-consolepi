@@ -286,7 +286,7 @@ THU_MUC_THEO_DUONG = {}          # {duong_dan_URL: (thu_muc, duoi_cho_phep)}
 EXT_OS_WIM = {".wim"}
 EXT_OS_ISO = {".iso"}
 EXT_SXS = {".cab"}      # goi .NET 3.5 offline (sources\\sxs cua ISO) - xem co_sxs()
-EXT_DRIVER = {".inf", ".sys", ".cat", ".zip", ".dll"}
+EXT_DRIVER = {".inf", ".sys", ".cat", ".zip", ".dll", ".cab", ".7z", ".exe"}
 
 
 def _thu_muc_os_theo_duong(duong_url):
@@ -1215,13 +1215,20 @@ def danh_sach_driver():
             so_file = sum(
                 1 for n in os.listdir(p)
                 if n != "_thongtin.json" and os.path.isfile(os.path.join(p, n)))
+            # Goi cua hang (Dell .cab, zip...) giai nen ra NHIEU thu muc con - dem .inf
+            # trong ca cay moi biet goi co dung duoc khong (dism /add-driver /recurse).
+            so_inf = sum(1 for _g, _d2, fs in os.walk(p) for n in fs
+                         if n.lower().endswith(".inf"))
             ra.append({
                 "id": driver_id,
                 "ten_hien_thi": meta.get("ten_hien_thi") or driver_id,
                 "so_file": so_file,
+                "so_inf": so_inf,
                 # Driver CHO ANH BOOT (WinPE) - xem giai thich trong
                 # docstring cua dat_driver_cho_boot().
                 "cho_boot": bool(meta.get("cho_boot")),
+                # Dong may tu nap goi nay (xem dat_model_driver)
+                "model": [str(m) for m in (meta.get("model") or []) if str(m).strip()],
             })
     except OSError:
         pass
@@ -1275,6 +1282,121 @@ def dat_driver_cho_boot(driver_id, bat):
                   else "Đã bỏ đánh dấu nạp vào ảnh boot.")
 
 
+def dat_model_driver(driver_id, chuoi):
+    """
+    Gan goi driver voi DONG MAY (anh Thoai 14/10/2026, muc 8 "goi driver theo hang may").
+
+    Di cai cho cong ty thi moi dong may (Dell Latitude 5420, HP EliteBook 840 G8...) can 1
+    bo driver rieng cua hang. Truoc day phai tick goi driver vao TUNG kich ban - 1 kich ban
+    dung cho nhieu dong may thi hoac thieu driver, hoac nhoi ca driver may khac vao. Nay goi
+    driver ghi san "dung cho dong may nao"; luc may chon kich ban trong menu PXE, iPXE doc
+    hang/model trong BIOS (SMBIOS) gui ve Pi, Pi chon dung goi -> deploy.cmd chi tiem goi do
+    vao Windows vua bung (xem lichsu.py + unattend._lenh_tiem_driver_offline).
+
+    Moi dong = 1 mau, cach nhau dau phay hoac xuong dong. Mau khop khi MOI TU trong mau la
+    dau cua 1 tu trong "hang + model + dong may" cua may (khong phan biet hoa thuong) - vd
+    "Latitude 5420" khop "Dell Inc. Latitude 5420"; "20W0" khop ThinkPad co model 20W0003XUS.
+    """
+    p = os.path.join(DRIVERS_DIR, ten_an_toan(driver_id))
+    if not os.path.isdir(p):
+        return False, "Không tìm thấy gói driver."
+    f_meta = os.path.join(p, "_thongtin.json")
+    meta = {}
+    try:
+        with open(f_meta) as f:
+            meta = json.load(f)
+    except Exception:
+        pass
+    mau = []
+    for m in re.split(r"[,;\n\r]+", chuoi or ""):
+        m = " ".join(m.split())[:80]
+        if m and m.lower() not in (x.lower() for x in mau):
+            mau.append(m)
+    meta["model"] = mau[:30]
+    try:
+        with open(f_meta, "w") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=1)
+    except OSError as e:
+        return False, f"Không ghi được: {e}"
+    return True, (f"Đã lưu {len(mau)} dòng máy cho gói driver." if mau
+                  else "Đã bỏ gán dòng máy - gói chỉ dùng khi chọn trong kịch bản.")
+
+
+def _tu_may(chuoi):
+    return [t for t in re.split(r"[^0-9a-z]+", (chuoi or "").lower()) if t]
+
+
+def khop_model(mau, hang="", model="", phien_ban=""):
+    """True neu MOI tu cua mau la dau cua 1 tu cua thong tin may (xem dat_model_driver)."""
+    tu_may = _tu_may(" ".join((hang or "", model or "", phien_ban or "")))
+    tu_mau = _tu_may(mau)
+    return bool(tu_mau and tu_may) and all(
+        any(t.startswith(w) for t in tu_may) for w in tu_mau)
+
+
+def driver_hop_model(hang="", model="", phien_ban=""):
+    """Cac goi driver (khong phai goi "cho anh boot" - goi do da luon duoc tiem) co mau
+    dong may khop voi may nay."""
+    ra = []
+    for dr in danh_sach_driver():
+        if dr["cho_boot"] or not dr["so_inf"]:
+            continue
+        if any(khop_model(m, hang, model, phien_ban) for m in dr["model"]):
+            ra.append(dr["id"])
+    return ra
+
+
+EXT_GOI_NEN_DRIVER = {".zip", ".cab", ".7z", ".exe"}
+
+
+def giai_nen_goi_driver(driver_id, duong):
+    """
+    Giai nen goi driver cua hang (Dell Driver Pack .cab, HP SoftPaq .exe, .zip/.7z) vao thu
+    muc con cung ten trong goi, roi xoa file nen. LOI CU (truoc 1.8.7): .zip tai len DE
+    NGUYEN - dism /add-driver khong doc ben trong zip nen driver khong bao gio duoc tiem.
+    Bo cai .exe kieu Inno Setup (Lenovo SCCM) 7z khong mo duoc -> bao ro cach lam.
+    """
+    import shutil as _sh
+    import subprocess as _sp
+    z = _sh.which("7z") or _sh.which("7zz")
+    thu_muc = os.path.join(DRIVERS_DIR, ten_an_toan(driver_id))
+    goc = os.path.splitext(os.path.basename(duong))[0]
+    ra = os.path.join(thu_muc, ten_an_toan(goc) or "goi")
+    if os.path.exists(ra):
+        ra += time.strftime("_%H%M%S")
+    try:
+        if not z:
+            return False, "Thiếu lệnh 7z để giải nén (cài gói 7zip)."
+        can = os.path.getsize(duong) * 4
+        if _sh.disk_usage(thu_muc).free < can + 1024 ** 3:
+            return False, ("Không đủ chỗ trống để giải nén gói này (cần khoảng "
+                           f"{co_kich_thuoc(can)}).")
+        r = _sp.run([z, "x", "-y", f"-o{ra}", duong], capture_output=True, text=True,
+                    timeout=1800)
+        so_inf = sum(1 for _g, _d2, fs in os.walk(ra) for n in fs
+                     if n.lower().endswith(".inf")) if os.path.isdir(ra) else 0
+        if r.returncode != 0 or not so_inf:
+            _sh.rmtree(ra, ignore_errors=True)
+            if duong.lower().endswith(".exe"):
+                return False, ("Không lấy được driver từ file .exe này (bộ cài kiểu Inno/"
+                               "InstallShield). Chạy file đó trên máy Windows, chọn "
+                               "giải nén (Extract) ra thư mục, nén thư mục thành .zip rồi "
+                               "tải .zip lên.")
+            if r.returncode != 0:
+                return False, ("File nén hỏng hoặc không đúng định dạng (tải lại file từ trang "
+                               "của hãng).")
+            return False, "Gói này không có file .inf nào - không phải gói driver."
+        return True, f"Đã giải nén {os.path.basename(duong)}: {so_inf} file .inf."
+    except (OSError, _sp.TimeoutExpired) as e:
+        _sh.rmtree(ra, ignore_errors=True)
+        return False, f"Lỗi khi giải nén: {e}"
+    finally:
+        try:
+            os.remove(duong)
+        except OSError:
+            pass
+
+
 def tao_driver_moi(ten_hien_thi):
     _bao_dam_thu_muc()
     ten_hien_thi = (ten_hien_thi or "").strip()
@@ -1312,6 +1434,10 @@ def xoa_file_trong_driver(driver_id, ten_file):
     if not p or not os.path.isdir(p):
         return False, "Không tìm thấy gói driver."
     fp = _duong_dan_trong(p, ten_file)
+    if fp and os.path.isdir(fp) and os.path.dirname(fp) == p:
+        # Thu muc giai nen tu goi cua hang (giai_nen_goi_driver)
+        shutil.rmtree(fp, ignore_errors=True)
+        return (not os.path.exists(fp)), "Đã xóa thư mục."
     if not fp or not os.path.isfile(fp) or os.path.basename(fp) == "_thongtin.json":
         return False, "Không tìm thấy file."
     try:
@@ -1736,6 +1862,10 @@ def _phan_vung_mac_dinh(os_ho):
 
 # ==================================================================== giao dien
 # ------------------------------------------------------------ khung tab
+CSS_CHUNG = ""     # gan trong register_deployos
+JS_PHAN_TRANG_CHUNG = ""
+
+
 def tabs_deployos(chinh, phu=""):
     """
     Thanh tab chinh + tab phu, dung chung cho moi trang cua muc nay.
@@ -1771,9 +1901,14 @@ def tabs_deployos(chinh, phu=""):
             ("scripts", "Script", "/deployos/console/scripts"),
             ("file", "WinPE", "/deployos/console"),
         ],
+        "tiendo": [
+            ("dang", "Đang cài", "/deployos/tiendo"),
+            ("lichsu", "Lịch sử", "/deployos/lichsu"),
+        ],
         "caidat": [
             ("pxe", "Bật / Tắt PXE", "/deployos/caidat"),
-            ("hatang", "Kiểm tra hạ tầng", "/deployos/caidat/hatang"),
+            ("hatang", "Kiểm tra sẵn sàng", "/deployos/caidat/hatang"),
+            ("wol", "Bật máy từ xa", "/deployos/caidat/wol"),
         ],
     }
     h = '<div class="dep-tabs">'
@@ -2236,6 +2371,9 @@ def register_deployos(app):
     .tt-chitiet { color:#a8b0bd; font-family:ui-monospace,monospace; }
     .tt-dia { margin-top:9px; font-size:13px; color:#8b93a1; min-height:19px; }
     """
+    # Trang cua module khac (lichsu, wol...) dung chung CSS nay (phan trang .pt-an...)
+    global CSS_CHUNG, JS_PHAN_TRANG_CHUNG
+    CSS_CHUNG = CSS
 
     # JS cua thanh tien trinh - chi chen vao cac trang co form tai len
     JS_PHAN_TRANG = r"""
@@ -2347,6 +2485,8 @@ def register_deployos(app):
       for (var i = 0; i < ds.length; i++) window.csPT.capNhat(ds[i], true);
     })();
     </script>"""
+
+    JS_PHAN_TRANG_CHUNG = JS_PHAN_TRANG
 
     JS_TIEN_DO = """
 <script>
@@ -2907,7 +3047,17 @@ def register_deployos(app):
                 Vào <a href="/deployos/os">Tài nguyên &gt; Hệ điều hành</a>
                 để thêm trước.</div>""")
             else:
-                khoi_os = f'<div class="card"><h3>Chọn hệ điều hành</h3><div data-pt="25" data-pt-tim="1">{muc_os}</div></div>'
+                # Windows 11 tren may khong du chuan (anh Thoai 14/10/2026, muc 1): deploy.cmd
+                # bung anh bang DISM, KHONG chay setup.exe -> khong co buoc kiem tra TPM/CPU/
+                # Secure Boot/RAM nao. Ghi ro de ky su khong phai di tim cach "bypass".
+                ghi_chu_w11 = ("" if not any("11" in (o.get("ten_hien_thi") or "") for o in ds_os) else
+                    '<p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">'
+                    '<strong>Windows 11 cài được cả máy không có TPM 2.0, CPU đời cũ, máy BIOS/Legacy</strong>: '
+                    'Console System bung ảnh trực tiếp, không qua bước kiểm tra phần cứng của bộ cài. '
+                    'Riêng CPU phải có SSE4.2/POPCNT (Intel đời Core i 2008 trở về sau, AMD 2011+) - '
+                    'bản 24H2 trở lên không chạy trên CPU cũ hơn. Muốn sau này nâng cấp lên bản Windows 11 '
+                    'mới bằng bộ cài, tick "Cho phép nâng cấp Windows 11 trên máy không đủ chuẩn" ở bước 6.</p>')
+                khoi_os = f'<div class="card"><h3>Chọn hệ điều hành</h3>{ghi_chu_w11}<div data-pt="25" data-pt-tim="1">{muc_os}</div></div>'
 
             ds_driver = danh_sach_driver()
             da_chon_driver = set(d.get("driver_ids") or [])
@@ -3759,6 +3909,13 @@ def register_deployos(app):
             bản</strong> (phím mũi tên + Enter). Chỉ cài khi có người chọn;
             không ai bấm thì khởi động ổ cứng. Mọi kịch bản Windows đủ thông
             tin đều có trong menu.</p>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 8px;">
+            <strong>Máy báo "Secure Boot Violation" / "Security Violation"</strong> khi nạp
+            Windows: máy đời mới chỉ tin chứng chỉ Secure Boot 2023 của Microsoft. Trong
+            menu chọn <strong>"4. May moi..."</strong> (bật chế độ dùng trình khởi động ký
+            2023 - cần bộ cài Windows 11 24H2 trở lên) rồi chọn kịch bản như bình thường.
+            Máy cũ thì để chế độ này tắt. Vẫn không được: cập nhật BIOS, hoặc tạm tắt
+            Secure Boot lúc cài rồi bật lại.</p>
           {bang}
           <details style="margin-top:12px;">
             <summary>Xem trước màn hình máy khách</summary>
@@ -3772,33 +3929,70 @@ def register_deployos(app):
                       "Bật/tắt PXE và kiểm tra hạ tầng", active="/deployos")
 
     def _trang_caidat_hatang(msg="", ok=True):
-        """Bang kiem tra ha tang PXE (bootloader/wimboot/bootmgr/BCD) - tach
-        khoi trang danh sach kich ban vi day la thu chi xem khi co su co,
-        khong phai thu nhin moi ngay."""
-        from . import pxe as _pxe
-        hang = ""
-        for dat, nhan, chi_tiet in _pxe.trang_thai_chuan_bi():
-            bieu = ('<span style="color:#4CAF50;">&#10004;</span>' if dat
-                    else '<span style="color:#f59e0b;">&#33;</span>')
-            hang += (f"<tr><td style='width:34px;'>{bieu}</td>"
-                     f"<td><strong>{_esc(nhan)}</strong><br>"
-                     f"<small style='color:#8b93a1;'>{_esc(chi_tiet)}</small></td></tr>")
-
-        # Tu 1.5.0 wimboot tu lay bootmgr + BCD trong boot.wim - bo nut
-        # "Trich bootmgr" (khong con buoc thu cong nao).
-        nut_trich = ""
-
-        body = _tabs("caidat", "hatang") + _msg(msg, ok) + f"""
+        """
+        Kiem tra san sang (ui/sansang.py, 1.8.7) - thay bang "Kiem tra ha tang" cu (chi co
+        1 dong file boot). Trang hien khung truoc, ket qua lay bang fetch (~5 giay vi phai
+        nghe DHCP 3 giay) de nguoi dung thay ngay la dang kiem, khong tuong trang treo.
+        """
+        body = _tabs("caidat", "hatang") + _msg(msg, ok) + """
         <div class="card">
-          <h3>Sẵn sàng PXE (giai đoạn phục vụ boot thật sự)</h3>
+          <h3>Kiểm tra sẵn sàng trước khi cài</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
-            Các thành phần hạ tầng cần có để máy khác boot được qua mạng.
-            Dấu <span style="color:#f59e0b;">!</span> nghĩa là còn thiếu.</p>
-          <table>{hang}</table>
-          {nut_trich}
-        </div>"""
-        return _trang(body, "Kiểm tra hạ tầng PXE",
-                      "iPXE + wimboot (bản ký, kèm sẵn)", active="/deployos")
+            Kiểm tra trong khoảng 5 giây: dây mạng và tốc độ, máy chủ DHCP lạ trên mạng,
+            dịch vụ PXE, chỗ trống, đồng hồ, file Windows của từng kịch bản, DNS của domain.
+            Mục <span style="color:#ff6b6b;">đỏ</span> = cài bây giờ sẽ hỏng;
+            <span style="color:#f59e0b;">vàng</span> = vẫn cài được nhưng nên sửa.
+            Nên bấm lại sau khi cắm Pi vào mạng của khách.</p>
+          <button type="button" id="ss-chay">Kiểm tra lại</button>
+          <div id="ss-kq" style="margin-top:12px;"><p style="color:#8b93a1;">Đang kiểm tra...</p></div>
+        </div>
+        <script>
+        (function() {
+          var nut = document.getElementById('ss-chay'), kq = document.getElementById('ss-kq');
+          function chay() {
+            nut.disabled = true;
+            kq.innerHTML = '<p style="color:#8b93a1;">Đang kiểm tra... (khoảng 5 giây)</p>';
+            fetch('/deployos/caidat/hatang/chay', {cache: 'no-store'})
+              .then(function(r) { return r.json(); })
+              .then(function(d) { kq.innerHTML = d.html; })
+              .catch(function() { kq.innerHTML = '<div class="msg err">Không chạy được kiểm tra.</div>'; })
+              .then(function() { nut.disabled = false; });
+          }
+          nut.addEventListener('click', chay);
+          chay();
+        })();
+        </script>"""
+        return _trang(body, "Kiểm tra sẵn sàng",
+                      "Mạng, DHCP, dịch vụ, file Windows, domain", active="/deployos")
+
+    @app.route("/deployos/caidat/hatang/chay")
+    def deployos_caidat_hatang_chay():
+        from . import sansang as _ss
+        kq = _ss.kiem_tra()
+        ten_kieu = dict((k, t) for k, t, _ in KIEU_BOOT)
+        bieu = {"ok": ('&#10004;', '#4CAF50'), "canh": ('!', '#f59e0b'),
+                "loi": ('&#10006;', '#ff6b6b'), "info": ('i', '#38bdf8')}
+        hang = ""
+        for x in kq["muc"]:
+            b, mau = bieu.get(x["muc_do"], ("?", "#8b93a1"))
+            sua = (f"<br><small style='color:#cbd5e1;'>Cách sửa: {_esc(x['sua'])}</small>"
+                   if x["sua"] and x["muc_do"] != "ok" else "")
+            hang += (f"<tr><td style='width:34px;color:{mau};font-weight:bold;text-align:center;'>{b}</td>"
+                     f"<td><strong>{_esc(x['muc'])}</strong><br>"
+                     f"<small style='color:#8b93a1;'>{_esc(x['noi_dung'])}</small>{sua}</td></tr>")
+        if kq["so_loi"]:
+            tom = (f'<div class="msg err"><strong>{kq["so_loi"]} lỗi</strong> cần sửa trước khi cài'
+                   + (f', {kq["so_canh"]} cảnh báo' if kq["so_canh"] else "") + ".</div>")
+        elif kq["so_canh"]:
+            tom = f'<div class="msg warn">Cài được, còn <strong>{kq["so_canh"]} cảnh báo</strong> nên xem.</div>'
+        else:
+            tom = '<div class="msg ok"><strong>Sẵn sàng</strong> - không thấy vấn đề nào.</div>'
+        tom += (f'<p style="color:#8b93a1;font-size:12.5px;margin:6px 0;">Chế độ mạng: '
+                f'<strong>{_esc(ten_kieu.get(kq["kieu"], kq["kieu"]))}</strong> &middot; cổng '
+                f'{_esc(kq["cong"])} &middot; PXE {"đang bật" if kq["pxe_bat"] else "đang tắt"} &middot; '
+                f'{time.strftime("%H:%M:%S")}</p>')
+        return jsonify({"html": tom + f"<div class='tbl-scroll'><table>{hang}</table></div>",
+                        "so_loi": kq["so_loi"], "so_canh": kq["so_canh"]})
 
     @app.route("/deployos/caidat")
     def deployos_caidat():
@@ -4269,8 +4463,11 @@ def register_deployos(app):
         for dr in ds:
             hang += f"""
             <tr>
-              <td><strong>{_esc(dr['ten_hien_thi'])}</strong></td>
-              <td>{dr['so_file']} file</td>
+              <td><strong>{_esc(dr['ten_hien_thi'])}</strong>{
+                '' if dr['so_inf'] else '<br><small style="color:#f59e0b;">chưa có file .inf nào</small>'}</td>
+              <td>{dr['so_inf']} .inf</td>
+              <td>{_o_model(dr['id'], dr['model'], 'ds') if not dr['cho_boot'] else
+                   '<small style="color:#8b93a1;">mọi máy (đã nạp vào ảnh boot)</small>'}</td>
               <td>{
                 '<span style="color:#4CAF50;">Có - nạp vào WinPE</span>'
                 if dr['cho_boot'] else
@@ -4293,7 +4490,8 @@ def register_deployos(app):
               </td>
             </tr>"""
         bang = (f"""<div class="tbl-scroll"><table>
-              <tr><th>Tên gói</th><th style="width:80px;">Số file</th>
+              <tr><th>Tên gói</th><th style="width:70px;">Driver</th>
+                  <th>Tự nạp cho dòng máy</th>
                   <th style="width:210px;">Nạp vào ảnh boot</th>
                   <th style="width:190px;">Thao tác</th></tr>
               {hang}
@@ -4305,15 +4503,17 @@ def register_deployos(app):
           <h3>Thêm gói driver mới</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
             Đặt tên để nhận biết (vd "Dell Latitude 5420 - LAN+WiFi"). Sau
-            khi tạo, vào "Quản lý file" để tải lên các file .inf/.sys/.cat
-            của driver.</p>
+            khi tạo, vào "Quản lý file" để tải lên driver: file lẻ
+            .inf/.sys/.cat hoặc cả gói của hãng (Dell .cab, HP .exe, .zip).
+            Ghi <strong>dòng máy</strong> cho gói thì máy đúng dòng đó cài qua PXE
+            sẽ tự được nạp gói, không cần chọn trong từng kịch bản.</p>
           <form method="POST" action="/deployos/drivers/tao">
             <input type="text" name="ten_hien_thi" placeholder="Tên gói driver" required>
             <button type="submit">Tạo</button>
           </form>
         </div>
         <h2>Gói driver đã có ({len(ds)})</h2>
-        {bang}""")
+        {bang}{_datalist_model() if ds else ""}""")
         return _trang(body, "Deployment OS", "Driver")
 
     def _khoi_goi_pho_bien():
@@ -5458,6 +5658,38 @@ def register_deployos(app):
 
     @app.route("/deployos/drivers/<driver_id>")
     def deployos_drivers_chitiet(driver_id):
+        return _trang_driver_chitiet(driver_id)
+
+    def _goi_y_model():
+        """Hang + model cac may da cai (trang Lich su) - goi y khi gan dong may."""
+        try:
+            from . import lichsu as _ls
+            thay = []
+            for b in _ls.danh_sach():
+                t = " ".join(x for x in (b.get("hang"), b.get("model")) if x)
+                if t and t not in thay:
+                    thay.append(t)
+                if b.get("phien_ban") and b["phien_ban"] not in thay:
+                    thay.append(b["phien_ban"])
+            return thay[:50]
+        except Exception:
+            return []
+
+    def _datalist_model():
+        goi_y = "".join(f'<option value="{_esc(m)}">' for m in _goi_y_model())
+        return f'<datalist id="goi-y-model">{goi_y}</datalist>'
+
+    def _o_model(driver_id, model, ve=""):
+        return f"""
+          <form method="POST" action="/deployos/drivers/{_esc(driver_id)}/model"
+                style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0;">
+            <input type="hidden" name="ve" value="{_esc(ve)}">
+            <input type="text" name="model" list="goi-y-model" value="{_esc(', '.join(model))}"
+                   placeholder="vd: Latitude 5420, EliteBook 840 G8" style="min-width:200px;flex:1;">
+            <button type="submit" class="small">Lưu</button>
+          </form>"""
+
+    def _trang_driver_chitiet(driver_id, msg="", ok=True):
         ds = danh_sach_driver()
         dr = next((x for x in ds if x["id"] == driver_id), None)
         if dr is None:
@@ -5469,6 +5701,17 @@ def register_deployos(app):
                 if n == "_thongtin.json":
                     continue
                 fp = os.path.join(p, n)
+                if os.path.isdir(fp):
+                    so = sum(1 for _g, _d2, fs in os.walk(fp) for x in fs
+                             if x.lower().endswith(".inf"))
+                    hang += f"""
+                <tr><td>&#128193; {_esc(n)}<br><small style="color:#8b93a1;">thư mục đã giải nén &middot; {so} file .inf</small></td><td></td>
+                    <td><form method="POST" action="/deployos/drivers/{_esc(driver_id)}/xoa-file"
+                              style="display:inline;" onsubmit="return confirm('Xóa cả thư mục này?');">
+                          <input type="hidden" name="ten" value="{_esc(n)}">
+                          <button type="submit" class="red small">Xóa</button>
+                        </form></td></tr>"""
+                    continue
                 if not os.path.isfile(fp):
                     continue
                 hang += f"""
@@ -5485,14 +5728,30 @@ def register_deployos(app):
               {hang}
             </table></div>""" if hang else
             '<p style="color:#8b93a1;">Chưa có file nào trong gói này.</p>')
-        body = (_tabs("tainguyen", "drivers") + f"""
+        body = (_tabs("tainguyen", "drivers") + _msg(msg, ok) + f"""
         <p><a href="/deployos/drivers">&larr; Về danh sách driver</a></p>
         <h2>{_esc(dr['ten_hien_thi'])}</h2>
+        <p style="color:#8b93a1;">{dr['so_inf']} file .inf trong gói.</p>
+        <div class="card">
+          <h3>Dùng cho dòng máy</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
+            Ghi các dòng máy cần gói này, cách nhau dấu phẩy. Khi máy cài qua PXE,
+            Console System đọc hãng/model trong BIOS của máy: khớp dòng nào thì
+            <strong>tự nạp gói này</strong> vào Windows, không cần chọn trong kịch bản.
+            Không phân biệt hoa thường; "Latitude 5420" khớp "Dell Inc. Latitude 5420".
+            Model các máy đã cài (tab Tiến trình &rarr; Lịch sử) được gợi ý khi gõ.
+            Để trống = chỉ dùng khi chọn gói trong kịch bản.</p>
+          {_o_model(driver_id, dr['model'])}{_datalist_model()}
+        </div>
         {bang}
         <div class="card" style="margin-top:14px;">
-          <h3>Tải lên file driver (.inf/.sys/.cat/.dll/.zip)</h3>
+          <h3>Tải lên file driver</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 10px;">
+            Nhận file lẻ .inf/.sys/.cat/.dll, hoặc <strong>cả gói của hãng</strong>:
+            Dell Driver Pack (.cab), HP SoftPaq (.exe), file .zip/.7z &mdash; Console
+            System tự giải nén (gói lớn mất vài phút, đừng tắt trang).</p>
           <form method="POST" action="/deployos/drivers/{_esc(driver_id)}/len"
-                enctype="multipart/form-data">
+                enctype="multipart/form-data" class="form-tai-len">
             <input type="file" name="file" required>
             <button type="submit">Tải lên</button>
           </form>
@@ -5513,12 +5772,19 @@ def register_deployos(app):
                 pass
             thu_muc = os.path.join(DRIVERS_DIR, ten_an_toan(driver_id))
             ok, msg, _duong_dich = _hoan_tat_ghi_thang(duong, thu_muc, f.filename)
+            if ok and os.path.splitext(_duong_dich)[1].lower() in EXT_GOI_NEN_DRIVER:
+                ok, msg = giai_nen_goi_driver(driver_id, _duong_dich)
         else:
             ok, msg = False, ("Đuôi file không được nhận (.inf/.sys/.cat/"
-                              ".dll/.zip) hoặc không ghi thẳng được.")
-        if ok:
-            return redirect(f"/deployos/drivers/{driver_id}")
-        return _trang_drivers(msg, ok)
+                              ".dll/.zip/.cab/.7z/.exe) hoặc không ghi thẳng được.")
+        return _trang_driver_chitiet(driver_id, msg, ok)
+
+    @app.route("/deployos/drivers/<driver_id>/model", methods=["POST"])
+    def deployos_drivers_model(driver_id):
+        ok, msg = dat_model_driver(driver_id, request.form.get("model", ""))
+        if request.form.get("ve") == "ds":
+            return _trang_drivers(msg, ok)
+        return _trang_driver_chitiet(driver_id, msg, ok)
 
     @app.route("/deployos/drivers/<driver_id>/xoa-file", methods=["POST"])
     def deployos_drivers_xoa_file(driver_id):

@@ -216,12 +216,25 @@ def register_tiendo(app):
         1 ban ghi - loi that 25/09/2026, 2 may ao PC01 de trang thai len nhau."""
         return f"{str(g.get('may') or '?')[:64]} · {request.remote_addr}"
 
+    def _bao_lich_su(g, may, xong=False):
+        """Noi voi trang Lich su (ui/lichsu.py): may gui kem ma "ls" (deploy.cmd chep vao
+        C:\\ConsolePi\\ls-id.txt). May cai bang ban cu / khong qua menu PXE thi khong co."""
+        ma = str(g.get("ls") or "").strip().lower()
+        if not ma:
+            return
+        from . import lichsu as _ls
+        m = next((x for x in danh_sach() if x["ten_may"] == may), None)
+        _ls.tu_tiendo(ma, str(g.get("may") or "")[:64],
+                      m["so_xong"] if m else None, m["so_loi"] if m else None,
+                      m["tong"] if m else None, xong=xong)
+
     @app.route("/api/tiendo/batdau", methods=["POST"])
     def api_tiendo_batdau():
         g = _goi()
         may = _khoa_may(g)
         bat_dau(may, str(g.get("kichban") or "?")[:120],
                 [str(t)[:120] for t in (g.get("buoc") or [])][:60])
+        _bao_lich_su(g, may)
         return jsonify({"ok": True})
 
     def _so(v):
@@ -241,12 +254,14 @@ def register_tiendo(app):
                  str(g.get("trang_thai") or ""), int(g.get("giay") or 0),
                  str(g.get("ghi_chu") or ""), str(g.get("ten") or ""),
                  str(g.get("kichban") or "")[:120], _so(g.get("tong")))
+        _bao_lich_su(g, _khoa_may(g))
         return jsonify({"ok": True})
 
     @app.route("/api/tiendo/ketthuc", methods=["POST"])
     def api_tiendo_ketthuc():
         g = _goi()
         ket_thuc(_khoa_may(g))
+        _bao_lich_su(g, _khoa_may(g), xong=True)
         return jsonify({"ok": True})
 
     @app.route("/api/tiendo/data")
@@ -333,7 +348,7 @@ def register_tiendo(app):
         # giong het moi trang khac cua muc nay: khong chi quay ve duoc ma
         # con nhay thang sang bat ky tab nao.
         from .deployos import tabs_deployos
-        body = tabs_deployos("tiendo") + f"""
+        body = tabs_deployos("tiendo", "dang") + f"""
         <p style="color:#8b93a1;font-size:13.5px;margin:0 0 14px;">
           Máy đang cài tự báo về đây sau mỗi bước. Bảng tự cập nhật, không
           cần bấm làm mới.</p>

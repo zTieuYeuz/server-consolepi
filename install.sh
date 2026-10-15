@@ -647,8 +647,10 @@ fi
 # nguyen qua cac lan chay lai install.sh sau nay (khong sinh lai neu da
 # co). ui/unattend.py doc dung file nay luc sinh unattend.xml.
 if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
-    # Bao cao "Do o dia" (share [cs-o-dia] ghi bang user nobody - xem config/smb.conf)
-    mkdir -p "$DATA_DIR/o-dia" && chown nobody:nogroup "$DATA_DIR/o-dia"
+    # Bao cao "Do o dia" (share [cs-o-dia] ghi boi consolepi-deploy - xem config/smb.conf)
+    mkdir -p "$DATA_DIR/o-dia"       # chown sau khi tao user consolepi-deploy (ben duoi)
+    # Ket qua WinPE cho trang "Lich su cai dat" (share [cs-lich-su])
+    mkdir -p "$DATA_DIR/lich-su-bao"
     install -m 644 "$SRC_DIR/config/smb.conf" /etc/samba/smb.conf
     if testparm -s >/dev/null 2>&1; then
         ok "Cau hinh Samba hop le"
@@ -658,6 +660,8 @@ if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
 
     id consolepi-deploy >/dev/null 2>&1 || \
         useradd --system --no-create-home --shell /usr/sbin/nologin consolepi-deploy
+    # Thu muc nhan bao cao tu WinPE (share ghi duoc [cs-o-dia], [cs-lich-su]) thuoc consolepi-deploy
+    chown consolepi-deploy:consolepi-deploy "$DATA_DIR/o-dia" "$DATA_DIR/lich-su-bao"
     KHOA_SAMBA="$DATA_DIR/samba-deploy.key"
     if [[ ! -s "$KHOA_SAMBA" ]]; then
         MAT_KHAU_MOI=$(tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 24 || true)

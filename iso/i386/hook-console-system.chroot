@@ -12,8 +12,10 @@ echo "[console-system] bat dau thiet lap"
 
 # --- 1. Thu muc du lieu (tach khoi ma nguon - xem ui/duongdan.py) ---
 mkdir -p /var/lib/console-pi/deploy /var/lib/console-pi/storage
-# Bao cao "Do o dia" (share [cs-o-dia] ghi bang user nobody - xem config/smb.conf)
-mkdir -p /var/lib/console-pi/o-dia && chown nobody:nogroup /var/lib/console-pi/o-dia
+# Thu muc nhan bao cao tu WinPE (share ghi duoc [cs-o-dia], [cs-lich-su] - xem config/smb.conf).
+# Chu thu muc (consolepi-deploy) dat o console-system-lan-dau, vi tai khoan do chi duoc tao luc may
+# khoi dong lan dau. KHONG dung `force user = nobody`: Samba 4.22 tu choi moi thao tac ghi (15/10/2026).
+mkdir -p /var/lib/console-pi/o-dia /var/lib/console-pi/lich-su-bao
 chmod 755 /var/lib/console-pi
 
 # --- 1b. ttyd (KHONG co trong kho Debian - phai tai ban binary) ---

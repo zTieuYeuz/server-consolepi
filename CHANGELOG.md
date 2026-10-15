@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.8.7 - 14/10/2026
+
+Đợt cải tiến cho dùng ngoài đời (anh Thoại duyệt các mục 1, 2, 5, 6, 8, 9).
+
+**1. Windows 11 trên máy không đủ chuẩn** (`ui/unattend.py`, `ui/deployos.py`):
+- Console System bung ảnh bằng DISM, không chạy setup.exe, nên không có bước kiểm tra TPM/CPU/Secure Boot/RAM: Windows 11 cài được trên máy không TPM 2.0, CPU đời cũ, máy BIOS/Legacy. Bước chọn hệ điều hành ghi rõ điều này (CPU vẫn phải có SSE4.2/POPCNT).
+- Tuỳ chọn mới "Cho phép nâng cấp Windows 11 trên máy không đủ chuẩn" (khoá `MoSetup\AllowUpgradesWithUnsupportedTPMOrCPU`) để sau này nâng cấp tại chỗ bằng bộ cài không bị chặn; báo cáo sau cài tự kiểm khoá này.
+
+**2. Chứng chỉ Secure Boot 2023** (`src/pxe-boot/`, `ui/pxemenu.py`):
+- Shim đổi sang `ipxe-16.1` ký cả Microsoft UEFI CA 2011 và 2023 (shim trong iPXE v2.0.0 chỉ ký 2011 - máy chỉ tin 2023 chặn ngay). wimboot 2.9.0 vốn đã ký kép.
+- Pi tự trích bootmgr ký "Windows UEFI CA 2023" (`EFI_EX\bootmgfw_EX.efi`, có trong bộ cài Windows 11 24H2+). Menu PXE có mục "4. May moi bao Secure Boot Violation" để dùng bootmgr này; mặc định tắt vì máy cũ chưa cập nhật chứng chỉ 2023 chặn nó.
+- Đã thử 7 tổ hợp trên OVMF Secure Boot bật (firmware chỉ 2011 / chỉ 2023, shim cũ/mới, bootmgr thường/EX, boot.wim Win10/Win11 26H2): đúng như mong đợi - xem bảng trong `src/pxe-boot/README.md`. Chưa thử trên máy thật chỉ có chứng chỉ 2023.
+
+**5. Kiểm tra sẵn sàng** (`ui/sansang.py`, tab Cài đặt → Kiểm tra sẵn sàng, thay "Kiểm tra hạ tầng"):
+- ~5 giây: dây mạng + tốc độ, dò DHCP thật trên dây (gói DISCOVER thô, không đụng IP của Pi) - báo DHCP lạ khi Pi tự cấp IP hoặc thiếu DHCP ở chế độ proxyDHCP, dịch vụ PXE, menu, chỗ trống, bộ cài trên thẻ SD, đồng hồ NTP, từng kịch bản (thiếu/hỏng boot.wim/install.wim qua wiminfo, gói driver mất, domain có tra được qua DNS không). Mỗi mục kèm cách sửa.
+
+**6. Lịch sử cài đặt + CSV** (`ui/lichsu.py`, tab Tiến trình → Lịch sử):
+- Lúc máy chọn kịch bản, iPXE gửi MAC + hãng + model + dòng máy + serial (SMBIOS) về Pi; WinPE báo bung xong / lỗi ở bước nào qua share Samba mới `[cs-lich-su]` (chỉ nhận .txt); Windows báo tên máy và số bước xong/lỗi. Tìm, xoá, xuất CSV (Excel đọc được tiếng Việt) làm biên bản bàn giao. Lưu 2000 máy.
+
+**8. Gói driver theo dòng máy** (`ui/deployos.py`):
+- Gói driver ghi "Dùng cho dòng máy" (vd `Latitude 5420`); máy cài qua PXE có hãng/model khớp thì tự được tiêm gói đó, không cần chọn trong kịch bản. Gợi ý model từ Lịch sử.
+- Tải lên cả gói của hãng: Dell Driver Pack `.cab`, HP SoftPaq `.exe`, `.zip`/`.7z` - tự giải nén. SỬA LỖI CŨ: trước đây file `.zip` tải lên driver để nguyên, DISM không đọc được nên driver bên trong không bao giờ được tiêm.
+
+**9. Bật máy từ xa (Wake-on-LAN)** (`ui/wol.py`, tab Cài đặt → Bật máy từ xa):
+- Chọn máy từ Lịch sử hoặc dán danh sách MAC; gửi magic packet 3 lần qua mọi card (UDP 9/7 broadcast, broadcast mạng con, khung Ethernet 0x0842); hỗ trợ broadcast sang VLAN khác.
+- Đã kiểm gói tin bắt trên mạng thật (10/10 gói đúng chuẩn). Chưa thử đánh thức máy thật (máy ảo không có WoL).
+
 ## 1.8.6 - 14/10/2026
 
 **Danh sách dài chia trang, tối đa 25 mục mỗi trang** (`ui/deployos.py`, chạy ở trình duyệt, không đổi dữ liệu):

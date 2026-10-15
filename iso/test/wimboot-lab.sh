@@ -126,7 +126,9 @@ case $FW in
   sb)   # Secure Boot BAT that (khoa Microsoft nap san). ROM iPXE cua e1000
         # khong ky -> bi chan; dung virtio-net (driver co san trong OVMF, co
         # ky) de boot mang, them e1000 KHONG ROM cho WinPE co driver.
-        cp /usr/share/OVMF/OVMF_VARS_4M.ms.fd $R/vars.fd
+        # VARS=<file> : firmware khac (vd chi tin chung chi Microsoft 2023 - may doi moi,
+        # xem pxe-boot/README.md). Mac dinh: khoa Microsoft 2011 cua Debian.
+        cp ${VARS:-/usr/share/OVMF/OVMF_VARS_4M.ms.fd} $R/vars.fd
         EXTRA="-machine q35,smm=on -global driver=cfi.pflash01,property=secure,value=on -drive if=pflash,format=raw,unit=0,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd -drive if=pflash,format=raw,unit=1,file=$R/vars.fd"
         NIC="-netdev tap,id=n0,ifname=tap0,script=no,downscript=no -device virtio-net-pci,netdev=n0,mac=52:54:00:12:34:01,bootindex=1 -netdev tap,id=n1,ifname=tap1,script=no,downscript=no -device e1000,netdev=n1,mac=52:54:00:12:34:02,romfile=" ;;
 esac

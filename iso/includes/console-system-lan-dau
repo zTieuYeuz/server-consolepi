@@ -28,6 +28,13 @@ if [ ! -f "$KHOA" ]; then
     fi
 fi
 
+# 1b. Thu muc nhan bao cao tu WinPE (share [cs-o-dia] "Do o dia", [cs-lich-su] "Lich su cai dat") thuoc
+# consolepi-deploy - tai khoan Samba ghi vao do (khong co `force user`, xem config/smb.conf).
+mkdir -p /var/lib/console-pi/o-dia /var/lib/console-pi/lich-su-bao
+if id -u consolepi-deploy >/dev/null 2>&1; then
+    chown consolepi-deploy:consolepi-deploy /var/lib/console-pi/o-dia /var/lib/console-pi/lich-su-bao
+fi
+
 touch "$DAU"
 
 # --- 7. MAN HINH: tu bat giao dien kiosk neu may CO man hinh that ---

@@ -915,6 +915,39 @@ def register_pxe(app):
             abort(404)
         return _gui_tep(goc, ten)
 
+    _HEX = re.compile(r"^x[0-9a-fA-F]{0,400}$")
+    _ls_gan_day = {}      # (mac, thu_muc) -> (luc, ma) - iPXE thu lai thi khong de 2 dong
+
+    @app.route("/deployos/pxeboot/_ls/<thu_muc>/<mac>/<hang>/<model>/<pb>/<serial>/<fw>/cs-may.cmd")
+    def deployos_pxeboot_cs_may(thu_muc, mac, hang, model, pb, serial, fw):
+        """
+        May vua chon kich ban trong menu PXE (pxemenu.sinh_script): ghi 1 dong lich su
+        (ui/lichsu.py) + chon goi driver hop dong may (deployos.driver_hop_model). Tra ve
+        cs-may.cmd cho deploy.cmd `call`. KHONG can dang nhap (may dang boot) - chi chay khi
+        PXE bat, chi nhan hex, chi ghi them 1 dong vao lich su (gioi han GIU_TOI_DA).
+        """
+        import time
+        from . import lichsu as _ls
+        from . import pxemenu as _m
+        if (not dang_bat() or not _TEN_SACH.match(thu_muc) or fw not in ("efi", "pcbios")
+                or not all(_HEX.match(x) for x in (mac, hang, model, pb, serial))):
+            abort(404)
+        kb = next(((n, o) for n, t, o in _m.muc_menu() if t == thu_muc), None)
+        if kb is None:
+            abort(404)
+        h, mo, p, se = (_ls.giai_hex(x) for x in (hang, model, pb, serial))
+        drv = _d.driver_hop_model(h, mo, p)
+        khoa = (_ls.chuan_mac(mac[1:]), thu_muc)
+        cu = _ls_gan_day.get(khoa)
+        if cu and time.time() - cu[0] < 120:
+            ma = cu[1]
+        else:
+            ma = _ls.bat_dau(request.remote_addr, mac[1:], h, mo, p, se, fw, kb[0], kb[1], drv)
+            _ls_gan_day[khoa] = (time.time(), ma)
+            for k in [k for k, v in _ls_gan_day.items() if time.time() - v[0] > 600]:
+                _ls_gan_day.pop(k, None)
+        return Response(_ls.sinh_cs_may_cmd(ma, drv), mimetype="text/plain")
+
     @app.route("/deployos/pxeboot/os/<os_id>/boot.wim")
     def deployos_pxeboot_bootwim(os_id):
         """boot.wim GOC cua tung he dieu hanh - wimboot nap, khong sua gi."""

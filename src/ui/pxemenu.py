@@ -49,6 +49,8 @@ from . import deployos as _d
 FILE_CAUHINH = os.path.join(_d.DEPLOY_DIR, "menu-pxe.json")
 TIEN_TO_ANH = "_menu-"      # anh dia GPT cu (< 1.5.0) - chi con de don rac
 THU_MUC_PXE = "_pxe"        # BOOT_DIR/_pxe/<kich ban>/ = file wimboot chen vao
+TEN_CS_MAY = "cs-may.cmd"   # ma lich su + goi driver theo model (ui/lichsu.py)
+TIEN_TO_EX = "_ex-"         # BOOT_DIR/_pxe/_ex-<os>/bootmgfw.efi = bootmgr ky "Windows UEFI CA 2023"
 CHO_TOI_DA = 300          # giay
 KIEU_HOP_LE = [k for k, _t, _m in _d.KIEU_BOOT]
 # Mac dinh "mang co DHCP" (proxyDHCP): khong bao gio tranh cap IP voi router
@@ -163,6 +165,10 @@ def chuan_bi_menu(dia_chi_pi, kieu_boot):
             can_giu.add(thu_muc)
         else:
             ket_qua.append(f'"{ten}": LỖI - {loi}')
+    # Bootmgr ky chung chi 2023 cho "che do may moi" (xem _trich_bootmgr_ex)
+    for o in {kb.get("os_id", "") for kb in kichban_windows()} | {os_cho_do_o_dia()}:
+        if o and os.path.isfile(_d.duong_boot_wim(o)) and _trich_bootmgr_ex(o):
+            can_giu.add(TIEN_TO_EX + ten_thu_muc(o))
     ok, loi = _u.dung_wim_driver(_duong_pxe(_u.TEN_WIM_DRIVER))
     if not ok:
         ket_qua.append(loi)
@@ -192,6 +198,72 @@ def chuan_bi_menu(dia_chi_pi, kieu_boot):
         pass
     _don_anh_cu()
     return ket_qua
+
+
+def _trich_bootmgr_ex(os_id):
+    r"""
+    Trich \Windows\Boot\EFI_EX\bootmgfw_EX.efi tu boot.wim -> _pxe/_ex-<os>/bootmgfw.efi.
+
+    VI SAO (14/10/2026, muc 2 "chung chi Secure Boot 2026"): chung chi Microsoft 2011 het han
+    6/2026. May DOI MOI co the chi tin chung chi 2023 -> bootmgfw.efi thuong cua boot.wim
+    (ky "Windows Production PCA 2011") bi firmware chan, bao Secure Boot Violation. Bo cai
+    Windows 11 tu 24H2 co san ban bootmgr ky "Windows UEFI CA 2023" o thu muc EFI_EX (kiem
+    that tren ISO 26300: bootmgfw_EX.efi ky 2023; winload.efi van ky 2011 nhung firmware chi
+    kiem file DAU TIEN no nap - winload do bootmgr tu kiem; Make2023BootableMedia cua
+    Microsoft cung chi thay bootmgr). wimboot nhan bootmgfw.efi dua qua initrd thay cho ban
+    trong boot.wim. KHONG dung mac dinh: may cu CHUA cap nhat chung chi 2023 se chan nguoc lai
+    ban nay -> chi dung khi bat "che do may moi" trong menu. Tra ve True neu co file.
+    """
+    import subprocess
+    boot = _d.duong_boot_wim(os_id)
+    thu_muc = _duong_pxe(TIEN_TO_EX + ten_thu_muc(os_id))
+    dich = os.path.join(thu_muc, "bootmgfw.efi")
+    dau = os.path.join(thu_muc, ".nguon")
+    try:
+        st = os.stat(boot)
+    except OSError:
+        return False
+    khoa = f"{st.st_size}:{int(st.st_mtime)}"
+    try:
+        with open(dau) as f:
+            if f.read() == khoa:
+                return os.path.isfile(dich)
+    except OSError:
+        pass
+    import shutil
+    shutil.rmtree(thu_muc, ignore_errors=True)
+    try:
+        os.makedirs(thu_muc)
+        for chi_so in ("2", "1"):
+            r = subprocess.run(["wimlib-imagex", "extract", boot, chi_so,
+                                "/Windows/Boot/EFI_EX/bootmgfw_EX.efi",
+                                f"--dest-dir={thu_muc}", "--no-acls"],
+                               capture_output=True, timeout=180)
+            nguon = os.path.join(thu_muc, "bootmgfw_EX.efi")
+            if r.returncode == 0 and os.path.isfile(nguon):
+                os.replace(nguon, dich)
+                break
+        with open(dau, "w") as f:
+            f.write(khoa)          # ghi ca khi KHONG co (bo cai cu) - khoi trich lai moi lan
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return os.path.isfile(dich)
+
+
+def co_bootmgr_ex(os_id):
+    return os.path.isfile(_duong_pxe(TIEN_TO_EX + ten_thu_muc(os_id), "bootmgfw.efi"))
+
+
+def _dong_bootmgr_ex(goc, os_id, nhan):
+    """Cac dong iPXE: che do may moi dang bat + may UEFI -> dua bootmgr ky 2023 cho wimboot."""
+    if not co_bootmgr_ex(os_id):
+        return [f"iseq ${{cs_sb23}} 1 && echo CANH BAO: bo cai nay khong co trinh khoi dong ky 2023 - "
+                f"dung ban thuong ||"]
+    return [f"iseq ${{cs_sb23}} 1 || goto {nhan}",
+            f"iseq ${{platform}} efi || goto {nhan}",
+            f"echo Che do may moi: trinh khoi dong ky chung chi Microsoft 2023",
+            f"initrd {goc}/{THU_MUC_PXE}/{TIEN_TO_EX}{ten_thu_muc(os_id)}/bootmgfw.efi bootmgfw.efi || goto loi",
+            f":{nhan}"]
 
 
 # ---------------------------------------------------------------- menu iPXE
@@ -257,7 +329,14 @@ def sinh_script(goc):
     rieng = _wr.danh_sach()
     # --timeout tinh bang mili giay; 0 giay = cho mai den khi co nguoi bam.
     cho = f"--timeout {c['cho_giay'] * 1000} " if c["cho_giay"] > 0 else ""
-    dong = ["#!ipxe", ":menu",
+    co_ex = any(co_bootmgr_ex(o) for _n, _t, o in muc) or (
+        co_do_o_dia() and co_bootmgr_ex(os_cho_do_o_dia()))
+    dong = ["#!ipxe",
+            # Che do may moi (Secure Boot chi tin chung chi 2023) - xem _trich_bootmgr_ex.
+            # Giu qua cac lan quay lai menu trong cung 1 lan boot; mac dinh TAT.
+            "isset ${cs_sb23} || set cs_sb23 0",
+            ":menu",
+            "iseq ${cs_sb23} 1 && set cs_sb23_chu DANG-BAT || set cs_sb23_chu tat",
             "menu Console System - Cai dat qua mang",
             "item --gap -- Chon bang phim mui ten + Enter:",
             "item --gap -- ",
@@ -268,11 +347,17 @@ def sinh_script(goc):
              "item --gap -- 2. Boot WinPE (chua co WinPE nao)"),
             ("item doodia 3. Do o dia (xem o dia + phan vung, KHONG xoa gi)" if co_do_o_dia() else
              "item --gap -- 3. Do o dia (can 1 he dieu hanh co boot.wim)"),
+            ] + ([
+            "item sb23 4. May moi bao Secure Boot Violation: dung chung chi 2023 [${cs_sb23_chu}]"]
+            if co_ex else []) + [
             "item --gap -- ",
             "item odia Khoi dong o cung (KHONG cai gi)",
             "item lai Khoi dong lai may",
             f"choose {cho}--default odia chon || goto odia",
             "goto ${chon}", "",
+            ":sb23",
+            "iseq ${cs_sb23} 1 && set cs_sb23 0 || set cs_sb23 1",
+            "goto menu", "",
             ":win",
             "menu Install Windows - chon kich ban cai dat"]
     if not muc:
@@ -327,7 +412,16 @@ def sinh_script(goc):
         # BIOS, UEFI va UEFI + Secure Boot (xem unattend: FILE NHUNG QUA
         # WIMBOOT). Ten thu 2 cua initrd = ten file hien trong X:\System32.
         dong += [f":kb{i}", f"echo Dang nap: {_chu_ipxe(nhan)}",
-                 f"kernel {goc}/wimboot || goto loi"]
+                 f"kernel {goc}/wimboot || goto loi",
+                 # Lich su + driver theo dong may (ui/lichsu.py, 14/10/2026): iPXE doc
+                 # SMBIOS (hang/model/dong may/serial) gui ve Pi trong DUONG DAN (hexraw -
+                 # chi [0-9a-f], khong vo URL; "x" de phan rong van co 1 ky tu). Pi tra
+                 # cs-may.cmd (ma lich su + goi driver hop model). Loi thi BO QUA (`||`
+                 # rong) - khong bao gio chan viec cai chi vi thieu lich su.
+                 f"initrd {goc}/_ls/{thu_muc}/x${{mac:hexraw}}/x${{manufacturer:hexraw}}/"
+                 f"x${{product:hexraw}}/x${{smbios/1.6.0:hexraw}}/x${{serial:hexraw}}/"
+                 f"${{platform}}/{TEN_CS_MAY} {TEN_CS_MAY} ||"]
+        dong += _dong_bootmgr_ex(goc, os_id, f"kb{i}tiep")
         try:
             cac_file = sorted(os.listdir(_duong_pxe(thu_muc)))
         except OSError:
@@ -347,6 +441,7 @@ def sinh_script(goc):
         from . import doodia as _od
         dong += [":doodia", "echo Dang nap WinPE de do o dia (chi doc, khong xoa gi)...",
                  f"kernel {goc}/wimboot || goto loi"]
+        dong += _dong_bootmgr_ex(goc, os_cho_do_o_dia(), "doodiatiep")
         for f in sorted(os.listdir(_duong_pxe(_od.THU_MUC_NHUNG_PXE))):
             dong.append(f"initrd {goc}/{THU_MUC_PXE}/{_od.THU_MUC_NHUNG_PXE}/{f} {f} || goto loi")
         if co_driver:
@@ -382,6 +477,10 @@ def _xem_truoc(c, muc):
     from . import winperieng as _wr
     n_pe = len(_wr.danh_sach())
     chinh.append(f"    2. Boot WinPE > ({n_pe})" if n_pe else "    2. Boot WinPE (chua co WinPE nao)")
+    chinh.append("    3. Do o dia (xem o dia + phan vung, KHONG xoa gi)" if co_do_o_dia() else
+                 "    3. Do o dia (can 1 he dieu hanh co boot.wim)")
+    if any(co_bootmgr_ex(o) for _n, _t, o in muc):
+        chinh.append("    4. May moi bao Secure Boot Violation: dung chung chi 2023 [tat]")
     chinh += ["",
              "  > Khoi dong o cung (KHONG cai gi)",
              "    Khoi dong lai may"]

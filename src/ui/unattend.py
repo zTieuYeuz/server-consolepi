@@ -833,8 +833,12 @@ function LayConChau($idCha) {{
     return $ra
 }}
 
+# Ma dong Lich su (deploy.cmd ghi luc con o WinPE) - gui kem moi goi de Pi noi dong lich su
+# cua may nay voi ten may + ket qua cac buoc (ui/lichsu.py). Khong co file -> bo qua.
+$LsId = (Get-Content (Join-Path $ThuMuc 'ls-id.txt') -EA SilentlyContinue | Select-Object -First 1)
 function BaoPi($duong, $goi) {{
     try {{
+        if ($LsId -and ($goi -is [hashtable])) {{ $goi['ls'] = "$LsId".Trim() }}
         $byte = [System.Text.Encoding]::UTF8.GetBytes(($goi | ConvertTo-Json -Compress))
         Invoke-RestMethod -Uri "http://$Pi/api/tiendo/$duong" -Method Post `
             -Body $byte -ContentType 'application/json; charset=utf-8' `
@@ -1743,6 +1747,23 @@ def _lenh_chon_unattend():
     ]
 
 
+def _lenh_bao_lich_su(dia_chi_pi, dong_dau, nhan):
+    r"""
+    Bao ket qua giai doan WinPE ve trang Lich su (ui/lichsu.py): ghi X:\ls.txt roi chep
+    vao share [cs-lich-su] (chi nhan .txt nho - xem config/smb.conf), dung phien SMB cua
+    Z: (cung may chu, cung tai khoan). Khong co ma lich su / chep loi -> bo qua, KHONG
+    bao gio lam hong viec cai. Dung nhan + goto, khong dung khoi ( ) (BUOC co dau ngoac).
+    """
+    from . import lichsu as _ls
+    return [
+        f"if not defined CS_LS goto {nhan}",
+        f"echo {dong_dau}> X:\\ls.txt",
+        'reg query "HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS" /v SystemProductName >> X:\\ls.txt 2>nul',
+        f"copy /y X:\\ls.txt \\\\{dia_chi_pi}\\{_ls.TEN_SHARE}\\%CS_LS%.txt >> %LOG% 2>&1",
+        f":{nhan}",
+    ]
+
+
 def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
     r"""
     Sinh script trien khai chay NGAY TRONG WinPE - mo phong dung cach
@@ -1795,6 +1816,14 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         # (tai lieu wimboot), khong phai goc X:\\ nhu thoi anh dia GPT.
         f"set NHUNG={THU_MUC_NHUNG}",
         "echo === Console Pi - bat dau trien khai === > %LOG%",
+        # Lich su + driver theo dong may (ui/lichsu.py, 14/10/2026): iPXE tai cs-may.cmd
+        # tu Pi luc may chon kich ban - chua CS_LS (ma dong lich su) va CS_DRV (goi driver
+        # hop hang/model trong BIOS). Khong co file (iPXE tai loi) -> cai binh thuong.
+        "set CS_LS=",
+        "set CS_DRV=",
+        "if exist %NHUNG%\\cs-may.cmd call %NHUNG%\\cs-may.cmd",
+        "echo === lich su: %CS_LS%  driver theo dong may: %CS_DRV% === >> %LOG%",
+        'reg query "HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS" >> %LOG% 2>&1',
         "",
         "echo.",
         "echo  ================================================",
@@ -2027,12 +2056,16 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "if not exist W:\\ConsolePi mkdir W:\\ConsolePi",
         "copy /y %NHUNG%\\bao-cao.ps1 W:\\ConsolePi\\bao-cao.ps1 >> %LOG% 2>&1",
         "copy /y %NHUNG%\\tien-trinh.ps1 W:\\ConsolePi\\tien-trinh.ps1 >> %LOG% 2>&1",
+        # Ma lich su cho tien-trinh.ps1 gui kem moi lan bao Pi (noi dong lich su voi
+        # ten may + ket qua cac buoc sau dang nhap).
+        "if defined CS_LS echo %CS_LS%> W:\\ConsolePi\\ls-id.txt",
         "",
         "echo  [6/6] Tao boot loader (%FW%)...",
         "bcdboot W:\\Windows /s S: /f %FW% >> %LOG% 2>&1",
         "if errorlevel 1 goto loi_boot",
         "",
         "echo XONG >> %LOG%",
+    ] + _lenh_bao_lich_su(dia_chi_pi, "XONG", "ls_xong") + [
         "echo.",
         "echo  ================================================",
         "echo    HOAN TAT - khoi dong lai sau 10 giay",
@@ -2083,6 +2116,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "",
         ":bao_loi",
         "echo LOI: %BUOC% >> %LOG%",
+    ] + _lenh_bao_lich_su(dia_chi_pi, "LOI=%BUOC%", "ls_loi") + [
         "echo.",
         "echo  ================================================",
         "echo    LOI: %BUOC%",
@@ -2495,6 +2529,19 @@ TUY_CHON_WINDOWS = [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes'
          r'\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f',
      ]),
+    # Muc 1 (14/10/2026): Windows 11 tren may khong du chuan. Cai qua Console System thi
+    # khong bi chan (DISM bung anh, khong qua setup.exe). Nhung SAU NAY chay bo cai nang
+    # cap tai cho (setup.exe tu ISO ban moi) thi Setup se chan "This PC doesn't meet...".
+    # Khoa MoSetup la cach Microsoft cong bo cho nang cap tai cho; LabConfig KHONG co tac
+    # dung o day (chi cho cai moi tu WinPE) nen khong ghi.
+    ("win11_khong_chuan", "Cho phép nâng cấp Windows 11 trên máy không đủ chuẩn",
+     "Máy không có TPM 2.0 / CPU không nằm trong danh sách: cài qua Console System vẫn "
+     "được, nhưng sau này chạy bộ cài để nâng cấp lên bản Windows 11 mới hơn sẽ bị chặn. "
+     "Tick để mở khoá việc nâng cấp đó. Microsoft không cam kết hỗ trợ máy không đủ chuẩn",
+     "may", [
+         r'reg add "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU'
+         r' /t REG_DWORD /d 1 /f',
+     ]),
     ("xoa_windows_old", "Xoá thư mục Windows.old nếu còn sót",
      "Bản Windows cũ để lại có thể chiếm hàng chục GB. Chỉ xoá nếu có, "
      "không có thì bỏ qua", "may", [
@@ -2638,6 +2685,14 @@ def _lenh_tiem_driver_offline(d):
     for driver_id in d.get("driver_ids") or []:
         dong.append(f'if exist "Z:\\drivers\\{driver_id}" dism /image:W:\\ /add-driver '
                     f'/driver:"Z:\\drivers\\{driver_id}" /recurse >> %LOG% 2>&1')
+    # Goi driver gan DONG MAY (deployos.dat_model_driver): Pi chon theo hang/model trong
+    # BIOS, dua ten thu muc qua CS_DRV (cs-may.cmd). Goi trung voi kich ban thi dism tu
+    # bo qua driver da co.
+    dong += [
+        'if defined CS_DRV echo  Nap driver rieng cho dong may nay: %CS_DRV%',
+        'if defined CS_DRV for %%i in (%CS_DRV%) do if exist "Z:\\drivers\\%%i" '
+        'dism /image:W:\\ /add-driver /driver:"Z:\\drivers\\%%i" /recurse >> %LOG% 2>&1',
+    ]
     return dong
 
 

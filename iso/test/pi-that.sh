@@ -16,6 +16,8 @@
 # Bien moi truong: CARD=e1000-82545em (card cua VMware) | vmxnet3 | e1000e...,
 # RAM=MB (mac dinh 4096), DISK=ahci (mac dinh) | pvscsi | virtio | nvme
 # (bo dieu khien o dia WinPE khong co san driver -> test goi driver pho bien).
+# QEMU_THEM="..." them tham so QEMU, vd gia hang/model may that de thu driver theo dong
+# may + Lich su: QEMU_THEM="-smbios type=1,manufacturer=Dell\ Inc.,product=Latitude\ 5420,serial=ABC"
 # ===================================================================
 FW=$1; LENH=$2; shift 2
 D=/build/test/pi-that/$FW; mkdir -p $D
@@ -47,7 +49,8 @@ start|odia)
           ip link add link $IF name mvt${M}1 address $MAC1 type macvtap mode bridge
           ip link set mvt${M}1 up
           T1=/dev/tap$(cat /sys/class/net/mvt${M}1/ifindex)
-          [ $LENH = start ] && cp /usr/share/OVMF/OVMF_VARS_4M.ms.fd $D/vars.fd
+          # VARS=<file>: firmware khac, vd chi tin chung chi Microsoft 2023 (may doi moi)
+          [ $LENH = start ] && cp ${VARS:-/usr/share/OVMF/OVMF_VARS_4M.ms.fd} $D/vars.fd
           EXTRA="-machine q35,smm=on -global driver=cfi.pflash01,property=secure,value=on -drive if=pflash,format=raw,unit=0,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd -drive if=pflash,format=raw,unit=1,file=$D/vars.fd"
           NIC="-netdev tap,id=n0,fd=3 -device virtio-net-pci,netdev=n0,mac=$MAC0,bootindex=1 -netdev tap,id=n1,fd=4 -device e1000,netdev=n1,mac=$MAC1,romfile="
           FDS="3<>$T0 4<>$T1" ;;
@@ -62,7 +65,7 @@ start|odia)
   esac
   eval "qemu-system-x86_64 -enable-kvm -cpu host -smp 4 -m ${RAM:-4096} -display none -vga std $EXTRA $NIC \
     -drive file=$D/disk.qcow2,if=none,id=d0 $OD \
-    -monitor unix:$D/mon.sock,server,nowait -pidfile $D/q.pid -daemonize $FDS" || { echo QEMU_LOI; exit 1; }
+    $QEMU_THEM -monitor unix:$D/mon.sock,server,nowait -pidfile $D/q.pid -daemonize $FDS" || { echo QEMU_LOI; exit 1; }
   echo "BAT $FW mac=$MAC0 pid=$(cat $D/q.pid)" ;;
 key)  for k in "$@"; do m "sendkey $k"; sleep 2; done ;;
 chup) m "screendump $D/$1.ppm"; sleep 1

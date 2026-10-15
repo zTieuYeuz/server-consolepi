@@ -47,12 +47,14 @@ rm -f /var/log/console-pi-api.log
 
 # 1.8.0: share Samba [cs-o-dia] nhan bao cao "Do o dia". Chi cai smb.conf khi KHAC ban dang
 # chay, kiem testparm truoc - loi thi tra ban cu (khong de Samba hong). smbd chi chay khi PXE bat.
-mkdir -p /var/lib/console-pi/o-dia && chown nobody:nogroup /var/lib/console-pi/o-dia
+mkdir -p /var/lib/console-pi/o-dia && chown consolepi-deploy:consolepi-deploy /var/lib/console-pi/o-dia 2>/dev/null || chown nobody:nogroup /var/lib/console-pi/o-dia
+# 1.8.7: share [cs-lich-su] - WinPE bao ket qua cho trang Lich su cai dat
+mkdir -p /var/lib/console-pi/lich-su-bao && chown consolepi-deploy:consolepi-deploy /var/lib/console-pi/lich-su-bao 2>/dev/null || chown nobody:nogroup /var/lib/console-pi/lich-su-bao
 if [ -f "$SRC/config/smb.conf" ] && ! cmp -s "$SRC/config/smb.conf" /etc/samba/smb.conf; then
     cp -a /etc/samba/smb.conf "/etc/samba/smb.conf.truoc-$(date +%Y%m%d-%H%M)"
     install -m 644 "$SRC/config/smb.conf" /etc/samba/smb.conf
     if testparm -s >/dev/null 2>&1; then
-        echo "Da cap nhat smb.conf (them share cs-o-dia)"
+        echo "Da cap nhat smb.conf"
         systemctl is-active --quiet smbd && smbcontrol smbd reload-config
     else
         echo "LOI smb.conf moi - tra ban cu"
