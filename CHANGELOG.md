@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.8.8 - 16/10/2026
+
+Giao diện mới hai chế độ (anh Thoại duyệt bản demo 15/10/2026). Mọi chức năng giữ nguyên.
+
+**Chế độ PC và Chế độ cảm ứng** (`ui/layout.py`, route `/giaodien`):
+- Cùng một trang HTML cho cả hai chế độ, lớp `cd-pc` / `cd-cu` trên `<body>` quyết định cách bày, nên sửa một chỗ là cả hai đều đúng.
+- Chế độ PC: menu trái (icon SVG, thu gọn được), thanh trên gọn có ô **Tìm chức năng (Ctrl+K)**. Chế độ cảm ứng: không menu trái, thanh dưới cố định **Trang chủ / Quay lại / Tìm / Menu / Nguồn**, menu ô to (`#cs-menu`, chạy cả khi JS lỗi), nút, ô nhập, bảng to hơn.
+- Nút đổi chế độ và đổi nền sáng/tối ở góc trên phải; lưu bằng cookie riêng từng trình duyệt, giữ nguyên trang đang xem; `next` chỉ nhận đường dẫn nội bộ. Chưa chọn: màn hình tại chỗ (cổng 8880) mở cảm ứng + nền sáng, vào qua mạng mở PC + nền tối. Màn hẹp (điện thoại): cả hai chế độ dùng thanh dưới.
+- Tìm nhanh: mọi mục menu và 33 trang con (tab Deployment OS, 15 công cụ mạng...), gõ không dấu được, mũi tên + Enter; phím ↵ của bàn phím ảo cũng mở kết quả.
+
+**Nền sáng cho mọi trang** (`doi_mau_viet_cung` trong `ui/layout.py`):
+- Hơn 500 chỗ màu tối viết cứng trong các trang được chuyển sang biến màu theo **nghĩa** của màu khi dựng trang (xám sáng → chữ, nền tối trung tính → nền thẻ, đỏ/vàng/xanh → màu trạng thái). Nút màu đặc (xanh lá, đỏ) giữ nguyên. Áp cả cho các khối HTML trả qua API (`/api/suckhoe`, tiến trình, kiểm tra sẵn sàng).
+- CSS của trang công cụ mạng kiểu cũ được giới hạn trong vùng nội dung, bỏ quy tắc tô thẻ trần (`th`, `input`, `a.btn`...) để không làm méo thanh trên.
+- Logo có bản nền sáng; tab Deployment OS dùng kiểu chung.
+
+**Trang Tổng quan mới** (`ui/home.py`) - chỉ số liệu thật của máy:
+- **Cần chú ý**: nguồn điện yếu, CPU từ 70 °C, dịch vụ `failed`, đĩa từ 80% (kèm thư mục dữ liệu chiếm nhiều nhất và link tới đúng trang quản lý - không bao giờ tự xoá), cáp console chưa đặt tên, PXE đang bật, máy đang cài (3 giờ gần nhất). Không có gì thì hiện "Mọi thứ đang ổn".
+- **Việc hay làm** (PC 4 ô) / **Chức năng** (cảm ứng 8 ô) có nhãn số thật: số cổng console, PXE đang bật, số máy WoL, số kịch bản.
+- Sức khoẻ thiết bị thành lưới thẻ số (vẫn tự cập nhật 10 giây), thêm **Cài đặt gần đây** (5 máy từ Lịch sử).
+
+**Đã kiểm tra** (máy build + Pi thật, bộ test tự động bằng chromium điều khiển qua DevTools): 67 đường dẫn × 4 tổ hợp chế độ/nền trả mã như trước khi sửa; 49 trang × 2 chế độ không lỗi JavaScript (kể cả khung terminal trên Pi); 58 đường dẫn trong menu/ô tìm/trang chủ mở được; 35 thao tác giao diện (menu, quay lại, tìm, Ctrl+K, đổi chế độ/nền, thu gọn menu, chặn chuyển hướng ra ngoài); 34 kiểm tra chức năng thật trên Pi ở cả hai chế độ (Ping, DNS, tải lên/xoá file, lọc thư viện lệnh, thêm/bỏ máy WoL, tìm + CSV lịch sử, kiểm tra sẵn sàng, mở terminal, trình tạo kịch bản, bàn phím ảo); thẻ "Cần chú ý" thử với số liệu giả lập 28/28; điện thoại 390 px; nhật ký lỗi Pi 0 dòng.
+
 ## 1.8.7 - 14/10/2026
 
 Đợt cải tiến cho dùng ngoài đời (anh Thoại duyệt các mục 1, 2, 5, 6, 8, 9).

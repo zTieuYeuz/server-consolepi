@@ -267,7 +267,8 @@ def register_tiendo(app):
     @app.route("/api/tiendo/data")
     def api_tiendo_data():
         """Cho trang tu lam moi - tra ve bang da render san."""
-        return jsonify({"html": _bang_tat_ca(_esc)})
+        from .layout import doi_mau_viet_cung
+        return jsonify({"html": doi_mau_viet_cung(_bang_tat_ca(_esc))})
 
     # -------------------------------------------------------------- trang
     def _bang_tat_ca(esc):

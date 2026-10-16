@@ -127,7 +127,36 @@ BASE_CSS = """
   --do-mo:    rgba(248,113,113,.12);
   --bong:     0 1px 2px rgba(0,0,0,.45), 0 6px 20px rgba(0,0,0,.25);
   --bo:       10px;
+  /* Them cho giao dien 2 che do (15/10/2026): nhung cho truoc day viet cung
+     mau toi, nay cung ra bien de doi duoc sang NEN SANG. */
+  --chu-tren-nhan: #04212E;
+  --hang-nen: rgba(255,255,255,.028);
+  --hang-hover: rgba(255,255,255,.018);
+  --msg-ok: #BBF7D0; --msg-err: #FECACA; --msg-warn: #FDE68A; --msg-info: #BAE6FD;
+  --code-nen: rgba(56,189,248,.09); --code-chu: #7DD3FC;
+  --pre-nen: #070A0F; --pre-chu: #CBD5E1;
 }
+/* NEN SANG - mac dinh cua Che do cam ung (doc ro ngoai troi), bat duoc ca
+   o Che do PC. Chi doi bien, khong doi bo cuc. */
+body.nen-sang {
+  --nen:#EEF1F5; --nen-noi:#FFFFFF; --the:#FFFFFF; --the-noi:#F1F4F8;
+  --vien:#E1E6ED; --vien-ro:#C9D2DE; --chu:#0F172A; --chu-mo:#556070; --chu-mo2:#7C8696;
+  --nhan:#2563EB; --nhan-dam:#1D4ED8; --nhan-mo:#E6EEFF;
+  --xanh:#15803D; --xanh-mo:#E3F6EA; --vang:#B45309; --vang-mo:#FEF3DC;
+  --do:#DC2626; --do-mo:#FDE7E7;
+  --bong: 0 1px 2px rgba(15,23,42,.06), 0 4px 14px rgba(15,23,42,.06);
+  --chu-tren-nhan:#FFFFFF;
+  --hang-nen: rgba(15,23,42,.035); --hang-hover: rgba(15,23,42,.025);
+  --msg-ok:#14532D; --msg-err:#7F1D1D; --msg-warn:#78350F; --msg-info:#1E3A8A;
+  --code-nen:#EEF2FF; --code-chu:#1D4ED8;
+  --pre-nen:#F4F6FA; --pre-chu:#1E293B;
+  color-scheme: light;
+}
+body.nen-toi { color-scheme: dark; }
+/* Logo co 2 ban: chu sang cho nen toi, chu dam cho nen sang */
+.logo-sang { display:none !important; }
+body.nen-sang .logo-toi { display:none !important; }
+body.nen-sang .logo-sang { display:inline-block !important; }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { touch-action: manipulation; }   /* bo do tre 300ms cho tap tren man hinh cam ung */
@@ -289,9 +318,9 @@ table { width:100%; border-collapse:collapse; }
 th,td { padding:12px 13px; text-align:left; border-bottom:1px solid var(--vien);
         font-size:14.5px; }
 tbody tr:last-child td, table tr:last-child td { border-bottom:none; }
-tbody tr:hover, table tr:hover { background:rgba(255,255,255,.018); }
+tbody tr:hover, table tr:hover { background:var(--hang-hover); }
 tbody tr:active, table tr:active { background:var(--the-noi); }
-th { background:rgba(255,255,255,.028); color:var(--chu-mo); font-size:11.5px;
+th { background:var(--hang-nen); color:var(--chu-mo); font-size:11.5px;
      text-transform:uppercase; letter-spacing:.5px; font-weight:600;
      white-space:nowrap; }
 input[type=text],input[type=password],input[type=number],input[type=search],
@@ -319,13 +348,13 @@ label { display:block; margin:13px 0 6px; font-size:13.5px; color:var(--chu-mo);
                               van nhan ra ngay nhung khong "hu doa" ca trang
    Chu tren nen cyan de mau xanh than THAY VI trang: cyan #38BDF8 kha sang,
    chu trang tren no doc rat met mat. */
-button, .btn { padding:11px 18px; background:var(--nhan); color:#04212E; border:none;
+button, .btn { padding:11px 18px; background:var(--nhan); color:var(--chu-tren-nhan); border:none;
   border-radius:8px; font-size:14.5px; cursor:pointer; display:inline-flex;
   align-items:center; justify-content:center; gap:7px;
   min-height:46px; font-family:inherit; font-weight:600;
   -webkit-user-select:none; user-select:none;
   transition:transform .08s, background .12s, box-shadow .12s; }
-button:hover,.btn:hover { background:var(--nhan-dam); color:#04212E; }
+button:hover,.btn:hover { background:var(--nhan-dam); color:var(--chu-tren-nhan); }
 /* :active thay cho :hover - tren man hinh cam ung khong co chuot di qua de
    :hover kich hoat, thieu phan hoi nay nguoi dung khong biet vua cham trung
    nut hay chua va hay bam lai nhieu lan (co the go trung lenh). */
@@ -340,27 +369,28 @@ button.gray:hover,.btn.gray:hover { background:var(--the-noi); color:var(--chu);
 /* .blue gop chung voi nut chinh: truoc day cyan/xanh duong/xanh la dung lan
    lon nhau khong theo quy tac nao, 3 sac xanh canh nhau lam roi mat ma
    khong he mang y nghia gi khac nhau. */
-button.blue,.btn.blue { background:var(--nhan); color:#04212E; }
+button.blue,.btn.blue { background:var(--nhan); color:var(--chu-tren-nhan); }
 button.blue:hover,.btn.blue:hover { background:var(--nhan-dam); }
 /* .red = hanh dong PHA HUY (xoa, tat, khoi dong lai). */
 button.red,.btn.red { background:transparent; color:var(--do);
   border:1px solid rgba(248,113,113,.45); }
-button.red:hover,.btn.red:hover { background:var(--do); color:#2A0A0A;
+button.red:hover,.btn.red:hover { background:var(--do); color:#fff;
   border-color:var(--do); }
 /* Nut bao trang thai TOT (dang chay/da bat) - dung cho cac cho can nhan
    manh la moi thu on. */
 button.xanh,.btn.xanh { background:var(--xanh); color:#06240F; }
-button.xanh:hover,.btn.xanh:hover { background:#3BC96D; }
+body.nen-sang button.xanh, body.nen-sang .btn.xanh { color:#fff; }
+button.xanh:hover,.btn.xanh:hover { filter:brightness(1.08); }
 /* Van giu nho hon nut chinh de phan biet muc do quan trong, nhung khong duoi
    nguong 40px - duoi muc nay ngon tay nguoi lon rat de bam nham nut ben canh. */
 button.small,.btn.small,button.nho,.btn.nho { padding:9px 14px; font-size:13.5px;
   min-height:40px; border-radius:7px; }
 
-pre { background:#070A0F; border:1px solid var(--vien); padding:14px;
+pre { background:var(--pre-nen); border:1px solid var(--vien); padding:14px;
       border-radius:8px; overflow-x:auto; white-space:pre-wrap;
-      word-break:break-word; font-size:13.5px; color:#CBD5E1; line-height:1.55; }
-code { font-family:ui-monospace, monospace; background:rgba(56,189,248,.09);
-       color:#7DD3FC; padding:2px 7px; border-radius:5px; font-size:13.5px; }
+      word-break:break-word; font-size:13.5px; color:var(--pre-chu); line-height:1.55; }
+code { font-family:ui-monospace, monospace; background:var(--code-nen);
+       color:var(--code-chu); padding:2px 7px; border-radius:5px; font-size:13.5px; }
 
 /* ---- Bang thong bao ----
    Vien trai 3px + nen mo cung tone: doc duoc ngay la loai gi ma khong can
@@ -368,13 +398,13 @@ code { font-family:ui-monospace, monospace; background:rgba(56,189,248,.09);
 .msg { padding:13px 16px; border-radius:9px; margin:15px 0; font-size:14.5px;
        line-height:1.6; border:1px solid transparent; border-left-width:3px; }
 .msg.ok   { background:var(--xanh-mo); border-color:rgba(74,222,128,.3);
-            border-left-color:var(--xanh); color:#BBF7D0; }
+            border-left-color:var(--xanh); color:var(--msg-ok); }
 .msg.err  { background:var(--do-mo);   border-color:rgba(248,113,113,.3);
-            border-left-color:var(--do);   color:#FECACA; }
+            border-left-color:var(--do);   color:var(--msg-err); }
 .msg.warn { background:var(--vang-mo); border-color:rgba(251,191,36,.3);
-            border-left-color:var(--vang); color:#FDE68A; }
+            border-left-color:var(--vang); color:var(--msg-warn); }
 .msg.info { background:var(--nhan-mo); border-color:rgba(56,189,248,.3);
-            border-left-color:var(--nhan); color:#BAE6FD; }
+            border-left-color:var(--nhan); color:var(--msg-info); }
 
 .row { display:flex; gap:11px; flex-wrap:wrap; align-items:flex-end; }
 .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(255px,1fr)); gap:14px; }
@@ -459,6 +489,157 @@ code { font-family:ui-monospace, monospace; background:rgba(56,189,248,.09);
   .side .foot, .brand small { display:none; }
   .status { position:static; }
   .content { padding:16px 14px 96px; }
+}
+
+/* =====================================================================
+   GIAO DIEN 2 CHE DO (anh Thoai duyet 15/10/2026)
+   =====================================================================
+   body.cd-pc : Che do PC   - thanh menu trai (thu gon duoc thanh day icon),
+                              thanh tren co o tim Ctrl+K.
+   body.cd-cu : Che do cam ung - khong co menu trai; thanh duoi co dinh
+                              (Trang chu / Quay lai / Tim / Menu / Nguon),
+                              moi thu to hon de cham ngon tay.
+   CUNG 1 trang HTML cho ca hai - chi CSS doi cach bay. Sua 1 cho la ca hai
+   che do deu dung, khong co 2 ban trang lech nhau.
+*/
+svg.i { width:20px; height:20px; flex:none; stroke:currentColor; fill:none;
+        stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.nav a .ic svg.i, .nav .nhom > summary .ic svg.i { width:20px; height:20px; }
+
+/* ---- Thanh tren (thay cho thanh trang thai cu) ---- */
+.top { display:flex; align-items:center; gap:10px; padding:10px 18px;
+       background:var(--nen-noi); border-bottom:1px solid var(--vien);
+       position:sticky; top:0; z-index:20; flex-wrap:wrap; }
+.top .ten-cu { display:none; align-items:center; gap:10px; font-weight:800;
+       font-size:16.5px; color:var(--chu); letter-spacing:.2px; white-space:nowrap; }
+.top .ten-cu img { width:34px; height:34px; display:block; }
+.top .tim { flex:1 1 220px; max-width:440px; display:flex; align-items:center; gap:10px;
+       background:var(--the); border:1px solid var(--vien); border-radius:11px;
+       padding:0 12px; min-height:42px; color:var(--chu-mo2); font-size:14px;
+       cursor:text; font-family:inherit; text-align:left; font-weight:400; }
+.top .tim:hover { border-color:var(--vien-ro); background:var(--the); color:var(--chu-mo); }
+.top .tim:active { transform:none; }
+.top .tim .tim-chu { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.top .tim kbd { margin-left:auto; white-space:nowrap; font:11px ui-monospace,monospace; border:1px solid var(--vien);
+       border-radius:6px; padding:2px 6px; color:var(--chu-mo2); }
+.top .chips { display:flex; gap:7px; flex-wrap:wrap; align-items:center; min-width:0; overflow:hidden; max-height:44px; }
+body.cd-pc .top { flex-wrap:nowrap; }
+body.cd-pc .top .nl-nen { display:none; }
+.top .act { flex:none; }
+/* O trang thai dang VIEN THUOC (pill): cham mau + ten + gia tri. Dong phu
+   (.x) dua vao tooltip cho gon - van giu the .x de dashboard.js cap nhat. */
+.top .chip { min-width:0; flex-direction:row; align-items:center; gap:7px;
+       padding:6px 11px; border-radius:999px; font-size:12.5px; }
+.top .chip .k { font-size:12px; text-transform:none; letter-spacing:0; color:var(--chu-mo); }
+.top .chip .k::before { width:8px; height:8px; }
+.top .chip .v { margin:0; font-size:12.5px; font-weight:600; }
+.top .chip .x { display:none; }
+.top .spacer { flex:1; }
+.top .act { display:flex; gap:7px; align-items:center; }
+.top .act .btn { min-height:40px; padding:8px 12px; font-size:13px; }
+.doi-cd { background:linear-gradient(135deg,#22d3ee,#6366f1) !important; color:#fff !important;
+       border:0 !important; border-radius:999px !important; font-weight:700; }
+.doi-cd:hover { filter:brightness(1.08); }
+
+/* ---- Thanh duoi + menu o to (chi Che do cam ung) ---- */
+.dock { display:none; }
+.menu-cu { display:none; }
+body.cd-cu .side { display:none; }
+body.cd-cu .top .tim { display:none; }
+/* Cam ung: thanh tren luon 1 dong - o trang thai phu (Bluetooth, Cloudflare)
+   chi hien khi man du rong; van xem duoc o trang Tong quan / Truy cap tu xa. */
+body.cd-cu .top { flex-wrap:nowrap; }
+body.cd-cu .top .chips { flex-wrap:nowrap; }
+@media (max-width: 1500px) { .top .chip.phu { display:none; } }
+body.cd-pc .top .chips { flex-wrap:nowrap; }
+@media (max-width: 1100px) { body.cd-cu .top .nl-nen { display:none; } }
+body.cd-cu .top .ten-cu { display:flex; }
+body.cd-cu .top { padding:12px 20px; gap:10px; }
+body.cd-cu .top .chip { padding:9px 14px; font-size:14px; border-radius:12px; }
+body.cd-cu .top .chip .v, body.cd-cu .top .chip .k { font-size:14px; }
+body.cd-cu .top .act .btn { min-height:48px; padding:10px 16px; font-size:14.5px; border-radius:12px; }
+body.cd-cu .nut-home { display:none; }
+body.cd-cu .content { padding:22px 24px 130px; max-width:1300px; margin:0 auto; }
+body.cd-cu button, body.cd-cu .btn { min-height:50px; font-size:15.5px; border-radius:12px; padding:12px 20px; }
+body.cd-cu button.small, body.cd-cu .btn.small, body.cd-cu button.nho, body.cd-cu .btn.nho { min-height:44px; font-size:14.5px; }
+body.cd-cu th, body.cd-cu td { padding:14px 14px; font-size:15.5px; }
+body.cd-cu input[type=text], body.cd-cu input[type=password], body.cd-cu input[type=number],
+body.cd-cu input[type=search], body.cd-cu input[type=url], body.cd-cu select, body.cd-cu textarea {
+       min-height:50px; font-size:16px; border-radius:11px; }
+body.cd-cu .card { border-radius:18px; padding:20px 22px; }
+body.cd-cu h1 { font-size:27px; }
+body.cd-cu .dep-tab { min-height:50px; padding:12px 18px; font-size:15px; border-radius:12px; }
+body.cd-cu .dock { display:flex; position:fixed; left:50%; transform:translateX(-50%);
+       bottom:14px; gap:4px; padding:7px; background:var(--nen-noi); border:1px solid var(--vien);
+       border-radius:22px; box-shadow:0 10px 30px rgba(0,0,0,.28); z-index:2147482990; }
+.dock a { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+       min-width:74px; min-height:58px; padding:6px 12px; border-radius:15px;
+       color:var(--chu-mo); font-size:12.5px; font-weight:600; -webkit-user-select:none; user-select:none; }
+.dock a svg.i { width:24px; height:24px; }
+.dock a:active { transform:scale(.95); background:var(--the-noi); }
+.dock a.on { background:var(--nhan-mo); color:var(--nhan); }
+/* Menu o to: mo bang #cs-menu (:target) - chay ca khi JS loi */
+.menu-cu:target { display:block; position:fixed; inset:0; z-index:2147482995;
+       background:var(--nen); overflow-y:auto; padding:18px 20px 120px; }
+.menu-cu .dau { display:flex; align-items:center; gap:12px; max-width:1300px; margin:0 auto 6px; }
+.menu-cu .dau b { font-size:22px; flex:1; color:var(--chu); }
+.menu-cu h3 { max-width:1300px; margin:18px auto 10px; font-size:13px; text-transform:uppercase;
+       letter-spacing:1px; color:var(--chu-mo2); }
+.menu-cu .luoi { max-width:1300px; margin:0 auto; display:grid;
+       grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+.o-to { display:flex; flex-direction:column; gap:10px; padding:16px; min-height:112px;
+       background:var(--the); border:1px solid var(--vien); border-radius:18px; color:var(--chu);
+       box-shadow:var(--bong); position:relative; }
+.o-to:hover { border-color:var(--nhan); color:var(--chu); }
+.o-to:active { transform:scale(.98); }
+.o-to .bi { width:48px; height:48px; border-radius:14px; display:grid; place-items:center;
+       background:var(--nhan-mo); color:var(--nhan); }
+.o-to .bi svg.i { width:26px; height:26px; }
+.o-to b { font-size:16.5px; }
+.o-to small { color:var(--chu-mo); font-size:13px; margin-top:-6px; }
+.o-to.on { border-color:var(--nhan); }
+
+/* ---- Bang tim nhanh (Ctrl+K / nut Tim) ---- */
+.tim-nhanh { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none;
+       align-items:flex-start; justify-content:center; padding-top:11vh; z-index:2147482996; }
+.tim-nhanh.on { display:flex; }
+.tim-nhanh .h { width:min(640px,94vw); background:var(--nen-noi); border:1px solid var(--vien);
+       border-radius:16px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.5); }
+.tim-nhanh input { width:100%; max-width:none; border:0; border-bottom:1px solid var(--vien);
+       border-radius:0; padding:16px 18px; font-size:16.5px; background:transparent; min-height:56px; }
+.tim-nhanh input:focus { box-shadow:none; }
+.tim-nhanh ul { list-style:none; margin:0; padding:6px; max-height:min(420px,60vh); overflow:auto; }
+.tim-nhanh li a { display:flex; gap:12px; align-items:center; padding:11px 12px; border-radius:10px;
+       font-size:14.5px; color:var(--chu); min-height:46px; }
+.tim-nhanh li a small { margin-left:auto; color:var(--chu-mo2); font-size:12px; white-space:nowrap; }
+.tim-nhanh li a.sel, .tim-nhanh li a:hover { background:var(--nhan-mo); color:var(--nhan); }
+.tim-nhanh .rong { padding:16px 18px; color:var(--chu-mo); font-size:14px; }
+
+/* ---- Menu trai Che do PC: icon net mat, dong chu gon ---- */
+body.cd-pc .side { width:226px; flex:0 0 226px; }
+body.cd-pc.thu-gon .side { width:72px; flex:0 0 72px; }
+
+@media (max-width: 760px) {
+  /* Man hep (dien thoai): menu trai khong con cho -> ca 2 che do deu dung
+     thanh duoi (co nut Menu mo du moi chuc nang) thay cho menu trai. */
+  body.cd-pc .side { display:none; }
+  body.cd-pc .top { flex-wrap:wrap; }
+  body.cd-pc .nut-home { display:none; }
+  body.cd-pc .dock, body.cd-cu .dock { display:flex; position:fixed; left:12px; right:84px;
+       transform:none; bottom:12px; justify-content:space-around; gap:2px; padding:6px;
+       background:var(--nen-noi); border:1px solid var(--vien); border-radius:20px;
+       box-shadow:0 10px 30px rgba(0,0,0,.28); z-index:2147482990; }
+  .top { padding:9px 12px; }
+  .top .tim { flex-basis:100%; order:5; max-width:none; }
+  .top .tim kbd { display:none; }
+  .top .chip.phu { display:none; }
+  .top .chips { flex-wrap:nowrap; overflow-x:auto; max-width:100%; max-height:none; scrollbar-width:none; }
+  .top .chip { flex:none; }
+  .top .nl-nen { display:none; }
+  .top .act .btn { min-height:44px !important; padding:8px 11px !important; }
+  .content, body.cd-cu .content { padding:16px 14px 120px; }
+  .dock a { min-width:0; flex:1; padding:6px 2px; font-size:10.5px; white-space:nowrap; min-height:54px; }
+  .dock a svg.i { width:22px; height:22px; }
 }
 """
 
@@ -630,19 +811,302 @@ from .gioithieu import dau_an_an as _dau_an_an
 _DAU_AN = _dau_an_an()
 
 
+# ---------------------------------------------------------------------------
+# DOI MAU VIET CUNG -> BIEN MAU (de NEN SANG khong vo trang)
+#
+# Cac trang viet tu truoc ghi cung hon 500 cho mau toi (nen #1e1e1e, chu
+# #eee, chu mo #8b93a1...). Bat nen sang ma de nguyen thi thanh chu trang
+# tren nen trang. Thay vi sua tay 30 file (de sot, de lech), render_page
+# chuyen moi mau viet cung trong noi dung trang sang bien mau cua he thong
+# theo NGHIA cua mau: xam sang -> --chu, xam vua -> --chu-mo, nen toi trung
+# tinh -> --the..., do/vang/xanh -> dung bien trang thai tuong ung.
+# Mau nen DAM va SANG (nut xanh #4CAF50 chu trang...) thi GIU NGUYEN: chu
+# tren no van doc duoc o ca 2 nen.
+# ---------------------------------------------------------------------------
+_RE_MAU = _re_mau = __import__("re").compile(
+    r'(?<![\w-])(color|background-color|background|border-color|border|'
+    r'border-(?:left|right|top|bottom)(?:-color)?)(\s*:\s*[^;"\'{}<>]*?)'
+    r'#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b')
+_MAU_CACHE = {}
+
+
+def _phan_loai_mau(hx):
+    if len(hx) == 3:
+        hx = "".join(c * 2 for c in hx)
+    r, g, b = (int(hx[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    mx, mn = max(r, g, b), min(r, g, b)
+    sang = (mx + mn) / 2
+    bao_hoa = 0 if mx == mn else (mx - mn) / (1 - abs(2 * sang - 1) + 1e-9)
+    if bao_hoa < 0.18 or (mx - mn) < 0.07:
+        sac = "xam"
+    elif r >= g and r >= b:
+        sac = "vang" if g > 0.55 * r and g > b * 1.4 else "do"
+    elif g >= r and g >= b:
+        sac = "vang" if r > 0.8 * g and b < 0.6 * g else "xanh"
+    else:
+        sac = "nhan" if g > 0.55 * b else "tim"
+    return sang, sac, mx - mn
+
+
+def _mau_moi(thuoc_tinh, hx):
+    khoa = (thuoc_tinh, hx.lower())
+    if khoa in _MAU_CACHE:
+        return _MAU_CACHE[khoa]
+    sang, sac, do_dam = _phan_loai_mau(hx)
+    kq = None
+    if thuoc_tinh == "color":
+        if sac == "xam":
+            if sang >= 0.80 and sang < 0.999:
+                kq = "var(--chu)"
+            elif 0.40 <= sang < 0.80:
+                kq = "var(--chu-mo)"
+            elif 0.30 <= sang < 0.40:
+                kq = "var(--chu-mo2)"
+        elif sang >= 0.35:
+            kq = {"xanh": "var(--xanh)", "do": "var(--do)", "vang": "var(--vang)",
+                  "nhan": "var(--nhan)"}.get(sac)
+    elif thuoc_tinh.startswith("background"):
+        if sang < 0.30:
+            if sac == "xam":
+                kq = ("var(--nen)" if sang < 0.10 else
+                      "var(--the)" if sang < 0.16 else "var(--the-noi)")
+            else:
+                kq = {"xanh": "var(--xanh-mo)", "do": "var(--do-mo)", "vang": "var(--vang-mo)",
+                      "nhan": "var(--nhan-mo)"}.get(sac, "var(--the-noi)")
+    else:   # vien
+        if sac == "xam" and sang < 0.45:
+            kq = "var(--vien-ro)"
+        elif sac != "xam" and sang >= 0.30:
+            kq = {"xanh": "var(--xanh)", "do": "var(--do)", "vang": "var(--vang)",
+                  "nhan": "var(--nhan)"}.get(sac)
+        elif sac != "xam":
+            kq = {"xanh": "rgba(74,222,128,.35)", "do": "rgba(248,113,113,.35)",
+                  "vang": "rgba(251,191,36,.35)", "nhan": "rgba(56,189,248,.35)"}.get(sac)
+    _MAU_CACHE[khoa] = kq
+    return kq
+
+
+def doi_mau_viet_cung(html):
+    """Chuyen mau viet cung trong HTML/CSS cua trang sang bien mau (xem tren)."""
+    if not html or "#" not in html:
+        return html
+
+    def _thay(m):
+        moi = _mau_moi(m.group(1), m.group(3))
+        return m.group(0) if moi is None else m.group(1) + m.group(2) + moi
+    html = _RE_MAU.sub(_thay, html)
+    # Chu TRANG tren nen vua bi doi sang bien (vd tab dang chon: nen xanh
+    # toi + chu trang) -> o nen sang thanh chu trang tren nen xanh nhat, mat
+    # chu. Trong CUNG khoi CSS / thuoc tinh style, doi chu trang -> --chu.
+    return _RE_KHOI.sub(_sua_chu_trang, html)
+
+
+_RE_KHOI = __import__("re").compile(r'\{[^{}]*\}|style="[^"]*"|style=\'[^\']*\'')
+_RE_CHU_TRANG = __import__("re").compile(r'(?<![\w-])color(\s*:\s*)#(?:fff|ffffff|FFF|FFFFFF)\b')
+_RE_NEN_BIEN = __import__("re").compile(r'(?<![\w-])background(?:-color)?\s*:\s*var\(--')
+
+
+_RE_NEN_CUNG = __import__("re").compile(
+    r'(?<![\w-])background(?:-color)?\s*:\s*(?:#|rgb|linear-gradient|radial-gradient)')
+
+
+def _sua_chu_trang(m):
+    """
+    Chu TRANG (#fff) chi giu khi CUNG khoi co nen mau dac viet cung (nut xanh,
+    nut do...) - chu trang tren nen do van doc duoc o ca 2 nen. Con lai (chu
+    trang dung tren nen toi cua trang, hoac tren nen vua doi sang bien) thi
+    doi sang --chu, neu khong o nen sang se thanh chu trang tren nen trang.
+    """
+    k = m.group(0)
+    if "#f" not in k.lower() or _RE_NEN_CUNG.search(k):
+        return k
+    return _RE_CHU_TRANG.sub(lambda x: "color" + x.group(1) + "var(--chu)", k)
+
+
+# ---------------------------------------------------------------- icon SVG
+#
+# Icon net mat (SVG noi tuyen, ve bang duong vien) thay cho emoji tren menu.
+# Emoji tren Pi OS Lite co cai thieu font (xem ghi chu U+23FB o tren), lai
+# moi cai mot mau loe loet. SVG thi luon hien dung, theo mau chu, va KHONG
+# can tai gi tu Internet (Pi mang ra hien truong co the khong co mang).
+_SVG = {
+ "home": '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+ "radar": '<circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 010 8.4M7.8 16.2a6 6 0 010-8.4M19 5a10 10 0 010 14M5 19A10 10 0 015 5"/>',
+ "wifi": '<path d="M2 8.5a15 15 0 0120 0M5 12a10 10 0 0114 0M8.5 15.5a5 5 0 017 0"/><circle cx="12" cy="19" r="1"/>',
+ "bt": '<path d="M7 7l10 10-5 4V3l5 4L7 17"/>',
+ "globe": '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>',
+ "plug": '<path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 01-12 0zM12 17v5"/>',
+ "list": '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+ "term": '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/>',
+ "kbd": '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+ "key": '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/>',
+ "link": '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>',
+ "net": '<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/>',
+ "disk": '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>',
+ "box": '<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/>',
+ "save": '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>',
+ "book": '<path d="M4 4h6a3 3 0 013 3v13a2 2 0 00-2-2H4zM20 4h-6a3 3 0 00-3 3v13a2 2 0 012-2h7z"/>',
+ "log": '<path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h4"/>',
+ "bolt": '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+ "tv": '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>',
+ "chat": '<path d="M21 12a8 8 0 01-11.6 7.1L3 21l1.9-6.4A8 8 0 1121 12z"/>',
+ "set": '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+ "doc": '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>',
+ "search": '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+ "back": '<path d="M15 6l-6 6 6 6"/>',
+ "menu": '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+ "pow": '<path d="M12 3v9"/><path d="M6.3 7a8 8 0 1011.4 0"/>',
+ "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+ "moon": '<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>',
+ "pc": '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+ "hand": '<path d="M8 13V5a2 2 0 014 0v6M12 11V4a2 2 0 014 0v7M16 11V6a2 2 0 014 0v8a8 8 0 01-8 8h-1a7 7 0 01-6-3.4L3 15a2 2 0 013.4-2L8 15"/>',
+ "refresh": '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
+ "win": '<path d="M3 5l8-1v8H3zM13 3.8L21 3v9h-8zM3 13h8v8l-8-1zM13 13h8v8l-8-1z"/>',
+ "warn": '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01"/>',
+ "info": '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>',
+ "usb": '<path d="M12 2v15M8 6l4-4 4 4"/><circle cx="12" cy="19" r="2.5"/><path d="M12 12l-5-3V7M12 14l5-3V9"/>',
+ "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ "temp": '<path d="M14 14.8V4a2 2 0 00-4 0v10.8a4 4 0 104 0z"/>',
+ "chip": '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+}
+
+# Icon cho tung muc menu (theo duong dan). Muc nao khong co thi dung "doc".
+ICON_MUC = {
+    "/": "home", "nhom:Kết nối server": "radar", "/wifi": "wifi", "/bluetooth": "bt",
+    "/remote": "globe", "nhom:Kết nối thiết bị": "plug", "/phien": "list",
+    "/console": "term", "/terminal": "kbd", "/ssh": "key", "/direct": "link",
+    "/nettools": "net", "/deployos": "disk", "nhom:Kho lưu trữ": "box",
+    "/storage": "save", "/commands": "book", "/logs": "log", "/power": "pow",
+    "/giaitri": "tv", "/gopy": "chat", "nhom:Cài đặt": "set", "/settings": "set",
+    "/docs": "doc",
+}
+
+
+def svg_icon(ten):
+    """1 icon SVG net mat (xem _SVG). Dung chung cho cac trang khac."""
+    return f'<svg class="i" viewBox="0 0 24 24" aria-hidden="true">{_SVG.get(ten, _SVG["doc"])}</svg>'
+
+
+# Cac trang CON (khong nam tren menu) - them vao o tim nhanh de go la thay.
+# (nhan, duong dan, nhom, tu khoa them)
+TIM_THEM = [
+    ("Kịch bản cài Windows", "/deployos/kichban", "Deployment OS", "pxe win cai dat"),
+    ("Tạo kịch bản mới", "/deployos/wizard/bat-dau?che_do=chay", "Deployment OS", "wizard cai windows"),
+    ("Ổ đĩa đã dò", "/deployos/o-dia", "Deployment OS", "disk o cung"),
+    ("Hệ điều hành (bộ cài)", "/deployos/os", "Deployment OS", "iso wim windows"),
+    ("Phần mềm cài kèm", "/deployos/console/apps", "Deployment OS", "app office"),
+    ("Ứng dụng nhiều file", "/deployos/ungdung", "Deployment OS", "app"),
+    ("Font chữ", "/deployos/font", "Deployment OS", "font"),
+    ("Driver theo dòng máy", "/deployos/drivers", "Deployment OS", "driver model"),
+    ("Script", "/deployos/console/scripts", "Deployment OS", "script cmd ps1"),
+    ("WinPE / file boot", "/deployos/console", "Deployment OS", "winpe boot"),
+    ("Kho trung tâm", "/deployos/kho", "Deployment OS", "kho tai ve"),
+    ("Máy đang cài", "/deployos/tiendo", "Deployment OS", "tien trinh tien do"),
+    ("Lịch sử cài đặt", "/deployos/lichsu", "Deployment OS", "lich su csv"),
+    ("Bật / Tắt PXE", "/deployos/caidat", "Deployment OS", "pxe dhcp tftp"),
+    ("Kiểm tra sẵn sàng", "/deployos/caidat/hatang", "Deployment OS", "san sang ha tang kiem tra"),
+    ("Bật máy từ xa (Wake-on-LAN)", "/deployos/caidat/wol", "Deployment OS", "wol wake danh thuc"),
+    ("ARP Scan", "/nettools/arp-scan", "Network Tools", "quet thiet bi"),
+    ("Ping / Traceroute", "/nettools/ping", "Network Tools", "ping"),
+    ("PCAP Capture", "/nettools/pcap", "Network Tools", "bat goi tshark"),
+    ("LLDP / CDP Discovery", "/nettools/lldp", "Network Tools", "lldp cdp switch"),
+    ("Kiểm tra cổng mạng", "/nettools/dhcp-test", "Network Tools", "dhcp poe toc do"),
+    ("STP / LACP / VLAN Scan", "/nettools/l2-scan", "Network Tools", "stp vlan"),
+    ("MTU Discovery", "/nettools/mtu", "Network Tools", "mtu"),
+    ("Kiểm tra DNS", "/nettools/dns-check", "Network Tools", "dns"),
+    ("Kiểm tra chứng chỉ TLS", "/nettools/tls-check", "Network Tools", "tls ssl https"),
+    ("Sơ đồ mạng 1 đoạn", "/nettools/topology", "Network Tools", "topology so do"),
+    ("Máy chủ TFTP", "/nettools/tftp", "Network Tools", "tftp"),
+    ("Sao lưu qua cáp console", "/nettools/console-backup", "Network Tools", "backup"),
+    ("Netmiko Config", "/nettools/netmiko", "Network Tools", "netmiko ssh cau hinh"),
+    ("802.1X Testing", "/nettools/dot1x", "Network Tools", "dot1x radius"),
+    ("IF/THEN Automation", "/nettools/ifthen", "Network Tools", "ifthen rule"),
+    ("Sao lưu cấu hình", "/settings/sao-luu", "Cài đặt", "backup sao luu"),
+    ("Đăng xuất", "/logout", "Tài khoản", "logout thoat"),
+]
+
+
+def che_do_giao_dien():
+    """
+    'pc' hoac 'cu' (cam ung). Lua chon nho bang cookie RIENG TUNG MAY (tung
+    trinh duyet) - doi tren laptop khong lam doi man hinh RasPad.
+    Chua chon bao gio: man hinh gan tren Pi (cong 8880, xem auth) -> cam ung,
+    con lai (laptop/PC vao qua mang) -> PC.
+    """
+    try:
+        from flask import request
+        c = request.cookies.get("cs_che_do")
+        if c in ("pc", "cu"):
+            return c
+        from .auth import _is_local_screen
+        return "cu" if _is_local_screen() else "pc"
+    except Exception:
+        return "pc"
+
+
+def nen_giao_dien(che_do=None):
+    """'sang' / 'toi'. Mac dinh: cam ung -> sang (doc ro ngoai troi), PC -> toi."""
+    try:
+        from flask import request
+        c = request.cookies.get("cs_nen")
+        if c in ("sang", "toi"):
+            return c
+    except Exception:
+        pass
+    return "sang" if (che_do or che_do_giao_dien()) == "cu" else "toi"
+
+
+def _duong_hien_tai(mac_dinh="/"):
+    try:
+        from flask import request
+        p = request.full_path if request.query_string else request.path
+        return p or mac_dinh
+    except Exception:
+        return mac_dinh
+
+
+def _link_doi(**kv):
+    from urllib.parse import urlencode
+    kv["next"] = _duong_hien_tai()
+    return "/giaodien?" + urlencode(kv)
+
+
+def _ds_tim_nhanh():
+    """Danh sach cho o tim nhanh: moi muc menu + cac trang con o TIM_THEM."""
+    import json as _json
+    ds = []
+    for muc in NAV_ITEMS:
+        if muc[0] != "nhom":
+            ds.append([muc[1], muc[0], "Menu", ""])
+        else:
+            for h, l, _i in muc[3]:
+                ds.append([l, h, muc[1], ""])
+    for nhan, href, nhom, tk in TIM_THEM:
+        ds.append([nhan, href, nhom, tk])
+    return _json.dumps(ds, ensure_ascii=False).replace("</", "<\\/")
+
+
 def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""):
     """
     Dung 1 trang hoan chinh voi khung chung.
       body_html : phan noi dung rieng cua trang (chuoi HTML da render xong)
       active    : duong dan de to sang muc menu tuong ung
+    Cung 1 HTML cho ca Che do PC va Che do cam ung - lop tren <body> quyet
+    dinh cach bay (xem phan "GIAO DIEN 2 CHE DO" trong BASE_CSS).
     """
     chips = get_status_chips()
+    che_do = che_do_giao_dien()
+    body_html = doi_mau_viet_cung(body_html)
+    extra_css = doi_mau_viet_cung(extra_css)
+    nen = nen_giao_dien(che_do)
 
     chips_html = ""
     for idx, c in enumerate(chips):
         cls = "up" if c["up"] else "down"
+        # O thu 3 tro di (Bluetooth, Cloudflare) an bot tren man hep
+        phu = " phu" if idx >= 2 else ""
         chips_html += (
-            f'<div class="chip {cls}" data-chip="{idx}"><div class="k">{c["key"]}</div>'
+            f'<div class="chip {cls}{phu}" data-chip="{idx}" title="{c["extra"]}"><div class="k">{c["key"]}</div>'
             f'<div class="v">{c["val"]}</div><div class="x">{c["extra"]}</div></div>'
         )
 
@@ -653,12 +1117,15 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     def _ve_muc(href, label, icon):
         return (f'<a href="{href}" class="{"active" if _dang_mo(href) else ""}" '
                 f'title="{label}">'
-                f'<span class="ic">{icon}</span><span class="nl">{label}</span></a>')
+                f'<span class="ic">{svg_icon(ICON_MUC.get(href, "doc"))}</span><span class="nl">{label}</span></a>')
 
     nav_html = ""
+    o_to_html = ""          # menu o to cua Che do cam ung
     for muc in NAV_ITEMS:
         if muc[0] != "nhom":
             nav_html += _ve_muc(*muc)
+            o_to_html += (f'<a class="o-to{" on" if _dang_mo(muc[0]) else ""}" href="{muc[0]}">'
+                          f'<span class="bi">{svg_icon(ICON_MUC.get(muc[0], "doc"))}</span><b>{muc[1]}</b></a>')
             continue
         _, ten_nhom, icon_nhom, cac_con = muc
         # Nhom chua trang dang mo thi bung san - nguoi dung luon thay minh
@@ -668,15 +1135,47 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
         nav_html += (
             f'<details class="nhom"{" open" if mo else ""}>'
             f'<summary title="{ten_nhom}">'
-            f'<span class="ic">{icon_nhom}</span>'
+            f'<span class="ic">{svg_icon(ICON_MUC.get("nhom:" + ten_nhom, "doc"))}</span>'
             f'<span class="nl">{ten_nhom}</span></summary>'
             f'<div class="con">{con_html}</div></details>'
         )
+        for h, l, _i in cac_con:
+            o_to_html += (f'<a class="o-to{" on" if _dang_mo(h) else ""}" href="{h}">'
+                          f'<span class="bi">{svg_icon(ICON_MUC.get(h, "doc"))}</span><b>{l}</b><small>{ten_nhom}</small></a>')
 
-    # Nut ve trang chu - khong hien khi dang O trang chu (ve chinh no thi vo ich)
+    # Nut ve trang chu - khong hien khi dang O trang chu (ve chinh no thi vo ich).
+    # Che do cam ung an nut nay vi thanh duoi da co "Trang chu".
     nut_home = ("" if active == "/" else
                 '<a href="/" class="nut-home" title="Về trang chủ" '
                 'aria-label="Về trang chủ">&#127968;</a>')
+
+    if che_do == "cu":
+        nut_doi_cd = (f'<a href="{_link_doi(che_do="pc")}" class="btn doi-cd" '
+                      f'title="Chuyển sang giao diện laptop / PC">{svg_icon("pc")} Chế độ PC</a>')
+    else:
+        nut_doi_cd = (f'<a href="{_link_doi(che_do="cu")}" class="btn doi-cd" '
+                      f'title="Chuyển sang giao diện cảm ứng (ô to, thanh dưới)">{svg_icon("hand")} Chế độ cảm ứng</a>')
+    if nen == "sang":
+        nut_nen = (f'<a href="{_link_doi(nen="toi")}" class="btn gray" title="Chuyển nền tối">'
+                   f'{svg_icon("moon")}<span class="nl-nen">Tối</span></a>')
+    else:
+        nut_nen = (f'<a href="{_link_doi(nen="sang")}" class="btn gray" title="Chuyển nền sáng">'
+                   f'{svg_icon("sun")}<span class="nl-nen">Sáng</span></a>')
+
+    dock_html = (
+        f'<nav class="dock" aria-label="Điều hướng">'
+        f'<a href="/" class="{"on" if active == "/" else ""}">{svg_icon("home")}Trang chủ</a>'
+        f'<a href="/" onclick="if(history.length>1){{history.back();return false;}}">{svg_icon("back")}Quay lại</a>'
+        f'<a href="#cs-menu" data-tim="1">{svg_icon("search")}Tìm</a>'
+        f'<a href="#cs-menu">{svg_icon("menu")}Menu</a>'
+        f'<a href="/power" class="{"on" if active.startswith("/power") else ""}">{svg_icon("pow")}Nguồn</a>'
+        f'</nav>')
+
+    menu_cu = (
+        f'<div class="menu-cu" id="cs-menu">'
+        f'<div class="dau"><b>Tất cả chức năng</b>'
+        f'<a href="#" class="btn gray" onclick="if(history.length>1&&location.hash==\'#cs-menu\'){{history.back();return false;}}">Đóng</a></div>'
+        f'<div class="luoi">{o_to_html}</div></div>')
 
     return f"""<!DOCTYPE html>
 <html lang="vi">
@@ -688,7 +1187,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 <style>{BASE_CSS}
 {extra_css}</style>
 </head>
-<body>
+<body class="cd-{che_do} nen-{nen}">
 <div class="wrap">
   <div class="side">
     <div class="brand">
@@ -700,14 +1199,20 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     <div class="nav">{nav_html}</div>
     <div class="foot">
       <a href="/logout">Đăng xuất</a>
-      <div style="font-size:11px;color:#5D6879;margin-top:6px;">&copy; 2026{_DAU_AN} <b style="color:#8A94A6;"><span style="color:#22D3EE;">z</span>TieuYeu<span style="color:#22D3EE;">z</span></b></div>
+      <div style="font-size:11px;color:var(--chu-mo2);margin-top:6px;">&copy; 2026{_DAU_AN} <b style="color:var(--chu-mo);"><span style="color:#22D3EE;">z</span>TieuYeu<span style="color:#22D3EE;">z</span></b></div>
     </div>
   </div>
   <div class="main">
-    <div class="status">
-      {chips_html}
+    <div class="top status">
+      <a href="/" class="ten-cu"><img src="/thuong-hieu/logo-mark.svg" alt="">Console System</a>
+      <button type="button" class="tim" id="mo-tim" title="Tìm nhanh chức năng (Ctrl+K)">{svg_icon("search")}<span class="tim-chu">Tìm chức năng…</span><kbd>Ctrl&nbsp;K</kbd></button>
+      <div class="chips">{chips_html}</div>
       <div class="spacer"></div>
-      <div class="act"><a href="{active}" class="btn gray small">🔃 Làm mới</a></div>
+      <div class="act">
+        <a href="{_duong_hien_tai(active)}" class="btn gray" title="Làm mới trang">{svg_icon("refresh")}</a>
+        {nut_nen}
+        {nut_doi_cd}
+      </div>
     </div>
     <div class="content">
       <h1>{title}</h1>
@@ -717,12 +1222,17 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
   </div>
 </div>
 {nut_home}
+{dock_html}
+{menu_cu}
+<div class="tim-nhanh" id="tim-nhanh" role="dialog" aria-label="Tìm nhanh"><div class="h">
+  <form id="tim-form" action="/" method="get" role="search">
+  <input type="search" id="tim-o" placeholder="Gõ để tìm… ví dụ: pxe, wol, console, wifi" autocomplete="off">
+  </form>
+  <ul id="tim-ds"></ul>
+</div></div>
 <script>
-/* Thu gon / mo rong thanh menu ben trai.
-   Nho lua chon vao localStorage de giu nguyen khi chuyen trang - neu
-   khong thi moi lan bam sang trang khac menu lai bung ra nhu cu, rat
-   kho chiu. Ap dung NGAY (khong doi DOMContentLoaded) de trang khong
-   bi "nhay" tu rong sang hep truoc mat nguoi dung. */
+/* Thu gon / mo rong thanh menu ben trai (Che do PC).
+   Nho lua chon vao localStorage de giu nguyen khi chuyen trang. */
 (function() {{
   var K = 'consolepi-menu-thu-gon';
   try {{
@@ -738,12 +1248,61 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
   n.addEventListener('click', function() {{
     var gon = document.body.classList.toggle('thu-gon');
     try {{ localStorage.setItem(K, gon ? '1' : '0'); }} catch (e) {{}}
-    // Thu gon thi bung het cac nhom (chi con icon, khong ton cho) de moi
-    // muc con van bam vao duoc.
     document.querySelectorAll('.nav .nhom').forEach(function(d) {{
       if (gon) d.open = true;
     }});
     veLai();
+  }});
+}})();
+/* Tim nhanh: Ctrl+K (PC) hoac nut "Tim" o thanh duoi (cam ung).
+   Go khong dau van tim duoc ("cai dat" ra "Cài đặt"). JS loi thi nut Tim
+   van mo menu o to (#cs-menu) - khong bao gio thanh nut chet. */
+(function() {{
+  var DS = {_ds_tim_nhanh()};
+  var hop = document.getElementById('tim-nhanh'), o = document.getElementById('tim-o'),
+      ul = document.getElementById('tim-ds'), chon = 0, kq = [];
+  if (!hop || !o || !ul) return;
+  function bo(s) {{ return (s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase(); }}
+  function ve() {{
+    var q = bo(o.value).trim(), tu = q.split(/\\s+/).filter(Boolean);
+    kq = DS.filter(function(d) {{
+      var t = bo(d[0] + ' ' + d[2] + ' ' + d[3] + ' ' + d[1]);
+      return tu.every(function(w) {{ return t.indexOf(w) >= 0; }});
+    }}).slice(0, 40);
+    if (chon >= kq.length) chon = 0;
+    ul.innerHTML = '';
+    if (!kq.length) {{ ul.innerHTML = '<li class="rong">Không thấy chức năng nào khớp.</li>'; return; }}
+    kq.forEach(function(d, i) {{
+      var li = document.createElement('li'), a = document.createElement('a');
+      a.href = d[1]; if (i === chon) a.className = 'sel';
+      a.appendChild(document.createTextNode(d[0]));
+      var sm = document.createElement('small'); sm.textContent = d[2]; a.appendChild(sm);
+      li.appendChild(a); ul.appendChild(li);
+    }});
+  }}
+  function mo() {{ hop.classList.add('on'); o.value = ''; chon = 0; ve(); setTimeout(function() {{ o.focus(); }}, 20); }}
+  function dong() {{ hop.classList.remove('on'); }}
+  var nt = document.getElementById('mo-tim'); if (nt) nt.addEventListener('click', mo);
+  document.querySelectorAll('[data-tim]').forEach(function(a) {{
+    a.addEventListener('click', function(e) {{ e.preventDefault(); mo(); }});
+  }});
+  o.addEventListener('input', function() {{ chon = 0; ve(); }});
+  /* Phim Enter cua ban phim THAT va phim ↵ cua BAN PHIM AO (vkeyboard.js goi
+     requestSubmit cua form) deu di qua day -> mo ket qua dang chon. */
+  var fm = document.getElementById('tim-form');
+  if (fm) fm.addEventListener('submit', function(e) {{
+    e.preventDefault();
+    if (kq[chon]) location.href = kq[chon][1];
+  }});
+  o.addEventListener('keydown', function(e) {{
+    if (e.key === 'ArrowDown') {{ chon = Math.min(chon + 1, kq.length - 1); ve(); e.preventDefault(); }}
+    else if (e.key === 'ArrowUp') {{ chon = Math.max(chon - 1, 0); ve(); e.preventDefault(); }}
+  }});
+  hop.addEventListener('click', function(e) {{ if (e.target === hop) dong(); }});
+  document.addEventListener('keydown', function(e) {{
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {{ e.preventDefault(); mo(); }}
+    else if (e.key === 'Escape') dong();
   }});
 }})();
 </script>
@@ -799,6 +1358,28 @@ def _nut_quay_ve():
             '&larr; Tất cả công cụ mạng</a></p>')
 
 
+_THE_TRAN = {"h1", "h2", "h3", "table", "th", "td", "tr", "input", "select", "textarea",
+             "button", "pre", "label", "code", "a", "p"}
+
+
+def _chi_the_tran(sel):
+    """
+    Bo chon CHI gom the HTML tran (vd 'th', 'input[type=text], select',
+    'button:hover'). Trang cu tu to mau cho cac the nay (nut xanh la, chu
+    tieu de xanh la, o nhap nen #333) - giu lai thi trang cong cu lech
+    han phong cach chung va vo o nen sang. Bo di de khung chung lo.
+    Bo chon co class/id (.card, #kq...) thi GIU - do la phan rieng cua trang.
+    """
+    for phan in sel.split(","):
+        p = phan.strip()
+        if _re.match(r"^(a|button)?\.btn(:[\w-]+)?$", p):
+            continue          # nut .btn: khung chung da co kieu (ca sang/toi)
+        goc = _re.split(r"[\[:\s>+~]", p, 1)[0]
+        if not goc or goc not in _THE_TRAN or "." in p or "#" in p:
+            return False
+    return True
+
+
 def wrap_legacy_html(html, active="/nettools"):
     """Boc 1 trang HTML hoan chinh (kieu cu) vao khung giao dien chung."""
     m = _BODY_RE.search(html)
@@ -826,7 +1407,38 @@ def wrap_legacy_html(html, active="/nettools"):
     for sm in _STYLE_RE.finditer(html):
         for rule in sm.group(1).split("}"):
             sel = rule.split("{")[0].strip()
-            if sel and not sel.startswith(("body", "html", "a ", "a{", "a:")):
-                css += rule + "}\n"
+            if sel and not sel.startswith(("body", "html", "a ", "a{", "a:")) \
+                    and not _chi_the_tran(sel):
+                # Gioi han CSS cu trong vung noi dung (.content): trang cu co
+                # quy tac nhu "a.btn {nen xanh la}" / ".chip {...}" trung ten
+                # voi nut va o trang thai cua thanh tren -> lam meo thanh tren.
+                than = rule.split("{", 1)[1]
+                sel_moi = ", ".join(".content " + p.strip() for p in sel.split(",") if p.strip())
+                css += sel_moi + " {" + than + "}\n"
 
     return render_page(body, active=active, title=title, extra_css=css)
+
+
+def register_giaodien(app):
+    """
+    /giaodien?che_do=pc|cu&nen=sang|toi&next=/duong-dan
+    Luu lua chon vao cookie cua RIENG trinh duyet nay roi quay lai trang cu.
+    Dung link thuong (khong can JS) nen nut doi che do luon bam duoc.
+    """
+    from flask import request, redirect
+
+    @app.route("/giaodien")
+    def doi_giao_dien():
+        nxt = request.args.get("next", "/") or "/"
+        # Chi cho quay ve duong dan NOI BO - chan chuyen huong ra ngoai
+        if not nxt.startswith("/") or nxt.startswith("//") or nxt.startswith("/\\"):
+            nxt = "/"
+        r = redirect(nxt)
+        nam = 3600 * 24 * 365
+        cd = request.args.get("che_do")
+        if cd in ("pc", "cu"):
+            r.set_cookie("cs_che_do", cd, max_age=nam, samesite="Lax", httponly=True)
+        nen = request.args.get("nen")
+        if nen in ("sang", "toi"):
+            r.set_cookie("cs_nen", nen, max_age=nam, samesite="Lax", httponly=True)
+        return r

@@ -60,7 +60,7 @@ def khoi_gioi_thieu():
     """The Gioi thieu: logo, san pham, tac gia, ban quyen, nut mo tai lieu."""
     return f"""
     <div class="card gt-the">
-      <img src="/thuong-hieu/logo-full.svg" alt="zTieuYeuz - Console System" class="gt-logo">
+      <img src="/thuong-hieu/logo-full.svg" alt="zTieuYeuz - Console System" class="gt-logo logo-toi"><img src="/thuong-hieu/logo-full-nen-sang.svg" alt="zTieuYeuz - Console System" class="gt-logo logo-sang">
       <p class="gt-mo">Bộ công cụ cho kỹ sư mạng: cấu hình thiết bị qua cổng console, SSH/Telnet,
         công cụ chẩn đoán mạng và cài Windows hàng loạt qua mạng (PXE) - tất cả trong một
         thiết bị nhỏ gọn, dùng ngay trên trình duyệt.</p>

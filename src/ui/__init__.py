@@ -1,6 +1,6 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """Console Pi - cac tab giao dien moi (bo cuc thanh trai + noi dung phai)."""
-from .layout import render_page, get_status_chips          # noqa: F401
+from .layout import render_page, get_status_chips, register_giaodien  # noqa: F401
 from .auth import register_auth                            # noqa: F401
 from .home import register_home                            # noqa: F401
 from .terminal import register_terminal                    # noqa: F401
@@ -28,6 +28,7 @@ from .gioithieu import register_gioithieu                  # noqa: F401
 def register_all(app):
     """Gan toan bo tab moi vao app Flask (goi tu app.py)."""
     register_auth(app)
+    register_giaodien(app)
     register_home(app)
     register_terminal(app)
     register_ssh(app)

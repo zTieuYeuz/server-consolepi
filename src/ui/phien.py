@@ -572,6 +572,9 @@ JS = r"""
 
 CSS_GON = """
 .main>.status{display:none;}
+/* Che do cam ung: chua cho thanh duoi (~90px) de khong che dong lenh cuoi */
+body.cd-cu .content{padding-bottom:96px !important;}
+body.cd-cu .ph-khung{height:calc(100vh - 168px);}
 .content{padding:10px 12px 10px;max-width:none;}
 .content>h1,.content>.sub{display:none;}
 """

@@ -14,7 +14,7 @@ import subprocess
 
 from flask import request
 
-from .layout import render_page
+from .layout import render_page, get_status_chips
 from . import health
 
 BASE_TTYD_PORT = 8001
@@ -191,61 +191,246 @@ def _thanh(phan_tram, nguong_vang=75, nguong_do=90):
 
 def _bang_suc_khoe(h, power_msg):
     """
-    Bang "Suc khoe thiet bi" - dung RIENG mot ham (khong viet thang trong
+    Khoi "Suc khoe thiet bi" - dung RIENG mot ham (khong viet thang trong
     trang) vi duoc dung o HAI cho: luc dung trang lan dau, va moi 10 giay
     khi /api/suckhoe tra ve de cap nhat tai cho. Viet 2 ban se lech nhau.
+
+    Giao dien 2 che do (15/10/2026): bay thanh LUOI THE SO (so to, thanh mau)
+    thay cho bang 2 cot - liec nhanh la thay. So lieu van y nhu cu, cho nao
+    khong do duoc thi ghi ro "khong ap dung", khong bia so.
     """
     temp = h.get("temp")
-    o_temp = (f"{temp} &deg;C" if temp is not None else
-              '<span style="color:#8b93a1;font-weight:400;">máy này không có '
-              'cảm biến nhiệt độ</span>')
-    temp_color = ("#6ee7a0" if (temp or 0) < 65
-                  else ("#ffb74d" if (temp or 0) < 80 else "#ff6b6b"))
     mem_u, mem_t, mem_p = h.get("mem", (0, 0, 0))
     dk_u, dk_t, dk_p = h.get("disk", (0, 0, 0))
     cpu = h.get("cpu")
 
-    # LOI THAT (26/09/2026, test ban ISO 32-bit chay LIVE tu USB): o dia hien
-    # "0 / 0 GB 0%" - so bia. May live khong co o cai dat: "/" la overlay nam
-    # tren RAM (tmpfs ~ nua RAM), statvfs tra < 1 GB nen chia nguyen ra 0
-    # (may nhieu RAM hon thi ra "0 / 1 GB" - van la so cua RAM, khong phai
-    # dia). Nguyen tac du an: khong bia so - ghi ro la khong ap dung.
-    # /run/live/medium chi co khi boot live (live-boot); Pi va may da cai
-    # khong co thu muc nay nen hien so that nhu cu.
-    if os.path.isdir("/run/live/medium"):
-        o_dia = ('<span style="color:#8b93a1;">không áp dụng (đang chạy từ '
-                 'USB/live, chưa cài vào ổ cứng)</span>')
-    elif dk_t:
-        o_dia = (f'{dk_u} / {dk_t} GB &nbsp;<strong>{dk_p}%</strong>'
-                 f'{_thanh(dk_p, 80, 92)}')
-    else:
-        o_dia = '<span style="color:#8b93a1;">không đọc được dung lượng đĩa</span>'
+    def the(nhan, gia_tri, phu="", thanh=""):
+        return (f'<div class="so-the"><div class="so-nhan">{nhan}</div>'
+                f'<div class="so-gt">{gia_tri}</div>{thanh}'
+                f'{f"<div class=so-phu>{phu}</div>" if phu else ""}</div>')
+
+    def mau(p, vang, do):
+        return "#6ee7a0" if p < vang else ("#ffb74d" if p < do else "#ff6b6b")
 
     if cpu is None:
         # Lan do dau tien chua co moc so sanh - xem cpu_percent() trong
         # ui/health.py. Sau 10 giay se co so that.
-        o_cpu = '<span style="color:#8b93a1;">đang đo...</span>'
+        o_cpu = the("CPU đang dùng", '<span class="so-mo">đang đo…</span>')
     else:
-        mau = "#6ee7a0" if cpu < 75 else ("#ffb74d" if cpu < 90 else "#ff6b6b")
-        o_cpu = (f'<span style="color:{mau};font-weight:600;">{cpu}%</span>'
-                 + _thanh(cpu))
+        o_cpu = the("CPU đang dùng",
+                    f'<span style="color:{mau(cpu, 75, 90)};">{cpu}%</span>', "", _thanh(cpu))
+
+    o_ram = the("Bộ nhớ (RAM)", f"{mem_p}%", f"{mem_u} / {mem_t} MB", _thanh(mem_p))
+
+    if temp is None:
+        o_temp = the("Nhiệt độ CPU", '<span class="so-mo">không đo được</span>',
+                     "máy này không có cảm biến nhiệt độ")
+    else:
+        o_temp = the("Nhiệt độ CPU",
+                     f'<span style="color:{mau(temp, 65, 80)};">{temp} &deg;C</span>')
+
+    # LOI THAT (26/09/2026, test ban ISO 32-bit chay LIVE tu USB): o dia hien
+    # "0 / 0 GB 0%" - so bia. May live khong co o cai dat: "/" la overlay nam
+    # tren RAM. Nguyen tac du an: khong bia so - ghi ro la khong ap dung.
+    if os.path.isdir("/run/live/medium"):
+        o_dia = the("Đĩa", '<span class="so-mo">không áp dụng</span>',
+                    "đang chạy từ USB/live, chưa cài vào ổ cứng")
+    elif dk_t:
+        o_dia = the("Đĩa", f"{dk_p}%", f"{dk_u} / {dk_t} GB", _thanh(dk_p, 80, 92))
+    else:
+        o_dia = the("Đĩa", '<span class="so-mo">không đọc được</span>')
 
     return f"""
-        <table>
-          <tr><td style="width:190px;">Nguồn điện</td><td>{power_msg}</td></tr>
-          <tr><td>CPU đang dùng</td><td>{o_cpu}</td></tr>
-          <tr><td>Bộ nhớ (RAM)</td>
-              <td>{mem_u} / {mem_t} MB &nbsp;<strong>{mem_p}%</strong>
-                  {_thanh(mem_p)}</td></tr>
-          <tr><td>Nhiệt độ CPU</td>
-              <td><span style="color:{temp_color};font-weight:600;">
-                  {o_temp}</span></td></tr>
-          <tr><td>Thời gian chạy</td><td>{h.get('uptime', '?')}</td></tr>
-          <tr><td>Tải hệ thống</td>
-              <td><code>{h.get('load', '?')}</code>
-                  <span style="color:#8b93a1;font-size:12px;">(1 / 5 / 15 phút)</span></td></tr>
-          <tr><td>Đĩa</td><td>{o_dia}</td></tr>
-        </table>"""
+        <div class="so-luoi">
+          {o_cpu}{o_ram}{o_temp}{o_dia}
+          {the("Thời gian chạy", f'<span class="so-vua">{h.get("uptime", "?")}</span>')}
+          {the("Tải hệ thống", f'<span class="so-vua">{h.get("load", "?")}</span>', "trung bình 1 / 5 / 15 phút")}
+        </div>
+        <div class="so-nguon"><b>Nguồn điện:</b> {power_msg}</div>"""
+
+
+# ---------------------------------------------------------------- tong quan
+# Thu muc du lieu -> (ten de hieu, trang quan ly). Dung cho the "Can chu y"
+# khi dia sap day: chi ra CAI GI dang chiem cho va bam vao dung trang do de
+# nguoi dung TU chon xoa. Khong bao gio tu xoa.
+_THU_MUC_LON = [
+    ("deploy/os", "Bộ cài Windows", "/deployos/os"),
+    ("deploy/winpe-apps", "Ứng dụng WinPE cứu hộ", "/deployos/console"),
+    ("deploy/boot", "File WinPE / boot", "/deployos/console"),
+    ("deploy/apps", "Phần mềm cài kèm", "/deployos/console/apps"),
+    ("deploy/ungdung", "Ứng dụng nhiều file", "/deployos/ungdung"),
+    ("deploy/drivers", "Driver", "/deployos/drivers"),
+    ("deploy/fonts", "Font chữ", "/deployos/font"),
+    ("storage", "Kho file", "/storage"),
+]
+_DL_CACHE = {"t": 0, "ds": []}
+
+
+def _kich_thuoc(duong):
+    tong = 0
+    for goc, _ds, cac_file in os.walk(duong):
+        for f in cac_file:
+            try:
+                tong += os.lstat(os.path.join(goc, f)).st_size
+            except OSError:
+                pass
+    return tong
+
+
+def dung_luong_lon():
+    """[(ten, trang, so_byte)] cac thu muc du lieu lon, giam dan. Nho 10 phut."""
+    import time as _t
+    if _t.time() - _DL_CACHE["t"] < 600:
+        return _DL_CACHE["ds"]
+    from .duongdan import _duong
+    ds = []
+    for tuong_doi, ten, trang in _THU_MUC_LON:
+        d = _duong(tuong_doi)
+        if os.path.isdir(d):
+            n = _kich_thuoc(d)
+            if n >= 50 * 1024 * 1024:
+                ds.append((ten, trang, n))
+    ds.sort(key=lambda x: -x[2])
+    _DL_CACHE.update(t=_t.time(), ds=ds)
+    return ds
+
+
+def _gb(n):
+    return f"{n / 1024 ** 3:.1f}".replace(".", ",") + " GB" if n >= 1024 ** 3 else f"{n // 1024 ** 2} MB"
+
+
+def can_chu_y(h, ports, states):
+    """
+    Cac the "Can chu y" o dau trang Tong quan - CHI sinh tu so lieu that
+    cua may, khong co gi la minh hoa. Tra ve [(muc, icon, tieu_de, mo_ta, nut)]
+    muc: "do" (loi) / "vang" (canh bao) / "nhan" (thong tin).
+    """
+    ra = []
+    th = h.get("throttle")
+    if th and th.get("now"):
+        ra.append(("do", "bolt", "Nguồn điện đang yếu",
+                   _esc(", ".join(th["now"])) + ". Đổi nguồn / cáp sạc tốt hơn.",
+                   ("Xem nguồn điện", "/power")))
+    temp = h.get("temp")
+    if temp is not None and temp >= 70:
+        ra.append(("do" if temp >= 80 else "vang", "temp", f"Nhiệt độ CPU {temp} °C",
+                   "Máy đang nóng. Để chỗ thoáng, kiểm tra quạt / tản nhiệt.", None))
+    hong = [nhan for svc, nhan in SERVICES if states.get(svc) == "failed"]
+    if hong:
+        ra.append(("do", "warn", "Dịch vụ bị lỗi: " + _esc(", ".join(hong)),
+                   "Dịch vụ này đã dừng vì lỗi. Xem nhật ký để biết lý do.",
+                   ("Xem nhật ký", "/logs")))
+    dk_u, dk_t, dk_p = h.get("disk", (0, 0, 0))
+    if dk_t and dk_p >= 80 and not os.path.isdir("/run/live/medium"):
+        lon = dung_luong_lon()[:3]
+        mo_ta = f"Đã dùng {dk_u} / {dk_t} GB. "
+        if lon:
+            mo_ta += "Chiếm nhiều nhất: " + ", ".join(
+                f'<a href="{t}">{_esc(n)} {_gb(b)}</a>' for n, t, b in lon) + "."
+        ra.append(("do" if dk_p >= 92 else "vang", "save",
+                   f"Bộ nhớ lưu trữ đã đầy {dk_p}%", mo_ta,
+                   ("Xem " + lon[0][0], lon[0][1]) if lon else None))
+    chua_ten = [p["devname"] for p in ports if not p.get("name")]
+    if chua_ten:
+        ra.append(("nhan", "usb", "Cáp console chưa đặt tên",
+                   "Cổng " + ", ".join(f"<code>{_esc(d)}</code>" for d in chua_ten) +
+                   ". Đặt tên để dễ nhận ra thiết bị.", ("Đặt tên", "#cong-console")))
+    try:
+        from . import pxe as _pxe
+        if _pxe.dang_bat():
+            ra.append(("nhan", "disk", "PXE đang bật",
+                       "Máy trong mạng chọn boot qua mạng sẽ thấy menu cài Windows. "
+                       "Tắt khi xong việc.", ("Bật / Tắt PXE", "/deployos/caidat")))
+    except Exception:
+        pass
+    n_cai = _so_may_dang_cai()
+    if n_cai:
+        ra.append(("nhan", "win", f"Đang cài Windows cho {n_cai} máy",
+                   "Theo dõi tiến độ từng máy.", ("Xem tiến trình", "/deployos/tiendo")))
+    return ra
+
+
+def _so_may_dang_cai():
+    """So may dang o giua chung (WinPE / Windows), cap nhat trong 3 gio qua."""
+    import time as _t
+    try:
+        from . import lichsu as _ls
+        moc = _t.time() - 3 * 3600
+        return sum(1 for b in _ls.danh_sach()
+                   if b.get("trang_thai") in ("winpe", "windows")
+                   and (b.get("cap_nhat") or b.get("bat_dau") or 0) >= moc)
+    except Exception:
+        return 0
+
+
+def _dem_kich_ban():
+    try:
+        from .deployos import KICHBAN_DIR
+        return sum(1 for f in os.listdir(KICHBAN_DIR) if f.endswith(".json"))
+    except Exception:
+        return 0
+
+
+def _dem_may_wol():
+    try:
+        from . import wol as _w
+        return len(_w.tat_ca_may())
+    except Exception:
+        return 0
+
+
+def _cai_gan_day(n=5):
+    try:
+        from . import lichsu as _ls
+        return _ls.danh_sach()[:n], _ls
+    except Exception:
+        return [], None
+
+
+CSS_TONG_QUAN = """
+.so-luoi { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+.so-the { background:var(--the); border:1px solid var(--vien); border-radius:14px; padding:14px 16px; }
+.so-nhan { font-size:12.5px; color:var(--chu-mo); }
+.so-gt { font-size:24px; font-weight:700; margin:4px 0 2px; color:var(--chu); letter-spacing:-.3px; }
+.so-gt .so-mo { font-size:14px; font-weight:500; color:var(--chu-mo2); }
+.so-gt .so-vua { font-size:15px; font-weight:600; line-height:1.35; display:block; }
+.so-phu { font-size:12px; color:var(--chu-mo2); margin-top:4px; }
+.so-nguon { margin-top:12px; font-size:14px; color:var(--chu-mo); }
+.ccy { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; margin-bottom:6px; }
+.ccy-the { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px;
+           border:1px solid var(--vien); background:var(--the); }
+.ccy-the .bi { width:40px; height:40px; border-radius:11px; display:grid; place-items:center; flex:none; }
+.ccy-the.vang { border-color:rgba(251,191,36,.45); background:var(--vang-mo); }
+.ccy-the.vang .bi { color:var(--vang); background:var(--vang-mo); }
+.ccy-the.do { border-color:rgba(248,113,113,.45); background:var(--do-mo); }
+.ccy-the.do .bi { color:var(--do); background:var(--do-mo); }
+.ccy-the.nhan { border-color:var(--vien-ro); }
+.ccy-the.nhan .bi { color:var(--nhan); background:var(--nhan-mo); }
+.ccy-the .nd { flex:1; min-width:0; }
+.ccy-the .nd b { display:block; font-size:14.5px; color:var(--chu); margin-bottom:2px; }
+.ccy-the .nd span { font-size:13px; color:var(--chu-mo); line-height:1.5; }
+.ccy-the .nut { margin-top:10px; }
+.ccy-ok { padding:12px 16px; border-radius:12px; background:var(--xanh-mo); color:var(--chu);
+          font-size:14px; display:flex; gap:10px; align-items:center; }
+.ccy-ok svg.i { color:var(--xanh); }
+.viec { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+body.cd-cu .viec { grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
+body.cd-cu .viec .o-to { min-height:150px; padding:20px; border-radius:22px; }
+body.cd-cu .viec .o-to b { font-size:18.5px; margin-top:auto; }
+body.cd-cu .viec .o-to .bi { width:56px; height:56px; border-radius:16px; }
+.o-to .nhan-so { position:absolute; top:14px; right:14px; font-size:12px; font-weight:700;
+                 padding:4px 10px; border-radius:999px; background:var(--nhan-mo); color:var(--nhan); }
+.o-to .nhan-so.xanh { background:var(--xanh-mo); color:var(--xanh); }
+.gan-day { display:flex; flex-direction:column; }
+.gan-day a { display:flex; gap:12px; align-items:center; padding:11px 4px; border-top:1px solid var(--vien);
+             color:var(--chu); font-size:14px; }
+.gan-day a:first-child { border-top:0; }
+.gan-day a .t { flex:1; min-width:0; }
+.gan-day a small { display:block; color:var(--chu-mo); font-size:12.5px; }
+.gan-day .tt { font-size:12px; padding:3px 10px; border-radius:999px; background:var(--the-noi); white-space:nowrap; }
+.tq-hai { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:16px; align-items:start; }
+@media (max-width: 1100px) { .tq-hai { grid-template-columns:1fr; } }
+"""
 
 
 def register_home(app):
@@ -318,18 +503,10 @@ def register_home(app):
         h = health.snapshot()
         power_msg = power_msg_html(h)
 
-        temp = h["temp"]
-        temp_color = "#6ee7a0" if (temp or 0) < 65 else ("#ffb74d" if (temp or 0) < 80 else "#ff6b6b")
-        mem_u, mem_t, mem_p = h["mem"]
-        dk_u, dk_t, dk_p = h["disk"]
-
         # Khoi suc khoe TU CAP NHAT moi 10 giay (xem /api/suckhoe + doan JS
-        # cuoi trang). Chi thay so trong khoi nay, KHONG tai lai ca trang:
-        # tai lai ca trang se cuon vot len dau va dong cac bang dang xem -
-        # rat kho chiu khi dang theo doi mot chi so.
+        # cuoi trang). Chi thay so trong khoi nay, KHONG tai lai ca trang.
         health_html = f"""
         <div id="suc-khoe">{_bang_suc_khoe(h, power_msg)}</div>
-        <p style="margin-top:10px;"><a class="btn" href="/power">⚡ Tắt máy / Khởi động lại</a></p>
         <script>
         (function() {{
           var o = document.getElementById('suc-khoe');
@@ -341,36 +518,121 @@ def register_home(app):
               .catch(function() {{}});   /* mat mang thi giu so cu, khong bao loi */
           }}
           setInterval(lamMoi, 10000);
-          /* Tab bi an (chuyen sang tab khac) thi KHONG do nua - do tiep chi
-             ton CPU cua chinh con Pi ma khong ai nhin. Quay lai thi do ngay. */
+          /* Tab bi an thi KHONG do nua - quay lai thi do ngay. */
           document.addEventListener('visibilitychange', function() {{
             if (!document.hidden) lamMoi();
           }});
         }})();
         </script>"""
 
-        body = f"""
-        <h2>Cổng console đang cắm</h2>
-        {ports_html}
+        from .layout import svg_icon, che_do_giao_dien
+        che_do = che_do_giao_dien()
 
-        <h2>Chi tiết mạng</h2>
-        <table>
-          <tr><th>Giao diện</th><th>Địa chỉ IP</th><th>MAC</th><th>Trạng thái</th><th style="width:50px;"></th></tr>
-          {net_rows}
-        </table>
+        # --- Can chu y: CHI tu so lieu that (xem can_chu_y) ---
+        canh = can_chu_y(h, ports, states)
+        if canh:
+            ccy_html = '<div class="ccy">' + "".join(
+                f'<div class="ccy-the {muc}"><div class="bi">{svg_icon(ic)}</div>'
+                f'<div class="nd"><b>{td}</b><span>{mt}</span>'
+                + (f'<div class="nut"><a class="btn gray small" href="{nut[1]}">{nut[0]}</a></div>' if nut else "")
+                + '</div></div>' for muc, ic, td, mt, nut in canh) + '</div>'
+        else:
+            ccy_html = (f'<div class="ccy-ok">{svg_icon("info")}Mọi thứ đang ổn: nguồn điện, '
+                        f'nhiệt độ, dịch vụ và dung lượng không có gì cần xử lý.</div>')
+
+        # --- Viec hay lam: nhan so tren moi o deu dem tu du lieu that ---
+        from nettools import TOOLS_READONLY, TOOLS_WRITE
+        n_cong = len(ports)
+        try:
+            from . import pxe as _pxe
+            pxe_bat = _pxe.dang_bat()
+        except Exception:
+            pxe_bat = False
+        n_kb = _dem_kich_ban()
+        n_wol = _dem_may_wol()
+        chip_wifi = next((c for c in get_status_chips() if c["key"].startswith("WiFi")), None)
+        viec = [
+            ("term", "Console",
+             (f"/phien?mo=serial-{ports[0]['devname']}" if ports else "/console"),
+             (_esc(ports[0]["name"] or ports[0]["devname"]) if ports else "Chưa cắm cáp console"),
+             (f"{n_cong} cổng" if n_cong else ""), ""),
+            ("win", "Cài Windows qua mạng", "/deployos/kichban",
+             f"{n_kb} kịch bản đã lưu" if n_kb else "Chưa có kịch bản",
+             ("PXE đang bật" if pxe_bat else ""), "xanh"),
+            ("net", "Công cụ mạng", "/nettools",
+             f"{len(TOOLS_READONLY) + len(TOOLS_WRITE)} công cụ: ARP, ping, LLDP, DHCP…", "", ""),
+            ("bolt", "Bật máy từ xa", "/deployos/caidat/wol", "Wake-on-LAN",
+             (f"{n_wol} máy" if n_wol else ""), ""),
+            ("key", "SSH / Telnet", "/ssh", "Vào thiết bị qua mạng", "", ""),
+            ("wifi", "WiFi / AP", "/wifi",
+             (_esc(chip_wifi["extra"]) if chip_wifi else "WiFi / điểm phát"), "", ""),
+            ("save", "Kho file", "/storage", "Cấu hình, firmware, file tải lên", "", ""),
+            ("log", "Nhật ký", "/logs", "Nhật ký hệ thống và lỗi", "", ""),
+        ]
+        if che_do == "pc":
+            viec = viec[:4]
+        viec_html = '<div class="viec">' + "".join(
+            f'<a class="o-to" href="{href}">'
+            + (f'<span class="nhan-so {lop}">{so}</span>' if so else "")
+            + f'<span class="bi">{svg_icon(ic)}</span><b>{ten}</b><small>{phu}</small></a>'
+            for ic, ten, href, phu, so, lop in viec) + '</div>'
+
+        # --- Cai dat gan day (Lich su cai that) ---
+        gan, _ls = _cai_gan_day(5)
+        if gan:
+            dong = ""
+            for bg in gan:
+                nhan, _m = _ls.TRANG_THAI.get(bg.get("trang_thai"), ("?", ""))
+                may = (bg.get("ten_may") or " ".join(x for x in (bg.get("hang"), bg.get("model")) if x)
+                       or bg.get("mac") or "Máy không rõ tên")
+                tl = _ls.thoi_luong(bg)
+                dong += (f'<a href="/deployos/lichsu"><span class="t"><b>{_esc(may)}</b>'
+                         f'<small>{_ls.gio(bg.get("bat_dau"))}{" · " + tl if tl else ""}'
+                         f'{" · " + _esc(bg.get("mac")) if bg.get("mac") else ""}</small></span>'
+                         f'<span class="tt">{_esc(nhan)}</span></a>')
+            gan_html = f'<div class="card gan-day">{dong}</div>'
+        else:
+            gan_html = ('<p class="hint">Chưa có lần cài Windows qua mạng nào. '
+                        '<a href="/deployos/kichban">Bắt đầu ở Deployment OS</a>.</p>')
+
+        body = f"""
+        <h2>Cần chú ý</h2>
+        {ccy_html}
+
+        <h2>{"Việc hay làm" if che_do == "pc" else "Chức năng"}</h2>
+        {viec_html}
 
         <h2>Sức khỏe thiết bị</h2>
         {health_html}
+        <p style="margin-top:12px;"><a class="btn gray" href="/power">{svg_icon("pow")} Tắt máy / Khởi động lại</a></p>
+
+        <h2 id="cong-console">Cổng console đang cắm</h2>
+        {ports_html}
+
+        <div class="tq-hai">
+          <div>
+            <h2>Chi tiết mạng</h2>
+            <div class="tbl-scroll"><table>
+              <tr><th>Giao diện</th><th>Địa chỉ IP</th><th>MAC</th><th>Trạng thái</th><th style="width:50px;"></th></tr>
+              {net_rows}
+            </table></div>
+          </div>
+          <div>
+            <h2>Cài đặt gần đây</h2>
+            {gan_html}
+          </div>
+        </div>
 
         <h2>Dịch vụ hệ thống</h2>
-        <table>
+        <div class="tbl-scroll"><table>
           <tr><th style="width:220px;">Chức năng</th><th>Dịch vụ</th><th style="width:160px;">Trạng thái</th></tr>
           {svc_rows}
-        </table>"""
+        </table></div>"""
 
+        from .gioithieu import _phien_ban
         return render_page(body, active="/", title="Tổng quan",
-                           subtitle="Trạng thái thiết bị và các cổng console")
-
+                           subtitle=f"Console System {_esc(_phien_ban())} · đã chạy {h.get('uptime', '?')}",
+                           extra_css=CSS_TONG_QUAN)
 
     @app.route("/api/status")
     def api_status():
@@ -384,7 +646,8 @@ def register_home(app):
         """Bang suc khoe da render san - trang Tong quan goi moi 10 giay."""
         from flask import jsonify
         h = health.snapshot()
-        return jsonify({"html": _bang_suc_khoe(h, power_msg_html(h))})
+        from .layout import doi_mau_viet_cung
+        return jsonify({"html": doi_mau_viet_cung(_bang_suc_khoe(h, power_msg_html(h)))})
 
     @app.route("/console")
     def console_danh_sach():

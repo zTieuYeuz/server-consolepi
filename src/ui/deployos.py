@@ -2106,7 +2106,7 @@ def ve_bao_cao_o_dia(kq, nut_chon=False):
 def register_deployos(app):
     from flask import (request, redirect, send_from_directory, abort, jsonify,
                        flash, get_flashed_messages, session)
-    from .layout import render_page
+    from .layout import render_page, doi_mau_viet_cung
     from .home import _esc
 
     # --- Khai bao cac duong tai len duoc phep ghi THANG ra dia dich ---
@@ -2323,14 +2323,7 @@ def register_deployos(app):
       grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); }
     .luoi-them textarea { width:100%; font-size:13.5px; }
 
-    .dep-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-    .dep-tabs.sub { margin-top:-4px; margin-bottom:18px; }
-    .dep-tab { padding:11px 17px; min-height:46px; display:inline-flex;
-      align-items:center; background:#22262b; border:1px solid #2c3036;
-      border-radius:7px; color:#c9ced6; font-size:14px; }
-    .dep-tab:active { transform:scale(.97); }
-    .dep-tab.on { background:#1f3a26; border-color:#4CAF50; color:#fff; font-weight:600; }
-    .dep-tabs.sub .dep-tab { padding:9px 14px; min-height:42px; font-size:13px; }
+    /* .dep-tab: dung kieu chung trong layout.py (co ca nen sang/toi) */
 
     /* Vach tien do cac buoc cua trinh tu tu chon */
     .buoc-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; }
@@ -3991,7 +3984,7 @@ def register_deployos(app):
                 f'<strong>{_esc(ten_kieu.get(kq["kieu"], kq["kieu"]))}</strong> &middot; cổng '
                 f'{_esc(kq["cong"])} &middot; PXE {"đang bật" if kq["pxe_bat"] else "đang tắt"} &middot; '
                 f'{time.strftime("%H:%M:%S")}</p>')
-        return jsonify({"html": tom + f"<div class='tbl-scroll'><table>{hang}</table></div>",
+        return jsonify({"html": doi_mau_viet_cung(tom + f"<div class='tbl-scroll'><table>{hang}</table></div>"),
                         "so_loi": kq["so_loi"], "so_canh": kq["so_canh"]})
 
     @app.route("/deployos/caidat")
