@@ -1657,6 +1657,7 @@ def _cauhinh_mac_dinh(che_do):
         "o_dia_che_do": "tu_dong", "o_dia_so": "0", "o_dia_bang": "tu_dong",
         # Cach chon o dich (1.9.0): so | co_windows | dung_luong | model | nho_nhat | lon_nhat
         "o_dia_chon": "so", "o_dia_gb": "", "o_dia_dungsai": "10", "o_dia_model": "",
+        "tu_dong_c_gb": "", "tu_dong_d": False, "tu_dong_c_nhan": "Windows", "tu_dong_d_nhan": "DuLieu",
         "phan_vung": [],
         "apps": [], "ungdung": [], "fonts": [], "scripts": [], "lenh_them": "",
         # Gia nhap domain + cac tuy chon Windows sau khi cai (mo hinh MDT).
@@ -1670,7 +1671,7 @@ def _cauhinh_mac_dinh(che_do):
 _TRUONG_KICHBAN = (
     "kieu_boot", "os_ho", "os_id", "driver_ids", "ten_may",
     "username", "password", "ssh", "mui_gio", "o_dia_che_do",
-    "o_dia_so", "o_dia_bang", "o_dia_chon", "o_dia_gb", "o_dia_dungsai", "o_dia_model", "phan_vung", "apps", "ungdung", "fonts",
+    "o_dia_so", "o_dia_bang", "o_dia_chon", "o_dia_gb", "o_dia_dungsai", "o_dia_model", "tu_dong_c_gb", "tu_dong_d", "tu_dong_c_nhan", "tu_dong_d_nhan", "phan_vung", "apps", "ungdung", "fonts",
     "scripts", "lenh_them",
     "domain", "domain_ou", "domain_user", "domain_pass",
     "tuy_chon",
@@ -1866,6 +1867,35 @@ def _phan_vung_mac_dinh(os_ho):
         {"nhan": "swap", "cd": "2048", "fs": "swap", "gan": "-"},
         {"nhan": "root", "cd": "con_lai", "fs": "ext4", "gan": "/"},
     ]
+
+
+def _pv_win(*phan):
+    """Bo phan vung Windows GPT: EFI + MSR + cac phan vung du lieu (nhan, MB hoac con_lai, ghi chu o)."""
+    ra = [{"nhan": "EFI", "cd": "260", "fs": "fat32", "gan": "EFI"},
+          {"nhan": "MSR", "cd": "16", "fs": "msr", "gan": "-"}]
+    for nhan, cd, gan in phan:
+        ra.append({"nhan": nhan, "cd": str(cd), "fs": "ntfs", "gan": gan})
+    return ra
+
+
+# 5 mau bo phan vung cho che do "Chia bang tay" (Windows). Phan vung dau tien sau MSR la o he dieu hanh.
+MAU_PHAN_VUNG_WINDOWS = [
+    {"ten": "Chuẩn: 1 ổ C dùng hết ổ",
+     "mo_ta": "EFI + MSR + ổ C dùng hết ổ. Chạy được trên mọi ổ từ 64 GB.",
+     "pv": _pv_win(("Windows", "con_lai", "C:"))},
+    {"ten": "C: 100 GB + D: dữ liệu",
+     "mo_ta": "Ổ C 100 GB cho Windows và phần mềm, phần còn lại là ổ dữ liệu. Cần ổ từ 128 GB trở lên.",
+     "pv": _pv_win(("Windows", 102400, "C:"), ("DuLieu", "con_lai", "D:"))},
+    {"ten": "C: 200 GB + D: dữ liệu",
+     "mo_ta": "Ổ C 200 GB (nhiều phần mềm nặng) và ổ dữ liệu phần còn lại. Cần ổ từ 256 GB trở lên.",
+     "pv": _pv_win(("Windows", 204800, "C:"), ("DuLieu", "con_lai", "D:"))},
+    {"ten": "Máy văn phòng: C 120 GB + D phần mềm + E dữ liệu",
+     "mo_ta": "C: 120 GB hệ điều hành, D: 100 GB phần mềm, E: phần còn lại cho tài liệu. Cần ổ từ 256 GB trở lên.",
+     "pv": _pv_win(("Windows", 122880, "C:"), ("PhanMem", 102400, "D:"), ("DuLieu", "con_lai", "E:"))},
+    {"ten": "Máy chủ nhỏ: C 80 GB + D ứng dụng + E nhật ký + F dữ liệu",
+     "mo_ta": "C: 80 GB hệ thống, D: 50 GB ứng dụng, E: 100 GB nhật ký/sao lưu, F: phần còn lại cho dữ liệu. Cần ổ từ 256 GB trở lên.",
+     "pv": _pv_win(("HeThong", 81920, "C:"), ("UngDung", 51200, "D:"), ("NhatKy", 102400, "E:"), ("DuLieu", "con_lai", "F:"))},
+]
 
 
 # ==================================================================== giao dien
@@ -2349,9 +2379,11 @@ def register_deployos(app):
       border-radius:8px; padding:14px 16px; margin-bottom:10px; cursor:pointer; }
     .chon:active { transform:scale(.995); }
     .chon input { margin-right:9px; transform:scale(1.25); vertical-align:-1px; }
+    .chon input[type=text], .chon input[type=number] { transform:none; margin:0; vertical-align:baseline; }
+    .chon .d input[type=checkbox] { transform:none; margin-right:6px; vertical-align:middle; }
     .chon .t { font-size:15px; font-weight:600; color:#fff; }
     .chon .d { color:#8b93a1; font-size:13px; margin-top:5px; line-height:1.5; }
-    .chon:has(input:checked) { border-color:#4CAF50; background:#1f3a26; }
+    .chon:has(> input:checked) { border-color:#4CAF50; background:#1f3a26; }
 
     .pv-hang { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; align-items:center; }
     .pv-hang input, .pv-hang select { max-width:none; width:auto; flex:1; min-width:110px; }
@@ -2891,6 +2923,19 @@ def register_deployos(app):
                 return "Chọn ổ theo dung lượng thì phải điền dung lượng (GB), ví dụ 256."
             if d["o_dia_chon"] == "model" and not d["o_dia_model"]:
                 return "Chọn ổ theo tên/model thì phải điền chuỗi cần tìm, ví dụ Samsung hoặc WD."
+            # Tuy chon phan chia tu dong (Windows): o C co dinh GB + o du lieu phan con lai
+            if d.get("os_ho") == "windows":
+                if form.get("tu_dong_kieu") == "c_gb":
+                    cg = (form.get("tu_dong_c_gb") or "").strip()
+                    if not (cg.isdigit() and int(cg) >= 40):
+                        return "Ổ C có dung lượng cố định thì phải điền số GB từ 40 trở lên (Windows 11 nên từ 64 GB)."
+                    d["tu_dong_c_gb"] = cg
+                    d["tu_dong_d"] = bool(form.get("tu_dong_d"))
+                else:
+                    d["tu_dong_c_gb"] = ""
+                    d["tu_dong_d"] = False
+                d["tu_dong_c_nhan"] = re.sub(r"[^A-Za-z0-9 _-]", "", form.get("tu_dong_c_nhan") or "").strip()[:24] or "Windows"
+                d["tu_dong_d_nhan"] = re.sub(r"[^A-Za-z0-9 _-]", "", form.get("tu_dong_d_nhan") or "").strip()[:24] or "DuLieu"
             # Tu 1.5.0 deploy.cmd TU chon theo may (UEFI -> GPT, BIOS -> MBR),
             # xem unattend.sinh_diskpart_txt. Truoc do o chon GPT/MBR nay BI
             # BO QUA (luon chia GPT) - chon MBR cung khong co tac dung.
@@ -3249,7 +3294,9 @@ def register_deployos(app):
                   Nếu không có đúng 1 ổ khớp, máy <strong>dừng lại và không xóa gì</strong>.</p>
                 <label class="chon"><input type="radio" name="o_dia_chon" value="so"{_ck['so']}>
                   <span class="t">Theo số ổ (như trước đây)</span>
-                  <div class="d">Dùng "Ổ đĩa số" ở khung bên dưới. Dùng khi mọi máy giống hệt nhau.</div></label>
+                  <div class="d">Dùng khi mọi máy giống hệt nhau. Số ổ do thứ tự cắm cáp/khe quyết định (xem bảng "Ổ đĩa đã dò").
+                    <div style="margin-top:6px;"><label>Ổ đĩa số</label>
+                      <input type="number" name="o_dia_so" value="{_esc(d['o_dia_so'])}" min="0" max="15" style="max-width:130px;"></div></div></label>
                 <label class="chon"><input type="radio" name="o_dia_chon" value="co_windows"{_ck['co_windows']}>
                   <span class="t">Ổ đang chứa Windows</span>
                   <div class="d">Cài lại đúng ổ đang có Windows (tìm thấy thư mục Windows). Phải có đúng 1 ổ như vậy.</div></label>
@@ -3273,6 +3320,8 @@ def register_deployos(app):
                 <label class="chon"><input type="radio" name="o_dia_chon" value="lon_nhat"{_ck['lon_nhat']}>
                   <span class="t">Ổ lớn nhất</span>
                   <div class="d">Ổ có dung lượng lớn nhất của máy (không tính USB).</div></label>
+                <div class="msg warn" style="margin-top:14px;"><strong>Cảnh báo thật:</strong> ổ được chọn sẽ bị XÓA SẠCH trước khi cài (cả khi chia tự động lẫn chia bằng tay);
+                  các ổ khác không bị đụng tới.</div>
               </div>
 """
             pv = d["phan_vung"] or _phan_vung_mac_dinh(d["os_ho"])
@@ -3295,57 +3344,88 @@ def register_deployos(app):
                   <button type="button" class="red small" onclick="this.parentNode.remove()">Xóa</button>
                 </div>"""
 
+            la_win = d.get("os_ho") == "windows"
+            tt = _unattend().tuychon_tu_dong(d) if la_win else {"c_gb": 0, "d_tao": False, "c_nhan": "Windows", "d_nhan": "DuLieu"}
+            # Ngoai "Cai vao o nao?" cho Windows, Linux chi co o so o.
+            khoi_so_o_linux = "" if la_win else f"""
+              <div class="card">
+                <h3>Chọn ổ đĩa</h3>
+                <label>Ổ đĩa số</label>
+                <input type="number" name="o_dia_so" value="{_esc(d['o_dia_so'])}" min="0" max="15" style="max-width:130px;">
+                <div class="msg warn" style="margin-top:14px;"><strong>Cảnh báo thật:</strong> chia ổ đĩa là thao tác GHI ĐÈ -
+                  toàn bộ dữ liệu trên ổ được chọn sẽ mất. Máy có nhiều ổ thì kiểm tra kỹ số ổ trước khi chạy.</div>
+              </div>"""
+            mau_json = json.dumps(MAU_PHAN_VUNG_WINDOWS, ensure_ascii=False) if la_win else "[]"
+            nut_mau = ""
+            if la_win:
+                for i, m in enumerate(MAU_PHAN_VUNG_WINDOWS):
+                    nut_mau += (f'<button type="button" class="gray small" style="margin:0 6px 6px 0;" title="{_esc(m["mo_ta"])}" '
+                                f'onclick="apMau({i})">{_esc(m["ten"])}</button>')
+            khoi_mau = "" if not la_win else f"""
+                <div style="margin:0 0 12px;">
+                  <div style="color:#8b93a1;font-size:13px;margin-bottom:6px;"><strong>Mẫu có sẵn</strong> - bấm để điền sẵn danh sách rồi sửa lại cho vừa ý
+                    (ổ phải đủ lớn cho các phân vùng cố định; phân vùng cuối ghi <code>con_lai</code> lấy phần còn lại):</div>
+                  {nut_mau}
+                  <div id="mau-mota" style="color:#8b93a1;font-size:12.5px;min-height:18px;"></div>
+                </div>"""
+            khoi_tu_dong = f"""
+              <div class="card" id="khoi-tu-dong"{'' if d['o_dia_che_do'] == 'tu_dong' else ' style="display:none;"'}>
+                <h3>Tuỳ chọn phân chia tự động</h3>
+                <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">Ổ được chọn ở trên bị xóa sạch rồi chia theo bộ chuẩn của máy:
+                  <strong>UEFI &rarr; GPT</strong> (phân vùng EFI 260 MB + MSR 16 MB + ổ C), <strong>BIOS/Legacy &rarr; MBR</strong> (phân vùng hệ thống + ổ C).
+                  Máy nhận ra UEFI hay BIOS lúc cài, không cần chọn.</p>
+                {"" if la_win else '<p style="margin:0;">Với Linux, bộ phân vùng chuẩn là EFI + swap + root (ext4).</p>'}
+                {f"""
+                <label class="chon"><input type="radio" name="tu_dong_kieu" value="het"{'' if tt['c_gb'] else ' checked'}>
+                  <span class="t">1 ổ C dùng hết ổ (mặc định)</span>
+                  <div class="d">Toàn bộ ổ cho Windows. Hợp khi ổ chỉ để chạy hệ điều hành.</div></label>
+                <label class="chon"><input type="radio" name="tu_dong_kieu" value="c_gb"{' checked' if tt['c_gb'] else ''}>
+                  <span class="t">Ổ C có dung lượng cố định</span>
+                  <div class="d">Phần còn lại của ổ có thể để trống hoặc làm ổ dữ liệu riêng (ví dụ ổ D) - sau này cài lại Windows chỉ cần chọn đúng ổ C.
+                    <div class="row" style="margin-top:6px;">
+                      <div><label>Dung lượng ổ C (GB)</label>
+                        <input type="number" name="tu_dong_c_gb" value="{_esc(str(tt['c_gb'] or ''))}" min="40" style="max-width:130px;"
+                          placeholder="vd 100"><div style="color:#8b93a1;font-size:12px;">Windows 11 nên từ 64 GB trở lên.</div></div>
+                      <div><label>Nhãn ổ C</label>
+                        <input type="text" name="tu_dong_c_nhan" value="{_esc(tt['c_nhan'])}" maxlength="24" style="max-width:180px;"></div>
+                    </div>
+                    <label style="display:block;margin-top:8px;"><input type="checkbox" name="tu_dong_d" value="1"{' checked' if tt['d_tao'] else ''}>
+                      Tạo ổ dữ liệu từ phần còn lại của ổ</label>
+                    <div style="margin-top:4px;"><label>Nhãn ổ dữ liệu</label>
+                      <input type="text" name="tu_dong_d_nhan" value="{_esc(tt['d_nhan'])}" maxlength="24" style="max-width:180px;"></div>
+                    <div style="color:#8b93a1;font-size:12px;margin-top:4px;">Chữ cái ổ (D:, E:...) do Windows tự gán lúc khởi động lần đầu.</div>
+                  </div></label>""" if la_win else ""}
+              </div>"""
             return f"""
             <form method="POST" {act}>
               <div class="card">
                 <h3>Cách chia ổ đĩa</h3>
                 <label class="chon">
-                  <input type="radio" name="o_dia_che_do" value="tu_dong"{tu_dong_ch}>
+                  <input type="radio" name="o_dia_che_do" value="tu_dong"{tu_dong_ch} onchange="doiCheDoChiaO()">
                   <span class="t">Phân chia tự động</span>
-                  <div class="d">Dùng "ổ đĩa số" ở dưới (mặc định 0 - ổ đầu tiên máy
-                  nhìn thấy), xóa sạch và chia theo bộ phân vùng chuẩn của hệ điều hành
-                  đã chọn.</div>
+                  <div class="d">Xóa sạch ổ được chọn rồi chia theo bộ phân vùng chuẩn của hệ điều hành
+                  (có thể đặt ổ C cố định và tạo ổ dữ liệu). Bấm vào đây để xem các tuỳ chọn.</div>
                 </label>
                 <label class="chon">
-                  <input type="radio" name="o_dia_che_do" value="chia_tay"{tay_ch}>
+                  <input type="radio" name="o_dia_che_do" value="chia_tay"{tay_ch} onchange="doiCheDoChiaO()">
                   <span class="t">Chia bằng tay</span>
-                  <div class="d">Tự khai báo từng phân vùng bên dưới. Dùng khi
-                  máy có nhiều ổ cứng, hoặc muốn chia thêm ổ D: để chứa dữ liệu
-                  riêng.</div>
+                  <div class="d">Tự khai báo từng phân vùng (nhãn, dung lượng, định dạng), có sẵn 5 mẫu. Dùng khi
+                  muốn chia thêm ổ D: để chứa dữ liệu riêng hoặc cần bố cục đặc biệt. Bấm vào đây để xem danh sách phân vùng.</div>
                 </label>
               </div>
 
               {_khoi_o_dia_da_do()}
               {khoi_chon_o}
+              {khoi_so_o_linux}
+              {khoi_tu_dong}
 
-              <div class="card">
-                <h3>Thông số ổ đĩa</h3>
-                <div class="row">
-                  <div>
-                    <label>Ổ đĩa số <small style="color:#8b93a1;">(dùng khi chọn "Theo số ổ")</small></label>
-                    <input type="number" name="o_dia_so" value="{_esc(d['o_dia_so'])}"
-                           min="0" max="15" style="max-width:130px;">
-                  </div>
-                  <div>
-                    <label>Bảng phân vùng</label>
-                    <div style="padding:8px 0;color:#c9d1d9;">Tự động theo máy:
-                      <strong>UEFI &rarr; GPT</strong>, <strong>BIOS/Legacy &rarr; MBR</strong>
-                      <br><small style="color:#8b93a1;">Máy nhận ra lúc cài, không cần chọn.</small></div>
-                  </div>
-                </div>
-                <div class="msg warn" style="margin-top:14px;">
-                  <strong>Cảnh báo thật:</strong> chia ổ đĩa là thao tác GHI ĐÈ -
-                  toàn bộ dữ liệu trên ổ đĩa được chọn sẽ mất. Nếu máy có
-                  nhiều ổ cứng, kiểm tra kỹ "ổ đĩa số" trước khi chạy.
-                </div>
-              </div>
-
-              <div class="card">
-                <h3>Danh sách phân vùng (chỉ dùng khi chọn "chia bằng tay")</h3>
+              <div class="card" id="khoi-chia-tay"{'' if d['o_dia_che_do'] == 'chia_tay' else ' style="display:none;"'}>
+                <h3>Danh sách phân vùng</h3>
+                {khoi_mau}
                 <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
                   Dung lượng điền bằng MB, hoặc gõ <code>con_lai</code> để lấy
                   hết chỗ trống còn lại. Cột cuối là ổ/điểm gắn
-                  ({'vd <code>/</code>, <code>/home</code>' if d['os_ho'] == 'linux' else 'vd <code>C:</code>, <code>D:</code>'}).
+                  ({'vd <code>/</code>, <code>/home</code>' if d['os_ho'] == 'linux' else 'ghi chú ý định, vd <code>C:</code>, <code>D:</code> - Windows tự gán chữ cái lúc khởi động lần đầu'}).
                   Với Windows trên GPT bắt buộc phải có phân vùng <code>EFI</code>
                   và <code>MSR</code> - đã điền sẵn theo đúng chuẩn.</p>
                 <div id="pvbox">{hang}</div>
@@ -3355,6 +3435,7 @@ def register_deployos(app):
               {_nut_dieu_huong(buoc)}
             </form>
             <script>
+            var MAU_PV = {mau_json};
             function themPV() {{
               var box = document.getElementById("pvbox");
               var mau = box.querySelector(".pv-hang");
@@ -3363,6 +3444,36 @@ def register_deployos(app):
               moi.querySelectorAll("input").forEach(function (i) {{ i.value = ""; }});
               box.appendChild(moi);
             }}
+            function doiCheDoChiaO() {{
+              var tay = document.querySelector('input[name=o_dia_che_do][value=chia_tay]');
+              var td = document.getElementById("khoi-tu-dong"), ct = document.getElementById("khoi-chia-tay");
+              var laTay = tay && tay.checked;
+              if (td) td.style.display = laTay ? "none" : "";
+              if (ct) ct.style.display = laTay ? "" : "none";
+            }}
+            function apMau(i) {{
+              var m = MAU_PV[i], box = document.getElementById("pvbox");
+              var mau = box.querySelector(".pv-hang");
+              if (!m || !mau) return;
+              var goc = mau.cloneNode(true);
+              box.innerHTML = "";
+              m.pv.forEach(function (p) {{
+                var h = goc.cloneNode(true), ins = h.querySelectorAll("input"), sel = h.querySelector("select");
+                ins[0].value = p.nhan; ins[1].value = p.cd; ins[2].value = p.gan; sel.value = p.fs;
+                box.appendChild(h);
+              }});
+              var mt = document.getElementById("mau-mota"); if (mt) mt.textContent = m.mo_ta;
+            }}
+            doiCheDoChiaO();
+            // Go/tich vao o phu cua 1 lua chon thi tu chon luon lua chon do (khoi phai bam radio roi moi go)
+            document.querySelectorAll('.chon input[type=text], .chon input[type=number], .chon .d input[type=checkbox]').forEach(function (i) {{
+              ['focus', 'input', 'change'].forEach(function (ev) {{
+                i.addEventListener(ev, function () {{
+                  var r = i.closest('.chon').querySelector('input[type=radio]');
+                  if (r && !r.checked) r.checked = true;
+                }});
+              }});
+            }});
             </script>"""
 
         # ------------------------------------------------- 1.1.5 phan mem
@@ -3610,7 +3721,8 @@ def register_deployos(app):
         os_ten = _ten_os(d)
 
         if d["o_dia_che_do"] == "tu_dong":
-            o_dia = f"Tự động trên {_esc(_unattend().mo_ta_chon_o(d))} (GPT/MBR tự nhận theo máy)"
+            o_dia = (f"Tự động trên {_esc(_unattend().mo_ta_chon_o(d))} (GPT/MBR tự nhận theo máy) - "
+                     f"{_esc(_unattend().mo_ta_tu_dong(d)) if d.get('os_ho') == 'windows' else 'bộ phân vùng chuẩn'}")
         else:
             pv = d["phan_vung"] or _phan_vung_mac_dinh(d["os_ho"])
             dong = "".join(
@@ -6369,7 +6481,7 @@ def _tom_tat_day_du(k, esc):
              f"{esc(k['lenh_them'])}</pre>")
 
     od = k.get("o_dia_che_do")
-    them("Ổ đĩa", ("tự động (%s, GPT/MBR tự nhận theo máy)" % esc(_unattend().mo_ta_chon_o(k))
+    them("Ổ đĩa", ("tự động (%s, GPT/MBR tự nhận theo máy; %s)" % (esc(_unattend().mo_ta_chon_o(k)), esc(_unattend().mo_ta_tu_dong(k)))
                    if od == "tu_dong" else "chia tay (%s)" % esc(_unattend().mo_ta_chon_o(k))))
     return "<table class='tt-bang'>" + "".join(dong) + "</table>"
 

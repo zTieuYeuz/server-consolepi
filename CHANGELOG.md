@@ -10,6 +10,14 @@
 - Tổng kết kịch bản và bảng kịch bản ghi rõ cách chọn ổ. Chỉ áp dụng cho Windows; Linux giữ cách cũ.
 - Đã thử trên máy ảo UEFI có 2 ổ SATA (SSD Windows 64 GB + HDD dữ liệu 40 GB có 8 file, so SHA-256 trước/sau): cài lại bằng cùng 1 kịch bản "ổ đang chứa Windows" khi Windows là Disk 1 rồi khi là Disk 0 → chọn đúng ổ cả hai lần, 8/8 file nguyên vẹn; theo dung lượng, theo tên model, ổ nhỏ nhất, ổ lớn nhất chọn đúng; có thêm ổ USB 128 GB thì "ổ lớn nhất" vẫn bỏ qua USB; dung lượng 100 GB (không có ổ nào) và model không tồn tại → máy dừng, báo lỗi, không xoá gì. Chưa thử trên máy thật (BIOS Legacy, NVMe, RAID/VMD) và chưa thử trường hợp 2 ổ cùng model/cùng dung lượng ngoài kiểm tra mã (máy dừng, không đoán).
 
+**Làm lại bước "Phân chia ổ đĩa" của trình tạo kịch bản** (`ui/deployos.py`, `ui/unattend.py`):
+- Khung **Cài vào ổ nào?** (số ổ / ổ đang chứa Windows / dung lượng / tên model / nhỏ nhất / lớn nhất, kèm ghi chú GPT/MBR) nay dùng chung cho cả hai chế độ chia và nằm trên cùng. Tab "Thông số ổ đĩa" cũ (áp dụng cho cả chia tự động lẫn chia bằng tay) được gộp vào đây.
+- **Chia tự động**: bấm vào là hiện tùy chọn riêng: ổ C dùng hết ổ hoặc đúng N GB (tối thiểu 40 GB), có tạo thêm phân vùng dữ liệu phần còn lại không, nhãn ổ C và ổ dữ liệu.
+- **Chia bằng tay**: bấm vào là hiện danh sách phân vùng, thêm **5 mẫu Windows** áp dụng bằng 1 nút (chỉ Windows; Linux chưa có mẫu).
+- Phân vùng chia tay chỉ gõ `assign` (Windows tự chọn ký tự ổ) thay vì ép `assign letter=...`, tránh trùng ký tự với ổ dữ liệu đang có trong WinPE.
+- Tổng kết kịch bản và bảng kịch bản mô tả cả cách chọn ổ lẫn cách chia tự động.
+- Thử trên máy ảo UEFI 2 ổ: kịch bản tự động "ổ C 40 GB + ổ dữ liệu mới" cài xong cho ổ C đúng 40 GB, ổ D "DuLieuMoi" 23,7 GB, ổ dữ liệu cũ vẫn còn 8/8 file khớp SHA-256. Kịch bản chia tay (EFI 260 MB, MSR 16 MB, ổ C 40000 MB, ổ dữ liệu phần còn lại) cũng cài đúng, ổ dữ liệu cũ nguyên vẹn 8/8.
+
 **Sửa lỗi: "Dò ổ đĩa" không gửi được báo cáo về Console System** (`ui/doodia.py`): hàm `bao_dam_thu_muc()` từ thời `force user = nobody` mỗi lần dựng menu PXE lại đổi chủ thư mục nhận báo cáo `o-dia` sang `nobody`, trong khi Samba (từ 1.8.7) ghi bằng `consolepi-deploy` nên bị từ chối: WinPE báo "KHONG gui duoc ve Console System" và trang *Ổ đĩa đã dò* trống. Nay thư mục luôn thuộc `consolepi-deploy` (không có user này thì mới dùng `nobody`). Tìm ra lúc quay video về cài Windows theo ổ.
 
 ## 1.8.10 - 17/10/2026

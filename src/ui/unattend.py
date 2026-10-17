@@ -1577,6 +1577,30 @@ def _lenh_khong_thay_o(d):
     ]
 
 
+def tuychon_tu_dong(d):
+    """Tuy chon cua che do "Phan chia tu dong" (1.9.0): dict(c_gb, d_tao, c_nhan, d_nhan).
+    Mac dinh (c_gb = 0): 1 o C dung het o, y nhu cac ban truoc. c_gb > 0: o C co dinh GB va (neu d_tao)
+    phan con lai thanh o du lieu."""
+    def ten(x, mac_dinh):
+        x = re.sub(r"[^A-Za-z0-9 _-]", "", str(x or "")).strip()[:24]
+        return x or mac_dinh
+    c = str(d.get("tu_dong_c_gb") or "").strip()
+    c = int(c) if c.isdigit() and int(c) > 0 else 0
+    return {"c_gb": c, "d_tao": bool(d.get("tu_dong_d")) and c > 0,
+            "c_nhan": ten(d.get("tu_dong_c_nhan"), "Windows"), "d_nhan": ten(d.get("tu_dong_d_nhan"), "DuLieu")}
+
+
+def mo_ta_tu_dong(d):
+    """Cau mo ta tuy chon phan chia tu dong, dung o trang tong ket."""
+    t = tuychon_tu_dong(d)
+    if not t["c_gb"]:
+        return "1 ổ C dùng hết ổ"
+    if t["d_tao"]:
+        return f"ổ C {t['c_gb']} GB + ổ dữ liệu “{t['d_nhan']}” (phần còn lại)"
+    return f"ổ C {t['c_gb']} GB (phần còn lại để trống)"
+
+
+
 # ---------------------------------------------------------------------------
 # Chon O DICH theo dac diem (1.9.0). Cung 1 kich ban dung cho nhieu may khi
 # may nay danh so o khac may kia (o Windows luc la Disk 0, luc la Disk 1):
@@ -1853,7 +1877,15 @@ def sinh_diskpart_txt(d, mbr=False):
         dong += he_thong(260, "System")
         if not mbr:
             dong.append("create partition msr size=16")
-        dong += tao() + ['format quick fs=ntfs label="Windows"', "assign letter=W"]
+        tt = tuychon_tu_dong(d)
+        if not tt["c_gb"]:
+            dong += tao() + ['format quick fs=ntfs label="Windows"', "assign letter=W"]
+        else:
+            dong += tao(tt["c_gb"] * 1024) + [f'format quick fs=ntfs label="{tt["c_nhan"]}"', "assign letter=W"]
+            if tt["d_tao"]:
+                # Khong gan chu cai cu the o WinPE (chu D co the dang bi o CD/o du lieu khac chiem -> diskpart loi);
+                # Windows tu gan chu cai o lan khoi dong dau.
+                dong += tao() + [f'format quick fs=ntfs label="{tt["d_nhan"]}"', "assign"]
     else:
         da_gan_windows = False
         for i, p in enumerate(d.get("phan_vung") or [], start=1):
@@ -1874,11 +1906,10 @@ def sinh_diskpart_txt(d, mbr=False):
                 dong.append("assign letter=W")
                 da_gan_windows = True
             else:
-                gan = (p.get("gan") or "").rstrip(":")
-                if gan and gan not in ("-", "EFI", "C"):
-                    dong.append(f"assign letter={gan}")
-                else:
-                    dong.append("assign")
+                # Chu cai o WinPE KHONG duoc luu vao Windows vua bung (Windows tu gan lai o lan boot dau), con ep
+                # `assign letter=X` se LOI neu X dang bi chiem (vd o du lieu cua may nhieu o hien la D: trong WinPE) -
+                # nen chi gan tu dong. Cot "gan" chi la ghi chu y dinh.
+                dong.append("assign")
 
     dong.append("exit")
     return "\r\n".join(dong) + "\r\n"
