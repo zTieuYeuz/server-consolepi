@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.10 - 17/10/2026
+
+Lỗi thật tìm ra lúc quay video "cài Windows tự vào domain" (17/10/2026).
+
+- **Bước "Đặt mạng ở chế độ riêng tư" báo lỗi trên máy đã vào domain** (`ui/unattend.py`): máy gia nhập domain xong thì card mạng thuộc loại `DomainAuthenticated`, Windows không cho đổi sang Private ("NetworkCategory cannot be changed from 'DomainAuthenticated'") nên bước này trả mã lỗi 1 và bảng Tiến trình hiện "xong, 1 lỗi" dù domain đã vào đúng và báo cáo tổng kết ghi 29 việc xong. Nay bước này chỉ đổi các mạng KHÔNG phải mạng domain; máy không vào domain vẫn được đặt Private như cũ. Thử trên máy Windows 11 thật đã vào domain home-server.com: lệnh cũ lỗi, lệnh mới trả mã 0.
+
 ## 1.8.9 - 17/10/2026
 
 4 điểm nhỏ tìm ra lúc quay video hướng dẫn (16/10/2026). Không đổi logic cài Windows.

@@ -695,7 +695,8 @@ def _danh_sach_buoc_nguoi_dung(d):
     # ngay luc dang nhap dau, khi card mang da co ket noi.
     ra = [("Đặt mạng ở chế độ riêng tư",
            'powershell -NoProfile -ExecutionPolicy Bypass -Command '
-           '"Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private"',
+           '"Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -ne \'DomainAuthenticated\' } '
+           '| Set-NetConnectionProfile -NetworkCategory Private"',
            True)]
 
     for nhan, lenh in zip(_nhan_tuy_chon(d, "nguoi_dung"),
