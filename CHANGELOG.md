@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.9.0 - 18/10/2026
+
+**Chọn ổ cài Windows theo đặc điểm, không còn phụ thuộc số ổ** (`ui/unattend.py`, `ui/deployos.py`). Máy có 2 ổ cứng (1 ổ Windows + 1 ổ dữ liệu) thường bị đánh số ổ khác nhau giữa các máy: ổ Windows lúc là Disk 0, lúc là Disk 1. Trước đây kịch bản chỉ có "ổ đĩa số N" cố định nên cài nhầm số là xoá nhầm ổ dữ liệu.
+
+- Bước 3 của trình tạo kịch bản có khung **Cài vào ổ nào?** với 6 cách: *theo số ổ* (như cũ, là mặc định nên kịch bản cũ không đổi), *ổ đang chứa Windows*, *theo dung lượng* (gần giá trị nhập, sai lệch cho phép mặc định 10%), *theo tên/model*, *ổ nhỏ nhất*, *ổ lớn nhất*.
+- **An toàn trước, xoá sau:** ổ USB/thẻ nhớ không bao giờ được chọn; chỉ cho phép đúng 1 ổ khớp, 0 ổ hoặc nhiều ổ thì WinPE **dừng, báo rõ lý do và không xoá gì**; chỉ ổ được chọn bị `clean`, các ổ khác không bị đụng tới. Màn hình WinPE liệt kê từng ổ (model, loại, dung lượng) và ổ đã chọn trước khi chia.
+- Chế độ "theo số ổ" sinh ra đúng từng chữ như bản 1.8.10 (đã so sánh file `deploy.cmd` và `diskpart` cho 4 kiểu kịch bản).
+- Tổng kết kịch bản và bảng kịch bản ghi rõ cách chọn ổ. Chỉ áp dụng cho Windows; Linux giữ cách cũ.
+- Đã thử trên máy ảo UEFI 2 ổ SATA có dữ liệu thật ở ổ thứ hai: ghi trong mục "đã thử" bên dưới.
+
+**Sửa lỗi: "Dò ổ đĩa" không gửi được báo cáo về Console System** (`ui/doodia.py`): hàm `bao_dam_thu_muc()` từ thời `force user = nobody` mỗi lần dựng menu PXE lại đổi chủ thư mục nhận báo cáo `o-dia` sang `nobody`, trong khi Samba (từ 1.8.7) ghi bằng `consolepi-deploy` nên bị từ chối: WinPE báo "KHONG gui duoc ve Console System" và trang *Ổ đĩa đã dò* trống. Nay thư mục luôn thuộc `consolepi-deploy` (không có user này thì mới dùng `nobody`). Tìm ra lúc quay video về cài Windows theo ổ.
+
 ## 1.8.10 - 17/10/2026
 
 Lỗi thật tìm ra lúc quay video "cài Windows tự vào domain" (17/10/2026).

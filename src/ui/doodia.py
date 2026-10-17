@@ -173,11 +173,18 @@ def sinh_file_nhung(dia_chi_pi):
 
 
 def bao_dam_thu_muc():
-    """Thu muc nhan bao cao: Samba ghi bang user `nobody` (force user) -> phai ghi duoc."""
+    """Thu muc nhan bao cao: Samba ghi bang user `consolepi-deploy` (xem config/smb.conf, [cs-o-dia]) ->
+    thu muc PHAI thuoc user do. LOI THAT (17/10/2026): ham nay tung chown thu muc sang `nobody` (thoi con
+    `force user = nobody`), nen moi lan dung menu PXE no doi chu thu muc ve nobody -> Samba tu choi ghi ->
+    WinPE bao "KHONG gui duoc ve Console System" va trang O dia da do trong. Khong co consolepi-deploy
+    (may cu) thi moi dung nobody."""
     try:
         os.makedirs(THU_MUC_O_DIA, exist_ok=True)
         import pwd
-        nb = pwd.getpwnam("nobody")
+        try:
+            nb = pwd.getpwnam("consolepi-deploy")
+        except KeyError:
+            nb = pwd.getpwnam("nobody")
         st = os.stat(THU_MUC_O_DIA)
         if st.st_uid != nb.pw_uid:
             os.chown(THU_MUC_O_DIA, nb.pw_uid, nb.pw_gid)

@@ -58,6 +58,12 @@ import unicodedata
 # du lieu tung nam chung voi ma nguon nen `uninstall.sh` xoa sach ca bo cai
 # Office 3.6GB lan toan bo kich ban).
 from .duongdan import DEPLOY_DIR
+
+
+def _unattend():
+    """Nap ui.unattend khi can (tranh vong import)."""
+    from . import unattend
+    return unattend
 BOOT_DIR = os.path.join(DEPLOY_DIR, "boot")
 APPS_DIR = os.path.join(DEPLOY_DIR, "apps")
 SCRIPTS_DIR = os.path.join(DEPLOY_DIR, "scripts")
@@ -1649,6 +1655,8 @@ def _cauhinh_mac_dinh(che_do):
         "ngon_ngu": NGON_NGU[0][0], "ban_phim": BAN_PHIM[0][0],
         "product_key": "",
         "o_dia_che_do": "tu_dong", "o_dia_so": "0", "o_dia_bang": "tu_dong",
+        # Cach chon o dich (1.9.0): so | co_windows | dung_luong | model | nho_nhat | lon_nhat
+        "o_dia_chon": "so", "o_dia_gb": "", "o_dia_dungsai": "10", "o_dia_model": "",
         "phan_vung": [],
         "apps": [], "ungdung": [], "fonts": [], "scripts": [], "lenh_them": "",
         # Gia nhap domain + cac tuy chon Windows sau khi cai (mo hinh MDT).
@@ -1662,7 +1670,7 @@ def _cauhinh_mac_dinh(che_do):
 _TRUONG_KICHBAN = (
     "kieu_boot", "os_ho", "os_id", "driver_ids", "ten_may",
     "username", "password", "ssh", "mui_gio", "o_dia_che_do",
-    "o_dia_so", "o_dia_bang", "phan_vung", "apps", "ungdung", "fonts",
+    "o_dia_so", "o_dia_bang", "o_dia_chon", "o_dia_gb", "o_dia_dungsai", "o_dia_model", "phan_vung", "apps", "ungdung", "fonts",
     "scripts", "lenh_them",
     "domain", "domain_ou", "domain_user", "domain_pass",
     "tuy_chon",
@@ -2872,6 +2880,17 @@ def register_deployos(app):
             d["o_dia_che_do"] = "chia_tay" if che == "chia_tay" else "tu_dong"
             so = (form.get("o_dia_so") or "0").strip()
             d["o_dia_so"] = so if so.isdigit() else "0"
+            chon = form.get("o_dia_chon", "so")
+            d["o_dia_chon"] = chon if chon in _unattend().CACH_CHON_O else "so"
+            gb = (form.get("o_dia_gb") or "").strip()
+            d["o_dia_gb"] = gb if gb.isdigit() and int(gb) > 0 else ""
+            ds = (form.get("o_dia_dungsai") or "10").strip()
+            d["o_dia_dungsai"] = ds if ds.isdigit() and 1 <= int(ds) <= 40 else "10"
+            d["o_dia_model"] = re.sub(r"[^A-Za-z0-9 ._-]", "", form.get("o_dia_model") or "").strip()[:40]
+            if d["o_dia_chon"] == "dung_luong" and not d["o_dia_gb"]:
+                return "Chọn ổ theo dung lượng thì phải điền dung lượng (GB), ví dụ 256."
+            if d["o_dia_chon"] == "model" and not d["o_dia_model"]:
+                return "Chọn ổ theo tên/model thì phải điền chuỗi cần tìm, ví dụ Samsung hoặc WD."
             # Tu 1.5.0 deploy.cmd TU chon theo may (UEFI -> GPT, BIOS -> MBR),
             # xem unattend.sinh_diskpart_txt. Truoc do o chon GPT/MBR nay BI
             # BO QUA (luon chia GPT) - chon MBR cung khong co tac dung.
@@ -3215,6 +3234,47 @@ def register_deployos(app):
         if buoc == 4:
             tu_dong_ch = " checked" if d["o_dia_che_do"] == "tu_dong" else ""
             tay_ch = " checked" if d["o_dia_che_do"] == "chia_tay" else ""
+            _oc = _unattend().o_chon(d) if d.get("os_ho") == "windows" else {"chon": "so", "gb": 0, "dungsai": 10, "model": ""}
+            _ck = {k: (" checked" if (d.get("o_dia_chon") or "so") == k else "")
+                   for k in ("so", "co_windows", "dung_luong", "model", "nho_nhat", "lon_nhat")}
+            if not any(_ck.values()):
+                _ck["so"] = " checked"
+            khoi_chon_o = "" if d.get("os_ho") != "windows" else f"""
+              <div class="card">
+                <h3>Cài vào ổ nào?</h3>
+                <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+                  Máy có nhiều ổ cứng (ví dụ 1 ổ Windows + 1 ổ dữ liệu) thì <strong>số ổ có thể khác nhau giữa các máy</strong>
+                  (ổ Windows lúc là Disk 0, lúc là Disk 1). Chọn ổ theo <strong>đặc điểm</strong> thì cùng một kịch bản cài đúng ổ
+                  trên mọi máy. Chỉ ổ được chọn bị xóa; các ổ khác không bị đụng tới. Ổ USB / thẻ nhớ không bao giờ được chọn.
+                  Nếu không có đúng 1 ổ khớp, máy <strong>dừng lại và không xóa gì</strong>.</p>
+                <label class="chon"><input type="radio" name="o_dia_chon" value="so"{_ck['so']}>
+                  <span class="t">Theo số ổ (như trước đây)</span>
+                  <div class="d">Dùng "Ổ đĩa số" ở khung bên dưới. Dùng khi mọi máy giống hệt nhau.</div></label>
+                <label class="chon"><input type="radio" name="o_dia_chon" value="co_windows"{_ck['co_windows']}>
+                  <span class="t">Ổ đang chứa Windows</span>
+                  <div class="d">Cài lại đúng ổ đang có Windows (tìm thấy thư mục Windows). Phải có đúng 1 ổ như vậy.</div></label>
+                <label class="chon"><input type="radio" name="o_dia_chon" value="dung_luong"{_ck['dung_luong']}>
+                  <span class="t">Theo dung lượng</span>
+                  <div class="d">Ổ có dung lượng gần bằng giá trị này (xem số GB ở bảng "Ổ đĩa đã dò"; ổ ghi 256 GB thường hiện ~238 GB).
+                    <div class="row" style="margin-top:6px;">
+                      <div><label>Dung lượng (GB)</label>
+                        <input type="number" name="o_dia_gb" value="{_esc(str(_oc['gb'] or ''))}" min="1" style="max-width:130px;"></div>
+                      <div><label>Sai lệch cho phép (%)</label>
+                        <input type="number" name="o_dia_dungsai" value="{_esc(str(_oc['dungsai']))}" min="1" max="40" style="max-width:110px;"></div>
+                    </div></div></label>
+                <label class="chon"><input type="radio" name="o_dia_chon" value="model"{_ck['model']}>
+                  <span class="t">Theo tên / model ổ</span>
+                  <div class="d">Ổ có tên chứa chuỗi này (không phân biệt hoa thường), ví dụ <code>Samsung</code>, <code>WD</code>, <code>NVMe</code>.
+                    <div style="margin-top:6px;"><input type="text" name="o_dia_model" value="{_esc(_oc['model'])}" maxlength="40"
+                      placeholder="ví dụ: Samsung SSD" style="max-width:260px;"></div></div></label>
+                <label class="chon"><input type="radio" name="o_dia_chon" value="nho_nhat"{_ck['nho_nhat']}>
+                  <span class="t">Ổ nhỏ nhất</span>
+                  <div class="d">Thường là ổ SSD chứa Windows khi ổ dữ liệu lớn hơn. Hai ổ bằng nhau thì máy dừng, không đoán.</div></label>
+                <label class="chon"><input type="radio" name="o_dia_chon" value="lon_nhat"{_ck['lon_nhat']}>
+                  <span class="t">Ổ lớn nhất</span>
+                  <div class="d">Ổ có dung lượng lớn nhất của máy (không tính USB).</div></label>
+              </div>
+"""
             pv = d["phan_vung"] or _phan_vung_mac_dinh(d["os_ho"])
 
             fs_lua = (["ntfs", "fat32", "msr", "ext4", "swap", "xfs", "btrfs"]
@@ -3256,12 +3316,13 @@ def register_deployos(app):
               </div>
 
               {_khoi_o_dia_da_do()}
+              {khoi_chon_o}
 
               <div class="card">
                 <h3>Thông số ổ đĩa</h3>
                 <div class="row">
                   <div>
-                    <label>Ổ đĩa số</label>
+                    <label>Ổ đĩa số <small style="color:#8b93a1;">(dùng khi chọn "Theo số ổ")</small></label>
                     <input type="number" name="o_dia_so" value="{_esc(d['o_dia_so'])}"
                            min="0" max="15" style="max-width:130px;">
                   </div>
@@ -3549,7 +3610,7 @@ def register_deployos(app):
         os_ten = _ten_os(d)
 
         if d["o_dia_che_do"] == "tu_dong":
-            o_dia = f"Tự động trên ổ đĩa số {_esc(d['o_dia_so'])} (GPT/MBR tự nhận theo máy)"
+            o_dia = f"Tự động trên {_esc(_unattend().mo_ta_chon_o(d))} (GPT/MBR tự nhận theo máy)"
         else:
             pv = d["phan_vung"] or _phan_vung_mac_dinh(d["os_ho"])
             dong = "".join(
@@ -3557,7 +3618,7 @@ def register_deployos(app):
                 f"{'hết chỗ còn lại' if p['cd'] == 'con_lai' else _esc(p['cd']) + ' MB'} "
                 f"&mdash; {_esc(p['fs'])} &mdash; {_esc(p['gan'])}</div>"
                 for p in pv)
-            o_dia = (f"Chia bằng tay trên ổ đĩa số {_esc(d['o_dia_so'])} "
+            o_dia = (f"Chia bằng tay trên {_esc(_unattend().mo_ta_chon_o(d))} "
                      f"(GPT/MBR tự nhận theo máy)<div style='margin-top:6px;'>{dong}</div>")
 
         ds_app = chuan_hoa_apps(d.get("apps"))
@@ -6308,8 +6369,8 @@ def _tom_tat_day_du(k, esc):
              f"{esc(k['lenh_them'])}</pre>")
 
     od = k.get("o_dia_che_do")
-    them("Ổ đĩa", ("tự động (ổ %s, GPT/MBR tự nhận theo máy)" % k.get("o_dia_so", "0")
-                   if od == "tu_dong" else "chia tay"))
+    them("Ổ đĩa", ("tự động (%s, GPT/MBR tự nhận theo máy)" % esc(_unattend().mo_ta_chon_o(k))
+                   if od == "tu_dong" else "chia tay (%s)" % esc(_unattend().mo_ta_chon_o(k))))
     return "<table class='tt-bang'>" + "".join(dong) + "</table>"
 
 
