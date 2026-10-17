@@ -18,6 +18,8 @@
 - Tổng kết kịch bản và bảng kịch bản mô tả cả cách chọn ổ lẫn cách chia tự động.
 - Thử trên máy ảo UEFI 2 ổ: kịch bản tự động "ổ C 40 GB + ổ dữ liệu mới" cài xong cho ổ C đúng 40 GB, ổ D "DuLieuMoi" 23,7 GB, ổ dữ liệu cũ vẫn còn 8/8 file khớp SHA-256. Kịch bản chia tay (EFI 260 MB, MSR 16 MB, ổ C 40000 MB, ổ dữ liệu phần còn lại) cũng cài đúng, ổ dữ liệu cũ nguyên vẹn 8/8.
 
+**Tương thích Python 3.11 (bản i386, Debian 12):** bản dựng thử đầu tiên của 1.9.0 làm dashboard i386 không khởi động được vì f-string lồng nhau cùng loại dấu nháy trong `ui/deployos.py` (chỉ hợp lệ từ Python 3.12; Pi và bản 64-bit chạy Python 3.13 nên không lộ). Đã sửa; thêm `iso/test/kiem-python311.sh` biên dịch toàn bộ repo bằng Python 3.11 của chroot i386, và ghi vào quy tắc build.
+
 **Sửa lỗi: "Dò ổ đĩa" không gửi được báo cáo về Console System** (`ui/doodia.py`): hàm `bao_dam_thu_muc()` từ thời `force user = nobody` mỗi lần dựng menu PXE lại đổi chủ thư mục nhận báo cáo `o-dia` sang `nobody`, trong khi Samba (từ 1.8.7) ghi bằng `consolepi-deploy` nên bị từ chối: WinPE báo "KHONG gui duoc ve Console System" và trang *Ổ đĩa đã dò* trống. Nay thư mục luôn thuộc `consolepi-deploy` (không có user này thì mới dùng `nobody`). Tìm ra lúc quay video về cài Windows theo ổ.
 
 ## 1.8.10 - 17/10/2026

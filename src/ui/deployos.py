@@ -3368,14 +3368,7 @@ def register_deployos(app):
                   {nut_mau}
                   <div id="mau-mota" style="color:#8b93a1;font-size:12.5px;min-height:18px;"></div>
                 </div>"""
-            khoi_tu_dong = f"""
-              <div class="card" id="khoi-tu-dong"{'' if d['o_dia_che_do'] == 'tu_dong' else ' style="display:none;"'}>
-                <h3>Tuỳ chọn phân chia tự động</h3>
-                <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">Ổ được chọn ở trên bị xóa sạch rồi chia theo bộ chuẩn của máy:
-                  <strong>UEFI &rarr; GPT</strong> (phân vùng EFI 260 MB + MSR 16 MB + ổ C), <strong>BIOS/Legacy &rarr; MBR</strong> (phân vùng hệ thống + ổ C).
-                  Máy nhận ra UEFI hay BIOS lúc cài, không cần chọn.</p>
-                {"" if la_win else '<p style="margin:0;">Với Linux, bộ phân vùng chuẩn là EFI + swap + root (ext4).</p>'}
-                {f"""
+            khoi_tu_dong_win = "" if not la_win else f"""
                 <label class="chon"><input type="radio" name="tu_dong_kieu" value="het"{'' if tt['c_gb'] else ' checked'}>
                   <span class="t">1 ổ C dùng hết ổ (mặc định)</span>
                   <div class="d">Toàn bộ ổ cho Windows. Hợp khi ổ chỉ để chạy hệ điều hành.</div></label>
@@ -3394,7 +3387,15 @@ def register_deployos(app):
                     <div style="margin-top:4px;"><label>Nhãn ổ dữ liệu</label>
                       <input type="text" name="tu_dong_d_nhan" value="{_esc(tt['d_nhan'])}" maxlength="24" style="max-width:180px;"></div>
                     <div style="color:#8b93a1;font-size:12px;margin-top:4px;">Chữ cái ổ (D:, E:...) do Windows tự gán lúc khởi động lần đầu.</div>
-                  </div></label>""" if la_win else ""}
+                  </div></label>"""
+            khoi_tu_dong = f"""
+              <div class="card" id="khoi-tu-dong"{'' if d['o_dia_che_do'] == 'tu_dong' else ' style="display:none;"'}>
+                <h3>Tuỳ chọn phân chia tự động</h3>
+                <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">Ổ được chọn ở trên bị xóa sạch rồi chia theo bộ chuẩn của máy:
+                  <strong>UEFI &rarr; GPT</strong> (phân vùng EFI 260 MB + MSR 16 MB + ổ C), <strong>BIOS/Legacy &rarr; MBR</strong> (phân vùng hệ thống + ổ C).
+                  Máy nhận ra UEFI hay BIOS lúc cài, không cần chọn.</p>
+                {"" if la_win else '<p style="margin:0;">Với Linux, bộ phân vùng chuẩn là EFI + swap + root (ext4).</p>'}
+                {khoi_tu_dong_win}
               </div>"""
             return f"""
             <form method="POST" {act}>

@@ -158,6 +158,9 @@ Thay đổi chỉ ảnh hưởng Pi (không đụng ISO) vẫn làm bước 4–
 - Kiểm **cả đường thành công lẫn đường lỗi** (thiếu dữ liệu, bấm 2 lần, hết chỗ đĩa...).
 - Khi sửa route/trang: dò **mọi link** trên trang (≥ 47 trang hiện có) phải 200/302.
 
+### Tầng 1b — Tương thích Python 3.11 (MỖI lần sửa .py, trước khi build)
+- Bản i386 chạy Python 3.11 (Debian 12), Pi/amd64 chạy 3.13. Cú pháp của 3.12+ (f-string lồng cùng loại dấu nháy, `\` hoặc chú thích trong biểu thức f-string...) chỉ làm hỏng bản i386. Chạy `bash iso/test/kiem-python311.sh` → phải ra `loi 3.11: 0`. (Bài học 1.9.0: dashboard i386 chết khi khởi động, test live chỉ báo "chua len".)
+
 ### Tầng 3 — Ruột ISO (sau mỗi lần build)
 - `unsquashfs -l` kiểm các file quan trọng có mặt (code mới, ttyd, parted,
   wimlib, 7z, cage, chromium, calamares, policy Chromium...).
