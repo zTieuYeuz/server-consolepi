@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.9 - 17/10/2026
+
+4 điểm nhỏ tìm ra lúc quay video hướng dẫn (16/10/2026). Không đổi logic cài Windows.
+
+- **Hộp thoại "Rời khỏi trang web?" khi bấm Tải về lúc kho đang tải** (`ui/deployos.py`): nút Tải về / Huỷ của mục khác là form nằm ngay trong trang kho (trang trả về vẫn tiếp tục hiện tiến độ) nên không còn bị hỏi; đóng tab / bấm sang trang khác lúc đang tải thì VẪN hỏi như cũ. Đã thử bằng Chromium thật cả 3 tình huống.
+- **Chữ "Pi" trên máy không phải Raspberry Pi** (`ui/tenmay.py`, mới): trang và kết quả JSON trả về trình duyệt tự đổi chữ "Pi" đứng riêng thành "Console System" (ví dụ "Console System tự cấp IP", "Địa chỉ của Console System"). Giữ nguyên "Raspberry Pi", "Console Pi", `X-Console-Pi`, "Pi 4", "Pi OS", đường dẫn và tên biến. Trên Raspberry Pi thật không đổi gì. Thử 64 trang: 24 chỗ "Pi" lạc chỗ còn 0, không trang nào lỗi.
+- **Tiêu đề phía Windows/WinPE** (`ui/unattend.py`, kịch bản khách, kiosk): "Console Pi - Triển khai hệ điều hành", bảng "Đang cài đặt phần mềm", báo cáo "Những việc đã làm", màn kiosk, hộp xác nhận tắt/khởi động lại, thông báo kho... đổi sang "Console System". Tên thư mục trên máy khách `C:\ConsolePi` giữ nguyên (đường dẫn nội bộ).
+- **Chọn card mạng cho PXE** (`ui/pxe.py`, `ui/deployos.py`): máy có từ 2 cổng mạng dây (máy ảo 2 card, mini PC 2 LAN, Pi cắm thêm USB-LAN) có thêm khung "Cổng mạng dùng cho PXE" ở Deployment OS → Cài đặt → Bật/Tắt PXE: chọn tay hoặc "Tự chọn". Chỉ nhận cổng dây có thật; PXE đang bật thì khoá (tắt PXE rồi mới đổi); máy chỉ 1 cổng dây thì không hiện khung. Lưu ở `cong-mang.json` (cơ chế có sẵn).
+
 ## 1.8.8 - 16/10/2026
 
 Giao diện mới hai chế độ (anh Thoại duyệt bản demo 15/10/2026). Mọi chức năng giữ nguyên.

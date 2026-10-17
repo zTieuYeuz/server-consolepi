@@ -644,7 +644,7 @@ def _muc_kiem_tra(d):
         """)
     for bo_id in mat:
         them("Font", bo_id, loai="ps", ma="""
-            @{ Dat = $false; ChiTiet = 'bo font da chon khong con (hoac dang trong) tren Console Pi luc tao kich ban' }
+            @{ Dat = $false; ChiTiet = 'bo font da chon khong con (hoac dang trong) tren Console System luc tao kich ban' }
         """)
 
     # --- File noi bo cua Console Pi khong duoc lot sang may khach
@@ -852,7 +852,7 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $frm = New-Object System.Windows.Forms.Form
-$frm.Text = "Console Pi - Đang cài đặt phần mềm"
+$frm.Text = "Console System - Đang cài đặt phần mềm"
 $frm.Size = New-Object System.Drawing.Size(720, 520)
 $frm.StartPosition = 'CenterScreen'
 $frm.BackColor = [System.Drawing.Color]::FromArgb(24, 26, 30)
@@ -1308,7 +1308,7 @@ $soKhong = @($ketQua | Where-Object { $_.Dat -eq $null }).Count
 # ---------- Ghi ra file (luon ghi, du co ai doc popup hay khong) ----------
 $txt = New-Object System.Collections.Generic.List[string]
 $txt.Add('================================================================')
-$txt.Add('   CONSOLE PI - BÁO CÁO NHỮNG VIỆC ĐÃ LÀM TRÊN MÁY NÀY')
+$txt.Add('   CONSOLE SYSTEM - BÁO CÁO NHỮNG VIỆC ĐÃ LÀM TRÊN MÁY NÀY')
 $txt.Add('   Kich ban : ' + $TEN_KICHBAN)
 $txt.Add('   May      : ' + $env:COMPUTERNAME + '   |   Nguoi dung: ' + $env:USERNAME)
 $txt.Add('   Thoi diem: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
@@ -1357,7 +1357,7 @@ Add-Type -AssemblyName System.Drawing
 # dung bien $f (vd Get-WindowsOptionalFeature), de trung ten thi rat kho
 # lan ra khi hong.
 $frm = New-Object System.Windows.Forms.Form
-$frm.Text = 'Console Pi - Những việc đã làm trên máy này'
+$frm.Text = 'Console System - Những việc đã làm trên máy này'
 $frm.Size = New-Object System.Drawing.Size(940, 720)
 $frm.StartPosition = 'CenterScreen'
 $frm.BackColor = [System.Drawing.Color]::FromArgb(248, 249, 251)
@@ -1809,13 +1809,13 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
 
     return "\r\n".join([
         "@echo off",
-        "title Console Pi - Trien khai he dieu hanh",
+        "title Console System - Trien khai he dieu hanh",
         "set LOG=X:\\deploy_log.txt",
         # File nhung (deploy.cmd, diskpart*.txt, unattend.xml, *.ps1) do
         # wimboot chen vao luc boot - wimboot LUON dat chung o System32
         # (tai lieu wimboot), khong phai goc X:\\ nhu thoi anh dia GPT.
         f"set NHUNG={THU_MUC_NHUNG}",
-        "echo === Console Pi - bat dau trien khai === > %LOG%",
+        "echo === Console System - bat dau trien khai === > %LOG%",
         # Lich su + driver theo dong may (ui/lichsu.py, 14/10/2026): iPXE tai cs-may.cmd
         # tu Pi luc may chon kich ban - chua CS_LS (ma dong lich su) va CS_DRV (goi driver
         # hop hang/model trong BIOS). Khong co file (iPXE tai loi) -> cai binh thuong.
@@ -1827,7 +1827,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "",
         "echo.",
         "echo  ================================================",
-        "echo    CONSOLE PI - TRIEN KHAI HE DIEU HANH TU DONG",
+        "echo    CONSOLE SYSTEM - TRIEN KHAI HE DIEU HANH TU DONG",
         "echo  ================================================",
         "echo.",
         "",
@@ -1954,7 +1954,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "if exist X:\\wpeinit_log.txt type X:\\wpeinit_log.txt >> %LOG% 2>&1",
         "ipconfig >> %LOG% 2>&1",
         "",
-        "echo  [2/6] Ket noi kho trien khai tren Console Pi...",
+        "echo  [2/6] Ket noi kho trien khai tren Console System...",
         # TUYET DOI KHONG `net stop workstation` o day.
         #
         # LOI THAT DA GAP khi tung lam vay (log: "=== khoi dong lai dich vu
@@ -2079,7 +2079,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "goto bao_loi",
         "",
         ":loi_mang_khong_thong",
-        f"set BUOC=Mang khong thong toi Console Pi ({dia_chi_pi}) - kiem tra "
+        f"set BUOC=Mang khong thong toi Console System ({dia_chi_pi}) - kiem tra "
         "day mang da cam dung chua",
         "goto bao_loi",
         "",
@@ -2135,7 +2135,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
 
 
 def sinh_autounattend_goi_script(ten_script="deploy.cmd",
-                                 mo_ta="Console Pi - trien khai he dieu hanh"):
+                                 mo_ta="Console System - trien khai he dieu hanh"):
     r"""
     autounattend.xml TOI GIAN - chi lam DUNG 1 viec: goi script trien khai
     cua Console Pi (X:\deploy.cmd), khong khai bao DiskConfiguration hay

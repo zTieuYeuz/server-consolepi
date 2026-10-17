@@ -3886,6 +3886,37 @@ def register_deployos(app):
                 if ds else '<p style="color:#8b93a1;">Chưa có kịch bản Windows nào &mdash; '
                            'tạo ở tab <a href="/deployos/kichban">Kịch bản</a>.</p>')
 
+        # ---- Cong mang dung cho PXE (chi hien o tuy chon khi may co tu 2 cong day)
+        from . import phancung as _pc
+        cac_day = [x for x in _pc.danh_sach_cong() if not x["wifi"]]
+        chon_tay = _pc._doc_chon_tay().get("day", "")
+        cong_hien = _pxe.cong()
+        if len(cac_day) >= 2:
+            tuy = f'<option value=""{" selected" if not chon_tay else ""}>Tự chọn (cổng đang có tín hiệu)</option>'
+            for x in cac_day:
+                mo = "đang có tín hiệu" if x["co_day"] else "chưa cắm dây"
+                tuy += (f'<option value="{_esc(x["ten"])}"{" selected" if x["ten"] == chon_tay else ""}>'
+                        f'{_esc(x["ten"])} ({mo}) {_esc(x["mac"])}</option>')
+            khoa = " disabled" if dang_bat else ""
+            ghi = ('<small style="color:#f59e0b;">PXE đang bật: tắt PXE rồi mới đổi được cổng.</small>'
+                   if dang_bat else
+                   '<small style="color:#8b93a1;">Chọn đúng cổng cắm sang máy cần cài (hoặc vào switch của mạng cài).</small>')
+            khung_cong = f"""
+        <div class="card">
+          <h3>Cổng mạng dùng cho PXE</h3>
+          <p style="color:#8b93a1;font-size:13px;margin:0 0 8px;">Máy này có {len(cac_day)} cổng mạng dây.
+            Đang dùng: <strong>{_esc(cong_hien)}</strong>{" (đã chọn tay)" if chon_tay else " (tự chọn)"}.
+            Máy ảo/mini PC 2 card nên chọn tay để PXE không gắn nhầm vào cổng ra Internet hoặc cổng quản lý.</p>
+          <form method="POST" action="/deployos/pxe/cong">
+            <input type="hidden" name="ve" value="/deployos/caidat">
+            <select name="cong"{khoa} style="min-width:320px;">{tuy}</select>
+            <button type="submit" class="gray"{khoa}>Dùng cổng này</button>
+            {ghi}
+          </form>
+        </div>"""
+        else:
+            khung_cong = ""
+
         man_chinh, man_con = _pm._xem_truoc(c, muc)
         kieu_pre = ("background:#000;color:#ddd;padding:12px;border-radius:6px;"
                     "overflow-x:auto;font-size:13px;line-height:1.5;margin:6px 0 12px;")
@@ -3895,6 +3926,7 @@ def register_deployos(app):
           {trang_thai}
           {dieu_khien}
         </div>
+        {khung_cong}
         <div class="card">
           <h3>Menu máy khách sẽ thấy</h3>
           <p style="color:#8b93a1;font-size:13px;margin:0 0 8px;">
@@ -4865,8 +4897,13 @@ def register_deployos(app):
               e.preventDefault();
           }});
           // Dang tai ma bam F5 / dong tab -> trinh duyet hoi lai
+          // Nut "Tai ve" cua muc khac / "Huy" la form nam NGAY TRONG trang nay: trang tra ve van tiep tuc
+          // hien tien do, nen KHONG hoi "Roi khoi trang web?" (loi that gap khi quay video 16/10/2026).
+          var choRoiForm = false;
+          document.addEventListener('submit', function() {{ choRoiForm = true; }}, true);
+          document.addEventListener('submit', function(e) {{ if (e.defaultPrevented) choRoiForm = false; }});
           window.addEventListener('beforeunload', function(e) {{
-            if (dangHienTai) {{ e.preventDefault(); e.returnValue = ''; }}
+            if (dangHienTai && !choRoiForm) {{ e.preventDefault(); e.returnValue = ''; }}
           }});
           function bangXong(ds) {{
             var dong = '', loi = false, huy = false, xong = false;
@@ -5023,7 +5060,7 @@ def register_deployos(app):
             thu_muc_dich = APPS_DIR if loai == "phanmem" else SCRIPTS_DIR
             duoi = EXT_APP if loai == "phanmem" else EXT_SCRIPT
             if not ten_an or ext not in duoi:
-                return _kho_chuyen(f"Console Pi chỉ nhận {'/'.join(sorted(duoi))} cho mục "
+                return _kho_chuyen(f"Console System chỉ nhận {'/'.join(sorted(duoi))} cho mục "
                                   f"{TEN_LOAI_KHO[loai]} - không tải \"{ten_hien_thi}\".", False)
             if kich * 1.05 + 200 * 1024 * 1024 > _con_trong(thu_muc_dich):
                 return _kho_chuyen(f"Không đủ chỗ trống để tải \"{ten_hien_thi}\" "

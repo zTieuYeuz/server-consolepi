@@ -142,7 +142,7 @@ def ghep_noi(url, ma):
     if not url:
         return False, "Chưa điền địa chỉ kho."
     if len(ma) != 6:
-        return False, "Mã kết nối gồm đúng 6 ký tự (lấy ở trang kho, mục Kết nối Console Pi)."
+        return False, "Mã kết nối gồm đúng 6 ký tự (lấy ở trang kho, mục Kết nối Console System)."
     try:
         r = requests.get(f"{url}/api/thong-tin", timeout=TIMEOUT_DANH_SACH,
                          headers=cf_access_headers())
@@ -150,7 +150,7 @@ def ghep_noi(url, ma):
     except (requests.RequestException, ValueError) as e:
         return False, f"Không mở được {url} - kiểm tra lại địa chỉ và mạng ({type(e).__name__})."
     if not d.get("ghep_bang_ma"):
-        return False, (f"{url} không phải kho Console Pi, hoặc là kho bản cũ chưa hỗ trợ "
+        return False, (f"{url} không phải kho Console System, hoặc là kho bản cũ chưa hỗ trợ "
                        f"mã kết nối - dùng ô Token (nâng cao) bên dưới.")
     try:
         r = requests.post(f"{url}/api/ghep-noi", timeout=TIMEOUT_DANH_SACH,

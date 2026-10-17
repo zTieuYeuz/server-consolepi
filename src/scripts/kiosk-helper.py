@@ -96,7 +96,7 @@ INJECT_JS_TEMPLATE = r"""
   // ============================================================ Nut Ve Dashboard
   onReady(function () {
     var b = document.createElement("button");
-    b.textContent = "🏠 Console Pi";
+    b.textContent = "🏠 Console System";
     b.type = "button";
     // Goc duoi ben trai (khong phai goc tren) - theo yeu cau thuc te: goc
     // tren de chong len thanh cong cu/logo cua nhieu trang (vd YouTube).
@@ -285,7 +285,7 @@ INJECT_JS_TEMPLATE = r"""
     while (kb.firstChild) kb.removeChild(kb.firstChild);
     var bar = document.createElement("div");
     bar.className = "bar";
-    bar.textContent = "⌨ Ban phim ao Console Pi";
+    bar.textContent = "⌨ Ban phim ao Console System";
     kb.appendChild(bar);
 
     (symbols ? ROWS_SYMBOLS : ROWS_LETTERS).forEach(function (row) {

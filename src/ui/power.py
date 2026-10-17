@@ -44,11 +44,11 @@ def register_power(app):
         <h2>Tắt máy / Khởi động lại (module Raspberry Pi)</h2>
         <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
           <form method="POST" action="/power/reboot"
-                onsubmit="return confirm('Khởi động lại Console Pi ngay bây giờ?\\n\\nMọi phiên console đang mở sẽ bị đóng.');">
+                onsubmit="return confirm('Khởi động lại Console System ngay bây giờ?\\n\\nMọi phiên console đang mở sẽ bị đóng.');">
             <button type="submit" class="gray" data-busy="Đang khởi động lại...">🔄 Khởi động lại</button>
           </form>
           <form method="POST" action="/power/poweroff"
-                onsubmit="return confirm('TẮT HẲN Console Pi?\\n\\nBật lại phải cắm điện trực tiếp - không bật từ xa được.');">
+                onsubmit="return confirm('TẮT HẲN Console System?\\n\\nBật lại phải cắm điện trực tiếp - không bật từ xa được.');">
             <button type="submit" class="red" data-busy="Đang tắt máy...">🛑 Tắt máy</button>
           </form>
         </div>

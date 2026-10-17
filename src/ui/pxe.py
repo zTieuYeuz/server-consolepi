@@ -1034,6 +1034,25 @@ def register_pxe(app):
         ok, msg = bat_pxe(_m.doc_cauhinh()["kieu_boot"])
         return _ve_lai(msg, ok)
 
+    @app.route("/deployos/pxe/cong", methods=["POST"])
+    def deployos_pxe_cong():
+        """Chon CARD MANG (co day) dung cho PXE khi may co tu 2 cong tro len (vd may ao 2 card,
+        mini PC 2 LAN, Pi cam them USB-LAN). Rong = tu chon cong dang co tin hieu."""
+        from . import phancung as _pc
+        if dang_bat():
+            return _ve_lai("PXE đang bật - hãy tắt PXE rồi mới đổi cổng mạng "
+                           "(PXE đang gắn vào cổng hiện tại).", False)
+        ten = (request.form.get("cong", "") or "").strip()
+        if ten:
+            hop_le = {c["ten"] for c in _pc.danh_sach_cong() if not c["wifi"]}
+            if ten not in hop_le:
+                return _ve_lai(f"Cổng \"{ten}\" không có trên máy này hoặc không phải cổng dây.", False)
+        ok, msg = _pc.luu_chon_tay(day=ten, wifi=None)
+        if ok:
+            msg = (f"Đã chọn cổng {ten} cho PXE." if ten else
+                   f"Đã chuyển về chế độ tự chọn cổng (hiện dùng {_pc.cong_day() or 'chưa có cổng dây'}).")
+        return _ve_lai(msg, ok)
+
     @app.route("/deployos/pxe/tat", methods=["POST"])
     def deployos_pxe_tat():
         ok, msg = tat_pxe()

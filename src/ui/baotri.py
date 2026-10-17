@@ -271,7 +271,7 @@ def nap_ban_sao_luu(du_lieu):
         tf.close()
 
     if not da_nap:
-        return False, "File này không chứa mục cấu hình nào của Console Pi."
+        return False, "File này không chứa mục cấu hình nào của Console System."
     tb = f"Đã nạp lại {len(da_nap)} mục cấu hình."
     if bo_qua:
         tb += f" Bỏ qua {len(bo_qua)} mục lạ không thuộc Console Pi."
