@@ -174,79 +174,77 @@ def iface_detail(name):
     return info
 
 
-def _thanh(phan_tram, nguong_vang=75, nguong_do=90):
+def _hang_so(nhan, gia_tri, phu="", phan_tram=None, muc="ok", co_dem=None, ghi_chu=False):
     """
-    Thanh mau truc quan cho mot chi so phan tram.
+    1 dong cua khoi "Suc khoe thiet bi": nhan ben trai, so ben phai, thanh
+    mong ben duoi (khong co nen thanh - thanh chi dai ra theo %). Mau thanh
+    theo muc: ok (xanh) / warn (vang) / bad (do).
+    co_dem: (so, so_le) de JS dem tu 0 len luc moi vao trang.
+    """
+    if co_dem is not None and not ghi_chu:
+        so, le = co_dem
+        gia_tri = gia_tri.replace(str(so), f'<span data-n="{so}" data-d="{le}">{so}</span>', 1)
+    thanh = ""
+    if phan_tram is not None:
+        rong = max(1, min(100, int(phan_tram)))
+        thanh = '<span class="bar ' + muc + '" style="width:' + str(rong) + '%"></span>'
+    lop = ' class="none"' if ghi_chu else ""
+    nho = ("<small>" + phu + "</small>") if phu else ""
+    return ("<div" + lop + "><dt>" + nhan + "</dt><dd>" + gia_tri + nho + "</dd>" + thanh + "</div>")
 
-    Nhin con so "78%" thi phai doc va nghi; nhin thanh mau thi biet ngay
-    dang o muc nao - quan trong khi dang cam may giua hien truong va chi
-    liec nhanh mot cai.
-    """
-    p = max(0, min(100, int(phan_tram or 0)))
-    mau = "#6ee7a0" if p < nguong_vang else ("#ffb74d" if p < nguong_do else "#ff6b6b")
-    return (f'<div style="background:#2c3036;border-radius:5px;height:8px;'
-            f'overflow:hidden;margin-top:5px;max-width:230px;">'
-            f'<div style="width:{p}%;height:100%;background:{mau};"></div></div>')
+
+def _muc(p, vang, do):
+    return "ok" if p < vang else ("warn" if p < do else "bad")
 
 
 def _bang_suc_khoe(h, power_msg):
     """
-    Khoi "Suc khoe thiet bi" - dung RIENG mot ham (khong viet thang trong
-    trang) vi duoc dung o HAI cho: luc dung trang lan dau, va moi 10 giay
-    khi /api/suckhoe tra ve de cap nhat tai cho. Viet 2 ban se lech nhau.
+    Khoi "Suc khoe thiet bi" - dung RIENG mot ham vi duoc dung o HAI cho: luc
+    dung trang lan dau, va moi 10 giay khi /api/suckhoe tra ve de cap nhat
+    tai cho. Viet 2 ban se lech nhau.
 
-    Giao dien 2 che do (15/10/2026): bay thanh LUOI THE SO (so to, thanh mau)
-    thay cho bang 2 cot - liec nhanh la thay. So lieu van y nhu cu, cho nao
-    khong do duoc thi ghi ro "khong ap dung", khong bia so.
+    Giao dien moi (18/10/2026): danh sach dong (nhan - so - thanh mong) thay
+    cho luoi the; so lieu y nhu cu, cho nao khong do duoc thi ghi ro, khong
+    bia so.
     """
     temp = h.get("temp")
     mem_u, mem_t, mem_p = h.get("mem", (0, 0, 0))
     dk_u, dk_t, dk_p = h.get("disk", (0, 0, 0))
     cpu = h.get("cpu")
 
-    def the(nhan, gia_tri, phu="", thanh=""):
-        return (f'<div class="so-the"><div class="so-nhan">{nhan}</div>'
-                f'<div class="so-gt">{gia_tri}</div>{thanh}'
-                f'{f"<div class=so-phu>{phu}</div>" if phu else ""}</div>')
-
-    def mau(p, vang, do):
-        return "#6ee7a0" if p < vang else ("#ffb74d" if p < do else "#ff6b6b")
-
     if cpu is None:
         # Lan do dau tien chua co moc so sanh - xem cpu_percent() trong
         # ui/health.py. Sau 10 giay se co so that.
-        o_cpu = the("CPU đang dùng", '<span class="so-mo">đang đo…</span>')
+        r_cpu = _hang_so("CPU", "đang đo…", ghi_chu=True)
     else:
-        o_cpu = the("CPU đang dùng",
-                    f'<span style="color:{mau(cpu, 75, 90)};">{cpu}%</span>', "", _thanh(cpu))
+        r_cpu = _hang_so("CPU", f"{cpu}%", "", cpu, _muc(cpu, 75, 90), (cpu, 0))
 
-    o_ram = the("Bộ nhớ (RAM)", f"{mem_p}%", f"{mem_u} / {mem_t} MB", _thanh(mem_p))
+    r_ram = _hang_so("Bộ nhớ", f"{mem_p}%", f"{mem_u} / {mem_t} MB", mem_p,
+                     _muc(mem_p, 75, 90), (mem_p, 0))
 
     if temp is None:
-        o_temp = the("Nhiệt độ CPU", '<span class="so-mo">không đo được</span>',
-                     "máy này không có cảm biến nhiệt độ")
+        r_temp = _hang_so("Nhiệt độ CPU", "máy này không có cảm biến", ghi_chu=True)
     else:
-        o_temp = the("Nhiệt độ CPU",
-                     f'<span style="color:{mau(temp, 65, 80)};">{temp} &deg;C</span>')
+        r_temp = _hang_so("Nhiệt độ CPU", f"{temp} &deg;C", "", min(100, temp),
+                          _muc(temp, 65, 80))
 
     # LOI THAT (26/09/2026, test ban ISO 32-bit chay LIVE tu USB): o dia hien
     # "0 / 0 GB 0%" - so bia. May live khong co o cai dat: "/" la overlay nam
     # tren RAM. Nguyen tac du an: khong bia so - ghi ro la khong ap dung.
     if os.path.isdir("/run/live/medium"):
-        o_dia = the("Đĩa", '<span class="so-mo">không áp dụng</span>',
-                    "đang chạy từ USB/live, chưa cài vào ổ cứng")
+        r_dia = _hang_so("Ổ đĩa", "không áp dụng (đang chạy từ USB)", ghi_chu=True)
     elif dk_t:
-        o_dia = the("Đĩa", f"{dk_p}%", f"{dk_u} / {dk_t} GB", _thanh(dk_p, 80, 92))
+        r_dia = _hang_so("Ổ đĩa", f"{dk_p}%", f"{dk_u} / {dk_t} GB", dk_p,
+                         _muc(dk_p, 80, 92), (dk_p, 0))
     else:
-        o_dia = the("Đĩa", '<span class="so-mo">không đọc được</span>')
+        r_dia = _hang_so("Ổ đĩa", "không đọc được", ghi_chu=True)
+
+    r_tai = (f'<div class="tai"><dt>Tải hệ thống</dt><dd>{h.get("load", "?")}'
+             f'<small>trung bình 1 / 5 / 15 phút</small></dd></div>')
 
     return f"""
-        <div class="so-luoi">
-          {o_cpu}{o_ram}{o_temp}{o_dia}
-          {the("Thời gian chạy", f'<span class="so-vua">{h.get("uptime", "?")}</span>')}
-          {the("Tải hệ thống", f'<span class="so-vua">{h.get("load", "?")}</span>', "trung bình 1 / 5 / 15 phút")}
-        </div>
-        <div class="so-nguon"><b>Nguồn điện:</b> {power_msg}</div>"""
+        <dl class="dl">{r_cpu}{r_ram}{r_dia}{r_temp}{r_tai}</dl>
+        <p class="so-nguon"><b>Nguồn điện:</b> {power_msg}</p>"""
 
 
 # ---------------------------------------------------------------- tong quan
@@ -388,48 +386,171 @@ def _cai_gan_day(n=5):
 
 
 CSS_TONG_QUAN = """
-.so-luoi { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
-.so-the { background:var(--the); border:1px solid var(--vien); border-radius:14px; padding:14px 16px; }
-.so-nhan { font-size:12.5px; color:var(--chu-mo); }
-.so-gt { font-size:24px; font-weight:700; margin:4px 0 2px; color:var(--chu); letter-spacing:-.3px; }
-.so-gt .so-mo { font-size:14px; font-weight:500; color:var(--chu-mo2); }
-.so-gt .so-vua { font-size:15px; font-weight:600; line-height:1.35; display:block; }
-.so-phu { font-size:12px; color:var(--chu-mo2); margin-top:4px; }
-.so-nguon { margin-top:12px; font-size:14px; color:var(--chu-mo); }
-.ccy { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; margin-bottom:6px; }
-.ccy-the { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px;
+/* ---- Phan mo dau ---- */
+.hero { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:clamp(24px,5vw,72px);
+        align-items:end; padding:20px 0 12px; }
+.hero h1 { font-size:clamp(34px,4.2vw,54px); line-height:1.04; letter-spacing:-.035em; margin:0; }
+.hero h1 em { font-style:normal; color:var(--xanh); }
+.hero h1 em.canh { color:var(--vang); }
+.hero p { margin:14px 0 0; max-width:52ch; color:var(--chu-mo); font-size:16px; line-height:1.55; }
+.hero .acts { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+.net { margin:0; border-left:1px solid var(--vien); padding-left:clamp(20px,3vw,40px); display:grid; gap:20px; }
+.net dt { font-size:13px; color:var(--chu-mo2); }
+.net dd { margin:3px 0 0; font:550 clamp(20px,2.2vw,28px)/1.15 var(--mono); letter-spacing:-.03em; word-break:break-all; }
+.net dd small { display:block; font:400 13px var(--chu-font); letter-spacing:0; color:var(--chu-mo); margin-top:5px; }
+.net dd.off { font:500 17px var(--chu-font); color:var(--chu-mo); letter-spacing:0; }
+@media (max-width:1100px) { .hero { grid-template-columns:1fr; }
+  .net { border-left:0; padding-left:0; border-top:1px solid var(--vien); padding-top:20px; grid-template-columns:1fr 1fr; } }
+@media (max-width:640px) { .net { grid-template-columns:1fr; } .hero .acts .btn { flex:1 1 100%; } }
+section.rvg { margin-top:44px; }
+.hero.rvg { margin-top:0; }
+
+/* ---- Viec hay lam (Che do PC): luoi bat doi xung, du 5 o ---- */
+.bento { display:grid; grid-template-columns:repeat(6,1fr); grid-auto-rows:minmax(104px,auto); gap:12px; }
+.bt { position:relative; display:flex; flex-direction:column; justify-content:flex-end; gap:2px; padding:20px;
+      border:1px solid var(--vien); border-radius:var(--bo); background:var(--the); color:var(--chu); overflow:hidden; }
+.bt:hover { border-color:var(--vien-ro); color:var(--chu); }
+.bt:active { transform:scale(.99); }
+.bt svg.i { width:26px; height:26px; color:var(--nhan); margin-bottom:auto; }
+.bt svg.go { position:absolute; top:18px; right:18px; width:18px; height:18px; color:var(--chu-mo2); margin:0; }
+.bt:hover svg.go { color:var(--chu); transform:translateX(3px); }
+.bt b { font-size:16px; font-weight:600; letter-spacing:-.01em; }
+.bt span { font-size:13.5px; color:var(--chu-mo); }
+.bt.a { grid-column:span 4; grid-row:span 2; padding:28px;
+        background:radial-gradient(120% 90% at 100% 0%, var(--nhan-mo), transparent 60%), var(--the);
+        border-color:color-mix(in srgb, var(--nhan) 32%, var(--vien)); }
+.bt.a svg.i { width:34px; height:34px; }
+.bt.a b { font-size:clamp(22px,2.2vw,28px); letter-spacing:-.025em; font-weight:630; }
+.bt.a span { font-size:15px; max-width:40ch; }
+.bt.b, .bt.c { grid-column:span 2; }
+.bt.d, .bt.e { grid-column:span 3; min-height:96px; }
+.bt::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0;
+             transition:opacity .25s;
+             background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%), color-mix(in srgb, var(--nhan) 16%, transparent), transparent 70%); }
+.bt:hover::after { opacity:1; }
+@media (hover:none) { .bt::after { display:none; } }
+@media (max-width:640px) { .bento { grid-template-columns:1fr 1fr; }
+  .bt.a { grid-column:span 2; grid-row:auto; min-height:190px; }
+  .bt.b, .bt.c, .bt.d, .bt.e { grid-column:span 1; min-height:132px; } }
+
+/* ---- Suc khoe: dong nhan - so - thanh mong ---- */
+.dl { margin:0; display:grid; }
+.dl > div { display:grid; grid-template-columns:1fr auto; align-items:baseline; gap:4px 16px;
+            padding:14px 0; border-bottom:1px solid var(--vien); }
+.dl > div:first-child { padding-top:0; }
+.dl dt { color:var(--chu-mo); font-size:14.5px; white-space:nowrap; }
+.dl .tai dd { font-size:15px; }
+.dl dd { margin:0; font:550 20px var(--mono); letter-spacing:-.03em; text-align:right; }
+.dl dd small { font:400 13px var(--chu-font); color:var(--chu-mo2); letter-spacing:0; margin-left:8px; }
+.dl .bar { grid-column:1 / -1; height:3px; border-radius:2px; background:var(--nhan); margin-top:4px;
+           transform-origin:left; }
+.dl .bar.ok { background:var(--xanh); } .dl .bar.warn { background:var(--vang); } .dl .bar.bad { background:var(--do); }
+.dl .none dd { font:400 14.5px var(--chu-font); color:var(--chu-mo2); letter-spacing:0; }
+.so-nguon { margin:14px 0 0; font-size:14px; color:var(--chu-mo); }
+.vazio { border:1px dashed var(--vien-ro); border-radius:var(--bo); padding:24px; display:grid; gap:12px; justify-items:start; }
+.vazio h3 { margin:0; font-size:16px; font-weight:600; }
+.vazio p { margin:0; color:var(--chu-mo); max-width:46ch; font-size:14.5px; }
+.col { display:grid; gap:30px; align-content:start; }
+.tq-hai { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:clamp(24px,5vw,72px); align-items:start; }
+@media (max-width:1100px) { .tq-hai { grid-template-columns:1fr; } }
+
+/* ---- Dich vu: 2 cot, chu trang thai (khong chi dua vao mau) ---- */
+.svc { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 clamp(24px,5vw,72px); }
+.svc li { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:13px 0; border-top:1px solid var(--vien); }
+.sv-t b { display:block; font-weight:550; font-size:14.5px; }
+.sv-t code { background:none; padding:0; font-size:12px; color:var(--chu-mo2); }
+.tt { font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
+.tt.bat { color:var(--xanh); } .tt.bat::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--xanh); }
+.tt.tat { color:var(--chu-mo2); font-weight:500; }
+.tt.hong { color:var(--do); }
+@media (max-width:640px) { .svc { grid-template-columns:1fr; } }
+
+/* ---- The "can chu y" ---- */
+.ccy { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; }
+.ccy-the { display:flex; gap:12px; align-items:flex-start; padding:16px 18px; border-radius:var(--bo);
            border:1px solid var(--vien); background:var(--the); }
-.ccy-the .bi { width:40px; height:40px; border-radius:11px; display:grid; place-items:center; flex:none; }
-.ccy-the.vang { border-color:rgba(251,191,36,.45); background:var(--vang-mo); }
+.ccy-the .bi { width:40px; height:40px; border-radius:10px; display:grid; place-items:center; flex:none; }
+.ccy-the.vang { border-color:rgba(232,176,74,.45); background:var(--vang-mo); }
 .ccy-the.vang .bi { color:var(--vang); background:var(--vang-mo); }
-.ccy-the.do { border-color:rgba(248,113,113,.45); background:var(--do-mo); }
+.ccy-the.do { border-color:rgba(239,107,107,.45); background:var(--do-mo); }
 .ccy-the.do .bi { color:var(--do); background:var(--do-mo); }
-.ccy-the.nhan { border-color:var(--vien-ro); }
 .ccy-the.nhan .bi { color:var(--nhan); background:var(--nhan-mo); }
 .ccy-the .nd { flex:1; min-width:0; }
 .ccy-the .nd b { display:block; font-size:14.5px; color:var(--chu); margin-bottom:2px; }
 .ccy-the .nd span { font-size:13px; color:var(--chu-mo); line-height:1.5; }
 .ccy-the .nut { margin-top:10px; }
-.ccy-ok { padding:12px 16px; border-radius:12px; background:var(--xanh-mo); color:var(--chu);
-          font-size:14px; display:flex; gap:10px; align-items:center; }
-.ccy-ok svg.i { color:var(--xanh); }
+
+/* ---- Che do cam ung: giu o to nhu cu ---- */
 .viec { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
 body.cd-cu .viec { grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
 body.cd-cu .viec .o-to { min-height:150px; padding:20px; border-radius:22px; }
 body.cd-cu .viec .o-to b { font-size:18.5px; margin-top:auto; }
 body.cd-cu .viec .o-to .bi { width:56px; height:56px; border-radius:16px; }
+body.cd-cu .hero { padding-top:6px; }
+body.cd-cu .hero p { font-size:17px; }
 .o-to .nhan-so { position:absolute; top:14px; right:14px; font-size:12px; font-weight:700;
                  padding:4px 10px; border-radius:999px; background:var(--nhan-mo); color:var(--nhan); }
 .o-to .nhan-so.xanh { background:var(--xanh-mo); color:var(--xanh); }
 .gan-day { display:flex; flex-direction:column; }
-.gan-day a { display:flex; gap:12px; align-items:center; padding:11px 4px; border-top:1px solid var(--vien);
+.gan-day a { display:flex; gap:12px; align-items:center; padding:12px 4px; border-top:1px solid var(--vien);
              color:var(--chu); font-size:14px; }
 .gan-day a:first-child { border-top:0; }
 .gan-day a .t { flex:1; min-width:0; }
 .gan-day a small { display:block; color:var(--chu-mo); font-size:12.5px; }
-.gan-day .tt { font-size:12px; padding:3px 10px; border-radius:999px; background:var(--the-noi); white-space:nowrap; }
-.tq-hai { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:16px; align-items:start; }
-@media (max-width: 1100px) { .tq-hai { grid-template-columns:1fr; } }
+.gan-day .tt { font-size:12px; padding:3px 10px; border-radius:999px; background:var(--the-noi); }
+
+/* ---- Hieu ung rieng trang Tong quan ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .js-tq .rv { opacity:0; transform:translateY(16px); }
+  .js-tq .rv.in { opacity:1; transform:none; transition:opacity .7s var(--muot) var(--d,0s), transform .7s var(--muot) var(--d,0s); }
+  .js-tq #suc-khoe:not(.lan2) .bar { animation:chay-thanh 1.1s var(--muot) .25s both; }
+  @keyframes chay-thanh { from { transform:scaleX(0); } to { transform:none; } }
+  .tt.bat::before { animation:nhip 2.4s ease-out infinite; }
+  .dl dd.sk { position:relative; color:transparent !important; }
+  .dl dd.sk * { color:transparent !important; }
+  .dl dd.sk::after { content:""; position:absolute; inset:3px 0 3px auto; width:min(110px,60%); border-radius:5px;
+    background:linear-gradient(90deg,var(--vien) 0%,var(--vien-ro) 50%,var(--vien) 100%); background-size:200% 100%;
+    animation:quet 1.2s linear infinite; }
+  @keyframes quet { to { background-position:-200% 0; } }
+}
+"""
+
+# Hieu ung trang Tong quan: hien dan theo thu bac, so dem len, o sang theo con tro.
+# KHONG dung scroll listener: IntersectionObserver + requestAnimationFrame cho so.
+JS_TONG_QUAN = """
+<script>
+(function() {
+  var giam = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.bt').forEach(function(o) {
+    o.addEventListener('pointermove', function(e) {
+      var b = o.getBoundingClientRect();
+      o.style.setProperty('--mx', (e.clientX - b.left) + 'px');
+      o.style.setProperty('--my', (e.clientY - b.top) + 'px');
+    });
+  });
+  if (giam) return;
+  function dem(el) {
+    var to = parseFloat(el.dataset.n), d = +el.dataset.d || 0, t0 = performance.now();
+    (function f(t) { var k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (to * e).toFixed(d); if (k < 1) requestAnimationFrame(f); })(t0);
+  }
+  document.documentElement.classList.add('js-tq');
+  document.querySelectorAll('.rvg').forEach(function(g) {
+    var ks = g.classList.contains('hero') ? g.querySelectorAll('h1,p,.acts,.net > div')
+      : g.querySelectorAll(':scope > h2, :scope > div > h2, :scope > div > div > h2, .bt, .dl > div, .vazio, .ccy-the, .tbl-scroll, .svc li');
+    ks.forEach(function(k, i) { k.classList.add('rv'); k.style.setProperty('--d', (i * 0.07) + 's'); });
+  });
+  var io = new IntersectionObserver(function(es) { es.forEach(function(e) {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, {threshold: .12});
+  document.querySelectorAll('.rv').forEach(function(n) { io.observe(n); });
+  /* Khung cho luc doc so lieu, roi so dem len tu 0 (phan hoi: dang cap nhat that) */
+  var dds = document.querySelectorAll('#suc-khoe .dl dd'); dds.forEach(function(d) { d.classList.add('sk'); });
+  setTimeout(function() {
+    dds.forEach(function(d) { d.classList.remove('sk'); });
+    document.querySelectorAll('#suc-khoe [data-n]').forEach(dem);
+  }, 800);
+})();
+</script>
 """
 
 
@@ -463,8 +584,8 @@ def register_home(app):
               {rows}
             </table>"""
         else:
-            ports_html = ('<div class="msg warn">Chưa cắm cáp console nào. '
-                          'Cắm cáp USB-serial (FTDI/Prolific) vào máy này, trang sẽ tự nhận.</div>')
+            ports_html = ('<div class="vazio"><h3>Chưa cắm cáp console nào</h3>'
+                          '<p>Cắm cáp USB-serial (FTDI/Prolific) vào máy này, trang sẽ tự nhận và hiện cổng ở đây.</p></div>')
 
         # --- Mang chi tiet ---
         net_rows = ""
@@ -486,7 +607,7 @@ def register_home(app):
               <td>{'<code>' + d['ip'] + '</code>' if d['ip'] else '<span style="color:#8b93a1;">chưa có IP</span>'}</td>
               <td><code style="font-size:12px;">{d['mac']}</code></td>
               <td>{d['state']}{' &middot; ' + d['speed'] if d['speed'] else ''}</td>
-              <td>{'🟢' if up else '⚪'}</td>
+              <td>{'<span class="tt bat">Có IP</span>' if up else '<span class="tt tat">Chưa có IP</span>'}</td>
             </tr>"""
 
         # --- Dich vu ---
@@ -494,9 +615,13 @@ def register_home(app):
         svc_rows = ""
         for svc, label in SERVICES:
             st = states.get(svc, "unknown")
-            icon = "🟢" if st == "active" else ("⚪" if st in ("inactive", "unknown") else "🔴")
-            svc_rows += (f"<tr><td>{label}</td><td><code style='font-size:12px;'>{svc}</code></td>"
-                         f"<td>{icon} {st}</td></tr>")
+            if st == "active":
+                tt = '<span class="tt bat">Đang chạy</span>'
+            elif st == "failed":
+                tt = '<span class="tt hong">Lỗi</span>'
+            else:
+                tt = '<span class="tt tat">Tắt</span>'
+            svc_rows += (f'<li><span class="sv-t"><b>{label}</b><code>{svc}</code></span>{tt}</li>')
 
 
         # --- Suc khoe he thong + nguon ---
@@ -514,7 +639,7 @@ def register_home(app):
           function lamMoi() {{
             fetch('/api/suckhoe', {{cache: 'no-store'}})
               .then(function(r) {{ return r.json(); }})
-              .then(function(d) {{ if (d && d.html) o.innerHTML = d.html; }})
+              .then(function(d) {{ if (d && d.html) {{ o.innerHTML = d.html; o.classList.add('lan2'); }} }})
               .catch(function() {{}});   /* mat mang thi giu so cu, khong bao loi */
           }}
           setInterval(lamMoi, 10000);
@@ -530,15 +655,14 @@ def register_home(app):
 
         # --- Can chu y: CHI tu so lieu that (xem can_chu_y) ---
         canh = can_chu_y(h, ports, states)
+        n_van_de = sum(1 for c in canh if c[0] in ("do", "vang"))
+        ccy_html = ""
         if canh:
-            ccy_html = '<div class="ccy">' + "".join(
+            ccy_html = '<section class="rvg"><h2>' + ("Cần chú ý" if n_van_de else "Đang diễn ra") + '</h2><div class="ccy">' + "".join(
                 f'<div class="ccy-the {muc}"><div class="bi">{svg_icon(ic)}</div>'
                 f'<div class="nd"><b>{td}</b><span>{mt}</span>'
                 + (f'<div class="nut"><a class="btn gray small" href="{nut[1]}">{nut[0]}</a></div>' if nut else "")
-                + '</div></div>' for muc, ic, td, mt, nut in canh) + '</div>'
-        else:
-            ccy_html = (f'<div class="ccy-ok">{svg_icon("info")}Mọi thứ đang ổn: nguồn điện, '
-                        f'nhiệt độ, dịch vụ và dung lượng không có gì cần xử lý.</div>')
+                + '</div></div>' for muc, ic, td, mt, nut in canh) + '</div></section>'
 
         # --- Viec hay lam: nhan so tren moi o deu dem tu du lieu that ---
         from nettools import TOOLS_READONLY, TOOLS_WRITE
@@ -570,12 +694,26 @@ def register_home(app):
             ("log", "Nhật ký", "/logs", "Nhật ký hệ thống và lỗi", "", ""),
         ]
         if che_do == "pc":
-            viec = viec[:4]
-        viec_html = '<div class="viec">' + "".join(
-            f'<a class="o-to" href="{href}">'
-            + (f'<span class="nhan-so {lop}">{so}</span>' if so else "")
-            + f'<span class="bi">{svg_icon(ic)}</span><b>{ten}</b><small>{phu}</small></a>'
-            for ic, ten, href, phu, so, lop in viec) + '</div>'
+            # Che do PC: 5 o bat doi xung (o dau noi bat), vua du, khong lap lai
+            dv = {v[2]: v for v in viec}
+            def _bt(lop, href):
+                ic, ten, hr, phu, so, _l = dv[href]
+                if so:
+                    phu = f"{phu} ({so})" if phu else so
+                return (f'<a class="bt {lop}" href="{hr}">{svg_icon(ic)}{svg_icon("go", "i go")}'
+                        f'<b>{ten}</b><span>{phu}</span></a>')
+            viec_html = ('<div class="bento">'
+                         + _bt("a", "/deployos/kichban")
+                         + _bt("b", viec[0][2])
+                         + _bt("c", "/nettools")
+                         + _bt("d", "/deployos/caidat/wol")
+                         + _bt("e", "/ssh") + '</div>')
+        else:
+            viec_html = '<div class="viec">' + "".join(
+                f'<a class="o-to" href="{href}">'
+                + (f'<span class="nhan-so {lop}">{so}</span>' if so else "")
+                + f'<span class="bi">{svg_icon(ic)}</span><b>{ten}</b><small>{phu}</small></a>'
+                for ic, ten, href, phu, so, lop in viec) + '</div>'
 
         # --- Cai dat gan day (Lich su cai that) ---
         gan, _ls = _cai_gan_day(5)
@@ -590,49 +728,75 @@ def register_home(app):
                          f'<small>{_ls.gio(bg.get("bat_dau"))}{" · " + tl if tl else ""}'
                          f'{" · " + _esc(bg.get("mac")) if bg.get("mac") else ""}</small></span>'
                          f'<span class="tt">{_esc(nhan)}</span></a>')
-            gan_html = f'<div class="card gan-day">{dong}</div>'
+            gan_html = f'<div class="gan-day">{dong}</div>'
         else:
-            gan_html = ('<p class="hint">Chưa có lần cài Windows qua mạng nào. '
-                        '<a href="/deployos/kichban">Bắt đầu ở Deployment OS</a>.</p>')
+            gan_html = ('<div class="vazio"><h3>Chưa có lần cài Windows nào</h3>'
+                        '<p>Kết quả các lần cài qua mạng sẽ được ghi lại tại đây.</p>'
+                        '<a class="btn gray" href="/deployos/kichban">Mở Deployment OS</a></div>')
+
+        # --- Phan mo dau: tra loi ngay "may co on khong" ---
+        from .gioithieu import _phien_ban
+        chips_mang = get_status_chips()[:2]
+        mang_html = "".join(
+            f'<div><dt>{_esc(c["key"])}</dt><dd class="{"" if c["up"] else "off"}">{_esc(c["val"])}'
+            f'<small>{_esc(c["extra"])}</small></dd></div>' for c in chips_mang)
+        link_console = (f"/phien?mo=serial-{ports[0]['devname']}" if ports else "/console")
+        if n_van_de:
+            h1 = f'Có <em class="canh">{n_van_de} việc</em> cần chú ý.'
+            mo_ta = "Xem các mục bên dưới trước khi làm việc khác."
+        else:
+            h1 = 'Mọi thứ đang <em>ổn.</em>'
+            mo_ta = "Nguồn điện, nhiệt độ, dịch vụ và dung lượng đều trong ngưỡng."
+        hero_html = f"""
+        <div class="hero rvg">
+          <div>
+            <h1>{h1}</h1>
+            <p>{mo_ta} Phiên bản {_esc(_phien_ban())}, đã chạy {h.get('uptime', '?')}.</p>
+            <div class="acts">
+              <a class="btn" href="/deployos/kichban">{svg_icon("win")} Cài Windows qua mạng</a>
+              <a class="btn gray" href="{link_console}">{svg_icon("term")} Mở Console</a>
+            </div>
+          </div>
+          <dl class="net">{mang_html}</dl>
+        </div>"""
 
         body = f"""
-        <h2>Cần chú ý</h2>
+        {hero_html}
         {ccy_html}
 
-        <h2>{"Việc hay làm" if che_do == "pc" else "Chức năng"}</h2>
-        {viec_html}
+        <section class="rvg">
+          <h2>{"Việc hay làm" if che_do == "pc" else "Chức năng"}</h2>
+          {viec_html}
+        </section>
 
-        <h2>Sức khỏe thiết bị</h2>
-        {health_html}
-        <p style="margin-top:12px;"><a class="btn gray" href="/power">{svg_icon("pow")} Tắt máy / Khởi động lại</a></p>
-
-        <h2 id="cong-console">Cổng console đang cắm</h2>
-        {ports_html}
-
-        <div class="tq-hai">
+        <section class="tq-hai rvg">
           <div>
-            <h2>Chi tiết mạng</h2>
-            <div class="tbl-scroll"><table>
-              <tr><th>Giao diện</th><th>Địa chỉ IP</th><th>MAC</th><th>Trạng thái</th><th style="width:50px;"></th></tr>
-              {net_rows}
-            </table></div>
+            <h2>Sức khỏe thiết bị</h2>
+            {health_html}
+            <p style="margin-top:14px;"><a class="btn gray" href="/power">{svg_icon("pow")} Tắt máy / Khởi động lại</a></p>
           </div>
-          <div>
-            <h2>Cài đặt gần đây</h2>
-            {gan_html}
+          <div class="col">
+            <div id="cong-console"><h2 style="margin-top:0;">Cổng console đang cắm</h2>{ports_html}</div>
+            <div><h2 style="margin-top:0;">Cài đặt gần đây</h2>{gan_html}</div>
           </div>
-        </div>
+        </section>
 
-        <h2>Dịch vụ hệ thống</h2>
-        <div class="tbl-scroll"><table>
-          <tr><th style="width:220px;">Chức năng</th><th>Dịch vụ</th><th style="width:160px;">Trạng thái</th></tr>
-          {svc_rows}
-        </table></div>"""
+        <section class="rvg">
+          <h2>Chi tiết mạng</h2>
+          <div class="tbl-scroll"><table>
+            <tr><th>Giao diện</th><th>Địa chỉ IP</th><th>MAC</th><th>Trạng thái</th><th style="width:130px;"></th></tr>
+            {net_rows}
+          </table></div>
+        </section>
 
-        from .gioithieu import _phien_ban
-        return render_page(body, active="/", title="Tổng quan",
-                           subtitle=f"Console System {_esc(_phien_ban())} · đã chạy {h.get('uptime', '?')}",
-                           extra_css=CSS_TONG_QUAN)
+        <section class="rvg">
+          <h2>Dịch vụ hệ thống</h2>
+          <ul class="svc">{svc_rows}</ul>
+        </section>
+        {JS_TONG_QUAN}"""
+
+        return render_page(body, active="/", title="Tổng quan", extra_css=CSS_TONG_QUAN, an_tieu_de=True)
+
 
     @app.route("/api/status")
     def api_status():

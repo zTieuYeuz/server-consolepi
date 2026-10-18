@@ -1,5 +1,17 @@
 # Changelog
 
+## Chưa phát hành (sau 1.9.0) - 18/10/2026
+
+**Giao diện web mới** (`ui/layout.py`, `ui/home.py`, `branding/`). Đã chạy thử trên Pi, chưa đóng gói vào ISO.
+
+- **Bảng màu và chữ mới:** nền xám xanh đậm / sáng, một màu nhấn xanh dương duy nhất; font Geist và Geist Mono nhúng sẵn trong máy (không cần Internet). Độ tương phản chữ nút đạt AA ở cả hai nền.
+- **Menu trái phẳng:** hiện đủ mọi mục theo 4 nhóm, không còn bung/thu từng nhóm; vạch chọn trượt theo con trỏ. Thu gọn thành dãy icon vẫn dùng được.
+- **Trang Tổng quan làm lại:** câu trả lời "máy có ổn không" ở đầu trang kèm địa chỉ mạng; lưới "Việc hay làm" bất đối xứng (Chế độ PC); sức khỏe thiết bị dạng dòng nhãn - số - thanh mỏng; cổng console, cài đặt gần đây và dịch vụ có trạng thái bằng chữ (không chỉ dựa vào màu). Chế độ cảm ứng và thanh dưới giữ nguyên bố cục ô to.
+- **Hiệu ứng có chủ đích:** nội dung hiện dần theo thứ bậc, số đếm lên kèm khung chờ khi đọc dữ liệu, thanh chỉ số chạy ra, ô sáng theo chuột, chấm "đang chạy" nhấp nhẹ, vào trang mượt. Tất cả tắt khi máy bật "giảm chuyển động".
+- `tools/cap-nhat-pi.sh` nay chép cả thư mục `branding/` (logo + font) và đưa vào bản sao lưu.
+- Các trang khác chỉ đổi theo màu/chữ chung; trang Network Tools còn dùng biểu tượng emoji và vạch xanh cũ (chưa làm lại).
+- Kiểm thử: test chức năng 34/0, chọn ổ 69/0, chia ổ 54/0, giao diện 35/0, Python 3.11 không lỗi cú pháp.
+
 ## 1.9.0 - 18/10/2026
 
 **Chọn ổ cài Windows theo đặc điểm, không còn phụ thuộc số ổ** (`ui/unattend.py`, `ui/deployos.py`). Máy có 2 ổ cứng (1 ổ Windows + 1 ổ dữ liệu) thường bị đánh số ổ khác nhau giữa các máy: ổ Windows lúc là Disk 0, lúc là Disk 1. Trước đây kịch bản chỉ có "ổ đĩa số N" cố định nên cài nhầm số là xoá nhầm ổ dữ liệu.

@@ -9,13 +9,15 @@ SRC=/home/administrator/consolepi-toolkit
 DST=/opt/console-pi
 BK=/home/administrator/console-pi-truoc-moi-$(date +%Y%m%d-%H%M).tgz
 
-tar czf "$BK" -C /opt console-pi/ui console-pi/nettools console-pi/scripts console-pi/VERSION \
+tar czf "$BK" -C /opt console-pi/ui console-pi/nettools console-pi/branding console-pi/scripts console-pi/VERSION \
     $(cd /opt && ls -d console-pi/pxe-boot 2>/dev/null)
 echo "Da sao luu ban cu: $BK"
 
 # ui + nettools: chep de (khong xoa file rieng cua Pi nhu ifthen-rules.json)
 cp -r "$SRC/src/ui/." "$DST/ui/"
 cp -r "$SRC/src/nettools/." "$DST/nettools/"
+# Logo + font Geist cua giao dien moi (18/10/2026)
+mkdir -p "$DST/branding" && cp -r "$SRC/src/branding/." "$DST/branding/"
 # File boot PXE ban ky kem san (tu 1.5.0)
 rm -rf "$DST/pxe-boot" && cp -r "$SRC/src/pxe-boot" "$DST/pxe-boot"
 for f in "$SRC"/src/scripts/*; do
@@ -23,7 +25,7 @@ for f in "$SRC"/src/scripts/*; do
 done
 install -m 644 "$SRC/VERSION" "$DST/VERSION"
 find "$DST" -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
-chown -R administrator:administrator "$DST/ui" "$DST/nettools"
+chown -R administrator:administrator "$DST/ui" "$DST/nettools" "$DST/branding"
 
 # 1.7.7: da go tinh nang "Cho AI / may khac truy cap" (token + /ai + /api). cp -r khong xoa
 # file da bi go khoi repo nen don tay: file code, khoa token trong config, nhat ky cu.

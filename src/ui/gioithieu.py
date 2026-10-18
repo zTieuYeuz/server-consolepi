@@ -24,6 +24,8 @@ FILE_CONG_KHAI = {
     "logo-mark-64.png": "image/png",
     "logo-mark-32.png": "image/png",
     "favicon.ico": "image/x-icon",
+    "Geist-Variable.woff2": "font/woff2",
+    "GeistMono-Variable.woff2": "font/woff2",
 }
 DUONG_CONG_KHAI = {f"/thuong-hieu/{f}" for f in FILE_CONG_KHAI} | {"/favicon.ico"}
 

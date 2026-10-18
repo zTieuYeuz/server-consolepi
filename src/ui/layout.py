@@ -87,6 +87,8 @@ NAV_ITEMS = [
 ]
 
 BASE_CSS = """
+@font-face { font-family:Geist; src:url(/thuong-hieu/Geist-Variable.woff2) format("woff2"); font-weight:100 900; font-display:swap; }
+@font-face { font-family:"Geist Mono"; src:url(/thuong-hieu/GeistMono-Variable.woff2) format("woff2"); font-weight:100 900; font-display:swap; }
 /* =====================================================================
    HE MAU - khai bao 1 CHO DUY NHAT bang bien CSS
    =====================================================================
@@ -107,48 +109,49 @@ BASE_CSS = """
 */
 :root {
   --zt:       "7a546965755965757a7c436f6e736f6c6553797374656d";
-  --nen:      #0B0E14;   /* nen trang */
-  --nen-noi:  #10151D;   /* thanh menu, thanh trang thai */
-  --the:      #141A23;   /* the noi dung */
-  --the-noi:  #1A2230;   /* the khi ro len / hang bang khi cham */
-  --vien:     #1F2733;
-  --vien-ro:  #2B3746;
-  --chu:      #E3E8EF;
-  --chu-mo:   #8A94A6;
-  --chu-mo2:  #5D6879;
-  --nhan:     #38BDF8;
-  --nhan-dam: #0EA5E9;
-  --nhan-mo:  rgba(56,189,248,.13);
-  --xanh:     #4ADE80;
-  --xanh-mo:  rgba(74,222,128,.12);
-  --vang:     #FBBF24;
-  --vang-mo:  rgba(251,191,36,.12);
-  --do:       #F87171;
-  --do-mo:    rgba(248,113,113,.12);
-  --bong:     0 1px 2px rgba(0,0,0,.45), 0 6px 20px rgba(0,0,0,.25);
-  --bo:       10px;
-  /* Them cho giao dien 2 che do (15/10/2026): nhung cho truoc day viet cung
-     mau toi, nay cung ra bien de doi duoc sang NEN SANG. */
-  --chu-tren-nhan: #04212E;
+  --nen:      #0C0E12;   /* nen trang */
+  --nen-noi:  #0F1217;   /* thanh menu, thanh trang thai */
+  --the:      #13171D;   /* the noi dung */
+  --the-noi:  #181D25;   /* the khi ro len / hang bang khi cham */
+  --vien:     #1E242D;
+  --vien-ro:  #2A323E;
+  --chu:      #E7EAF0;
+  --chu-mo:   #98A1B0;
+  --chu-mo2:  #7A8496;
+  --nhan:     #6C9CFF;
+  --nhan-dam: #8AB1FF;
+  --nhan-mo:  rgba(108,156,255,.14);
+  --xanh:     #43D492;
+  --xanh-mo:  rgba(67,212,146,.12);
+  --vang:     #E8B04A;
+  --vang-mo:  rgba(232,176,74,.12);
+  --do:       #EF6B6B;
+  --do-mo:    rgba(239,107,107,.12);
+  --bong:     0 1px 2px rgba(0,0,0,.4);
+  --bo:       14px;      /* hop/the: 14px; nut va o nhap: 8px (xem muc NUT) */
+  --chu-tren-nhan: #0A1430;
   --hang-nen: rgba(255,255,255,.028);
   --hang-hover: rgba(255,255,255,.018);
-  --msg-ok: #BBF7D0; --msg-err: #FECACA; --msg-warn: #FDE68A; --msg-info: #BAE6FD;
-  --code-nen: rgba(56,189,248,.09); --code-chu: #7DD3FC;
-  --pre-nen: #070A0F; --pre-chu: #CBD5E1;
+  --msg-ok: #BBF7D0; --msg-err: #FECACA; --msg-warn: #FDE68A; --msg-info: #D3E2FF;
+  --code-nen: rgba(108,156,255,.10); --code-chu: #A9C4FF;
+  --pre-nen: #080A0E; --pre-chu: #CBD5E1;
+  --chu-font: Geist, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --muot: cubic-bezier(.16,1,.3,1);
 }
 /* NEN SANG - mac dinh cua Che do cam ung (doc ro ngoai troi), bat duoc ca
    o Che do PC. Chi doi bien, khong doi bo cuc. */
 body.nen-sang {
-  --nen:#EEF1F5; --nen-noi:#FFFFFF; --the:#FFFFFF; --the-noi:#F1F4F8;
-  --vien:#E1E6ED; --vien-ro:#C9D2DE; --chu:#0F172A; --chu-mo:#556070; --chu-mo2:#7C8696;
-  --nhan:#2563EB; --nhan-dam:#1D4ED8; --nhan-mo:#E6EEFF;
-  --xanh:#15803D; --xanh-mo:#E3F6EA; --vang:#B45309; --vang-mo:#FEF3DC;
-  --do:#DC2626; --do-mo:#FDE7E7;
-  --bong: 0 1px 2px rgba(15,23,42,.06), 0 4px 14px rgba(15,23,42,.06);
+  --nen:#F3F4F6; --nen-noi:#FFFFFF; --the:#FFFFFF; --the-noi:#F6F7F9;
+  --vien:#E4E7EC; --vien-ro:#CBD1DA; --chu:#12161D; --chu-mo:#505A6A; --chu-mo2:#6B7586;
+  --nhan:#2358D8; --nhan-dam:#1B47B3; --nhan-mo:#E7EEFF;
+  --xanh:#157A4A; --xanh-mo:#E3F6EA; --vang:#9A5B07; --vang-mo:#FEF3DC;
+  --do:#C62828; --do-mo:#FDE7E7;
+  --bong: 0 1px 2px rgba(15,23,42,.05);
   --chu-tren-nhan:#FFFFFF;
   --hang-nen: rgba(15,23,42,.035); --hang-hover: rgba(15,23,42,.025);
   --msg-ok:#14532D; --msg-err:#7F1D1D; --msg-warn:#78350F; --msg-info:#1E3A8A;
-  --code-nen:#EEF2FF; --code-chu:#1D4ED8;
+  --code-nen:#EEF2FF; --code-chu:#1F4FC4;
   --pre-nen:#F4F6FA; --pre-chu:#1E293B;
   color-scheme: light;
 }
@@ -160,7 +163,7 @@ body.nen-sang .logo-sang { display:inline-block !important; }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { touch-action: manipulation; }   /* bo do tre 300ms cho tap tren man hinh cam ung */
-body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+body { margin:0; font-family: var(--chu-font);
        background:var(--nen); color:var(--chu);
        -webkit-font-smoothing:antialiased; }
 a { color:var(--nhan); text-decoration:none; }
@@ -204,23 +207,21 @@ a:hover { color:var(--nhan-dam); }
 
 .nav { padding:8px 8px 4px; }
 
-/* ---- Nhom muc menu (the <details> chinh chu cua trinh duyet - khong
-   can JS, bung/thu chay duoc ngay ca khi JS loi) ---- */
-.nav .nhom > summary { display:flex; align-items:center; gap:11px;
-    padding:12px 12px; min-height:48px; color:var(--chu-mo); font-size:14.5px;
-    cursor:pointer; white-space:nowrap; list-style:none; border-radius:9px;
-    -webkit-user-select:none; user-select:none;
-    transition:background .12s, color .12s; }
-.nav .nhom > summary::-webkit-details-marker { display:none; }
-/* Mui ten chi huong mo/dong - xoay khi bung ra */
-.nav .nhom > summary::after { content:"\\25B8"; margin-left:auto; font-size:11px;
-    color:var(--chu-mo2); transition:transform .18s; }
-.nav .nhom[open] > summary::after { transform:rotate(90deg); }
-.nav .nhom > summary:hover { background:var(--the); color:var(--chu); }
-.nav .nhom > summary:active { background:var(--the-noi); }
-.nav .nhom .con { margin:2px 0 6px; }
-.nav .nhom .con a { padding-left:26px; font-size:14px; min-height:44px; }
-.nav .nhom .con a .ic { font-size:15px; width:20px; }
+/* ---- Nhan nhom trong menu ----
+   (Giao dien moi 18/10/2026) Moi muc hien san, khong con bung/thu: it bam
+   hon, nhin la thay het cho co the toi. Nhom chi la nhan chu nho. */
+.nav .ngr { margin:0; padding:16px 12px 5px; font-size:12px; color:var(--chu-mo2);
+    font-weight:500; white-space:nowrap; }
+.nav .ngr:first-child { padding-top:4px; }
+/* Vach chon truot theo con tro (JS them class ind-on len body; khong co JS
+   thi muc dang mo van to nen nhu cu). */
+.nav { position:relative; }
+.nav .ind { position:absolute; left:8px; right:8px; top:0; height:42px;
+    border-radius:8px; background:var(--nhan-mo); pointer-events:none; opacity:0;
+    transition:transform .32s var(--muot), height .2s, opacity .2s, background .2s; }
+.nav .ind.hov { background:var(--the-noi); }
+body.ind-on .nav a.active, body.ind-on .nav a:hover { background:transparent; }
+.nav a { z-index:1; }
 
 /* ---- Che do THU GON: chi con day icon ----
    Dat class tren <body> (khong phai tren .side) de CSS o day doi duoc ca
@@ -230,18 +231,15 @@ body.thu-gon .side .nl,
 body.thu-gon .side .brand .bten,
 body.thu-gon .side .foot { display:none; }
 body.thu-gon .side .brand { justify-content:center; padding:15px 8px; flex-direction:column; }
-body.thu-gon .side .nav a,
-body.thu-gon .side .nav .nhom > summary { justify-content:center; padding:12px 6px; }
-body.thu-gon .side .nav .nhom > summary::after { display:none; }
-/* Khi thu gon thi luon bung cac nhom ra (chi con icon nen khong chiem cho),
-   neu khong cac muc con se bi giau han, khong bam vao dau duoc. */
-body.thu-gon .side .nav .nhom .con a { padding-left:6px; }
+body.thu-gon .side .nav a { justify-content:center; padding:12px 6px; }
+body.thu-gon .side .nav .ngr { height:1px; padding:0; margin:9px 14px; background:var(--vien);
+    font-size:0; overflow:hidden; }
 /* Muc menu toi thieu 44px chieu cao (khuyen nghi cho man hinh cam ung) va co
    hieu ung bam :active - :hover khong bao gio kich hoat tren cam ung nen
    thieu no nguoi dung khong biet minh vua cham trung hay chua.
    white-space:nowrap: truoc day "Cam thang thiet bi" bi xuong 2 dong lam
    danh sach cao thap khong deu, kho nham trung muc can bam. */
-.nav a { display:flex; align-items:center; gap:11px; padding:12px; min-height:48px;
+.nav a { display:flex; align-items:center; gap:11px; padding:10px 12px; min-height:44px;
          color:var(--chu-mo); font-size:14.5px; border-radius:9px;
          white-space:nowrap; -webkit-user-select:none; user-select:none;
          position:relative; transition:background .12s, color .12s; }
@@ -251,11 +249,7 @@ body.thu-gon .side .nav .nhom .con a { padding-left:6px; }
    khong dung border-left nhu truoc - border-left lam chu bi day lech 3px so
    voi cac muc khac, nhin ca cot bi so le. */
 .nav a.active { background:var(--nhan-mo); color:var(--nhan); font-weight:600; }
-.nav a.active::before { content:""; position:absolute; left:0; top:9px; bottom:9px;
-         width:3px; border-radius:0 3px 3px 0; background:var(--nhan); }
-.nav a .ic { font-size:18px; width:24px; text-align:center; flex:none;
-         filter:grayscale(.25); }
-.nav a.active .ic { filter:none; }
+.nav a .ic { font-size:18px; width:24px; text-align:center; flex:none; }
 .side .foot { margin-top:auto; padding:10px 16px; border-top:1px solid var(--vien);
               font-size:12px; color:var(--chu-mo2); }
 .side .foot a { display:inline-block; min-height:36px; line-height:36px;
@@ -277,11 +271,11 @@ body.thu-gon .side .nav .nhom .con a { padding-left:6px; }
            letter-spacing:.6px; display:flex; align-items:center; gap:6px; }
 .chip .k::before { content:""; width:7px; height:7px; border-radius:50%;
            background:var(--chu-mo2); flex:none; }
-.chip.up .k::before { background:var(--xanh); box-shadow:0 0 7px var(--xanh); }
+.chip.up .k::before { background:var(--xanh); }
 .chip.down .k::before { background:var(--chu-mo2); }
 .chip.up { border-color:rgba(74,222,128,.28); }
 .chip .v { font-size:14px; color:var(--chu); font-weight:600; margin-top:3px;
-           font-family:ui-monospace, monospace; letter-spacing:-.2px; }
+           font-family:var(--mono); letter-spacing:-.2px; }
 .chip .x { font-size:11px; color:var(--chu-mo); margin-top:2px; }
 .status .spacer { flex:1; }
 .status .act { display:flex; gap:8px; align-items:center; }
@@ -293,14 +287,13 @@ body.thu-gon .side .nav .nhom .con a { padding-left:6px; }
    tren no (them 58px + khe 10px). Tong vung bi che tu day len la ~138px;
    dem mong hon la chung de len dung hang/nut cuoi trang, bam khong trung. */
 .content { padding:22px 24px 150px; flex:1; max-width:1500px; width:100%; }
-h1 { font-size:24px; color:var(--chu); margin:0 0 5px; font-weight:650;
-     letter-spacing:-.3px; }
+h1 { font-size:30px; color:var(--chu); margin:0 0 6px; font-weight:650;
+     letter-spacing:-.03em; line-height:1.1; }
 /* Tieu de muc co vach cyan ben trai - mat luot qua la biet trang chia lam
    may phan, thay vi ca trang toan chu cung mau. */
-h2 { font-size:16.5px; color:var(--chu); margin:28px 0 12px; font-weight:600;
+h2 { font-size:18px; color:var(--chu); margin:34px 0 14px; font-weight:620; letter-spacing:-.015em;
      display:flex; align-items:center; gap:9px; }
-h2::before { content:""; width:3px; height:16px; border-radius:2px;
-     background:var(--nhan); flex:none; }
+h2::before { content:none; }
 .sub { color:var(--chu-mo); font-size:13.5px; margin:0 0 20px; }
 
 /* ---- Thanh phan chung ---- */
@@ -332,7 +325,7 @@ input[type=url],select,textarea {
 input:focus,select:focus,textarea:focus { outline:none; border-color:var(--nhan);
   box-shadow:0 0 0 3px var(--nhan-mo); }
 input::placeholder, textarea::placeholder { color:var(--chu-mo2); }
-textarea { font-family:ui-monospace, monospace; min-height:110px; }
+textarea { font-family:var(--mono); min-height:110px; }
 label { display:block; margin:13px 0 6px; font-size:13.5px; color:var(--chu-mo);
         font-weight:500; }
 
@@ -389,7 +382,7 @@ button.small,.btn.small,button.nho,.btn.nho { padding:9px 14px; font-size:13.5px
 pre { background:var(--pre-nen); border:1px solid var(--vien); padding:14px;
       border-radius:8px; overflow-x:auto; white-space:pre-wrap;
       word-break:break-word; font-size:13.5px; color:var(--pre-chu); line-height:1.55; }
-code { font-family:ui-monospace, monospace; background:var(--code-nen);
+code { font-family:var(--mono); background:var(--code-nen);
        color:var(--code-chu); padding:2px 7px; border-radius:5px; font-size:13.5px; }
 
 /* ---- Bang thong bao ----
@@ -403,7 +396,7 @@ code { font-family:ui-monospace, monospace; background:var(--code-nen);
             border-left-color:var(--do);   color:var(--msg-err); }
 .msg.warn { background:var(--vang-mo); border-color:rgba(251,191,36,.3);
             border-left-color:var(--vang); color:var(--msg-warn); }
-.msg.info { background:var(--nhan-mo); border-color:rgba(56,189,248,.3);
+.msg.info { background:var(--nhan-mo); border-color:rgba(108,156,255,.3);
             border-left-color:var(--nhan); color:var(--msg-info); }
 
 .row { display:flex; gap:11px; flex-wrap:wrap; align-items:flex-end; }
@@ -468,8 +461,9 @@ code { font-family:ui-monospace, monospace; background:var(--code-nen);
 @media (min-width: 1200px) and (pointer: fine) {
   .content { padding:24px 28px 96px; }
   th,td { padding:10px 13px; }
-  .nav a, .nav .nhom > summary { min-height:42px; padding:9px 12px; }
-  .nav .nhom .con a { min-height:38px; }
+  .nav a { min-height:38px; padding:7px 12px; font-size:14px; }
+  .nav .ind { height:38px; }
+  .nav .ngr { padding-top:13px; }
   button, .btn { min-height:40px; padding:9px 16px; }
   button.small,.btn.small,button.nho,.btn.nho { min-height:34px; padding:7px 12px; }
   input[type=text],input[type=password],input[type=number],input[type=search],
@@ -484,8 +478,7 @@ code { font-family:ui-monospace, monospace; background:var(--code-nen);
   .side { width:100%; flex:none; position:static; height:auto; }
   .nav { display:flex; overflow-x:auto; padding:6px; }
   .nav a { border-radius:8px; white-space:nowrap; }
-  .nav a.active::before { left:9px; right:9px; top:auto; bottom:0; width:auto;
-       height:3px; border-radius:3px 3px 0 0; }
+  .nav .ngr, .nav .ind { display:none; }
   .side .foot, .brand small { display:none; }
   .status { position:static; }
   .content { padding:16px 14px 96px; }
@@ -514,13 +507,13 @@ svg.i { width:20px; height:20px; flex:none; stroke:currentColor; fill:none;
        font-size:16.5px; color:var(--chu); letter-spacing:.2px; white-space:nowrap; }
 .top .ten-cu img { width:34px; height:34px; display:block; }
 .top .tim { flex:1 1 220px; max-width:440px; display:flex; align-items:center; gap:10px;
-       background:var(--the); border:1px solid var(--vien); border-radius:11px;
+       background:var(--the); border:1px solid var(--vien); border-radius:8px;
        padding:0 12px; min-height:42px; color:var(--chu-mo2); font-size:14px;
        cursor:text; font-family:inherit; text-align:left; font-weight:400; }
 .top .tim:hover { border-color:var(--vien-ro); background:var(--the); color:var(--chu-mo); }
 .top .tim:active { transform:none; }
 .top .tim .tim-chu { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.top .tim kbd { margin-left:auto; white-space:nowrap; font:11px ui-monospace,monospace; border:1px solid var(--vien);
+.top .tim kbd { margin-left:auto; white-space:nowrap; font:11px var(--mono); border:1px solid var(--vien);
        border-radius:6px; padding:2px 6px; color:var(--chu-mo2); }
 .top .chips { display:flex; gap:7px; flex-wrap:wrap; align-items:center; min-width:0; overflow:hidden; max-height:44px; }
 body.cd-pc .top { flex-wrap:nowrap; }
@@ -537,9 +530,9 @@ body.cd-pc .top .nl-nen { display:none; }
 .top .spacer { flex:1; }
 .top .act { display:flex; gap:7px; align-items:center; }
 .top .act .btn { min-height:40px; padding:8px 12px; font-size:13px; }
-.doi-cd { background:linear-gradient(135deg,#22d3ee,#6366f1) !important; color:#fff !important;
-       border:0 !important; border-radius:999px !important; font-weight:700; }
-.doi-cd:hover { filter:brightness(1.08); }
+.doi-cd { background:transparent !important; color:var(--chu) !important;
+       border:1px solid var(--vien-ro) !important; font-weight:600; }
+.doi-cd:hover { background:var(--the-noi) !important; }
 
 /* ---- Thanh duoi + menu o to (chi Che do cam ung) ---- */
 .dock { display:none; }
@@ -641,6 +634,20 @@ body.cd-pc.thu-gon .side { width:72px; flex:0 0 72px; }
   .dock a { min-width:0; flex:1; padding:6px 2px; font-size:10.5px; white-space:nowrap; min-height:54px; }
   .dock a svg.i { width:22px; height:22px; }
 }
+
+/* ===== HIEU UNG CHUNG (moi cai deu co ly do: phan hoi khi bam, bao trang thai) =====
+   Tat het khi may bat "giam chuyen dong" (prefers-reduced-motion). */
+@media (prefers-reduced-motion: no-preference) {
+  .content { animation:vao-trang .45s var(--muot) both; }
+  @keyframes vao-trang { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  body, .side, .top, .card, .tbl-scroll, .chip, .dock, input, select, textarea {
+    transition:background-color .3s, border-color .3s, color .3s; }
+  button, .btn, .dep-tab, .nav a, .dock a, .o-to, .bt { transition:transform .18s var(--muot), background-color .18s, border-color .18s, color .18s; }
+  .chip.up .k::before { animation:nhip 2.4s ease-out infinite; }
+  @keyframes nhip { 0% { box-shadow:0 0 0 0 rgba(67,212,146,.5); } 70%,100% { box-shadow:0 0 0 7px rgba(67,212,146,0); } }
+  .o-to:hover { transform:translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
 """
 
 
@@ -881,7 +888,7 @@ def _mau_moi(thuoc_tinh, hx):
                   "nhan": "var(--nhan)"}.get(sac)
         elif sac != "xam":
             kq = {"xanh": "rgba(74,222,128,.35)", "do": "rgba(248,113,113,.35)",
-                  "vang": "rgba(251,191,36,.35)", "nhan": "rgba(56,189,248,.35)"}.get(sac)
+                  "vang": "rgba(251,191,36,.35)", "nhan": "rgba(108,156,255,.35)"}.get(sac)
     _MAU_CACHE[khoa] = kq
     return kq
 
@@ -967,6 +974,7 @@ _SVG = {
  "usb": '<path d="M12 2v15M8 6l4-4 4 4"/><circle cx="12" cy="19" r="2.5"/><path d="M12 12l-5-3V7M12 14l5-3V9"/>',
  "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
  "temp": '<path d="M14 14.8V4a2 2 0 00-4 0v10.8a4 4 0 104 0z"/>',
+ "go": '<path d="M5 12h14M13 6l6 6-6 6"/>',
  "chip": '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
 }
 
@@ -982,9 +990,9 @@ ICON_MUC = {
 }
 
 
-def svg_icon(ten):
+def svg_icon(ten, lop="i"):
     """1 icon SVG net mat (xem _SVG). Dung chung cho cac trang khac."""
-    return f'<svg class="i" viewBox="0 0 24 24" aria-hidden="true">{_SVG.get(ten, _SVG["doc"])}</svg>'
+    return f'<svg class="{lop}" viewBox="0 0 24 24" aria-hidden="true">{_SVG.get(ten, _SVG["doc"])}</svg>'
 
 
 # Cac trang CON (khong nam tren menu) - them vao o tim nhanh de go la thay.
@@ -1086,7 +1094,7 @@ def _ds_tim_nhanh():
     return _json.dumps(ds, ensure_ascii=False).replace("</", "<\\/")
 
 
-def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""):
+def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css="", an_tieu_de=False):
     """
     Dung 1 trang hoan chinh voi khung chung.
       body_html : phan noi dung rieng cua trang (chuoi HTML da render xong)
@@ -1119,7 +1127,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
                 f'title="{label}">'
                 f'<span class="ic">{svg_icon(ICON_MUC.get(href, "doc"))}</span><span class="nl">{label}</span></a>')
 
-    nav_html = ""
+    nav_html = '<span class="ind" id="nav-ind" aria-hidden="true"></span>'
     o_to_html = ""          # menu o to cua Che do cam ung
     for muc in NAV_ITEMS:
         if muc[0] != "nhom":
@@ -1128,17 +1136,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
                           f'<span class="bi">{svg_icon(ICON_MUC.get(muc[0], "doc"))}</span><b>{muc[1]}</b></a>')
             continue
         _, ten_nhom, icon_nhom, cac_con = muc
-        # Nhom chua trang dang mo thi bung san - nguoi dung luon thay minh
-        # dang dung o dau ma khong phai tu mo lai sau moi lan chuyen trang.
-        mo = any(_dang_mo(h) for h, _l, _i in cac_con)
-        con_html = "".join(_ve_muc(*c) for c in cac_con)
-        nav_html += (
-            f'<details class="nhom"{" open" if mo else ""}>'
-            f'<summary title="{ten_nhom}">'
-            f'<span class="ic">{svg_icon(ICON_MUC.get("nhom:" + ten_nhom, "doc"))}</span>'
-            f'<span class="nl">{ten_nhom}</span></summary>'
-            f'<div class="con">{con_html}</div></details>'
-        )
+        nav_html += f'<p class="ngr">{ten_nhom}</p>' + "".join(_ve_muc(*c) for c in cac_con)
         for h, l, _i in cac_con:
             o_to_html += (f'<a class="o-to{" on" if _dang_mo(h) else ""}" href="{h}">'
                           f'<span class="bi">{svg_icon(ICON_MUC.get(h, "doc"))}</span><b>{l}</b><small>{ten_nhom}</small></a>')
@@ -1147,7 +1145,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     # Che do cam ung an nut nay vi thanh duoi da co "Trang chu".
     nut_home = ("" if active == "/" else
                 '<a href="/" class="nut-home" title="Về trang chủ" '
-                'aria-label="Về trang chủ">&#127968;</a>')
+                f'aria-label="Về trang chủ">{svg_icon("home")}</a>')
 
     if che_do == "cu":
         nut_doi_cd = (f'<a href="{_link_doi(che_do="pc")}" class="btn doi-cd" '
@@ -1215,8 +1213,8 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
       </div>
     </div>
     <div class="content">
-      <h1>{title}</h1>
-      {f'<p class="sub">{subtitle}</p>' if subtitle else ''}
+      {"" if an_tieu_de else f"<h1>{title}</h1>"}
+      {f'<p class="sub">{subtitle}</p>' if (subtitle and not an_tieu_de) else ''}
       {body_html}
     </div>
   </div>
@@ -1253,6 +1251,27 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     }});
     veLai();
   }});
+}})();
+/* Vach chon menu trai truot theo con tro (chi che do PC). */
+(function() {{
+  var nav = document.querySelector('.side .nav'), ind = document.getElementById('nav-ind');
+  if (!nav || !ind || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var cur = nav.querySelector('a.active');
+  function den(a, hov) {{
+    ind.style.height = a.offsetHeight + 'px';
+    ind.style.transform = 'translateY(' + a.offsetTop + 'px)';
+    ind.style.opacity = 1; ind.classList.toggle('hov', !!hov);
+  }}
+  document.body.classList.add('ind-on');
+  if (cur) {{ ind.style.transition = 'none'; den(cur, false);
+    requestAnimationFrame(function() {{ ind.style.transition = ''; }}); }}
+  nav.querySelectorAll('a').forEach(function(a) {{
+    a.addEventListener('pointerenter', function() {{ den(a, a !== cur); }});
+  }});
+  nav.addEventListener('pointerleave', function() {{ if (cur) den(cur, false); else ind.style.opacity = 0; }});
+  var n = document.getElementById('nut-thu');
+  if (n) n.addEventListener('click', function() {{ setTimeout(function() {{ if (cur) den(cur, false); }}, 30); }});
+  addEventListener('resize', function() {{ if (cur) den(cur, false); }});
 }})();
 /* Tim nhanh: Ctrl+K (PC) hoac nut "Tim" o thanh duoi (cam ung).
    Go khong dau van tim duoc ("cai dat" ra "Cài đặt"). JS loi thi nut Tim
