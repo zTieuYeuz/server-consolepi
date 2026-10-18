@@ -240,63 +240,104 @@ def go_mat_khau(ma, mk=None, cho_giay=15):
 # ------------------------------------------------------------------ giao dien
 TRANG = r"""
 <style>
-.ph-modal [hidden],.ph-cong[hidden],.ph-trong[hidden]{display:none !important;}
-.ph-khung{display:flex;gap:10px;height:calc(100vh - 72px);min-height:420px;}
-.ph-trai{width:270px;flex:0 0 270px;display:flex;flex-direction:column;background:var(--card,#131a24);
-  border:1px solid var(--border,#1f2733);border-radius:10px;overflow:hidden;}
-.ph-trai .dau{padding:6px;border-bottom:1px solid var(--border,#1f2733);display:flex;gap:6px;}
-.ph-trai input{margin:0;padding:7px 10px;min-height:0;}
-.ph-ds{overflow:auto;flex:1;padding:6px 0;}
-.ph-nhom{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8A94A6;
-  padding:10px 12px 4px;}
-.ph-muc{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;border-left:3px solid transparent;}
-.ph-muc:hover{background:#18212d;}
-.ph-muc.mo{border-left-color:#38BDF8;background:#132132;}
-.ph-muc .ic{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;flex:none;}
-.ic.ssh{background:#12324a;color:#7cc8ff;} .ic.telnet{background:#3a2a12;color:#ffcf7a;}
-.ic.serial{background:#123a22;color:#7ddc9a;} .ic.local{background:#2a2140;color:#c8a8ff;}
-.ph-muc .chu{flex:1;min-width:0;} .ph-muc .chu b{display:block;font-size:13.5px;font-weight:600;
+.ph-modal [hidden],.ph-cong[hidden],.ph-trong[hidden],.ph-tv[hidden]{display:none !important;}
+.ph-khung{display:flex;gap:12px;height:calc(100dvh - 84px);min-height:440px;}
+.ph-trai,.ph-phai{background:var(--the);border:1px solid var(--vien);border-radius:var(--bo);overflow:hidden;}
+.ph-trai{width:272px;flex:0 0 272px;display:flex;flex-direction:column;}
+.ph-trai .dau{padding:10px;border-bottom:1px solid var(--vien);}
+.ph-trai input{margin:0;max-width:none;}
+.ph-ds{overflow:auto;flex:1;padding:6px 8px 10px;}
+.ph-nhom{font-size:12px;font-weight:500;color:var(--chu-mo2);padding:14px 8px 5px;}
+.ph-muc{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;
+  transition:background-color .15s;}
+.ph-muc:hover{background:var(--the-noi);}
+.ph-muc.mo{background:var(--nhan-mo);}
+.ph-muc .ic{min-width:34px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font:600 11px var(--mono);flex:none;background:var(--the-noi);color:var(--chu-mo);}
+.ic.ssh{background:var(--nhan-mo);color:var(--nhan);} .ic.telnet{background:var(--vang-mo);color:var(--vang);}
+.ic.serial{background:var(--xanh-mo);color:var(--xanh);} .ic.local{background:var(--the-noi);color:var(--chu);}
+.ph-muc .chu{flex:1;min-width:0;} .ph-muc .chu b{display:block;font-size:14px;font-weight:600;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ph-muc .chu small{color:#8A94A6;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
-.ph-muc .sua{opacity:.0;border:none;background:none;color:#8A94A6;cursor:pointer;font-size:14px;padding:2px 4px;}
+.ph-muc .chu small{color:var(--chu-mo);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+.ph-muc .sua{opacity:0;border:none;background:none;color:var(--chu-mo);cursor:pointer;padding:4px;min-height:0;}
 .ph-muc:hover .sua{opacity:1;}
-.ph-phai{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--card,#131a24);
-  border:1px solid var(--border,#1f2733);border-radius:10px;overflow:hidden;}
-.ph-tabs{display:flex;gap:2px;padding:6px 6px 0;border-bottom:1px solid var(--border,#1f2733);overflow-x:auto;}
-.ph-tab{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:8px 8px 0 0;background:#0f151d;
-  cursor:pointer;white-space:nowrap;font-size:13px;border:1px solid transparent;border-bottom:none;}
-.ph-tab.on{background:#18212d;border-color:#2a3647;color:#fff;}
-.ph-tab .x{border:none;background:none;color:#8A94A6;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;min-height:0;min-width:0;}
-.ph-cong{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;padding:4px 8px;border-bottom:1px solid var(--border,#1f2733);align-items:center;}
-.ph-cong button{padding:4px 10px;font-size:12.5px;min-height:0;}
-.ph-than{flex:1;position:relative;background:#0f1114;}
+.ph-phai{flex:1;min-width:0;display:flex;flex-direction:column;}
+.ph-tabs{display:flex;gap:2px;padding:8px 8px 0;border-bottom:1px solid var(--vien);overflow-x:auto;}
+.ph-tab{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px 8px 0 0;
+  cursor:pointer;white-space:nowrap;font-size:13.5px;color:var(--chu-mo);border:1px solid transparent;border-bottom:none;}
+.ph-tab:hover{color:var(--chu);}
+.ph-tab.on{background:var(--the-noi);border-color:var(--vien);color:var(--chu);font-weight:600;}
+.ph-tab .x{border:none;background:none;color:var(--chu-mo);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;min-height:0;min-width:0;}
+.ph-cong{display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden;padding:8px 10px;border-bottom:1px solid var(--vien);align-items:center;}
+.ph-cong button{padding:6px 12px;font-size:13px;min-height:36px;}
+.ph-cong button svg.i{width:17px;height:17px;}
+#nut-tv.on{background:var(--nhan-mo);color:var(--nhan);border-color:var(--nhan);}
+.ph-giua{flex:1;display:flex;min-height:0;}
+.ph-than{flex:1;position:relative;background:var(--pre-nen);min-width:0;}
 .ph-than iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;}
 .ph-than iframe.on{display:block;}
 .ph-trong{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
-  color:#8A94A6;text-align:center;padding:20px;}
-.ph-nhanh{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
-.ph-nhanh input{flex:1;min-width:240px;margin:0;font-family:ui-monospace,monospace;padding:8px 12px;min-height:0;}
-.ph-nhanh button{padding:8px 14px;min-height:0;}
-.ph-nhanh .tieude{font-weight:700;font-size:15px;margin-right:4px;white-space:nowrap;}
+  color:var(--chu-mo);text-align:center;padding:24px;gap:6px;}
+.ph-trong h3{margin:10px 0 2px;font-size:20px;color:var(--chu);letter-spacing:-.02em;}
+.ph-trong p{max-width:460px;margin:0;}
+.ph-trong .bd{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+.ph-trong svg.to{width:44px;height:44px;color:var(--chu-mo2);}
+.ph-nhanh{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+.ph-nhanh input{flex:1;min-width:240px;max-width:none;margin:0;font-family:var(--mono);}
+.ph-nhanh .tieude{font-weight:650;font-size:18px;letter-spacing:-.02em;margin-right:6px;white-space:nowrap;}
+
+/* ---- Ngan thu vien lenh (truot ra ben phai khung terminal) ---- */
+.ph-tv{width:340px;flex:0 0 340px;border-left:1px solid var(--vien);background:var(--the);display:flex;flex-direction:column;min-height:0;}
+.ph-tv .tvd{display:flex;align-items:center;gap:8px;padding:12px 14px 6px;}
+.ph-tv .tvd b{font-size:16px;font-weight:650;letter-spacing:-.01em;flex:1;}
+.ph-tv .tvd a,.ph-tv .tvd button{font-size:13px;min-height:32px;padding:4px 10px;}
+.ph-tv .tvt{padding:4px 14px 8px;}
+.ph-tv .tvt input{max-width:none;margin:0;}
+.ph-chip{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 8px;}
+.ph-chip button{min-height:30px;padding:3px 11px;font-size:12.5px;border-radius:999px;background:transparent;
+  color:var(--chu-mo);border:1px solid var(--vien-ro);font-weight:500;}
+.ph-chip button.on{background:var(--nhan-mo);color:var(--nhan);border-color:var(--nhan);}
+.ph-tvds{flex:1;overflow:auto;padding:0 8px 8px;min-height:90px;}
+.ph-the{display:block;width:100%;text-align:left;background:transparent;color:var(--chu);border:1px solid transparent;
+  border-radius:10px;padding:10px 12px;margin-bottom:2px;min-height:0;font-weight:400;}
+.ph-the:hover{background:var(--the-noi);}
+.ph-the.chon{background:var(--nhan-mo);border-color:var(--nhan);}
+.ph-the b{display:block;font-size:14px;font-weight:600;}
+.ph-the span{display:block;font-size:12.5px;color:var(--chu-mo);margin-top:2px;line-height:1.4;}
+.ph-the small{display:block;font:11.5px var(--mono);color:var(--chu-mo2);margin-top:5px;}
+.ph-sua{border-top:1px solid var(--vien);padding:12px 14px 14px;background:var(--nen-noi);max-height:58%;overflow:auto;}
+.ph-sua h4{margin:0 0 8px;font-size:14px;}
+.ph-sua label{margin:8px 0 4px;font-size:12.5px;}
+.ph-sua input{max-width:none;min-height:36px;padding:6px 10px;font-size:14px;margin:0;}
+.ph-sua textarea{width:100%;max-width:none;min-height:120px;font-size:13px;line-height:1.5;}
+.ph-sua .nut{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;}
+.ph-sua .nut button{white-space:nowrap;}
+.ph-sua .kq{font-size:12.5px;color:var(--xanh);flex:1 1 100%;order:3;}
+.ph-sua .kq.loi{color:var(--do);}
+.ph-sua .hd{font-size:12px;color:var(--chu-mo2);margin:8px 0 0;line-height:1.45;}
 .ph-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;
   z-index:50;overflow:auto;padding:16px 0 300px;}
 .ph-modal.on{display:flex;}
-.ph-modal .hop{background:#131a24;border:1px solid #2a3647;border-radius:12px;padding:18px;width:min(520px,94vw);
+.ph-modal .hop{background:var(--the);border:1px solid var(--vien-ro);border-radius:var(--bo);padding:20px;width:min(520px,94vw);
   max-height:90vh;overflow:auto;}
-.ph-modal label{display:block;font-size:13px;color:#aeb7c5;margin:8px 0 3px;}
+.ph-modal label{display:block;font-size:13px;color:var(--chu-mo);margin:8px 0 3px;}
 .ph-modal .hai{display:flex;gap:10px;} .ph-modal .hai>div{flex:1;}
 .ph-loai{display:flex;gap:6px;} .ph-loai button{flex:1;}
-.ph-loai button.chon{background:#38BDF8;color:#0b1220;border-color:#38BDF8;font-weight:700;}
+.ph-loai button.chon{background:var(--nhan);color:var(--chu-tren-nhan);border-color:var(--nhan);font-weight:700;}
 @media (max-width:900px){.ph-khung{flex-direction:column;height:auto;}.ph-trai{width:auto;flex:none;max-height:260px;}
-  .ph-phai{height:70vh;}}
+  .ph-phai{height:80vh;}
+  .ph-giua{position:relative;} .ph-tv{position:absolute;inset:0;width:auto;flex:none;z-index:5;border-left:0;}}
+@media (prefers-reduced-motion:no-preference){
+  .ph-tv.vao{animation:tv-vao .3s var(--muot) both;}
+  @keyframes tv-vao{from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:none;}}
+}
 </style>
 
 <div class="ph-nhanh">
-  <span class="tieude">🗂️ Phiên kết nối</span>
-  <input type="text" id="o-nhanh" placeholder="Kết nối nhanh:  ssh admin@192.168.1.1   ·   telnet 10.0.0.1   ·   ttyUSB0" autocomplete="off">
-  <button id="nut-nhanh" type="button">⚡ Kết nối</button>
-  <button id="nut-moi" type="button" class="gray">+ Phiên mới</button>
+  <span class="tieude">Phiên kết nối</span>
+  <input type="text" id="o-nhanh" placeholder="Kết nối nhanh: ssh admin@192.168.1.1" autocomplete="off">
+  <button id="nut-nhanh" type="button">[[i:go]] Kết nối</button>
+  <button id="nut-moi" type="button" class="gray">[[i:plus]] Phiên mới</button>
 </div>
 
 <div class="ph-khung">
@@ -307,20 +348,42 @@ TRANG = r"""
   <div class="ph-phai">
     <div class="ph-tabs" id="tabs"></div>
     <div class="ph-cong" id="congcu" hidden>
-      <button type="button" data-lam="lenh" title="Chọn tập lệnh trong thư viện, sửa rồi dán vào phiên">📋 Gửi tập lệnh</button>
-      <button type="button" data-lam="mk" title="Gõ mật khẩu giúp khi thiết bị hỏi">🔑 Gõ mật khẩu</button>
-      <button type="button" data-lam="log" class="gray" title="Tải toàn bộ nội dung màn hình về máy">💾 Lưu log</button>
-      <button type="button" data-lam="full" class="gray">🔍 Toàn màn hình</button>
-      <button type="button" data-lam="ngat" class="gray" title="Kết thúc hẳn phiên (không chỉ đóng tab)">✖ Ngắt phiên</button>
+      <button type="button" id="nut-tv" data-lam="tv" title="Mở thư viện lệnh làm sẵn, chọn rồi gửi vào phiên này">[[i:book]] Thư viện lệnh</button>
+      <button type="button" data-lam="mk" class="gray" title="Gõ mật khẩu giúp khi thiết bị hỏi">[[i:key]] Gõ mật khẩu</button>
+      <button type="button" data-lam="log" class="gray" title="Tải toàn bộ nội dung màn hình về máy">[[i:save]] Lưu log</button>
+      <button type="button" data-lam="full" class="gray">[[i:search]] Toàn màn hình</button>
+      <button type="button" data-lam="ngat" class="gray" title="Kết thúc hẳn phiên (không chỉ đóng tab)">[[i:x]] Ngắt phiên</button>
       <span id="tt-tab" class="hint" style="margin-left:auto;flex:1 1 0;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
     </div>
-    <div class="ph-than" id="than">
-      <div class="ph-trong" id="trong">
-        <div style="font-size:40px;">🖥️</div>
-        <h3 style="margin:8px 0;">Chưa mở phiên nào</h3>
-        <p style="max-width:460px;">Bấm một phiên ở danh sách bên trái, gõ vào ô <b>Kết nối nhanh</b>
-          (ví dụ <code>ssh admin@192.168.1.1</code>), hoặc bấm <b>+ Phiên mới</b> để lưu thiết bị dùng lại.</p>
+    <div class="ph-giua">
+      <div class="ph-than" id="than">
+        <div class="ph-trong" id="trong">
+          [[i:term:to]]
+          <h3>Chưa mở phiên nào</h3>
+          <p>Chọn một phiên ở danh sách bên trái, hoặc bắt đầu nhanh:</p>
+          <div class="bd">
+            <button type="button" id="bd-local">[[i:term]] Terminal máy này</button>
+            <button type="button" id="bd-ssh" class="gray">[[i:key]] SSH / Telnet mới</button>
+          </div>
+          <p class="hint" style="margin-top:12px;">Hoặc gõ vào ô <b>Kết nối nhanh</b> phía trên, ví dụ <code>ssh admin@192.168.1.1</code>.</p>
+        </div>
       </div>
+      <aside class="ph-tv" id="tv" hidden aria-label="Thư viện lệnh">
+        <div class="tvd"><b>Thư viện lệnh</b>
+          <a class="btn gray small" href="/commands" target="_blank" rel="noopener" title="Thêm, sửa, xoá lệnh trong thư viện">Quản lý</a>
+          <button type="button" class="gray small" id="tv-dong" aria-label="Đóng thư viện">[[i:x]]</button></div>
+        <div class="tvt"><input type="search" id="tv-tim" placeholder="Tìm lệnh: vlan, cổng, ip..." autocomplete="off"></div>
+        <div class="ph-chip" id="tv-chip"></div>
+        <div class="ph-tvds" id="tv-ds"></div>
+        <div class="ph-sua" id="tv-sua" hidden>
+          <h4 id="tv-ten"></h4>
+          <div id="tv-truong"></div>
+          <label for="tv-nd">Lệnh sẽ gửi (sửa được trước khi gửi)</label>
+          <textarea id="tv-nd" spellcheck="false"></textarea>
+          <div class="nut"><button type="button" id="tv-gui">[[i:go]] Gửi vào phiên</button><span class="kq" id="tv-kq"></span></div>
+          <p class="hd">Gửi từng dòng, đợi thiết bị in xong mới gửi dòng tiếp. Dòng cuối không tự bấm Enter để bạn kiểm tra lại.</p>
+        </div>
+      </aside>
     </div>
   </div>
 </div>
@@ -363,18 +426,8 @@ TRANG = r"""
     <button type="button" id="f-xoa" class="red" style="margin-left:auto;" hidden>Xoá phiên</button>
   </div>
 </div></div>
-
-<!-- Hop gui tap lenh -->
-<div class="ph-modal" id="md-lenh"><div class="hop" style="width:min(680px,95vw);">
-  <h3 style="margin:0 0 8px;">Gửi tập lệnh vào phiên</h3>
-  <label>Chọn từ thư viện lệnh</label><select id="l-chon"></select>
-  <label>Nội dung (sửa lại IP / tên cổng trước khi gửi)</label>
-  <textarea id="l-noidung" rows="10" style="width:100%;font-family:ui-monospace,monospace;"></textarea>
-  <p class="hint">Vào thiết bị mạng: gửi <b>từng dòng</b>, đợi thiết bị in xong mới gửi dòng tiếp; dòng cuối không tự Enter để anh/chị kiểm tra.</p>
-  <div style="display:flex;gap:8px;margin-top:10px;"><button type="button" id="l-gui">Dán vào phiên</button>
-    <button type="button" id="l-huy" class="gray">Đóng</button></div>
-</div></div>
 """
+
 
 JS = r"""
 <script>
@@ -407,7 +460,7 @@ JS = r"""
         var mo = MO.some(function(t){ return t.ma===p.ma; });
         h += '<div class="ph-muc'+(mo?' mo':'')+'" data-ma="'+esc(p.ma)+'" title="'+esc(p.ghi_chu||'')+'">'
           + '<span class="ic '+p.loai+'">'+NHAN[p.loai]+'</span><span class="chu"><b>'+esc(p.ten)+'</b><small>'
-          + esc(moTa(p)) + (p.co_mat_khau?' · 🔑':'') + '</small></span>'
+          + esc(moTa(p)) + (p.co_mat_khau?', đã lưu mật khẩu':'') + '</small></span>'
           + (p.sua ? '<button class="sua" data-sua="'+esc(p.ma)+'" title="Sửa">✎</button>' : '') + '</div>';
       });
     });
@@ -489,7 +542,7 @@ JS = r"""
     $('f-mk').value=''; $('f-luu-mk').checked = false; $('f-xoa-mk').checked=false; $('f-ghichu').value = p.ghi_chu||'';
     $('f-xoa-mk-dong').hidden = !p.co_mat_khau; $('f-xoa').hidden = !p.ma; $('f-loi').hidden = true;
     var cong = DS.filter(function(x){ return x.loai==='serial' && !x.sua; });
-    $('f-cong').innerHTML = cong.map(function(c){ return '<option value="'+esc(c.cong)+'">'+esc(c.cong+' — '+c.ten)+'</option>'; }).join('')
+    $('f-cong').innerHTML = cong.map(function(c){ return '<option value="'+esc(c.cong)+'">'+esc(c.cong+' - '+c.ten)+'</option>'; }).join('')
       || '<option value="">(chưa cắm cáp console)</option>';
     if (p.cong) $('f-cong').value = p.cong;
     $('f-baud').innerHTML = [1200,2400,4800,9600,19200,38400,57600,115200].map(function(b){
@@ -535,34 +588,90 @@ JS = r"""
     } else if (lam==='full'){ var f = document.querySelector('#than iframe.on'); if (f && f.requestFullscreen) f.requestFullscreen();
     } else if (lam==='ngat'){ if (!confirm('Ngắt hẳn phiên này? (Kết nối tới thiết bị sẽ đóng)')) return;
       api(u+'ngat', {}).then(function(){ dongTab(DANG); });
-    } else if (lam==='lenh'){ moLenh(); }
+    } else if (lam==='tv'){ moTv(!TV_MO); }
   });
-  function moLenh(){
-    var napLai = THU_VIEN.length ? Promise.resolve() : api('/phien/api/thu-vien').then(function(d){ THU_VIEN = d.tap; });
-    napLai.then(function(){
-      $('l-chon').innerHTML = '<option value="">— Chọn tập lệnh —</option>' + THU_VIEN.map(function(t,i){
-        return '<option value="'+i+'">'+esc(t.ten)+(t.mo_ta?' — '+esc(t.mo_ta):'')+'</option>'; }).join('');
-      $('md-lenh').classList.add('on');
-    });
+  // ---- NGAN THU VIEN LENH: chon lenh lam san -> dien cho trong -> gui vao phien dang mo
+  var TV_MO = false, TV_LOC = '', TV_THE = '', TV_CHON = -1, TV_MAU = '';
+  function taiThuVien(){
+    if (THU_VIEN.length) return Promise.resolve();
+    return api('/phien/api/thu-vien').then(function(d){ THU_VIEN = d.tap || []; });
   }
-  $('l-chon').onchange = function(){ var t = THU_VIEN[this.value]; if (t) $('l-noidung').value = t.lenh; };
-  $('l-huy').onclick = function(){ $('md-lenh').classList.remove('on'); };
-  $('l-gui').onclick = function(){
-    var nd = $('l-noidung').value; if (!nd.trim() || !DANG) return;
-    this.disabled = true; var nut = this;
+  function veChip(){
+    var cac = {}; THU_VIEN.forEach(function(t){ (t.the||[]).forEach(function(g){ cac[g]=(cac[g]||0)+1; }); });
+    var ten = Object.keys(cac).sort(function(a,b){ return cac[b]-cac[a]; }).slice(0,8);
+    $('tv-chip').innerHTML = ten.length ? ['Tất cả'].concat(ten).map(function(g,i){
+      var v = i ? g : ''; return '<button type="button" data-the="'+esc(v)+'" class="'+(TV_THE===v?'on':'')+'">'+esc(g)+'</button>'; }).join('') : '';
+  }
+  function veThuVien(){
+    var q = TV_LOC.toLowerCase(), h = '';
+    THU_VIEN.forEach(function(t, i){
+      if (TV_THE && (t.the||[]).indexOf(TV_THE) < 0) return;
+      if (q && (t.ten+' '+t.mo_ta+' '+(t.the||[]).join(' ')+' '+t.lenh).toLowerCase().indexOf(q) < 0) return;
+      var n = t.lenh.split('\n').filter(function(x){ return x.trim(); }).length;
+      h += '<button type="button" class="ph-the'+(i===TV_CHON?' chon':'')+'" data-tv="'+i+'"><b>'+esc(t.ten)+'</b>'
+        + (t.mo_ta ? '<span>'+esc(t.mo_ta)+'</span>' : '') + '<small>'+n+' dòng'+((t.the||[]).length?', '+esc(t.the.join(', ')):'')+'</small></button>';
+    });
+    if (!THU_VIEN.length) h = '<p class="hint" style="padding:12px;">Thư viện chưa có lệnh nào. Bấm <b>Quản lý</b> để thêm lệnh dùng thường xuyên.</p>';
+    else if (!h) h = '<p class="hint" style="padding:12px;">Không có lệnh nào khớp.</p>';
+    $('tv-ds').innerHTML = h;
+  }
+  // Cho trong dang {{ten}} trong lenh -> hien o nhap, dien den dau thay vao dong lenh den do
+  function cacTruong(mau){ var r = [], m, re = /\{\{\s*([^{}]+?)\s*\}\}/g;
+    while ((m = re.exec(mau))) if (r.indexOf(m[1]) < 0) r.push(m[1]); return r; }
+  function ghepLenh(){
+    var gt = {}; document.querySelectorAll('#tv-truong input').forEach(function(i){ gt[i.dataset.k] = i.value; });
+    $('tv-nd').value = TV_MAU.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function(m, k){ return gt[k] ? gt[k] : m; });
+  }
+  function chonLenh(i){
+    var t = THU_VIEN[i]; if (!t) return; TV_CHON = i; TV_MAU = t.lenh;
+    $('tv-ten').textContent = t.ten; $('tv-kq').textContent = ''; $('tv-sua').hidden = false;
+    var tr = cacTruong(TV_MAU);
+    $('tv-truong').innerHTML = tr.map(function(k){
+      return '<label>'+esc(k)+'</label><input type="text" data-k="'+esc(k)+'" autocomplete="off" autocapitalize="off">'; }).join('');
+    $('tv-nd').value = TV_MAU; veThuVien();
+    var o = $('tv-truong').querySelector('input'); if (o) setTimeout(function(){ o.focus(); }, 40);
+  }
+  function moTv(mo, i){
+    TV_MO = mo; $('tv').hidden = !mo; $('nut-tv').classList.toggle('on', mo);
+    try{ localStorage.setItem('phien-tv', mo ? '1' : '0'); }catch(e){}
+    if (!mo) return;
+    $('tv').classList.remove('vao'); void $('tv').offsetWidth; $('tv').classList.add('vao');
+    taiThuVien().then(function(){ veChip(); veThuVien(); if (i != null && i >= 0) chonLenh(i); });
+  }
+  $('tv-chip').addEventListener('click', function(e){ var b = e.target.closest('[data-the]'); if (!b) return;
+    TV_THE = b.dataset.the; veChip(); veThuVien(); });
+  $('tv-ds').addEventListener('click', function(e){ var b = e.target.closest('[data-tv]'); if (b) chonLenh(+b.dataset.tv); });
+  $('tv-tim').addEventListener('input', function(){ TV_LOC = this.value; veThuVien(); });
+  $('tv-truong').addEventListener('input', ghepLenh);
+  $('tv-dong').onclick = function(){ moTv(false); };
+  $('tv-gui').onclick = function(){
+    var nd = $('tv-nd').value, kq = $('tv-kq'); if (!nd.trim() || !DANG) return;
+    kq.className = 'kq';
+    if (/\{\{[^{}]+\}\}/.test(nd) && !confirm('Còn chỗ trống chưa điền ({{...}}). Vẫn gửi?')) return;
+    var nut = this; nut.disabled = true; kq.textContent = 'Đang gửi...';
     api('/phien/api/'+encodeURIComponent(DANG)+'/dan', {noi_dung:nd}).then(function(d){
-      nut.disabled = false; if (!d.ok) { alert(d.msg||d.loi); return; } $('md-lenh').classList.remove('on'); });
+      nut.disabled = false;
+      if (!d.ok) { kq.className = 'kq loi'; kq.textContent = d.msg || d.loi || 'Không gửi được'; return; }
+      kq.textContent = 'Đã gửi vào ' + ((MO.filter(function(x){return x.ma===DANG;})[0]||{}).ten || 'phiên');
+    });
   };
+  $('bd-local').onclick = function(){ var p = DS.filter(function(x){return x.ma==='local';})[0]; if (p) moTab(p, false); };
+  $('bd-ssh').onclick = function(){ moForm(null); };
   // ---- khoi dong
   taiDs().then(function(){
     var cu = {}; try{ cu = JSON.parse(localStorage.getItem('phien-tab')||'{}'); }catch(e){}
-    var mo = new URLSearchParams(location.search).get('mo');
+    var qs = new URLSearchParams(location.search), mo = qs.get('mo');
+    var vlenh = qs.get('lenh'), vtv = qs.get('thuvien');
     // Chi mo lai tab cua phien CON TON TAI (phien da xoa / cap console da rut thi bo)
     (cu.mo||[]).forEach(function(t){ var p = DS.filter(function(x){return x.ma===t.ma;})[0];
       if (p) moTab(p, false); });
     if (mo){ var p = DS.filter(function(x){return x.ma===mo;})[0]; if (p) moTab(p, true); }
     else if (cu.dang && MO.some(function(t){return t.ma===cu.dang;})) { DANG = cu.dang; veTabs(); }
   });
+  (function(){ var qs = new URLSearchParams(location.search), l = qs.get('lenh'), m = qs.get('thuvien'), nho = '0';
+    try{ nho = localStorage.getItem('phien-tv') || '0'; }catch(e){}
+    if (l !== null || m !== null || nho === '1') setTimeout(function(){ if (DANG || l !== null) moTv(true, l !== null ? +l : -1); }, 450);
+  })();
   if (location.hash === '#moi') setTimeout(function(){ moForm(null); }, 300);
   setInterval(taiDs, 15000);   // cam/rut cap console -> danh sach tu cap nhat
 })();
@@ -580,13 +689,20 @@ body.cd-cu .ph-khung{height:calc(100vh - 168px);}
 """
 
 
+def _icon_hoa(html):
+    """Thay [[i:ten]] / [[i:ten:lop]] trong TRANG bang icon SVG cua khung chung."""
+    from .layout import svg_icon
+    return re.sub(r"\[\[i:([a-z]+)(?::([a-z]+))?\]\]",
+                  lambda m: svg_icon(m.group(1), m.group(2) or "i"), html)
+
+
 def register_phien(app):
     @app.route("/phien")
     def phien_trang():
         # Trang terminal: bo thanh trang thai + tieu de lon cua khung chung de
         # khung terminal duoc cao toi da (yeu cau 27/09/2026 - phan tren chiem
         # gan 1/3 man hinh cam ung). Tieu de thu nho nam cung hang Ket noi nhanh.
-        return render_page(TRANG + JS, active="/phien", title="Phiên kết nối", extra_css=CSS_GON)
+        return render_page(_icon_hoa(TRANG) + JS, active="/phien", title="Phiên kết nối", extra_css=CSS_GON)
 
     @app.route("/phien/api/ds")
     def phien_api_ds():
@@ -633,7 +749,8 @@ def register_phien(app):
             lenh = t.get("commands", "")
             if isinstance(lenh, list):
                 lenh = "\n".join(lenh)
-            tap.append({"ten": t.get("name", ""), "mo_ta": t.get("desc", ""), "lenh": lenh})
+            the = [x.strip() for x in str(t.get("tags", "")).split(",") if x.strip()]
+            tap.append({"ten": t.get("name", ""), "mo_ta": t.get("desc", ""), "lenh": lenh, "the": the})
         return jsonify({"tap": tap})
 
     def _ma_hop_le(ma):

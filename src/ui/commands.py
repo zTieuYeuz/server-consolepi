@@ -476,7 +476,7 @@ def render_library_page(msg="", ok=True, edit_index=None):
               <input type="hidden" name="index" value="{i}">
               <button type="submit" class="blue small">⌨️ Gửi vào Terminal</button>
             </form>
-            <a class="btn small" href="/ssh?lib={i}">🔑 Dùng ở tab SSH</a>
+            <a class="btn small" href="/phien?lenh={i}">Dùng trong Phiên kết nối</a>
             <a class="btn gray small" href="/commands?edit={i}">✏️ Sửa</a>
             <form method="POST" action="/commands/delete" style="display:inline;"
                   onsubmit="return confirm('Xóa tập lệnh &quot;{_esc(it.get('name'))}&quot;?');">

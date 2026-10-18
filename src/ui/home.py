@@ -687,7 +687,7 @@ def register_home(app):
              f"{len(TOOLS_READONLY) + len(TOOLS_WRITE)} công cụ: ARP, ping, LLDP, DHCP…", "", ""),
             ("bolt", "Bật máy từ xa", "/deployos/caidat/wol", "Wake-on-LAN",
              (f"{n_wol} máy" if n_wol else ""), ""),
-            ("key", "SSH / Telnet", "/ssh", "Vào thiết bị qua mạng", "", ""),
+            ("list", "Phiên kết nối", "/phien", "SSH, Telnet, Serial, terminal máy này", "", ""),
             ("wifi", "WiFi / AP", "/wifi",
              (_esc(chip_wifi["extra"]) if chip_wifi else "WiFi / điểm phát"), "", ""),
             ("save", "Kho file", "/storage", "Cấu hình, firmware, file tải lên", "", ""),
@@ -707,7 +707,7 @@ def register_home(app):
                          + _bt("b", viec[0][2])
                          + _bt("c", "/nettools")
                          + _bt("d", "/deployos/caidat/wol")
-                         + _bt("e", "/ssh") + '</div>')
+                         + _bt("e", "/phien") + '</div>')
         else:
             viec_html = '<div class="viec">' + "".join(
                 f'<a class="o-to" href="{href}">'

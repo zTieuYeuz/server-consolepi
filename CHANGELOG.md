@@ -12,6 +12,14 @@
 - Các trang khác chỉ đổi theo màu/chữ chung; trang Network Tools còn dùng biểu tượng emoji và vạch xanh cũ (chưa làm lại).
 - Kiểm thử: test chức năng 34/0, chọn ổ 69/0, chia ổ 54/0, giao diện 35/0, Python 3.11 không lỗi cú pháp.
 
+**Phiên kết nối gọn hơn, có ngăn Thư viện lệnh** (`ui/phien.py`, `ui/layout.py`, `ui/home.py`, `ui/commands.py`).
+
+- **Bỏ 2 tab "SSH" và "Terminal server" khỏi menu** vì Phiên kết nối đã có "Terminal máy này" và SSH/Telnet/Serial. Hai trang `/ssh`, `/terminal` vẫn còn (không gãy liên kết cũ), chỉ không hiện trên menu. Ô "SSH / Telnet" ở Tổng quan đổi thành "Phiên kết nối"; ô tìm nhanh (Ctrl K) thêm "SSH / Telnet (phiên mới)", "Terminal máy này", "Thư viện lệnh trong phiên".
+- **Ngăn Thư viện lệnh** bên phải khung terminal (nút "Thư viện lệnh" trên thanh công cụ của phiên): tìm lệnh, lọc theo thẻ, bấm chọn để xem và sửa trước khi gửi, bấm "Gửi vào phiên". Chỗ cần điền viết dạng `{{tên}}` trong lệnh (ví dụ `interface {{cổng}}`) sẽ hiện thành ô nhập, điền đến đâu lệnh cập nhật đến đó; còn chỗ trống thì hỏi lại trước khi gửi. Cách gửi giữ nguyên như cũ (từng dòng, đợi thiết bị in xong, dòng cuối không tự Enter). Kết quả hiện ngay trong ngăn, không còn hộp thoại cảnh báo.
+- Trang Thư viện lệnh có nút "Dùng trong Phiên kết nối" (mở phiên với lệnh đã chọn sẵn) thay cho "Dùng ở tab SSH".
+- Trang trống của Phiên kết nối có 2 nút bắt đầu nhanh: "Terminal máy này" và "SSH / Telnet mới". Làm lại giao diện theo bảng màu mới, bỏ emoji.
+- Kiểm thử: bộ test mới `test_thuvien_phien.py` 17/0 (menu, mở ngăn, tìm/lọc, chọn, gửi, `?lenh=N`); chức năng 34/0, giao diện 35/0, Python 3.11 không lỗi. Chưa thử gửi lệnh thật vào thiết bị mạng sau khi đổi giao diện.
+
 ## 1.9.0 - 18/10/2026
 
 **Chọn ổ cài Windows theo đặc điểm, không còn phụ thuộc số ổ** (`ui/unattend.py`, `ui/deployos.py`). Máy có 2 ổ cứng (1 ổ Windows + 1 ổ dữ liệu) thường bị đánh số ổ khác nhau giữa các máy: ổ Windows lúc là Disk 0, lúc là Disk 1. Trước đây kịch bản chỉ có "ổ đĩa số N" cố định nên cài nhầm số là xoá nhầm ổ dữ liệu.
