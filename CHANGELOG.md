@@ -1,6 +1,6 @@
 # Changelog
 
-## Chưa phát hành (sau 1.9.1) - 18/10/2026
+## 1.9.2 - 19/10/2026
 
 **Kho trung tâm có thêm loại "Font chữ"** (`ui/deployos.py`, server kho).
 
@@ -8,6 +8,7 @@
 - Trang **Deployment OS, Kho trung tâm** có nút lọc **Font chữ**. Bấm **Tải về** là tự tạo một bộ font cùng tên trong **Tài nguyên, Font chữ** và giải nén vào đó (chỉ lấy file font thật); tải lại thì ghi đè đúng bộ font cũ. Dùng ở bước *Phân mềm* của kịch bản để cài cho máy Windows.
 - Bản Console System cũ vẫn mở được kho; các mục font hiện "Không hỗ trợ (.zip)".
 - Đã thử trên Pi: tải thử họ Pacifico thành bộ font 1 font, rồi xoá bộ font thử.
+- **Đã thử cài thật lên Windows 10 (máy ảo):** cả 241 file font của 50 họ cài bằng đúng bước cài font của kịch bản, chạy 2 lần đều 241/241, không lỗi, không cảnh báo; sau khi khởi động lại, ứng dụng thấy đủ 86 họ chữ, registry và file đều đúng, font hệ thống `arial.ttf` còn nguyên (script thử: `iso/test/thu-font-kho.sh`).
 
 **Network Tools làm lại theo giao diện mới** (`nettools/__init__.py`, `ui/ph_icons.py`, `nettools/*.py`).
 
