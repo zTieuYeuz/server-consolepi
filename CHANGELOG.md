@@ -2,6 +2,13 @@
 
 ## Chưa phát hành (sau 1.9.1) - 18/10/2026
 
+**Kho trung tâm có thêm loại "Font chữ"** (`ui/deployos.py`, server kho).
+
+- Kho có 50 họ font miễn phí (giấy phép SIL Open Font License, riêng Roboto Slab là Apache 2.0), **đều hỗ trợ đủ tiếng Việt** (đã kiểm các ký tự Ạ ạ ơ ư đ ế ỹ â ă trong từng họ): sans-serif (Roboto, Open Sans, Noto Sans, Montserrat, Be Vietnam Pro, Inter...), serif (Noto Serif, Merriweather, Playfair Display, Lora...), đơn cách (Roboto Mono, JetBrains Mono, Source Code Pro...) và chữ trang trí (Pacifico, Lobster, Anton...). Mỗi họ là một file `.zip` gồm bản Regular/Bold/Italic dạng font tĩnh và giấy phép.
+- Trang **Deployment OS, Kho trung tâm** có nút lọc **Font chữ**. Bấm **Tải về** là tự tạo một bộ font cùng tên trong **Tài nguyên, Font chữ** và giải nén vào đó (chỉ lấy file font thật); tải lại thì ghi đè đúng bộ font cũ. Dùng ở bước *Phân mềm* của kịch bản để cài cho máy Windows.
+- Bản Console System cũ vẫn mở được kho; các mục font hiện "Không hỗ trợ (.zip)".
+- Đã thử trên Pi: tải thử họ Pacifico thành bộ font 1 font, rồi xoá bộ font thử.
+
 **Network Tools làm lại theo giao diện mới** (`nettools/__init__.py`, `ui/ph_icons.py`, `nettools/*.py`).
 
 - Trang danh sách công cụ: ô *Kiểm tra cổng mạng* (làm hết trong 1 nút) nổi bật ở đầu, các công cụ còn lại xếp 2 cột có icon Phosphor nhúng sẵn (không cần Internet), phần *Tự động hóa* có dòng lưu ý "ghi thay đổi lên thiết bị thật". Hiệu ứng hiện dần, tắt khi bật "giảm chuyển động".

@@ -4844,7 +4844,14 @@ def register_deployos(app):
     # dien: ket noi (ma 6 ky tu), tim/loc, tai o nen vao dung thu muc cuc
     # bo (APPS_DIR / SCRIPTS_DIR / 1 he dieu hanh moi trong OS_DIR).
     TEN_LOAI_KHO = {"phanmem": "Phần mềm", "ungdung": "Ứng dụng nhiều file", "script": "Script", "os": "Hệ điều hành",
-                    "winpe": "WinPE"}
+                    "winpe": "WinPE", "font": "Font chữ"}
+
+    def _bo_font_tu_kho(muc_id):
+        """Bo font da tao tu muc kho nay (ghi kho_id trong _thongtin.json), hoac None."""
+        for b in danh_sach_bo_font():
+            if _doc_meta_bo_font(os.path.join(FONTS_DIR, b["id"])).get("kho_id") == muc_id:
+                return b
+        return None
 
     def _da_co_tu_kho(m, cac_os):
         """Muc kho nay da co tren Console Pi chua (de hien "Đã có")."""
@@ -4859,6 +4866,9 @@ def register_deployos(app):
                     return any(not x.endswith((".zip", ".part")) and x != "_thongtin.json"
                                for x in os.listdir(d))
             return False
+        if loai == "font":
+            b = _bo_font_tu_kho(m.get("id"))
+            return bool(b and b["so_font"])
         if loai == "winpe":
             from . import winperieng as _wr
             ten = ten_an_toan(m.get("ten_file", ""))
@@ -4939,7 +4949,7 @@ def register_deployos(app):
                       (loai == "script" and ext in EXT_SCRIPT) or
                       (loai == "os" and ext == ".iso") or
                       (loai == "winpe" and ext in (".wim", ".iso")) or
-                      (loai == "ungdung" and ext == ".zip"))
+                      (loai in ("ungdung", "font") and ext == ".zip"))
             nhan_loai = TEN_LOAI_KHO.get(loai, loai)
             cap_nhat = m.get("cap_nhat_luc") or 0
             luc = time.strftime("%d/%m/%Y %H:%M", time.localtime(cap_nhat)) if cap_nhat else ""
@@ -5408,7 +5418,58 @@ def register_deployos(app):
             ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(BOOT_DIR, ten_an), sau_winpe)
             return _kho_chuyen(msg, ok)
 
+        if loai == "font":
+            # FONT CHU (18/10/2026): moi muc kho = 1 file .zip cua 1 ho chu (cac file .ttf/.otf
+            # + giay phep). Tai ve la TU tao 1 "bo font" cung ten trong Tai nguyen > Font chu
+            # roi giai nen PHANG vao do (chi lay file font that, bo giay phep/rac). Tai lai lan sau:
+            # dung lai DUNG bo font cu (kho_id), giai nen de len.
+            if ext != ".zip":
+                return _kho_chuyen("Mục font chữ phải là file .zip.", False)
+            can = kich * 2.1 + 100 * 1024 * 1024
+            if can > _con_trong(FONTS_DIR):
+                return _kho_chuyen(f"Không đủ chỗ trống để tải \"{ten_hien_thi}\" "
+                                   f"(cần khoảng {co_kich_thuoc(int(can))}).", False)
+            bo = _bo_font_tu_kho(muc_id)
+            bo_id = bo["id"] if bo else None
+            bo_moi = False
+            if not bo_id:
+                ten_b, so = ten_hien_thi, 2
+                while True:
+                    ok_t, msg_t, bo_id = tao_bo_font(ten_b)
+                    if ok_t:
+                        bo_moi = True
+                        break
+                    if "Đã có" not in msg_t or so > 20:
+                        return _kho_chuyen(msg_t, False)
+                    ten_b, so = f"{ten_hien_thi} ({so})", so + 1
+                p_bo = os.path.join(FONTS_DIR, bo_id)
+                meta = _doc_meta_bo_font(p_bo)
+                meta.update({"kho_id": muc_id, "nguon": "kho"})
+                with open(os.path.join(p_bo, "_thongtin.json"), "w", encoding="utf-8") as f:
+                    json.dump(meta, f, ensure_ascii=False, indent=1)
+            p_bo = os.path.join(FONTS_DIR, bo_id)
+
+            def sau_font(duong):
+                ok_g, msg_g, so_them, _bo_qua = _giai_nen_font_zip(p_bo, duong, ten_an)  # tu xoa .zip
+                if not ok_g:
+                    return False, msg_g
+                return True, f'Đã tải "{ten_hien_thi}": {so_them} font trong Tài nguyên → Font chữ.'
+
+            def don_dep_font():
+                """Huy giua chung: bo font do CHINH lan tai nay tao ra ma chua co font -> xoa luon."""
+                if bo_moi and os.path.isdir(p_bo) and not any(
+                        x.lower().endswith(tuple(_fontinfo_duoi())) for x in os.listdir(p_bo)):
+                    shutil.rmtree(p_bo, ignore_errors=True)
+
+            ok, msg = _kt.tai_nen(cauhinh, m, os.path.join(p_bo, ".tam-kho-" + secrets.token_hex(4) + ".zip"),
+                                  sau_font, None, don_dep_font)
+            return _kho_chuyen(msg, ok)
+
         return _kho_chuyen("Loại mục không hỗ trợ.", False)
+
+    def _fontinfo_duoi():
+        from . import fontinfo as _fi
+        return _fi.DUOI_FONT
 
     # ------------------------- ung dung thu muc (mo hinh MDT: "Application
     # with source files" - xem chi tiet trong docstring cua danh_sach_ungdung()
