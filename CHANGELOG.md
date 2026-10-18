@@ -1,8 +1,8 @@
 # Changelog
 
-## Chưa phát hành (sau 1.9.0) - 18/10/2026
+## 1.9.1 - 18/10/2026
 
-**Giao diện web mới** (`ui/layout.py`, `ui/home.py`, `branding/`). Đã chạy thử trên Pi, chưa đóng gói vào ISO.
+**Giao diện web mới** (`ui/layout.py`, `ui/home.py`, `branding/`). Giao diện web làm lại toàn bộ; không đổi chức năng cài đặt.
 
 - **Bảng màu và chữ mới:** nền xám xanh đậm / sáng, một màu nhấn xanh dương duy nhất; font Geist và Geist Mono nhúng sẵn trong máy (không cần Internet). Độ tương phản chữ nút đạt AA ở cả hai nền.
 - **Menu trái phẳng:** hiện đủ mọi mục theo 4 nhóm, không còn bung/thu từng nhóm; vạch chọn trượt theo con trỏ. Thu gọn thành dãy icon vẫn dùng được.
