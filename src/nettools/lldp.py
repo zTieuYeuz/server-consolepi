@@ -223,12 +223,12 @@ LLDP_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🔗 LLDP/CDP Discovery</h1>
+    <h1>LLDP/CDP Discovery</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Máy lắng nghe quảng bá LLDP và CDP trên từng cổng mạng.
         Cắm dây vào một switch/router có bật các giao thức này, đợi 10-60 giây
         (thiết bị thường quảng bá mỗi 30-60 giây) rồi bấm Quét lại.</p>
-    <p><a class="btn" href="/nettools/lldp">🔄 Quét lại</a></p>
+    <p><a class="btn" href="/nettools/lldp">Quét lại</a></p>
 
     {% if result.error %}
     <div class="err">Lỗi: {{ result.error }}</div>

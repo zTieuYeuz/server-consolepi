@@ -345,7 +345,7 @@ TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🔌 Sao lưu cấu hình qua cáp console</h1>
+    <h1>Sao lưu cấu hình qua cáp console</h1>
     <p><a href="/nettools">← Network Tools</a></p>
 
     {% if msg %}<div class="msg {{ 'ok' if ok else 'err' }}">{{ msg | safe }}</div>{% endif %}
@@ -360,7 +360,7 @@ TEMPLATE = """
     <div class="msg warn">Chưa cắm cáp console nào. Cắm cáp USB-serial vào máy này rồi tải lại trang.</div>
     {% else %}
     <div class="msg warn">
-        ⚠️ <strong>Với Cisco/HP-Aruba: phải vào chế độ đặc quyền trước</strong> (dấu nhắc
+        <strong>Với Cisco/HP-Aruba: phải vào chế độ đặc quyền trước</strong> (dấu nhắc
         kết thúc bằng <code>#</code>, ví dụ <code>Switch#</code>) - mở phiên console của cổng
         đó, gõ <code>enable</code> (nhập mật khẩu nếu thiết bị hỏi) cho tới khi thấy dấu
         <code>#</code>, rồi mới quay lại bấm chụp. Nếu còn đang ở dấu nhắc
@@ -390,7 +390,7 @@ TEMPLATE = """
 
             <div class="row" style="margin-top:14px;">
                 <button type="submit" data-busy="Đang chụp, có thể mất 1-3 phút...">
-                    ⬇ Chụp cấu hình ngay</button>
+                    Chụp cấu hình ngay</button>
                 <a class="btn gray" href="/phien?mo=serial-{{ dev_chon }}">↗ Mở phiên console (gõ enable ở đây)</a>
             </div>
         </form>
@@ -413,7 +413,7 @@ TEMPLATE = """
             <td>{{ (f.kich_thuoc / 1024) | round(1) }} KB</td>
             <td class="hint">{{ f.thoi_gian }}</td>
             <td style="white-space:nowrap;">
-                <a class="nut-tai" href="/nettools/console-backup/tai/{{ f.ten | urlencode }}" download>⬇ Tải về</a>
+                <a class="nut-tai" href="/nettools/console-backup/tai/{{ f.ten | urlencode }}" download>Tải về</a>
                 <form method="POST" action="/nettools/console-backup/xoa" style="display:inline;"
                       onsubmit="return confirm('Xóa {{ f.ten }}?');">
                     <input type="hidden" name="ten" value="{{ f.ten }}">

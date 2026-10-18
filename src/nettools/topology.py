@@ -100,7 +100,7 @@ def _ve_svg(iface, switch, hosts):
     from ui.layout import TEN_NGAN
     x_pi = RONG / 2
     phan.append(f'<rect class="hop" x="{x_pi-70}" y="{Y_PI-22}" width="140" height="44" rx="8"/>')
-    phan.append(f'<text class="ten" x="{x_pi}" y="{Y_PI+5}" text-anchor="middle">🖥 {TEN_NGAN}</text>')
+    phan.append(f'<text class="ten" x="{x_pi}" y="{Y_PI+5}" text-anchor="middle">{TEN_NGAN}</text>')
 
     # --- Nut switch ---
     x_switch = RONG / 2
@@ -109,7 +109,7 @@ def _ve_svg(iface, switch, hosts):
         cong_switch = _thoat_svg(switch.get("port_descr") or switch.get("port_id") or "")
         phan.append(f'<line class="duong" x1="{x_pi}" y1="{Y_PI+22}" x2="{x_switch}" y2="{Y_SWITCH-22}"/>')
         phan.append(f'<rect class="hop" x="{x_switch-100}" y="{Y_SWITCH-22}" width="200" height="44" rx="8"/>')
-        phan.append(f'<text class="ten" x="{x_switch}" y="{Y_SWITCH-2}" text-anchor="middle">🔀 {ten_switch}</text>')
+        phan.append(f'<text class="ten" x="{x_switch}" y="{Y_SWITCH-2}" text-anchor="middle">{ten_switch}</text>')
         if cong_switch:
             phan.append(f'<text class="nhan" x="{x_switch}" y="{Y_SWITCH+14}" text-anchor="middle">{cong_switch}</text>')
         diem_bat_dau_host = (x_switch, Y_SWITCH + 22)
@@ -189,11 +189,11 @@ TOPOLOGY_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🗺️ Sơ đồ mạng 1 đoạn</h1>
+    <h1>Sơ đồ mạng 1 đoạn</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Ghép ARP Scan + LLDP/CDP Discovery thành 1 sơ đồ: máy → switch đang cắm vào
     (nếu có quảng bá LLDP/CDP) → các thiết bị trên cùng đoạn mạng.</p>
-    <p class="hint">⚠️ <strong>Giới hạn:</strong> chỉ vẽ được 1 đoạn mạng nối trực tiếp vào cổng
+    <p class="hint"><strong>Giới hạn:</strong> chỉ vẽ được 1 đoạn mạng nối trực tiếp vào cổng
     này - không vẽ được nhiều switch nối tiếp qua nhiều hop.</p>
 
     <form method="POST" style="margin-top:16px;">

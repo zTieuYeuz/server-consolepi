@@ -1375,7 +1375,7 @@ def _nut_quay_ve():
         return ""                      # ngoai ngu canh request thi bo qua
     if duong in ("", "/nettools"):
         return ""
-    return ('<p style="margin:0 0 14px;">'
+    return ('<p style="margin:12px 0 20px;">'
             '<a class="btn gray small" href="/nettools">'
             '&larr; Tất cả công cụ mạng</a></p>')
 

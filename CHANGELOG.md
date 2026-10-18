@@ -1,5 +1,13 @@
 # Changelog
 
+## Chưa phát hành (sau 1.9.1) - 18/10/2026
+
+**Network Tools làm lại theo giao diện mới** (`nettools/__init__.py`, `ui/ph_icons.py`, `nettools/*.py`).
+
+- Trang danh sách công cụ: ô *Kiểm tra cổng mạng* (làm hết trong 1 nút) nổi bật ở đầu, các công cụ còn lại xếp 2 cột có icon Phosphor nhúng sẵn (không cần Internet), phần *Tự động hóa* có dòng lưu ý "ghi thay đổi lên thiết bị thật". Hiệu ứng hiện dần, tắt khi bật "giảm chuyển động".
+- Bỏ emoji trong mọi công cụ mạng (nút, tiêu đề, kết quả); trạng thái vẫn có chữ (Thành công / Thất bại / Không có lỗi...) nên không mất thông tin.
+- Nút "Tất cả công cụ mạng" cách tiêu đề rộng hơn. Đã thử: 16 trang công cụ trả 200, test giao diện/chức năng đạt, Python 3.11 không lỗi. Đã lên Pi, chưa đóng gói ISO.
+
 ## 1.9.1 - 18/10/2026
 
 **Giao diện web mới** (`ui/layout.py`, `ui/home.py`, `branding/`). Giao diện web làm lại toàn bộ; không đổi chức năng cài đặt.

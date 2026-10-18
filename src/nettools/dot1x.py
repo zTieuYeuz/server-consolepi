@@ -124,7 +124,7 @@ DOT1X_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🔐 802.1X Testing</h1>
+    <h1>802.1X Testing</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Dùng <code>eapol_test</code> - chỉ nói chuyện UDP trực tiếp tới RADIUS server,
     <strong>KHÔNG đụng đến cổng mạng đang dùng</strong>, nên an toàn, không làm gián đoạn kết nối hiện tại.
@@ -175,11 +175,11 @@ DOT1X_TEMPLATE = """
         {% if result.error %}
         <div class="err">Lỗi: {{ result.error }}</div>
         {% elif result.success is sameas true %}
-        <div class="ok">✅ EAP-SUCCESS - Xác thực thành công.</div>
+        <div class="ok">EAP-SUCCESS - Xác thực thành công.</div>
         {% elif result.success is sameas false %}
-        <div class="err">❌ EAP-FAILURE - Xác thực thất bại (kiểm tra lại username/password/cấu hình RADIUS).</div>
+        <div class="err">EAP-FAILURE - Xác thực thất bại (kiểm tra lại username/password/cấu hình RADIUS).</div>
         {% else %}
-        <div class="unknown">⚠️ Không kết luận được (có thể RADIUS server không phản hồi, sai IP/secret,
+        <div class="unknown">Không kết luận được (có thể RADIUS server không phản hồi, sai IP/secret,
         hoặc không có RADIUS thật trong môi trường này).</div>
         {% endif %}
         <h3 style="color:#22D3EE;">Output đầy đủ</h3>

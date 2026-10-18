@@ -190,7 +190,7 @@ TLS_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🔒 Kiểm tra chứng chỉ TLS</h1>
+    <h1>Kiểm tra chứng chỉ TLS</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Xem chi tiết chứng chỉ HTTPS của giao diện quản trị (switch/router/iLO/iDRAC).
     Các thiết bị này thường dùng chứng chỉ TỰ KÝ - đó là BÌNH THƯỜNG, không phải lỗi. Công cụ này
@@ -209,11 +209,11 @@ TLS_TEMPLATE = """
         <div class="err">{{ result.error }}</div>
         {% else %}
         {% if result.xac_thuc_duoc %}
-        <div class="banner-ok">✔ Chứng chỉ HỢP LỆ, được hệ thống tin cậy (chuỗi chứng nhận hợp
+        <div class="banner-ok">Chứng chỉ HỢP LỆ, được hệ thống tin cậy (chuỗi chứng nhận hợp
             lệ, đúng tên miền).</div>
         {% else %}
         <div class="banner-warn">
-            ⚠️ KHÔNG được hệ thống tin cậy tự động.
+            KHÔNG được hệ thống tin cậy tự động.
             {% if result.tu_ky %}Chứng chỉ TỰ KÝ (rất phổ biến với thiết bị mạng - không nhất
             thiết là vấn đề, nhưng trình duyệt sẽ luôn cảnh báo).{% endif %}
             {% if not result.khop_ten %}Tên trong chứng chỉ KHÔNG khớp với địa chỉ đang truy cập.{% endif %}

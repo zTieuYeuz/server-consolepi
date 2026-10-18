@@ -10,74 +10,106 @@ from flask import Blueprint, render_template_string
 
 nettools_bp = Blueprint("nettools", __name__)
 
-HUB_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Network Tools - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; }
-        h2 { color: #4CAF50; font-size: 15px; margin: 24px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-        a.tool { display: block; padding: 14px 16px; background: #2d2d2d; color: #eee;
-            text-decoration: none; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #4CAF50; }
-        a.tool:hover { background: #383838; }
-        a.tool small { display: block; color: #999; font-size: 12px; margin-top: 4px; }
-        a.tool.disabled { border-left-color: #555; color: #777; pointer-events: none; }
-        .back { color: #4CAF50; }
-    </style>
-</head>
-<body>
-    <h1>🛠️ Network Tools</h1>
-    <p><a href="/" class="back">← Quay lai Dashboard</a></p>
+HUB_CSS = """
+        .nt-mo { color: var(--chu-mo); font-size: 14.5px; margin: -2px 0 16px; max-width: 62ch; }
+        .nt-luoi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .nt-luoi:not(.co-dai) > a:last-child:nth-child(odd), .nt-luoi.co-dai > a:last-child:nth-child(even) { grid-column: 1 / -1; }
+        a.nt-o { position: relative; display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px;
+            background: var(--the); border: 1px solid var(--vien); border-radius: var(--bo); color: var(--chu); overflow: hidden;
+            transition: border-color .2s, transform .2s var(--muot), background-color .2s; }
+        a.nt-o:hover { border-color: var(--vien-ro); transform: translateY(-2px); color: var(--chu); background: var(--the); }
+        a.nt-o:active { transform: scale(.99); }
+        a.nt-o .bi { flex: none; width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center;
+            background: var(--nhan-mo); color: var(--nhan); }
+        a.nt-o svg.ph { width: 24px; height: 24px; }
+        a.nt-o b { display: block; font-size: 15.5px; font-weight: 620; letter-spacing: -.01em; }
+        a.nt-o small { display: block; color: var(--chu-mo); font-size: 13.5px; line-height: 1.5; margin-top: 3px; }
+        a.nt-o.dai { padding: 24px 26px; align-items: center; grid-column: 1 / -1;
+            background: radial-gradient(120% 100% at 100% 0%, var(--nhan-mo), transparent 60%), var(--the);
+            border-color: color-mix(in srgb, var(--nhan) 32%, var(--vien)); }
+        a.nt-o.dai .bi { width: 56px; height: 56px; border-radius: 14px; }
+        a.nt-o.dai svg.ph { width: 32px; height: 32px; }
+        a.nt-o.dai b { font-size: 21px; letter-spacing: -.025em; font-weight: 630; }
+        a.nt-o.dai small { font-size: 14.5px; max-width: 70ch; }
+        a.nt-o.tat { opacity: .5; pointer-events: none; }
+        .nt-luu-y { margin: 0 0 14px; padding: 12px 16px; border-radius: 10px; font-size: 14px;
+            background: var(--vang-mo); border: 1px solid rgba(232,176,74,.35); border-left-width: 3px; border-left-color: var(--vang); color: var(--msg-warn); }
+        @media (max-width: 760px) { .nt-luoi { grid-template-columns: 1fr; } }
+        @media (prefers-reduced-motion: no-preference) {
+            .nt-luoi > a { animation: nt-vao .5s var(--muot) both; animation-delay: calc(var(--i, 0) * 45ms); }
+            @keyframes nt-vao { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+        }
+    """
 
-    <h2>Chẩn đoán mạng (chỉ đọc)</h2>
+HUB_BODY = """
+    <h2>Chẩn đoán mạng</h2>
+    <p class="nt-mo">Chỉ đọc: các công cụ này quan sát mạng, không thay đổi gì trên thiết bị hay mạng của khách.</p>
+    <div class="nt-luoi co-dai">
     {% for href, label, desc, ready in tools_readonly %}
-    <a class="tool{{ '' if ready else ' disabled' }}" href="{{ href if ready else '#' }}">
-        {{ label }}<small>{{ desc }}</small>
+    <a class="nt-o{{ ' dai' if loop.first else '' }}{{ '' if ready else ' tat' }}" style="--i: {{ loop.index0 }}" href="{{ href if ready else '#' }}">
+        <span class="bi">{{ icon(href)|safe }}</span><span><b>{{ label }}</b><small>{{ desc }}</small></span>
     </a>
     {% endfor %}
+    </div>
 
-    <h2>Tự động hóa (ghi cấu hình thiết bị thật)</h2>
+    <h2>Tự động hóa</h2>
+    <p class="nt-luu-y">Các công cụ này ghi thay đổi lên thiết bị thật. Kiểm tra kỹ trước khi chạy.</p>
+    <div class="nt-luoi">
     {% for href, label, desc, ready in tools_write %}
-    <a class="tool{{ '' if ready else ' disabled' }}" href="{{ href if ready else '#' }}">
-        {{ label }}<small>{{ desc }}</small>
+    <a class="nt-o{{ '' if ready else ' tat' }}" style="--i: {{ loop.index0 }}" href="{{ href if ready else '#' }}">
+        <span class="bi">{{ icon(href)|safe }}</span><span><b>{{ label }}</b><small>{{ desc }}</small></span>
     </a>
     {% endfor %}
-</body>
-</html>
+    </div>
 """
+
+# Icon Phosphor cho tung cong cu (duong dan -> ten icon, xem ui/ph_icons.py)
+ICON_CONG_CU = {
+    "/nettools/dhcp-test": "plugs-connected", "/nettools/arp-scan": "magnifying-glass",
+    "/nettools/ping": "wifi-high", "/nettools/pcap": "cassette-tape", "/nettools/lldp": "link",
+    "/nettools/l2-scan": "tree-structure", "/nettools/mtu": "ruler", "/nettools/dns-check": "globe",
+    "/nettools/tls-check": "lock", "/nettools/topology": "map-trifold",
+    "/nettools/tftp": "upload-simple", "/nettools/console-backup": "usb",
+    "/nettools/netmiko": "gear-six", "/nettools/dot1x": "shield-check", "/nettools/ifthen": "flow-arrow",
+}
+
+
+def _icon(href):
+    from ui.ph_icons import ph_icon
+    return ph_icon(ICON_CONG_CU.get(href, "link"))
+
 
 # ready=False = placeholder, se bat len tung phan khi lam xong giai doan tuong ung
 TOOLS_READONLY = [
-    ("/nettools/arp-scan", "🔍 ARP Scan", "Quét toàn bộ thiết bị đang online trong subnet", True),
-    ("/nettools/ping", "📶 Ping / Traceroute", "Kiểm tra kết nối tới 1 địa chỉ/hostname", True),
-    ("/nettools/pcap", "📼 PCAP Capture", "Bắt gói tin, lưu ra USB, xem lại bằng tshark", True),
-    ("/nettools/lldp", "🔗 LLDP/CDP Discovery", "Tìm switch hostname, port, VLAN, PoE quảng bá", True),
-    ("/nettools/dhcp-test", "🔌🌐 Kiểm tra cổng mạng", "Tốc độ/duplex, lỗi đường truyền, PoE, DHCP, Internet, băng thông - tất cả trong 1 nút", True),
-    ("/nettools/l2-scan", "🌲 STP/LACP/VLAN Scan", "Bắt gói BPDU/LACP/802.1Q trên dây đang cắm", True),
-    ("/nettools/mtu", "📏 MTU Discovery", "Đo MTU thực tế tới 1 địa chỉ (phát hiện VPN/PPPoE làm giảm MTU)", True),
-    ("/nettools/dns-check", "🌐 Kiểm tra DNS", "Đối chiếu kết quả phân giải tên miền qua nhiều DNS server", True),
-    ("/nettools/tls-check", "🔒 Kiểm tra chứng chỉ TLS", "Xem chi tiết và tình trạng tin cậy của chứng chỉ HTTPS quản lý", True),
-    ("/nettools/topology", "🗺️ Sơ đồ mạng 1 đoạn", "Vẽ Pi - switch - các host trên cùng 1 segment (ARP+LLDP)", True),
+    ("/nettools/arp-scan", "ARP Scan", "Quét toàn bộ thiết bị đang online trong subnet", True),
+    ("/nettools/ping", "Ping / Traceroute", "Kiểm tra kết nối tới 1 địa chỉ/hostname", True),
+    ("/nettools/pcap", "PCAP Capture", "Bắt gói tin, lưu ra USB, xem lại bằng tshark", True),
+    ("/nettools/lldp", "LLDP/CDP Discovery", "Tìm switch hostname, port, VLAN, PoE quảng bá", True),
+    ("/nettools/dhcp-test", "Kiểm tra cổng mạng", "Tốc độ/duplex, lỗi đường truyền, PoE, DHCP, Internet, băng thông - tất cả trong 1 nút", True),
+    ("/nettools/l2-scan", "STP/LACP/VLAN Scan", "Bắt gói BPDU/LACP/802.1Q trên dây đang cắm", True),
+    ("/nettools/mtu", "MTU Discovery", "Đo MTU thực tế tới 1 địa chỉ (phát hiện VPN/PPPoE làm giảm MTU)", True),
+    ("/nettools/dns-check", "Kiểm tra DNS", "Đối chiếu kết quả phân giải tên miền qua nhiều DNS server", True),
+    ("/nettools/tls-check", "Kiểm tra chứng chỉ TLS", "Xem chi tiết và tình trạng tin cậy của chứng chỉ HTTPS quản lý", True),
+    ("/nettools/topology", "Sơ đồ mạng 1 đoạn", "Vẽ Pi - switch - các host trên cùng 1 segment (ARP+LLDP)", True),
 ]
 
 TOOLS_WRITE = [
-    ("/nettools/tftp", "📤 Máy chủ TFTP", "Bật/tắt TFTP để sao lưu/phục hồi config, firmware từ switch/router", True),
-    ("/nettools/console-backup", "🔌 Sao lưu qua cáp console", "Backup cấu hình khi thiết bị mất IP quản lý - chỉ cần dây console", True),
-    ("/nettools/netmiko", "⚙️ Netmiko Config", "Tự động SSH vào switch chạy lệnh cấu hình (có xem trước)", True),
-    ("/nettools/dot1x", "🔐 802.1X Testing", "Test xác thực EAP với RADIUS server (không đụng eth0)", True),
-    ("/nettools/ifthen", "🧩 IF/THEN Automation", "Rule tự động gợi ý cấu hình khi phát hiện switch quen", True),
+    ("/nettools/tftp", "Máy chủ TFTP", "Bật/tắt TFTP để sao lưu/phục hồi config, firmware từ switch/router", True),
+    ("/nettools/console-backup", "Sao lưu qua cáp console", "Backup cấu hình khi thiết bị mất IP quản lý - chỉ cần dây console", True),
+    ("/nettools/netmiko", "Netmiko Config", "Tự động SSH vào switch chạy lệnh cấu hình (có xem trước)", True),
+    ("/nettools/dot1x", "802.1X Testing", "Test xác thực EAP với RADIUS server (không đụng eth0)", True),
+    ("/nettools/ifthen", "IF/THEN Automation", "Rule tự động gợi ý cấu hình khi phát hiện switch quen", True),
 ]
 
 
 @nettools_bp.route("/nettools")
 def hub():
-    return render_template_string(
-        HUB_TEMPLATE, tools_readonly=TOOLS_READONLY, tools_write=TOOLS_WRITE
-    )
+    # Kiem tra cong mang (1 nut lam het) len dau, thanh o noi bat
+    ds = sorted(TOOLS_READONLY, key=lambda t: 0 if t[0] == "/nettools/dhcp-test" else 1)
+    from ui.layout import render_page
+    noi_dung = render_template_string(HUB_BODY, tools_readonly=ds, tools_write=TOOLS_WRITE, icon=_icon)
+    return render_page(noi_dung, active="/nettools", title="Network Tools",
+                       subtitle="Công cụ chẩn đoán và tự động hóa mạng", extra_css=HUB_CSS)
 
 
 # Import cac module con O CUOI FILE (sau khi nettools_bp da dinh nghia xong)

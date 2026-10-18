@@ -116,7 +116,7 @@ L2_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🌲 STP / LACP / VLAN Scan</h1>
+    <h1>STP / LACP / VLAN Scan</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Bắt gói tin thụ động trong khoảng thời gian đã chọn, trên cổng
     chọn bên dưới. Tag 802.1Q chỉ hiện ra nếu có traffic tagged thực sự đi

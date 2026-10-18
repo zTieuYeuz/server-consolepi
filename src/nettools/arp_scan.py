@@ -91,7 +91,7 @@ ARP_SCAN_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🔍 ARP Scan</h1>
+    <h1>ARP Scan</h1>
     <p><a href="/nettools">← Network Tools</a></p>
 
     <form method="POST" style="margin-top:16px;">

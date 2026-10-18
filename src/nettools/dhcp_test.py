@@ -586,7 +586,7 @@ DHCP_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🔌🌐 Kiểm tra toàn diện cổng mạng</h1>
+    <h1>Kiểm tra toàn diện cổng mạng</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Một nút bấm duy nhất: đọc tốc độ/duplex/lỗi đường truyền/PoE của cổng,
     gửi DHCPDISCOVER, và nếu có IP thì kiểm tra luôn ra Internet + đo băng thông thật
@@ -599,12 +599,12 @@ DHCP_TEMPLATE = """
         <select name="iface">
             {{ o_chon_cong|safe }}
         </select>
-        <button type="submit" style="margin-left:10px;" data-busy="Đang kiểm tra toàn diện...">🔎 Kiểm tra toàn diện</button>
+        <button type="submit" style="margin-left:10px;" data-busy="Đang kiểm tra toàn diện...">Kiểm tra toàn diện</button>
     </form>
 
     {% if ran %}
     <div class="card">
-        <h3 style="margin-top:0;">🔌 Cổng vật lý</h3>
+        <h3 style="margin-top:0;">Cổng vật lý</h3>
         {% if result.cong.ok %}
         <table>
             <tr><th>Tốc độ thương lượng</th><td class="big">{{ result.cong.toc_do }}</td></tr>
@@ -616,7 +616,7 @@ DHCP_TEMPLATE = """
             <tr><th>Năng lực phía bên kia</th><td><div class="modes">{% for m in result.cong.nang_luc_doi_phuong %}<span class="mode-chip">{{ m }}</span>{% endfor %}
                 {% if not result.cong.nang_luc_doi_phuong %}<span class="hint">Không đọc được (cổng có thể đang down)</span>{% endif %}</div></td></tr>
         </table>
-        {% if result.cong.canh_bao %}<div class="warn" style="margin-top:11px;">⚠️ {{ result.cong.canh_bao }}</div>{% endif %}
+        {% if result.cong.canh_bao %}<div class="warn" style="margin-top:11px;">{{ result.cong.canh_bao }}</div>{% endif %}
         {% else %}<div class="err">{{ result.cong.loi }}</div>{% endif %}
 
         <h3>Thống kê lỗi đường truyền</h3>
@@ -627,12 +627,12 @@ DHCP_TEMPLATE = """
             {% endfor %}
         </table>
         <p style="margin-top:9px;" class="{{ 'bad-txt' if result.loi_truyen.tong_loi > 0 else 'ok-txt' }}">
-            {% if result.loi_truyen.tong_loi == 0 %}🟢 Không có lỗi nào được ghi nhận{% else %}
-            🔴 Tổng {{ result.loi_truyen.tong_loi }} lỗi - dây cáp có thể kém chất lượng hoặc bị nhiễu{% endif %}</p>
+            {% if result.loi_truyen.tong_loi == 0 %}Không có lỗi nào được ghi nhận{% else %}
+            Tổng {{ result.loi_truyen.tong_loi }} lỗi - dây cáp có thể kém chất lượng hoặc bị nhiễu{% endif %}</p>
         {% else %}<p class="hint">{{ result.loi_truyen.loi }}</p>{% endif %}
 
         <h3>PoE (nguồn qua cáp mạng)</h3>
-        {% if result.poe.phat_hien %}<p>🟢 Phat hien PoE: {{ result.poe.gia_tri }}</p>
+        {% if result.poe.phat_hien %}<p>Phat hien PoE: {{ result.poe.gia_tri }}</p>
         {% else %}<p class="hint">Không phát hiện mạch đo PoE trên phần cứng này.</p>{% endif %}
     </div>
 
@@ -640,7 +640,7 @@ DHCP_TEMPLATE = """
     <div class="err">Lỗi: {{ result.error }}</div>
     {% else %}
         <div class="card">
-        <h3 style="margin-top:0;">📡 DHCP</h3>
+        <h3 style="margin-top:0;">DHCP</h3>
         <p>Nhận được <strong>{{ result.offers|length }}</strong> OFFER:</p>
         <table>
             <tr><th>IP cấp</th><th>DHCP Server</th><th>Subnet</th><th>Gateway</th><th>DNS</th><th>Lease (s)</th></tr>
@@ -652,7 +652,7 @@ DHCP_TEMPLATE = """
             {% endfor %}
         </table>
         {% if result.offers|length > 1 %}
-        <p class="hint">⚠️ Có <strong>{{ result.offers|length }}</strong> DHCP server trả lời trên cùng 1
+        <p class="hint">Có <strong>{{ result.offers|length }}</strong> DHCP server trả lời trên cùng 1
         dây - có thể là dấu hiệu DHCP server giả mạo (rogue) nếu bạn chỉ mong đợi 1 server.</p>
         {% endif %}
         {% if not result.offers %}<p>Khong co OFFER nao tra ve trong thoi gian cho (co the khong co DHCP server tren day nay).</p>{% endif %}
@@ -660,28 +660,28 @@ DHCP_TEMPLATE = """
 
         {% if result.internet %}
         <div class="card">
-        <h3 style="margin-top:0;">🌍 Internet + Băng thông (qua IP {{ result.internet.ip or '?' }})</h3>
+        <h3 style="margin-top:0;">Internet + Băng thông (qua IP {{ result.internet.ip or '?' }})</h3>
         {% if not result.internet.lease_ok %}
         <div class="err">Không xin được lease thật để test: {{ result.internet.loi }}</div>
         {% else %}
         <table style="margin:0;">
             <tr><th style="width:220px;">Ping 8.8.8.8 (Google DNS)</th>
-                <td>{% if result.internet.ping_8888.ok %}<span class="ok-txt">✔ Thành công</span> - mất {{ result.internet.ping_8888.mat_goi_pct }}% gói tin
-                    {% else %}<span class="bad-txt">✘ Thất bại</span> - mất {{ result.internet.ping_8888.mat_goi_pct }}% gói tin{% endif %}</td></tr>
+                <td>{% if result.internet.ping_8888.ok %}<span class="ok-txt">Thành công</span> - mất {{ result.internet.ping_8888.mat_goi_pct }}% gói tin
+                    {% else %}<span class="bad-txt">Thất bại</span> - mất {{ result.internet.ping_8888.mat_goi_pct }}% gói tin{% endif %}</td></tr>
             <tr><th>Ping google.com</th>
-                <td>{% if result.internet.ping_google.ok %}<span class="ok-txt">✔ Thành công</span>
+                <td>{% if result.internet.ping_google.ok %}<span class="ok-txt">Thành công</span>
                     {% if result.internet.ping_google.ip_phan_giai %} - phân giải ra <code>{{ result.internet.ping_google.ip_phan_giai }}</code>{% endif %}
-                    {% else %}<span class="bad-txt">✘ Thất bại</span>{% if result.internet.ping_google.loi %} - {{ result.internet.ping_google.loi }}{% endif %}{% endif %}</td></tr>
+                    {% else %}<span class="bad-txt">Thất bại</span>{% if result.internet.ping_google.loi %} - {{ result.internet.ping_google.loi }}{% endif %}{% endif %}</td></tr>
             {% for w in result.internet.web %}
             <tr><th>Mở web {{ w.url }} (port {{ w.port }})</th>
-                <td>{% if w.ok %}<span class="ok-txt">✔ HTTP {{ w.http_code }}</span> - {{ w.thoi_gian_s }}s
-                    {% else %}<span class="bad-txt">✘ Không kết nối được</span>{% endif %}</td></tr>
+                <td>{% if w.ok %}<span class="ok-txt">HTTP {{ w.http_code }}</span> - {{ w.thoi_gian_s }}s
+                    {% else %}<span class="bad-txt">Không kết nối được</span>{% endif %}</td></tr>
             {% endfor %}
-            <tr><th>📶 Băng thông (Cloudflare)</th>
+            <tr><th>Băng thông (Cloudflare)</th>
                 <td>{% if result.internet.bang_thong and result.internet.bang_thong.ok %}
-                    <span class="big ok-txt">⬇ {{ result.internet.bang_thong.mbps }} Mbps</span>
+                    <span class="big ok-txt">{{ result.internet.bang_thong.mbps }} Mbps</span>
                     <span class="hint"> - tải {{ result.internet.bang_thong.so_mb }}MB trong {{ result.internet.bang_thong.thoi_gian_s }}s</span>
-                    {% else %}<span class="bad-txt">✘ {{ (result.internet.bang_thong or {}).get('loi', 'Không đo được') }}</span>{% endif %}</td></tr>
+                    {% else %}<span class="bad-txt">{{ (result.internet.bang_thong or {}).get('loi', 'Không đo được') }}</span>{% endif %}</td></tr>
         </table>
         {% if result.internet.loi %}<div class="err" style="margin-top:11px;">{{ result.internet.loi }}</div>{% endif %}
         <p class="hint" style="margin-top:9px;">Đã trả lại IP tạm và bảng định tuyến - không còn ảnh hưởng gì đến cổng {{ iface }} nữa.</p>

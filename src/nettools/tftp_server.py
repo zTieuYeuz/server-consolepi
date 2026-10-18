@@ -199,13 +199,13 @@ TFTP_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>📤 Máy chủ TFTP</h1>
+    <h1>Máy chủ TFTP</h1>
     <p><a href="/nettools">← Network Tools</a></p>
 
     {% if msg %}<div class="{{ 'warn' if not ok else 'card' }}">{{ msg }}</div>{% endif %}
 
     <div class="warn">
-        ⚠️ TFTP KHÔNG có xác thực - bất kỳ thiết bị nào cắm vào cổng <strong>{{ iface }}</strong> đều
+        TFTP KHÔNG có xác thực - bất kỳ thiết bị nào cắm vào cổng <strong>{{ iface }}</strong> đều
         đọc/ghi được file. Chỉ bật khi đang thực sự làm việc, tắt ngay sau khi xong.
     </div>
 
@@ -217,12 +217,12 @@ sudo systemctl disable --now tftpd-hpa   # tắt dịch vụ mặc định của
     {% else %}
     <div class="card">
         {% if dang_bat %}
-        <p>🟢 Đang bật trên <strong>{{ iface }}</strong>. File nhận được hiện ở bảng bên dưới.</p>
+        <p>Đang bật trên <strong>{{ iface }}</strong>. File nhận được hiện ở bảng bên dưới.</p>
         <form method="POST" action="/nettools/tftp/tat">
             <button type="submit" class="red" data-busy="Đang tắt...">⏏ Tắt TFTP</button>
         </form>
         {% else %}
-        <p>⚪ Đang tắt.</p>
+        <p>Đang tắt.</p>
         <form method="POST" action="/nettools/tftp/bat">
             <button type="submit" data-busy="Đang bật...">▶ Bật TFTP trên {{ iface }}</button>
         </form>
@@ -237,12 +237,12 @@ sudo systemctl disable --now tftpd-hpa   # tắt dịch vụ mặc định của
         <p style="margin-top:11px;">Sao lưu cấu hình lên máy:</p>
         <div class="lenh">
             <pre id="lenh_backup">copy running-config tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-của-máy>' }}/backup.cfg</pre>
-            <button type="button" class="nut-copy" data-dich="lenh_backup">📋 Copy</button>
+            <button type="button" class="nut-copy" data-dich="lenh_backup">Copy</button>
         </div>
         <p>Nạp firmware/cấu hình từ máy xuống switch (đặt file vào thư mục <code>{{ tftp_root }}</code> của máy trước):</p>
         <div class="lenh">
             <pre id="lenh_firmware">copy tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-của-máy>' }}/firmware.bin flash:</pre>
-            <button type="button" class="nut-copy" data-dich="lenh_firmware">📋 Copy</button>
+            <button type="button" class="nut-copy" data-dich="lenh_firmware">Copy</button>
         </div>
         <div id="bao_copy" class="hint" style="margin-top:8px;"></div>
     </div>
@@ -259,7 +259,7 @@ sudo systemctl disable --now tftpd-hpa   # tắt dịch vụ mặc định của
             <td class="hint">{{ f.thoi_gian }}</td>
             <td style="white-space:nowrap;">
                 <a class="nut-tai" href="/nettools/tftp/tai/{{ f.ten | urlencode }}"
-                   download>⬇ Tải về</a>
+                   download>Tải về</a>
                 <form method="POST" action="/nettools/tftp/xoa" style="display:inline;"
                       onsubmit="return confirm('Xóa {{ f.ten }}?');">
                     <input type="hidden" name="ten" value="{{ f.ten }}">
@@ -296,7 +296,7 @@ sudo systemctl disable --now tftpd-hpa   # tắt dịch vụ mặc định của
     var ok = false;
     try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
     document.body.removeChild(o);
-    noi(ok ? "✅ Đã copy dòng lệnh." : "⚠️ Trình duyệt không cho copy tự động - bôi đen dòng lệnh rồi copy tay.",
+    noi(ok ? "Đã copy dòng lệnh." : "Trình duyệt không cho copy tự động - bôi đen dòng lệnh rồi copy tay.",
         ok ? "#7ddc7d" : "#ffb74d");
   }
 
@@ -308,7 +308,7 @@ sudo systemctl disable --now tftpd-hpa   # tắt dịch vụ mặc định của
       var chu = dich.textContent.trim();
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(chu).then(
-          function () { noi("✅ Đã copy dòng lệnh.", "#7ddc7d"); },
+          function () { noi("Đã copy dòng lệnh.", "#7ddc7d"); },
           function () { copyCachCu(chu); });
       } else {
         copyCachCu(chu);

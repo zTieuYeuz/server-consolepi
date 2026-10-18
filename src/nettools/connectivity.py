@@ -81,7 +81,7 @@ PING_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>📶 Ping / Traceroute</h1>
+    <h1>Ping / Traceroute</h1>
     <p><a href="/nettools">← Network Tools</a></p>
 
     <form method="POST" style="margin-top:16px;">

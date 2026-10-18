@@ -145,7 +145,7 @@ IFTHEN_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🧩 IF/THEN Automation</h1>
+    <h1>IF/THEN Automation</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Rule chỉ TẠO GỢI Ý sau khi quét LLDP - không tự động chạy lệnh lên thiết bị.
     Bạn vẫn phải xác nhận qua màn hình xem trước của Netmiko.</p>
@@ -172,7 +172,7 @@ IFTHEN_TEMPLATE = """
         {% else %}<p>Không có rule nào khớp với thiết bị đã phát hiện.</p>{% endif %}
     {% endif %}
 
-    <h3>📋 Danh sách rule đã lưu</h3>
+    <h3>Danh sách rule đã lưu</h3>
     <table>
         <tr><th>Ten</th><th>Điều kiện</th><th>Device type</th><th></th></tr>
         {% for i, r in rules %}
@@ -192,7 +192,7 @@ IFTHEN_TEMPLATE = """
     </table>
     {% if not rules %}<p>Chưa có rule nào.</p>{% endif %}
 
-    <h3>➕ Thêm rule mới</h3>
+    <h3>Thêm rule mới</h3>
     <form method="POST" action="/nettools/ifthen/add">
         <label>Tên rule:</label>
         <input type="text" name="name" required placeholder="ví dụ Switch tầng 3">
@@ -218,7 +218,7 @@ IFTHEN_TEMPLATE = """
         <button type="submit">Lưu rule</button>
     </form>
 
-    <h3>🔒 Export / Import (mã hóa)</h3>
+    <h3>Export / Import (mã hóa)</h3>
     <form method="POST" action="/nettools/ifthen/export">
         <label>Passphrase để mã hóa:</label>
         <input type="password" name="passphrase" required>

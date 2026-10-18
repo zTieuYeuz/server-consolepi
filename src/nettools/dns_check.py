@@ -165,7 +165,7 @@ DNS_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>🌐 Kiểm tra DNS</h1>
+    <h1>Kiểm tra DNS</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Truy vấn cùng 1 tên miền tới DNS hệ thống hiện tại và 3 DNS công khai lớn,
     đối chiếu kết quả. DNS hệ thống trả về khác hẳn các DNS công khai là dấu hiệu bị can thiệp
@@ -181,7 +181,7 @@ DNS_TEMPLATE = """
         {% if not result.ok %}
         <div class="err">{{ result.error }}</div>
         {% else %}
-        {% if result.canh_bao %}<div class="warn">⚠️ {{ result.canh_bao }}</div>{% endif %}
+        {% if result.canh_bao %}<div class="warn">{{ result.canh_bao }}</div>{% endif %}
         <div class="card">
             <table style="margin:0;">
                 <tr><th>DNS Server</th><th>Thời gian</th><th>Địa chỉ trả về</th></tr>
@@ -193,7 +193,7 @@ DNS_TEMPLATE = """
                         {% if s.dia_chi %}
                             {% for ip in s.dia_chi %}<code>{{ ip }}</code><br>{% endfor %}
                         {% elif s.loi %}
-                            <span class="bad-txt">✘ {{ s.loi }}</span>
+                            <span class="bad-txt">{{ s.loi }}</span>
                         {% else %}—{% endif %}
                     </td>
                 </tr>
@@ -201,7 +201,7 @@ DNS_TEMPLATE = """
             </table>
         </div>
         {% if not result.co_mau_thuan %}
-        <p class="ok-txt" style="margin-top:11px;">✔ Tất cả DNS server có kết quả trả về đều khớp nhau (hoặc không đủ dữ liệu để so sánh).</p>
+        <p class="ok-txt" style="margin-top:11px;">Tất cả DNS server có kết quả trả về đều khớp nhau (hoặc không đủ dữ liệu để so sánh).</p>
         {% endif %}
         {% endif %}
     {% endif %}

@@ -195,7 +195,7 @@ PCAP_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>📼 PCAP Capture</h1>
+    <h1>PCAP Capture</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Thư mục đang dùng: <code>{{ capture_dir }}</code>
     {% if is_usb %}(USB drive){% else %}(ổ đĩa của máy - nên cắm USB để an toàn hơn){% endif %}</p>
@@ -204,8 +204,8 @@ PCAP_TEMPLATE = """
 
     {% if capturing %}
     <form method="POST" action="/nettools/pcap/stop">
-        <p>⏺ Đang capture: <strong>{{ current_file }}</strong></p>
-        <button type="submit" class="stop">⏹ Dừng capture</button>
+        <p>Đang capture: <strong>{{ current_file }}</strong></p>
+        <button type="submit" class="stop">Dừng capture</button>
     </form>
     {% else %}
     <form method="POST" action="/nettools/pcap/start">
@@ -217,7 +217,7 @@ PCAP_TEMPLATE = """
         <input type="text" name="filter" placeholder="ví dụ port 80">
         <label style="margin-left:10px;">Thời lượng (giây):</label>
         <input type="number" name="duration" value="60" min="5" max="600" style="width:80px;">
-        <button type="submit" style="margin-left:10px;">⏺ Bắt đầu</button>
+        <button type="submit" style="margin-left:10px;">Bắt đầu</button>
     </form>
     {% endif %}
 

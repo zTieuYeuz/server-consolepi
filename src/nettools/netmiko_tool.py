@@ -139,15 +139,15 @@ FORM_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>⚙️ Netmiko Config</h1>
+    <h1>Netmiko Config</h1>
     <p><a href="/nettools">← Network Tools</a> &nbsp;|&nbsp;
     {% if mode == 'test' %}
     <a href="/nettools/netmiko">Sang form Cấu hình (ghi)</a>
     {% else %}
-    <a href="/nettools/netmiko/test-form">🔍 Sang form Test kết nối (chỉ đọc)</a>
+    <a href="/nettools/netmiko/test-form">Sang form Test kết nối (chỉ đọc)</a>
     {% endif %}
     </p>
-    <div class="warn">⚠️ Công cụ này GHI thay đổi lên thiết bị thật qua SSH.
+    <div class="warn">Công cụ này GHI thay đổi lên thiết bị thật qua SSH.
     Luôn <strong>Test kết nối</strong> trước, rồi <strong>Xem trước lệnh</strong>,
     cuối cùng mới <strong>Xác nhận và chạy</strong>. Không tự động lưu vĩnh viễn
     (write memory) trừ khi bạn tích riêng.</div>
@@ -175,11 +175,11 @@ FORM_TEMPLATE = """
         {% if mode == 'test' %}
         <label>Lệnh đọc để test (không vào config mode):</label>
         <input type="text" name="test_cmd" value="{{ test_cmd or 'show version' }}">
-        <button type="submit" class="secondary">🔍 Test kết nối (chỉ đọc)</button>
+        <button type="submit" class="secondary">Test kết nối (chỉ đọc)</button>
         {% else %}
         <label>Danh sách lệnh cấu hình (mỗi dòng 1 lệnh):</label>
         <textarea name="commands">{{ commands_text or '' }}</textarea>
-        <button type="submit">👁 Xem trước lệnh</button>
+        <button type="submit">Xem trước lệnh</button>
         {% endif %}
     </form>
 
@@ -215,13 +215,13 @@ PREVIEW_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>👁 Xem trước - CHƯA KẾT NỐI GÌ CẢ</h1>
+    <h1>Xem trước - CHƯA KẾT NỐI GÌ CẢ</h1>
     <p><a href="/nettools/netmiko">← Quay lại form</a></p>
 
     <p>Sẽ kết nối tới <strong>{{ host }}</strong> ({{ device_type }}) và chạy CHÍNH XÁC các lệnh sau:</p>
     <pre>{{ commands_text }}</pre>
 
-    <div class="warn">⚠️ Đây là bước ghi cấu hình THỰC SỰ lên thiết bị. Đọc lại kỹ trước khi xác nhận.</div>
+    <div class="warn">Đây là bước ghi cấu hình THỰC SỰ lên thiết bị. Đọc lại kỹ trước khi xác nhận.</div>
 
     <form method="POST" action="/nettools/netmiko/run"
           onsubmit="return confirm('XÁC NHẬN chạy {{ commands|length }} lệnh cấu hình trên {{ host }}?');">
@@ -235,7 +235,7 @@ PREVIEW_TEMPLATE = """
             <input type="checkbox" name="save" value="1">
             Cũng lưu vĩnh viễn (write memory / save config) - KHÓ HOÀN TÁC, mặc định KHÔNG tích
         </label>
-        <button type="submit">✅ Xác nhận và chạy</button>
+        <button type="submit">Xác nhận và chạy</button>
         <a href="/nettools/netmiko" class="cancel" style="display:inline-block; padding:10px 20px; background:#607d8b; color:white; border-radius:4px; text-decoration:none;">Hủy</a>
     </form>
 </body>

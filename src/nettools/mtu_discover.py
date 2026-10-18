@@ -222,7 +222,7 @@ MTU_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>📏 MTU / Path MTU Discovery</h1>
+    <h1>MTU / Path MTU Discovery</h1>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Tìm MTU thật của đường truyền bằng ping có cờ "không phân mảnh" (DF), kích
     thước tăng/giảm dần. Hữu ích khi mạng có triệu chứng: duyệt web/ping bình thường nhưng
@@ -252,7 +252,7 @@ MTU_TEMPLATE = """
             {% endif %}
             <p class="hint">MTU cấu hình của chính cổng {{ iface }}: {{ result.mtu_interface }} bytes.</p>
         </div>
-        {% if result.canh_bao %}<div class="warn">⚠️ {{ result.canh_bao }}</div>{% endif %}
+        {% if result.canh_bao %}<div class="warn">{{ result.canh_bao }}</div>{% endif %}
 
         <details>
             <summary>Xem chi tiết các bước đo ({{ result.chi_tiet|length }} lần thử)</summary>
@@ -262,8 +262,8 @@ MTU_TEMPLATE = """
                 <tr>
                     <td>{{ b.payload }}</td>
                     <td>{{ b.mtu_tuong_ung }}</td>
-                    <td>{% if b.ket_qua == 'ok' %}<span style="color:#8fd99a;">✔ Qua được</span>
-                        {% elif b.ket_qua == 'qua_lon' %}<span style="color:#ff8a8a;">✘ Quá lớn</span>
+                    <td>{% if b.ket_qua == 'ok' %}<span style="color:#8fd99a;">Qua được</span>
+                        {% elif b.ket_qua == 'qua_lon' %}<span style="color:#ff8a8a;">Quá lớn</span>
                         {% else %}<span style="color:#999;">? Không rõ (mất gói)</span>{% endif %}</td>
                 </tr>
                 {% endfor %}
