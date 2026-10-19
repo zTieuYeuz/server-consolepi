@@ -7,6 +7,9 @@
 - **Kéo chuột trái để bôi đen:** vệt bôi giữ nguyên sau khi nhả chuột và **tự chép vào clipboard** (như PuTTY), không cần giữ Shift.
 - **Chuột phải:** chỉ còn menu của trình duyệt (Copy / Paste), không còn menu tmux. Dán bằng chuột phải, Ctrl+V hoặc Ctrl+Shift+V.
 - Bánh xe cuộn lịch sử, bấm thường và gõ phím giữ nguyên như cũ. Vẫn không tắt chế độ chuột của tmux.
+- **Bấm vào terminal là gõ được ngay:** bản sửa chuột ban đầu làm con trỏ không nhận phím sau khi bấm (dấu nháy không sáng, phải bấm đúng vào dấu nháy). Đã trả tiêu điểm cho terminal sau mỗi lần bấm; thử trên Pi: bấm 1 lần rồi gõ lệnh chạy bình thường.
+- **Hết hiện hình cái kéo (Edge):** khi có vùng bôi đen, xterm.js đặt chữ đã chọn vào ô nhập ẩn của nó rồi chọn luôn ô đó, nên Edge tưởng đang chọn chữ trong ô nhập và hiện thanh công cụ nhỏ có nút Cắt (hình cái kéo) cạnh vệt bôi. Nay vô hiệu hoá việc chọn thật trong đúng ô ẩn đó; vệt bôi vẫn hiện, chép, gõ phím và dán vẫn như cũ. Đường chép dự phòng (trang mở bằng http thường) cũng không còn tạo ô nhập tạm.
+- **Tắt phiên là tắt hẳn:** trước đây bấm **×** trên tab chỉ đóng tab, phiên vẫn chạy ngầm nên mở lại thấy đúng màn hình cũ với mọi thứ đã hiện; riêng **Terminal máy này** thì Ngắt phiên cũng không tắt được. Nay **×** và **Ngắt phiên** đều kết thúc phiên (kể cả Terminal máy này), mở lại là phiên mới. Tải lại trang hoặc lỡ đóng trình duyệt vẫn giữ phiên như cũ. Đã thử trên Pi: tải lại trang vẫn còn nội dung, bấm × rồi mở lại là màn hình mới.
 - Đã thử thật trên Pi bằng chuột mô phỏng: bôi đen, clipboard đúng nội dung, vệt còn nguyên, không còn menu tmux, gõ phím sau khi bôi đen bình thường, cuộn bằng bánh xe (script `iso/test/thu-chuot-terminal.py`); anh Thoại đã thử bằng tay và xác nhận chạy tốt. Chưa đóng gói ISO.
 
 ## 1.9.2 - 19/10/2026

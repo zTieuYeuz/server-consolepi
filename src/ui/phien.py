@@ -174,8 +174,8 @@ def xoa(ma):
 
 
 def ngat(ma):
-    if ma == "local":
-        return
+    # Ke ca "Terminal may nay" (19/10/2026, anh Thoai: tat phien roi mo lai van ra man hinh cu): truoc day
+    # khong bao gio kill phien "local" nen mo lai luon ra dung noi dung cu. Phien tmux tu tao lai khi mo.
     subprocess.run(["tmux", "kill-session", "-t", ten_tmux(ma)], capture_output=True, timeout=5)
 
 
@@ -476,7 +476,7 @@ JS = r"""
     $('tabs').innerHTML = MO.map(function(t){
       return '<div class="ph-tab'+(t.ma===DANG?' on':'')+'" data-tab="'+esc(t.ma)+'"><span class="ic '+t.loai+
         '" style="width:auto;height:auto;padding:1px 5px;border-radius:4px;font-size:10px;">'+NHAN[t.loai]+'</span>'
-        + esc(t.ten) + '<button class="x" data-dong="'+esc(t.ma)+'" title="Đóng tab (phiên vẫn chạy)">×</button></div>';
+        + esc(t.ten) + '<button class="x" data-dong="'+esc(t.ma)+'" title="Đóng tab và tắt phiên">×</button></div>';
     }).join('');
     document.querySelectorAll('#than iframe').forEach(function(f){ f.classList.toggle('on', f.dataset.ma===DANG); });
     $('trong').hidden = MO.length > 0; $('congcu').hidden = !DANG;
@@ -513,16 +513,40 @@ JS = r"""
   function chepChon(w, d){
     var t = ''; try{ t = w.term && w.term.getSelection(); }catch(e){}
     if (!t) return;
-    function du(){ try{
-      var ta = d.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0;left:-999px';
-      d.body.appendChild(ta); ta.select(); d.execCommand('copy'); d.body.removeChild(ta);
-      if (w.term) w.term.focus();   /* tra lai tieu diem cho terminal de go tiep duoc */
-    }catch(e){} }
+    /* Du phong (trang mo bang http thuong, trinh duyet khong cho navigator.clipboard): dung su kien "copy"
+       de dat noi dung, KHONG tao o nhap tam - o nhap tam bi boi den se bat thanh cong cu cua trinh
+       duyet (hinh cai keo "Cat" nhay len man hinh - anh Thoai bao 19/10/2026). */
+    function du(){
+      var xong = false;
+      function dat(ev){ try{ ev.clipboardData.setData('text/plain', t); ev.preventDefault(); xong = true; }catch(e){} }
+      try{ d.addEventListener('copy', dat, true); d.execCommand('copy'); }catch(e){}
+      d.removeEventListener('copy', dat, true);
+      if (!xong){   /* trinh duyet khong cho: o nhap CHI DOC (khong co nut Cat), chen vao roi go ngay */
+        try{
+          var ta = d.createElement('textarea'); ta.value = t; ta.readOnly = true;
+          ta.style.cssText = 'position:fixed;opacity:0;left:-999px;top:0;width:1px;height:1px';
+          d.body.appendChild(ta); ta.select(); d.execCommand('copy'); d.body.removeChild(ta);
+        }catch(e){}
+      }
+      try{ if (w.term) w.term.focus(); }catch(e){}   /* tra lai tieu diem cho terminal de go tiep duoc */
+    }
     try{ navigator.clipboard.writeText(t).catch(du); }catch(e){ du(); }
   }
   function ganChuot(f){
     var d, w; try{ d = f.contentDocument; w = f.contentWindow; }catch(e){ return; }
     if (!d || d.__csChuot) return; d.__csChuot = true;
+    /* HINH CAI KEO tren Edge (anh Thoai 19/10/2026): xterm.js, khi co vung chon, dat NOI DUNG DA CHON vao o
+       nhap an (textarea.xterm-helper-textarea) roi select() no - Edge thay co vung chon trong o NHAP LIEU nen
+       bat thanh cong cu nho "Cat / Chep" (cai keo = Cat) ngay canh vet boi. Vet boi nhin thay do xterm tu ve
+       nen KHONG can chon that trong o nhap: vo hieu hoa select()/setSelectionRange() cua DUNG o nay. Go phim,
+       dan, IME tieng Viet khong dung toi hai ham do. Chep da lo bang chepChon() (su kien copy), khong can no. */
+    function voHieuChon(){
+      var ta = d.querySelector('.xterm-helper-textarea');
+      if (!ta || ta.__csKhongChon) return !!ta;
+      ta.__csKhongChon = true; ta.select = function(){}; ta.setSelectionRange = function(){};
+      return true;
+    }
+    if (!voHieuChon()){ var lan = 0, h = setInterval(function(){ if (voHieuChon() || ++lan > 40) clearInterval(h); }, 250); }
     d.addEventListener('mousedown', function(e){
       if (e.__cs) return;
       if (e.button === 2){ e.stopImmediatePropagation(); return; }          /* chuot phai: khong gui cho tmux */
@@ -532,12 +556,24 @@ JS = r"""
           clientX:e.clientX, clientY:e.clientY, screenX:e.screenX, screenY:e.screenY, button:0, buttons:e.buttons,
           detail:e.detail, shiftKey:true, ctrlKey:e.ctrlKey, altKey:e.altKey, metaKey:e.metaKey});
         n.__cs = true; e.target.dispatchEvent(n);                           /* giong giu Shift: xterm.js tu boi den */
+        /* Su kien that bi chan nen xterm.js khong tu focus o nhap; su kien gia khong lam doi tieu diem cua
+           trinh duyet -> phai tu tra tieu diem cho terminal, neu khong bam vao terminal ma khong go duoc
+           (anh Thoai 19/10/2026: dau nhay khong sang, phai bam dung vao dau nhay moi go duoc). */
+        try{ w.term.focus(); }catch(er){}
+        setTimeout(function(){ try{ w.term.focus(); }catch(er){} }, 0);
       }
     }, true);
     d.addEventListener('mouseup', function(e){
       if (e.button === 2){ e.stopImmediatePropagation(); return; }
-      if (e.button === 0) setTimeout(function(){ chepChon(w, d); }, 40);
+      if (e.button === 0) setTimeout(function(){ chepChon(w, d); try{ w.term.focus(); }catch(er){} }, 40);
     }, true);
+  }
+  /* Bam x tren tab = TAT HAN phien (19/10/2026, anh Thoai: "tat phien roi mo lai van quay ve phien do va nhung
+     thu no tung show"). Truoc day x chi dong tab, phien tmux chay ngam nen mo lai thay dung man hinh cu.
+     Tai lai trang / dong trinh duyet KHONG goi ham nay nen phien van duoc giu khi chi lo tay mat trang. */
+  function tatPhien(ma){
+    api('/phien/api/'+encodeURIComponent(ma)+'/ngat', {}).catch(function(){});
+    dongTab(ma);
   }
   function dongTab(ma){
     MO = MO.filter(function(t){ return t.ma!==ma; });
@@ -550,7 +586,7 @@ JS = r"""
     var p = DS.filter(function(x){ return x.ma===m.dataset.ma; })[0]; if (p) moTab(p, true);
   });
   $('tabs').addEventListener('click', function(e){
-    var x = e.target.closest('[data-dong]'); if (x){ e.stopPropagation(); dongTab(x.dataset.dong); return; }
+    var x = e.target.closest('[data-dong]'); if (x){ e.stopPropagation(); tatPhien(x.dataset.dong); return; }
     var t = e.target.closest('[data-tab]'); if (t){ DANG = t.dataset.tab; veTabs(); }
   });
   $('o-loc').addEventListener('input', veDs);
