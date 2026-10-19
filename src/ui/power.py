@@ -61,6 +61,8 @@ def register_power(app):
 
     @app.route("/power/<what>", methods=["POST"])
     def power_route(what):
+        from .errlog import ghi_thao_tac
+        ghi_thao_tac("Nguồn điện: " + what, "gửi lệnh")
         ok, msg = health.power_action(what)
         color = "ok" if ok else "err"
         # Trang tinh, khong tu chuyen huong: may sap tat/khoi dong lai nen

@@ -1,8 +1,8 @@
 # Changelog
 
-## Chưa phát hành (sau 1.9.2) - 19/10/2026
+## 1.9.3 - 19/10/2026
 
-**Chuột trong terminal của Phiên kết nối** (`ui/phien.py`). Trước đây kéo chuột để bôi đen rồi nhả ra thì vệt bôi biến mất, bấm chuột phải ra hai menu chồng nhau (menu của tmux và của trình duyệt), nên chép và dán rất khó. Nguyên nhân: terminal chạy trong tmux có bật chuột (để bánh xe cuộn được lịch sử màn hình), nên tmux chiếm hết thao tác chuột.
+**Phiên kết nối: chuột, tắt phiên, nhóm, tô màu** (`ui/phien.py`). Phần chuột: trước đây kéo chuột để bôi đen rồi nhả ra thì vệt bôi biến mất, bấm chuột phải ra hai menu chồng nhau (menu của tmux và của trình duyệt), nên chép và dán rất khó. Nguyên nhân: terminal chạy trong tmux có bật chuột (để bánh xe cuộn được lịch sử màn hình), nên tmux chiếm hết thao tác chuột.
 
 - **Kéo chuột trái để bôi đen:** vệt bôi giữ nguyên sau khi nhả chuột và **tự chép vào clipboard** (như PuTTY), không cần giữ Shift.
 - **Chuột phải:** chỉ còn menu của trình duyệt (Copy / Paste), không còn menu tmux. Dán bằng chuột phải, Ctrl+V hoặc Ctrl+Shift+V.
@@ -13,6 +13,17 @@
 - **Hết hiện hình cái kéo (Edge):** khi có vùng bôi đen, xterm.js đặt chữ đã chọn vào ô nhập ẩn của nó rồi chọn luôn ô đó, nên Edge tưởng đang chọn chữ trong ô nhập và hiện thanh công cụ nhỏ có nút Cắt (hình cái kéo) cạnh vệt bôi. Nay vô hiệu hoá việc chọn thật trong đúng ô ẩn đó; vệt bôi vẫn hiện, chép, gõ phím và dán vẫn như cũ. Đường chép dự phòng (trang mở bằng http thường) cũng không còn tạo ô nhập tạm.
 - **Tắt phiên là tắt hẳn:** trước đây bấm **×** trên tab chỉ đóng tab, phiên vẫn chạy ngầm nên mở lại thấy đúng màn hình cũ với mọi thứ đã hiện; riêng **Terminal máy này** thì Ngắt phiên cũng không tắt được. Nay **×** và **Ngắt phiên** đều kết thúc phiên (kể cả Terminal máy này), mở lại là phiên mới. Tải lại trang hoặc lỡ đóng trình duyệt vẫn giữ phiên như cũ. Đã thử trên Pi: tải lại trang vẫn còn nội dung, bấm × rồi mở lại là màn hình mới.
 - Đã thử thật trên Pi bằng chuột mô phỏng: bôi đen, clipboard đúng nội dung, vệt còn nguyên, không còn menu tmux, gõ phím sau khi bôi đen bình thường, cuộn bằng bánh xe (script `iso/test/thu-chuot-terminal.py`); anh Thoại đã thử bằng tay và xác nhận chạy tốt. Chưa đóng gói ISO.
+
+**Kiểm tra và sửa hệ thống Nhật ký** (`ui/errlog.py`, `ui/logs.py`, `ui/auth.py`, `ui/power.py`, `ui/pxe.py`, `ui/gioithieu.py`, `app.py`, `config/logrotate-console-pi`, `tools/cap-nhat-pi.sh`). Kiểm thật trên Pi (nhiều tab, bộ lọc, tìm kiếm, tải về, tham số độc hại, ghi lỗi 500) và sửa các lỗi tìm được:
+
+- **Tab "Lỗi ứng dụng" mất hết lỗi sau mỗi lần xoay vòng log:** tab chỉ đọc file hiện tại; logrotate chạy lúc 00:31 làm file này thành 0 byte nên lỗi của cả tuần biến mất khỏi tab ngay lúc cần xem (dù vẫn còn trong bản `.1`). Nay tab đọc cả các bản đã xoay vòng (`.1`..`.7`, `.gz`) trong 7 ngày, đúng thứ tự cũ trước mới sau. Dùng chung một hàm đọc cho mọi chỗ đọc log.
+- **Nhật ký bị "ngập" bởi dòng truy cập vô nghĩa:** trên Pi thật khoảng 23.000 dòng mỗi 24 giờ là `GET /api/suckhoe 200` (trang tự hỏi mỗi 10 giây), file tĩnh, kiểm tra sức khỏe; trang chỉ hiện 1500 dòng nên che mất sự kiện thật. Nay bỏ các dòng GET thành công thuộc nhóm đó (kể cả dòng có mã màu của Werkzeug), vẫn giữ mọi lần xem trang, mọi thao tác POST và mọi dòng lỗi 4xx/5xx. Đo trên Pi: 40 giây chỉ còn 3 dòng thay vì khoảng 35.
+- **Tìm kiếm nhanh gấp đôi:** tìm 7 ngày trên Pi từ khoảng 15 giây xuống khoảng 7 giây (bỏ dấu từng dòng của khoảng 185 nghìn dòng; nay dòng chỉ có ASCII thì so thẳng chữ thường). Vẫn gõ không dấu ra tiếng Việt có dấu.
+- **Nhật ký thao tác mới (tab "Thao tác", file `console-pi-audit.log`):** dấu vết ai làm gì: đăng nhập thành công, **đăng nhập thất bại** (chỉ ghi tên đã thử, không bao giờ ghi mật khẩu), đăng xuất, tắt máy / khởi động lại, bật / tắt PXE, và mọi thao tác ghi dữ liệu (xoá kịch bản, xoá hệ điều hành...) kèm tên đối tượng; không ghi giá trị các trường khác nên không lộ mật khẩu hay token. Giữ 7 ngày, tự xoay vòng.
+- **File thương hiệu bị thiếu giờ trả 404** thay vì lỗi 500 làm đầy "Lỗi ứng dụng" (lúc cài đặt dở dang các file font thiếu đã ghi ra 90 dòng lỗi giả).
+- **logrotate thêm `maxage 7`:** trước đây trên Pi vẫn còn file `.gz` từ ngày 07/09 vì `notifempty` khiến log ít khi xoay vòng, trái yêu cầu "chỉ giữ 7 ngày".
+- **`tools/cap-nhat-pi.sh` nay chép cả `app.py`** (trước đó các sửa trong `app.py` không lên Pi: bản `app.py` trên Pi cũ từ 01/10).
+- Bỏ emoji trên trang Nhật ký. Bộ test dài hạn mới `test_nhat_ky.py` (33 kiểm tra: ghi lỗi, xoay vòng, đọc `.gz`, lọc, tìm không dấu, tham số độc hại, tải về, thư mục log trống, không ghi được file, không lộ mật khẩu, bộ lọc truy cập); chạy lại sau mỗi lần sửa lớn.
 
 ## 1.9.2 - 19/10/2026
 

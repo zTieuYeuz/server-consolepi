@@ -31,8 +31,8 @@ from urllib.parse import urlencode
 
 from flask import Response, request
 
-from .layout import render_page
-from .errlog import LOG_FILE, DICH_VU_CAN_THEO_DOI, doc_nhat_ky, doc_journal_dich_vu
+from .layout import render_page, svg_icon
+from .errlog import LOG_FILE, LOG_THAO_TAC, DICH_VU_CAN_THEO_DOI, doc_nhat_ky, doc_journal_dich_vu
 
 # Khoang thoi gian: ma -> (nhan, doi so --since cua journalctl, so giay)
 KHOANG = {
@@ -48,7 +48,7 @@ MUC = {
     "loi": ("Chỉ lỗi", "err"),
 }
 SO_DONG_HIEN = 1500          # hien toi da tren trang (Pi yeu, trinh duyet cam ung)
-FILE_LOG_MAU = "/var/log/console-pi-*.log"
+FILE_LOG_MAU = "console-pi-*.log"
 
 
 def _esc(s):
@@ -65,7 +65,8 @@ def _bo_dau(s):
 
 def _ds_file_log():
     """Cac file log rieng cua Console System (ten ngan, khong duong dan)."""
-    return sorted(os.path.basename(p) for p in glob.glob(FILE_LOG_MAU))
+    from . import errlog
+    return sorted(os.path.basename(p) for p in glob.glob(os.path.join(errlog.THU_MUC_LOG, FILE_LOG_MAU)))
 
 
 def _dich_vu_co():
@@ -122,35 +123,38 @@ def _lenh_journal(khoang, muc, dv, so_dong=None):
 
 def _doc_file_log(ten, khoang):
     """Doc file log + cac ban da xoay vong (.1, .N.gz) con trong khoang thoi gian."""
-    goc = os.path.join("/var/log", ten)
-    cac = [goc] + [f"{goc}.{i}" for i in range(1, 8)] + [f"{goc}.{i}.gz" for i in range(1, 8)]
-    moc = time.time() - KHOANG[khoang][2]
-    ds = []
-    for p in cac:
-        try:
-            if os.path.getmtime(p) < moc:
-                continue
-            mo = gzip.open if p.endswith(".gz") else open
-            with mo(p, "rt", encoding="utf-8", errors="replace") as f:
-                # bo ma mau ANSI (selftest ghi mau cho terminal)
-                ds.append((os.path.getmtime(p), re.sub(r"\x1b\[[0-9;]*m", "", f.read()).splitlines()))
-        except OSError:
-            continue
-    dong = []
-    for _, d in sorted(ds):          # cu truoc, moi sau
-        dong.extend(d)
-    return dong
+    from . import errlog
+    return errlog.doc_file_xoay_vong(os.path.join(errlog.THU_MUC_LOG, ten), KHOANG[khoang][2])
 
 
 def _loc(dong, muc, tim, la_file):
     if la_file and muc != "tat":
         tu = ("error", "loi", "fail", "traceback", "exception") if muc == "loi" else \
              ("error", "loi", "fail", "traceback", "exception", "warn", "canh bao")
-        dong = [d for d in dong if any(t in _bo_dau(d) for t in tu)]
+        co = _bo_loc(tu)
+        dong = [d for d in dong if co(d)]
     if tim:
-        k = _bo_dau(tim)
-        dong = [d for d in dong if k in _bo_dau(d)]
+        co = _bo_loc((tim,))
+        dong = [d for d in dong if co(d)]
     return dong
+
+
+def _bo_loc(cac_tu):
+    """
+    Ham kiem tra "dong co chua 1 trong cac tu" - khong phan biet hoa thuong, GO KHONG DAU VAN TIM RA
+    ("cai dat" khop "Cài đặt"). Duong nhanh (19/10/2026: tim 7 ngay tren Pi mat ~15 giay vi bo dau tung
+    dong trong ~185 nghin dong): dong chi gom ky tu ASCII thi KHONG can bo dau, chi so chu thuong;
+    chi dong co dau moi chuan hoa. Tu khoa chuan hoa MOT LAN o day, khong tinh lai moi dong.
+    """
+    ks = [_bo_dau(t) for t in cac_tu]
+
+    def co(d):
+        if d.isascii():
+            th = d.lower()
+            return any(k in th for k in ks)
+        bd = _bo_dau(d)
+        return any(k in bd for k in ks)
+    return co
 
 
 def _lay_log(khoang, muc, nguon, dv, tim, gioi_han):
@@ -199,8 +203,8 @@ def _khoi_log():
       <label>Mức độ {_chon("muc", [(k, v[0]) for k, v in MUC.items()], muc)}</label>
       <label class="nk-tim">Tìm <input type="text" name="tim" value="{_esc(tim)}"
              placeholder="gõ không dấu cũng được"></label>
-      <button type="submit">🔍 Lọc</button>
-      <a class="btn gray" href="/logs/tai?{qs}">⬇ Tải về (.txt)</a>
+      <button type="submit">{svg_icon("search")} Lọc</button>
+      <a class="btn gray" href="/logs/tai?{qs}">{svg_icon("save")} Tải về (.txt)</a>
     </form>
     {thong_bao}
     <div class="card" style="padding:0;overflow:hidden;">
@@ -220,10 +224,16 @@ CSS = """
 
 
 def register_logs(app):
+    @app.after_request
+    def _ghi_thao_tac(resp):
+        from .errlog import ghi_thao_tac_tu_dong
+        ghi_thao_tac_tu_dong(request, resp)
+        return resp
+
     @app.route("/logs")
     def logs_page():
         tab = request.args.get("tab", "loi")
-        if tab not in ("loi", "dichvu", "log"):
+        if tab not in ("loi", "dichvu", "log", "thaotac"):
             tab = "loi"
 
         dv_chon = request.args.get("dv", DICH_VU_CAN_THEO_DOI[0])
@@ -237,9 +247,17 @@ def register_logs(app):
             noi_dung = f"""
             <div class="msg info">Chỉ ghi lỗi THẬT SỰ của phần mềm (lỗi bất ngờ trong mã nguồn),
               không ghi các lỗi công cụ đã tự báo ngay trên màn hình (ví dụ "không kết nối được").
-              Tự động dọn sau 7 ngày.</div>
+              Hiện lỗi của <b>7 ngày gần nhất</b> (kể cả các bản log đã xoay vòng), tự động dọn sau 7 ngày.</div>
             <div class="card" style="padding:0;overflow:hidden;">
               <pre style="margin:0;max-height:65vh;overflow:auto;padding:14px;">{_esc(doc_nhat_ky(300)) or '(chưa có lỗi nào được ghi lại - tốt!)'}</pre>
+            </div>"""
+        elif tab == "thaotac":
+            noi_dung = f"""
+            <div class="msg info">Dấu vết <b>ai làm gì</b>: đăng nhập thành công / thất bại, tắt hoặc khởi động lại máy,
+              bật tắt PXE và các thao tác ghi dữ liệu (xoá kịch bản, xoá hệ điều hành...). Mỗi dòng gồm thời gian,
+              <i>người dùng@địa chỉ máy</i> và thao tác. <b>Không bao giờ ghi mật khẩu.</b> Giữ 7 ngày.</div>
+            <div class="card" style="padding:0;overflow:hidden;">
+              <pre style="margin:0;max-height:65vh;overflow:auto;padding:14px;">{_esc(doc_nhat_ky(300, LOG_THAO_TAC)) or '(chưa có thao tác nào được ghi lại)'}</pre>
             </div>"""
         elif tab == "dichvu":
             # 1 nut cho moi dich vu, bam vao moi tai (khong tai het moi journal luc vao trang)
@@ -257,10 +275,11 @@ def register_logs(app):
 
         body = f"""
         <div class="nk-tab">
-          {_nut("loi", "🐞 Lỗi ứng dụng", "/logs?tab=loi")}
-          {_nut("dichvu", "⚙️ Cảnh báo dịch vụ", f"/logs?tab=dichvu&dv={dv_chon}")}
-          {_nut("log", "📜 Log toàn bộ", "/logs?tab=log")}
-          <a class="btn gray" href="{_esc(request.full_path)}">🔄 Làm mới</a>
+          {_nut("loi", "Lỗi ứng dụng", "/logs?tab=loi")}
+          {_nut("dichvu", "Cảnh báo dịch vụ", f"/logs?tab=dichvu&dv={dv_chon}")}
+          {_nut("thaotac", "Thao tác", "/logs?tab=thaotac")}
+          {_nut("log", "Log toàn bộ", "/logs?tab=log")}
+          <a class="btn gray" href="{_esc(request.full_path)}">{svg_icon("refresh")} Làm mới</a>
         </div>
         {noi_dung}
         """

@@ -96,7 +96,10 @@ def register_gioithieu(app):
     def thuong_hieu(ten):
         if ten not in FILE_CONG_KHAI:
             abort(404)
-        r = send_file(os.path.join(THU_MUC, ten), mimetype=FILE_CONG_KHAI[ten], max_age=86400)
+        duong = os.path.join(THU_MUC, ten)
+        if not os.path.isfile(duong):      # thieu file (cai dat do dang) -> 404 ro rang, khong thanh loi 500 ghi vao nhat ky loi
+            abort(404)
+        r = send_file(duong, mimetype=FILE_CONG_KHAI[ten], max_age=86400)
         r.headers["X-Content-Type-Options"] = "nosniff"
         return r
 

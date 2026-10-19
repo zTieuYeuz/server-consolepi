@@ -9,7 +9,7 @@ SRC=/home/administrator/consolepi-toolkit
 DST=/opt/console-pi
 BK=/home/administrator/console-pi-truoc-moi-$(date +%Y%m%d-%H%M).tgz
 
-tar czf "$BK" -C /opt console-pi/ui console-pi/nettools console-pi/branding console-pi/scripts console-pi/VERSION \
+tar czf "$BK" -C /opt console-pi/app.py console-pi/ui console-pi/nettools console-pi/branding console-pi/scripts console-pi/VERSION \
     $(cd /opt && ls -d console-pi/pxe-boot 2>/dev/null)
 echo "Da sao luu ban cu: $BK"
 
@@ -24,6 +24,8 @@ for f in "$SRC"/src/scripts/*; do
     [ -f "$f" ] && install -m 755 "$f" "$DST/scripts/$(basename "$f")"
 done
 install -m 644 "$SRC/VERSION" "$DST/VERSION"
+# app.py (19/10/2026): truoc day KHONG duoc chep nen sua trong app.py (vd bo loc nhat ky truy cap) khong len Pi
+install -m 644 "$SRC/src/app.py" "$DST/app.py"
 find "$DST" -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
 chown -R administrator:administrator "$DST/ui" "$DST/nettools" "$DST/branding"
 

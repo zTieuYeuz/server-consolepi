@@ -5,7 +5,10 @@
 # xoa. "maxsize" van giu de 1 file phinh bat thuong (loi lap lai lien tuc)
 # khong lam day the nho truoc khi toi moc ngay.
 #
-# console-pi-errors.log: errlog.py chi ghi them (append), viec xoay vong
+# "maxage 7" (19/10/2026): ban da xoay vong cu hon 7 ngay bi xoa ke ca khi chua du 7 ban (truoc day tren Pi
+# van con file .gz tu ngay 07/09 vi "notifempty" khien it khi xoay vong -> trai yeu cau "chi giu 7 ngay").
+#
+# console-pi-errors.log / console-pi-audit.log: errlog.py chi ghi them (append), viec xoay vong
 # GIAO HET cho logrotate o day - 1 co che duy nhat, tranh xung dot.
 #
 # (c) 2026 zTieuYeuz - Console System
@@ -13,6 +16,7 @@
 {
     daily
     rotate 7
+    maxage 7
     maxsize 5M
     compress
     delaycompress

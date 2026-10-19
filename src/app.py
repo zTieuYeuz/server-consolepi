@@ -97,6 +97,34 @@ _bao_tien_do(90, "Đang khởi động máy chủ web...")
 
 app = Flask(__name__)
 
+# ---- LOC NHAT KY TRUY CAP (19/10/2026): tren Pi that, ~23.000 dong/24 gio cua journal la dong
+# "GET /api/suckhoe 200" (trang tu hoi moi 10 giay), file tinh, kiem tra suc khoe... vung lay het cho
+# hien 1500 dong cua trang Nhat ky, che mat cac su kien that. Bo cac dong GET THANH CONG (2xx/3xx) cua
+# nhom nay; GIU NGUYEN moi yeu cau xem trang, moi thao tac POST va moi dong loi (4xx/5xx).
+import logging as _logging
+import re as _re
+
+
+class _LocTruyCap(_logging.Filter):
+    _ANSI = _re.compile(r"\x1b\[[0-9;]*m")
+    _RE = _re.compile(r'"(?:GET|HEAD) (\S+) HTTP/[\d.]+" (\d{3})')
+    _DUOI = (".js", ".css", ".png", ".svg", ".woff2", ".woff", ".ico", ".jpg", ".map")
+    _CHINH = ("/healthz", "/_auth", "/favicon.ico", "/phien/api/ds")
+
+    def filter(self, record):
+        try:
+            # Werkzeug to mau dong truy cap (ma ANSI quanh "GET /x HTTP/1.1") khi chay duoi systemd -> bo truoc khi so khop
+            m = self._RE.search(self._ANSI.sub("", record.getMessage()))
+        except Exception:
+            return True
+        if not m or m.group(2)[0] not in "23":
+            return True
+        p = m.group(1).split("?", 1)[0]
+        return not (p in self._CHINH or "/api/" in p or p.endswith("/tien-do") or p.endswith(self._DUOI))
+
+
+_logging.getLogger("werkzeug").addFilter(_LocTruyCap())
+
 # Doc IP that cua nguoi dung tu header nginx dat.
 # Neu khong co buoc nay, MOI request deu thay la 127.0.0.1 (vi nginx dung
 # tren cung may) -> ngoai le "man hinh tai cho khong can dang nhap" se ap

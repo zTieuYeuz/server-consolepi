@@ -330,16 +330,23 @@ def register_auth(app):
             username = (request.form.get("username") or "").strip()
             password = request.form.get("password") or ""
             ok, msg = check_login(username, password)
+            from .errlog import ghi_thao_tac
             if ok:
                 session.permanent = True
                 session["user"] = username
+                ghi_thao_tac("Đăng nhập thành công", nguoi=username)
                 return redirect("/")
+            # Chi ghi TEN dang nhap da thu, KHONG BAO GIO ghi mat khau
+            ghi_thao_tac("Đăng nhập THẤT BẠI", f"tên thử: {username[:40]}", nguoi="-")
             error = msg
         from .gioithieu import dau_an_an
         return render_template_string(LOGIN_TEMPLATE, error=error, username=username, dau_an=dau_an_an())
 
     @app.route("/logout")
     def logout():
+        from .errlog import ghi_thao_tac
+        if session.get("user"):
+            ghi_thao_tac("Đăng xuất")
         session.clear()
         return redirect("/login")
 

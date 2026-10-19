@@ -1032,6 +1032,8 @@ def register_pxe(app):
         if not ok:
             return _ve_lai(msg, False)
         ok, msg = bat_pxe(_m.doc_cauhinh()["kieu_boot"])
+        from .errlog import ghi_thao_tac
+        ghi_thao_tac("Bật PXE" if ok else "Bật PXE THẤT BẠI", _m.doc_cauhinh().get("kieu_boot", ""))
         return _ve_lai(msg, ok)
 
     @app.route("/deployos/pxe/cong", methods=["POST"])
@@ -1056,6 +1058,8 @@ def register_pxe(app):
     @app.route("/deployos/pxe/tat", methods=["POST"])
     def deployos_pxe_tat():
         ok, msg = tat_pxe()
+        from .errlog import ghi_thao_tac
+        ghi_thao_tac("Tắt PXE" if ok else "Tắt PXE THẤT BẠI")
         return _ve_lai(msg, ok)
 
     # ---- Menu PXE (Buoc A - xem ui/pxemenu.py)
