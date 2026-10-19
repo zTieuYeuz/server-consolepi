@@ -495,11 +495,49 @@ JS = r"""
     if (!MO.some(function(t){ return t.ma===p.ma; })) {
       MO.push({ma:p.ma, ten:p.ten, loai:p.loai, host:p.host, user:p.user, port:p.port, cong:p.cong, baud:p.baud});
       var f = document.createElement('iframe'); f.dataset.ma = p.ma;
+      f.addEventListener('load', function(){ ganChuot(f); });
       f.src = '/term-phien/?arg=' + encodeURIComponent(p.ma); $('than').appendChild(f);
       if (tuGoMk && p.co_mat_khau) api('/phien/api/'+encodeURIComponent(p.ma)+'/mk', {});
     }
     DANG = p.ma; veTabs();
     var f2 = document.querySelector('#than iframe[data-ma="'+p.ma+'"]'); if (f2) setTimeout(function(){ try{f2.focus();}catch(e){} }, 300);
+  }
+  /* CHUOT TRONG TERMINAL (19/10/2026, anh Thoai: "boi den buong chuot la mat, chuot phai ra 2 bang,
+     copy paste kho"). Nguyen nhan: terminal chay trong tmux voi `mouse on` (de banh xe cuon lich su)
+     nen xterm.js nhuong het chuot cho tmux: keo chuot = tmux chon roi XOA ngay khi nha, chuot phai =
+     menu cua tmux chong len menu cua trinh duyet. KHONG tat `mouse on` (se hong banh xe - xem
+     ui/soanlenh.py). Thay vao do, tu khung cha (cung goc nen truy cap duoc iframe):
+       - chuot trai keo = xterm.js tu boi den (nhu giu Shift): vet boi con nguyen, TU CHEP khi nha chuot
+       - chuot phai   = chi con menu cua trinh duyet (Copy / Paste), khong gui cho tmux
+       - banh xe, click thuong, phim bam van nhu cu */
+  function chepChon(w, d){
+    var t = ''; try{ t = w.term && w.term.getSelection(); }catch(e){}
+    if (!t) return;
+    function du(){ try{
+      var ta = d.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0;left:-999px';
+      d.body.appendChild(ta); ta.select(); d.execCommand('copy'); d.body.removeChild(ta);
+      if (w.term) w.term.focus();   /* tra lai tieu diem cho terminal de go tiep duoc */
+    }catch(e){} }
+    try{ navigator.clipboard.writeText(t).catch(du); }catch(e){ du(); }
+  }
+  function ganChuot(f){
+    var d, w; try{ d = f.contentDocument; w = f.contentWindow; }catch(e){ return; }
+    if (!d || d.__csChuot) return; d.__csChuot = true;
+    d.addEventListener('mousedown', function(e){
+      if (e.__cs) return;
+      if (e.button === 2){ e.stopImmediatePropagation(); return; }          /* chuot phai: khong gui cho tmux */
+      if (e.button === 0 && !e.shiftKey){
+        e.stopImmediatePropagation();
+        var n = new MouseEvent('mousedown', {bubbles:true, cancelable:true, composed:true, view:w,
+          clientX:e.clientX, clientY:e.clientY, screenX:e.screenX, screenY:e.screenY, button:0, buttons:e.buttons,
+          detail:e.detail, shiftKey:true, ctrlKey:e.ctrlKey, altKey:e.altKey, metaKey:e.metaKey});
+        n.__cs = true; e.target.dispatchEvent(n);                           /* giong giu Shift: xterm.js tu boi den */
+      }
+    }, true);
+    d.addEventListener('mouseup', function(e){
+      if (e.button === 2){ e.stopImmediatePropagation(); return; }
+      if (e.button === 0) setTimeout(function(){ chepChon(w, d); }, 40);
+    }, true);
   }
   function dongTab(ma){
     MO = MO.filter(function(t){ return t.ma!==ma; });
