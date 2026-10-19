@@ -104,7 +104,7 @@ def kiem_tra(f):
     if loai not in ("ssh", "telnet", "serial"):
         return "Loại phiên không hợp lệ.", None
     p = {"loai": loai, "ten": (f.get("ten") or "").strip()[:60],
-         "nhom": (f.get("nhom") or "").strip()[:40], "ghi_chu": (f.get("ghi_chu") or "").strip()[:200]}
+         "nhom": _chuan_nhom(f.get("nhom")), "ghi_chu": (f.get("ghi_chu") or "").strip()[:200]}
     if loai in ("ssh", "telnet"):
         host = (f.get("host") or "").strip()
         if not MAU_HOST.fullmatch(host):
@@ -162,8 +162,85 @@ def luu(f):
     if mk and cu["loai"] != "serial":
         cu["mat_khau"] = mk
     cu.pop("tam", None)
+    if cu.get("nhom"):
+        d["nhom_ds"] = _nhom_ds(d)
     _ghi(d)
     return True, "Đã lưu phiên.", ma
+
+
+# ---- NHOM PHIEN (19/10/2026, anh Thoai: "tao nhom truoc, luc tao phien thi xo xuong cac nhom de chon")
+# Danh sach nhom da tao luu trong phien.json (khoa "nhom_ds") - nhom van ton tai khi chua co phien nao.
+# Phien chi luu TEN nhom (p["nhom"]); doi ten / xoa nhom cap nhat luon cac phien thuoc nhom do.
+NHOM_HE_THONG = {"máy này", "cổng console (tự nhận)", "đã lưu", "kết nối nhanh gần đây"}
+
+
+def _chuan_nhom(ten):
+    ten = re.sub(r"\s+", " ", (ten or "").strip())[:40]
+    return "" if re.search(r"[\x00-\x1f<>]", ten) else ten
+
+
+def _nhom_ds(d):
+    """Cac nhom da tao + cac nhom dang duoc phien dung (phien cu tu go tay), khong trung hoa/thuong."""
+    ra, thay = [], set()
+    for n in list(d.get("nhom_ds") or []) + [p.get("nhom") for p in d["phien"] if p.get("nhom")]:
+        n = _chuan_nhom(n)
+        if n and n.lower() not in thay:
+            thay.add(n.lower()); ra.append(n)
+    return sorted(ra, key=str.lower)
+
+
+def nhom_tao(ten):
+    ten = _chuan_nhom(ten)
+    if not ten:
+        return False, "Hãy đặt tên nhóm (tối đa 40 ký tự, không dùng < >).", None
+    if ten.lower() in NHOM_HE_THONG:
+        return False, f"Tên \"{ten}\" là tên nhóm của hệ thống, hãy chọn tên khác.", None
+    d = _doc()
+    co = next((n for n in _nhom_ds(d) if n.lower() == ten.lower()), None)
+    if co:
+        return True, f"Nhóm \"{co}\" đã có.", co
+    d["nhom_ds"] = _nhom_ds(d) + [ten]
+    _ghi(d)
+    return True, f"Đã tạo nhóm \"{ten}\".", ten
+
+
+def nhom_doi_ten(cu, moi):
+    cu, moi = _chuan_nhom(cu), _chuan_nhom(moi)
+    if not moi:
+        return False, "Hãy đặt tên nhóm mới."
+    if moi.lower() in NHOM_HE_THONG:
+        return False, f"Tên \"{moi}\" là tên nhóm của hệ thống, hãy chọn tên khác."
+    d = _doc()
+    ds = _nhom_ds(d)
+    goc = next((n for n in ds if n.lower() == cu.lower()), None)
+    if not goc:
+        return False, "Không tìm thấy nhóm."
+    if moi.lower() != goc.lower() and any(n.lower() == moi.lower() for n in ds):
+        return False, f"Đã có nhóm \"{moi}\"."
+    d["nhom_ds"] = [moi if n == goc else n for n in ds]
+    for p in d["phien"]:
+        if (p.get("nhom") or "") == goc:
+            p["nhom"] = moi
+    _ghi(d)
+    return True, f"Đã đổi tên nhóm thành \"{moi}\"."
+
+
+def nhom_xoa(ten):
+    """Xoa nhom: cac phien trong nhom KHONG bi xoa, chi chuyen ve "Da luu" (khong nhom)."""
+    ten = _chuan_nhom(ten)
+    d = _doc()
+    ds = _nhom_ds(d)
+    goc = next((n for n in ds if n.lower() == ten.lower()), None)
+    if not goc:
+        return False, "Không tìm thấy nhóm.", 0
+    d["nhom_ds"] = [n for n in ds if n != goc]
+    dem = 0
+    for p in d["phien"]:
+        if (p.get("nhom") or "") == goc:
+            p["nhom"] = ""
+            dem += 1
+    _ghi(d)
+    return True, f"Đã xoá nhóm \"{goc}\"." + (f" {dem} phiên được chuyển về \"Đã lưu\"." if dem else ""), dem
 
 
 def xoa(ma):
@@ -323,6 +400,12 @@ TRANG = r"""
   max-height:90vh;overflow:auto;}
 .ph-modal label{display:block;font-size:13px;color:var(--chu-mo);margin:8px 0 3px;}
 .ph-modal .hai{display:flex;gap:10px;} .ph-modal .hai>div{flex:1;}
+.ph-modal select{width:100%;max-width:none;}
+.nh-hang{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--vien);}
+.nh-hang b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.nh-hang small{color:var(--chu-mo2);font-size:12.5px;white-space:nowrap;}
+.nh-hang button{min-height:32px;padding:3px 10px;font-size:12.5px;}
+.ph-nhom-trong{font-size:12px;color:var(--chu-mo2);padding:2px 8px 6px;}
 .ph-loai{display:flex;gap:6px;} .ph-loai button{flex:1;}
 .ph-loai button.chon{background:var(--nhan);color:var(--chu-tren-nhan);border-color:var(--nhan);font-weight:700;}
 @media (max-width:900px){.ph-khung{flex-direction:column;height:auto;}.ph-trai{width:auto;flex:none;max-height:260px;}
@@ -339,6 +422,7 @@ TRANG = r"""
   <input type="text" id="o-nhanh" placeholder="Kết nối nhanh: ssh admin@192.168.1.1" autocomplete="off">
   <button id="nut-nhanh" type="button">[[i:go]] Kết nối</button>
   <button id="nut-moi" type="button" class="gray">[[i:plus]] Phiên mới</button>
+  <button id="nut-nhom" type="button" class="gray" title="Tạo nhóm mới, đổi tên hoặc xoá nhóm để xếp các phiên cho gọn">[[i:plus]] Tạo nhóm</button>
 </div>
 
 <div class="ph-khung">
@@ -390,6 +474,18 @@ TRANG = r"""
   </div>
 </div>
 
+<!-- Hop quan ly nhom -->
+<div class="ph-modal" id="md-nhom"><div class="hop" style="width:min(460px,94vw);">
+  <h3 style="margin:0 0 4px;">Tạo và quản lý nhóm</h3>
+  <p class="hint" style="margin:0 0 10px;">Tạo nhóm trước, khi lưu phiên mới thì chọn nhóm trong danh sách thả xuống. Xoá nhóm không xoá phiên, chỉ chuyển phiên về "Đã lưu".</p>
+  <div id="nh-ds"></div>
+  <label>Thêm nhóm mới</label>
+  <div style="display:flex;gap:6px;"><input type="text" id="nh-ten" placeholder="VD: Trụ sở chính" maxlength="40" autocomplete="off">
+    <button type="button" id="nh-them">[[i:plus]] Thêm</button></div>
+  <div id="nh-loi" class="msg err" hidden style="margin-top:10px;"></div>
+  <div style="display:flex;margin-top:14px;"><button type="button" id="nh-dong" class="gray" style="margin-left:auto;">Đóng</button></div>
+</div></div>
+
 <!-- Hop sua phien -->
 <div class="ph-modal" id="md-phien"><div class="hop">
   <h3 style="margin:0 0 6px;" id="md-tieude">Phiên mới</h3>
@@ -400,8 +496,10 @@ TRANG = r"""
     <button type="button" data-v="serial">Serial (console)</button>
   </div>
   <div class="hai"><div><label>Tên gợi nhớ</label><input type="text" id="f-ten" placeholder="VD: Core switch tầng 3"></div>
-    <div><label>Nhóm</label><input type="text" id="f-nhom" placeholder="VD: Chi nhánh HN" list="ds-nhom"></div></div>
-  <datalist id="ds-nhom"></datalist>
+    <div><label>Nhóm</label><select id="f-nhom"></select>
+      <div id="f-nhom-moi" hidden style="display:flex;gap:6px;margin-top:6px;">
+        <input type="text" id="f-nhom-ten" placeholder="Tên nhóm mới, VD: Chi nhánh HN" maxlength="40" autocomplete="off">
+        <button type="button" id="f-nhom-tao">Tạo</button></div></div></div>
   <div id="f-mang">
     <div class="hai"><div style="flex:3"><label>Địa chỉ IP / tên máy</label><input type="text" id="f-host" placeholder="192.168.1.1"></div>
       <div><label>Cổng</label><input type="text" id="f-port" placeholder="22"></div></div>
@@ -434,7 +532,7 @@ TRANG = r"""
 JS = r"""
 <script>
 (function(){
-  var DS = [], MO = [], DANG = null, THU_VIEN = [];
+  var DS = [], MO = [], DANG = null, THU_VIEN = [], NHOM = [], NHOM_DEM = {};
   var $ = function(i){ return document.getElementById(i); };
   function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
   function api(u, du){
@@ -454,10 +552,16 @@ JS = r"""
     var q = ($('o-loc').value||'').toLowerCase(), h = '';
     var nhom = {};
     DS.forEach(function(p){ var g = p.nhom_hien || 'Đã lưu'; (nhom[g]=nhom[g]||[]).push(p); });
-    Object.keys(nhom).forEach(function(g){
+    NHOM.forEach(function(g){ if (!nhom[g]) nhom[g] = []; });        /* nhom da tao nhung chua co phien van hien */
+    var HT = ['Cổng console (tự nhận)', 'Máy này'], CUOI = ['Đã lưu', 'Kết nối nhanh gần đây'];
+    var thuTu = HT.filter(function(g){ return nhom[g]; })
+      .concat(Object.keys(nhom).filter(function(g){ return HT.indexOf(g) < 0 && CUOI.indexOf(g) < 0; }).sort(function(a, b){ return a.toLowerCase() < b.toLowerCase() ? -1 : 1; }))
+      .concat(CUOI.filter(function(g){ return nhom[g]; }));
+    thuTu.forEach(function(g){
       var cac = nhom[g].filter(function(p){ return !q || (p.ten+' '+moTa(p)+' '+(p.nhom||'')+' '+(p.ghi_chu||'')).toLowerCase().indexOf(q)>=0; });
-      if (!cac.length) return;
+      if (!cac.length && (q || NHOM.indexOf(g) < 0)) return;
       h += '<div class="ph-nhom">'+esc(g)+'</div>';
+      if (!cac.length) h += '<div class="ph-nhom-trong">Chưa có phiên. Bấm Phiên mới và chọn nhóm này.</div>';
       cac.forEach(function(p){
         var mo = MO.some(function(t){ return t.ma===p.ma; });
         h += '<div class="ph-muc'+(mo?' mo':'')+'" data-ma="'+esc(p.ma)+'" title="'+esc(p.ghi_chu||'')+'">'
@@ -470,7 +574,7 @@ JS = r"""
   }
   function taiDs(){
     return api('/phien/api/ds').then(function(d){ DS = d.phien; veDs();
-      $('ds-nhom').innerHTML = (d.nhom||[]).map(function(g){ return '<option value="'+esc(g)+'">'; }).join('');
+      NHOM = d.nhom || []; NHOM_DEM = d.nhom_dem || {}; veDs();
     });
   }
   function luuTab(){ try{ localStorage.setItem('phien-tab', JSON.stringify({mo:MO, dang:DANG})); }catch(e){} }
@@ -691,7 +795,7 @@ JS = r"""
   document.querySelectorAll('#f-loai button').forEach(function(b){ b.onclick = function(){ datLoai(b.dataset.v); }; });
   function moForm(p){
     p = p || {}; $('md-tieude').textContent = p.ma ? 'Sửa phiên' : 'Phiên mới';
-    $('f-ma').value = p.ma||''; $('f-ten').value = p.ten||''; $('f-nhom').value = p.nhom||'';
+    $('f-ma').value = p.ma||''; $('f-ten').value = p.ten||''; veChonNhom(p.nhom||'');
     $('f-host').value = p.host||''; $('f-port').value = p.port||''; $('f-user').value = p.user||'';
     $('f-mk').value=''; $('f-luu-mk').checked = false; $('f-xoa-mk').checked=false; $('f-ghichu').value = p.ghi_chu||'';
     $('f-xoa-mk-dong').hidden = !p.co_mat_khau; $('f-xoa').hidden = !p.ma; $('f-loi').hidden = true;
@@ -704,9 +808,58 @@ JS = r"""
     datLoai(p.loai||'ssh'); $('md-phien').classList.add('on'); setTimeout(function(){ $('f-ten').focus(); }, 50);
   }
   $('nut-moi').onclick = function(){ moForm(null); };
+  // ---- NHOM: danh sach tha xuong trong form phien + hop quan ly nhom
+  function veChonNhom(chon){
+    var cac = NHOM.slice(); if (chon && cac.indexOf(chon) < 0) cac.push(chon);
+    $('f-nhom').innerHTML = '<option value="">(Không nhóm)</option>' + cac.map(function(g){
+      return '<option value="'+esc(g)+'">'+esc(g)+'</option>'; }).join('') + '<option value="__moi__">+ Tạo nhóm mới...</option>';
+    $('f-nhom').value = chon || ''; $('f-nhom-moi').hidden = true;
+  }
+  $('f-nhom').onchange = function(){
+    var moi = this.value === '__moi__'; $('f-nhom-moi').hidden = !moi;
+    if (moi) setTimeout(function(){ $('f-nhom-ten').value = ''; $('f-nhom-ten').focus(); }, 30);
+  };
+  function taoNhomNhanh(){
+    var ten = $('f-nhom-ten').value;
+    api('/phien/api/nhom/tao', {ten:ten}).then(function(d){
+      if (!d.ok){ $('f-loi').textContent = d.loi; $('f-loi').hidden = false; return; }
+      $('f-loi').hidden = true;
+      taiDs().then(function(){ veChonNhom(d.ten); });
+    });
+  }
+  $('f-nhom-tao').onclick = taoNhomNhanh;
+  $('f-nhom-ten').addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); taoNhomNhanh(); } });
+  function veHopNhom(){
+    $('nh-ds').innerHTML = NHOM.length ? NHOM.map(function(g){
+      var n = NHOM_DEM[g] || 0;
+      return '<div class="nh-hang"><b>'+esc(g)+'</b><small>'+n+' phiên</small>'
+        + '<button type="button" class="gray" data-doi="'+esc(g)+'">Đổi tên</button>'
+        + '<button type="button" class="red" data-xoa-nhom="'+esc(g)+'">Xoá</button></div>'; }).join('')
+      : '<p class="hint" style="padding:8px 0;">Chưa có nhóm nào. Thêm nhóm đầu tiên ở bên dưới.</p>';
+  }
+  function loiNhom(m){ $('nh-loi').textContent = m || ''; $('nh-loi').hidden = !m; }
+  $('nut-nhom').onclick = function(){ loiNhom(''); veHopNhom(); $('md-nhom').classList.add('on'); setTimeout(function(){ $('nh-ten').focus(); }, 50); };
+  $('nh-dong').onclick = function(){ $('md-nhom').classList.remove('on'); };
+  function themNhom(){
+    api('/phien/api/nhom/tao', {ten:$('nh-ten').value}).then(function(d){
+      if (!d.ok){ loiNhom(d.loi); return; } loiNhom(''); $('nh-ten').value = '';
+      taiDs().then(veHopNhom);
+    });
+  }
+  $('nh-them').onclick = themNhom;
+  $('nh-ten').addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); themNhom(); } });
+  $('nh-ds').addEventListener('click', function(e){
+    var dn = e.target.closest('[data-doi]'), xn = e.target.closest('[data-xoa-nhom]');
+    if (dn){ var cu = dn.dataset.doi, moi = prompt('Tên mới cho nhóm "'+cu+'":', cu); if (moi === null) return;
+      api('/phien/api/nhom/doi-ten', {cu:cu, moi:moi}).then(function(d){ if (!d.ok){ loiNhom(d.loi); return; } loiNhom(''); taiDs().then(veHopNhom); }); }
+    if (xn){ var g = xn.dataset.xoaNhom, n = NHOM_DEM[g] || 0;
+      if (!confirm('Xoá nhóm "'+g+'"?' + (n ? ' '+n+' phiên trong nhóm sẽ chuyển về "Đã lưu" (không bị xoá).' : ''))) return;
+      api('/phien/api/nhom/xoa', {ten:g}).then(function(d){ if (!d.ok){ loiNhom(d.loi); return; } loiNhom(''); taiDs().then(veHopNhom); }); }
+  });
   $('f-huy').onclick = function(){ $('md-phien').classList.remove('on'); };
   function luuForm(moLuon){
-    var du = {ma:$('f-ma').value, loai:LOAI, ten:$('f-ten').value, nhom:$('f-nhom').value, host:$('f-host').value,
+    var nhomChon = $('f-nhom').value; if (nhomChon === '__moi__') nhomChon = '';
+    var du = {ma:$('f-ma').value, loai:LOAI, ten:$('f-ten').value, nhom:nhomChon, host:$('f-host').value,
       port:$('f-port').value, user:$('f-user').value, mat_khau:$('f-mk').value, luu_mat_khau:$('f-luu-mk').checked?1:'',
       xoa_mat_khau:$('f-xoa-mk').checked?1:'', cong:$('f-cong').value, baud:$('f-baud').value, ghi_chu:$('f-ghichu').value};
     var mkNgay = $('f-mk').value;
@@ -851,7 +1004,7 @@ def _icon_hoa(html):
     from .ph_icons import ph_icon
     html = re.sub(r"\[\[p:([a-z-]+)\]\]", lambda m: ph_icon(m.group(1)), html)
     return re.sub(r"\[\[i:([a-z]+)(?::([a-z]+))?\]\]",
-                  lambda m: svg_icon(m.group(1), m.group(2) or "i"), html)
+                  lambda m: svg_icon(m.group(1), ("i " + m.group(2)) if m.group(2) else "i"), html)
 
 
 def register_phien(app):
@@ -879,8 +1032,26 @@ def register_phien(app):
         for p in _doc()["phien"]:
             if p.get("tam"):
                 ds.append(dict(_cong_khai(p), nhom_hien="Kết nối nhanh gần đây"))
-        nhom = sorted({p.get("nhom") for p in luu_ds if p.get("nhom")})
-        return jsonify({"phien": ds, "nhom": nhom})
+        d_doc = _doc()
+        nhom = _nhom_ds(d_doc)
+        dem = {n: sum(1 for p in luu_ds if (p.get("nhom") or "") == n) for n in nhom}
+        return jsonify({"phien": ds, "nhom": nhom, "nhom_dem": dem})
+
+    @app.route("/phien/api/nhom/tao", methods=["POST"])
+    def phien_api_nhom_tao():
+        ok, msg, ten = nhom_tao((request.get_json(silent=True) or {}).get("ten", ""))
+        return jsonify({"ok": ok, "loi": "" if ok else msg, "msg": msg, "ten": ten})
+
+    @app.route("/phien/api/nhom/doi-ten", methods=["POST"])
+    def phien_api_nhom_doi_ten():
+        j = request.get_json(silent=True) or {}
+        ok, msg = nhom_doi_ten(j.get("cu", ""), j.get("moi", ""))
+        return jsonify({"ok": ok, "loi": "" if ok else msg, "msg": msg})
+
+    @app.route("/phien/api/nhom/xoa", methods=["POST"])
+    def phien_api_nhom_xoa():
+        ok, msg, dem = nhom_xoa((request.get_json(silent=True) or {}).get("ten", ""))
+        return jsonify({"ok": ok, "loi": "" if ok else msg, "msg": msg, "so_phien": dem})
 
     @app.route("/phien/api/luu", methods=["POST"])
     def phien_api_luu():
