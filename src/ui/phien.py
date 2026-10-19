@@ -268,9 +268,10 @@ TRANG = r"""
 .ph-tab:hover{color:var(--chu);}
 .ph-tab.on{background:var(--the-noi);border-color:var(--vien);color:var(--chu);font-weight:600;}
 .ph-tab .x{border:none;background:none;color:var(--chu-mo);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;min-height:0;min-width:0;}
-.ph-cong{display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden;padding:8px 10px;border-bottom:1px solid var(--vien);align-items:center;}
-.ph-cong button{padding:6px 12px;font-size:13px;min-height:36px;}
-.ph-cong button svg.i{width:17px;height:17px;}
+.ph-cong{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--vien);align-items:center;}
+.ph-cong button{padding:6px 9px;font-size:13px;min-height:36px;white-space:nowrap;gap:6px;}
+.ph-cong button svg.i,.ph-cong button svg.ph{width:17px;height:17px;}
+#nut-mau.on{background:var(--nhan-mo);color:var(--nhan);border-color:var(--nhan);}
 #nut-tv.on{background:var(--nhan-mo);color:var(--nhan);border-color:var(--nhan);}
 .ph-giua{flex:1;display:flex;min-height:0;}
 .ph-than{flex:1;position:relative;background:var(--pre-nen);min-width:0;}
@@ -349,6 +350,7 @@ TRANG = r"""
     <div class="ph-tabs" id="tabs"></div>
     <div class="ph-cong" id="congcu" hidden>
       <button type="button" id="nut-tv" data-lam="tv" title="Mở thư viện lệnh làm sẵn, chọn rồi gửi vào phiên này">[[i:book]] Thư viện lệnh</button>
+      <button type="button" id="nut-mau" data-lam="mau" class="gray" title="Tô màu chữ trên màn hình: dòng lỗi (đỏ), cảnh báo (vàng), trạng thái tốt (xanh), địa chỉ IP, MAC, tên cổng">[[p:paint-brush]] Tô màu</button>
       <button type="button" data-lam="mk" class="gray" title="Gõ mật khẩu giúp khi thiết bị hỏi">[[i:key]] Gõ mật khẩu</button>
       <button type="button" data-lam="log" class="gray" title="Tải toàn bộ nội dung màn hình về máy">[[i:save]] Lưu log</button>
       <button type="button" data-lam="full" class="gray">[[i:search]] Toàn màn hình</button>
@@ -532,7 +534,85 @@ JS = r"""
     }
     try{ navigator.clipboard.writeText(t).catch(du); }catch(e){ du(); }
   }
+  /* TO MAU CHU TRONG TERMINAL (19/10/2026, anh Thoai: "to mau dong loi, IP... nhu MobaXterm").
+     Lam o PHIA TRINH DUYET bang "decoration" cua xterm.js (to mau len o chu co san, khong sua du lieu
+     di qua): khong lam tre viec go phim, khong chen ma mau vao luong du lieu nen khong hong man hinh
+     cua vim/less/htop. Chi to o chu dang mau mac dinh (thiet bi da tu to mau thi giu nguyen mau cua no). */
+  var MAU_BAT = true; try{ MAU_BAT = localStorage.getItem('phien-mau') !== '0'; }catch(e){}
+  var LUAT_MAU = [
+    [/% (?:Invalid input|Incomplete command|Ambiguous command|Unknown command)|\b(?:errors?|err-disabled|failed|failure|fail|fatal|critical|denied|refused|invalid|unreachable|timed out|timeout|down|not found|no route|disconnected|rejected|violation|panic|exception|traceback)\b/gi, '#ff6b6b'],
+    [/\b(?:warn(?:ing)?s?|notice|administratively down|deprecated|flapping|collisions?|duplex mismatch)\b/gi, '#ffd166'],
+    [/\b(?:up|connected|established|success(?:ful(?:ly)?)?|forwarding|reachable|authenticated)\b/gi, '#7ddc7d'],
+    [/\b(?:[0-9a-f]{4}\.){2}[0-9a-f]{4}\b|\b(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b/gi, '#d99bff'],
+    [/\b(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?\b|\b(?:[0-9a-f]{1,4}:){3,7}[0-9a-f]{0,4}\b/gi, '#68d5d5'],
+    [/\b(?:(?:Ten|Hundred|Forty|Twenty|)Gigabit[A-Za-z]*|FastEthernet|Ethernet|Serial|Loopback|Port-channel|Vlan|Tunnel|mgmt|Gi|Fa|Te|Eth|Po|Vl|Lo|Tw|Hu)\d+(?:\/\d+){0,3}(?:\.\d+)?\b/g, '#6cb6ff'],
+    [/\b\d{1,2}:\d{2}:\d{2}(?:\.\d+)?\b/g, '#8a94a6']
+  ];
+  function ganMau(f){
+    var w; try{ w = f.contentWindow; }catch(e){ return; }
+    if (!w || w.__csMau) return;
+    var lan = 0, doi = setInterval(function(){
+      if (w.term && w.term.registerDecoration){ clearInterval(doi); khoiMau(w); }
+      else if (++lan > 60) clearInterval(doi);
+    }, 250);
+  }
+  function khoiMau(w){
+    var T = w.term, muc = [], cho = null, st = {dem:0};
+    w.__csMau = st;
+    function xoaHet(){ muc.forEach(function(m){ m.ds.forEach(function(x){ try{ x.dispose(); }catch(e){} }); try{ m.mk.dispose(); }catch(e){} }); muc = []; }
+    function chiaDong(dong, cols){      /* chuoi + bang anh xa vi tri ky tu -> cot; bo qua o co mau san */
+      var s = '', cot = [], co = [], cell = null;
+      for (var x = 0; x < cols; x++){
+        cell = dong.getCell(x, cell); if (!cell) break;
+        var rong = cell.getWidth(); if (rong === 0) continue;
+        var ch = cell.getChars() || ' ';
+        for (var k = 0; k < ch.length; k++){ cot.push(x); co.push(cell.getFgColorMode() !== 0); }
+        s += ch;
+      }
+      return {s:s, cot:cot, co:co};
+    }
+    function ve(){
+      cho = null;
+      if (!MAU_BAT){ xoaHet(); return; }
+      var b = T.buffer.active, cols = T.cols;
+      var theoDong = {};
+      muc = muc.filter(function(m){ if (m.mk.isDisposed){ return false; } theoDong[m.mk.line] = m; return true; });
+      for (var r = 0; r < T.rows; r++){
+        var abs = b.viewportY + r, dong = b.getLine(abs); if (!dong) continue;
+        var ct = chiaDong(dong, cols), cu = theoDong[abs];
+        if (cu && cu.sig === ct.s) continue;                       /* dong khong doi: giu nguyen */
+        if (cu){ cu.ds.forEach(function(x){ try{ x.dispose(); }catch(e){} }); try{ cu.mk.dispose(); }catch(e){}
+                 muc.splice(muc.indexOf(cu), 1); }
+        if (!ct.s.trim()) continue;
+        var mk = T.registerMarker(abs - (b.baseY + b.cursorY)); if (!mk) continue;
+        var ds = [], da = {};
+        LUAT_MAU.forEach(function(lt){
+          lt[0].lastIndex = 0; var m;
+          while ((m = lt[0].exec(ct.s))){
+            if (!m[0]) { lt[0].lastIndex++; continue; }
+            var a = m.index, z = m.index + m[0].length, tr = false;
+            for (var i = a; i < z; i++){ if (da[i] || ct.co[i]) { tr = true; break; } }   /* trung luat truoc / da co mau */
+            if (tr) continue;
+            for (var i2 = a; i2 < z; i2++) da[i2] = 1;
+            var x0 = ct.cot[a], x1 = ct.cot[z - 1] + 1;
+            try{ var d = T.registerDecoration({marker:mk, x:x0, width:x1 - x0, foregroundColor:lt[1]}); if (d){ ds.push(d); st.dem++; } }catch(e){}
+          }
+        });
+        muc.push({mk:mk, sig:ct.s, ds:ds});
+      }
+    }
+    function hen(){ if (!cho) cho = setTimeout(ve, 90); }
+    st.ve = hen;
+    T.onWriteParsed(hen); T.onScroll(hen); T.onResize(hen);
+    hen();
+  }
+  function datMau(bat){
+    MAU_BAT = !!bat; try{ localStorage.setItem('phien-mau', bat ? '1' : '0'); }catch(e){}
+    var n = $('nut-mau'); if (n) n.classList.toggle('on', MAU_BAT);
+    document.querySelectorAll('#than iframe').forEach(function(f){ try{ if (f.contentWindow.__csMau) f.contentWindow.__csMau.ve(); }catch(e){} });
+  }
   function ganChuot(f){
+    ganMau(f);
     var d, w; try{ d = f.contentDocument; w = f.contentWindow; }catch(e){ return; }
     if (!d || d.__csChuot) return; d.__csChuot = true;
     /* HINH CAI KEO tren Edge (anh Thoai 19/10/2026): xterm.js, khi co vung chon, dat NOI DUNG DA CHON vao o
@@ -662,7 +742,8 @@ JS = r"""
     } else if (lam==='full'){ var f = document.querySelector('#than iframe.on'); if (f && f.requestFullscreen) f.requestFullscreen();
     } else if (lam==='ngat'){ if (!confirm('Ngắt hẳn phiên này? (Kết nối tới thiết bị sẽ đóng)')) return;
       api(u+'ngat', {}).then(function(){ dongTab(DANG); });
-    } else if (lam==='tv'){ moTv(!TV_MO); }
+    } else if (lam==='tv'){ moTv(!TV_MO);
+    } else if (lam==='mau'){ datMau(!MAU_BAT); }
   });
   // ---- NGAN THU VIEN LENH: chon lenh lam san -> dien cho trong -> gui vao phien dang mo
   var TV_MO = false, TV_LOC = '', TV_THE = '', TV_CHON = -1, TV_MAU = '';
@@ -731,6 +812,7 @@ JS = r"""
   };
   $('bd-local').onclick = function(){ var p = DS.filter(function(x){return x.ma==='local';})[0]; if (p) moTab(p, false); };
   $('bd-ssh').onclick = function(){ moForm(null); };
+  datMau(MAU_BAT);
   // ---- khoi dong
   taiDs().then(function(){
     var cu = {}; try{ cu = JSON.parse(localStorage.getItem('phien-tab')||'{}'); }catch(e){}
@@ -766,6 +848,8 @@ body.cd-cu .ph-khung{height:calc(100vh - 168px);}
 def _icon_hoa(html):
     """Thay [[i:ten]] / [[i:ten:lop]] trong TRANG bang icon SVG cua khung chung."""
     from .layout import svg_icon
+    from .ph_icons import ph_icon
+    html = re.sub(r"\[\[p:([a-z-]+)\]\]", lambda m: ph_icon(m.group(1)), html)
     return re.sub(r"\[\[i:([a-z]+)(?::([a-z]+))?\]\]",
                   lambda m: svg_icon(m.group(1), m.group(2) or "i"), html)
 
