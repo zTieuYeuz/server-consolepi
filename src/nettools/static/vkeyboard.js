@@ -316,6 +316,43 @@
     }
   }
 
+  /* BAN PHIM CHE KHUNG TERMINAL (anh Thoai 21/10/2026: "no che khuat man hinh phia duoi, khong keo len duoc,
+     khong thay minh go gi"): ban phim ao la lop noi (fixed) o day man hinh, khung terminal lai cao gan het man
+     hinh nen dong dang go nam ngay duoi ban phim. Khi ban phim mo tren trang terminal: thu nho khung terminal
+     (iframe, hoac .ph-khung cua trang Phien ket noi) de day khung nam tron tren ban phim, dua khung len dau
+     man hinh; dong ban phim thi tra lai kich thuoc cu. ttyd tu co lai chu khi khung doi kich thuoc. */
+  var fitEl = null, fitDa = null;
+  function fitTarget() {
+    var k = document.querySelector(".ph-khung");
+    if (k && k.offsetParent !== null) return k;
+    var fr = document.querySelectorAll("iframe");
+    for (var i = 0; i < fr.length; i++)
+      if (fr[i].offsetParent !== null && fr[i].offsetWidth > 300 && fr[i].offsetHeight > 120) return fr[i];
+    return null;
+  }
+  function fitTra() {
+    if (fitEl && fitDa) {
+      fitEl.style.height = fitDa[0]; fitEl.style.minHeight = fitDa[1];
+    }
+    fitEl = null; fitDa = null;
+    document.body.style.paddingBottom = "";
+  }
+  function fit() {
+    if (!tmuxSession || !visible) { fitTra(); return; }
+    var el = (fitEl && document.contains(fitEl)) ? fitEl : fitTarget();
+    if (!el) return;
+    if (el !== fitEl) { fitTra(); fitEl = el; fitDa = [el.style.height, el.style.minHeight]; }
+    var h = kb.offsetHeight;
+    document.body.style.paddingBottom = h + "px";
+    var ban = Math.max(140, window.innerHeight - h - 66);
+    el.style.setProperty("height", ban + "px", "important");
+    el.style.setProperty("min-height", "0", "important");
+    var y = el.getBoundingClientRect().top + (window.pageYOffset || 0) - 62;
+    window.scrollTo(0, Math.max(0, y));
+  }
+  if (window.ResizeObserver) new ResizeObserver(function () { if (visible) fit(); }).observe(kb);
+  window.addEventListener("resize", function () { if (visible) fit(); });
+
   function show(el) {
     if (!enabled) return;
     target = el;
@@ -323,6 +360,7 @@
     render();
     kb.classList.add("on");
     visible = true;
+    fit();
     if (el) {
       setTimeout(function () {
         var r = el.getBoundingClientRect();
@@ -337,6 +375,7 @@
     kb.classList.remove("on");
     visible = false;
     target = null;
+    fitTra();
   }
 
   function isTypable(el) {
@@ -368,6 +407,16 @@
     if (tmuxSession) { if (enabled) show(null); }
     else if (!isTypable(document.activeElement)) hide();
   }
+
+  /* Cham vao khung terminal (iframe) thi cua so cha mat tieu diem: hien ban phim ngay, khong phai bat/tat nut.
+     (Su kien focusin khong di xuyen qua iframe nen khong the bat bang focusin.) Dong ban phim bang nut Dong
+     roi cham lai terminal thi ban phim hien lai. */
+  window.addEventListener("blur", function () {
+    setTimeout(function () {
+      var a = document.activeElement;
+      if (tmuxSession && enabled && !visible && a && a.tagName === "IFRAME") show(null);
+    }, 0);
+  });
 
   function init() {
     killBlank(document);

@@ -14,7 +14,7 @@ Trang **Lịch sử** ghi sẵn tên máy ngay lúc máy chọn kịch bản. Đ
 
 - **Bước 1 (chọn driver) gọn hơn:** mỗi gói một dòng, 10 gói mỗi trang (có ô tìm), tiêu đề hiện **Đã chọn n / tổng gói**.
 - **Mật khẩu Administrator** ở bước 2 chỉ còn bắt buộc khi kịch bản chưa đặt mật khẩu (trước đây ô luôn bắt buộc, kể cả khi đã đặt).
-- **Bàn phím ảo trên màn hình cảm ứng không hiện ở Console, SSH, Terminal và Phiên kết nối** (dù đã bật): thuộc tính báo cho bàn phím biết đây là trang terminal bị ghi nhầm vào chú thích CSS thay vì thẻ `<body>` thật, và trang Phiên kết nối đặt thuộc tính này bằng JS sau khi tải nhưng bàn phím chỉ đọc một lần. Đã sửa cả hai (`layout.gan_phien_tmux`, `vkeyboard.js` theo dõi thuộc tính); bộ kiểm tra `test_banphim_ao.py` 7 kiểm tra.
+- **Bàn phím ảo trên màn hình cảm ứng (Console, SSH, Terminal, Phiên kết nối):** (1) *không tự hiện* dù đã bật: thuộc tính báo cho bàn phím biết đây là trang terminal bị ghi nhầm vào chú thích CSS thay vì thẻ `<body>` thật, và trang Phiên kết nối đặt thuộc tính này bằng JS sau khi tải nhưng bàn phím chỉ đọc một lần; (2) **chạm vào khung terminal là bàn phím hiện** (trước phải bấm nút bật/tắt), bấm *Đóng* rồi chạm lại thì hiện lại; (3) bàn phím **không còn che dòng đang gõ**: khung terminal tự thu nhỏ để nằm trọn phía trên bàn phím và trang tự cuộn lên, đóng bàn phím thì khung trở về kích thước cũ. Sửa ở `layout.gan_phien_tmux`, `vkeyboard.js`; bộ kiểm tra `test_banphim_ao.py` 21 kiểm tra (cả Chế độ PC và Chế độ cảm ứng).
 
 ## 1.9.3 - 19/10/2026
 
