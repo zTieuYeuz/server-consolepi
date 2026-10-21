@@ -1097,6 +1097,20 @@ def _ds_tim_nhanh():
     return _json.dumps(ds, ensure_ascii=False).replace("</", "<\\/")
 
 
+def gan_phien_tmux(html, session):
+    """Bao ban phim ao (vkeyboard.js) go phim vao phien tmux nao: them data-tmux-session vao the <body ...>.
+    LOI DA GAP (21/10/2026, anh Thoai: bam vao Console/SSH tren man hinh cam ung khong thay ban phim ao du da bat):
+    truoc day cac trang dung html.replace("<body>", ...) - tu khi giao dien moi co chu thich CSS chua chu "<body>"
+    (khop dau tien) va the that mang class cd-*/nen-*, thuoc tinh KHONG bao gio vao the that, vkeyboard.js khong biet
+    day la trang terminal."""
+    ra, n = _re.subn(r'<body(?=\s+class="cd-)', f'<body data-tmux-session="{session}"', html, count=1)
+    if n:
+        return ra
+    # Khong tim thay the <body class="cd-..."> that: KHONG dung "<body>" dau tien (co the nam trong chu thich CSS)
+    # ma tim the <body> dung ngay truoc noi dung, o cuoi phan <head>.
+    return _re.sub(r"(</head>\s*)<body>", lambda m: m.group(1) + f'<body data-tmux-session="{session}">', html, count=1)
+
+
 def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css="", an_tieu_de=False):
     """
     Dung 1 trang hoan chinh voi khung chung.

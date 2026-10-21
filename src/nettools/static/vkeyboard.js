@@ -358,10 +358,23 @@
     }, 150);
   });
 
+  /* Trang "Phien ket noi" (phien.py) dat/doi data-tmux-session bang JS SAU khi trang da tai (moi lan mo hoac
+     chuyen tab phien) - doc mot lan luc khoi dong thi ban phim ao khong bao gio hien (anh Thoai bao 21/10/2026).
+     Nen theo doi thuoc tinh nay va cap nhat bat cu luc nao no doi. */
+  function syncTmux() {
+    var s = document.body.getAttribute("data-tmux-session") || null;
+    if (s === tmuxSession) return;
+    tmuxSession = s;
+    if (tmuxSession) { if (enabled) show(null); }
+    else if (!isTypable(document.activeElement)) hide();
+  }
+
   function init() {
     killBlank(document);
     tmuxSession = document.body.getAttribute("data-tmux-session") || null;
     if (tmuxSession && enabled) show(null);   // trang terminal: hien san
+    if (window.MutationObserver)
+      new MutationObserver(syncTmux).observe(document.body, { attributes: true, attributeFilter: ["data-tmux-session"] });
   }
 
   if (document.readyState === "loading") {

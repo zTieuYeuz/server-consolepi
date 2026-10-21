@@ -267,13 +267,32 @@ def xuat_csv(ds):
 
 
 # ------------------------------------------------------------- noi dung cho WinPE
-def sinh_cs_may_cmd(ma, cac_driver):
+def sinh_cs_may_cmd(ma, cac_driver, ten_may=None):
     """File chen vao WinPE qua wimboot (X:\\Windows\\System32\\cs-may.cmd) - deploy.cmd
-    `call` no. Chi chua ma ban ghi + ten thu muc driver (da loc ky tu an toan)."""
+    `call` no. Chi chua ma ban ghi + ten thu muc driver (da loc ky tu an toan) + (1.9.4) ten may
+    da tinh san cho che do serial/CSV/ngau nhien (chi nhan [A-Za-z0-9-], toi da 15 ky tu)."""
     an_toan = [d for d in (cac_driver or []) if re.fullmatch(r"[A-Za-z0-9._-]{1,120}", d)]
-    return ("@echo off\r\n"
-            f"set CS_LS={ma}\r\n"
-            f"set CS_DRV={' '.join(an_toan)}\r\n")
+    ra = ("@echo off\r\n"
+          f"set CS_LS={ma}\r\n"
+          f"set CS_DRV={' '.join(an_toan)}\r\n")
+    if ten_may and re.fullmatch(r"[A-Za-z0-9-]{1,15}", ten_may):
+        ra += f"set CS_TENMAY={ten_may}\r\n"
+    return ra
+
+
+def dat_ten(ma, ten_may):
+    """Ghi ten may da tinh san vao dong lich su (hien ngay o trang Lich su, truoc khi Windows bao ve)."""
+    if not _RE_MA.match(ma or "") or not ten_may:
+        return False
+
+    def ham(bg):
+        bg["ten_may"] = str(ten_may)[:64]
+    return _sua(ma, ham)
+
+
+def ten_dang_dung():
+    """Cac ten may da co trong lich su (de ten ngau nhien khong trung may khac)."""
+    return [str(b.get("ten_may") or "") for b in _doc() if b.get("ten_may")]
 
 
 # ---------------------------------------------------------------- giao dien

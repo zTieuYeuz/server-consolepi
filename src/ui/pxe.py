@@ -936,6 +936,12 @@ def register_pxe(app):
         if kb is None:
             abort(404)
         h, mo, p, se = (_ls.giai_hex(x) for x in (hang, model, pb, serial))
+        # 1.9.4: ten may dong (serial / CSV / ngau nhien) - tinh san ngay day tu serial + MAC cua may nay.
+        from . import datten as _dt
+        kich_ban = next((k for k in _m.kichban_windows() if _m.ten_thu_muc(k["_file"]) == thu_muc), None)
+        ten_may = None
+        if kich_ban is not None and _dt.la_dong(kich_ban):
+            ten_may, _gc = _dt.tinh_ten(kich_ban, se, mac[1:], _ls.ten_dang_dung())
         drv = _d.driver_hop_model(h, mo, p)
         khoa = (_ls.chuan_mac(mac[1:]), thu_muc)
         cu = _ls_gan_day.get(khoa)
@@ -946,7 +952,9 @@ def register_pxe(app):
             _ls_gan_day[khoa] = (time.time(), ma)
             for k in [k for k, v in _ls_gan_day.items() if time.time() - v[0] > 600]:
                 _ls_gan_day.pop(k, None)
-        return Response(_ls.sinh_cs_may_cmd(ma, drv), mimetype="text/plain")
+        if ten_may:
+            _ls.dat_ten(ma, ten_may)
+        return Response(_ls.sinh_cs_may_cmd(ma, drv, ten_may), mimetype="text/plain")
 
     @app.route("/deployos/pxeboot/os/<os_id>/boot.wim")
     def deployos_pxeboot_bootwim(os_id):

@@ -28,7 +28,7 @@ import time
 
 from flask import request
 
-from .layout import render_page
+from .layout import render_page, gan_phien_tmux
 from .commands import load_library, dan_thong_minh
 from .soanlenh import khoi_soan_lenh, khoi_copy_terminal
 from .terminal import SSH_SESSION, tmux_session_exists, service_active
@@ -241,7 +241,7 @@ def _render(msg="", ok=True, prefill=""):
     {SSH_JS}"""
 
     html = render_page(body, active="/ssh", title="SSH", subtitle="")
-    return html.replace("<body>", f'<body data-tmux-session="{SSH_SESSION}">', 1)
+    return gan_phien_tmux(html, SSH_SESSION)
 
 
 def register_ssh(app):

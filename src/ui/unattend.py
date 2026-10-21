@@ -34,6 +34,7 @@ import subprocess
 import xml.sax.saxutils as _x
 
 from . import deployos as _d
+from . import datten as _tm
 
 
 
@@ -546,7 +547,14 @@ def _muc_kiem_tra(d):
         muc.append(dict(nhom=nhom, nhan=nhan, **kw))
 
     # --- Danh tinh may
-    them("May", "Tên máy", loai="ps", ma=f"""
+    if _tm.la_dong(d):
+        # Ten may dong (serial/CSV/ngau nhien/hoi): khong biet truoc ten -> chi can khong phai ten Windows tu dat.
+        them("May", "Tên máy", loai="ps", ma="""
+        $t = (Get-CimInstance Win32_ComputerSystem).Name
+        @{ Dat = ($t -notmatch '^(DESKTOP|WIN)-'); ChiTiet = $t }
+    """)
+    else:
+        them("May", "Tên máy", loai="ps", ma=f"""
         $t = (Get-CimInstance Win32_ComputerSystem).Name
         @{{ Dat = ($t -eq {_ps_chuoi((d.get('ten_may') or '')[:15])}); ChiTiet = $t }}
     """)
@@ -2025,6 +2033,79 @@ def _lenh_bao_lich_su(dia_chi_pi, dong_dau, nhan):
     ]
 
 
+def _lenh_dat_ten(d):
+    r"""
+    Dong deploy.cmd xac dinh CS_TENMAY (chi khi ten may DONG - xem ui/datten.py):
+      - serial / csv / ngau_nhien: server da ghi `set CS_TENMAY=...` vao cs-may.cmd (call o tren).
+        Khong co (iPXE tai cs-may.cmd loi) -> du phong PC-<so ngau nhien cua cmd>, KHONG bao gio de trong.
+      - hoi: hien cua so cmd hoi ten, kiem tra bang `for /f delims=` (WinPE khong co findstr/powershell),
+        sai thi hoi lai; go xong bam Enter moi chay tiep toan bo qua trinh.
+    Co dinh -> khong them dong nao (hanh vi cu giu nguyen).
+    """
+    c = _tm.che_do_cua(d)
+    if c == "co_dinh":
+        return []
+    if c != "hoi":
+        tt = _tm.tien_to_sach(d.get("ten_may_tiento_ngau" if c == "ngau_nhien" else "ten_may_tiento")) or "PC"
+        return [
+            "rem === Ten may dong (" + c + "): server ghi CS_TENMAY vao cs-may.cmd; thieu thi du phong ===",
+            f"if not defined CS_TENMAY set CS_TENMAY={tt}-%RANDOM%",
+            "echo === ten may: %CS_TENMAY% === >> %LOG%",
+            "echo  Ten may se la: %CS_TENMAY%",
+            "echo.",
+            "",
+        ]
+    chu = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    return [
+        "rem === Ten may: hoi nguoi dung (che do 'hoi') ===",
+        ":nhap_ten",
+        "set CS_TENMAY=",
+        "set CS_BAD=",
+        "set CS_CO_CHU=",
+        "echo.",
+        "echo  NHAP TEN MAY roi bam Enter (chu khong dau, so, dau -, toi da 15 ky tu).",
+        "echo  Bam Enter xong, may se TU CAI TOAN BO - khong can bam gi them.",
+        "echo.",
+        "set /p CS_TENMAY=  Ten may: ",
+        "if not defined CS_TENMAY goto ten_sai",
+        'if not "%CS_TENMAY:~15,1%"=="" set CS_BAD=dai',
+        'if "%CS_TENMAY:~0,1%"=="-" set CS_BAD=gach',
+        'if "%CS_TENMAY:~-1%"=="-" set CS_BAD=gach',
+        # eol mac dinh cua `for /f` la ";" (dong bat dau bang ";" bi bo qua -> "ab;c" lot qua kiem tra): quet 2 lan, eol khac nhau.
+        f'for /f "eol=; delims={chu}0123456789-" %%a in ("%CS_TENMAY%") do set CS_BAD=kytu',
+        f'for /f "eol=, delims={chu}0123456789-" %%a in ("%CS_TENMAY%") do set CS_BAD=kytu',
+        f'for /f "delims=0123456789" %%a in ("%CS_TENMAY%") do set CS_CO_CHU=1',
+        "if not defined CS_CO_CHU set CS_BAD=toanso",
+        "if defined CS_BAD goto ten_sai",
+        "goto ten_xong",
+        ":ten_sai",
+        "echo.",
+        "echo  Ten may khong hop le. Chi dung chu KHONG DAU, so, dau gach ngang; toi da 15 ky tu; khong chi toan so.",
+        "goto nhap_ten",
+        ":ten_xong",
+        "echo === ten may (nguoi dung nhap): %CS_TENMAY% === >> %LOG%",
+        "echo.",
+        "echo  OK, ten may: %CS_TENMAY%. Bat dau cai dat...",
+        "echo.",
+        "",
+    ]
+
+
+def _lenh_chep_unattend(d):
+    r"""Chep unattend vao Panther. Ten may dong: ghep nua-truoc + ten + nua-sau (copy /b, khong can powershell)."""
+    if not _tm.la_dong(d):
+        return ["copy /y %NHUNG%\\%CSUNA% W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1"]
+    return [
+        "set CSPA=una-a.xml",
+        "set CSPB=una-b.xml",
+        'if "%CSUNA%"=="unattend-cu.xml" set CSPA=una-cu-a.xml',
+        'if "%CSUNA%"=="unattend-cu.xml" set CSPB=una-cu-b.xml',
+        '<nul set /p "=%CS_TENMAY%">X:\\csten.txt',
+        "echo Ten may %CS_TENMAY% - ghep %CSPA% + ten + %CSPB% >> %LOG%",
+        "copy /b /y %NHUNG%\\%CSPA%+X:\\csten.txt+%NHUNG%\\%CSPB% W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
+    ]
+
+
 def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
     r"""
     Sinh script trien khai chay NGAY TRONG WinPE - mo phong dung cach
@@ -2092,6 +2173,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "echo  ================================================",
         "echo.",
         "",
+    ] + _lenh_dat_ten(d) + [
         # ================================================================
         # KHOI TAO MANG - phan mong manh nhat, da phai sua nhieu vong.
         #
@@ -2303,7 +2385,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "echo  [5/6] Chep cau hinh tu dong - ten may, tai khoan, mui gio...",
         "if not exist W:\\Windows\\Panther mkdir W:\\Windows\\Panther",
     ] + _lenh_chon_unattend() + [
-        "copy /y %NHUNG%\\%CSUNA% W:\\Windows\\Panther\\unattend.xml >> %LOG% 2>&1",
+    ] + _lenh_chep_unattend(d) + [
         "if errorlevel 1 goto loi_chep",
         "",
         # Chep phan mem + script sang THANG o dia may dich NGAY BAY GIO,
@@ -3384,7 +3466,7 @@ def _khoi_firstlogon(d, kieu_cu=False):
       </FirstLogonCommands>"""
 
 
-def sinh_unattend_offline_xml(d, kieu_cu=False):
+def sinh_unattend_offline_xml(d, kieu_cu=False, ten_override=None):
     """
     Sinh unattend.xml dat vao W:\\Windows\\Panther sau khi dism apply -
     CHI con pass specialize + oobeSystem (dat ten may, mui gio, tai
@@ -3396,6 +3478,9 @@ def sinh_unattend_offline_xml(d, kieu_cu=False):
     cau hinh no luc boot lan dau.
     """
     ten_may = (d.get("ten_may") or "PC-CONSOLEPI")[:15]
+    if ten_override:
+        # 1.9.4: ten may dong (serial/CSV/ngau nhien/hoi) - deploy.cmd ghep ten that vao giua 2 nua file.
+        ten_may = ten_override
     # Khong tao user rieng: chi dung Administrator co san (anh Thoai 04/10/2026).
     # Mat khau o mk_admin (bat buoc, xem thieu_gi); AutoLogon vao Administrator.
     username = "Administrator"
@@ -3789,6 +3874,7 @@ def dung_iso_tu_dong(d, dia_chi_pi="192.168.98.1"):
 # Lab: may BIOS chay het chuoi, net use vao Samba thanh cong.
 TEN_DIA_GPT_TU_DONG = "windows-autounattend.img"   # anh cu - chi con de don rac
 THU_MUC_NHUNG = "X:\\Windows\\System32"
+DAU_TEN_MAY = "@@CSTEN@@"      # cho dat ten may trong unattend (xem sinh_file_nhung)
 TEN_WIM_DRIVER = "drivers.wim"
 # TEN FILE KHI CHEN QUA wimboot. wimboot KHONG chen file duoi ".wim" vao
 # System32 (coi la anh boot) - lab 26/09/2026 may VMXNET3: drivers.wim da
@@ -3823,6 +3909,12 @@ def sinh_file_nhung(d, dia_chi_pi):
         "bao-cao.ps1": sinh_script_bao_cao(d),
         "tien-trinh.ps1": sinh_script_tien_trinh(d, dia_chi_pi),
     }
+    if _tm.la_dong(d):
+        # Ten may dong (1.9.4): WinPE khong co powershell/sed -> deploy.cmd ghep
+        # nua-truoc + ten + nua-sau bang `copy /b`. Chi sinh khi can (che do co dinh giu nguyen nhu cu).
+        for tenf, cu in ((("una-a.xml", "una-b.xml"), False), (("una-cu-a.xml", "una-cu-b.xml"), True)):
+            truoc, sau = sinh_unattend_offline_xml(d, kieu_cu=cu, ten_override=DAU_TEN_MAY).split(DAU_TEN_MAY, 1)
+            ra[tenf[0]], ra[tenf[1]] = truoc, sau
     if _ds_go_app(d):
         ra[TEN_PS_GO_APP] = sinh_ps_go_app(d)
     if _bo_font_cai_duoc(d)[0]:

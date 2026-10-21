@@ -14,7 +14,7 @@ import subprocess
 
 from flask import request
 
-from .layout import render_page, get_status_chips
+from .layout import render_page, get_status_chips, gan_phien_tmux
 from . import health
 
 BASE_TTYD_PORT = 8001
@@ -917,6 +917,6 @@ def register_home(app):
         html = render_page(body, active="/", title=f"Console: {label}",
                            subtitle="Cổng serial đang mở trong dashboard")
         # Bao cho ban phim ao biet go vao phien tmux nao (xem vkeyboard.js)
-        return html.replace("<body>", f'<body data-tmux-session="console-{devname}">', 1)
+        return gan_phien_tmux(html, f"console-{devname}")
 
     return app

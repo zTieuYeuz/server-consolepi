@@ -25,7 +25,7 @@ import subprocess
 from flask import request
 
 
-from .layout import render_page
+from .layout import render_page, gan_phien_tmux
 
 CONFIG_FILE = "/opt/console-pi/config.json"
 
@@ -180,7 +180,7 @@ def register_terminal(app):
         html = render_page(body, active="/terminal", title="Terminal",
                            subtitle="Dòng lệnh trực tiếp trên Pi (phiên tmux giữ nguyên khi đóng trình duyệt)")
         # Bao cho ban phim ao biet go phim vao phien tmux nao
-        return html.replace("<body>", f'<body data-tmux-session="{LOCAL_SESSION}">', 1)
+        return gan_phien_tmux(html, LOCAL_SESSION)
 
     @app.route("/terminal/paste", methods=["POST"])
     def terminal_paste():
@@ -208,7 +208,7 @@ def register_terminal(app):
                               "console-pi-term-local.service", warn)
         html = render_page(f'<div class="msg {"ok" if ok else "err"}">{msg}</div>' + body,
                            active="/terminal", title="Terminal", subtitle="")
-        return html.replace("<body>", f'<body data-tmux-session="{LOCAL_SESSION}">', 1)
+        return gan_phien_tmux(html, LOCAL_SESSION)
 
     @app.route("/api/send-keys", methods=["POST"])
     def api_send_keys():

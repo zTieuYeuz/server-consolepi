@@ -58,6 +58,7 @@ import unicodedata
 # du lieu tung nam chung voi ma nguon nen `uninstall.sh` xoa sach ca bo cai
 # Office 3.6GB lan toan bo kich ban).
 from .duongdan import DEPLOY_DIR
+from . import datten as _dt
 
 
 def _unattend():
@@ -1640,6 +1641,9 @@ def _cauhinh_mac_dinh(che_do):
         "kieu_boot": "truc_tiep",
         "os_ho": "", "os_id": "", "driver_ids": [],
         "ten_may": "", "username": "", "password": "",
+        # 1.9.4: cach dat ten may (xem ui/datten.py) - mac dinh "co_dinh" = hanh vi cu.
+        "ten_may_che_do": "co_dinh", "ten_may_tiento": "", "ten_may_tiento_ngau": "",
+        "ten_may_csv": {}, "ten_may_csv_ten": "",
         "ssh": False, "mui_gio": MUI_GIO[0],
         # Tai khoan Administrator co san cua Windows: MAC DINH TAT (dung
         # dung cach Windows lam). Chi bat khi anh Thoai tich chon va dat
@@ -1670,6 +1674,7 @@ def _cauhinh_mac_dinh(che_do):
 # Cac truong cua kich ban da luu duoc nap vao trinh tu khi "Dung".
 _TRUONG_KICHBAN = (
     "kieu_boot", "os_ho", "os_id", "driver_ids", "ten_may",
+    "ten_may_che_do", "ten_may_tiento", "ten_may_tiento_ngau", "ten_may_csv", "ten_may_csv_ten",
     "username", "password", "ssh", "mui_gio", "o_dia_che_do",
     "o_dia_so", "o_dia_bang", "o_dia_chon", "o_dia_gb", "o_dia_dungsai", "o_dia_model", "tu_dong_c_gb", "tu_dong_d", "tu_dong_c_nhan", "tu_dong_d_nhan", "phan_vung", "apps", "ungdung", "fonts",
     "scripts", "lenh_them",
@@ -1703,7 +1708,7 @@ def thieu_gi(d):
     thieu = []
     if not d["os_ho"]:
         thieu.append("chưa chọn OS")
-    if not d["ten_may"]:
+    if not d["ten_may"] and not _dt.la_dong(d):
         thieu.append("chưa có tên máy")
     if d["os_ho"] == "linux":
         if not d["username"]:
@@ -1728,7 +1733,11 @@ def loi_bat_buoc(d):
     if not d.get("os_id"):
         ra.append((2, "chưa chọn hệ điều hành"))
     tm = d.get("ten_may") or ""
-    if not tm:
+    if _dt.che_do_cua(d) == "csv" and not d.get("ten_may_csv"):
+        ra.append((3, "chưa tải danh sách CSV (serial → tên máy)"))
+    if _dt.la_dong(d):
+        pass                                    # ten may dong: tinh luc may chon kich ban (ui/datten.py)
+    elif not tm:
         ra.append((3, "chưa điền tên máy"))
     elif not re.fullmatch(r"[A-Za-z0-9-]{1,15}", tm):
         ra.append((3, "tên máy chỉ dùng chữ không dấu, số, dấu gạch ngang, tối đa 15 ký tự"))
@@ -2763,6 +2772,13 @@ def register_deployos(app):
         _WIZARD[ma] = cauhinh_tu_kichban(kb)
         return ma, kb
 
+    @app.route("/deployos/kichban/mau-csv")
+    def deployos_kichban_mau_csv():
+        """File CSV mau (serial,ten_may) cho cach dat ten may 'doi chieu danh sach' (ui/datten.py)."""
+        from flask import Response
+        return Response(_dt.mau_csv().encode("utf-8"), mimetype="text/csv",
+                        headers={"Content-Disposition": "attachment; filename=danh-sach-may-mau.csv"})
+
     @app.route("/deployos/kichban/sua/<ten>")
     def deployos_sua_kichban(ten):
         """
@@ -2850,6 +2866,32 @@ def register_deployos(app):
 
         elif buoc == 3:
             d["ten_may"] = (form.get("ten_may") or "").strip()
+            # --- 1.9.4: 5 cach dat ten may (ui/datten.py) ---
+            che = form.get("ten_may_che_do") or "co_dinh"
+            d["ten_may_che_do"] = che if che in _dt.CHE_DO else "co_dinh"
+            for truong, nguon in (("ten_may_tiento", "ten_may_tiento"), ("ten_may_tiento_ngau", "ten_may_tiento_ngau")):
+                if nguon in form:
+                    tho = (form.get(nguon) or "").strip()
+                    if tho and (len(tho) > _dt.TIENTO_TOI_DA or not re.fullmatch(r"[A-Za-z0-9-]+", tho)
+                                or tho.startswith("-") or tho.endswith("-")):
+                        return (f"Tiền tố tên máy \"{tho[:20]}\" không hợp lệ: chỉ chữ không dấu, số, dấu gạch "
+                                f"ngang, tối đa {_dt.TIENTO_TOI_DA} ký tự.")
+                    d[truong] = tho
+            d["_ten_may_csv_canhbao"] = []
+            if form.get("ten_may_csv_xoa"):
+                d["ten_may_csv"], d["ten_may_csv_ten"] = {}, ""
+            tep = request.files.get("ten_may_csv_file")
+            if tep is not None and tep.filename:
+                ds_csv, loi_csv, canh_csv = _dt.doc_csv(tep.read(_dt.MAX_BYTE_CSV + 1))
+                if loi_csv or not ds_csv:
+                    return ("File CSV không được nạp vì có lỗi (sửa file rồi chọn lại): "
+                            + (" · ".join(loi_csv[:8]) or "không có dòng hợp lệ nào")
+                            + (f" · ... và {len(loi_csv) - 8} lỗi nữa" if len(loi_csv) > 8 else "")
+                            + ". Tải file mẫu ở khung này để xem đúng định dạng (serial,ten_may).")
+                d["ten_may_csv"], d["ten_may_csv_ten"] = ds_csv, os.path.basename(tep.filename)[:80]
+                d["_ten_may_csv_canhbao"] = canh_csv[:10]
+            if d["ten_may_che_do"] == "csv" and not d.get("ten_may_csv"):
+                return "Chưa chọn file CSV danh sách máy. Bấm \"Tải file CSV mẫu\", điền serial và tên máy, rồi chọn file đó."
             # Linux: tai khoan thuong (username/password). Windows: KHONG tao user,
             # chi dung Administrator co san (anh Thoai 04/10/2026) - mat khau o mk_admin.
             if d.get("os_ho") == "linux":
@@ -2896,13 +2938,13 @@ def register_deployos(app):
                     return ("Phải đặt mật khẩu cho tài khoản Administrator. Đây là "
                             "tài khoản duy nhất để đăng nhập vào máy sau khi cài.")
 
-            if not d["ten_may"]:
+            if not d["ten_may"] and not _dt.la_dong(d):
                 return "Chưa điền tên máy."
             if d.get("os_ho") == "linux" and not d["username"]:
                 return "Chưa điền tên đăng nhập."
             # Ten may: theo quy tac chung cua ca Windows lan Linux (chu, so,
             # dau gach ngang; khong dau cach) - de tranh loi luc cai
-            if not re.fullmatch(r"[A-Za-z0-9-]{1,15}", d["ten_may"]):
+            if (not _dt.la_dong(d) or d["ten_may"]) and not re.fullmatch(r"[A-Za-z0-9-]{1,15}", d["ten_may"]):
                 return ("Tên máy chỉ được dùng chữ không dấu, số và dấu gạch "
                         "ngang, tối đa 15 ký tự (quy tắc chung của cả Windows "
                         "lẫn Linux).")
@@ -3122,20 +3164,33 @@ def register_deployos(app):
                 muc_driver = ""
                 for dr in ds_driver:
                     ch = " checked" if dr["id"] in da_chon_driver else ""
+                    # Thu gon 1 dong/goi (anh Thoai 20/10/2026): ten + so file cung 1 dong.
                     muc_driver += f"""
-                    <label class="chon" style="margin-bottom:8px;">
+                    <label class="chon" style="margin-bottom:6px;padding:9px 14px;">
                       <input type="checkbox" name="driver_ids" value="{_esc(dr['id'])}"{ch}>
                       <span class="t">{_esc(dr['ten_hien_thi'])}</span>
-                      <div class="d">{dr['so_file']} file</div>
+                      <span class="d" style="display:inline;margin-left:8px;">· {dr['so_file']} file</span>
                     </label>"""
                 khoi_driver = f"""
                 <div class="card">
-                  <h3>Driver tiêm kèm (không bắt buộc)</h3>
+                  <h3>Driver tiêm kèm (không bắt buộc)
+                    <span id="dem-driver" style="font-weight:600;font-size:14px;margin-left:8px;color:#8b93a1;"></span></h3>
                   <p style="color:#8b93a1;font-size:13px;margin:0 0 9px;">
                     Chọn 0 hoặc nhiều gói - Windows Setup sẽ tự quét và cài
                     driver phù hợp trong lúc chạy (giống "Out-of-Box
-                    Drivers" của MDT).</p>
-                  {muc_driver}
+                    Drivers" của MDT). Mỗi trang hiện tối đa 10 gói.</p>
+                  <div id="ds-driver" data-pt="10" data-pt-tim="1">{muc_driver}</div>
+                  <script>
+                  (function () {{
+                    var ds = document.getElementById('ds-driver'), dem = document.getElementById('dem-driver');
+                    function cap() {{
+                      var n = ds.querySelectorAll('input[type=checkbox]:checked').length, t = ds.querySelectorAll('input[type=checkbox]').length;
+                      dem.textContent = 'Đã chọn ' + n + ' / ' + t + ' gói';
+                      dem.style.color = n ? '#4CAF50' : '#8b93a1';
+                    }}
+                    ds.addEventListener('change', cap); cap();
+                  }})();
+                  </script>
                 </div>"""
             else:
                 khoi_driver = """
@@ -3219,7 +3274,7 @@ def register_deployos(app):
 
                 <div id="khoi_mk_admin">
                   <label>Tài khoản đăng nhập: <strong>Administrator</strong> (mặc định, luôn mở)</label>
-                  <input type="password" name="mk_admin" value="" required
+                  <input type="password" name="mk_admin" value=""{"" if d.get("mk_admin") else " required"}
                          autocomplete="new-password"
                          placeholder="{nhac_mk_ad}">
                   <p style="color:#f59e0b;font-size:12.5px;margin:7px 0 0;">
@@ -3255,13 +3310,75 @@ def register_deployos(app):
                   không phải mật khẩu của Console Pi. Nếu lưu thành kịch bản,
                   file kịch bản được để quyền chỉ root đọc được (600).
                   {'<br>Đã có mật khẩu - để trống ô này thì giữ nguyên cái cũ.' if d['password'] else ''}</p>"""
-            return f"""
-            <form method="POST" {act}>
-              <div class="card">
-                <h3>Thông tin máy sẽ cài</h3>
+            # 1.9.4: 5 cach dat ten may (Windows) - xem ui/datten.py. Linux giu o ten co dinh.
+            che_tm = _dt.che_do_cua(d)
+            ck_tm = {c: (" checked" if che_tm == c else "") for c in _dt.CHE_DO}
+            canh_bao_csv = "".join(f"<li>{_esc(x)}</li>" for x in (d.get("_ten_may_csv_canhbao") or []))
+            if d.get("ten_may_csv"):
+                tt_csv = (f'<div class="d" style="color:#7bd88f;">Đã nạp <strong>{_esc(d.get("ten_may_csv_ten") or "danh sách")}</strong>: '
+                          f'{len(d["ten_may_csv"])} máy. Chọn file khác để thay thế. '
+                          '<label style="display:inline;"><input type="checkbox" name="ten_may_csv_xoa" value="1"> xóa danh sách</label></div>')
+            else:
+                tt_csv = '<div class="d" style="color:#f59e0b;">Chưa có danh sách. Bấm tải file mẫu, điền serial và tên máy, rồi chọn file đó.</div>'
+            if canh_bao_csv:
+                tt_csv += f'<ul class="d" style="color:#f59e0b;margin:4px 0 0 18px;">{canh_bao_csv}</ul>'
+            if la_linux:
+                khoi_ten_may = f"""
                 <label>Tên máy (hostname)</label>
                 <input type="text" name="ten_may" value="{_esc(d['ten_may'])}"
-                       placeholder="ví dụ: PC-KETOAN-01" autocapitalize="off">
+                       placeholder="ví dụ: PC-KETOAN-01" autocapitalize="off">"""
+            else:
+                _nhan_tm = (("co_dinh", "Tên cố định"), ("serial", "Tiền tố + số serial của máy"),
+                            ("csv", "Đối chiếu danh sách (CSV): serial → tên máy"),
+                            ("ngau_nhien", "Tên máy ngẫu nhiên"), ("hoi", "Hỏi tên máy lúc cài"))
+                opt_tm = "".join(f'<option value="{k}"{" selected" if k == che_tm else ""}>{v}</option>' for k, v in _nhan_tm)
+                an = lambda k: "" if k == che_tm else ' style="display:none;"'
+                khoi_ten_may = f"""
+                <label>Tên máy (hostname) - cách đặt tên</label>
+                <select name="ten_may_che_do" id="tm-che-do" onchange="doiCachTenMay()">{opt_tm}</select>
+                <p style="color:#8b93a1;font-size:12.5px;margin:7px 0 10px;">Cài <strong>nhiều máy bằng một kịch bản</strong> thì mỗi máy phải
+                  có tên riêng (trùng tên thì không gia nhập domain được).</p>
+                <div id="tm-co_dinh"{an('co_dinh')}>
+                  <input type="text" name="ten_may" value="{_esc(d['ten_may'])}" placeholder="ví dụ: PC-KETOAN-01" autocapitalize="off">
+                  <p style="color:#8b93a1;font-size:12.5px;margin:7px 0 0;">Một tên cho máy này. Dùng khi chỉ cài một máy.</p>
+                </div>
+                <div id="tm-serial"{an('serial')}>
+                  <label>Tiền tố (tối đa 8 ký tự, bỏ trống = PC)</label>
+                  <input type="text" name="ten_may_tiento" value="{_esc(d.get('ten_may_tiento') or '')}" maxlength="8"
+                       placeholder="ví dụ: PC" autocapitalize="off" style="max-width:200px;">
+                  <p style="color:#8b93a1;font-size:12.5px;margin:7px 0 0;">Máy tự lấy số serial trong BIOS ghép sau tiền tố, ví dụ <strong>PC-5CG1234ABC</strong>.
+                    Tên dài quá 15 ký tự thì giữ phần đuôi serial. Máy không có serial hợp lệ (nhiều máy ảo, bo mạch rẻ) dùng 6 số cuối địa chỉ MAC.</p>
+                </div>
+                <div id="tm-csv"{an('csv')}>
+                  <a class="btn small" href="/deployos/kichban/mau-csv">Tải file CSV mẫu</a>
+                  <span style="color:#8b93a1;font-size:12.5px;margin-left:8px;">Cột 1: serial, cột 2: tên máy</span>
+                  <div style="margin-top:8px;"><input type="file" name="ten_may_csv_file" accept=".csv,.txt"></div>
+                  {tt_csv}
+                  <p style="color:#8b93a1;font-size:12.5px;margin:7px 0 0;">Máy có serial nằm trong danh sách nhận đúng tên đó. Tên máy được kiểm tra theo quy tắc của Microsoft: tối đa 15 ký tự, chỉ chữ không dấu, số, dấu -, không chỉ toàn số, không bắt đầu/kết thúc bằng dấu -; file có tên sai hoặc trùng thì không được nạp. Máy ngoài danh sách tự dùng tên PC + số serial.</p>
+                </div>
+                <div id="tm-ngau_nhien"{an('ngau_nhien')}>
+                  <label>Tiền tố (tối đa 8 ký tự, bỏ trống = PC)</label>
+                  <input type="text" name="ten_may_tiento_ngau" value="{_esc(d.get('ten_may_tiento_ngau') or '')}" maxlength="8"
+                       placeholder="ví dụ: PC" autocapitalize="off" style="max-width:200px;">
+                  <p style="color:#8b93a1;font-size:12.5px;margin:7px 0 0;">Mỗi máy tự nhận một tên khác nhau, ví dụ <strong>PC-K7Q2M9X</strong>.</p>
+                </div>
+                <div id="tm-hoi"{an('hoi')}>
+                  <p style="color:#8b93a1;font-size:12.5px;margin:0;">Khi máy khởi động vào bộ cài, cửa sổ lệnh hỏi bạn muốn đặt tên gì. Gõ tên rồi bấm
+                    <strong>Enter</strong> thì máy mới bắt đầu cài toàn bộ. Dùng khi có người đứng cạnh máy (cần bàn phím cắm vào máy đó).</p>
+                </div>
+                <script>
+                function doiCachTenMay() {{
+                  var v = document.getElementById('tm-che-do').value;
+                  ['co_dinh','serial','csv','ngau_nhien','hoi'].forEach(function(k) {{
+                    var e = document.getElementById('tm-' + k); if (e) e.style.display = (k === v) ? '' : 'none';
+                  }});
+                }}
+                </script>"""
+            return f"""
+            <form method="POST" enctype="multipart/form-data" {act}>
+              <div class="card">
+                <h3>Thông tin máy sẽ cài</h3>
+                {khoi_ten_may}
                 {khoi_tk_linux}
                 <!-- O mat khau KHONG dien san gia tri cu: dien san thi mat
                      khau nam thang trong ma nguon trang, ai xem nguon (hoac
@@ -3786,7 +3903,7 @@ def register_deployos(app):
             <tr><td>Driver kèm theo</td><td>{
                 (', '.join(_esc(x) for x in d.get('driver_ids') or [])
                  or "<span style='color:#8b93a1;'>Không có</span>")}</td></tr>
-            <tr><td>Tên máy</td><td>{_esc(d['ten_may'])}</td></tr>
+            <tr><td>Tên máy</td><td>{_esc(_dt.mo_ta(d))}</td></tr>
             <tr><td>Tài khoản</td><td>{_esc(d['username'] if d['os_ho'] == 'linux' else 'Administrator')}</td></tr>
             <tr><td>Mật khẩu</td><td>{'&bull;' * 8 + ' <span style="color:#8b93a1;">(đã đặt)</span>' if (d['password'] if d['os_ho'] == 'linux' else d.get('mk_admin')) else '<span style="color:#f59e0b;">Chưa đặt</span>'}</td></tr>
             <tr><td>SSH</td><td>{'Bật' if d.get('ssh') else ('Tắt' if d['os_ho'] == 'linux' else '<span style="color:#8b93a1;">Không áp dụng cho Windows</span>')}</td></tr>
@@ -6479,7 +6596,7 @@ def _tom_tat_day_du(k, esc):
     # (Dong "Kieu boot" da bo 25/09/2026: che do mang chon khi bat PXE, khong
     # con thuoc kich ban - xem ui/pxemenu.py.)
     them("Hệ điều hành", esc(_ten_os(k)))
-    them("Tên máy", esc(k.get("ten_may") or ""))
+    them("Tên máy", esc(_dt.mo_ta(k)))
     them("Tài khoản", esc(k.get("username") or "") if k.get("os_ho") == "linux"
          else "Administrator")
     them("Múi giờ", esc(k.get("mui_gio") or ""))
@@ -6576,8 +6693,8 @@ def _mo_ta_ngan(k):
     Gio liet ke thang ten phan mem va ten tuy chon.
     """
     phan = [_ten_os(k)]
-    if k.get("ten_may"):
-        phan.append(k["ten_may"])
+    if _dt.mo_ta(k):
+        phan.append(_dt.mo_ta(k))
     if k.get("domain"):
         phan.append("domain: " + k["domain"])
 

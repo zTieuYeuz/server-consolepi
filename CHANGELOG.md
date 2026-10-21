@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.9.4 - 21/10/2026
+
+**Đặt tên máy khi cài nhiều máy bằng một kịch bản** (`ui/datten.py` mới, `ui/deployos.py`, `ui/unattend.py`, `ui/pxe.py`, `ui/lichsu.py`). Trước đây kịch bản chỉ có một tên máy cố định nên cài nhiều máy cùng kịch bản thì máy nào cũng trùng tên (không gia nhập domain được, trang Tiến trình trộn lẫn các máy). Bước 2 của kịch bản nay có danh sách thả xuống **Tên máy - cách đặt tên** với 5 cách:
+
+- **Tên cố định** (như trước, dùng cho một máy).
+- **Tiền tố + số serial** (ví dụ `PC-5CG1234ABC`): serial đọc từ BIOS lúc máy chọn kịch bản trong menu PXE, tên được tính sẵn trên Console System. Tiền tố tối đa 8 ký tự (bỏ trống = PC); tên dài quá 15 ký tự thì giữ phần đuôi serial. Máy không có serial hợp lệ (nhiều máy ảo, bo mạch rẻ) dùng 6 số cuối địa chỉ MAC.
+- **Đối chiếu danh sách CSV** (serial, tên máy): có nút tải file mẫu. File được **kiểm tra nghiêm theo quy tắc đặt tên của Microsoft** (tối đa 15 ký tự, chỉ chữ không dấu, số, dấu -, không toàn số, không bắt đầu/kết thúc bằng dấu -): file có tên sai hoặc hai máy cùng tên thì không được nạp và báo rõ dòng nào sai, sai ở đâu. Máy ngoài danh sách nhận tên PC + serial.
+- **Tên ngẫu nhiên** (ví dụ `PC-K7Q2M9X`), không trùng máy khác đang cài.
+- **Hỏi tên lúc cài**: WinPE hiện cửa sổ lệnh hỏi tên, tên sai (có dấu cách, quá dài, toàn số...) thì báo lỗi và hỏi lại; gõ đúng rồi Enter máy mới bắt đầu cài.
+
+Trang **Lịch sử** ghi sẵn tên máy ngay lúc máy chọn kịch bản. Đã thử thật trên máy ảo ở cả 5 cách (Windows nhận đúng tên); bộ kiểm tra `test_ten_may.py` 90 kiểm tra.
+
+- **Bước 1 (chọn driver) gọn hơn:** mỗi gói một dòng, 10 gói mỗi trang (có ô tìm), tiêu đề hiện **Đã chọn n / tổng gói**.
+- **Mật khẩu Administrator** ở bước 2 chỉ còn bắt buộc khi kịch bản chưa đặt mật khẩu (trước đây ô luôn bắt buộc, kể cả khi đã đặt).
+- **Bàn phím ảo trên màn hình cảm ứng không hiện ở Console, SSH, Terminal và Phiên kết nối** (dù đã bật): thuộc tính báo cho bàn phím biết đây là trang terminal bị ghi nhầm vào chú thích CSS thay vì thẻ `<body>` thật, và trang Phiên kết nối đặt thuộc tính này bằng JS sau khi tải nhưng bàn phím chỉ đọc một lần. Đã sửa cả hai (`layout.gan_phien_tmux`, `vkeyboard.js` theo dõi thuộc tính); bộ kiểm tra `test_banphim_ao.py` 7 kiểm tra.
+
 ## 1.9.3 - 19/10/2026
 
 **Phiên kết nối: chuột, tắt phiên, nhóm, tô màu** (`ui/phien.py`). Phần chuột: trước đây kéo chuột để bôi đen rồi nhả ra thì vệt bôi biến mất, bấm chuột phải ra hai menu chồng nhau (menu của tmux và của trình duyệt), nên chép và dán rất khó. Nguyên nhân: terminal chạy trong tmux có bật chuột (để bánh xe cuộn được lịch sử màn hình), nên tmux chiếm hết thao tác chuột.
