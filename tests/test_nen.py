@@ -40,3 +40,11 @@ def test_python311_khong_loi():
 def test_bo_cu(tep, dau):
     r = chay(["python3", os.path.join(TEST, tep)])
     assert r.returncode == 0 and dau in r.stdout, r.stdout[-800:] + r.stderr[-400:]
+
+
+def test_hop_dong_trang(tmp_path):
+    ra = tmp_path / "trang.txt"
+    r = chay(["python3", "tools/xuat-trang.py", str(ra)])
+    assert r.returncode == 0, r.stderr[-500:]
+    mau = open(os.path.join(GOC, "tests", "hop-dong", "trang.txt"), encoding="utf-8").read()
+    assert ra.read_text(encoding="utf-8") == mau
