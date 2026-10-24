@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+  <settings pass="windowsPE">
+    <component name="Microsoft-Windows-International-Core-WinPE"
+        processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+        language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <SetupUILanguage><UILanguage>en-US</UILanguage></SetupUILanguage>
+      <InputLocale>en-US</InputLocale>
+      <SystemLocale>en-US</SystemLocale>
+      <UILanguage>en-US</UILanguage>
+      <UserLocale>en-US</UserLocale>
+    </component>
+    <component name="Microsoft-Windows-Setup" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <!-- LOI THAT DA GAP: wimboot chi dua may vao duoc moi truong WinPE/
+           Setup (boot.wim) - BAN THAN Windows Setup van can 1 nguon ANH
+           CAI DAT THAT (install.wim, 4.4GB) giong het khi cai tu USB/DVD
+           that (X:/sources/install.wim nam CUNG dia voi WinPE). Qua mang
+           thi khong co "cung 1 dia" nhu vay - dung 1 chia se Samba
+           (xem smb.conf cua Console Pi, share "deploy") va tro thang
+           InstallFrom/Path toi duong dan UNC.
+
+           LOI KY THUAT DA GAP - vong 1 (kiem chung that bang smbstatus):
+           ban dau dinh dung 1 lenh `net use` rieng (RunSynchronousCommand)
+           de anh xa o mang TRUOC. Ket qua: `smbstatus` tren Pi khong ghi
+           nhan BAT KY ket noi nao - bo huong nay, quay ve InstallFrom/Path
+           TU KET NOI UNC truc tiep (dung guest, khong mat khau).
+
+           LOI KY THUAT DA GAP - vong 2 (kiem chung that bang cach go tay
+           qua Command Prompt that trong WinPE, anh Thoai truc tiep thu):
+           `net use //<pi>/deploy /user:guest ""` bao "completed
+           successfully", nhung ngay sau do goi thang
+           `setup.exe /unattend://<pi>/deploy/autounattend.xml` van bao
+           "The specified file does not exist" - CHUNG TO Windows Setup
+           TU MO 1 phien SMB RIENG cua chinh no (system context) khi doc
+           InstallFrom/Path, KHONG dung chung phien voi bat ky `net use`
+           thu cong nao da chay truoc do trong cung WinPE (context khac
+           nhau) - VA rat co the Windows hien dai (tu 1709+) chan dang
+           nhap khach an danh (chinh sach "insecure guest logon") ngay ca
+           khi server cho phep guest.
+
+           SUA DUNG (dang dung): dung <Credentials> CHINH THUC ngay trong
+           <InstallFrom> (tai lieu Microsoft, xem
+           learn.microsoft.com ".../microsoft-windows-setup-imageinstall-
+           osimage-installfrom") - Windows Setup TU xac thuc bang tai
+           khoan nay khi no tu mo phien SMB, khong can `net use`/
+           RunSynchronousCommand gi ca. Samba tren Pi dung 1 user he thong
+           RIENG "consolepi-deploy" (khong the dang nhap SSH/local,
+           nologin) - chi de xac thuc doc chia se "deploy". -->
+      <!-- LOI THAT DA THU VA BO (kiem chung that bang log Samba
+           /var/log/samba/: HOAN TOAN khong co ket noi nao duoc ghi nhan,
+           ke ca sau khi xac nhan mang DA len that su qua 1 file log
+           chuan doan rieng): tung thu dung RunSynchronousCommand o day de
+           chay `net start workstation` + `wpeinit` truoc DiskConfiguration/
+           ImageInstall, theo dung tai lieu Microsoft mo ta - NHUNG Windows
+           Setup xu ly ImageInstall SOM HON ca RunSynchronousCommand cua
+           CHINH pass windowsPE nay (khong dam bao thu tu nhu tai lieu ngu
+           y). SUA DUNG THAT SU: chuyen sang nhung 1 file winpeshl.ini rieng
+           vao boot.wim (xem dung_dia_gpt_tu_dong() - chay wpeinit truoc
+           ca khi setup.exe duoc khoi dong, som hon nhieu so voi bat ky
+           cai gi trong chinh autounattend.xml nay). -->
+      <DiskConfiguration>
+        <Disk wcm:action="add">
+          
+            <CreatePartitions>
+                <CreatePartition wcm:action="add">
+                    <Order>1</Order>
+                    <Type>EFI</Type>
+                    <Size>260</Size>
+                </CreatePartition>
+                <CreatePartition wcm:action="add">
+                    <Order>2</Order>
+                    <Type>MSR</Type>
+                    <Size>16</Size>
+                </CreatePartition>
+                <CreatePartition wcm:action="add">
+                    <Order>3</Order>
+                    <Type>Primary</Type>
+                    <Extend>true</Extend>
+                </CreatePartition>
+            </CreatePartitions>
+            <ModifyPartitions>
+                <ModifyPartition wcm:action="add">
+                    <Order>1</Order>
+                    <PartitionID>1</PartitionID>
+                    <Label>EFI</Label>
+                    <Format>FAT32</Format>
+                </ModifyPartition>
+                <ModifyPartition wcm:action="add">
+                    <Order>2</Order>
+                    <PartitionID>2</PartitionID>
+                </ModifyPartition>
+                <ModifyPartition wcm:action="add">
+                    <Order>3</Order>
+                    <PartitionID>3</PartitionID>
+                    <Label>Windows</Label>
+                    <Format>NTFS</Format>
+                    <Letter>C</Letter>
+                </ModifyPartition>
+            </ModifyPartitions>
+            <DiskID>0</DiskID>
+            <WillWipeDisk>true</WillWipeDisk>
+        </Disk>
+      </DiskConfiguration>
+      <ImageInstall>
+        <OSImage>
+          <InstallFrom>
+            <Credentials>
+              <Domain>Server-console</Domain>
+              <Username>consolepi-deploy</Username>
+              <Password></Password>
+            </Credentials>
+            <Path>\\192.168.98.1\deploy\os\windows_10_pro\install.wim</Path>
+            <MetaData wcm:action="add">
+              <Key>/IMAGE/INDEX</Key><Value>1</Value>
+            </MetaData>
+          </InstallFrom>
+          <InstallTo>
+            <DiskID>0</DiskID>
+            <PartitionID>3</PartitionID>
+          </InstallTo>
+        </OSImage>
+      </ImageInstall>
+      <UserData>
+        <AcceptEula>true</AcceptEula>
+        <!-- Key KMS client CONG KHAI chinh thuc cua Microsoft cho Windows
+             10/11 Pro (khong phai key lau/crack) - dung de Setup chay
+             tiep khong can nhap key that luc cai, kich hoat that su lam
+             sau (KMS/MAK cua to chuc). Cong khai tai learn.microsoft.com
+             "KMS client setup keys". -->
+        <ProductKey>
+          <Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
+        </ProductKey>
+      </UserData>
+    </component>
+  </settings>
+
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <ComputerName>T3-DOMAIN</ComputerName>
+      <TimeZone>SE Asia Standard Time</TimeZone>
+    </component>
+  </settings>
+
+  <settings pass="oobeSystem">
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+        publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add">
+            <Name>nhanvien</Name>
+            <Group>Administrators</Group>
+            <Password>
+              <Value>Mau@1234</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+      <OOBE>
+        <HideEULAPage>true</HideEULAPage>
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <NetworkLocation>Work</NetworkLocation>
+        <ProtectYourPC>3</ProtectYourPC>
+        <SkipMachineOOBE>true</SkipMachineOOBE>
+        <SkipUserOOBE>true</SkipUserOOBE>
+      </OOBE>
+      <TimeZone>SE Asia Standard Time</TimeZone>
+    </component>
+  </settings>
+</unattend>

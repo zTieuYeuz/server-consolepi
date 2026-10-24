@@ -174,7 +174,15 @@ def may_chu():
          .sign(ca_k, hashes.SHA256()))
     _ghi(_p("server.key"), _pem_khoa(k))
     _ghi(_p("server.pem"), c.public_bytes(serialization.Encoding.PEM), 0o644)
+    ghi_chain()
     return True
+
+
+def ghi_chain():
+    """server-chain.pem = server.pem + ca.pem. PHAI ghi lai moi khi server.pem doi, neu khong khoa va chung chi
+    lech nhau va nginx -t hong luc khoi dong lai (loi that 24/10/2026: IP doi -> may_chu() cap lai chung chi nhung
+    chain cu con nguyen -> mat dien/khoi dong lai thi ca trang web khong len)."""
+    _ghi(_p("server-chain.pem"), _doc("server.pem") + b"\n" + _doc("ca.pem"), 0o644)
 
 
 def cap_khach(may_id):
@@ -209,7 +217,7 @@ def nginx_conf():
     d = _dir()
     bm = bi_mat_nginx()
     may_chu()
-    _ghi(_p("server-chain.pem"), _doc("server.pem") + b"\n" + _doc("ca.pem"), 0o644)
+    ghi_chain()
     proxy = (f"        proxy_pass http://127.0.0.1:5000;\n        proxy_http_version 1.1;\n        proxy_set_header Host $host;\n"
              f"        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-CS-TLS-Secret \"{bm}\";\n"
              "        proxy_set_header X-CS-Client-Verify $ssl_client_verify;\n        proxy_set_header X-CS-Client-DN $ssl_client_s_dn;\n"
@@ -322,8 +330,19 @@ def bat_tls():
 def nap_lai_neu_doi():
     """Goi luc khoi dong: IP Console System doi -> cap lai chung chi may chu va nap lai nginx."""
     try:
-        if os.path.exists(FILE_NGINX) and may_chu():
-            subprocess.run(["systemctl", "reload", "nginx"], capture_output=True, text=True)
+        if not os.path.exists(FILE_NGINX):
+            return
+        may_chu()
+        ghi_chain()        # luon dong bo, ke ca khi may_chu() khong cap lai (chain hong do mat dien/loi cu)
+        t = subprocess.run(["nginx", "-t"], capture_output=True, text=True)
+        if t.returncode == 0:
+            subprocess.run(["systemctl", "reload-or-restart", "nginx"], capture_output=True, text=True)    # nginx dang hong sau khi khoi dong -> tu bat lai
+        else:
+            # Cong mTLS hong KHONG duoc keo sap trang web chinh: dua file cau hinh ra ngoai de nginx khoi dong duoc,
+            # nguoi dung bat lai cong agent trong giao dien (bat_tls ghi lai file).
+            os.replace(FILE_NGINX, FILE_NGINX + ".hong")
+            if subprocess.run(["nginx", "-t"], capture_output=True, text=True).returncode == 0:
+                subprocess.run(["systemctl", "restart", "nginx"], capture_output=True, text=True)
     except Exception:
         pass
 

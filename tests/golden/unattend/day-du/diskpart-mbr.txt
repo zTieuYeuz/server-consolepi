@@ -1,0 +1,14 @@
+select disk 0
+clean
+convert mbr
+create partition primary size=500
+format quick fs=ntfs label="System"
+active
+assign letter=S
+create partition primary size=100
+format quick fs=ntfs label="Windows"
+assign letter=W
+create partition primary
+format quick fs=ntfs label="DuLieu"
+assign
+exit

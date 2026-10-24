@@ -1,0 +1,40 @@
+#!ipxe
+isset ${cs_sb23} || set cs_sb23 0
+:menu
+iseq ${cs_sb23} 1 && set cs_sb23_chu DANG-BAT || set cs_sb23_chu tat
+menu Console System - Cai dat qua mang
+item --gap -- Chon bang phim mui ten + Enter:
+item --gap -- 
+item win 1. Install Windows > (0 kich ban)
+item --gap -- 2. Boot WinPE (chua co WinPE nao)
+item --gap -- 3. Do o dia (can 1 he dieu hanh co boot.wim)
+item --gap -- 
+item odia Khoi dong o cung (KHONG cai gi)
+item lai Khoi dong lai may
+choose --timeout 30000 --default odia chon || goto odia
+goto ${chon}
+
+:sb23
+iseq ${cs_sb23} 1 && set cs_sb23 0 || set cs_sb23 1
+goto menu
+
+:win
+menu Install Windows - chon kich ban cai dat
+item --gap -- (Chua co kich ban Windows nao dung duoc)
+item --gap -- 
+item menu < Quay lai menu chinh
+choose --default menu chon || goto menu
+goto ${chon}
+
+:odia
+echo Khoi dong tu o cung...
+iseq ${platform} efi && echo (May UEFI: dong Could not boot image ngay sau day la BINH THUONG - firmware se tu sang o cung)
+iseq ${platform} efi && exit 1 || exit
+
+:lai
+reboot
+
+:loi
+echo LOI: khong nap duoc file cai dat tu Console System.
+prompt Bam phim bat ky de quay lai menu...
+goto win
