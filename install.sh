@@ -83,7 +83,7 @@ say "Cai cac goi phu thuoc"
 
 PKGS_CORE=(
     python3 python3-flask python3-pam python3-scapy python3-netmiko
-    python3-cryptography
+    python3-cryptography python3-venv
     tmux git curl nginx
     hostapd dnsmasq wpasupplicant iw wireless-tools
     bluez avahi-daemon
@@ -193,6 +193,11 @@ if ! command -v microcom >/dev/null 2>&1; then
     apt-get install -y -qq microcom 2>/dev/null || warn "Khong cai duoc microcom (console serial se khong chay)"
 fi
 
+# wixl: dong goi file MSI cai agent (Quan ly may tram, Agent) - khong co thi chi mat tinh nang tao MSI, script van tao duoc
+if ! command -v wixl >/dev/null 2>&1; then
+    apt-get install -y -qq wixl 2>/dev/null || warn "Khong cai duoc wixl (khong tao duoc file MSI cai agent; script PowerShell van dung duoc)"
+fi
+
 # ------------------------------------------------- 3. Lay ma nguon
 say "Chuan bi ma nguon"
 
@@ -280,6 +285,11 @@ for f in "$SRC_DIR"/src/scripts/*; do
     install -m 755 "$f" "$INSTALL_DIR/scripts/$(basename "$f")"
 done
 [[ -f "$SRC_DIR/uninstall.sh" ]] && install -m 755 "$SRC_DIR/uninstall.sh" "$INSTALL_DIR/uninstall.sh"
+# Cong cu cai them (cai-winrm.sh, cai-vnc.sh) - giao dien Quan ly may tram nhac duong dan /opt/console-pi/tools/
+mkdir -p "$INSTALL_DIR/tools"
+for f in "$SRC_DIR"/tools/cai-*.sh; do
+    [[ -f "$f" ]] && install -m 755 "$f" "$INSTALL_DIR/tools/$(basename "$f")"
+done
 
 find "$INSTALL_DIR" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
@@ -560,6 +570,16 @@ if [[ -f "$SRC_DIR/config/nginx-console-pi.conf" ]]; then
         ok "Cau hinh nginx hop le"
     else
         warn "Cau hinh nginx co loi - chay 'sudo nginx -t' de xem"
+    fi
+    # Thu vien WinRM (pypsrp) cho Trien khai phan mem / Quan ly may tram - venv rieng, can Internet; loi thi bo qua
+    if [[ -x "$INSTALL_DIR/tools/cai-winrm.sh" && ! -x /opt/console-pi-venv/winrm/bin/python3 ]]; then
+        bash "$INSTALL_DIR/tools/cai-winrm.sh" >/dev/null 2>&1 \
+            && ok "Thu vien WinRM san sang" || warn "Chua cai duoc thu vien WinRM (can Internet) - chay: sudo bash $INSTALL_DIR/tools/cai-winrm.sh"
+    fi
+    # Cong mTLS 8443 cho agent Quan ly may tram: tao CA rieng + chung chi may chu, them /etc/nginx/conf.d/console-pi-agent-tls.conf (loi thi bo qua, khong chan cai dat)
+    if [[ -x "$INSTALL_DIR/tools/cai-agent-tls.sh" ]]; then
+        CONSOLE_PI_DIR="$INSTALL_DIR" bash "$INSTALL_DIR/tools/cai-agent-tls.sh" >/dev/null 2>&1 \
+            && ok "Cong mTLS 8443 cho agent san sang" || warn "Chua bat duoc cong mTLS cho agent - bat sau o Quan ly may tram, Quan tri, Agent"
     fi
 fi
 

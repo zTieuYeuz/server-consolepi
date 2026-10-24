@@ -85,6 +85,39 @@ kt "1.7.5: o buoc kich ban bam duoc (data-den)"    sh -c "L=\$(curl -s -i -H 'X-
 kt "dashboard tra loi qua cong 80"        sh -c "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/ | grep -qE '200|302'"
 kt "khong co traceback trong log web"     khong sh -c "journalctl -u console-pi-dashboard -b | grep -q Traceback"
 
+echo "== Quan ly may tram + Agent (1.9.5)"
+kt "co wixl (tao file MSI agent)"          sh -c "command -v wixl"
+kt "venv WinRM nap duoc pypsrp"            /opt/console-pi-venv/winrm/bin/python3 -c "from pypsrp.client import Client"
+kt "co cong cu cai them (tools/cai-*.sh)"  sh -c "test -x /opt/console-pi/tools/cai-agent-tls.sh && test -x /opt/console-pi/tools/cai-winrm.sh && test -x /opt/console-pi/tools/cai-vnc.sh"
+kt "co file agent dung san (cs-agent.exe, mau MSI)" sh -c "test -s /opt/console-pi/ui/agent_bin/cs-agent.exe && test -s /opt/console-pi/ui/agent_bin/ConsoleSystemAgent.wxs.tpl"
+kt "PKI rieng da tao (CA + chung chi may chu)" sh -c "test -s /var/lib/console-pi/trienkhai/pki/ca.pem && test -s /var/lib/console-pi/trienkhai/pki/server.pem"
+kt "cong mTLS agent 8443 dang nghe"        sh -c "ss -ltn | grep -q ':8443 '"
+kt "cong 8443 khong co chung chi khach -> 403/404 (khong mo)" sh -c "c=\$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 https://127.0.0.1:8443/uem/agent/ping); [ \"\$c\" = 403 ] || [ \"\$c\" = 404 ]"
+kt "khong co CA/khoa nao trong ISO goc (tao luc khoi dong dau)" sh -c "test \$(stat -c %Y /var/lib/console-pi/trienkhai/pki/ca.pem) -gt \$(stat -c %Y /opt/console-pi/VERSION)"
+for p in /uem /uem/may /uem/phan-mem /uem/bao-mat /uem/trien-khai /uem/profiles /uem/bao-cao /uem/quan-tri /uem/quan-tri/agent /uem/chua-ho-tro /deployos/trienkhai; do
+    kt "trang $p mo duoc" sh -c "c=\$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -H 'X-ConsolePi-Local: 1' http://127.0.0.1:8880$p); [ \"\$c\" = 200 ] || [ \"\$c\" = 302 ]"
+done
+kt "tao duoc file script agent (khong can wixl)" sh -c "cd /opt/console-pi && PYTHONPATH=/opt/console-pi python3 -c \"
+import time
+from ui import uem_agent_goi as UG
+v=UG.bat_dau('ps1','kiem-tra','127.0.0.1:8443',0,0,'')
+for _ in range(100):
+    r=UG.viec(v)
+    if r['tt']!='dang': break
+    time.sleep(0.2)
+import sys; sys.exit(0 if r['tt']=='xong' else 1)
+\""
+kt "tao duoc file MSI agent (wixl)"        sh -c "cd /opt/console-pi && PYTHONPATH=/opt/console-pi python3 -c \"
+import time
+from ui import uem_agent_goi as UG
+v=UG.bat_dau('msi','kiem-tra-msi','127.0.0.1:8443',0,0,'')
+for _ in range(100):
+    r=UG.viec(v)
+    if r['tt']!='dang': break
+    time.sleep(0.2)
+import sys; sys.exit(0 if r['tt']=='xong' else 1)
+\""
+
 echo
 echo "TONG: $dat dat, $loi loi"
 [ "$loi" = 0 ]

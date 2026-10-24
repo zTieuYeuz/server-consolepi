@@ -174,11 +174,12 @@ def iface_detail(name):
     return info
 
 
-def _hang_so(nhan, gia_tri, phu="", phan_tram=None, muc="ok", co_dem=None, ghi_chu=False):
+def _hang_so(nhan, gia_tri, phu="", phan_tram=None, muc="ok", co_dem=None, ghi_chu=False, chu_thich=""):
     """
-    1 dong cua khoi "Suc khoe thiet bi": nhan ben trai, so ben phai, thanh
-    mong ben duoi (khong co nen thanh - thanh chi dai ra theo %). Mau thanh
-    theo muc: ok (xanh) / warn (vang) / bad (do).
+    1 dong cua khoi "Suc khoe thiet bi": nhan ben trai, so ben phai, thanh ben duoi.
+    Thanh CO NEN (track): phan nen xam la 100% nen nhin vao biet ngay da dung bao nhieu tren tong - truoc day
+    thanh chi dai ra theo % khong co nen nen khong thay thang do (anh Thoai 22/10/2026: dung 17 GB ma nhin nhu 10 GB).
+    Mau thanh theo muc: ok (xanh) / warn (vang) / bad (do). chu_thich: dong chu nho duoi thanh (da dung / con trong).
     co_dem: (so, so_le) de JS dem tu 0 len luc moi vao trang.
     """
     if co_dem is not None and not ghi_chu:
@@ -187,10 +188,18 @@ def _hang_so(nhan, gia_tri, phu="", phan_tram=None, muc="ok", co_dem=None, ghi_c
     thanh = ""
     if phan_tram is not None:
         rong = max(1, min(100, int(phan_tram)))
-        thanh = '<span class="bar ' + muc + '" style="width:' + str(rong) + '%"></span>'
+        thanh = ('<span class="track" role="img" aria-label="' + str(rong) + '%"><span class="bar ' + muc
+                 + '" style="width:' + str(rong) + '%"></span></span>')
+        if chu_thich:
+            thanh += '<span class="cap">' + chu_thich + '</span>'
     lop = ' class="none"' if ghi_chu else ""
     nho = ("<small>" + phu + "</small>") if phu else ""
     return ("<div" + lop + "><dt>" + nhan + "</dt><dd>" + gia_tri + nho + "</dd>" + thanh + "</div>")
+
+
+def _so_gb(x):
+    """17.1 -> '17,1' (dau phay kieu Viet)."""
+    return f"{x:.1f}".replace(".", ",")
 
 
 def _muc(p, vang, do):
@@ -220,7 +229,8 @@ def _bang_suc_khoe(h, power_msg):
         r_cpu = _hang_so("CPU", f"{cpu}%", "", cpu, _muc(cpu, 75, 90), (cpu, 0))
 
     r_ram = _hang_so("Bộ nhớ", f"{mem_p}%", f"{mem_u} / {mem_t} MB", mem_p,
-                     _muc(mem_p, 75, 90), (mem_p, 0))
+                     _muc(mem_p, 75, 90), (mem_p, 0),
+                     chu_thich=f"Đã dùng <b>{mem_u} MB</b> · còn trống <b>{max(mem_t - mem_u, 0)} MB</b>")
 
     if temp is None:
         r_temp = _hang_so("Nhiệt độ CPU", "máy này không có cảm biến", ghi_chu=True)
@@ -234,8 +244,10 @@ def _bang_suc_khoe(h, power_msg):
     if os.path.isdir("/run/live/medium"):
         r_dia = _hang_so("Ổ đĩa", "không áp dụng (đang chạy từ USB)", ghi_chu=True)
     elif dk_t:
-        r_dia = _hang_so("Ổ đĩa", f"{dk_p}%", f"{dk_u} / {dk_t} GB", dk_p,
-                         _muc(dk_p, 80, 92), (dk_p, 0))
+        r_dia = _hang_so("Ổ đĩa", f"{dk_p}%", f"{_so_gb(dk_u)} / {_so_gb(dk_t)} GB", dk_p,
+                         _muc(dk_p, 80, 92), (dk_p, 0),
+                         chu_thich=f"Đã dùng <b>{_so_gb(dk_u)} GB</b> · còn trống <b>{_so_gb(max(dk_t - dk_u, 0))} GB</b>"
+                                   f" · tổng {_so_gb(dk_t)} GB")
     else:
         r_dia = _hang_so("Ổ đĩa", "không đọc được", ghi_chu=True)
 
@@ -321,7 +333,7 @@ def can_chu_y(h, ports, states):
     dk_u, dk_t, dk_p = h.get("disk", (0, 0, 0))
     if dk_t and dk_p >= 80 and not os.path.isdir("/run/live/medium"):
         lon = dung_luong_lon()[:3]
-        mo_ta = f"Đã dùng {dk_u} / {dk_t} GB. "
+        mo_ta = f"Đã dùng {_so_gb(dk_u)} / {_so_gb(dk_t)} GB. "
         if lon:
             mo_ta += "Chiếm nhiều nhất: " + ", ".join(
                 f'<a href="{t}">{_esc(n)} {_gb(b)}</a>' for n, t, b in lon) + "."
@@ -442,8 +454,11 @@ section.rvg { margin-top:44px; }
 .dl .tai dd { font-size:15px; }
 .dl dd { margin:0; font:550 20px var(--mono); letter-spacing:-.03em; text-align:right; }
 .dl dd small { font:400 13px var(--chu-font); color:var(--chu-mo2); letter-spacing:0; margin-left:8px; }
-.dl .bar { grid-column:1 / -1; height:3px; border-radius:2px; background:var(--nhan); margin-top:4px;
-           transform-origin:left; }
+.dl .track { grid-column:1 / -1; display:block; height:8px; border-radius:5px; background:var(--vien-ro);
+             overflow:hidden; margin-top:6px; }
+.dl .bar { display:block; height:100%; border-radius:5px; background:var(--nhan); transform-origin:left; }
+.dl .cap { grid-column:1 / -1; font-size:12.5px; color:var(--chu-mo2); margin-top:2px; }
+.dl .cap b { color:var(--chu-mo); font-weight:600; }
 .dl .bar.ok { background:var(--xanh); } .dl .bar.warn { background:var(--vang); } .dl .bar.bad { background:var(--do); }
 .dl .none dd { font:400 14.5px var(--chu-font); color:var(--chu-mo2); letter-spacing:0; }
 .so-nguon { margin:14px 0 0; font-size:14px; color:var(--chu-mo); }

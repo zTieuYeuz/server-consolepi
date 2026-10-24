@@ -1913,6 +1913,46 @@ CSS_CHUNG = ""     # gan trong register_deployos
 JS_PHAN_TRANG_CHUNG = ""
 
 
+def ngu_canh_trienkhai():
+    """True khi nguoi dung dang o muc "Trien khai phan mem" (cac trang Tai nguyen / Kho dung chung voi Deployment OS,
+    chi khac thanh tab va khong hien He dieu hanh / Driver / WinPE). Dat boi ui/deploysw.py (before_request)."""
+    try:
+        from flask import session
+        return session.get("nc") == "tk"
+    except Exception:
+        return False
+
+
+def _tabs_trienkhai(chinh, phu=""):
+    tab_chinh = [
+        ("tainguyen", "Tài nguyên", "/deployos/console/apps"),
+        ("kho", "Kho trung tâm", "/deployos/kho"),
+        ("lich", "Lập lịch", "/deployos/trienkhai/lich"),
+        ("may", "Máy - nhóm máy", "/deployos/trienkhai/may"),
+        ("kichban", "Kịch bản", "/deployos/trienkhai/kichban"),
+        ("chay", "Triển khai", "/deployos/trienkhai"),
+        ("khac", "Kiểm tra bảo mật", "/deployos/trienkhai/khac"),
+    ]
+    phu_ds = {"tainguyen": [
+        ("apps", "Phần mềm", "/deployos/console/apps"),
+        ("ungdung", "Ứng dụng (nhiều file)", "/deployos/ungdung"),
+        ("font", "Font chữ", "/deployos/font"),
+        ("scripts", "Script", "/deployos/console/scripts"),
+        ("nhom", "Nhóm tài nguyên", "/deployos/trienkhai/nhom-tn"),
+    ], "may": [
+        ("ds", "Danh sách máy", "/deployos/trienkhai/may"),
+        ("nhom", "Nhóm máy", "/deployos/trienkhai/may/nhom"),
+        ("quet", "Quét mạng", "/deployos/trienkhai/may/quet"),
+        ("tk", "Tài khoản quản trị", "/deployos/trienkhai/may/taikhoan"),
+    ]}
+    h = '<div class="dep-tabs">' + "".join(
+        f'<a href="{href}" class="dep-tab{" on" if ma == chinh else ""}">{nhan}</a>' for ma, nhan, href in tab_chinh) + "</div>"
+    if phu and phu_ds.get(chinh):
+        h += '<div class="dep-tabs sub">' + "".join(
+            f'<a href="{href}" class="dep-tab{" on" if ma == phu else ""}">{nhan}</a>' for ma, nhan, href in phu_ds[chinh]) + "</div>"
+    return h
+
+
 def tabs_deployos(chinh, phu=""):
     """
     Thanh tab chinh + tab phu, dung chung cho moi trang cua muc nay.
@@ -1927,6 +1967,8 @@ def tabs_deployos(chinh, phu=""):
     nguyen" (He dieu hanh, Phan mem, Driver, Script, File boot) vao 1
     tab GOC khac.
     """
+    if ngu_canh_trienkhai():
+        return _tabs_trienkhai(chinh, phu)
     tab_chinh = [
         ("kichban", "Kịch bản", "/deployos/kichban"),
         ("tainguyen", "Tài nguyên", "/deployos/os"),
@@ -2152,7 +2194,7 @@ def ve_bao_cao_o_dia(kq, nut_chon=False):
 
 def register_deployos(app):
     from flask import (request, redirect, send_from_directory, abort, jsonify,
-                       flash, get_flashed_messages, session)
+                       flash, get_flashed_messages, session, g)
     from .layout import render_page, doi_mau_viet_cung
     from .home import _esc
 
@@ -2357,6 +2399,8 @@ def register_deployos(app):
     .nhan-chep { position:absolute; right:6px; top:5px; font-size:11px;
       color:#4CAF50; background:#12331a; padding:1px 6px; border-radius:4px; }
     .cot-nut { white-space:nowrap; width:1%; }
+    .cot-tich { width:1%; text-align:center; }
+    .cot-tich input { width:18px; height:18px; cursor:pointer; }
     .cot-nut form { display:inline; }
     .nut-sua, .nut-huy { display:inline-flex; align-items:center;
       min-height:38px; padding:6px 13px; border-radius:6px; font-size:13px;
@@ -5050,6 +5094,8 @@ def register_deployos(app):
             return _trang(body, "Deployment OS", "Kho trung tâm - lỗi kết nối")
 
         ds = ket_qua
+        if ngu_canh_trienkhai():     # Trien khai phan mem: khong co He dieu hanh / WinPE
+            ds = [m for m in ds if m.get("loai") not in ("os", "winpe")]
         cac_os = danh_sach_os()
         du_lieu_js = json.dumps([
             {"id": m.get("id", ""),
@@ -5057,7 +5103,9 @@ def register_deployos(app):
                                         ("ten", "mo_ta", "du_lieu", "ten_file")))}
             for m in ds], ensure_ascii=False)
 
-        dem = {k: sum(1 for m in ds if m.get("loai") == k) for k in TEN_LOAI_KHO}
+        ten_loai_hien = {k: v for k, v in TEN_LOAI_KHO.items()
+                         if not (ngu_canh_trienkhai() and k in ("os", "winpe"))}
+        dem = {k: sum(1 for m in ds if m.get("loai") == k) for k in ten_loai_hien}
         hang = ""
         for m in ds:
             loai = m.get("loai", "")
@@ -5071,6 +5119,7 @@ def register_deployos(app):
             cap_nhat = m.get("cap_nhat_luc") or 0
             luc = time.strftime("%d/%m/%Y %H:%M", time.localtime(cap_nhat)) if cap_nhat else ""
             mid = _esc(m.get("id", ""))
+            da_co = False
             if not hop_le:
                 nut = (f'<span class="hint">Không hỗ trợ ({_esc(ext or "?")})</span>')
             else:
@@ -5092,8 +5141,12 @@ def register_deployos(app):
             if loai == "phanmem" and m.get("go_cai"):
                 phu += (f'<br><span style="color:#e8c898;">Tham số gỡ: '
                         f'{_esc(m["go_cai"])}</span>')
+            o_tich = (f'<input type="checkbox" class="tich-kho" value="{mid}" '
+                      f'data-co="{1 if (hop_le and da_co) else 0}" aria-label="Chọn">'
+                      if hop_le else '')
             hang += f"""
             <tr data-id="{mid}" data-loai="{_esc(loai)}">
+              <td class="cot-tich">{o_tich}</td>
               <td>{nhan_loai}</td>
               <td><strong>{_esc(m.get('ten',''))}</strong><br>
                   <small style="color:#8b93a1;">{phu}</small></td>
@@ -5103,13 +5156,14 @@ def register_deployos(app):
             </tr>"""
 
         bang = (f'<div class="tbl-scroll"><table id="bang-kho" data-pt="25"><thead><tr>'
+                f'<th class="cot-tich"><input type="checkbox" id="tich-tat-ca" aria-label="Chọn tất cả đang hiện"></th>'
                 f'<th>Loại</th><th>Tên</th><th>Kích thước</th><th>Cập nhật</th>'
                 f'<th class="cot-nut">&nbsp;</th></tr></thead>'
                 f'<tbody>{hang}</tbody></table></div>'
                 if ds else '<p style="color:#8b93a1;">Kho chưa có mục nào.</p>')
         loc_nut = "".join(
             f'<button type="button" class="small gray loc-loai" data-loai="{k}">'
-            f'{n} ({dem[k]})</button> ' for k, n in TEN_LOAI_KHO.items())
+            f'{n} ({dem[k]})</button> ' for k, n in ten_loai_hien.items())
 
         body = _tabs("kho") + _msg(msg, ok) + f"""
         <div class="card" id="khung-tai" hidden>
@@ -5132,6 +5186,13 @@ def register_deployos(app):
             <button type="button" id="nut-xoa-tim-kho" class="gray">Xoá</button>
           </div>
           <div id="ket-qua-tim-kho" class="ket-qua"></div>
+          <form method="POST" action="/deployos/kho/tai-nhieu" id="form-tai-nhieu"
+                style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0;">
+            <button type="submit" id="nut-tai-nhieu" disabled data-busy="Đang bắt đầu tải...">
+              Tải các mục đã tích (<span id="so-tich">0</span>)</button>
+            <button type="button" class="gray" id="nut-bo-tich" hidden>Bỏ chọn</button>
+            <span class="hint" id="goi-y-tich">Tích ô đầu mỗi dòng (hoặc ô trên cùng để chọn tất cả mục đang hiện), rồi bấm Tải.</span>
+          </form>
           {bang}
         </div>
 
@@ -5164,6 +5225,7 @@ def register_deployos(app):
             }}
             if (window.csPT) window.csPT.capNhat(bang, true);
             kq.textContent = so + ' / ' + hang.length + ' mục';
+            if (typeof capNhatTich === 'function') capNhatTich();
           }}
           var nutLoc = document.querySelectorAll('.loc-loai');
           nutLoc.forEach(function(b) {{
@@ -5179,6 +5241,41 @@ def register_deployos(app):
               function() {{ oTim.value = ''; loc(); oTim.focus(); }});
           }}
           loc();
+
+          // ---- tich chon nhieu muc roi tai 1 lan
+          var tatCa = document.getElementById('tich-tat-ca'), ft = document.getElementById('form-tai-nhieu');
+          function oTich() {{ return Array.prototype.slice.call(document.querySelectorAll('.tich-kho')); }}
+          function dangHien(o) {{ var tr = o.closest('tr'); return tr && !tr.hasAttribute('data-loc'); }}
+          function capNhatTich() {{
+            var ds = oTich(), chon = ds.filter(function(o) {{ return o.checked; }});
+            document.getElementById('so-tich').textContent = chon.length;
+            document.getElementById('nut-tai-nhieu').disabled = chon.length === 0;
+            document.getElementById('nut-bo-tich').hidden = chon.length === 0;
+            var hien = ds.filter(dangHien);
+            if (tatCa) tatCa.checked = hien.length > 0 && hien.every(function(o) {{ return o.checked; }});
+          }}
+          document.addEventListener('change', function(e) {{
+            if (e.target.classList && e.target.classList.contains('tich-kho')) capNhatTich();
+          }});
+          if (tatCa) tatCa.addEventListener('change', function() {{
+            oTich().filter(dangHien).forEach(function(o) {{ o.checked = tatCa.checked; }});
+            capNhatTich();
+          }});
+          document.getElementById('nut-bo-tich').addEventListener('click', function() {{
+            oTich().forEach(function(o) {{ o.checked = false; }}); capNhatTich();
+          }});
+          ft.addEventListener('submit', function(e) {{
+            var chon = oTich().filter(function(o) {{ return o.checked; }});
+            if (!chon.length) {{ e.preventDefault(); return; }}
+            var co = chon.filter(function(o) {{ return o.getAttribute('data-co') === '1'; }}).length;
+            if (co && !confirm(co + ' mục đã có trên máy sẽ được tải lại và ghi đè. Tiếp tục?')) {{
+              e.preventDefault(); return; }}
+            Array.prototype.slice.call(ft.querySelectorAll('input[name=id]')).forEach(function(x) {{ x.remove(); }});
+            chon.forEach(function(o) {{
+              var h = document.createElement('input'); h.type = 'hidden'; h.name = 'id'; h.value = o.value; ft.appendChild(h);
+            }});
+          }});
+          capNhatTich();
 
           // ---- tien do tai o nen
           function co(n) {{
@@ -5290,6 +5387,10 @@ def register_deployos(app):
         "location.reload()" tai lai trang -> trinh duyet GUI LAI CA POST -> bat dau
         tai lan nua (log: 4 lan POST cach nhau ~12 phut, dung bang 1 chu ky tai).
         """
+        gom = getattr(g, "kho_gom", None)
+        if gom is not None:                  # dang tai NHIEU muc: chi gom ket qua, chua chuyen huong
+            gom.append((str(msg), bool(ok)))
+            return None
         session["kho_tb"] = [str(msg)[:600], bool(ok)]
         return redirect("/deployos/kho")
 
@@ -5336,6 +5437,32 @@ def register_deployos(app):
 
     @app.route("/deployos/kho/tai", methods=["POST"])
     def deployos_kho_tai():
+        return _tai_mot((request.form.get("id") or "").strip())
+
+    @app.route("/deployos/kho/tai-nhieu", methods=["POST"])
+    def deployos_kho_tai_nhieu():
+        """Tai NHIEU muc da tich: lan luot bat dau tung muc (moi muc tai o nen nhu nut Tai ve)."""
+        ids = []
+        for x in request.form.getlist("id"):
+            x = (x or "").strip()
+            if x and x not in ids:
+                ids.append(x)
+        if not ids:
+            return _kho_chuyen("Chưa tích mục nào để tải.", False)
+        g.kho_gom = []
+        try:
+            for x in ids[:200]:
+                _tai_mot(x)
+            ket = list(g.kho_gom)
+        finally:
+            g.kho_gom = None
+        loi = [m for m, o in ket if not o]
+        if loi:
+            return _kho_chuyen(f"Đã bắt đầu tải {len(ket) - len(loi)}/{len(ket)} mục. "
+                               f"Chưa tải được: " + " | ".join(loi[:5]), len(loi) < len(ket))
+        return _kho_chuyen(f"Đã bắt đầu tải {len(ket)} mục đã tích. Theo dõi ở khung \"Đang tải\".", True)
+
+    def _tai_mot(muc_id):
         """
         Tai 1 muc o nen. KHONG tin cac truong an trong form (ten file, loai,
         sha256...) - lay lai danh sach tu kho roi tim dung muc theo id.
@@ -5344,7 +5471,6 @@ def register_deployos(app):
         cauhinh = _kt.doc_cauhinh()
         if not cauhinh:
             return _kho_chuyen("Chưa kết nối tới kho.", False)
-        muc_id = (request.form.get("id") or "").strip()
         ok_ds, ds = _kt.danh_sach(cauhinh)
         if not ok_ds:
             return _kho_chuyen(ds, False)

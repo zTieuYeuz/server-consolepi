@@ -35,6 +35,13 @@ if id -u consolepi-deploy >/dev/null 2>&1; then
     chown consolepi-deploy:consolepi-deploy /var/lib/console-pi/o-dia /var/lib/console-pi/lich-su-bao
 fi
 
+# 1c. PKI rieng tung may cho agent Quan ly may tram (CA + chung chi may chu + cong mTLS 8443). TUYET DOI khong tao san trong ISO:
+# CA nam trong ISO cong khai thi ai cung co khoa goc. Loi thi bo qua - bat sau o Quan ly may tram > Quan tri > Agent.
+if [ -x /opt/console-pi/tools/cai-agent-tls.sh ]; then
+    CONSOLE_PI_DIR=/opt/console-pi bash /opt/console-pi/tools/cai-agent-tls.sh >/dev/null 2>&1 \
+        && echo "[console-system] da tao PKI + mo cong mTLS cho agent" || echo "[console-system] chua bat duoc cong mTLS cho agent (bat sau trong giao dien)"
+fi
+
 touch "$DAU"
 
 # --- 7. MAN HINH: tu bat giao dien kiosk neu may CO man hinh that ---

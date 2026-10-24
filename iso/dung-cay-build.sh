@@ -37,6 +37,9 @@ dung_cay() {   # $1 = amd64 | i386
     mkdir -p "$R/opt/console-pi"
     rsync -a --exclude='__pycache__' --exclude='*.pyc' "$REPO/src/" "$R/opt/console-pi/"
     install -m 644 "$REPO/VERSION" "$R/opt/console-pi/VERSION"
+    # Cong cu cai them (cai-agent-tls.sh, cai-vnc.sh, cai-winrm.sh): trang Quan ly may tram va lan khoi dong dau goi toi /opt/console-pi/tools/
+    mkdir -p "$R/opt/console-pi/tools"
+    for f in "$REPO"/tools/cai-*.sh; do [ -f "$f" ] && install -m 755 "$f" "$R/opt/console-pi/tools/$(basename "$f")"; done
     chmod 755 "$R/opt/console-pi/scripts/"*.sh "$R/opt/console-pi/scripts/"*.py 2>/dev/null || true
 
     # --- 1b. Ban quyen + DAU AN ban build (27/09/2026, yeu cau cua tac gia).

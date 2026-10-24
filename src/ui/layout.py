@@ -51,21 +51,37 @@ NAV_ITEMS = [
     ("/", "Tổng quan", "🏠"),
 
     # Cac duong ket noi VAO chinh con Pi nay
-    ("nhom", "Kết nối server", "📡", [
+    ("nhom", "Kết nối Console System", "📡", [
         ("/wifi", "WiFi / AP", "📶"),
         ("/bluetooth", "Bluetooth", "🔵"),
         ("/remote", "Truy cập từ xa", "🌍"),
     ]),
 
     # Cac duong tu Pi ket noi RA thiet bi mang can lam viec
-    ("nhom", "Kết nối thiết bị", "🔌", [
+    ("nhom", "Quản lý và kết nối thiết bị", "🔌", [
         ("/phien", "Phiên kết nối", "🗂️"),
         ("/console", "Console", "🖥️"),
         ("/direct", "Cắm thẳng thiết bị", "🔗"),
     ]),
 
-    ("/nettools", "Network Tools", "🛠️"),
-    ("/deployos", "Deployment OS", "💿"),
+    # Quan ly may tram (kieu OpenUEM): kiem ke, bao mat, trien khai WinGet, profiles
+    ("nhom", "Quản lý máy trạm", "🖥️", [
+        ("/uem", "Tổng quan máy trạm", "📊"),
+        ("/uem/may", "Máy tính", "💻"),
+        ("/uem/phan-mem", "Phần mềm", "📦"),
+        ("/uem/bao-mat", "Bảo mật", "🛡️"),
+        ("/uem/trien-khai", "Triển khai WinGet", "🚀"),
+        ("/uem/profiles", "Profiles", "📋"),
+        ("/uem/bao-cao", "Báo cáo", "📄"),
+        ("/uem/quan-tri", "Quản trị", "⚙️"),
+        ("/uem/chua-ho-tro", "Chưa hỗ trợ", "ℹ️"),
+    ]),
+
+    ("nhom", "System Utilities", "🛠️", [
+        ("/nettools", "Network Tools", "🛠️"),
+        ("/deployos", "Deployment OS", "💿"),
+        ("/deployos/trienkhai", "Triển khai phần mềm", "🚀"),
+    ]),
 
     # Noi cat du lieu de dung lai
     ("nhom", "Kho lưu trữ", "📦", [
@@ -73,13 +89,12 @@ NAV_ITEMS = [
         ("/commands", "Thư viện lệnh", "📚"),
     ]),
 
-    ("/logs", "Nhật ký", "📋"),
-    ("/power", "Nguồn điện", "⚡"),
-    ("/giaitri", "Giải trí", "📺"),
-    ("/gopy", "Góp ý", "💬"),
-
     ("nhom", "Cài đặt", "⚙️", [
         ("/settings", "Cài đặt chung", "⚙️"),
+        ("/logs", "Nhật ký", "📋"),
+        ("/power", "Nguồn điện", "⚡"),
+        ("/gopy", "Góp ý", "💬"),
+        ("/giaitri", "Giải trí", "📺"),
         ("/docs", "Tài liệu", "📖"),
     ]),
 ]
@@ -211,6 +226,26 @@ a:hover { color:var(--nhan-dam); }
 .nav .ngr { margin:0; padding:16px 12px 5px; font-size:12px; color:var(--chu-mo2);
     font-weight:500; white-space:nowrap; }
 .nav .ngr:first-child { padding-top:4px; }
+/* Nhom menu dang DROPDOWN: bam tieu de de thu/mo, nho trang thai, nhom chua trang dang mo luon mo. */
+.nav button.gh { display:flex; width:100%; align-items:center; justify-content:space-between; gap:8px; background:transparent;
+    border:0; border-radius:0; min-height:0; padding:18px 12px 6px; margin:0; font:inherit; font-size:14.5px; font-weight:700;
+    letter-spacing:.1px; color:var(--chu); cursor:pointer; text-align:left; box-shadow:none; white-space:normal; line-height:1.25; }
+.nav button.gh:hover { color:var(--nhan); background:transparent; }
+.nav .gc > div { margin-left:14px; padding-left:6px; border-left:1px solid var(--vien); }
+.nav .gc a { font-size:14px; }
+body.thu-gon .nav .gc > div { margin-left:0; padding-left:0; border-left:0; }
+.nav .gr:first-of-type button.gh { padding-top:10px; }
+.nav .gh .chev { flex:none; transition:transform .3s var(--muot); }
+.nav .gr.dong .gh .chev { transform:rotate(-90deg); }
+.nav .gc { display:grid; grid-template-rows:1fr; }
+.nav .gc > div { overflow:hidden; min-height:0; }
+body.nav-ready .nav .gc { transition:grid-template-rows .3s var(--muot); }
+.nav .gr.dong .gc { grid-template-rows:0fr; }
+.nav .gr.dong .gc > div { visibility:hidden; transition:visibility 0s .3s; }
+body.thu-gon .nav .gc { grid-template-rows:1fr !important; }
+body.thu-gon .nav .gc > div { visibility:visible !important; }
+body.thu-gon .nav button.gh { height:1px; padding:0; margin:9px 14px; width:auto; background:var(--vien); font-size:0; overflow:hidden; display:block; }
+body.thu-gon .nav .gh .chev { display:none; }
 /* Vach chon truot theo con tro (JS them class ind-on len body; khong co JS
    thi muc dang mo van to nen nhu cu). */
 .nav { position:relative; }
@@ -513,7 +548,20 @@ svg.i { width:20px; height:20px; flex:none; stroke:currentColor; fill:none;
 .top .tim .tim-chu { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .top .tim kbd { margin-left:auto; white-space:nowrap; font:11px var(--mono); border:1px solid var(--vien);
        border-radius:6px; padding:2px 6px; color:var(--chu-mo2); }
-.top .chips { display:flex; gap:7px; flex-wrap:wrap; align-items:center; min-width:0; overflow:hidden; max-height:44px; }
+.top .chips { display:flex; gap:7px; flex-wrap:wrap; align-items:center; min-width:0; overflow:hidden; max-height:44px;
+       flex:1 1 0; justify-content:flex-end; }
+/* Co gian: JS (khoi 'vua thanh tren') do vung chip, hep thi them f1 (bo ten card), f2 (thu nho), f3 (xuong dong rieng); KHONG bo chip nao - IP khong bao gio bi cat */
+.top.f1 .chip .kd { display:none; }
+.top.f2 .chip { padding:5px 9px; gap:5px; }
+.top.f2 .chip .v, .top.f2 .chip .k { font-size:12px; }
+.top.f3 .chips { flex:1 1 100% !important; order:9; justify-content:flex-start; max-height:none !important; flex-wrap:wrap !important; overflow:visible !important; }
+body.cd-pc .top.f3 { flex-wrap:wrap; }
+.top .chip .k { white-space:nowrap; }
+.top .chip { flex:0 0 auto; }
+.top .chip .v { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.top .tim { flex:0 1 340px; min-width:120px; }
+.top .spacer { display:none; }
+@media (max-width:1250px) { .top .tim { flex-basis:240px; } .top .act .doi-cd .nl-nut { display:none; } .top .act .doi-cd { padding-left:11px; padding-right:11px; } }
 body.cd-pc .top { flex-wrap:nowrap; }
 body.cd-pc .top .nl-nen { display:none; }
 .top .act { flex:none; }
@@ -541,7 +589,6 @@ body.cd-cu .top .tim { display:none; }
    chi hien khi man du rong; van xem duoc o trang Tong quan / Truy cap tu xa. */
 body.cd-cu .top { flex-wrap:nowrap; }
 body.cd-cu .top .chips { flex-wrap:nowrap; }
-@media (max-width: 1500px) { .top .chip.phu { display:none; } }
 body.cd-pc .top .chips { flex-wrap:nowrap; }
 @media (max-width: 1100px) { body.cd-cu .top .nl-nen { display:none; } }
 body.cd-cu .top .ten-cu { display:flex; }
@@ -607,7 +654,7 @@ body.cd-cu .dock { display:flex; position:fixed; left:50%; transform:translateX(
 .tim-nhanh .rong { padding:16px 18px; color:var(--chu-mo); font-size:14px; }
 
 /* ---- Menu trai Che do PC: icon net mat, dong chu gon ---- */
-body.cd-pc .side { width:226px; flex:0 0 226px; }
+body.cd-pc .side { width:252px; flex:0 0 252px; }
 body.cd-pc.thu-gon .side { width:72px; flex:0 0 72px; }
 
 @media (max-width: 760px) {
@@ -623,8 +670,7 @@ body.cd-pc.thu-gon .side { width:72px; flex:0 0 72px; }
   .top { padding:9px 12px; }
   .top .tim { flex-basis:100%; order:5; max-width:none; }
   .top .tim kbd { display:none; }
-  .top .chip.phu { display:none; }
-  .top .chips { flex-wrap:nowrap; overflow-x:auto; max-width:100%; max-height:none; scrollbar-width:none; }
+  .top .chips { flex-wrap:nowrap; overflow-x:auto; max-width:100%; max-height:none; scrollbar-width:none; justify-content:flex-start; }
   .top .chip { flex:none; }
   .top .nl-nen { display:none; }
   .top .act .btn { min-height:44px !important; padding:8px 11px !important; }
@@ -973,6 +1019,7 @@ _SVG = {
  "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
  "temp": '<path d="M14 14.8V4a2 2 0 00-4 0v10.8a4 4 0 104 0z"/>',
  "go": '<path d="M5 12h14M13 6l6 6-6 6"/>',
+ "send": '<path d="M4 12l16-8-6 16-3-7z"/><path d="M11 13l9-9"/>',
  "plus": '<path d="M12 5v14M5 12h14"/>',
  "x": '<path d="M6 6l12 12M18 6L6 18"/>',
  "chip": '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
@@ -980,9 +1027,10 @@ _SVG = {
 
 # Icon cho tung muc menu (theo duong dan). Muc nao khong co thi dung "doc".
 ICON_MUC = {
-    "/": "home", "nhom:Kết nối server": "radar", "/wifi": "wifi", "/bluetooth": "bt",
-    "/remote": "globe", "nhom:Kết nối thiết bị": "plug", "/phien": "list",
-    "/console": "term", "/terminal": "kbd", "/ssh": "key", "/direct": "link",
+    "/": "home", "nhom:Kết nối Console System": "radar", "/wifi": "wifi", "/bluetooth": "bt",
+    "/remote": "globe", "nhom:Quản lý và kết nối thiết bị": "plug", "nhom:System Utilities": "net", "/phien": "list",
+    "/console": "term", "/terminal": "kbd", "/ssh": "key", "/direct": "link", "/deployos/trienkhai": "send", "nhom:Quản lý máy trạm": "pc", "/uem": "home", "/uem/may": "pc", "/uem/phan-mem": "box",
+    "/uem/bao-mat": "key", "/uem/trien-khai": "send", "/uem/profiles": "list", "/uem/bao-cao": "doc", "/uem/quan-tri": "set", "/uem/chua-ho-tro": "info",
     "/nettools": "net", "/deployos": "disk", "nhom:Kho lưu trữ": "box",
     "/storage": "save", "/commands": "book", "/logs": "log", "/power": "pow",
     "/giaitri": "tv", "/gopy": "chat", "nhom:Cài đặt": "set", "/settings": "set",
@@ -1112,6 +1160,15 @@ def gan_phien_tmux(html, session):
 
 
 def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css="", an_tieu_de=False):
+    if active == "/deployos":        # o muc Trien khai phan mem (cac trang dung chung voi Deployment OS) thi sang muc do
+        try:
+            from flask import session as _ss
+            if _ss.get("nc") == "tk":
+                active = "/deployos/trienkhai"
+                if title == "Deployment OS":
+                    title = "Triển khai phần mềm"
+        except Exception:
+            pass
     """
     Dung 1 trang hoan chinh voi khung chung.
       body_html : phan noi dung rieng cua trang (chuoi HTML da render xong)
@@ -1131,13 +1188,15 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
         # O thu 3 tro di (Bluetooth, Cloudflare) an bot tren man hep
         phu = " phu" if idx >= 2 else ""
         chips_html += (
-            f'<div class="chip {cls}{phu}" data-chip="{idx}" title="{c["extra"]}"><div class="k">{c["key"]}</div>'
+            f'<div class="chip {cls}{phu}" data-chip="{idx}" title="{c["extra"]}"><div class="k"><span class="kt"><span class="kl">{c["key"].split(" (")[0]}</span><span class="kd">{(" (" + c["key"].split(" (", 1)[1]) if " (" in c["key"] else ""}</span></span></div>'
             f'<div class="v">{c["val"]}</div><div class="x">{c["extra"]}</div></div>'
         )
 
     def _dang_mo(href):
         """'/' chi sang khi khop tuyet doi; cac muc khac sang khi la tien to."""
-        return (active == href) if href == "/" else active.startswith(href)
+        if href == "/deployos" and active.startswith("/deployos/trienkhai"):
+            return False                      # dang o Trien khai phan mem: khong sang them muc Deployment OS
+        return (active == href) if href in ("/", "/uem") else active.startswith(href)
 
     def _ve_muc(href, label, icon):
         return (f'<a href="{href}" class="{"active" if _dang_mo(href) else ""}" '
@@ -1153,7 +1212,11 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
                           f'<span class="bi">{svg_icon(ICON_MUC.get(muc[0], "doc"))}</span><b>{muc[1]}</b></a>')
             continue
         _, ten_nhom, icon_nhom, cac_con = muc
-        nav_html += f'<p class="ngr">{ten_nhom}</p>' + "".join(_ve_muc(*c) for c in cac_con)
+        co_act = any(_dang_mo(c[0]) for c in cac_con)
+        nav_html += (f'<div class="gr" data-g="{ten_nhom}"><button type="button" class="ngr gh" aria-expanded="true" title="{ten_nhom}">'
+                     f'<span class="gt">{ten_nhom}</span><svg class="chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" '
+                     f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>'
+                     f'<div class="gc"><div>' + "".join(_ve_muc(*c) for c in cac_con) + '</div></div></div>')
         for h, l, _i in cac_con:
             o_to_html += (f'<a class="o-to{" on" if _dang_mo(h) else ""}" href="{h}">'
                           f'<span class="bi">{svg_icon(ICON_MUC.get(h, "doc"))}</span><b>{l}</b><small>{ten_nhom}</small></a>')
@@ -1166,10 +1229,10 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 
     if che_do == "cu":
         nut_doi_cd = (f'<a href="{_link_doi(che_do="pc")}" class="btn doi-cd" '
-                      f'title="Chuyển sang giao diện laptop / PC">{svg_icon("pc")} Chế độ PC</a>')
+                      f'title="Chuyển sang giao diện laptop / PC">{svg_icon("pc")}<span class="nl-nut"> Chế độ PC</span></a>')
     else:
         nut_doi_cd = (f'<a href="{_link_doi(che_do="cu")}" class="btn doi-cd" '
-                      f'title="Chuyển sang giao diện cảm ứng (ô to, thanh dưới)">{svg_icon("hand")} Chế độ cảm ứng</a>')
+                      f'title="Chuyển sang giao diện cảm ứng (ô to, thanh dưới)">{svg_icon("hand")}<span class="nl-nut"> Chế độ cảm ứng</span></a>')
     if nen == "sang":
         nut_nen = (f'<a href="{_link_doi(nen="toi")}" class="btn gray" title="Chuyển nền tối">'
                    f'{svg_icon("moon")}<span class="nl-nen">Tối</span></a>')
@@ -1249,10 +1312,31 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 /* Thu gon / mo rong thanh menu ben trai (Che do PC).
    Nho lua chon vao localStorage de giu nguyen khi chuyen trang. */
 (function() {{
-  var K = 'consolepi-menu-thu-gon';
-  try {{
-    if (localStorage.getItem(K) === '1') document.body.classList.add('thu-gon');
-  }} catch (e) {{}}
+  var KN = 'consolepi-menu-nhom', dong = {{}};
+  try {{ dong = JSON.parse(localStorage.getItem(KN) || '{{}}') || {{}}; }} catch (e) {{}}
+  document.querySelectorAll('.nav .gr').forEach(function(g) {{
+    var id = g.getAttribute('data-g'), b = g.querySelector('.gh');
+    if (dong[id] && !g.querySelector('a.active')) g.classList.add('dong');
+    b.setAttribute('aria-expanded', g.classList.contains('dong') ? 'false' : 'true');
+    b.addEventListener('click', function() {{
+      var d = g.classList.toggle('dong'); b.setAttribute('aria-expanded', d ? 'false' : 'true'); dong[id] = d;
+      try {{ localStorage.setItem(KN, JSON.stringify(dong)); }} catch (e) {{}}
+      setTimeout(function() {{ if (window.csNavInd) window.csNavInd(); }}, 340);
+    }});
+  }});
+  requestAnimationFrame(function() {{ document.body.classList.add('nav-ready'); }});
+}})();
+(function() {{
+  var K = 'consolepi-menu-thu-gon', mq = matchMedia('(max-width:1100px)');
+  /* Chua tung chon thi tu thu gon thanh menu khi man hinh hep (<1100px), mo lai khi rong */
+  function tuDong() {{
+    var v = null; try {{ v = localStorage.getItem(K); }} catch (e) {{}}
+    if (v === '1') document.body.classList.add('thu-gon');
+    else if (v === '0') document.body.classList.remove('thu-gon');
+    else document.body.classList.toggle('thu-gon', mq.matches);
+  }}
+  tuDong();
+  if (mq.addEventListener) mq.addEventListener('change', function() {{ tuDong(); if (window.csNavInd) setTimeout(window.csNavInd, 340); }});
   var n = document.getElementById('nut-thu');
   if (!n) return;
   function veLai() {{
@@ -1263,11 +1347,32 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
   n.addEventListener('click', function() {{
     var gon = document.body.classList.toggle('thu-gon');
     try {{ localStorage.setItem(K, gon ? '1' : '0'); }} catch (e) {{}}
-    document.querySelectorAll('.nav .nhom').forEach(function(d) {{
-      if (gon) d.open = true;
-    }});
     veLai();
   }});
+}})();
+/* Thanh tren: tu co gian cac chip trang thai theo cho trong thuc te. */
+(function() {{
+  var top = document.querySelector('.top'), cs = top && top.querySelector('.chips');
+  if (!top || !cs) return;
+  function tran() {{
+    var tong = 0, n = 0;
+    cs.querySelectorAll('.chip').forEach(function(c) {{ if (c.offsetParent) {{ tong += c.offsetWidth; n++; }} }});
+    return tong + Math.max(0, n - 1) * 7 > cs.clientWidth + 1;
+  }}
+  var cho = 0;
+  function vua() {{
+    top.classList.remove('f1', 'f2', 'f3');
+    /* Khong bao gio bo chip: bo (ten card) -> thu nho -> xuong dong rieng. Luon thay LAN / WiFi / Bluetooth / Cloudflare. */
+    if (tran()) top.classList.add('f1');
+    if (tran()) top.classList.add('f2');
+    if (tran()) {{ top.classList.remove('f1', 'f2'); top.classList.add('f3'); }}
+  }}
+  function hen() {{ cancelAnimationFrame(cho); cho = requestAnimationFrame(vua); }}
+  vua();
+  addEventListener('resize', hen);
+  if (window.ResizeObserver) new ResizeObserver(hen).observe(top);
+  if (window.MutationObserver) new MutationObserver(hen).observe(cs, {{ subtree: true, childList: true, characterData: true }});
+  setTimeout(vua, 400);
 }})();
 /* Vach chon menu trai truot theo con tro (chi che do PC). */
 (function() {{
@@ -1279,6 +1384,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     ind.style.transform = 'translateY(' + a.offsetTop + 'px)';
     ind.style.opacity = 1; ind.classList.toggle('hov', !!hov);
   }}
+  window.csNavInd = function() {{ var a = nav.querySelector('a.active'); if (a && a.offsetParent) {{ den(a, false); }} }};
   document.body.classList.add('ind-on');
   if (cur) {{ ind.style.transition = 'none'; den(cur, false);
     requestAnimationFrame(function() {{ ind.style.transition = ''; }}); }}

@@ -219,6 +219,33 @@ def _pxe_boot_cong_khai():
         return False
 
 
+def _tk_tai_cong_khai():
+    """
+    /tk/tai/<token>/<ten>: may Windows dich (dang duoc Trien khai phan mem cai dat) tu tai goi cai ve - no khong co tai
+    khoan dashboard. An toan vi: (1) token ngau nhien 128 bit do tien trinh trien khai tao cho DUNG file do, het han
+    sau 2 gio; (2) chi cho client o mang noi bo (IP rieng); (3) khong liet ke duoc gi, doan token la khong kha thi.
+    """
+    if not request.path.startswith("/tk/tai/"):
+        return False
+    if not _khach_trong_mang_noi_bo():
+        return False
+    try:
+        _, _, _, tok, ten = request.path.split("/", 4)
+        from . import tk_dongco as _dc
+        return _dc.tra_token(tok, ten) is not None
+    except Exception:
+        return False
+
+
+def _uem_agent_cong_khai():
+    """
+    /uem/agent/*: agent Windows (Quan ly may tram) tu bao nhip / nhan viec / tra ket qua - khong co tai khoan dashboard.
+    An toan vi: (1) chi nhan tu mang noi bo, khong qua Cloudflare/proxy (cung kiem tra voi /tk/tai); (2) MOI duong deu tu doi
+    token rieng cua tung may (256 bit, chi luu ma bam, compare_digest) trong ui/uem_agent_trang.py - sai token tra 403.
+    """
+    return request.path.startswith("/uem/agent/") and _khach_trong_mang_noi_bo()
+
+
 def _bao_tien_trinh_cong_khai():
     """
     /api/tiendo/* phai KHONG can dang nhap: may vua duoc cai xong tu bao
@@ -319,6 +346,10 @@ def register_auth(app):
             return None          # may dang boot qua PXE - xem muc dich o duoi
         if _bao_tien_trinh_cong_khai():
             return None          # may vua cai xong bao tien trinh - xem duoi
+        if _tk_tai_cong_khai():
+            return None          # may dich tai goi cai (Trien khai phan mem) - xem duoi
+        if _uem_agent_cong_khai():
+            return None          # agent Windows cua Quan ly may tram - xem muc dich o duoi
 
         return redirect("/login")
 

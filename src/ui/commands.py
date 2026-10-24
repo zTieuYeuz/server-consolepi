@@ -376,23 +376,112 @@ def _esc(s):
             .replace(">", "&gt;").replace('"', "&quot;"))
 
 
-# CSS + JS cho o tim kiem. De rieng ngoai f-string vi trong JS co rat nhieu
-# dau ngoac nhon - nhet vao f-string phai nhan doi het, rat de sai va kho doc.
+# ---------------------------------------------------------------------------
+# GIAO DIEN THU VIEN LENH (lam lai 22/10/2026 theo yeu cau anh Thoai: "de nhin, de them, thuc te").
+#
+# Truoc day: luoi the, moi the dai ca man hinh, nut xep chong len nhau, form them nam gap sau cung
+# danh sach. Nay: DANH SACH ben trai (tim + loc the) / CHI TIET ben phai (xem, sua, them ngay tai cho),
+# nhin mot man hinh la thay het va chon duoc ngay.
+#   - Du lieu day xuong trang bang mot khoi JSON, JS ve giao dien bang createElement/textContent
+#     (khong dung innerHTML voi du lieu nguoi dung -> khong the chen ma).
+#   - Cac duong POST cu (/commands/add|update|delete|send) giu nguyen, chi them tham so `chon`
+#     de sau khi luu van dang xem dung tap lenh do.
+#   - Cho can dien khi dung viet {{ten}} (phien.py da hieu cu phap nay) - hien noi bat trong khoi lenh.
+# ---------------------------------------------------------------------------
 LIB_CSS = """
 <style>
-.tim-hop { display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
-.tim-hop input { max-width:420px; }
-.the-loc { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px; }
-.the-loc .the { background:#22262b; border:1px solid #363b42; color:#a8b0bd;
-                border-radius:99px; padding:6px 13px; font-size:13px; cursor:pointer;
-                min-height:34px; }
-.the-loc .the:hover { background:#2c3036; color:#fff; }
-.lenh-luoi { display:grid; grid-template-columns:repeat(auto-fill,minmax(345px,1fr)); gap:13px; }
-.lenh-luoi .card { margin-bottom:0; display:flex; flex-direction:column; }
-.lenh-luoi pre { max-height:132px; overflow:auto; margin:9px 0 0; flex:1; }
-.tap-ten { margin:0 0 3px; font-size:15px; color:#4CAF50; }
-.tap-mo-ta { color:#8b93a1; font-size:13px; }
-.tap-meta { color:#6b7280; font-size:12px; margin-top:4px; }
+.tv { display:grid; grid-template-columns:minmax(300px,380px) minmax(0,1fr); gap:18px; align-items:start; }
+.tv-ds { position:sticky; top:12px; display:flex; flex-direction:column; gap:12px; max-height:calc(100vh - 120px); }
+.tv-tim { display:flex; gap:8px; }
+.tv-o { position:relative; flex:1; min-width:0; }
+.tv-o svg { position:absolute; left:12px; top:50%; width:18px; height:18px; transform:translateY(-50%);
+            stroke:var(--chu-mo2); fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+.tv-o input { width:100%; max-width:none; padding-left:38px; padding-right:38px; height:44px; margin:0; }
+.tv-o button { position:absolute; right:6px; top:50%; transform:translateY(-50%); width:32px; height:32px; min-height:32px;
+               padding:0; border-radius:8px; background:transparent; border:0; color:var(--chu-mo); cursor:pointer; display:none; }
+.tv-o button:hover { background:var(--hang-nen); color:var(--chu); }
+.tv-moi { height:44px; padding:0 16px; border-radius:8px; border:0; cursor:pointer; background:var(--nhan);
+          color:var(--chu-tren-nhan); font:600 14.5px var(--chu-font); display:inline-flex; align-items:center; gap:7px;
+          white-space:nowrap; transition:transform .5s var(--muot), filter .3s var(--muot); }
+.tv-moi:hover { filter:brightness(1.08); } .tv-moi:active { transform:scale(.97); }
+.tv-moi svg, .tv-nut svg { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.tv-the { display:flex; gap:6px; flex-wrap:wrap; }
+.tv-the button { background:transparent; border:1px solid var(--vien-ro); color:var(--chu-mo); border-radius:99px;
+                 padding:0 12px; height:32px; min-height:32px; font:500 13px var(--chu-font); cursor:pointer;
+                 transition:background .35s var(--muot), color .35s var(--muot), border-color .35s var(--muot); }
+.tv-the button:hover { color:var(--chu); border-color:var(--chu-mo2); }
+.tv-the button.on { background:var(--nhan-mo); color:var(--nhan); border-color:var(--nhan); }
+.tv-the button small { opacity:.7; margin-left:5px; font-size:11.5px; }
+.tv-dem { color:var(--chu-mo2); font-size:12.5px; margin:-2px 2px 0; }
+.tv-list { list-style:none; margin:0; padding:0; overflow:auto; border:1px solid var(--vien); border-radius:var(--bo);
+           background:var(--the); scrollbar-width:thin; }
+.tv-list li { margin:0; }
+.tv-list li + li button { border-top:1px solid var(--vien); }
+.tv-list button { width:100%; text-align:left; background:transparent; border:0; color:var(--chu); cursor:pointer;
+                  padding:13px 16px 13px 18px; min-height:62px; display:grid; grid-template-columns:1fr auto; gap:2px 12px;
+                  position:relative; font-family:var(--chu-font); border-radius:0; transition:background .3s var(--muot); }
+.tv-list button:hover { background:var(--hang-hover); }
+.tv-list button.on { background:var(--nhan-mo); }
+.tv-list button.on::before { content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:0 3px 3px 0; background:var(--nhan); }
+.tv-list b { font-size:14.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tv-list em { font-style:normal; font-size:12.5px; color:var(--chu-mo2); align-self:center; }
+.tv-list small { grid-column:1 / -1; color:var(--chu-mo); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tv-list mark { background:var(--vang-mo); color:var(--vang); border-radius:3px; padding:0 1px; }
+.tv-trong { padding:26px 18px; color:var(--chu-mo); font-size:14px; text-align:center; }
+.tv-vo { background:var(--the-noi); border:1px solid var(--vien); border-radius:var(--bo); padding:6px; min-width:0; }
+.tv-ct { background:var(--the); border-radius:calc(var(--bo) - 6px); padding:24px 26px 26px; min-height:360px; }
+.tv-ct h2 { margin:0 0 6px; font-size:22px; letter-spacing:-.02em; }
+.tv-mo-ta { color:var(--chu-mo); font-size:14.5px; line-height:1.5; margin:0 0 14px; }
+.tv-tag { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 18px; }
+.tv-tag span { background:var(--nhan-mo); color:var(--nhan); border-radius:99px; padding:3px 11px; font-size:12.5px; font-weight:500; }
+.tv-nut-hang { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px; }
+.tv-nut { height:44px; min-height:44px; padding:0 15px; border-radius:8px; cursor:pointer; text-decoration:none;
+          font:550 14px var(--chu-font); display:inline-flex; align-items:center; gap:7px; border:1px solid var(--vien-ro);
+          background:transparent; color:var(--chu); transition:transform .5s var(--muot), background .3s var(--muot), border-color .3s var(--muot); }
+.tv-nut:hover { background:var(--hang-nen); border-color:var(--chu-mo2); color:var(--chu); }
+.tv-nut:active { transform:scale(.97); }
+.tv-nut.chinh { background:var(--nhan); border-color:var(--nhan); color:var(--chu-tren-nhan); }
+.tv-nut.chinh:hover { filter:brightness(1.08); background:var(--nhan); color:var(--chu-tren-nhan); }
+.tv-nut.nguy { color:var(--do); border-color:var(--do-mo); }
+.tv-nut.nguy:hover { background:var(--do-mo); border-color:var(--do); color:var(--do); }
+.tv-ma { display:flex; justify-content:space-between; align-items:center; color:var(--chu-mo2); font-size:12.5px; margin:0 0 8px; }
+.tv-code { margin:0; background:var(--pre-nen); border:1px solid var(--vien); border-radius:10px; overflow:auto; max-height:46vh;
+           font:13.5px/1.65 var(--mono); color:var(--pre-chu); counter-reset:d; }
+.tv-code div { display:flex; padding:0 14px 0 0; white-space:pre; }
+.tv-code div:first-child { padding-top:12px; } .tv-code div:last-child { padding-bottom:12px; }
+.tv-code div::before { counter-increment:d; content:counter(d); flex:0 0 42px; text-align:right; padding-right:14px; color:var(--chu-mo2); opacity:.6; user-select:none; }
+.tv-code i { font-style:normal; background:var(--vang-mo); color:var(--vang); border-radius:4px; padding:0 3px; }
+.tv-goi { color:var(--chu-mo); font-size:13px; margin:12px 0 0; line-height:1.55; }
+.tv-goi i { font-style:normal; background:var(--vang-mo); color:var(--vang); border-radius:4px; padding:0 3px; font-family:var(--mono); }
+.tv-f label { display:block; font-size:13px; font-weight:600; color:var(--chu-mo); margin:16px 0 6px; }
+.tv-f label:first-of-type { margin-top:0; }
+.tv-f input[type=text], .tv-f textarea { width:100%; max-width:none; margin:0; }
+.tv-f textarea { font:13.5px/1.6 var(--mono); min-height:230px; resize:vertical; tab-size:2; }
+.tv-f .ghi { color:var(--chu-mo2); font-size:12.5px; margin:6px 0 0; line-height:1.5; }
+.tv-f .ghi i { font-style:normal; font-family:var(--mono); background:var(--vang-mo); color:var(--vang); border-radius:4px; padding:0 3px; }
+.tv-goiy { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.tv-goiy button { background:transparent; border:1px dashed var(--vien-ro); color:var(--chu-mo); border-radius:99px; padding:0 11px;
+                  height:30px; min-height:30px; font:500 12.5px var(--chu-font); cursor:pointer; }
+.tv-goiy button:hover { color:var(--nhan); border-color:var(--nhan); }
+.tv-mau { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:12px 14px; border:1px dashed var(--vien-ro);
+          border-radius:10px; margin:0 0 20px; color:var(--chu-mo); font-size:13.5px; }
+.tv-mau button { background:var(--hang-nen); border:1px solid var(--vien-ro); color:var(--chu); border-radius:8px; height:34px;
+                 min-height:34px; padding:0 12px; font:500 13px var(--chu-font); cursor:pointer; }
+.tv-mau button:hover { border-color:var(--nhan); color:var(--nhan); }
+.tv-rong { text-align:center; padding:60px 20px; color:var(--chu-mo); }
+.tv-rong h2 { color:var(--chu); }
+.tv-thongbao { margin:0 0 16px; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.5; border:1px solid; }
+.tv-thongbao.ok { background:var(--xanh-mo); color:var(--msg-ok); border-color:rgba(67,212,146,.35); }
+.tv-thongbao.loi { background:var(--do-mo); color:var(--msg-err); border-color:rgba(239,107,107,.4); }
+.tv-ct { animation:tv-vao .6s var(--muot) both; }
+@keyframes tv-vao { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce) { .tv-ct { animation:none; } }
+@media (max-width:900px) {
+  .tv { grid-template-columns:1fr; }
+  .tv-ds { position:static; max-height:none; }
+  .tv-list { max-height:300px; }
+  .tv-ct { padding:18px 16px 20px; }
+}
 </style>
 """
 
@@ -400,156 +489,243 @@ LIB_JS = """
 <script>
 (function () {
   "use strict";
-  var o = document.getElementById("tim_lenh");
-  if (!o) return;
-  var nutXoa = document.getElementById("xoa_tim");
-  var dem = document.getElementById("dem_kq");
-  var trong = document.getElementById("khong_thay");
-  var the = Array.prototype.slice.call(document.querySelectorAll("[data-tim]"));
+  var D = JSON.parse(document.getElementById("tv-data").textContent);
+  var ITEMS = D.items;            // [{i, name, desc, tags, commands}] - i = chi so that trong file
+  var NS = "http://www.w3.org/2000/svg";
+  var q = "", the = "", chon = null;
+  var $ = function (id) { return document.getElementById(id); };
 
-  function loc() {
-    var q = (o.value || "").trim().toLowerCase();
-    var hien = 0;
-    the.forEach(function (el) {
-      var khop = !q || (el.getAttribute("data-tim") || "").indexOf(q) >= 0;
-      el.style.display = khop ? "" : "none";
-      if (khop) hien++;
-    });
-    dem.textContent = hien + "/" + the.length;
-    trong.style.display = hien ? "none" : "block";
-    nutXoa.style.display = q ? "inline-block" : "none";
+  var ICON = {
+    plus: "M12 5v14M5 12h14", search: "M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4", x: "M6 6l12 12M18 6L6 18",
+    send: "M4 12l16-8-6 16-3-7z", link: "M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1",
+    copy: "M9 9h11v11H9zM5 15V4h11", edit: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4", trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
+    dup: "M8 8h12v12H8zM4 16V4h12", save: "M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7"
+  };
+  function icon(n) {
+    var s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("aria-hidden", "true");
+    var p = document.createElementNS(NS, "path"); p.setAttribute("d", ICON[n]); s.appendChild(p); return s;
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e;
+  }
+  function bo(s) {   // bo dau de tim khong can go dau
+    return (s || "").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/đ/g, "d");
+  }
+  function cacThe(it) { return (it.tags || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean); }
+  function soLenh(it) { return (it.commands || "").split("\\n").filter(function (l) { return l.trim(); }).length; }
+  function khop(it) {
+    if (the && cacThe(it).map(bo).indexOf(the) < 0) return false;
+    if (!q) return true;
+    return bo([it.name, it.desc, it.tags, it.commands].join(" ")).indexOf(q) >= 0;
+  }
+  // to sang tu khoa dang tim trong ten (khong dung innerHTML)
+  function toSang(node, text) {
+    var k = q ? bo(text).indexOf(q) : -1;
+    if (k < 0) { node.textContent = text; return; }
+    node.appendChild(document.createTextNode(text.slice(0, k)));
+    node.appendChild(el("mark", null, text.slice(k, k + q.length)));
+    node.appendChild(document.createTextNode(text.slice(k + q.length)));
   }
 
-  o.addEventListener("input", loc);
-  nutXoa.addEventListener("click", function () { o.value = ""; loc(); o.focus(); });
-
-  // Bam vao the (tag) = loc theo the do. Tien khi dung man hinh cam ung
-  // khong co ban phim: khong can go chu nao van loc duoc.
-  document.querySelectorAll("[data-the]").forEach(function (c) {
-    c.addEventListener("click", function () {
-      var t = c.getAttribute("data-the");
-      o.value = (o.value.trim().toLowerCase() === t) ? "" : t;   // bam lai = bo loc
-      loc();
+  // ---------------------------------------------------------------- danh sach ben trai
+  function veThe() {
+    var dem = {}, ten = {};
+    ITEMS.forEach(function (it) { cacThe(it).forEach(function (t) { var k = bo(t); dem[k] = (dem[k] || 0) + 1; ten[k] = ten[k] || t; }); });
+    var h = $("tv-the"); h.textContent = "";
+    var tatca = el("button", the ? "" : "on", "Tất cả"); tatca.type = "button";
+    tatca.onclick = function () { the = ""; ve(); }; h.appendChild(tatca);
+    Object.keys(dem).sort().forEach(function (k) {
+      var b = el("button", the === k ? "on" : "", ten[k]); b.type = "button";
+      b.appendChild(el("small", null, String(dem[k])));
+      b.onclick = function () { the = (the === k) ? "" : k; ve(); };
+      h.appendChild(b);
     });
-  });
+  }
+  function veDs() {
+    var ul = $("tv-list"); ul.textContent = "";
+    var hien = ITEMS.filter(khop).sort(function (a, b) { return a.name.localeCompare(b.name, "vi"); });
+    $("tv-dem").textContent = hien.length + " / " + ITEMS.length + " tập lệnh";
+    if (!hien.length) {
+      ul.appendChild(el("li", "tv-trong", ITEMS.length ? "Không có tập lệnh nào khớp. Thử từ khóa ngắn hơn hoặc bỏ lọc thẻ." : "Thư viện đang trống."));
+      return;
+    }
+    hien.forEach(function (it) {
+      var li = el("li"), b = el("button", chon === it.i ? "on" : ""); b.type = "button";
+      var t = el("b"); toSang(t, it.name); b.appendChild(t);
+      b.appendChild(el("em", null, soLenh(it) + " lệnh"));
+      if (it.desc) b.appendChild(el("small", null, it.desc));
+      b.onclick = function () { xem(it.i); };
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  function ve() { veThe(); veDs(); $("tv-xoa").style.display = q ? "block" : "none"; }
 
-  loc();
+  // ---------------------------------------------------------------- phan chi tiet
+  function postForm(action, fields) {
+    var f = el("form"); f.method = "POST"; f.action = action; f.style.display = "none";
+    Object.keys(fields).forEach(function (k) { var i = el("input"); i.type = "hidden"; i.name = k; i.value = fields[k]; f.appendChild(i); });
+    document.body.appendChild(f); f.submit();
+  }
+  function sao(text) {
+    function du() { var t = el("textarea"); t.value = text; t.style.position = "fixed"; t.style.opacity = "0"; document.body.appendChild(t); t.select();
+      try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(t); }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(du); else du();
+  }
+  function nutBam(cls, ic, nhan, fn, tag) {
+    var b = el(tag || "button", "tv-nut " + (cls || "")); if (!tag) b.type = "button";
+    b.appendChild(icon(ic)); b.appendChild(document.createTextNode(nhan)); if (fn) b.onclick = fn; return b;
+  }
+  function khungChiTiet() { var c = $("tv-ct"); var m = c.cloneNode(false); c.parentNode.replaceChild(m, c); return m; }
+  function thongBao(ct) {
+    if (!D.msg) return; ct.appendChild(el("div", "tv-thongbao " + (D.ok ? "ok" : "loi"), D.msg)); D.msg = "";
+  }
+  function hash(i) { try { history.replaceState(null, "", i == null ? location.pathname : "#" + i); } catch (e) {} }
+
+  function xem(i) {
+    chon = i; var it = ITEMS.filter(function (x) { return x.i === i; })[0]; hash(i); veDs();
+    var ct = khungChiTiet(); if (!it) { rong(); return; }
+    thongBao(ct);
+    ct.appendChild(el("h2", null, it.name));
+    if (it.desc) ct.appendChild(el("p", "tv-mo-ta", it.desc));
+    var tg = cacThe(it);
+    if (tg.length) { var t = el("div", "tv-tag"); tg.forEach(function (x) { t.appendChild(el("span", null, x)); }); ct.appendChild(t); }
+    var h = el("div", "tv-nut-hang");
+    h.appendChild(nutBam("chinh", "send", "Gửi vào Terminal", function () { postForm("/commands/send", { index: i, chon: i }); }));
+    var lk = nutBam("", "link", "Dùng trong Phiên kết nối", null, "a"); lk.href = "/phien?lenh=" + i; h.appendChild(lk);
+    var cp = nutBam("", "copy", "Sao chép", function () { sao(it.commands); cp.lastChild.textContent = "Đã chép"; setTimeout(function () { cp.lastChild.textContent = "Sao chép"; }, 1600); });
+    h.appendChild(cp);
+    h.appendChild(nutBam("", "edit", "Sửa", function () { sua(i); }));
+    h.appendChild(nutBam("", "dup", "Nhân bản", function () { moi({ name: it.name + " (bản sao)", desc: it.desc, tags: it.tags, commands: it.commands }); }));
+    h.appendChild(nutBam("nguy", "trash", "Xóa", function () { if (confirm("Xóa tập lệnh \\"" + it.name + "\\"?")) postForm("/commands/delete", { index: i }); }));
+    ct.appendChild(h);
+    var ma = el("div", "tv-ma"); ma.appendChild(el("span", null, soLenh(it) + " lệnh")); ct.appendChild(ma);
+    var pre = el("div", "tv-code"), coBien = false;
+    it.commands.replace(/\\r/g, "").split("\\n").forEach(function (dong) {
+      var d = el("div"); var re = /\\{\\{[^{}]+\\}\\}/g, k = 0, m;
+      if (!dong) d.appendChild(document.createTextNode(" "));
+      while ((m = re.exec(dong))) {
+        coBien = true; d.appendChild(document.createTextNode(dong.slice(k, m.index))); d.appendChild(el("i", null, m[0])); k = m.index + m[0].length;
+      }
+      if (dong) d.appendChild(document.createTextNode(dong.slice(k)));
+      pre.appendChild(d);
+    });
+    ct.appendChild(pre);
+    var g = el("p", "tv-goi");
+    if (coBien) { g.appendChild(document.createTextNode("Chỗ tô vàng như ")); g.appendChild(el("i", null, "{{ten}}")); g.appendChild(document.createTextNode(" là chỗ cần điền: mở bằng ")); g.appendChild(el("b", null, "Dùng trong Phiên kết nối")); g.appendChild(document.createTextNode(" thì có ô nhập để điền rồi mới gửi. ")); }
+    g.appendChild(document.createTextNode("Gửi vào Terminal chỉ dán lệnh, không tự bấm Enter ở dòng cuối: đọc lại rồi tự chạy."));
+    ct.appendChild(g);
+  }
+
+  var MAU = [
+    { ten: "Cisco: gán VLAN cho 1 cổng", name: "Gán VLAN cho cổng", desc: "Điền tên cổng và số VLAN khi dùng", tags: "cisco, vlan",
+      commands: "interface {{cổng}}\\n switchport mode access\\n switchport access vlan {{vlan}}\\n no shutdown" },
+    { ten: "Linux: kiểm tra mạng", name: "Kiểm tra mạng Linux", desc: "Địa chỉ, đường đi, ping thử một máy", tags: "linux, mạng",
+      commands: "ip -br addr\\nip route\\nping -c 3 {{địa chỉ}}" },
+    { ten: "Windows: thông tin máy", name: "Thông tin máy Windows", desc: "Tên máy, địa chỉ mạng, phiên bản", tags: "windows, xem",
+      commands: "hostname\\nipconfig /all\\nsysteminfo" }
+  ];
+
+  function bieuMau(it, laSua) {
+    var ct = khungChiTiet(); thongBao(ct);
+    ct.appendChild(el("h2", null, laSua ? "Sửa tập lệnh" : "Thêm tập lệnh mới"));
+    ct.appendChild(el("p", "tv-mo-ta", laSua ? "Sửa xong bấm Lưu, thay đổi có hiệu lực ngay." : "Điền tên và các lệnh là đủ, mô tả và thẻ để sau cũng được."));
+    var f = el("form", "tv-f"); f.method = "POST"; f.action = laSua ? "/commands/update" : "/commands/add";
+    if (laSua) { var ix = el("input"); ix.type = "hidden"; ix.name = "index"; ix.value = it.i; f.appendChild(ix); }
+    var o = {};
+    function truong(nhan, ten, thuoc, ghiChu) {
+      var l = el("label", null, nhan); l.setAttribute("for", "tv-" + ten); f.appendChild(l);
+      var e = el(thuoc.t || "input"); if (!thuoc.t) e.type = "text"; e.name = ten; e.id = "tv-" + ten; e.value = it[ten] || "";
+      if (thuoc.ph) e.placeholder = thuoc.ph; if (thuoc.req) e.required = true; if (thuoc.rows) e.rows = thuoc.rows;
+      f.appendChild(e); o[ten] = e; if (ghiChu) f.appendChild(ghiChu); return e;
+    }
+    if (!laSua) {
+      var mau = el("div", "tv-mau"); mau.appendChild(el("span", null, "Bắt đầu nhanh từ mẫu:"));
+      MAU.forEach(function (m) { var b = el("button", null, m.ten); b.type = "button";
+        b.onclick = function () { ["name", "desc", "tags", "commands"].forEach(function (k) { o[k].value = m[k]; }); dem(); }; mau.appendChild(b); });
+      ct.appendChild(mau);
+    }
+    truong("Tên tập lệnh", "name", { req: true, ph: "Ví dụ: Gán VLAN cho 1 cổng" });
+    truong("Mô tả ngắn", "desc", { ph: "Ghi rõ chỗ nào cần sửa trước khi chạy" });
+    var gy = el("div", "tv-goiy");
+    var tg = truong("Thẻ, cách nhau bằng dấu phẩy (để lọc nhanh bên trái)", "tags", { ph: "cisco, vlan" }, gy);
+    var co = {}; ITEMS.forEach(function (x) { cacThe(x).forEach(function (t) { co[t] = 1; }); });
+    Object.keys(co).sort().slice(0, 12).forEach(function (t) {
+      var b = el("button", null, "+ " + t); b.type = "button";
+      b.onclick = function () { var c = cacThe({ tags: tg.value }); if (c.map(bo).indexOf(bo(t)) < 0) c.push(t); tg.value = c.join(", "); }; gy.appendChild(b);
+    });
+    var gc = el("p", "ghi"); gc.appendChild(document.createTextNode("Mỗi dòng một lệnh. Chỗ cần điền khi dùng thì viết dạng "));
+    gc.appendChild(el("i", null, "{{tên}}")); gc.appendChild(document.createTextNode(", ví dụ ")); gc.appendChild(el("i", null, "interface {{cổng}}"));
+    gc.appendChild(document.createTextNode(". "));
+    var dm = el("span"); gc.appendChild(dm);
+    var ta = truong("Các lệnh", "commands", { t: "textarea", req: true, ph: "show version\\nshow ip interface brief" }, gc);
+    function dem() { var n = ta.value.split("\\n").filter(function (l) { return l.trim(); }).length; dm.textContent = n ? n + " lệnh." : ""; }
+    ta.addEventListener("input", dem); dem();
+    ta.addEventListener("keydown", function (e) {      // Tab chen 2 dau cach thay vi nhay khoi o
+      if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); var s = ta.selectionStart; ta.value = ta.value.slice(0, s) + "  " + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 2; }
+    });
+    var h = el("div", "tv-nut-hang"); h.style.marginTop = "20px";
+    var ok = el("button", "tv-nut chinh"); ok.type = "submit"; ok.appendChild(icon("save")); ok.appendChild(document.createTextNode(laSua ? "Lưu thay đổi" : "Thêm vào thư viện")); h.appendChild(ok);
+    var hu = nutBam("", "x", "Hủy", function () { if (laSua) xem(it.i); else if (chon != null) xem(chon); else rong(); }); h.appendChild(hu);
+    f.appendChild(h); ct.appendChild(f);
+    o.name.focus();
+  }
+  function sua(i) { chon = i; hash(i); veDs(); bieuMau(ITEMS.filter(function (x) { return x.i === i; })[0], true); }
+  function moi(goc) { chon = null; hash(null); veDs(); bieuMau(goc || { name: "", desc: "", tags: "", commands: "" }, false); }
+  function rong() {
+    var ct = khungChiTiet(); thongBao(ct);
+    var r = el("div", "tv-rong"); r.appendChild(el("h2", null, ITEMS.length ? "Chọn một tập lệnh bên trái" : "Thư viện đang trống"));
+    r.appendChild(el("p", null, ITEMS.length ? "Hoặc bấm Thêm mới để lưu một tập lệnh của bạn." : "Bấm Thêm mới để lưu tập lệnh đầu tiên."));
+    ct.appendChild(r);
+  }
+
+  $("tv-tim").addEventListener("input", function (e) { q = bo(e.target.value.trim()); ve(); });
+  $("tv-xoa").addEventListener("click", function () { $("tv-tim").value = ""; q = ""; ve(); $("tv-tim").focus(); });
+  $("tv-moi").addEventListener("click", function () { moi(); });
+  ve();
+  var h0 = (location.hash || "").replace("#", "");
+  if (D.edit != null) sua(D.edit);
+  else if (D.chon != null && ITEMS.some(function (x) { return x.i === D.chon; })) xem(D.chon);
+  else if (/^\\d+$/.test(h0) && ITEMS.some(function (x) { return x.i === +h0; })) xem(+h0);
+  else if (D.msg) rong();
+  else if (ITEMS.length) xem(ITEMS.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "vi"); })[0].i);
+  else moi();
 })();
 </script>
 """
 
 
-def render_library_page(msg="", ok=True, edit_index=None):
+def render_library_page(msg="", ok=True, edit_index=None, chon=None):
     items = load_library()
-
-    # Gom the (tag) duy nhat de lam nut loc nhanh
-    tat_ca_the = []
-    for it in items:
-        for t in (it.get("tags") or "").split(","):
-            t = t.strip().lower()
-            if t and t not in tat_ca_the:
-                tat_ca_the.append(t)
-    the_html = "".join(
-        f'<button type="button" class="the" data-the="{_esc(t)}">{_esc(t)}</button>'
-        for t in sorted(tat_ca_the)
-    )
-    the_khoi = f'<div class="the-loc">{the_html}</div>' if the_html else ""
-
-    rows = ""
-    for i, it in enumerate(items):
-        cmds = _esc(it.get("commands", ""))
-        n_lines = len([l for l in it.get("commands", "").splitlines() if l.strip()])
-        # Chuoi de tim kiem: gom ten + mo ta + the + noi dung lenh, viet
-        # thuong san de JS chi viec so sanh, khong phai xu ly gi them.
-        kho_tim = _esc(" ".join([
-            it.get("name", ""), it.get("desc", ""),
-            it.get("tags", ""), it.get("commands", ""),
-        ]).lower())
-        rows += f"""
-        <div class="card" data-tim="{kho_tim}">
-          <h3 class="tap-ten">{_esc(it.get('name'))}</h3>
-          <div class="tap-mo-ta">{_esc(it.get('desc'))}</div>
-          <div class="tap-meta">{n_lines} lệnh &middot; {_esc(it.get('tags'))}</div>
-          <pre>{cmds}</pre>
-          <div class="row" style="margin-top:10px;">
-            <form method="POST" action="/commands/send" style="display:inline;">
-              <input type="hidden" name="index" value="{i}">
-              <button type="submit" class="blue small">⌨️ Gửi vào Terminal</button>
-            </form>
-            <a class="btn small" href="/phien?lenh={i}">Dùng trong Phiên kết nối</a>
-            <a class="btn gray small" href="/commands?edit={i}">✏️ Sửa</a>
-            <form method="POST" action="/commands/delete" style="display:inline;"
-                  onsubmit="return confirm('Xóa tập lệnh &quot;{_esc(it.get('name'))}&quot;?');">
-              <input type="hidden" name="index" value="{i}">
-              <button type="submit" class="red small">🗑 Xóa</button>
-            </form>
-          </div>
-        </div>"""
-
-    if not items:
-        rows = '<div class="msg info">Thư viện đang trống. Thêm tập lệnh đầu tiên ở bên dưới.</div>'
-
-    # Form them moi hoac sua
-    editing = edit_index is not None and 0 <= edit_index < len(items)
-    cur = items[edit_index] if editing else {"name": "", "desc": "", "tags": "", "commands": ""}
-    action = "/commands/update" if editing else "/commands/add"
-
-    form_ruot = f"""
-      <form method="POST" action="{action}">
-        {f'<input type="hidden" name="index" value="{edit_index}">' if editing else ''}
-        <label>Tên tập lệnh</label>
-        <input type="text" name="name" required value="{_esc(cur.get('name'))}"
-               placeholder="Ví dụ: Gán VLAN cho 1 cổng">
-        <label>Mô tả ngắn</label>
-        <input type="text" name="desc" value="{_esc(cur.get('desc'))}"
-               placeholder="Nhớ ghi rõ chỗ nào cần sửa trước khi chạy">
-        <label>Thẻ (phân cách bằng dấu phẩy) - dùng để lọc nhanh ở trên</label>
-        <input type="text" name="tags" value="{_esc(cur.get('tags'))}"
-               placeholder="cisco, vlan, cấu hình">
-        <label>Các lệnh (mỗi dòng 1 lệnh)</label>
-        <textarea name="commands" required style="max-width:100%;">{_esc(cur.get('commands'))}</textarea>
-        <div class="row" style="margin-top:12px;">
-          <button type="submit">{'Lưu thay đổi' if editing else 'Thêm vào thư viện'}</button>
-          {'<a class="btn gray" href="/commands">Hủy</a>' if editing else ''}
-        </div>
-      </form>"""
-
-    if editing:
-        # Dang sua thi mo san va dua len TREN CUNG - do la viec anh dang lam.
-        form_html = f"""
-        <h2>✏️ Sửa: {_esc(cur.get('name'))}</h2>
-        <div class="card">{form_ruot}</div>"""
-    else:
-        # Khong sua thi thu gon xuong DUOI danh sach: vao trang la thay ngay
-        # thu vien de tim, khong bi form them moi choan het phan tren.
-        form_html = f"""
-        <details style="margin-top:18px;">
-          <summary style="cursor:pointer;color:#4CAF50;font-size:16px;font-weight:600;
-                          padding:10px 0;">➕ Thêm tập lệnh mới</summary>
-          <div class="card" style="margin-top:10px;">{form_ruot}</div>
-        </details>"""
-
-    msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
-
+    du_lieu = {
+        "items": [{"i": i, "name": str(it.get("name") or ""), "desc": str(it.get("desc") or ""),
+                   "tags": str(it.get("tags") or ""), "commands": str(it.get("commands") or "")}
+                  for i, it in enumerate(items)],
+        "msg": msg or "", "ok": bool(ok),
+        "chon": chon if (chon is not None and 0 <= chon < len(items)) else None,
+        "edit": edit_index if (edit_index is not None and 0 <= edit_index < len(items)) else None,
+    }
+    # </ trong JSON co the dong the script som: thay bang <\/ (JSON van hop le)
+    nhung = json.dumps(du_lieu, ensure_ascii=False).replace("</", "<\\/")
+    tim_icon = ('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4"/></svg>')
     body = f"""
     {LIB_CSS}
-    {msg_html}
-    <div class="tim-hop">
-      <input type="text" id="tim_lenh" placeholder="🔎 Gõ để tìm: tên, mô tả, thẻ, hoặc nội dung lệnh...">
-      <button type="button" class="gray small" id="xoa_tim" style="display:none;">✕ Xóa tìm</button>
-      <span style="color:#8b93a1;font-size:13px;">Hiện <strong id="dem_kq">0/0</strong> tập lệnh</span>
+    <div class="tv">
+      <aside class="tv-ds">
+        <div class="tv-tim">
+          <div class="tv-o">{tim_icon}
+            <input type="text" id="tv-tim" placeholder="Tìm tập lệnh" autocomplete="off">
+            <button type="button" id="tv-xoa" aria-label="Xóa ô tìm">&#10005;</button>
+          </div>
+          <button type="button" class="tv-moi" id="tv-moi">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Thêm mới</button>
+        </div>
+        <div class="tv-the" id="tv-the"></div>
+        <div class="tv-dem" id="tv-dem"></div>
+        <ul class="tv-list" id="tv-list"></ul>
+      </aside>
+      <section class="tv-vo"><div class="tv-ct" id="tv-ct"></div></section>
     </div>
-    {the_khoi}
-    <div id="khong_thay" class="msg info" style="display:none;">
-      Không có tập lệnh nào khớp. Thử từ khóa ngắn hơn, hoặc bấm ✕ Xóa tìm.
-    </div>
-    <div class="lenh-luoi">{rows}</div>
-    {form_html}
-    <div class="msg info" style="margin-top:18px;">
-      <strong>Cách dùng:</strong> <em>Gửi vào Terminal</em> dán lệnh vào terminal đang mở nhưng
-      <strong>không tự bấm Enter</strong> - bạn xem lại rồi tự chạy.
-      <em>Dùng ở tab SSH</em> chép tập lệnh sang ô soạn ở tab SSH để sửa IP/tên trước khi dán.
-    </div>
+    <script id="tv-data" type="application/json">{nhung}</script>
     {LIB_JS}"""
 
     return render_page(body, active="/commands", title="Thư viện lệnh",
@@ -561,7 +737,8 @@ def register_commands(app, tmux_session="consolepi-local"):
     def commands_page():
         edit = request.args.get("edit")
         edit_index = int(edit) if (edit or "").isdigit() else None
-        return render_library_page(edit_index=edit_index)
+        chon = request.args.get("chon")
+        return render_library_page(edit_index=edit_index, chon=int(chon) if (chon or "").isdigit() else None)
 
     @app.route("/commands/add", methods=["POST"])
     def commands_add():
@@ -570,7 +747,7 @@ def register_commands(app, tmux_session="consolepi-local"):
             return render_library_page(msg="Thiếu tên hoặc nội dung lệnh.", ok=False)
         add_item(f.get("name").strip(), f.get("desc", "").strip(),
                  f.get("tags", "").strip(), f.get("commands"))
-        return render_library_page(msg=f"Đã thêm '{f.get('name')}'.", ok=True)
+        return render_library_page(msg=f"Đã thêm '{f.get('name')}'.", ok=True, chon=len(load_library()) - 1)
 
     @app.route("/commands/update", methods=["POST"])
     def commands_update():
@@ -578,7 +755,7 @@ def register_commands(app, tmux_session="consolepi-local"):
         idx = int(f.get("index", -1) or -1)
         if update_item(idx, f.get("name", "").strip(), f.get("desc", "").strip(),
                        f.get("tags", "").strip(), f.get("commands", "")):
-            return render_library_page(msg="Đã lưu thay đổi.", ok=True)
+            return render_library_page(msg="Đã lưu thay đổi.", ok=True, chon=idx)
         return render_library_page(msg="Không tìm thấy tập lệnh để sửa.", ok=False)
 
     @app.route("/commands/delete", methods=["POST"])
@@ -603,6 +780,6 @@ def register_commands(app, tmux_session="consolepi-local"):
         # dang o thiet bi ngoai va chon cach dan phu hop, bat ke vao tu
         # duong nao.
         ok, msg = dan_thong_minh(tmux_session, items[idx].get("commands", ""))
-        return render_library_page(msg=msg, ok=ok)
+        return render_library_page(msg=msg, ok=ok, chon=idx)
 
     return app

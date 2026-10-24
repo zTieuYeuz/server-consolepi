@@ -166,12 +166,20 @@ def mem_info():
 
 
 def disk_info(path="/"):
+    """
+    (da_dung_GB, tong_GB, phan_tram) - GB lam tron 1 chu so thap phan, tinh GIONG lenh `df`:
+    da dung = block da cap phat (f_blocks - f_bfree), tong = da dung + con trong cho nguoi dung (f_bavail),
+    phan tram = da dung / tong. LOI THAT (anh Thoai 22/10/2026: "dung luong dung 17 G nhung nhin hinh nhu moi
+    dung 10 G"): ban cu cat bo phan le va lay tong - con_trong nen tinh ca vung du tru 5% cua root vao "da dung"
+    (Pi 29 GB hien 20 GB trong khi df bao 18 GB), con thanh hien thi thi khong co nen thanh nen khong thay thang do.
+    """
     try:
         st = os.statvfs(path)
-        total = st.f_blocks * st.f_frsize // (1024 ** 3)
-        free = st.f_bavail * st.f_frsize // (1024 ** 3)
-        used = total - free
-        return used, total, (round(used * 100 / total) if total else 0)
+        gb = 1024 ** 3
+        da_dung = (st.f_blocks - st.f_bfree) * st.f_frsize
+        trong = st.f_bavail * st.f_frsize
+        tong = da_dung + trong
+        return round(da_dung / gb, 1), round(tong / gb, 1), (round(da_dung * 100 / tong) if tong else 0)
     except Exception:
         return 0, 0, 0
 

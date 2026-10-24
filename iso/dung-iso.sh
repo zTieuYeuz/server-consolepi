@@ -70,7 +70,7 @@ cau_hinh() {
     --memtest none \
     --iso-application "Console System" --iso-publisher "Console System" \
     --iso-volume "CONSOLE-SYSTEM" \
-    --bootappend-live "boot=live components quiet splash hostname=console-system" \
+    --bootappend-live "boot=live components hostname=console-system loglevel=4 systemd.show_status=1" \
     >/tmp/lb-config.log 2>&1
 }
 cau_hinh

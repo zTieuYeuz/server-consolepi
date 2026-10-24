@@ -66,6 +66,16 @@ if [ -f "$SRC/config/smb.conf" ] && ! cmp -s "$SRC/config/smb.conf" /etc/samba/s
     fi
 fi
 
+# 1.9.5: cong cu .sh cua ui nam o /opt/console-pi/tools (ui nhac "sudo bash /opt/console-pi/tools/cai-winrm.sh")
+mkdir -p "$DST/tools"
+for f in "$SRC"/tools/cai-*.sh; do [ -f "$f" ] && install -m 755 "$f" "$DST/tools/$(basename "$f")"; done
+# Dieu khien tu xa (VNC) cua Quan ly may tram can duong /uem-vnc-ws/ trong nginx (tu them neu thieu, loi thi tra ban cu)
+[ -f "$DST/tools/cai-vnc.sh" ] && bash "$DST/tools/cai-vnc.sh" || echo "Canh bao: chua bat duoc nginx cho VNC (xem thong bao tren)"
+# wixl de tao file MSI cai agent (Quan ly may tram, Agent); thieu mang/goi thi bo qua, script PowerShell van tao duoc
+command -v wixl >/dev/null 2>&1 || apt-get install -y -qq wixl >/dev/null 2>&1 || echo "Canh bao: khong cai duoc wixl (khong tao duoc file MSI cai agent)"
+# Cong mTLS 8443 cho agent (CA rieng + chung chi may chu + nginx), loi thi tra ban cu
+[ -f "$DST/tools/cai-agent-tls.sh" ] && bash "$DST/tools/cai-agent-tls.sh" || echo "Canh bao: chua bat duoc cong mTLS 8443 cho agent (xem thong bao tren)"
+
 # Kiem tra cu phap truoc khi khoi dong lai - loi thi tra ban cu, khong de web chet
 if ! python3 -m py_compile "$DST"/ui/*.py "$DST"/nettools/*.py "$DST"/app.py; then
     echo "LOI cu phap - tra lai ban cu"

@@ -1,6 +1,4 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
-# Test DAI HAN cho he thong Nhat ky (chay sau moi lan sua giao dien/ha tang): python3 thu-nhat-ky.py
-# Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # TEST DAI HAN cho he thong Nhat ky (19/10/2026): "log rat quan trong" - chay lai sau MOI lan sua giao dien/ ha tang.
 # Dung thu muc log tam (khong dung /var/log that), flask test_client, khong can mang.
 import sys, os, time, gzip, json, tempfile, logging, re
@@ -90,8 +88,8 @@ t0 = time.time(); co = logs._bo_loc(("accepted",)); n = sum(1 for d in big if co
 kt(f"Loc 200.000 dong ASCII duoi 1.5 giay ({dt:.2f}s)", n == 200000 and dt < 1.5, dt)
 # 10. thu muc log trong: khong sap
 for f in os.listdir(tmp): os.remove(os.path.join(tmp, f))
-st, h = lay("/logs?tab=loi"); kt("Chua co file log nao: tab van 200 + thong bao 'tot'", st == 200 and "chưa có lỗi nào" in h)
-st, h = lay("/logs?tab=thaotac"); kt("Chua co thao tac: thong bao ro", st == 200 and "chưa có thao tác" in h)
+st, h = lay("/logs?tab=loi"); kt("Chua co file log nao: tab van 200 + thong bao 'tot'", st == 200 and "chưa có lỗi nào" in h.lower())
+st, h = lay("/logs?tab=thaotac"); kt("Chua co thao tac: thong bao ro", st == 200 and "chưa có thao tác" in h.lower())
 # 11. ghi vao thu muc khong ghi duoc thi KHONG nem loi
 errlog.LOG_FILE = "/proc/khong/ton/tai/x.log"; errlog.LOG_THAO_TAC = "/proc/khong/ton/tai/y.log"
 try: errlog.ghi_loi("/x", "m"); errlog.ghi_thao_tac("a", "b", nguoi="u", ip="i"); kt("Khong ghi duoc file: im lang, khong sap", True)

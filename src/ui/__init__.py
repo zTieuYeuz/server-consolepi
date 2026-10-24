@@ -20,6 +20,8 @@ from .pxe import register_pxe                              # noqa: F401
 from .tiendo import register_tiendo                        # noqa: F401
 from .lichsu import register_lichsu                        # noqa: F401
 from .wol import register_wol                              # noqa: F401
+from .tk_trang import register_trienkhai                   # noqa: F401
+from .uem_trang_b import register_uem                      # noqa: F401
 from .gopy import register_gopy                            # noqa: F401
 from .phien import register_phien                          # noqa: F401
 from .gioithieu import register_gioithieu                  # noqa: F401
@@ -48,6 +50,8 @@ def register_all(app):
     register_tiendo(app)
     register_lichsu(app)
     register_wol(app)
+    register_trienkhai(app)
+    register_uem(app)
     register_gopy(app)
     register_phien(app)
     register_gioithieu(app)

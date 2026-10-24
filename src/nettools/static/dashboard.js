@@ -32,7 +32,7 @@
         d.chips.forEach(function (c, i) {
           var el = document.querySelector('.chip[data-chip="' + i + '"]');
           if (!el) return;
-          el.className = "chip " + (c.up ? "up" : "down");
+          el.className = "chip " + (c.up ? "up" : "down") + (el.classList.contains("phu") ? " phu" : "");
           el.setAttribute("data-chip", i);
           var v = el.querySelector(".v"), x = el.querySelector(".x");
           if (v && v.textContent !== c.val) v.textContent = c.val;

@@ -45,6 +45,14 @@ chmod 755 /usr/local/bin/ttyd
     echo "[console-system] ttyd tai ve nhung khong chay duoc"; exit 1; }
 echo "[console-system] da cai ttyd: $(/usr/local/bin/ttyd --version 2>&1 | head -1)"
 
+# --- 1c. Thu vien WinRM (pypsrp) cho Trien khai phan mem + Quan ly may tram ---
+# pypsrp khong co trong kho Debian: cai vao venv rieng (giong tools/cai-winrm.sh tren Pi). Can Internet luc build;
+# `set -e` de build do vo neu that bai - tha hong luc build con hon giao ISO thieu WinRM.
+python3 -m venv /opt/console-pi-venv/winrm --system-site-packages
+/opt/console-pi-venv/winrm/bin/pip install --quiet pypsrp requests-ntlm
+/opt/console-pi-venv/winrm/bin/python3 -c "from pypsrp.client import Client" || { echo "[console-system] pypsrp khong nap duoc"; exit 1; }
+echo "[console-system] da cai pypsrp (WinRM)"
+
 # --- 2. Cac don vi systemd ---
 for f in /usr/local/share/console-system/systemd/*.service /usr/local/share/console-system/systemd/*.timer; do
     [ -f "$f" ] || continue

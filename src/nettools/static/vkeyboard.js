@@ -349,8 +349,23 @@
     el.style.setProperty("min-height", "0", "important");
     var y = el.getBoundingClientRect().top + (window.pageYOffset || 0) - 62;
     window.scrollTo(0, Math.max(0, y));
+    /* Thanh tren co the cao hon (chip xuong dong rieng) nen khung khong len duoc toi dinh, va thu nho khung lam trang ngan
+       di khien cuon bi keo xuong lai: do vi tri THAT, bot chieu cao den khi day khung nam tren ban phim; kiem tra lai sau khi bo cuc yen. */
+    nenXuong(el);
+    setTimeout(function () { if (visible && el === fitEl) nenXuong(el); }, 150);
+    setTimeout(function () { if (visible && el === fitEl) nenXuong(el); }, 700);
+  }
+  function nenXuong(el) {
+    for (var i = 0; i < 4; i++) {
+      var r = el.getBoundingClientRect(), kt = kb.getBoundingClientRect().top;
+      var thua = r.bottom - (kt - 4);
+      if (thua <= 0 || r.height <= 140) break;
+      el.style.setProperty("height", Math.max(140, r.height - thua) + "px", "important");
+    }
   }
   if (window.ResizeObserver) new ResizeObserver(function () { if (visible) fit(); }).observe(kb);
+  var thanhTren = document.querySelector(".top");
+  if (window.ResizeObserver && thanhTren) new ResizeObserver(function () { if (visible) fit(); }).observe(thanhTren);
   window.addEventListener("resize", function () { if (visible) fit(); });
 
   function show(el) {
@@ -411,6 +426,30 @@
   /* Cham vao khung terminal (iframe) thi cua so cha mat tieu diem: hien ban phim ngay, khong phai bat/tat nut.
      (Su kien focusin khong di xuyen qua iframe nen khong the bat bang focusin.) Dong ban phim bang nut Dong
      roi cham lai terminal thi ban phim hien lai. */
+  /* Cham lai ngay o/terminal DANG co tieu diem (vd vua bam Dong roi cham lai) thi trinh duyet khong ban them su kien
+     focus nao -> ban phim khong hien lai (anh Thoai 21/10/2026, lan 3). Bat truc tiep lan cham (pointerdown):
+     (1) o nhap lieu trong trang; (2) ben trong khung terminal - khung ttyd cung goc (nginx) nen cha gan duoc
+     nghe vao tai lieu cua iframe (cach phien.py da dung de xu ly chuot). */
+  document.addEventListener("pointerdown", function (e) {
+    if (enabled && !visible && isTypable(e.target)) show(e.target);
+  }, true);
+  function nghe(f) {
+    try {
+      var d = f.contentDocument;
+      if (!d || d.__cpvkNghe) return;
+      d.__cpvkNghe = true;
+      d.addEventListener("pointerdown", function () {
+        if (tmuxSession && enabled && !visible) show(null);
+      }, true);
+    } catch (e) {}
+  }
+  function ngheKhung() {
+    var fr = document.querySelectorAll("iframe");
+    for (var i = 0; i < fr.length; i++) {
+      nghe(fr[i]);
+      if (!fr[i].__cpvkLoad) { fr[i].__cpvkLoad = true; fr[i].addEventListener("load", (function (f) { return function () { nghe(f); }; })(fr[i])); }
+    }
+  }
   window.addEventListener("blur", function () {
     setTimeout(function () {
       var a = document.activeElement;
@@ -422,6 +461,7 @@
     killBlank(document);
     tmuxSession = document.body.getAttribute("data-tmux-session") || null;
     if (tmuxSession && enabled) show(null);   // trang terminal: hien san
+    ngheKhung(); setInterval(ngheKhung, 1500);   // khung terminal tao sau (trang Phien ket noi) va khung tai lai
     if (window.MutationObserver)
       new MutationObserver(syncTmux).observe(document.body, { attributes: true, attributeFilter: ["data-tmux-session"] });
   }

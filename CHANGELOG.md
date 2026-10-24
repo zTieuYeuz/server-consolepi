@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.9.5 - 22/10/2026 (CHƯA PHÁT HÀNH, bản thử cho anh Thoại)
+
+**Triển khai phần mềm kiểu PDQ qua WinRM** (`ui/tk_dongco.py`, `tk_dulieu.py`, `tk_trang.py`; menu System Utilities). 7 tab: Tài nguyên, Kho trung tâm, Lập lịch, Máy - nhóm máy (Danh sách, Nhóm, Quét mạng, Tài khoản quản trị), Kịch bản, Triển khai (Chạy/Dừng + popup tiến độ), Chức năng khác. Bước: phần mềm exe/msi, ứng dụng nhiều file, script, WinGet, nguồn điện (bật WoL/tắt/khởi động lại), kiểm kê, bảo mật. Mật khẩu admin lưu mã hóa (Fernet). Lập lịch hằng ngày/tuần/tháng/năm, chạy song song tối đa 10 máy, thử lại máy tắt/bước lỗi.
+
+**Quản lý máy trạm kiểu OpenUEM** (`ui/uem_*.py`; menu riêng 9 mục): Tổng quan, Máy tính (19 tab mỗi máy: phần cứng, OS, ổ đĩa, màn hình, card mạng, máy in, chia sẻ, phần mềm, cập nhật, duyệt file, hỗ trợ từ xa, agent, nguồn điện...), Phần mềm, Bảo mật (diệt virus, tường lửa, BitLocker, SMB1, Windows Update), Triển khai WinGet, Profiles (16 loại tác vụ registry/người dùng/nhóm/MSI/WinGet/PowerShell), Báo cáo CSV, Quản trị (thẻ, địa điểm, thông tin thêm, nhật ký tác vụ). Điều khiển từ xa bằng TightVNC + noVNC ngay trong trình duyệt (có hộp xin phép người dùng).
+
+**Agent Windows v2** (`ui/uem_agent*.py`, `uem_pki.py`): dịch vụ C# ConsoleSystemAgent, nối HTTPS mTLS (CA riêng, chứng chỉ riêng từng máy, thu hồi, tự gia hạn), chạy lệnh, chuyển file dạng luồng 2 GB, VNC tunnel ngược (không mở cổng), profile tự trị (áp dụng cả khi server tắt), tự cập nhật, trợ lý phiên người dùng.
+- Trang Quản lý máy trạm > Quản trị > Agent: dòng IP LAN tự cập nhật, domain + cổng mTLS đổi được, tạo **file MSI hoặc script** (đặt tên, tick nhiều địa chỉ dự phòng, passkey) kèm cây timeline các bước, lưu để tải về; mã ghi danh không hết hạn, không giới hạn máy; xóa file thu hồi mã.
+- Passkey (PBKDF2): bắt buộc khi cài và khi gỡ; `uninstall.bat` cần quyền Administrator; ẩn khỏi Control Panel.
+- Biểu tượng khay: Xem log, Chẩn đoán kết nối, Đồng bộ ngay.
+- Giới hạn đã biết: Windows 11 bật Smart App Control chặn agent chưa ký số; MSI chỉ x64; hàng đợi việc nằm trong RAM.
+
+**Bổ sung 23/10/2026 (theo góp ý của anh Thoại, thử trên Pi, máy .30 thật và máy Windows .33):**
+- **Kho trung tâm:** ô tích ở mỗi dòng + ô "chọn tất cả đang hiện" (theo bộ lọc/tìm kiếm) + nút **Tải các mục đã tích**; đã có trên máy thì hỏi xác nhận tải lại (`deployos.py`, route `/deployos/kho/tai-nhieu`).
+- **Kho file:** tải lên có **thanh tiến độ** (phần trăm, MB, tốc độ, thời gian còn lại, nút Huỷ; sau 100% báo "đang ghi và tính SHA-256") (`storage.py`).
+- **Triển khai phần mềm:** nút **Làm mới** (tự làm mới 10 giây/lần); đổi tab "Chức năng khác" thành **Kiểm tra bảo mật**; bỏ mục "Tính năng lấy cảm hứng từ OpenUEM"; mỗi máy thử tối đa **3 lần, cách nhau 5 phút** (máy tắt, mất mạng hoặc cài lỗi), quá 3 lần là **Không thành công**; trạng thái chia 4 nhóm **Thành công / Đang chạy / Chờ thử lại / Không thành công**, kịch bản có cả máy thành công lẫn thất bại thì hiện cả hai.
+- **Kịch bản:** ô tìm (không dấu) trong danh sách phần mềm/script khi thêm bước.
+- **Quản lý máy trạm:** danh sách máy có chip **Có agent / Chưa cài agent** và bộ lọc; ghi danh agent gắn vào đúng máy đã có (cùng IP hoặc cùng tên) thay vì tạo bản ghi thứ hai.
+- **Triển khai MSI agent bằng Triển khai phần mềm:** trước đây lỗi 1603 vì gói có passkey mà Triển khai không biết passkey. Nay tạo gói có ô "Cho phép Triển khai phần mềm tự điền passkey" (lưu mã hoá bằng khoá của Console System; file MSI vẫn chỉ chứa dấu băm); gói cũ có nút **Lưu passkey cho triển khai** (kiểm đúng với dấu băm). Nhận gói theo SHA-256 nên đổi tên file vẫn nhận. MSI ghi danh lại được khi lần cài trước hỏng giữa chừng (máy chủ tắt).
+- **Smart App Control:** thêm khung hướng dẫn trên trang Agent (ký số, tắt SAC, chính sách tổ chức).
+- **ISO (chưa dựng lại):** bỏ `quiet splash` ở các mục chạy thử/cài và in dòng hướng dẫn để màn hình không đen hoàn toàn 1-3 phút khi nạp từ USB.
+
+**Gói cài:** thêm `wixl` (tạo MSI) và `python3-venv`; ISO có sẵn thư viện WinRM (pypsrp) và `tools/cai-*.sh`; lần khởi động đầu tự tạo PKI riêng cho từng máy (CA không bao giờ nằm sẵn trong ISO). `install.sh` cài thêm WinRM.
+
 ## 1.9.4 - 21/10/2026
 
 **Đặt tên máy khi cài nhiều máy bằng một kịch bản** (`ui/datten.py` mới, `ui/deployos.py`, `ui/unattend.py`, `ui/pxe.py`, `ui/lichsu.py`). Trước đây kịch bản chỉ có một tên máy cố định nên cài nhiều máy cùng kịch bản thì máy nào cũng trùng tên (không gia nhập domain được, trang Tiến trình trộn lẫn các máy). Bước 2 của kịch bản nay có danh sách thả xuống **Tên máy - cách đặt tên** với 5 cách:

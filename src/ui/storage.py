@@ -194,7 +194,7 @@ def delete_file(name):
 
 # =============================================================== giao dien web
 def register_storage(app):
-    from flask import request, send_from_directory, abort
+    from flask import request, send_from_directory, abort, jsonify
     from .layout import render_page
     from .home import _esc
 
@@ -204,7 +204,7 @@ def register_storage(app):
 
         msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
 
-        bar_color = "#4CAF50" if pct < 75 else ("#ffb74d" if pct < 90 else "#ff6b6b")
+        bar_color = "var(--xanh)" if pct < 75 else ("var(--vang)" if pct < 90 else "var(--do)")
         noi_luu = (f"USB đang cắm &mdash; <code>{_esc(d)}</code>" if on_usb
                    else f"Thẻ nhớ của Pi &mdash; <code>{_esc(d)}</code>"
                         " <span style='color:#8b93a1;'>(cắm USB vào sẽ tự chuyển sang ghi ra USB)</span>")
@@ -229,15 +229,78 @@ def register_storage(app):
 
         du_cho = free >= MIN_FREE_GB
         upload_html = f"""
-        <form method="POST" action="/storage/len" enctype="multipart/form-data">
+        <form method="POST" action="/storage/len" enctype="multipart/form-data" id="form-len">
           <label>Chọn file (ISO, IMG, firmware, cấu hình...)</label>
-          <input type="file" name="file" required>
+          <input type="file" name="file" id="o-file-len" required>
           <div class="row" style="margin-top:13px;">
-            <button type="submit" data-busy="Đang tải lên, đừng đóng trang...">⬆ Tải lên</button>
-            <span style="color:#8b93a1;font-size:13px;margin-left:10px;">
-              File lớn mất vài phút. Trang sẽ đứng yên cho đến khi xong.</span>
+            <button type="submit" id="nut-len">⬆ Tải lên</button>
+            <span style="color:#8b93a1;font-size:13px;margin-left:10px;" id="goi-y-len">
+              File lớn mất vài phút. Có thanh tiến độ bên dưới, đừng đóng trang cho đến khi xong.</span>
           </div>
-        </form>""" if du_cho else f"""
+          <div id="khung-len" hidden style="margin-top:14px;">
+            <div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;">
+              <strong id="ten-len"></strong><span id="pt-len" style="font-family:monospace;">0%</span></div>
+            <div style="background:#0B0E14;border:1px solid #1F2733;border-radius:6px;height:14px;overflow:hidden;margin:7px 0;">
+              <div id="thanh-len" style="height:100%;width:0%;background:#38BDF8;transition:width .3s;"></div></div>
+            <div id="chu-len" style="color:#8A94A6;font-size:13px;"></div>
+            <button type="button" class="gray small" id="nut-huy-len" style="margin-top:8px;">Huỷ tải lên</button>
+          </div>
+        </form>
+        <script>
+        (function() {{
+          var f = document.getElementById('form-len'), o = document.getElementById('o-file-len');
+          var khung = document.getElementById('khung-len'), xhr = null, dang = false;
+          function co(n) {{ var d = ['B','KB','MB','GB'], i = 0; while (n >= 1024 && i < 3) {{ n /= 1024; i++; }}
+            return (i < 2 ? n.toFixed(0) : n.toFixed(1)) + ' ' + d[i]; }}
+          function gio(g) {{ g = Math.max(1, Math.round(g)); if (g < 60) return g + ' giây';
+            var m = Math.floor(g / 60); return m + ' phút ' + (g % 60) + ' giây'; }}
+          try {{
+            var tb = sessionStorage.getItem('kho_len_tb');
+            if (tb) {{ sessionStorage.removeItem('kho_len_tb'); tb = JSON.parse(tb);
+              var d = document.createElement('div'); d.className = 'msg ' + (tb.ok ? 'ok' : 'err'); d.textContent = tb.msg;
+              f.closest('.card').parentNode.insertBefore(d, f.closest('.card').previousElementSibling || f.closest('.card')); }}
+          }} catch (e) {{}}
+          window.addEventListener('beforeunload', function(e) {{ if (dang) {{ e.preventDefault(); e.returnValue = ''; }} }});
+          document.getElementById('nut-huy-len').addEventListener('click', function() {{
+            if (xhr && confirm('Huỷ tải lên? File đang tải dở sẽ bị xoá.')) xhr.abort(); }});
+          f.addEventListener('submit', function(e) {{
+            e.preventDefault(); e.stopImmediatePropagation();
+            var file = o.files[0]; if (!file || dang) return;
+            var fd = new FormData(); fd.append('file', file);
+            xhr = new XMLHttpRequest(); xhr.open('POST', '/storage/len');
+            xhr.setRequestHeader('X-Requested-With', 'xhr'); xhr.responseType = 'json';
+            var t0 = Date.now(), ten = document.getElementById('ten-len'), thanh = document.getElementById('thanh-len'),
+                pt = document.getElementById('pt-len'), chu = document.getElementById('chu-len');
+            ten.textContent = file.name; khung.hidden = false; dang = true;
+            document.getElementById('nut-len').disabled = true; o.disabled = true;
+            xhr.upload.onprogress = function(ev) {{
+              if (!ev.lengthComputable) return;
+              var p = 100 * ev.loaded / ev.total, g = (Date.now() - t0) / 1000, toc = g > 0.5 ? ev.loaded / g : 0;
+              thanh.style.width = p + '%'; pt.textContent = p.toFixed(0) + '%';
+              chu.textContent = co(ev.loaded) + ' / ' + co(ev.total) + (toc ? ' · ' + co(toc) + '/s' : '')
+                + (toc && ev.total > ev.loaded ? ' · còn khoảng ' + gio((ev.total - ev.loaded) / toc) : '');
+            }};
+            xhr.upload.onload = function() {{
+              thanh.style.width = '100%'; pt.textContent = '100%';
+              chu.textContent = 'Đã gửi xong, máy đang ghi file và tính SHA-256... (file lớn có thể mất thêm ít phút)';
+              document.getElementById('nut-huy-len').hidden = true;
+            }};
+            function xong(ok, msg) {{
+              dang = false;
+              try {{ sessionStorage.setItem('kho_len_tb', JSON.stringify({{ok: ok, msg: msg}})); }} catch (e) {{}}
+              location.href = '/storage';
+            }}
+            xhr.onload = function() {{
+              var r = xhr.response;
+              if (r && typeof r.ok !== 'undefined') xong(r.ok, r.msg);
+              else xong(false, 'Máy chủ trả về lỗi ' + xhr.status + ' (file quá lớn hoặc hết dung lượng?).');
+            }};
+            xhr.onerror = function() {{ xong(false, 'Mất kết nối khi tải lên. Kiểm tra mạng rồi thử lại.'); }};
+            xhr.onabort = function() {{ xong(false, 'Đã huỷ tải lên.'); }};
+            xhr.send(fd);
+          }}, true);
+        }})();
+        </script>""" if du_cho else f"""
         <div class="msg err">Chỉ còn {free} GB trống. Xóa bớt file hoặc cắm USB
         trước khi tải thêm (cần ít nhất {MIN_FREE_GB} GB để hệ thống chạy an toàn).</div>"""
 
@@ -274,9 +337,12 @@ def register_storage(app):
     @app.route("/storage/len", methods=["POST"])
     def storage_upload():
         f = request.files.get("file")
+        xhr = request.headers.get("X-Requested-With") == "xhr"
         if not f:
-            return page(msg="Chưa chọn file.", ok=False)
+            return jsonify(ok=False, msg="Chưa chọn file.") if xhr else page(msg="Chưa chọn file.", ok=False)
         ok_u, msg = save_upload(f)
+        if xhr:
+            return jsonify(ok=ok_u, msg=msg)
         return page(msg=msg, ok=ok_u)
 
     @app.route("/storage/xoa", methods=["POST"])

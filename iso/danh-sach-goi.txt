@@ -258,3 +258,9 @@ rsync
 squashfs-tools
 polkitd
 dosfstools
+
+# --- Quan ly may tram (22/10/2026) ---
+# wixl: dong goi file MSI cai agent ngay trong trang Agent (khong co thi chi tao duoc script PowerShell)
+# python3-venv: tao moi truong rieng cho pypsrp (WinRM) - xem hooks/0100-console-system.hook.chroot
+wixl
+python3-venv
