@@ -33,4 +33,4 @@ Ban dung de anh Thoai tu test tay. Chua len Drive/docs/GitHub.
 - ISO chua thu BIOS Legacy / NVMe / RAID tren may that; chua thu USB that. Cai Windows qua PXE chua thu lai that (golden + test xac nhan dau ra khong doi).
 - Hai test CDP terminal (chuot, focus) can terminal song tren Pi that - chua chay.
 - Trang `/cap-nhat` voi kenh "on-dinh": kho tra "chua co danh muc" cho toi khi anh phat hanh (dung thiet ke).
-- 2 test (con 1 sau khi xoa) da dang ky vao KHO THAT trong luc thu (ten may `console-system`): can anh xoa tren trang Ket noi Console System cua kho (machine_id 753a8a09..., a9775153..., them 1 ban ghi cua lan thu cuoi).
+- 3 may ao test da dang ky vao KHO THAT trong luc thu (ten may `console-system`): can anh xoa tren trang Ket noi Console System cua kho (token bat dau 2526fc, 900b2f, 2bb9ea).
