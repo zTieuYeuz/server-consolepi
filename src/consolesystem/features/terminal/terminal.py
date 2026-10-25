@@ -29,8 +29,7 @@ from flask import request
 
 from ui.layout import render_page, gan_phien_tmux
 from ui import duongdan as _DD
-from consolesystem.core.cauhinh import kho as _cauhinh_kho
-from consolesystem.core.store import LoiDuLieu
+from consolesystem.core.cauhinh import load_config, save_config, get_term_credential  # noqa: F401
 
 CONFIG_FILE = _DD.FILE_CONFIG
 
@@ -40,32 +39,7 @@ LOCAL_PORT = 8010
 SSH_PORT = 8011
 
 
-def _kho_cauhinh():
-    return _cauhinh_kho(CONFIG_FILE)
-
-
-def load_config():
-    """config.json. File hong -> khoi phuc tu .bak hoac giu lai .hong-* (xem core/store.py), khong am tham tra {} roi ghi de."""
-    try:
-        return _kho_cauhinh().doc()
-    except LoiDuLieu:
-        return {}
-
-
-def save_config(cfg):
-    _kho_cauhinh().ghi(cfg)           # quyen 0600, ghi nguyen tu (tam + fsync + doi ten)
-
-
-def get_term_credential():
-    """Lay (user, pass) cho ttyd. Tu sinh lan dau neu chua co."""
-    cfg = load_config()
-    cred = cfg.get("terminal_auth")
-    if not cred or ":" not in cred:
-        cred = "console:" + secrets.token_urlsafe(12)
-        cfg["terminal_auth"] = cred
-        save_config(cfg)
-    user, _, pw = cred.partition(":")
-    return user, pw
+# load_config / save_config / get_term_credential: dich vu dung chung o consolesystem/core/cauhinh.py (B3), giu ten o day cho noi goi cu
 
 
 def tmux_session_exists(name):

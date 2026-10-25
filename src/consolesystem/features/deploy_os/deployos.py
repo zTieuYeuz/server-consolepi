@@ -59,7 +59,7 @@ import unicodedata
 # Duong dan du lieu khai bao tap trung o duongdan.py (xem ly do that o do:
 # du lieu tung nam chung voi ma nguon nen `uninstall.sh` xoa sach ca bo cai
 # Office 3.6GB lan toan bo kich ban).
-from ui.duongdan import DEPLOY_DIR
+from ui.duongdan import DEPLOY_DIR, BOOT_DIR, APPS_DIR, SCRIPTS_DIR, KICHBAN_DIR, OS_DIR, DRIVERS_DIR, UNGDUNG_DIR, FONTS_DIR, EXT_SCRIPT  # noqa: F401  (B3: khai bao o core/duongdan.py)
 from ui import datten as _dt
 
 
@@ -67,14 +67,6 @@ def _unattend():
     """Nap ui.unattend khi can (tranh vong import)."""
     from ui import unattend
     return unattend
-BOOT_DIR = os.path.join(DEPLOY_DIR, "boot")
-APPS_DIR = os.path.join(DEPLOY_DIR, "apps")
-SCRIPTS_DIR = os.path.join(DEPLOY_DIR, "scripts")
-KICHBAN_DIR = os.path.join(DEPLOY_DIR, "kichban")
-OS_DIR = os.path.join(DEPLOY_DIR, "os")
-DRIVERS_DIR = os.path.join(DEPLOY_DIR, "drivers")
-UNGDUNG_DIR = os.path.join(DEPLOY_DIR, "ungdung")
-FONTS_DIR = os.path.join(DEPLOY_DIR, "fonts")      # moi "bo font" = 1 thu muc (xem muc BO FONT)
 APPS_META = os.path.join(APPS_DIR, "_thongtin.json")
 
 # Con lai duoi muc nay thi khong cho tai them (giong ui/storage.py)
@@ -84,7 +76,6 @@ EXT_BOOT = {".iso", ".wim", ".esd", ".img", ".vhd", ".vhdx", ".efi", ".kpxe", ".
 # Tab "WinPE" (truoc la "File boot", 03/10/2026): chi nhan va hien file WinPE
 EXT_WINPE = {".wim", ".iso"}
 EXT_APP = {".msi", ".exe"}
-EXT_SCRIPT = {".bat", ".ps1", ".cmd"}
 
 # ---------------------------------------------------------------- lua chon
 KIEU_BOOT = [

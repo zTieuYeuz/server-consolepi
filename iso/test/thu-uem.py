@@ -477,6 +477,7 @@ if _sh.which("wixl"):
     post(f"/uem/quan-tri/agent/goi/{g3['id']}/xoa")
     from ui import deployos as _D
     _D.APPS_DIR = tempfile.mkdtemp()
+    import ui.duongdan as _DDX; _DDX.APPS_DIR = _D.APPS_DIR      # B3: hang so thu muc nam o duongdan; cac tinh nang uem doc tu day
     post(f"/uem/quan-tri/agent/goi/{gm['id']}/kho"); kt("MSI: dua vao kho phan mem (Tai nguyen, Phan mem)", os.path.getsize(os.path.join(_D.APPS_DIR, "Agent-VP.msi")) == len(rm.data))
     post(f"/uem/quan-tri/agent/goi/{gm['id']}/xoa")
 else:

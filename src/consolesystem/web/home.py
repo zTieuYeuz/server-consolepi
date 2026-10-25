@@ -347,8 +347,7 @@ def can_chu_y(h, ports, states):
                    "Cổng " + ", ".join(f"<code>{_esc(d)}</code>" for d in chua_ten) +
                    ". Đặt tên để dễ nhận ra thiết bị.", ("Đặt tên", "#cong-console")))
     try:
-        from ui import pxe as _pxe
-        if _pxe.dang_bat():
+        if _DD.pxe_dang_bat():
             ra.append(("nhan", "disk", "PXE đang bật",
                        "Máy trong mạng chọn boot qua mạng sẽ thấy menu cài Windows. "
                        "Tắt khi xong việc.", ("Bật / Tắt PXE", "/deployos/caidat")))
@@ -684,8 +683,7 @@ def register_home(app):
         from nettools import TOOLS_READONLY, TOOLS_WRITE
         n_cong = len(ports)
         try:
-            from ui import pxe as _pxe
-            pxe_bat = _pxe.dang_bat()
+            pxe_bat = _DD.pxe_dang_bat()
         except Exception:
             pxe_bat = False
         n_kb = _dem_kich_ban()

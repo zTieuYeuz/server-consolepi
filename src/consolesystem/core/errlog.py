@@ -106,18 +106,26 @@ def doc_nhat_ky(so_dong=300, duong=None, so_giay=7 * 86400):
         return f"(không đọc được nhật ký: {e})"
 
 
+_NGU_CANH = None          # ham () -> (nguoi, ip) cua yeu cau dang xu ly; tang web dang ky luc khoi dong (core khong phu thuoc flask)
+
+
+def dat_ngu_canh(ham):
+    global _NGU_CANH
+    _NGU_CANH = ham
+
+
 def ghi_thao_tac(hanh_dong, chi_tiet="", nguoi=None, ip=None):
     """
     Ghi 1 dong vao nhat ky THAO TAC: "thoi gian | nguoi @ IP | hanh dong | chi tiet".
-    Tu lay nguoi dung + dia chi may tu yeu cau Flask dang xu ly neu khong truyen vao. KHONG BAO GIO ghi
+    Tu lay nguoi dung + dia chi may tu yeu cau dang xu ly (qua dat_ngu_canh, tang web dang ky) neu khong truyen vao. KHONG BAO GIO ghi
     mat khau. Loi ghi file thi im lang bo qua - khong duoc lam sap chuc nang chinh.
     """
     try:
         if nguoi is None or ip is None:
             try:
-                from flask import request, session
-                nguoi = nguoi if nguoi is not None else (session.get("user") or "-")
-                ip = ip if ip is not None else (request.remote_addr or "-")
+                n2, i2 = _NGU_CANH()
+                nguoi = nguoi if nguoi is not None else n2
+                ip = ip if ip is not None else i2
             except Exception:
                 nguoi, ip = nguoi or "-", ip or "-"
         dong = (f"{time.strftime('%Y-%m-%d %H:%M:%S')} | {nguoi}@{ip} | {hanh_dong}"

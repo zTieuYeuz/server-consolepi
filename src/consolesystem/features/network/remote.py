@@ -30,15 +30,13 @@ Bao mat (ca hai):
     dung tailnet do moi ket noi toi duoc Pi.
 """
 import sys as _sys
+from consolesystem.integrations.cloudflare import CONF_DIR, TOKEN_FILE, SERVICE, da_cai, co_token, dang_chay  # noqa: F401
 _sys.modules["ui.remote"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import os
 import re
 import shutil
 import subprocess
 
-CONF_DIR = "/etc/cloudflared"
-TOKEN_FILE = os.path.join(CONF_DIR, "console-pi-token")
-SERVICE = "console-pi-tunnel"
 DEB_URL = ("https://github.com/cloudflare/cloudflared/releases/latest/"
            "download/cloudflared-linux-{arch}.deb")
 
@@ -46,8 +44,6 @@ TS_AUTHKEY_FILE = "/etc/tailscale-console-pi-authkey"
 TS_HOSTNAME = "console-pi"
 
 
-def da_cai():
-    return shutil.which("cloudflared") is not None
 
 
 def kien_truc():
@@ -101,8 +97,6 @@ def luu_token(token):
     return True, "Đã lưu token."
 
 
-def co_token():
-    return os.path.exists(TOKEN_FILE) and os.path.getsize(TOKEN_FILE) > 40
 
 
 def xoa_token():
@@ -115,10 +109,6 @@ def xoa_token():
     return True, "Đã xóa token và tắt đường hầm."
 
 
-def dang_chay():
-    r = subprocess.run(["systemctl", "is-active", SERVICE],
-                       capture_output=True, text=True, timeout=8)
-    return r.stdout.strip() == "active"
 
 
 def bat_tunnel():

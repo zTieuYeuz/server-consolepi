@@ -12,6 +12,7 @@ import sys as _sys
 _sys.modules["ui.layout"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import os
 import subprocess
+from consolesystem.integrations import cloudflare as _CF
 
 # (duong dan, nhan, icon)
 #
@@ -830,10 +831,9 @@ def get_status_chips(use_cache=True):
     # nguoc lai render_page tu chinh file nay - dat import o dau file se tao
     # vong lap import. Cac ham duoc goi o day deu re (shutil.which/os.path,
     # toi da 1 lenh systemctl is-active), cung muc chi phi voi cac chip khac.
-    from ui import remote as _remote
-    cf_cai = _remote.da_cai()
-    cf_tok = _remote.co_token() if cf_cai else False
-    cf_chay = _remote.dang_chay() if (cf_cai and cf_tok) else False
+    cf_cai = _CF.da_cai()
+    cf_tok = _CF.co_token() if cf_cai else False
+    cf_chay = _CF.dang_chay() if (cf_cai and cf_tok) else False
     if not cf_cai:
         cf_val, cf_extra = "Chưa cài đặt", "Xem tab Truy cập từ xa"
     elif not cf_tok:

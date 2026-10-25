@@ -47,6 +47,7 @@ import re
 import unicodedata
 
 from ui import deployos as _d
+from consolesystem.core import duongdan as _DD
 
 FILE_CAUHINH = os.path.join(_d.DEPLOY_DIR, "menu-pxe.json")
 TIEN_TO_ANH = "_menu-"      # anh dia GPT cu (< 1.5.0) - chi con de don rac
@@ -121,18 +122,18 @@ def ten_thu_muc(ten_file_kichban):
 
 
 def _duong_pxe(*phan):
-    return os.path.join(_d.BOOT_DIR, THU_MUC_PXE, *phan)
+    return os.path.join(_DD.BOOT_DIR, THU_MUC_PXE, *phan)
 
 
 def _don_anh_cu():
     """Anh dia GPT cua ban < 1.5.0 (moi cai ~500 MB) - khong con dung nua."""
     from ui import unattend as _u
     try:
-        for n in os.listdir(_d.BOOT_DIR):
+        for n in os.listdir(_DD.BOOT_DIR):
             if ((n.startswith(TIEN_TO_ANH) and (n.endswith(".img") or n.endswith(".img.json")))
                     or n in (_u.TEN_DIA_GPT_TU_DONG, _u.TEN_DIA_GPT_TU_DONG + ".json")):
                 try:
-                    os.remove(os.path.join(_d.BOOT_DIR, n))
+                    os.remove(os.path.join(_DD.BOOT_DIR, n))
                 except OSError:
                     pass
     except OSError:
@@ -286,7 +287,7 @@ def os_cho_do_o_dia():
     """os_id co boot.wim dau tien (theo ten) - muc "Do o dia" chi can 1 WinPE bat ky de chay
     diskpart. Khong co he dieu hanh nao -> khong hien muc nay."""
     try:
-        for o in sorted(os.listdir(_d.OS_DIR)):
+        for o in sorted(os.listdir(_DD.OS_DIR)):
             if os.path.isfile(_d.duong_boot_wim(o)):
                 return o
     except OSError:

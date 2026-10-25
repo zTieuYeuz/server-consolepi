@@ -20,10 +20,21 @@ from flask import request, redirect, session, render_template_string
 # Duong dan cac trang khong can dang nhap
 from ui.gioithieu import DUONG_CONG_KHAI as _LOGO
 from ui import duongdan as _DD
+from consolesystem.core import token_tai as _TT
 # Logo/favicon cong khai: trang dang nhap phai hien duoc logo truoc khi dang nhap
 PUBLIC_PATHS = {"/login", "/vkeyboard.js", "/dashboard.js", "/healthz", "/_auth"} | _LOGO
 
 SECRET_FILE = _DD.FILE_FLASK_SECRET
+
+
+def _ngu_canh_yeu_cau():
+    """(nguoi, ip) cua yeu cau Flask dang xu ly - dang ky cho core.errlog (core khong import flask)."""
+    from flask import request, session
+    return (session.get("user") or "-"), (request.remote_addr or "-")
+
+
+from consolesystem.core import errlog as _errlog  # noqa: E402
+_errlog.dat_ngu_canh(_ngu_canh_yeu_cau)
 
 
 def get_or_create_secret():
@@ -216,8 +227,7 @@ def _pxe_boot_cong_khai():
     if not _khach_trong_mang_noi_bo():
         return False
     try:
-        from ui import pxe as _pxe
-        return _pxe.dang_bat()
+        return _DD.pxe_dang_bat()
     except Exception:
         return False
 
@@ -234,8 +244,7 @@ def _tk_tai_cong_khai():
         return False
     try:
         _, _, _, tok, ten = request.path.split("/", 4)
-        from ui import tk_dongco as _dc
-        return _dc.tra_token(tok, ten) is not None
+        return _TT.tra_token(tok, ten) is not None
     except Exception:
         return False
 
@@ -272,8 +281,7 @@ def _bao_tien_trinh_cong_khai():
     if not _khach_trong_mang_noi_bo():
         return False
     try:
-        from ui import pxe as _pxe
-        return _pxe.dang_bat()
+        return _DD.pxe_dang_bat()
     except Exception:
         return False
 

@@ -30,6 +30,7 @@ from ui import uem_pki as PKI
 from ui import uem_vnc as UV
 from ui import uem_winget as UW
 from ui.uem_trang import _esc, bc, bang, chip, chuyen, co_khong, gio, iso_gio, kv, may_theo_id, ten_may, the_html, trang
+from consolesystem.core import magic_packet as _MP
 
 CON_QT = [("may", "Máy được giám sát"), ("agent", "Agent"), ("the", "Thẻ"), ("dia-diem", "Địa điểm"), ("metadata", "Thông tin thêm"), ("cai-dat", "Cài đặt chung"), ("nhat-ky", "Nhật ký tác vụ")]
 CON_BM = [("", "Tổng hợp"), ("cap-nhat", "Cập nhật Windows")]
@@ -788,9 +789,8 @@ def register_uem(app):
             return chuyen(f"/uem/may/{mid}/quan-ly", "Địa chỉ IP không hợp lệ.", False)
         if any(x["ip"] == ips[0] and x["id"] != mid for x in DL.MAY.doc()):
             return chuyen(f"/uem/may/{mid}/quan-ly", "Đã có máy khác dùng IP này.", False)
-        from ui import wol
         mac = (f.get("mac") or "").strip()
-        mac_c = wol.chuan_mac(mac) if mac else ""
+        mac_c = _MP.chuan_mac(mac) if mac else ""
         if mac and not mac_c:
             return chuyen(f"/uem/may/{mid}/quan-ly", "Địa chỉ MAC không hợp lệ.", False)
         tk = f.get("tai_khoan_id") or None
@@ -865,11 +865,10 @@ def register_uem(app):
         m = may_theo_id(mid)
         viec = request.form.get("viec", "")
         if viec == "bat":
-            from ui import wol
-            mac = wol.chuan_mac(m.get("mac", ""))
+            mac = _MP.chuan_mac(m.get("mac", ""))
             if not mac:
                 return chuyen(f"/uem/may/{mid}/nguon", "Máy chưa có địa chỉ MAC hợp lệ (nhập ở tab Quản lý).", False)
-            n, _ct = wol.gui([mac])
+            n, _ct = _MP.gui([mac])
             UD.ghi_tac_vu(mid, "tu_xa", "Wake-on-LAN", True, mac)
             return chuyen(f"/uem/may/{mid}/nguon", f"Đã gửi gói đánh thức tới {mac}. Máy mất vài chục giây để khởi động.")
         if viec not in ("khoi_dong_lai", "tat", "ngu_dong", "huy"):

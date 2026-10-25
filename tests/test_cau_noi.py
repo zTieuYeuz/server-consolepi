@@ -14,11 +14,15 @@ sys.path.insert(0, GOC + "/tools")
 
 
 def _anh_xa():
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("chuyen_b2", os.path.join(GOC, "tools", "chuyen-b2.py"))
-    m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
-    return [(ten, d.replace("/", ".") + "." + ten) for d, ds in m.ANH_XA.values() for ten in ds]
+    """(ten cu, ten moi) doc tu chinh cac file cau noi ui/*.py (nguon su that, khong phu thuoc bang cua cong cu di chuyen)."""
+    import re
+    ra = []
+    for f in sorted(os.listdir(os.path.join(SRC, "ui"))):
+        if f.endswith(".py") and f != "__init__.py":
+            m = re.search(r'import_module\("([^"]+)"\)', open(os.path.join(SRC, "ui", f), encoding="utf-8").read())
+            if m:
+                ra.append((f[:-3], m.group(1)))
+    return ra
 
 
 MODULES = _anh_xa()

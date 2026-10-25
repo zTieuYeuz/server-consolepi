@@ -20,8 +20,8 @@ import time
 import uuid
 from datetime import date, datetime, timedelta
 
-from ui.duongdan import THU_MUC_DU_LIEU
-from ui import duongdan as _DD
+from consolesystem.core.duongdan import THU_MUC_DU_LIEU
+from consolesystem.core import duongdan as _DD
 from consolesystem.core.store import KhoJson
 from consolesystem.core.store_sqlite import KhoSqlite
 

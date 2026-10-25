@@ -36,6 +36,7 @@ import threading
 import time
 
 from ui import deployos as _d
+from consolesystem.core import duongdan as _DD
 
 FILE_DS = os.path.join(_d.DEPLOY_DIR, "winpe-rieng.json")
 # bootmgr MUON cho WinPE rut gon (xem _bao_dam_bootmgr) - ngoai BOOT_DIR de khong hien o tab WinPE
@@ -80,7 +81,7 @@ def danh_sach():
     """Cac muc WinPE rieng CON file that (theo thu tu them). Moi muc: ten, file, cd."""
     ra = []
     for m in _doc():
-        p = _d._duong_dan_trong(_d.BOOT_DIR, m["file"])
+        p = _d._duong_dan_trong(_DD.BOOT_DIR, m["file"])
         if p and os.path.isfile(p):
             ra.append({"ten": m.get("ten") or m["file"], "file": m["file"],
                        "cd": os.path.getsize(p), "muon_bootmgr": bool(m.get("muon_bootmgr")),
@@ -93,9 +94,9 @@ def file_co_the_them():
     da = {m["file"] for m in _doc()}
     ra = []
     try:
-        for n in sorted(os.listdir(_d.BOOT_DIR)):
+        for n in sorted(os.listdir(_DD.BOOT_DIR)):
             if (n.lower().endswith((".wim", ".iso")) and n not in da
-                    and os.path.isfile(os.path.join(_d.BOOT_DIR, n))
+                    and os.path.isfile(os.path.join(_DD.BOOT_DIR, n))
                     and n not in ("autounattend.img",)):
                 ra.append(n)
     except OSError:
@@ -232,7 +233,7 @@ def _bao_dam_bootmgr(build_pe=0):
 # ------------------------------------------------------------- them / bo
 def them(file, ten):
     """Them 1 file trong BOOT_DIR vao menu. .iso -> tach nen roi tu them."""
-    p = _d._duong_dan_trong(_d.BOOT_DIR, file)
+    p = _d._duong_dan_trong(_DD.BOOT_DIR, file)
     if not p or not os.path.isfile(p):
         return False, "Không tìm thấy file trong tab WinPE."
     ten = (ten or "").strip()[:60] or os.path.splitext(os.path.basename(p))[0]
@@ -259,7 +260,7 @@ def them_dong_bo(file, ten):
     Nhu them() nhung file .iso thi TACH NGAY trong luong dang goi (dung cho tai tu kho
     trung tam - da chay o luong nen, xong moi bao "xong"). Cap nhat menu PXE luon.
     """
-    p = _d._duong_dan_trong(_d.BOOT_DIR, file)
+    p = _d._duong_dan_trong(_DD.BOOT_DIR, file)
     if not p or not os.path.isfile(p):
         return False, "Không tìm thấy file vừa tải."
     ten = (ten or "").strip()[:60] or os.path.splitext(os.path.basename(p))[0]
@@ -490,8 +491,8 @@ def _tach(iso, ten):
     try:
         trong = _chon_wim(iso)
         dich_ten = ten_wim_tu_iso(iso)
-        dich = os.path.join(_d.BOOT_DIR, dich_ten)
-        tam = os.path.join(_d.BOOT_DIR, f".winpe-tach-{os.getpid()}")
+        dich = os.path.join(_DD.BOOT_DIR, dich_ten)
+        tam = os.path.join(_DD.BOOT_DIR, f".winpe-tach-{os.getpid()}")
         shutil.rmtree(tam, ignore_errors=True)
         os.makedirs(tam)
         _TACH["buoc"] = f"Tách {trong}..."

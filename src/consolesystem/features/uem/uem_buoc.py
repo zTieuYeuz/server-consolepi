@@ -17,6 +17,7 @@ import uuid
 
 from ui import tk_dongco as DC
 from ui import tk_dulieu as DL
+from consolesystem.core import duongdan as _DD
 
 # ----------------------------------------------------------------- dinh nghia loai tac vu (cho giao dien tao task)
 # truong: (ten, nhan, kieu, bat_buoc, mac_dinh, goi_y)   kieu: text | password | checkbox | select:a|b | textarea | number
@@ -335,9 +336,8 @@ def tao_kich_ban(loai, ts, ip=""):
         url = ""
         d = ts.get("duong_dan", "")
         if loai == "msi_cai" and d.lower().endswith(".msi") and not re.match(r"^(https?://|[A-Za-z]:\\|\\\\)", d):
-            from ui import deployos as D
             import os
-            duong = os.path.join(D.APPS_DIR, os.path.basename(d))
+            duong = os.path.join(_DD.APPS_DIR, os.path.basename(d))
             if os.path.isfile(duong):
                 url = DC.url_tai(ip, duong)
         return _ps_msi(loai, ts, url)

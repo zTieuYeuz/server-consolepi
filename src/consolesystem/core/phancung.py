@@ -34,7 +34,7 @@ _sys.modules["ui.phancung"] = _sys.modules[__name__]   # B2: ten cu tro toi chin
 import json
 import os
 
-from ui.duongdan import THU_MUC_DU_LIEU
+from consolesystem.core.duongdan import THU_MUC_DU_LIEU
 
 FILE_CHON_CONG = os.path.join(THU_MUC_DU_LIEU, "cong-mang.json")
 

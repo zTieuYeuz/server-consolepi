@@ -109,6 +109,17 @@ LOG_NETMIKO = "/var/log/console-pi-netmiko.log"
 # driver, script, kich ban, file boot. Day la thu muc NANG NHAT (nhieu GB).
 DEPLOY_DIR = os.path.join(GOC, "deploy")
 
+# Thu muc con cua DEPLOY (B3: gom o day de moi tinh nang dung chung, khong phai import deployos chi de lay duong dan)
+BOOT_DIR = os.path.join(DEPLOY_DIR, "boot")
+APPS_DIR = os.path.join(DEPLOY_DIR, "apps")
+SCRIPTS_DIR = os.path.join(DEPLOY_DIR, "scripts")
+KICHBAN_DIR = os.path.join(DEPLOY_DIR, "kichban")
+OS_DIR = os.path.join(DEPLOY_DIR, "os")
+DRIVERS_DIR = os.path.join(DEPLOY_DIR, "drivers")
+UNGDUNG_DIR = os.path.join(DEPLOY_DIR, "ungdung")
+FONTS_DIR = os.path.join(DEPLOY_DIR, "fonts")      # moi "bo font" = 1 thu muc
+EXT_SCRIPT = {".bat", ".ps1", ".cmd"}                # duoi file script cai dat duoc phep
+
 # Kho file dung chung (tab "Kho file")
 STORAGE_DIR = os.path.join(GOC, "storage")
 
@@ -152,3 +163,8 @@ def bao_dam_thu_muc_du_lieu():
         return True
     except OSError:
         return False
+
+
+def pxe_dang_bat():
+    """PXE dang chay? (co file co /run/console-pi-pxe.flag) - nguon su that duy nhat, tinh nang nao cung hoi duoc ma khong import pxe."""
+    return os.path.exists(FLAG_PXE)

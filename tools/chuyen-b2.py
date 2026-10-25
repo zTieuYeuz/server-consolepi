@@ -15,6 +15,7 @@ SRC = os.path.join(GOC, "src")
 
 ANH_XA = {
     "core": ("consolesystem/core", ["duongdan", "dichuyen", "phathanh"]),
+    "core2": ("consolesystem/core", ["errlog", "phancung", "tk_dulieu"]),         # B3: dich vu dung chung keo ra khoi tinh nang
     "web": ("consolesystem/web", ["layout", "auth", "gioithieu", "docs", "ph_icons", "home", "health"]),
     "deploy_os": ("consolesystem/features/deploy_os", ["deployos", "unattend", "pxe", "pxemenu", "isotach", "goidriver", "doodia", "lichsu",
                                                         "tiendo", "datten", "tenmay", "khotrungtam", "winperieng", "wol", "sansang", "gopy", "fontinfo"]),

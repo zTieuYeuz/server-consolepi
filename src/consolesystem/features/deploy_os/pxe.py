@@ -120,7 +120,7 @@ def _sh(cmd, timeout=20):
 
 
 def dang_bat():
-    return os.path.exists(STATE_FLAG)
+    return _DD.pxe_dang_bat()          # B3: nguon su that o core/duongdan.py
 
 
 def kieu_dang_bat():
@@ -137,7 +137,7 @@ def kieu_dang_bat():
 
 
 def _duong(ten):
-    return os.path.join(_d.BOOT_DIR, ten)
+    return os.path.join(_DD.BOOT_DIR, ten)
 
 
 def _co_bootmgr_pxe():
@@ -447,7 +447,7 @@ dhcp-boot=tag:efi-that,{FILE_EFI_DAU},,{dia_chi_pi}
 dhcp-boot=tag:ipxe,http://{dia_chi_pi}:80/deployos/pxeboot/menu.ipxe,,{dia_chi_pi}
 {dong_pxe_service}
 enable-tftp
-tftp-root={_d.BOOT_DIR}
+tftp-root={_DD.BOOT_DIR}
 log-dhcp
 """
     try:
@@ -661,11 +661,11 @@ def _don_rac_dung_anh():
     CHI goi khi dang giu _KHOA - luc do chac chan khong co ai dang dung.
     """
     try:
-        ten = os.listdir(_d.BOOT_DIR)
+        ten = os.listdir(_DD.BOOT_DIR)
     except OSError:
         return
     for n in ten:
-        p = os.path.join(_d.BOOT_DIR, n)
+        p = os.path.join(_DD.BOOT_DIR, n)
         if n.startswith("gpt-mnt-") and os.path.isdir(p):
             if os.path.ismount(p):
                 # Anh dia dang bi ket mount nay co the CHUA ghi du -> xoa dau
@@ -877,7 +877,7 @@ def register_pxe(app):
         duoi = os.path.splitext(ten_sach)[1].lower()
         if ten_sach not in TEN_PHUC_VU_RIENG and duoi not in EXT_PHUC_VU:
             abort(404)
-        p = _d._duong_dan_trong(_d.BOOT_DIR, ten_sach)
+        p = _d._duong_dan_trong(_DD.BOOT_DIR, ten_sach)
         if not p or not os.path.isfile(p):
             abort(404)
 
@@ -895,7 +895,7 @@ def register_pxe(app):
         if ten_sach == "menu.ipxe":
             _don_phien_smb_cu(request.remote_addr)
 
-        return _gui_tep(_d.BOOT_DIR, ten_sach)
+        return _gui_tep(_DD.BOOT_DIR, ten_sach)
 
     # Ten thu muc/file cua duong wimboot: chi ky tu an toan, khong ".." -
     # cung la ten do pxemenu.ten_thu_muc() sinh ra.
@@ -909,7 +909,7 @@ def register_pxe(app):
         if not dang_bat() or not _TEN_SACH.match(ten) or (
                 thu_muc and not _TEN_SACH.match(thu_muc)):
             abort(404)
-        goc = os.path.join(_d.BOOT_DIR, _m.THU_MUC_PXE, thu_muc)
+        goc = os.path.join(_DD.BOOT_DIR, _m.THU_MUC_PXE, thu_muc)
         from ui import unattend as _u
         if not thu_muc and ten == _u.TEN_NHUNG_DRIVER:
             ten = _u.TEN_WIM_DRIVER      # xem pxemenu: ten cuoi URL = ten file
@@ -979,7 +979,7 @@ def register_pxe(app):
         from ui import winperieng as _wr
         if not dang_bat() or ten not in {m["file"] for m in _wr.danh_sach()}:
             abort(404)
-        return _gui_tep(_d.BOOT_DIR, ten)
+        return _gui_tep(_DD.BOOT_DIR, ten)
 
     @app.route("/deployos/pxeboot/winpe-apps/<path:ten>/cs-apps.cmd")
     def deployos_pxeboot_winpe_apps(ten):

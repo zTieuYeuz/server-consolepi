@@ -57,6 +57,7 @@ TEN_TAI_KHOAN_SAMBA = "consolepi-deploy"
 # chua tung bi day len GitHub).
 from ui.duongdan import FILE_KHOA_SAMBA as _FILE_KHOA_SAMBA
 from consolesystem.core.esc import esc_xml as _esc
+from consolesystem.core import duongdan as _DD
 
 
 def _doc_mat_khau_samba():
@@ -3692,14 +3693,14 @@ def chuan_bi_autounattend(d, dia_chi_pi="192.168.98.1"):
     dien, chua ket luan chac chan.
     """
     xml_noi_dung = sinh_autounattend_xml(d, dia_chi_pi)
-    duong_xml = os.path.join(_d.BOOT_DIR, TEN_AUTOUNATTEND)
+    duong_xml = os.path.join(_DD.BOOT_DIR, TEN_AUTOUNATTEND)
     try:
         with open(duong_xml, "w", encoding="utf-8") as f:
             f.write(xml_noi_dung)
     except OSError as e:
         return False, f"Khong ghi duoc {TEN_AUTOUNATTEND}: {e}"
 
-    duong_floppy = os.path.join(_d.BOOT_DIR, TEN_FLOPPY)
+    duong_floppy = os.path.join(_DD.BOOT_DIR, TEN_FLOPPY)
     ok, msg = tao_dia_mem_ao(xml_noi_dung, duong_floppy)
     if not ok:
         return False, msg
@@ -3707,11 +3708,11 @@ def chuan_bi_autounattend(d, dia_chi_pi="192.168.98.1"):
 
 
 def co_san_autounattend():
-    return os.path.isfile(os.path.join(_d.BOOT_DIR, TEN_AUTOUNATTEND))
+    return os.path.isfile(os.path.join(_DD.BOOT_DIR, TEN_AUTOUNATTEND))
 
 
 def co_san_dia_mem_autounattend():
-    return os.path.isfile(os.path.join(_d.BOOT_DIR, TEN_FLOPPY))
+    return os.path.isfile(os.path.join(_DD.BOOT_DIR, TEN_FLOPPY))
 
 
 TEN_ISO_TU_DONG = "windows-autounattend.iso"
@@ -3719,7 +3720,7 @@ TEN_ISO_TU_DONG = "windows-autounattend.iso"
 
 def co_san_iso_tu_dong():
     """True neu da dung xong ISO tu dong (xem dung_iso_tu_dong)."""
-    return os.path.isfile(os.path.join(_d.BOOT_DIR, TEN_ISO_TU_DONG))
+    return os.path.isfile(os.path.join(_DD.BOOT_DIR, TEN_ISO_TU_DONG))
 
 
 # Cac file boot BIOS+UEFI can de dung 1 ISO Windows that boot duoc, TAT CA
@@ -3764,8 +3765,8 @@ def dung_iso_tu_dong(d, dia_chi_pi="192.168.98.1"):
         return False, ("Chua co pycdlib - chay: sudo apt-get install "
                         "python3-pycdlib")
 
-    goc_wim = os.path.join(_d.BOOT_DIR, "boot.wim")
-    duong_install = os.path.join(_d.BOOT_DIR, "install.wim")
+    goc_wim = os.path.join(_DD.BOOT_DIR, "boot.wim")
+    duong_install = os.path.join(_DD.BOOT_DIR, "install.wim")
     if not os.path.isfile(goc_wim):
         return False, "Chua co boot.wim."
     if not os.path.isfile(duong_install):
@@ -3773,7 +3774,7 @@ def dung_iso_tu_dong(d, dia_chi_pi="192.168.98.1"):
 
     import shutil
     import tempfile
-    tam = tempfile.mkdtemp(prefix="iso-src-", dir=_d.BOOT_DIR)
+    tam = tempfile.mkdtemp(prefix="iso-src-", dir=_DD.BOOT_DIR)
     try:
         for duong_wim, duong_dich in _CAC_FILE_BOOT_ISO:
             dich_day_du = os.path.join(tam, duong_dich)
@@ -3843,7 +3844,7 @@ def dung_iso_tu_dong(d, dia_chi_pi="192.168.98.1"):
         iso.add_eltorito("/EFI/MICROSOFT/BOOT/EFISYS_NOPROMPT.BIN;1",
                           platform_id=0xef, efi=True, media_name="noemul")
 
-        duong_iso = os.path.join(_d.BOOT_DIR, TEN_ISO_TU_DONG)
+        duong_iso = os.path.join(_DD.BOOT_DIR, TEN_ISO_TU_DONG)
         duong_iso_tam = duong_iso + ".dang-dung"
         iso.write(duong_iso_tam)
         iso.close()
@@ -3967,7 +3968,7 @@ def dung_wim_driver(duong_wim):
     import tempfile
     cac = []
     for dr in _d.danh_sach_driver():
-        thu_muc = os.path.join(_d.DRIVERS_DIR, dr["id"])
+        thu_muc = os.path.join(_DD.DRIVERS_DIR, dr["id"])
         if dr.get("cho_boot") and os.path.isdir(thu_muc):
             cac.append((dr["id"], thu_muc))
     dau_file = duong_wim + ".dau"

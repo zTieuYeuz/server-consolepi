@@ -163,3 +163,22 @@ def test_cauhinh_quyen_0600_va_mot_doi_tuong_moi_duong_dan(tmp_path):
     assert kho_cauhinh(p) is kho_cauhinh(p)
     kho_cauhinh(p).ghi({"terminal_auth": "u:p"})
     assert os.stat(p).st_mode & 0o777 == 0o600 and kho_cauhinh(p).doc() == {"terminal_auth": "u:p"}
+
+
+def test_errlog_thao_tac_dung_ngu_canh_do_tang_web_dang_ky(tmp_path, monkeypatch):
+    from consolesystem.core import errlog as EL
+    monkeypatch.setattr(EL, "LOG_THAO_TAC", str(tmp_path / "tt.log"))
+    monkeypatch.setattr(EL, "_NGU_CANH", None)
+    EL.ghi_thao_tac("Hanh dong A")                                   # chua dang ky -> '-@-'
+    EL.dat_ngu_canh(lambda: ("anh.thoai", "10.0.0.7"))
+    EL.ghi_thao_tac("Hanh dong B", "chi tiet")
+    EL.ghi_thao_tac("Hanh dong C", nguoi="khac")                      # truyen tay thang
+    dong = open(tmp_path / "tt.log").read().splitlines()
+    assert "| -@- | Hanh dong A" in dong[0] and "| anh.thoai@10.0.0.7 | Hanh dong B | chi tiet" in dong[1] and "| khac@10.0.0.7 | Hanh dong C" in dong[2]
+
+
+def test_core_dich_vu_moi_khong_keo_flask():
+    import subprocess
+    r = subprocess.run(["python3", "-c", "import sys;sys.path.insert(0,'src');import consolesystem.core.errlog, consolesystem.core.tk_dulieu, consolesystem.core.phancung, consolesystem.core.magic_packet, consolesystem.core.token_tai, consolesystem.core.cauhinh;print('flask' in sys.modules)"],
+                       cwd=GOC, capture_output=True, text=True)
+    assert r.stdout.strip() == "False", r.stdout + r.stderr[-300:]

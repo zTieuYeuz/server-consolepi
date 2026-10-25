@@ -49,7 +49,7 @@ def danh_sach_goi():
         ds = []
     ra = []
     for g in ds:
-        thu_muc = os.path.join(_d.DRIVERS_DIR, TIEN_TO + g["ma"])
+        thu_muc = os.path.join(_DD.DRIVERS_DIR, TIEN_TO + g["ma"])
         with _khoa:
             tt = dict(_trang_thai.get(g["ma"], {}))
         ra.append(dict(g, da_tai=os.path.isfile(os.path.join(thu_muc, "_thongtin.json")),
@@ -138,7 +138,7 @@ def _giai_nen_va_cai(g, f_tai, tam, da, tu_san=False):
                                 + (g.get("nguon") or g["url"]),
                        "url": g["url"], "tu_goi_pho_bien": ma},
                       f, ensure_ascii=False, indent=1)
-        dich = os.path.join(_d.DRIVERS_DIR, TIEN_TO + ma)
+        dich = os.path.join(_DD.DRIVERS_DIR, TIEN_TO + ma)
         cu = dich + ".cu"
         shutil.rmtree(cu, ignore_errors=True)
         if os.path.isdir(dich):
@@ -207,7 +207,7 @@ def nap_san():
             if g.get("sha256") and h.hexdigest() != g["sha256"].lower():
                 print(f"[driver-san] {ma}: sai sha256 - bo qua", flush=True)
                 continue
-            os.makedirs(_d.DRIVERS_DIR, exist_ok=True)
+            os.makedirs(_DD.DRIVERS_DIR, exist_ok=True)
             tam = tempfile.mkdtemp(prefix="goidrv-", dir=_d.DEPLOY_DIR)
             try:
                 f_tai = os.path.join(tam, "goi.cab")

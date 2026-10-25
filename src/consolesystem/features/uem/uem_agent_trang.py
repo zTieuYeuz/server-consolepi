@@ -14,6 +14,7 @@ from ui import uem_agent_goi as UG
 from ui import uem_pki as PKI
 from ui import uem_trang as T
 from ui.uem_trang import _esc, chip, chuyen, gio, may_theo_id, ten_may
+from consolesystem.core import duongdan as _DD
 
 MAX_BODY = UA.TOI_DA_BODY
 
@@ -339,12 +340,11 @@ def register_agent(app):
 
     @app.route("/uem/quan-tri/agent/goi/<gid>/kho", methods=["POST"])
     def uem_ag_goi_kho(gid):
-        from ui import deployos as D
         p, ten = UG.duong_file(gid) if re.fullmatch(r"[0-9a-f]{10}", gid) else (None, None)
         if not p or not ten.endswith(".msi"):
             return chuyen("/uem/quan-tri/agent", "Không tìm thấy file MSI.", False)
-        os.makedirs(D.APPS_DIR, exist_ok=True)
-        shutil.copyfile(p, os.path.join(D.APPS_DIR, ten))
+        os.makedirs(_DD.APPS_DIR, exist_ok=True)
+        shutil.copyfile(p, os.path.join(_DD.APPS_DIR, ten))
         return chuyen("/uem/quan-tri/agent", f"Đã đưa {ten} vào kho phần mềm (Tài nguyên, Phần mềm). Khi triển khai, Console System tự điền passkey nếu đã lưu cho gói này. Mã sản phẩm: {UG.MSI_PRODUCT_CODE}")
 
     @app.route("/uem/quan-tri/agent/goi/<gid>/passkey", methods=["POST"])

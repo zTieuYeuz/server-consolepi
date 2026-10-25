@@ -14,6 +14,7 @@ tu TAI tu Console System qua duong dan 1 lan (token ngau nhien, het han sau 2 gi
 MAT KHAU: lay tu kho tai khoan ma hoa (tk_dulieu), chi nam trong RAM luc dang chay, khong ghi log.
 """
 import sys as _sys
+from consolesystem.core.token_tai import _TOKEN, tao_token, tra_token  # noqa: F401  (B3)
 _sys.modules["ui.tk_dongco"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import glob
 import json
@@ -30,6 +31,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from ui import tk_dulieu as DL
+from consolesystem.core import duongdan as _DD
+from consolesystem.core import magic_packet as _MP
 
 TOI_DA_SONG_SONG = 10
 CONG_TAI = int(os.environ.get("TK_CONG_TAI", "80"))      # cong Console System phuc vu file (nginx 80)
@@ -40,7 +43,6 @@ CUA_SO_BU = 6 * 3600                                      # bo lo gio hen toi da
 _EX = ThreadPoolExecutor(max_workers=TOI_DA_SONG_SONG)
 _KHOA = threading.RLock()
 _DANG = set()                                             # (kb_id, ip) dang chay
-_TOKEN = {}                                               # token -> {duong, ten, het}
 _ZIP = {}                                                 # ung dung -> (chu ky, duong zip)
 _BO_LAP_DA_CHAY = False
 
@@ -74,21 +76,8 @@ def ip_pi_toi(ip_may):
         s.close()
 
 
-def tao_token(duong, giay=7200):
-    tok = uuid.uuid4().hex
-    with _KHOA:
-        for k in [k for k, v in _TOKEN.items() if v["het"] < time.time()]:
-            _TOKEN.pop(k, None)
-        _TOKEN[tok] = {"duong": duong, "ten": os.path.basename(duong), "het": time.time() + giay}
-    return tok
 
 
-def tra_token(tok, ten):
-    with _KHOA:
-        v = _TOKEN.get(tok)
-    if v and v["het"] > time.time() and v["ten"] == ten and os.path.isfile(v["duong"]):
-        return v["duong"]
-    return None
 
 
 def _noi_bo(addr):
@@ -192,7 +181,7 @@ def _dir_tep(ten):
 def _b_phanmem(c, ip, b, may):
     from ui import deployos as D
     ten = os.path.basename(b["ref"])
-    duong = os.path.join(D.APPS_DIR, ten)
+    duong = os.path.join(_DD.APPS_DIR, ten)
     if not os.path.isfile(duong):
         return False, f"Không còn file phần mềm {ten} trong Tài nguyên."
     meta = D.doc_thongtin_app()
@@ -257,7 +246,7 @@ def _b_ungdung(c, ip, b, may):
         return False, f"Không còn ứng dụng '{b.get('ten') or b['ref']}' trong Tài nguyên."
     if not (u.get("lenh_cai") or "").strip():
         return False, "Ứng dụng chưa có dòng lệnh cài đặt (điền ở Tài nguyên, Ứng dụng nhiều file)."
-    z = _zip_ungdung(u["id"], os.path.join(D.UNGDUNG_DIR, u["id"]))
+    z = _zip_ungdung(u["id"], os.path.join(_DD.UNGDUNG_DIR, u["id"]))
     d = _dir_tep(u["id"])
     _tai_ve_may(c, ip, z, d + "\\ungdung.zip")
     _chay_ps(c, f"Expand-Archive -Force -Path {_q(d + chr(92) + 'ungdung.zip')} -DestinationPath {_q(d + chr(92) + 'src')}; "
@@ -270,7 +259,7 @@ def _b_ungdung(c, ip, b, may):
 def _b_script(c, ip, b, may):
     from ui import deployos as D
     ten = os.path.basename(b["ref"])
-    duong = os.path.join(D.SCRIPTS_DIR, ten)
+    duong = os.path.join(_DD.SCRIPTS_DIR, ten)
     if not os.path.isfile(duong):
         return False, f"Không còn script {ten} trong Tài nguyên."
     if ten.lower().endswith(".ps1"):
@@ -438,13 +427,12 @@ def giai_buoc(kb):
 
 
 def _cho_wol(ip, mac):
-    from ui import wol
     if cong_mo(ip, 5985, 1.5):
         return True, "Máy đã bật sẵn (WinRM sẵn sàng), không cần gửi Wake-on-LAN."
-    mac = wol.chuan_mac(mac)
+    mac = _MP.chuan_mac(mac)
     if not mac:
         return False, "Máy chưa có địa chỉ MAC hợp lệ để bật bằng Wake-on-LAN (thêm MAC ở Máy - nhóm máy, bấm Kiểm tra để tự lấy)."
-    wol.gui([mac])
+    _MP.gui([mac])
     het = time.time() + 240
     while time.time() < het:
         if cong_mo(ip, 5985, 1.0):
