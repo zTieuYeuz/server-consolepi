@@ -46,6 +46,8 @@ def get_or_create_secret():
             data = f.read().strip()
             if len(data) >= 32:
                 return data
+    except FileNotFoundError:
+        pass                         # lan chay dau: chua co khoa phien, tao moi ben duoi
     except Exception as _loi:
         _bo_qua(_loi)
 

@@ -505,6 +505,8 @@ def bt_agent_state():
         # Chi coi la con hieu luc trong 2 phut
         if time.time() - d.get("at", 0) < 120:
             return d
+    except FileNotFoundError:
+        pass                         # chua co trang thai Bluetooth (may khong co BT) - binh thuong
     except Exception as _loi:
         _bo_qua(_loi)
     return None
