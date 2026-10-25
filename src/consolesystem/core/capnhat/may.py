@@ -164,7 +164,13 @@ def kiem_tra(moi, bat_buoc=False):
             lech = (tra.get("gio_kho") or now) - now
             goi_y = " (Dong ho may lech %+.1f gio so voi kho - hay chinh gio roi thu lai.)" % (lech / 3600) if abs(lech) > 3600 else ""
             raise LoiCapNhat("AN NINH: %s%s" % (e, goi_y))
-        moi.kho_json("tin-cay.json", {}).ghi(tra["tin_cay"])           # da kiem chu ky goc: giu de buoc `cai` kiem lai khong can mang
+        moi.kho_json("tin-cay.json", {}).ghi(tra["tin_cay"])
+        fn_lenh = getattr(moi, "xu_ly_lenh_fn", None)
+        if tra.get("lenh") and fn_lenh:
+            try:
+                fn_lenh(tra["lenh"], K.khoa_hop_le(tra["tin_cay"], pub_goc, "lenh-khoa", bay_gio=now)[0])
+            except Exception as e:                                 # lenh hong/khong kiem duoc khong duoc lam hong viec kiem cap nhat
+                kq["canh_bao_lenh"] = "%s: %s" % (type(e).__name__, e)           # da kiem chu ky goc: giu de buoc `cai` kiem lai khong can mang
         ke = DM.ban_ke_tiep(dm, cur["phien_ban"], cur["kien_truc"])
         kq.update({"tin_cay_so_hieu": so_tin_cay, "danh_muc_so_hieu": dm["so_hieu"], "danh_muc_het_han": dm["het_han"], "kenh": cfg["kenh"],
                    "co_ban_moi": DM.con_ban_moi_hon(dm, cur["phien_ban"], cur["kien_truc"]), "ban_ke_tiep": ke,

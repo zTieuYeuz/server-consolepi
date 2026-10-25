@@ -112,7 +112,23 @@ def token():
     return c["token"]
 
 
+def bi_mat_nho():
+    """Cac file bi mat NHO se bi ma hoa khi may bi khoa (C6)."""
+    return [DD.FILE_FLASK_SECRET, DD.FILE_KHOA_SAMBA, DD.FILE_KHO_TRUNGTAM, DD.FILE_CF_ACCESS, DD.FILE_KHOA_MAY, DD.FILE_TK_KHOA]
+
+
 def moi_thuc():
+    moi = _moi_thuc()
+    from consolesystem.core.capnhat import khoa_lenh as KL
+
+    def xu_ly_lenh(cac_lenh, khoa_lenh_hop_le):
+        kq = KL.xu_ly_lenh(moi, cac_lenh, khoa_lenh_hop_le, token(), bi_mat_nho(), bao_cao_fn=moi.kho.bao_cao if moi.kho is not None else None)
+        moi.kho_json("lenh-gan-day.json", {}).ghi({"luc": int(moi.gio()), "ket_qua": kq})
+    moi.xu_ly_lenh_fn = xu_ly_lenh
+    return moi
+
+
+def _moi_thuc():
     return N.MoiNangCap(kho=kho_thuc(), sao_luu_fn=sao_luu, khoi_phuc_fn=khoi_phuc, pxe_dang_bat_fn=DD.pxe_dang_bat, suc_khoe_fn=suc_khoe,
                         khoi_dong_lai_fn=khoi_dong_lai, ap_dung_fn=ap_dung, migration_fn=migration, schema_fn=schema, token_fn=token)
 

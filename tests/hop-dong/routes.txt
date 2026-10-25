@@ -169,6 +169,7 @@
 /gopy	GET	gopy_trang
 /gopy	POST	gopy_gui
 /healthz	GET	healthz
+/khoa-may	GET,POST	khoa_may_trang
 /login	GET,POST	login
 /logout	GET	logout
 /logs	GET	logs_page

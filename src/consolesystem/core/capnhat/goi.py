@@ -286,7 +286,7 @@ def kiem_dieu_kien_cai(manifest, hien_tai, ha_cap=False):
     return loi
 
 
-def cai_goi(duong, dek, khoa_hop_le, hien_tai, thu_muc_releases, ha_cap=False):
+def cai_goi(duong, dek, khoa_hop_le, hien_tai, thu_muc_releases, ha_cap=False, luu_chu_ky=None):
     """Kiem + giai ma + giai nen goi vao `thu_muc_releases/<phien_ban>` (chua dung toi `current`). Tra ve (ten ban, manifest).
     Moi buoc loi -> LoiGoi va KHONG de lai thu muc do dang."""
     with open(duong, "rb") as f:
@@ -311,6 +311,12 @@ def cai_goi(duong, dek, khoa_hop_le, hien_tai, thu_muc_releases, ha_cap=False):
                 raise LoiGoi("thieu RELEASE.json trong goi")
             PH._khoa_chi_doc(cay)
             os.rename(cay, dich)
+            if luu_chu_ky:
+                try:
+                    luu_chu_ky(ten, dau_b, cs)                  # giu bang bam DA KY de chong chinh sua (nguyenven.py)
+                except OSError:
+                    PH.xoa_ban(dich)
+                    raise
         finally:
             PH.xoa_ban(tam)
     return ten, manifest

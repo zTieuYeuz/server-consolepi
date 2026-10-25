@@ -24,6 +24,7 @@ from . import danhmuc as DM  # noqa: F401
 from . import goi as G
 from . import khoa as K
 from . import may as M
+from . import nguyenven as NV
 
 BUOC_NANG_CAP = ("kiem", "sao-luu", "tai", "cai", "migration", "doi-ban", "khoi-dong-lai", "suc-khoe", "hoan-tat")
 BUOC_HA_CAP = ("kiem", "sao-luu", "doi-ban", "khoi-phuc-du-lieu", "khoi-dong-lai", "suc-khoe", "hoan-tat")
@@ -141,6 +142,10 @@ def kiem_dieu_kien_nang_cap(moi, tuy_chon=None):
         chan.append("Khong co ban ke tiep de nang cap (da moi nhat, hoac phai qua ban trung gian).")
     if dang_chay(moi):
         chan.append("Dang co mot lan nang cap/ha cap chay.")
+    nv = NV.kiem(moi)
+    if nv["trang_thai"] == "lech":
+        chan.append("CHUONG TRINH DANG CHAY BI SUA DOI so voi ban da ky (%s). Cap nhat tu dong bi chan de khong de len mot he thong khong tin cay. "
+                    "Cach xu ly: tim nguyen nhan, roi cai lai ban hien tai tu nguon tin cay (console-system-release.py cai) truoc khi cap nhat." % nv["ly_do"])
     j = doc_job(moi)
     if j and j.get("trang_thai") == "dang-chay":
         chan.append("Con mot cong viec cap nhat chua ket thuc.")
@@ -251,7 +256,8 @@ def _b_cai(moi, job):
     dek = M.mo_khoa_goi(khoa_may, moi.hook("token_fn")(), job["den"], job["kien_truc"], job["kenh"], boc)
     cur = M.hien_tai(moi)
     try:
-        ten, manifest = G.cai_goi(_duong_goi(moi, job), dek, _tin_cay_va_khoa(moi, job), cur, thu_releases)
+        ten, manifest = G.cai_goi(_duong_goi(moi, job), dek, _tin_cay_va_khoa(moi, job), cur, thu_releases,
+                                luu_chu_ky=lambda t, db, cs: NV.luu_chu_ky(moi, t, db, cs))
     except G.LoiGoi as e:
         raise LoiNangCap("goi KHONG hop le: %s" % e)
     if manifest["so_phat_hanh"] != job["so_phat_hanh_den"] or ten != job["den"]:

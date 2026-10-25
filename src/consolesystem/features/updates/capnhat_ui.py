@@ -10,12 +10,15 @@ import random
 import threading
 import time
 
-from flask import jsonify, redirect, request
+from flask import Response, jsonify, redirect, request, session
 
 from consolesystem.core import duongdan as DD
 from consolesystem.core.capnhat import may as M
 from consolesystem.core.capnhat import nangcap as N
+from consolesystem.core.capnhat import khoa_lenh as KL
+from consolesystem.core.capnhat import nguyenven as NV
 from consolesystem.core.esc import esc
+from consolesystem.web import auth as _auth
 from consolesystem.web.layout import render_page
 
 from consolesystem.features.updates import thuc_te as T
@@ -28,7 +31,11 @@ DIEU_KHOAN = """\
 3. Goi cap nhat duoc ky so va ma hoa; he thong chi cai goi hop le tu nha phat hanh, tung ban mot theo thu tu, va kiem lai tung file sau khi cai.
 4. Phan mem duoc cung cap theo hien trang. Nha phat hanh khong chiu trach nhiem ve thiet hai gian tiep hay mat du lieu do ban khong sao luu hoac do
    thay doi trai phep ma nguon/he thong cap nhat.
-5. Tinh nang cap nhat co the bi chan neu phat hien chuong trinh bi sua doi trai phep (xem muc Chong chinh sua).
+5. Tinh nang cap nhat co the bi chan neu phat hien chuong trinh bi sua doi trai phep (xem muc Chong chinh sua). Day la lop phat hien thay doi, khong
+   chong duoc nguoi da co quyen root tren may.
+6. KHOA MAY: neu may bi nghi ngo (vd chuong trinh bi sua, may that lac/bi sao chep), CHU HE THONG co the ky mot lenh khoa; may nhan lenh thi ma hoa cac
+   bi mat NHO (khoa phien web, token kho, khoa Samba...) va chi mo lai khi nhap MA MO KHOA do chu he thong giu. Lenh chi co hieu luc khi co chu ky hop le,
+   dung may, con han; khong ai (ke ca kho) mo khoa tu xa. Mat ma mo khoa = mat cac bi mat da khoa, nen hay giu ma o noi an toan.
 """
 GO_XAC_NHAN = "CAP NHAT"
 GO_HA_CAP = "HA CAP"
@@ -156,6 +163,21 @@ def _khoi_lich_su(moi):
         _gio(x.get("bat_dau")), "Nâng cấp" if x.get("loai") == "nang-cap" else "Hạ cấp", esc(x.get("tu")), esc(x.get("den")), esc(x.get("trang_thai"))) for x in ds))
 
 
+def _khoi_nguyen_ven(moi):
+    kq = NV.doc_ket_qua(moi) or {}
+    tt = kq.get("trang_thai")
+    if not tt:
+        return ""
+    nhan = {"ok": ("Nguyên vẹn", "var(--ok,#2a2)"), "chua-ky": ("Chưa có chữ ký để đối chiếu", ""), "lech": ("BỊ SỬA ĐỔI", "#c33"),
+            "khong-xac-minh": ("Chưa xác minh lại được chữ ký", "#c90")}.get(tt, (tt, ""))
+    nd = "<p><b>%s</b> — bản %s, kiểm lúc %s.</p>" % (nhan[0], esc(kq.get("ban") or "-"), _gio(kq.get("luc")))
+    if kq.get("ly_do"):
+        nd += "<p>%s</p>" % esc(kq["ly_do"])
+    if kq.get("lech"):
+        nd += "<ul>%s</ul>" % "".join("<li>%s</li>" % esc(x) for x in kq["lech"][:10])
+    return _the("Chống chỉnh sửa", nd, nhan[1])
+
+
 def register_capnhat(app):
     def _moi():
         return T.moi_thuc()
@@ -173,7 +195,7 @@ def register_capnhat(app):
         chay = bool(job and job.get("trang_thai") == "dang-chay")
         thong_bao = ('<div class="msg %s">%s</div>' % ("ok" if ok else "err", esc(msg))) if msg else ""
         body = thong_bao + _khoi_tien_do(T.mo_ta_job(job) if job and (chay or time.time() - (job.get("ket_thuc") or 0) < 86400) else None) + _khoi_trang_thai(moi, ts, cur, cfg) \
-            + _khoi_ban_moi(moi, ts, cur, chay) + _khoi_ha_cap(moi, chay) + _khoi_cai_dat(cfg) + _khoi_lich_su(moi)
+            + _khoi_nguyen_ven(moi) + _khoi_ban_moi(moi, ts, cur, chay) + _khoi_ha_cap(moi, chay) + _khoi_cai_dat(cfg) + _khoi_lich_su(moi)
         return render_page(body, active="/cap-nhat", title="Cập nhật", subtitle="Phiên bản và nâng cấp")
 
     @app.route("/cap-nhat/dong-y", methods=["POST"])
@@ -184,7 +206,9 @@ def register_capnhat(app):
 
     @app.route("/cap-nhat/kiem-tra", methods=["POST"])
     def cap_nhat_kiem_tra():
-        M.kiem_tra(_moi(), bat_buoc=True)
+        moi = _moi()
+        NV.kiem_va_ghi(moi, moi.kho.bao_cao if moi.kho is not None else None)
+        M.kiem_tra(moi, bat_buoc=True)
         return redirect("/cap-nhat")
 
     @app.route("/cap-nhat/cai-dat", methods=["POST"])
@@ -226,11 +250,61 @@ def register_capnhat(app):
         j = N.doc_job(_moi())
         return jsonify(T.mo_ta_job(j) or {})
 
+    # ---- C6: man hinh MAY BI KHOA (chi chan nguoi da dang nhap; /healthz, /static, agent va PXE khong bi dong vao)
+    nho_khoa = {"luc": 0.0, "co": False}
+
+    def _dang_khoa():
+        t = time.time()
+        if t - nho_khoa["luc"] > 2:
+            try:
+                nho_khoa["co"] = KL.dang_khoa(_moi())
+            except Exception:
+                nho_khoa["co"] = False
+            nho_khoa["luc"] = t
+        return nho_khoa["co"]
+
+    def _trang_khoa(msg=""):
+        nd = ('<div class="msg err">%s</div>' % esc(msg)) if msg else ""
+        nd += ("<p>Máy này đã bị <b>KHÓA</b> theo lệnh đã ký của chủ hệ thống. Các bí mật nhỏ (khóa phiên, token kho, khóa Samba...) đã được mã hóa; "
+               "chỉ <b>mã mở khóa</b> do chủ hệ thống giữ mới giải được.</p>"
+               '<form method="POST" action="/khoa-may"><input name="ma" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" size="48" autocomplete="off" autofocus> '
+               '<button class="green">Mở khóa</button></form>')
+        return Response(render_page(_the("Máy bị khóa", nd, "#c33"), active="/khoa-may", title="Máy bị khóa"), status=423, mimetype="text/html")
+
+    @app.before_request
+    def _cong_khoa_may():
+        if request.path in ("/khoa-may", "/healthz") or request.path.startswith("/static") or not (session.get("user") or _auth._is_local_screen()):
+            return None
+        return _trang_khoa() if _dang_khoa() else None
+
+    @app.route("/khoa-may", methods=["GET", "POST"])
+    def khoa_may_trang():
+        moi = _moi()
+        if not KL.dang_khoa(moi):
+            return redirect("/")
+        if request.method == "POST":
+            try:
+                n = KL.mo_khoa(moi, request.form.get("ma", ""))
+            except KL.LoiKhoaLenh as e:
+                return _trang_khoa(str(e))
+            nho_khoa["luc"] = 0.0
+            return redirect("/cap-nhat?mo=%d" % n)
+        return _trang_khoa()
+
+    try:                                                     # mat dien luc dang khoa -> hoan tat viec xoa ban ro
+        KL.hoan_tat_khoa(_moi())
+    except Exception as e:
+        print("[cap-nhat] loi hoan tat khoa: %s" % e, flush=True)
+
     def vong_kiem_tra_nen():
         time.sleep(random.randint(60, 300))
+        lan_nguyen_ven = 0.0
         while True:
             try:
                 moi = _moi()
+                if time.time() - lan_nguyen_ven > 6 * 3600:
+                    lan_nguyen_ven = time.time()
+                    NV.kiem_va_ghi(moi, moi.kho.bao_cao if moi.kho is not None else None)
                 if M.den_han_hoi(moi) and moi.kho is not None:
                     M.kiem_tra(moi)
             except Exception as e:                                   # luong nen khong duoc chet vi mot lan loi
