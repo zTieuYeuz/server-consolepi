@@ -103,7 +103,7 @@ def _lenh_chon_o(d):
             f"if %{t}TRUNG% EQU 1 goto loi_chon_trung",
             f"if not defined {t}DN goto loi_chon_khong",
             f"set DISK=%{t}DN%",
-            f"set /a NKHOP=1",
+            "set /a NKHOP=1",
         ]
     elif c["chon"] == "co_windows":
         ra += ["if %NKHOP% EQU 0 goto loi_chon_khong", "if %NKHOP% GTR 1 goto loi_chon_trung"]

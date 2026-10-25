@@ -385,7 +385,7 @@ def run_once():
         try:
             ws.close()
         except Exception:
-            pass
+            pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
     return True
 
 
@@ -414,7 +414,7 @@ def _dong_tab(tid):
     try:
         urllib.request.urlopen(f"{CDP_BASE}/json/close/{tid}", timeout=3).read()
     except Exception:
-        pass
+        pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
 
 
 def _mo_trong_tab_chinh(ws_url, url):
@@ -452,14 +452,14 @@ def giu_mot_tab():
                 try:
                     _mo_trong_tab_chinh(chinh["webSocketDebuggerUrl"], url)
                 except Exception:
-                    pass
+                    pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
             _dong_tab(t["id"])
             thay_luc.pop(t["id"], None)
             print(f"Da dong tab moi: {url[:80]}", flush=True)
         try:
             urllib.request.urlopen(f"{CDP_BASE}/json/activate/{chinh['id']}", timeout=3).read()
         except Exception:
-            pass
+            pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
 
 
 def cuu_man_hinh_cho():

@@ -2,6 +2,7 @@
 """Deploy OS - he dieu hanh (anh WIM/ISO/SxS): liet ke, tao, xoa, chi so ban Pro.
 
 (B4: tach nguyen van tu deployos.py; ten ham/hang giu nguyen, nguon van re-export.)"""
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import json
 import os
 import re
@@ -25,8 +26,8 @@ def danh_sach_os():
             try:
                 with open(os.path.join(p, "_thongtin.json")) as f:
                     meta = json.load(f)
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
             co_boot = os.path.isfile(os.path.join(p, "boot.wim"))
             co_install = os.path.isfile(os.path.join(p, "install.wim"))
             kich_thuoc = sum(

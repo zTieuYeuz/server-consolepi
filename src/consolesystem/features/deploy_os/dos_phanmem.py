@@ -2,6 +2,7 @@
 """Deploy OS - danh muc PHAN MEM (.exe/.msi) va UNG DUNG nhieu file: doc/ghi thong tin, tham so cai im lang, giai nen, xoa.
 
 (B4: tach nguyen van tu deployos.py; ten ham/hang giu nguyen, nguon van re-export.)"""
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import json
 import os
 from ui.duongdan import DEPLOY_DIR, BOOT_DIR, APPS_DIR, SCRIPTS_DIR, KICHBAN_DIR, OS_DIR, DRIVERS_DIR, UNGDUNG_DIR, FONTS_DIR, EXT_SCRIPT  # noqa: F401  (B3: khai bao o core/duongdan.py)
@@ -96,8 +97,8 @@ def danh_sach_ungdung():
             try:
                 with open(os.path.join(p, "_thongtin.json")) as f:
                     meta = json.load(f)
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
             so_file = 0
             tong_byte = 0
             for goc, _dirs, files in os.walk(p):

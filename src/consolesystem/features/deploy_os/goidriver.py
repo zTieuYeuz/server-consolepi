@@ -20,6 +20,7 @@ dau "cho_boot" -> dung chung co che driver cho anh boot da co (drivers.wim +
 drvload trong deploy.cmd) VA driver cho Windows sau khi cai (DriverPaths).
 Danh sach goi: goi-driver.json canh file nay (url + sha256 da kiem chung).
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.goidriver"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import hashlib
@@ -225,8 +226,8 @@ def nap_san():
             try:
                 from ui import pxe as _pxe
                 _pxe.cap_nhat_menu()
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
         return xong
     except Exception as e:
         print(f"[driver-san] loi: {type(e).__name__}: {e}", flush=True)
@@ -249,8 +250,8 @@ def tai_goi(cac_ma):
         try:
             from ui import pxe as _pxe
             _pxe.cap_nhat_menu()
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
 
     threading.Thread(target=chay, daemon=True).start()
     return True, f"Đang tải {len(chon)} gói ở nền - trang tự cập nhật tiến độ."
@@ -298,8 +299,8 @@ def tai_ngam():
                 try:
                     from ui import pxe as _pxe
                     _pxe.cap_nhat_menu()
-                except Exception:
-                    pass
+                except Exception as _loi:
+                    _bo_qua(_loi)
             if len(xong) < len(can):          # co goi that bai (mang chap chon...) -> thu lai sau
                 time.sleep(cho)
                 cho = min(cho * 2, 120)

@@ -260,11 +260,11 @@ def co_bootmgr_ex(os_id):
 def _dong_bootmgr_ex(goc, os_id, nhan):
     """Cac dong iPXE: che do may moi dang bat + may UEFI -> dua bootmgr ky 2023 cho wimboot."""
     if not co_bootmgr_ex(os_id):
-        return [f"iseq ${{cs_sb23}} 1 && echo CANH BAO: bo cai nay khong co trinh khoi dong ky 2023 - "
-                f"dung ban thuong ||"]
+        return ["iseq ${cs_sb23} 1 && echo CANH BAO: bo cai nay khong co trinh khoi dong ky 2023 - "
+                "dung ban thuong ||"]
     return [f"iseq ${{cs_sb23}} 1 || goto {nhan}",
             f"iseq ${{platform}} efi || goto {nhan}",
-            f"echo Che do may moi: trinh khoi dong ky chung chi Microsoft 2023",
+            "echo Che do may moi: trinh khoi dong ky chung chi Microsoft 2023",
             f"initrd {goc}/{THU_MUC_PXE}/{TIEN_TO_EX}{ten_thu_muc(os_id)}/bootmgfw.efi bootmgfw.efi || goto loi",
             f":{nhan}"]
 

@@ -5,6 +5,7 @@ Console Pi - Tab Cai dat (yeu cau so 3: nut xoay man hinh)
 Xoay man hinh dung wlr-randr noi vao compositor cage dang chay. Luu lua chon
 vao config de kiosk-start.sh tu ap dung lai moi lan khoi dong.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.settings"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import contextlib
@@ -87,8 +88,8 @@ def set_rotation(value):
         with open(ROTATION_FILE, "w") as f:
             f.write(value + "\n")
         os.chmod(ROTATION_FILE, 0o644)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
 
     # Xoay toa do cam ung cho khop - bat buoc, neu khong se cham khong trung
     touch_ok = sync_touch_matrix(value)

@@ -7,6 +7,7 @@ Bo cuc uu tien nhung gi dan network can nhin dau tien:
   2. Trang thai mang chi tiet tung card
   3. Tinh trang cac dich vu
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.home"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import glob
@@ -93,8 +94,8 @@ def chip_of(devname):
                 name = name.replace("usb-", "").split("-if")[0]
                 parts = name.split("_")
                 return " ".join(parts[:3])[:34]
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return ""
 
 
@@ -135,8 +136,8 @@ def service_states(names):
         lines = r.stdout.split()
         if len(lines) == len(names):
             return dict(zip(names, lines))
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return {n: "unknown" for n in names}
 
 
@@ -151,8 +152,8 @@ def iface_detail(name):
     try:
         with open(f"/sys/class/net/{name}/address") as f:
             info["mac"] = f.read().strip()
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     # Doc IP tu /proc/net/route + lenh ip chi khi can.
     # Uu tien /sys va /proc vi khong phai spawn tien trinh - nhanh hon nhieu
     # tren Pi doi thap (Pi 3 / Zero).
@@ -163,15 +164,15 @@ def iface_detail(name):
             if "/" in tok and tok.count(".") == 3:
                 info["ip"] = tok
                 break
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     try:
         with open(f"/sys/class/net/{name}/speed") as f:
             s = f.read().strip()
             if s and s != "-1":
                 info["speed"] = f"{s} Mbps"
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return info
 
 
@@ -351,8 +352,8 @@ def can_chu_y(h, ports, states):
             ra.append(("nhan", "disk", "PXE đang bật",
                        "Máy trong mạng chọn boot qua mạng sẽ thấy menu cài Windows. "
                        "Tắt khi xong việc.", ("Bật / Tắt PXE", "/deployos/caidat")))
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     n_cai = _so_may_dang_cai()
     if n_cai:
         ra.append(("nhan", "win", f"Đang cài Windows cho {n_cai} máy",

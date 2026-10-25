@@ -13,6 +13,7 @@ tu TAI tu Console System qua duong dan 1 lan (token ngau nhien, het han sau 2 gi
 
 MAT KHAU: lay tu kho tai khoan ma hoa (tk_dulieu), chi nam trong RAM luc dang chay, khong ghi log.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 from consolesystem.core.token_tai import _TOKEN, tao_token, tra_token  # noqa: F401  (B3)
 _sys.modules["ui.tk_dongco"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
@@ -146,8 +147,8 @@ def _tai_ve_may(c, ip, duong_local, dich):
             return
     except LoiKetNoi:
         raise
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     if os.path.getsize(duong_local) < 30 * 1024 * 1024:
         _chay_ps(c, f"New-Item -ItemType Directory -Force (Split-Path {_q(dich)}) | Out-Null")
         c.copy(duong_local, dich)
@@ -688,8 +689,8 @@ def tick():
         if cu:
             DL.KICH_BAN.sua(lambda ds: ds.__setitem__(slice(None), [k for k in ds if k["id"] not in cu]))
             DL.TRANG_THAI.sua(lambda t: [t.pop(i, None) for i in cu])
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
 
 
 def khoi_dong_bo_lap_lich():
@@ -708,13 +709,13 @@ def khoi_dong_bo_lap_lich():
                         if m.get("tt") == "dang":
                             m["tt"] = "cho"
             DL.TRANG_THAI.sua(sua)
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
         while True:
             try:
                 tick()
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
             time.sleep(15)
     threading.Thread(target=vong, daemon=True, name="tk-lap-lich").start()
 
@@ -748,8 +749,8 @@ def _mang_cuc_bo():
                     n = ipaddress.ip_network(f"{a['local']}/{a['prefixlen']}", strict=False)
                     if n.num_addresses <= 1024:
                         ra.append(n)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return ra
 
 

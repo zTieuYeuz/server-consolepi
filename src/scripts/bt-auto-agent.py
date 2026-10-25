@@ -53,14 +53,14 @@ def _write_state(**kw):
         os.replace(tmp, STATE_FILE)
         os.chmod(STATE_FILE, 0o644)
     except Exception:
-        pass
+        pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
 
 
 def _clear_state():
     try:
         os.unlink(STATE_FILE)
     except Exception:
-        pass
+        pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
 
 
 def _dev_name(bus, path):

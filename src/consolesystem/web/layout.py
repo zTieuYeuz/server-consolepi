@@ -8,6 +8,7 @@ tu viet lai <html> tu dau. Thiet ke cho man hinh cam ung 1280x800:
   - Thanh trang thai mang luon hien tren cung (yeu cau so 2)
   - Khong dung thu vien ngoai / CDN (Pi mang di hien truong co the khong co net)
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.layout"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import os
@@ -787,8 +788,8 @@ def get_status_chips(use_cache=True):
                     ssid = line[5:].strip()
                 elif line.startswith("type "):
                     mode = line[5:].strip()
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
 
         if mode == "AP":
             extra = "Đang phát AP: " + (ssid or "ConsolePi")
@@ -815,8 +816,8 @@ def get_status_chips(use_cache=True):
         out = subprocess.run(["ip", "neigh", "show", "dev", "pan0"],
                              capture_output=True, text=True, timeout=4).stdout
         n_bt = sum(1 for l in out.splitlines() if "REACHABLE" in l or "STALE" in l)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     chips.append({
         "key": "Bluetooth (pan0)",
         "val": ip_b if ip_b else "Chưa bật",
@@ -1113,8 +1114,8 @@ def nen_giao_dien(che_do=None):
         c = request.cookies.get("cs_nen")
         if c in ("sang", "toi"):
             return c
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return "sang" if (che_do or che_do_giao_dien()) == "cu" else "toi"
 
 
@@ -1170,8 +1171,8 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
                 active = "/deployos/trienkhai"
                 if title == "Deployment OS":
                     title = "Triển khai phần mềm"
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
     """
     Dung 1 trang hoan chinh voi khung chung.
       body_html : phan noi dung rieng cua trang (chuoi HTML da render xong)

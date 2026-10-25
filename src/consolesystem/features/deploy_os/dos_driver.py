@@ -2,6 +2,7 @@
 """Deploy OS - DRIVER: goi driver, chon cho boot, khop model, giai nen.
 
 (B4: tach nguyen van tu deployos.py; ten ham/hang giu nguyen, nguon van re-export.)"""
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import json
 import os
 import re
@@ -26,8 +27,8 @@ def danh_sach_driver():
             try:
                 with open(os.path.join(p, "_thongtin.json")) as f:
                     meta = json.load(f)
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
             so_file = sum(
                 1 for n in os.listdir(p)
                 if n != "_thongtin.json" and os.path.isfile(os.path.join(p, n)))
@@ -85,8 +86,8 @@ def dat_driver_cho_boot(driver_id, bat):
     try:
         with open(f_meta) as f:
             meta = json.load(f)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     meta["cho_boot"] = bool(bat)
     try:
         with open(f_meta, "w") as f:
@@ -119,8 +120,8 @@ def dat_model_driver(driver_id, chuoi):
     try:
         with open(f_meta) as f:
             meta = json.load(f)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     mau = []
     for m in re.split(r"[,;\n\r]+", chuoi or ""):
         m = " ".join(m.split())[:80]

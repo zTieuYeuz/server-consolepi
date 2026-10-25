@@ -81,3 +81,28 @@ def test_phu_thuoc_giua_cac_goi_dung_luat_va_no_ky_thuat_chi_giam():
     assert not moi, "phu thuoc moi vi pham luat kien truc (tach dich vu dung chung ra core/integrations): %s" % moi
     het = sorted(set(NO_KY_THUAT) - vp)
     assert not het, "no ky thuat da duoc go - xoa khoi NO_KY_THUAT: %s" % het
+
+
+# ------------------------------------------------------------------------------------------------ B7: lenh he thong luon co timeout
+NGOAI_LE_TIMEOUT = {"scripts/phien-chay.py"}                       # phien terminal TUONG TAC: chay den khi nguoi dung thoat
+
+
+def test_moi_subprocess_run_co_timeout():
+    import ast
+    goc = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
+    thieu = []
+    for d, _ds, fs in os.walk(goc):
+        if "__pycache__" in d:
+            continue
+        for f in fs:
+            if not f.endswith(".py"):
+                continue
+            p = os.path.join(d, f)
+            rel = os.path.relpath(p, goc)
+            if rel in NGOAI_LE_TIMEOUT:
+                continue
+            for n in ast.walk(ast.parse(open(p, encoding="utf-8").read())):
+                if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and isinstance(n.func.value, ast.Name) and n.func.value.id == "subprocess"
+                        and n.func.attr in ("run", "check_output", "call", "check_call") and "timeout" not in {k.arg for k in n.keywords}):
+                    thieu.append("%s:%d" % (rel, n.lineno))
+    assert not thieu, "subprocess khong co timeout (co the treo vinh vien): %s" % thieu

@@ -18,6 +18,7 @@ Nguon du lieu bam theo ma nguon OpenUEM (openuem-agent/internal/commands/report/
 GIOI HAN SO VOI AGENT THAT (ghi ro tren giao dien): WinRM chay duoi phien quan tri KHONG phai phien nguoi dung dang ngoi may,
 nen may in cai rieng cho tung user va ung dung Microsoft Store khong thay duoc.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.uem_baocao"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
@@ -224,7 +225,7 @@ def khoi_dong_bo_lap():
         while True:
             try:
                 _tick()
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
             time.sleep(30)
     threading.Thread(target=vong, daemon=True, name="uem-bao-cao").start()

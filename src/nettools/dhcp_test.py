@@ -17,6 +17,7 @@ Mot lan bam "Kiểm tra toàn diện" se lam:
 KHONG dung iperf3 (theo yeu cau) - chi dung Cloudflare Speed Test, khong
 can chuan bi may thu hai.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import random
 import re
 import subprocess
@@ -61,8 +62,8 @@ def _ghi_nhat_ky(iface, offers, internet_result):
             dong += f" | internet={internet_result}"
         with open(AUDIT_LOG, "a") as f:
             f.write(dong + "\n")
-    except Exception:
-        pass  # khong bao gio de ghi log lam hong ca lan kiem tra
+    except Exception as _loi:
+        _bo_qua(_loi)  # khong bao gio de ghi log lam hong ca lan kiem tra
 
 
 def _chay(cmd, timeout=10):

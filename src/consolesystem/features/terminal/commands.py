@@ -8,6 +8,7 @@ Luu cac tap lenh hay dung, them/sua/xoa duoc qua web. Tu day co the:
 
 File luu: /opt/console-pi/command-library.json  (giu nguyen khi cai dat lai)
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.commands"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
@@ -82,8 +83,8 @@ def load_library():
     except FileNotFoundError:
         save_library(DEFAULT_LIBRARY)
         return list(DEFAULT_LIBRARY)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return []
 
 

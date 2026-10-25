@@ -17,7 +17,7 @@ DICH_VU = ("console-pi-dashboard", "console-pi-tftp")
 
 
 def _sc(*a):
-    return subprocess.run(["systemctl", *a], capture_output=True, text=True)
+    return subprocess.run(["systemctl", *a], capture_output=True, text=True, timeout=180)
 
 
 def khoi_dong_lai(dv_them=()):

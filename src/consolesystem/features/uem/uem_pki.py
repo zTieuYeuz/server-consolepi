@@ -9,6 +9,7 @@ Quan ly may tram - HA TANG KHOA CONG KHAI (PKI) cho agent, de agent noi chuyen b
     di qua cong 80 gia mao duoc).
 Tat ca nam trong <thu muc du lieu>/pki (0700, root). Khoa CA khong bao gio roi may Console System.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.uem_pki"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import datetime
@@ -137,8 +138,8 @@ def ips_pi():
     try:
         out = subprocess.run(["ip", "-4", "-o", "addr"], capture_output=True, text=True, timeout=5).stdout
         ra |= set(re.findall(r"inet (\d+\.\d+\.\d+\.\d+)/", out))
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     try:
         ra |= set(socket.gethostbyname_ex(socket.gethostname())[2])
     except OSError:
@@ -306,7 +307,7 @@ def bat_tls():
         os.chmod(FILE_NGINX, 0o640)
     except OSError as e:
         return False, f"Không ghi được {FILE_NGINX} (cần chạy bằng root): {e}"
-    t = subprocess.run(["nginx", "-t"], capture_output=True, text=True)
+    t = subprocess.run(["nginx", "-t"], capture_output=True, text=True, timeout=30)
     if t.returncode != 0:
         try:
             if cu is None:
@@ -317,11 +318,11 @@ def bat_tls():
         except OSError:
             pass
         return False, "Cấu hình nginx mới bị lỗi, đã trả lại bản cũ: " + (t.stderr or t.stdout)[-300:]
-    if subprocess.run(["systemctl", "is-active", "--quiet", "nginx"]).returncode != 0:
+    if subprocess.run(["systemctl", "is-active", "--quiet", "nginx"], timeout=15).returncode != 0:
         return True, f"Đã ghi cấu hình; cổng {cong()} sẽ mở khi nginx chạy."        # vd: dang cai dat/ISO, nginx chua khoi dong
-    r = subprocess.run(["systemctl", "reload", "nginx"], capture_output=True, text=True)
+    r = subprocess.run(["systemctl", "reload", "nginx"], capture_output=True, text=True, timeout=60)
     if r.returncode != 0:
-        subprocess.run(["nginx", "-s", "reload"], capture_output=True, text=True)
+        subprocess.run(["nginx", "-s", "reload"], capture_output=True, text=True, timeout=60)
     import time
     for _ in range(10):
         if dang_nghe():
@@ -337,17 +338,17 @@ def nap_lai_neu_doi():
             return
         may_chu()
         ghi_chain()        # luon dong bo, ke ca khi may_chu() khong cap lai (chain hong do mat dien/loi cu)
-        t = subprocess.run(["nginx", "-t"], capture_output=True, text=True)
+        t = subprocess.run(["nginx", "-t"], capture_output=True, text=True, timeout=30)
         if t.returncode == 0:
-            subprocess.run(["systemctl", "reload-or-restart", "nginx"], capture_output=True, text=True)    # nginx dang hong sau khi khoi dong -> tu bat lai
+            subprocess.run(["systemctl", "reload-or-restart", "nginx"], capture_output=True, text=True, timeout=120)    # nginx dang hong sau khi khoi dong -> tu bat lai
         else:
             # Cong mTLS hong KHONG duoc keo sap trang web chinh: dua file cau hinh ra ngoai de nginx khoi dong duoc,
             # nguoi dung bat lai cong agent trong giao dien (bat_tls ghi lai file).
             os.replace(FILE_NGINX, FILE_NGINX + ".hong")
-            if subprocess.run(["nginx", "-t"], capture_output=True, text=True).returncode == 0:
-                subprocess.run(["systemctl", "restart", "nginx"], capture_output=True, text=True)
-    except Exception:
-        pass
+            if subprocess.run(["nginx", "-t"], capture_output=True, text=True, timeout=30).returncode == 0:
+                subprocess.run(["systemctl", "restart", "nginx"], capture_output=True, text=True, timeout=120)
+    except Exception as _loi:
+        _bo_qua(_loi)
 
 
 def doi_cong(cong_moi, domain):

@@ -57,7 +57,7 @@ def ghi_loi(nguon, thong_diep, ngoai_le=None):
             dong += "\n" + "".join(traceback.format_exception(
                 type(ngoai_le), ngoai_le, ngoai_le.__traceback__))
         except Exception:
-            pass
+            pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
     try:
         # copytruncate cua logrotate co the cat file giua luc ghi - "a" mo
         # lai file moi lan goi (khong giu handle mo lau dai) nen luon ghi
@@ -134,7 +134,7 @@ def ghi_thao_tac(hanh_dong, chi_tiet="", nguoi=None, ip=None):
         with open(LOG_THAO_TAC, "a", encoding="utf-8") as f:
             f.write(dong + "\n")
     except Exception:
-        pass
+        pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
 
 
 # Cac thao tac POST KHONG ghi (da co dong ghi rieng chi tiet hon, hoac chay thuong xuyen/khong phai thao tac cua nguoi dung)
@@ -162,7 +162,7 @@ def ghi_thao_tac_tu_dong(request, response):
                 ct.append(f"{k}={v[:60]}")
         ghi_thao_tac(f"POST {duong}", " ".join(ct) + (f" -> {response.status_code}" if response.status_code != 200 else ""))
     except Exception:
-        pass
+        pass  # noqa: S110  (cong cu doc lap/ghi loi: khong the goi lai chinh no)
 
 
 def doc_journal_dich_vu(ten_dich_vu, so_dong=60):

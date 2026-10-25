@@ -92,7 +92,7 @@ def _trang_caidat_pxe(msg="", ok=True):
                   <div class="d">{_esc(mo_ta)}</div>
                 </label>"""
         if _pxe.san_sang_bat():
-            nut = f"""
+            nut = """
                 <button type="submit"
                   data-busy="Đang bật PXE... chỉ vài giây, KHÔNG bấm lại">
                   Bật PXE</button>"""
@@ -100,7 +100,7 @@ def _trang_caidat_pxe(msg="", ok=True):
             nut = ('<div class="msg err">Chưa đủ điều kiện để bật &mdash; '
                    'xem tab <a href="/deployos/caidat/hatang">Kiểm tra '
                    'hạ tầng</a>.</div>')
-        trang_thai = f"""
+        trang_thai = """
             <div class="msg warn">PXE đang <strong>TẮT</strong>. Chọn chế độ
               mạng rồi bấm <strong>Bật PXE</strong>. Không chắc thì chọn
               <strong>"mạng có sẵn DHCP"</strong> &mdash; Pi không cấp IP nên

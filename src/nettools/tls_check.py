@@ -24,6 +24,7 @@ KY THUAT (2 buoc, ca hai deu dung thu vien co san, khong can cai them):
      nhi phan (getpeercert(binary_form=True)) roi tu phan tich bang thu
      vien `cryptography` (da co san trong du an, dung cho IF/THEN Fernet).
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import re
 import socket
 import ssl
@@ -48,8 +49,8 @@ def _lay_ten_chung(name):
         cn = name.get_attributes_for_oid(NameOID.COMMON_NAME)
         if cn:
             return cn[0].value
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return name.rfc4514_string()
 
 

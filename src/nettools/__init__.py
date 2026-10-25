@@ -6,6 +6,7 @@ Package rieng, tach khoi app.py chinh (WiFi/Bluetooth da on dinh, tranh dung
 vao). Moi module con o day co logic thuan (test duoc qua CLI) + route Flask
 dang ky vao Blueprint nay.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 from flask import Blueprint, render_template_string
 
 nettools_bp = Blueprint("nettools", __name__)
@@ -175,8 +176,8 @@ def register_vkeyboard(app):
                 response.set_data(body.replace(b"</body>", _VK_TAG + b"</body>", 1))
             else:
                 response.set_data(body + _VK_TAG)
-        except Exception:
-            pass  # khong bao gio de loi chen script lam hong ca trang
+        except Exception as _loi:
+            _bo_qua(_loi)  # khong bao gio de loi chen script lam hong ca trang
         return response
 
     return app
@@ -201,8 +202,8 @@ def _wrap_in_layout(response):
         html = response.get_data(as_text=True)
         if "<body" in html and 'class="wrap"' not in html:
             response.set_data(wrap_legacy_html(html))
-    except Exception:
-        pass          # loi boc khung khong duoc lam hong ca trang
+    except Exception as _loi:
+        _bo_qua(_loi)          # loi boc khung khong duoc lam hong ca trang
     return response
 
 
@@ -232,8 +233,8 @@ def register_no_cache_json(app):
             if (response.content_type or "").startswith("application/json"):
                 response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
                 response.headers["Pragma"] = "no-cache"
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
         return response
 
     return app

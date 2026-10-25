@@ -7,6 +7,7 @@ debug thuc te: race condition voi systemd-networkd, vong doi D-Bus cua NAP,
 ngat ket noi truoc khi reset Bluetooth...). CHI thay doi phan hien thi de
 dung khung giao dien moi.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.network"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
@@ -51,8 +52,8 @@ def _lenh(cmd, timeout=15, **kw):
         try:
             from ui.errlog import ghi_loi
             ghi_loi("network", f"Lệnh quá {timeout}s, đã bỏ qua: {' '.join(map(str, cmd))}")
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
         return _KetQuaRong()
     except (FileNotFoundError, OSError):
         return _KetQuaRong()
@@ -110,8 +111,8 @@ def get_net_status():
             if "/" in tok and tok.count(".") == 3:
                 ip = tok.split("/")[0]
                 break
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
 
     ssid, mode = "", "?"
     try:
@@ -123,8 +124,8 @@ def get_net_status():
                 ssid = line[5:].strip()
             elif line.startswith("type "):
                 mode = line[5:].strip()
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
 
     if mode == "AP":
         return ("AP", ssid or "ConsolePi", ip or AP_IP)
@@ -362,8 +363,8 @@ def bt_scan(seconds=10):
     try:
         subprocess.run(["bluetoothctl", "--timeout", str(seconds), "scan", "on"],
                        capture_output=True, timeout=seconds + 8)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     found = []
     try:
         out = subprocess.run(["bluetoothctl", "devices"],
@@ -372,8 +373,8 @@ def bt_scan(seconds=10):
             p = line.split(None, 2)
             if len(p) == 3 and p[0] == "Device":
                 found.append((p[1], p[2]))
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return found
 
 
@@ -407,8 +408,8 @@ def bt_device_info(mac):
                 m = re.search(r"\(([0-9a-fA-F-]{36})\)", t)
                 if m:
                     info["uuids"].append(m.group(1))
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     info["cls"] = classify_bt(info["cod"], info["uuids"], info["icon"])
     return info
 
@@ -488,8 +489,8 @@ def bt_da_vao_mang(mac):
                     phan = dong.split()
                     if len(phan) >= 3 and phan[1].lower() == m:
                         return True, phan[2]
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
     return True, ""      # co duong mang nhung chua thay IP da cap
 
 
@@ -504,8 +505,8 @@ def bt_agent_state():
         # Chi coi la con hieu luc trong 2 phut
         if time.time() - d.get("at", 0) < 120:
             return d
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return None
 
 
@@ -628,8 +629,8 @@ def _pair_worker(mac):
         try:
             subprocess.run(["bluetoothctl", "scan", "off"],
                            capture_output=True, timeout=8)
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
 
     # Tu day tro xuong nam trong try/finally RIENG: neu buoc kiem tra sau
     # ghep gap loi bat ngo, "_PAIR['running']" van PHAI duoc dat lai False -

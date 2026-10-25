@@ -159,7 +159,7 @@ def _lenh_dat_ten(d):
         # eol mac dinh cua `for /f` la ";" (dong bat dau bang ";" bi bo qua -> "ab;c" lot qua kiem tra): quet 2 lan, eol khac nhau.
         f'for /f "eol=; delims={chu}0123456789-" %%a in ("%CS_TENMAY%") do set CS_BAD=kytu',
         f'for /f "eol=, delims={chu}0123456789-" %%a in ("%CS_TENMAY%") do set CS_BAD=kytu',
-        f'for /f "delims=0123456789" %%a in ("%CS_TENMAY%") do set CS_CO_CHU=1',
+        'for /f "delims=0123456789" %%a in ("%CS_TENMAY%") do set CS_CO_CHU=1',
         "if not defined CS_CO_CHU set CS_BAD=toanso",
         "if defined CS_BAD goto ten_sai",
         "goto ten_xong",

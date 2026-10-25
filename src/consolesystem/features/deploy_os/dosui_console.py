@@ -2,6 +2,7 @@
 """Tach tu deployos.py (B4).
 
 (B4: tach nguyen van tu deployos.py::register_deployos; ten ham/route giu nguyen.)"""
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import os
 import shutil
 import time
@@ -35,8 +36,8 @@ def _nhan_tai_len(thu_muc, duoi_cho_phep, nhan):
         try:
             f.stream.flush()
             os.fsync(f.stream.fileno())
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
         ok, msg, _duong_dich = _hoan_tat_ghi_thang(duong, thu_muc, f.filename)
         return ok, msg
     # Khong ghi thang duoc (vd duoi file khong hop le -> da do vao
@@ -290,7 +291,7 @@ def _trang_apps(msg="", ok=True):
     else:
         bang = '<p style="color:#8b93a1;">Chưa có phần mềm nào.</p>'
 
-    thanh_cong_cu = f"""
+    thanh_cong_cu = """
         <div class="row" style="margin:0 0 12px;align-items:center;">
           <input type="search" id="tim-app" autocomplete="off"
                  placeholder="Tìm phần mềm... (gõ không dấu cũng được)"

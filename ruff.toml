@@ -1,0 +1,17 @@
+# Chuan chat luong (B9). Chi chon luat BAT LOI THAT + nuot loi; khong ep dinh dang (khong lam nhieu diff mu).
+line-length = 200
+target-version = "py311"
+extend-exclude = ["iso", "ungdung-mau", "kho-scripts"]
+
+[lint]
+select = ["E9", "F", "S110"]
+ignore = [
+    "F841",   # bien gan khong dung (14 cho): mot so dong con tac dung phu (goi lenh) - se xu ly tung cho khi dung toi
+    "F811",   # dinh nghia lai ten (2 cho trong uem_trang_b.py: bien tam trong bieu thuc)
+    "F401",   # `import X` khong dung: nhieu module GIU lam cau noi/re-export (ui/ -> consolesystem/), xoa tu dong se vo import cu
+]
+
+[lint.per-file-ignores]
+"src/consolesystem/core/errlog.py" = ["S110"]   # chinh la bo ghi loi - khong the goi lai chinh no
+"src/scripts/*" = ["S110"]                       # cong cu chay doc lap tren thiet bi, khong import duoc consolesystem
+"src/consolesystem/core/nhatky.py" = ["S110"]

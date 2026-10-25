@@ -9,6 +9,7 @@ dung cac tac vu CHUA dung trang thai (xem uem_buoc.py: kiem tra truoc, khong lam
   - neu tac vu bat "bo qua loi" thi chay tiep tac vu sau.
 May tat / mat mang: thu lai moi 5 phut. Tac vu PowerShell "chay mot lan" thanh cong roi khong chay lai.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.uem_profiles"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import hashlib
@@ -280,8 +281,8 @@ def khoi_dong_bo_lap():
         while True:
             try:
                 _tick()
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
             time.sleep(30)
     threading.Thread(target=vong, daemon=True, name="uem-profiles").start()
 

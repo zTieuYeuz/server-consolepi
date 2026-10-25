@@ -11,6 +11,7 @@ vi tai lieu tin cay het han/thieu, nhung bam van khop ban da luu).
 GIOI HAN THANG THAN: ke co quyen ROOT tren may co the sua luon ma kiem tra nay hoac xoa chu ky. Day la lop phat hien thay doi vo tinh/than thiet
 (sua tay, ban sao la, o dia hong) va chan CAP NHAT TU DONG len mot he thong da bi sua - khong phai ranh gioi an ninh chong root.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import json
 import os
 
@@ -105,8 +106,8 @@ def kiem_va_ghi(moi, bao_cao_fn=None):
     if moi_lech and bao_cao_fn:
         try:
             bao_cao_fn("lech-ma-bam", kq["ban"], kq["ban"], kq["ly_do"][:400])
-        except Exception:                                    # bao cao la phu
-            pass
+        except Exception as _loi:                                    # bao cao la phu
+            _bo_qua(_loi)
     return kq
 
 

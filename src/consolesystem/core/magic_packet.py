@@ -118,7 +118,7 @@ def gui(cac_mac, so_lan=3, them_broadcast=()):
                     loi.append(f"{b}:9: {e}")
         if lan + 1 < so_lan:
             time.sleep(1)
-    chi_tiet = [f"Qua card: " + ", ".join(f"{t} ({', '.join(b)})" for t, _m, b in cards)
+    chi_tiet = ["Qua card: " + ", ".join(f"{t} ({', '.join(b)})" for t, _m, b in cards)
                 if cards else "KHÔNG có card mạng nào đang có IP - không gửi được."]
     if ngoai:
         chi_tiet.append("Thêm broadcast: " + ", ".join(ngoai))

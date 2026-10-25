@@ -32,7 +32,7 @@ def main(argv=None):
         print("  LOI:", x, file=sys.stderr)
     if a.khoi_dong_lai and bc["unit_doi"]:
         for u in bc["unit_doi"]:
-            subprocess.run(["systemctl", "try-restart", u], capture_output=True)
+            subprocess.run(["systemctl", "try-restart", u], capture_output=True, timeout=180)
     return 1 if bc["loi"] else 0
 
 

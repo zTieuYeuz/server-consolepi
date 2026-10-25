@@ -9,6 +9,7 @@ deu chiem duoc may.
 Dung PAM nen KHONG luu mat khau o dau ca - moi lan dang nhap deu hoi lai
 he dieu hanh. Tai khoan chinh la tai khoan Linux (vd: administrator).
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.auth"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import ipaddress
@@ -44,8 +45,8 @@ def get_or_create_secret():
             data = f.read().strip()
             if len(data) >= 32:
                 return data
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
 
     key = secrets.token_bytes(48)
     try:
@@ -53,8 +54,8 @@ def get_or_create_secret():
         with open(SECRET_FILE, "wb") as f:
             f.write(key)
         os.umask(old)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return key
 
 

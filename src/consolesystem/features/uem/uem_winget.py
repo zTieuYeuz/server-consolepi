@@ -6,6 +6,7 @@ Danh muc goi WinGet de TIM PHAN MEM (giong OpenUEM: openuem-console .../software
   - tim bang SELECT DISTINCT id, name ... WHERE name/id LIKE
 Chi giu index.db tren dia (xoa file .msix), lam moi moi 24 gio khi co Internet. Khong co Internet thi dung ban cu / bao ro chua co.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.uem_winget"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import os
@@ -132,7 +133,7 @@ def khoi_dong_bo_lap():
         while True:
             try:
                 cap_nhat()
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
             time.sleep(3600)
     threading.Thread(target=vong, daemon=True, name="uem-winget-db").start()

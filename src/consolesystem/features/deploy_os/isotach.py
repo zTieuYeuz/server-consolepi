@@ -36,6 +36,7 @@ Chi khi CA BA deu dat moi xoa ISO. Thieu bat ky dieu nao thi GIU NGUYEN ISO
 va bao loi ro rang - tha ton dia con hon mat du lieu cua anh.
 """
 
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.isotach"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import os
@@ -506,8 +507,8 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
                 os.makedirs(thu_muc_sxs, exist_ok=True)
                 for k in cab:
                     _chay_huy([lenh7, "e", f"-o{thu_muc_sxs}", "-y", duong_iso, k], 900)
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
 
         # --- 6. Don dep
         _buoc(5, "Dọn file không cần nữa", 95)

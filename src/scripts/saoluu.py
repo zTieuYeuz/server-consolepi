@@ -46,7 +46,7 @@ def main(argv=None):
                 return 1
             if not a.khong_dich_vu:
                 for s in DICH_VU:
-                    subprocess.run(["systemctl", "stop", s], capture_output=True)
+                    subprocess.run(["systemctl", "stop", s], capture_output=True, timeout=120)
             try:
                 kq = S.khoi_phuc(a.tep)
                 print("da khoi phuc %d file. Ban sao luu trang thai truoc do: %s" % (kq["so_tep"], kq["goi_truoc"]))
@@ -55,7 +55,7 @@ def main(argv=None):
             finally:
                 if not a.khong_dich_vu:
                     for s in DICH_VU:
-                        subprocess.run(["systemctl", "start", s], capture_output=True)
+                        subprocess.run(["systemctl", "start", s], capture_output=True, timeout=120)
     except S.LoiSaoLuu as e:
         print("LOI:", e, file=sys.stderr)
         return 1

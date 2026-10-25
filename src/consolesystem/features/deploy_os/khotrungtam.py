@@ -28,6 +28,7 @@ phan OS, nhieu khi ho muon tai OS xuong luon"):
     ui/isotach.py tach boot.wim/install.wim - y het nhu tai ISO len bang tay.
 """
 
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.khotrungtam"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import hashlib
@@ -363,8 +364,8 @@ def huy_tai(muc_id):
     if cb:
         try:
             cb()
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
     return True
 
 
@@ -425,8 +426,8 @@ def tai_nen(cauhinh, muc, duong_dich, sau_khi_xong=None, khi_huy=None, don_dep=N
         if don_dep:
             try:
                 don_dep()
-            except Exception:
-                pass
+            except Exception as _loi:
+                _bo_qua(_loi)
 
     def chay():
         co_san_truoc = os.path.exists(duong_dich)

@@ -25,6 +25,7 @@ GIOI HAN THAT:
     goc thi duoc); ban tu che sua bootmgr se bi firmware chan - Console System khong
     vuot qua duoc.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.winperieng"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
@@ -277,8 +278,8 @@ def them_dong_bo(file, ten):
         try:
             from ui import pxe as _pxe
             msg += _pxe.cap_nhat_menu()
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
     return ok, msg
 
 
@@ -515,8 +516,8 @@ def _tach(iso, ten):
         try:
             from ui import pxe as _pxe
             _pxe.cap_nhat_menu()
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
         _TACH.update(xong=f'Đã tách "{trong}" thành {dich_ten} '
                           f'({_d.co_kich_thuoc(os.path.getsize(dich))}), đưa "{ten}" vào menu PXE.'
                           + {"mang": " Thư mục công cụ Apps nạp qua mạng từ Console System "

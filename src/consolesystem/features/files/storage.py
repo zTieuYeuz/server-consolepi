@@ -13,6 +13,7 @@ Ba diem phai lam dung, khong thi Pi chet hoac day dia:
 
 Uu tien ghi ra USB neu co cam (giong co che cua PCAP), vi the nho cua Pi be.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.storage"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import hashlib
@@ -101,8 +102,8 @@ def list_files():
             if os.path.exists(sp):
                 try:
                     sha = open(sp).read().split()[0][:16]
-                except Exception:
-                    pass
+                except Exception as _loi:
+                    _bo_qua(_loi)
             out.append({"name": n, "size": st.st_size,
                         "mtime": time.strftime("%Y-%m-%d %H:%M", time.localtime(st.st_mtime)),
                         "sha": sha})
@@ -230,7 +231,7 @@ def register_storage(app):
             </tr>"""
 
         du_cho = free >= MIN_FREE_GB
-        upload_html = f"""
+        upload_html = """
         <form method="POST" action="/storage/len" enctype="multipart/form-data" id="form-len">
           <label>Chọn file (ISO, IMG, firmware, cấu hình...)</label>
           <input type="file" name="file" id="o-file-len" required>
@@ -249,23 +250,23 @@ def register_storage(app):
           </div>
         </form>
         <script>
-        (function() {{
+        (function() {
           var f = document.getElementById('form-len'), o = document.getElementById('o-file-len');
           var khung = document.getElementById('khung-len'), xhr = null, dang = false;
-          function co(n) {{ var d = ['B','KB','MB','GB'], i = 0; while (n >= 1024 && i < 3) {{ n /= 1024; i++; }}
-            return (i < 2 ? n.toFixed(0) : n.toFixed(1)) + ' ' + d[i]; }}
-          function gio(g) {{ g = Math.max(1, Math.round(g)); if (g < 60) return g + ' giây';
-            var m = Math.floor(g / 60); return m + ' phút ' + (g % 60) + ' giây'; }}
-          try {{
+          function co(n) { var d = ['B','KB','MB','GB'], i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; }
+            return (i < 2 ? n.toFixed(0) : n.toFixed(1)) + ' ' + d[i]; }
+          function gio(g) { g = Math.max(1, Math.round(g)); if (g < 60) return g + ' giây';
+            var m = Math.floor(g / 60); return m + ' phút ' + (g % 60) + ' giây'; }
+          try {
             var tb = sessionStorage.getItem('kho_len_tb');
-            if (tb) {{ sessionStorage.removeItem('kho_len_tb'); tb = JSON.parse(tb);
+            if (tb) { sessionStorage.removeItem('kho_len_tb'); tb = JSON.parse(tb);
               var d = document.createElement('div'); d.className = 'msg ' + (tb.ok ? 'ok' : 'err'); d.textContent = tb.msg;
-              f.closest('.card').parentNode.insertBefore(d, f.closest('.card').previousElementSibling || f.closest('.card')); }}
-          }} catch (e) {{}}
-          window.addEventListener('beforeunload', function(e) {{ if (dang) {{ e.preventDefault(); e.returnValue = ''; }} }});
-          document.getElementById('nut-huy-len').addEventListener('click', function() {{
-            if (xhr && confirm('Huỷ tải lên? File đang tải dở sẽ bị xoá.')) xhr.abort(); }});
-          f.addEventListener('submit', function(e) {{
+              f.closest('.card').parentNode.insertBefore(d, f.closest('.card').previousElementSibling || f.closest('.card')); }
+          } catch (e) {}
+          window.addEventListener('beforeunload', function(e) { if (dang) { e.preventDefault(); e.returnValue = ''; } });
+          document.getElementById('nut-huy-len').addEventListener('click', function() {
+            if (xhr && confirm('Huỷ tải lên? File đang tải dở sẽ bị xoá.')) xhr.abort(); });
+          f.addEventListener('submit', function(e) {
             e.preventDefault(); e.stopImmediatePropagation();
             var file = o.files[0]; if (!file || dang) return;
             var fd = new FormData(); fd.append('file', file);
@@ -275,33 +276,33 @@ def register_storage(app):
                 pt = document.getElementById('pt-len'), chu = document.getElementById('chu-len');
             ten.textContent = file.name; khung.hidden = false; dang = true;
             document.getElementById('nut-len').disabled = true; o.disabled = true;
-            xhr.upload.onprogress = function(ev) {{
+            xhr.upload.onprogress = function(ev) {
               if (!ev.lengthComputable) return;
               var p = 100 * ev.loaded / ev.total, g = (Date.now() - t0) / 1000, toc = g > 0.5 ? ev.loaded / g : 0;
               thanh.style.width = p + '%'; pt.textContent = p.toFixed(0) + '%';
               chu.textContent = co(ev.loaded) + ' / ' + co(ev.total) + (toc ? ' · ' + co(toc) + '/s' : '')
                 + (toc && ev.total > ev.loaded ? ' · còn khoảng ' + gio((ev.total - ev.loaded) / toc) : '');
-            }};
-            xhr.upload.onload = function() {{
+            };
+            xhr.upload.onload = function() {
               thanh.style.width = '100%'; pt.textContent = '100%';
               chu.textContent = 'Đã gửi xong, máy đang ghi file và tính SHA-256... (file lớn có thể mất thêm ít phút)';
               document.getElementById('nut-huy-len').hidden = true;
-            }};
-            function xong(ok, msg) {{
+            };
+            function xong(ok, msg) {
               dang = false;
-              try {{ sessionStorage.setItem('kho_len_tb', JSON.stringify({{ok: ok, msg: msg}})); }} catch (e) {{}}
+              try { sessionStorage.setItem('kho_len_tb', JSON.stringify({ok: ok, msg: msg})); } catch (e) {}
               location.href = '/storage';
-            }}
-            xhr.onload = function() {{
+            }
+            xhr.onload = function() {
               var r = xhr.response;
               if (r && typeof r.ok !== 'undefined') xong(r.ok, r.msg);
               else xong(false, 'Máy chủ trả về lỗi ' + xhr.status + ' (file quá lớn hoặc hết dung lượng?).');
-            }};
-            xhr.onerror = function() {{ xong(false, 'Mất kết nối khi tải lên. Kiểm tra mạng rồi thử lại.'); }};
-            xhr.onabort = function() {{ xong(false, 'Đã huỷ tải lên.'); }};
+            };
+            xhr.onerror = function() { xong(false, 'Mất kết nối khi tải lên. Kiểm tra mạng rồi thử lại.'); };
+            xhr.onabort = function() { xong(false, 'Đã huỷ tải lên.'); };
             xhr.send(fd);
-          }}, true);
-        }})();
+          }, true);
+        })();
         </script>""" if du_cho else f"""
         <div class="msg err">Chỉ còn {free} GB trống. Xóa bớt file hoặc cắm USB
         trước khi tải thêm (cần ít nhất {MIN_FREE_GB} GB để hệ thống chạy an toàn).</div>"""

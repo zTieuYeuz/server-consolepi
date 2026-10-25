@@ -11,6 +11,7 @@ Cach lam (khac OpenUEM o diem dich vu, giong o diem mat khau tam):
     trinh duyet chay noVNC (MPL-2.0, nettools/static/novnc).
   * Dong tab / bam Ket thuc / het 2 gio: tat dich vu va doi PIN.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.uem_vnc"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import base64
@@ -493,8 +494,8 @@ def _xu_ly(cs):
             pass
         finally:
             xong.set()
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     finally:
         for s in (tcp, cs):
             try:

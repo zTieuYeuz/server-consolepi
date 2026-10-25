@@ -22,6 +22,7 @@ do bi day nham cong va timeout, trong khi cac DNS server khac van binh
 thuong. Vi vay ket qua LUON hien theo TUNG SERVER rieng le - mot server loi
 khong duoc lam mat ket qua cua cac server con lai.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import re
 import socket
 import time
@@ -45,8 +46,8 @@ def _dns_he_thong():
                 line = line.strip()
                 if line.startswith("nameserver"):
                     return line.split()[1]
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return None
 
 
@@ -103,7 +104,7 @@ def kiem_tra_dns(domain, timeout=3):
     danh_sach = []
     dns_he_thong_ip = _dns_he_thong()
     if dns_he_thong_ip:
-        danh_sach.append((f"Hệ thống hiện tại", dns_he_thong_ip))
+        danh_sach.append(("Hệ thống hiện tại", dns_he_thong_ip))
     danh_sach += MAY_CHU_CO_DINH
 
     ket_qua = []

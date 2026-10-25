@@ -182,3 +182,32 @@ def test_core_dich_vu_moi_khong_keo_flask():
     r = subprocess.run(["python3", "-c", "import sys;sys.path.insert(0,'src');import consolesystem.core.errlog, consolesystem.core.tk_dulieu, consolesystem.core.phancung, consolesystem.core.magic_packet, consolesystem.core.token_tai, consolesystem.core.cauhinh;print('flask' in sys.modules)"],
                        cwd=GOC, capture_output=True, text=True)
     assert r.stdout.strip() == "False", r.stdout + r.stderr[-300:]
+
+
+def test_bo_qua_van_nuot_loi_nhung_de_dau_vet_va_gioi_han_tan_suat(caplog):
+    from consolesystem.core import nhatky
+    nhatky._lan_cuoi.clear()
+    for _ in range(5):
+        try:
+            raise ValueError("loi gia lap")
+        except Exception as _loi:
+            nhatky.bo_qua(_loi)                                          # CUNG mot diem goi -> chi ghi 1 dong
+    err = caplog.text
+    assert err.count("bo qua loi ValueError: loi gia lap") == 1 and "test_bo_qua_van_nuot_loi" in err
+    nhatky._lan_cuoi.clear()
+    try:
+        raise OSError("khac")
+    except Exception as _loi:
+        nhatky.bo_qua(_loi, "ghi chu rieng", moi_giay=0)
+    assert "ghi chu rieng" in caplog.text
+
+
+def test_lenh_het_gio_va_khong_co_lenh_khong_nem_ngoai_le():
+    from consolesystem.core import lenh
+    k = lenh.chay(["sleep", "5"], timeout=1)
+    assert k.rc == 124 and k.het_gio
+    k = lenh.chay(["lenh-khong-ton-tai-xyz"], timeout=2)
+    assert k.rc == 127 and k.khong_chay_duoc
+    import pytest
+    with pytest.raises(lenh.LoiLenh):
+        lenh.chay(["false"], check=True)

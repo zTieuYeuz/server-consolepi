@@ -2,6 +2,7 @@
 """Tach tu deployos.py (B4).
 
 (B4: tach nguyen van tu deployos.py::register_deployos; ten ham/route giu nguyen.)"""
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import os
 from ui.duongdan import DEPLOY_DIR, BOOT_DIR, APPS_DIR, SCRIPTS_DIR, KICHBAN_DIR, OS_DIR, DRIVERS_DIR, UNGDUNG_DIR, FONTS_DIR, EXT_SCRIPT  # noqa: F401  (B3: khai bao o core/duongdan.py)
 from consolesystem.features.deploy_os.dos_chung import (BUOC_DAU, EXT_DRIVER, EXT_OS_ISO, EXT_OS_WIM, EXT_SXS, SO_BUOC, THU_MUC_THEO_DUONG, _bao_dam_thu_muc, _bo_dau_py, _con_trong_gb, _don_file_do_dang, _duong_dan_trong, _hoan_tat_ghi_thang, _liet_ke, _luu_tai_len, _mo_file_dich, _thu_muc_os_theo_duong, _xoa_file, bo_dau, co_kich_thuoc, so_hien_thi, ten_an_toan)  # noqa: F401  (B4: nguyen van o module nay)
@@ -217,8 +218,8 @@ def register_ungdung(app):
         try:
             f.stream.flush()
             os.fsync(f.stream.fileno())
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
         ok, msg, duong_dich = _hoan_tat_ghi_thang(
             duong, os.path.join(UNGDUNG_DIR, ten_an_toan(ung_id)), f.filename)
         if not ok:

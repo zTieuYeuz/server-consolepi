@@ -24,6 +24,7 @@ BAO MAT (theo yeu cau anh Thoai):
     loai thiet bi - KHONG gui IP noi bo, MAC, mat khau, cau hinh.
 """
 
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.gopy"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import base64
@@ -253,8 +254,8 @@ def _luong():
     while True:
         try:
             gui_cac_gop_y_cho()
-        except Exception:
-            pass
+        except Exception as _loi:
+            _bo_qua(_loi)
         _su_kien.wait(CHU_KY_GUI_LAI)
         _su_kien.clear()
 

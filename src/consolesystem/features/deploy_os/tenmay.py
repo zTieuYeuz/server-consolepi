@@ -10,6 +10,7 @@ Raspberry Pi, doi tu "Pi" doc lap thanh "Console System" trong HTML/JSON tra ve 
 Khong dung toi: "Raspberry Pi", "Console Pi", "ConsolePi", "X-Console-Pi", "$Pi", "Pi 4", "Pi OS",
 duong dan/ten bien (cac ky tu lien ke \\w - / . $).
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.tenmay"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import re
@@ -44,8 +45,8 @@ def register_tenmay(app):
             moi = doi_chu_pi(goc)
             if moi != goc:
                 resp.set_data(moi)
-        except Exception:      # khong bao gio lam hong trang vi viec doi chu
-            pass
+        except Exception as _loi:      # khong bao gio lam hong trang vi viec doi chu
+            _bo_qua(_loi)
         return resp
 
     return app

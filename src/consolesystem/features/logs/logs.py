@@ -21,6 +21,7 @@ khoa tim chi loc bang Python, khong bao gio thanh doi so dong lenh.
 
 (c) 2026 zTieuYeuz - Console System
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.logs"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import glob
@@ -81,8 +82,8 @@ def _dich_vu_co():
                 ten = ten[:-8]
                 if ten not in ds:
                     ds.append(ten)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     for ten in ("hostapd", "dnsmasq", "NetworkManager", "ssh", "kernel"):
         if ten not in ds:
             ds.append(ten)
@@ -429,7 +430,7 @@ def _trang_xem(tab, kind, dong, tim="", tim_may_chu=False, gioi_han=0, khu_chon=
                    '<span class="nk-nhan">Thời gian</span><span class="nk-chip" id="nk-kh">'
                    '<button type="button" class="on" data-v="0">Tất cả</button><button type="button" data-v="3600">1 giờ</button>'
                    '<button type="button" data-v="86400">24 giờ</button></span>')
-    form_dau = f'<form method="GET" action="/logs" class="nk-o">' if tab == "log" else '<div class="nk-o">'
+    form_dau = '<form method="GET" action="/logs" class="nk-o">' if tab == "log" else '<div class="nk-o">'
     form_cuoi = "</form>" if tab == "log" else "</div>"
     an = an_form
     return f"""

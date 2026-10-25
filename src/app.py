@@ -20,6 +20,7 @@ terminal dung luon phien dang nhap cua dashboard.
 Chay duoi quyen root (systemd khong khai User=) vi can raw socket cho cac
 cong cu bat goi tin va quyen sua cau hinh mang.
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import json
 import os
 import sys
@@ -51,8 +52,8 @@ sys.path.insert(0, "/opt/console-pi")
 try:
     os.makedirs("/var/tmp", exist_ok=True)
     tempfile.tempdir = "/var/tmp"
-except Exception:
-    pass          # khong duoc de viec nay lam hong ca dashboard
+except Exception as _loi:
+    _bo_qua(_loi)          # khong duoc de viec nay lam hong ca dashboard
 
 # ---------------------------------------------------------------------------
 # Bao tien do khoi dong THAT (khong phai doan theo thoi gian).
@@ -78,8 +79,8 @@ def _bao_tien_do(phan_tram, thong_diep):
             json.dump({"phan_tram": phan_tram, "thong_diep": thong_diep}, f)
         os.chmod(tmp, 0o644)   # kiosk-loading.html doc file nay voi quyen user thuong
         os.replace(tmp, BOOT_STATUS_FILE)
-    except Exception:
-        pass   # khong duoc de loi ghi tien do lam hong ca dashboard
+    except Exception as _loi:
+        _bo_qua(_loi)   # khong duoc de loi ghi tien do lam hong ca dashboard
 
 
 _bao_tien_do(10, "Đang nạp khung giao diện...")
@@ -144,8 +145,8 @@ try:
 
     from ui.khotrungtam import tu_dang_ky_nen
     threading.Thread(target=tu_dang_ky_nen, daemon=True).start()
-except Exception:
-    pass
+except Exception as _loi:
+    _bo_qua(_loi)
 
 # Nap san driver VirtIO nhung trong ISO (neu co) - khong can mang, chay nen, khong lam gi tren Pi.
 try:
@@ -156,8 +157,8 @@ try:
         tai_ngam()          # sau: cac goi con thieu, tu tai khi co Internet
 
     threading.Thread(target=_driver_nen, daemon=True).start()
-except Exception:
-    pass
+except Exception as _loi:
+    _bo_qua(_loi)
 
 
 @app.errorhandler(405)
@@ -186,8 +187,8 @@ def _loi_sai_phuong_thuc(e):
         # hien tai) - tranh bi dan huong sang trang la neu Referer bi gia.
         if p.path and (not p.netloc or p.netloc == request.host):
             dich = p.path
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return redirect(dich)
 
 
@@ -232,8 +233,8 @@ def _ghi_loi_toan_cuc(e):
     try:
         from ui.errlog import ghi_loi
         ghi_loi(request.path, f"{type(e).__name__}: {e}", ngoai_le=e)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
     return InternalServerError().get_response()
 
 

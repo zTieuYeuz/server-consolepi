@@ -17,6 +17,7 @@ switch/router lab de test truoc, bat buoc phai co luong an toan:
 Moi phien chay (test/run) deu duoc ghi log vao
 /var/log/console-pi-netmiko.log (KHONG ghi mat khau vao log).
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import time
 
 from flask import request, render_template_string
@@ -41,8 +42,8 @@ def _audit(host, device_type, action, commands, result_summary):
     try:
         with open(AUDIT_LOG, "a") as f:
             f.write(line)
-    except Exception:
-        pass
+    except Exception as _loi:
+        _bo_qua(_loi)
 
 
 def test_connection(host, device_type, username, password, test_cmd, port=22, timeout=10):
