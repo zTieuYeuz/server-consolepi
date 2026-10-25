@@ -16,6 +16,7 @@ Cac nut deu gui bang fetch (khong tai lai trang) vi 2 ly do THAT:
   - ttyd co dang ky canh bao truoc khi roi trang, nen moi lan bam nut la
     trinh duyet hoi "Leave site?" - rat vuong khi dang lam viec
 """
+from consolesystem.core import taisan as _taisan
 import sys as _sys
 _sys.modules["ui.soanlenh"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
@@ -28,100 +29,7 @@ from consolesystem.core.esc import esc as _esc
 
 # JS de rieng ngoai f-string vi co rat nhieu dau ngoac nhon - nhet vao
 # f-string phai nhan doi het, rat de sai va kho doc.
-SOAN_JS = """
-<script>
-(function () {
-  "use strict";
-  var form = document.getElementById("form_dan");
-  if (!form) return;
-  var o = document.getElementById("o_lenh");
-  var chon = document.getElementById("chon_tap");
-  var bao = document.getElementById("bao_dan");
-  var KHOA_LUU = form.getAttribute("data-khoa-luu") || "consolepi-o-lenh";
-
-  function noi(chuoi, loai) {
-    bao.textContent = chuoi;
-    bao.className = "msg " + (loai || "info");
-    bao.style.display = chuoi ? "block" : "none";
-  }
-
-  // Giu lai noi dung dang soan khi tai lai trang. Chi luu tren may dang
-  // dung, khong gui ve server.
-  function luu() { try { localStorage.setItem(KHOA_LUU, o.value); } catch (e) {} }
-  o.addEventListener("input", luu);
-  if (!o.value) {
-    try { var cu = localStorage.getItem(KHOA_LUU); if (cu) o.value = cu; } catch (e) {}
-  } else { luu(); }
-
-  document.getElementById("nut_chep").addEventListener("click", function () {
-    var i = chon.value;
-    if (i === "") { noi("Chọn 1 tập lệnh trong danh sách trước.", "warn"); return; }
-    o.value = THU_VIEN[i].lenh;
-    luu();
-    noi("Da chep \\"" + THU_VIEN[i].ten + "\\" vao o. Sua lai IP/ten cho dung roi dan.", "info");
-  });
-
-  function copyCachCu() {
-    // Trang chay HTTP thuong (vao bang IP trong LAN) thi navigator.clipboard
-    // KHONG ton tai - trinh duyet chi cho dung Clipboard API o ngu canh bao
-    // mat (HTTPS hoac localhost). execCommand cu van chay duoc tren HTTP.
-    try {
-      o.focus(); o.select();
-      var ok = document.execCommand("copy");
-      noi(ok ? "Đã copy nội dung ô lệnh."
-             : "Trình duyệt không cho copy tự động - nội dung đã được bôi đen, bấm Ctrl+C để copy.",
-          ok ? "ok" : "warn");
-    } catch (e) {
-      noi("Trình duyệt không cho copy tự động - nội dung đã được bôi đen, bấm Ctrl+C để copy.", "warn");
-    }
-  }
-
-  document.getElementById("nut_copy").addEventListener("click", function () {
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(o.value).then(
-        function () { noi("Đã copy nội dung ô lệnh.", "ok"); },
-        function () { copyCachCu(); });
-    } else { copyCachCu(); }
-  });
-
-  document.getElementById("nut_dan_cb").addEventListener("click", function () {
-    if (navigator.clipboard && navigator.clipboard.readText && window.isSecureContext) {
-      navigator.clipboard.readText().then(function (t) {
-        o.value = t; luu(); noi("Đã dán nội dung từ clipboard vào ô.", "ok");
-      }, function () {
-        noi("Trinh duyet chan doc clipboard. Cham vao o roi dan tay, hoac dung ban phim ao.", "warn");
-      });
-    } else {
-      noi("Vào bằng HTTP nên trình duyệt không cho đọc clipboard. Chạm vào ô rồi dán tay, " +
-          "hoặc dùng bàn phím ảo.", "warn");
-    }
-  });
-
-  document.getElementById("nut_xoa").addEventListener("click", function () {
-    o.value = ""; luu(); noi("Đã xóa ô lệnh.", "info");
-  });
-
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var nut = document.getElementById("nut_dan");
-    var chuCu = nut.innerHTML;
-    nut.disabled = true; nut.innerHTML = "Đang dán...";
-    noi("Đang dán vào terminal, chờ thiết bị phản hồi...", "info");
-    fetch(form.action, {
-      method: "POST", body: new FormData(form),
-      headers: { "X-Console-Pi": "fetch" }, cache: "no-store"
-    })
-      .then(function (r) {
-        if (!r.ok) throw new Error("Server trả về HTTP " + r.status);
-        return r.json();
-      })
-      .then(function (d) { noi(d.msg, d.ok ? "ok" : "err"); })
-      .catch(function (err) { noi("Không liên lạc được với server: " + err.message, "err"); })
-      .finally(function () { nut.disabled = false; nut.innerHTML = chuCu; });
-  });
-})();
-</script>
-"""
+SOAN_JS = _taisan.doc("features/terminal/soanlenh.SOAN_JS.html")
 
 
 # ---------------------------------------------------------------------------
@@ -147,75 +55,7 @@ SOAN_JS = """
 # API `term.getSelection()` (ttyd co gan doi tuong Terminal vao window.term
 # cua khung iframe - da kiem chung that), (3) them nut copy CA MAN HINH bang
 # `term.selectAll()` cho truong hop can lay ca doan ket qua lenh dai.
-COPY_TERM_JS = """
-<script>
-(function () {
-  "use strict";
-  var bao = document.getElementById("bao_copyterm");
-  if (!bao) return;
-
-  function noi(chuoi, loai) {
-    bao.textContent = chuoi;
-    bao.className = "msg " + (loai || "info");
-    bao.style.display = chuoi ? "block" : "none";
-  }
-
-  function layTerm() {
-    var f = document.querySelector("iframe");
-    if (!f) return null;
-    try { return f.contentWindow && f.contentWindow.term ? f.contentWindow.term : null; }
-    catch (e) { return null; }   // khac nguon goc (khong xay ra o day, nhung cu chac)
-  }
-
-  // Trang vao bang IP LAN chay HTTP thuong -> navigator.clipboard khong ton
-  // tai (chi co o HTTPS/localhost). execCommand cu van chay tren HTTP.
-  function chepCachCu(chu) {
-    var o = document.createElement("textarea");
-    o.value = chu;
-    o.style.position = "fixed"; o.style.left = "-9999px";
-    document.body.appendChild(o);
-    o.focus(); o.select();
-    var ok = false;
-    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
-    document.body.removeChild(o);
-    noi(ok ? "Đã copy " + chu.length + " ký tự." :
-        "Trình duyệt không cho copy tự động. Giữ Shift rồi bôi đen bằng chuột và bấm Ctrl+C.",
-        ok ? "ok" : "warn");
-  }
-
-  function chep(chu) {
-    if (!chu) return;
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(chu).then(
-        function () { noi("Đã copy " + chu.length + " ký tự.", "ok"); },
-        function () { chepCachCu(chu); });
-    } else { chepCachCu(chu); }
-  }
-
-  document.getElementById("nut_copy_chon").addEventListener("click", function () {
-    var t = layTerm();
-    if (!t) { noi("Khung terminal chua san sang - doi no hien chu roi bam lai.", "warn"); return; }
-    var chu = t.getSelection();
-    if (!chu) {
-      noi("Chưa bôi đen chữ nào. GIỮ PHÍM SHIFT trong lúc kéo chuột để bôi đen " +
-          "(không giữ Shift thì tmux giữ chuột để cuộn màn hình), rồi bấm lại nút này.", "warn");
-      return;
-    }
-    chep(chu);
-  });
-
-  document.getElementById("nut_copy_all").addEventListener("click", function () {
-    var t = layTerm();
-    if (!t) { noi("Khung terminal chua san sang - doi no hien chu roi bam lai.", "warn"); return; }
-    t.selectAll();
-    var chu = t.getSelection();
-    t.clearSelection();
-    if (!chu) { noi("Khung terminal dang trong.", "warn"); return; }
-    chep(chu);
-  });
-})();
-</script>
-"""
+COPY_TERM_JS = _taisan.doc("features/terminal/soanlenh.COPY_TERM_JS.html")
 
 
 def khoi_copy_terminal():

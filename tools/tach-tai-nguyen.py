@@ -15,6 +15,13 @@ ASSETS = os.path.join(SRC, "consolesystem", "assets")
 
 def doan_duoi(ten, nd):
     t = nd.lstrip()
+    u = ten.upper()
+    if "CSS" in u:
+        return ".css"
+    if u == "SOURCE" and "using System" in nd:
+        return ".cs"
+    if re.search(r"(^|_)JS(_|$)", u) and not t.startswith("<"):
+        return ".js"
     if re.search(r"(?m)^\s*(param\(|\$[A-Za-z_]+\s*=|Write-Host|function\s+\w+-?\w*\s*\{)", nd) and "<html" not in nd.lower():
         return ".ps1"
     if t.startswith("<!DOCTYPE") or t.startswith("<html") or re.match(r"^<\w+", t):

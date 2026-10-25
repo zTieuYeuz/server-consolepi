@@ -1,0 +1,120 @@
+
+<script>
+(function () {
+  "use strict";
+  function co(n) {
+    if (n < 1024) return n + " B";
+    var d = ["KB","MB","GB"], i = -1;
+    do { n /= 1024; i++; } while (n >= 1024 && i < 2);
+    return n.toFixed(1) + " " + d[i];
+  }
+  function thoiGian(giay) {
+    if (!isFinite(giay) || giay < 0) return "";
+    giay = Math.round(giay);
+    if (giay < 60) return giay + " giay";
+    var p = Math.floor(giay / 60), g = giay % 60;
+    return p + " phut " + (g < 10 ? "0" : "") + g + " giay";
+  }
+
+  Array.prototype.forEach.call(
+    document.querySelectorAll("form.form-tai-len"), function (form) {
+    var khung = form.parentNode.querySelector(".tt-khung");
+    if (!khung || !window.XMLHttpRequest || !window.FormData) return;  // de form thuong lo
+
+    var thanh = khung.querySelector(".tt-thanh");
+    var phantram = khung.querySelector(".tt-phantram");
+    var chitiet = khung.querySelector(".tt-chitiet");
+    var tenO = khung.querySelector(".tt-ten");
+    var diaO = khung.querySelector(".tt-dia");
+    var nutHuy = khung.querySelector(".tt-huy");
+    var loai = form.getAttribute("data-loai") || "";
+    var xhr = null, hen = null;
+
+    form.addEventListener("submit", function (e) {
+      var o = form.querySelector('input[type="file"]');
+      if (!o || !o.files || !o.files.length) return;   // khong co file: de form bao loi
+      e.preventDefault();
+
+      var file = o.files[0];
+      var batDau = Date.now();
+      form.style.display = "none";
+      khung.style.display = "block";
+      tenO.textContent = file.name + "  (" + co(file.size) + ")";
+
+      // Hoi may xem da ghi duoc bao nhieu XUONG DIA that. So nay moi la su
+      // that cuoi cung - so byte trinh duyet gui di co the chay truoc no.
+      function hoiDia() {
+        if (!loai) return;
+        var q = new XMLHttpRequest();
+        q.open("GET", "/deployos/tien-do?loai=" + encodeURIComponent(loai) +
+                      "&os_id=" + encodeURIComponent(form.getAttribute("data-os") || "") +
+                      "&ten=" + encodeURIComponent(file.name), true);
+        q.onload = function () {
+          try {
+            var d = JSON.parse(q.responseText);
+            if (d.da_ghi > 0) {
+              diaO.textContent = "Đã ghi xuống đĩa: " + co(d.da_ghi) +
+                " / " + co(file.size);
+            }
+          } catch (err) { /* bo qua, khong lam hong viec tai len */ }
+        };
+        q.send();
+      }
+      hen = setInterval(hoiDia, 2000);
+
+      xhr = new XMLHttpRequest();
+      xhr.open("POST", form.getAttribute("action"), true);
+
+      xhr.upload.onprogress = function (ev) {
+        if (!ev.lengthComputable) return;
+        var pt = Math.round(ev.loaded * 100 / ev.total);
+        thanh.style.width = pt + "%";
+        phantram.textContent = pt + "%";
+        var giay = (Date.now() - batDau) / 1000;
+        var tocDo = giay > 0 ? ev.loaded / giay : 0;
+        var conLai = tocDo > 0 ? (ev.total - ev.loaded) / tocDo : Infinity;
+        chitiet.textContent = co(ev.loaded) + " / " + co(ev.total) +
+          "  -  " + co(tocDo) + "/s  -  con " + thoiGian(conLai);
+      };
+
+      xhr.upload.onload = function () {
+        // Trinh duyet gui xong roi, nhung may co the con dang ghi not
+        phantram.textContent = "100%";
+        thanh.style.width = "100%";
+        chitiet.textContent = "Da gui xong, dang hoan tat luu tren may...";
+      };
+
+      xhr.onload = function () {
+        clearInterval(hen);
+        // May tra ve nguyen trang ket qua -> thay the trang hien tai
+        document.open();
+        document.write(xhr.responseText);
+        document.close();
+      };
+      xhr.onerror = function () {
+        clearInterval(hen);
+        diaO.innerHTML = '<span style="color:#ef4444;">Mất kết nối tới máy. ' +
+          'File chưa được lưu - thử lại.</span>';
+      };
+      xhr.onabort = function () {
+        clearInterval(hen);
+        diaO.innerHTML = '<span style="color:#f59e0b;">Da huy tai len.</span>';
+      };
+
+      var fd = new FormData();
+      fd.append("file", file);
+      xhr.send(fd);
+    });
+
+    nutHuy.addEventListener("click", function () {
+      if (xhr) xhr.abort();
+      form.style.display = "";
+      khung.style.display = "none";
+      thanh.style.width = "0%";
+      phantram.textContent = "0%";
+      chitiet.textContent = "";
+      diaO.textContent = "";
+    });
+  });
+})();
+</script>

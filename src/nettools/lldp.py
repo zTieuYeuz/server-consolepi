@@ -23,6 +23,7 @@ dict co the co "value" (chuoi don gian) hoac ca "type" + "value" (dinh danh
 nhu MAC/ifname). Ham _gt() lay ra phan tu dau do mot cach an toan du lldpd
 tra ve kieu gi.
 """
+from consolesystem.core import taisan as _taisan
 import json
 import subprocess
 
@@ -183,120 +184,7 @@ def _find_power_info(node, depth=0):
     return None
 
 
-LLDP_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>LLDP/CDP Discovery - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; }
-        h3 { color: #4CAF50; margin-top: 24px; }
-        a { color: #4CAF50; }
-        a.btn { display:inline-block; padding: 9px 16px; background: #4CAF50; color: white;
-            text-decoration: none; border-radius: 4px; }
-        .hint { color: #999; font-size: 13px; }
-        .err { background: #4a2d2d; border-left: 4px solid #f44336; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        details summary { cursor: pointer; color: #999; margin-top: 20px; }
-        pre { background: #111; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 12px; max-height: 400px; }
-
-        /* --- The thong tin cho tung thiet bi lang gieng --- */
-        .card { background:#2a2a2a; border:1px solid #3a3a3a; border-left: 4px solid #4CAF50;
-                border-radius: 6px; padding: 16px 18px; margin-top: 16px; }
-        .card h2 { margin: 0 0 4px; font-size: 19px; color: #fff; }
-        .card .badge-proto { display:inline-block; background:#333; color:#4CAF50;
-                border:1px solid #4CAF50; border-radius: 4px; font-size: 11px;
-                padding: 1px 7px; margin-left: 8px; vertical-align: 2px; }
-        .card .via-if { color:#999; font-size: 13px; margin: 2px 0 14px; }
-        .grid { display: grid; grid-template-columns: 160px 1fr; gap: 8px 14px; align-items: start; }
-        .grid dt { color: #999; font-size: 13px; padding-top: 2px; }
-        .grid dd { margin: 0; word-break: break-word; }
-        .grid dd code { background:#151515; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
-        .descr-box { background:#151515; border-radius: 4px; padding: 8px 10px; font-size: 12.5px;
-                white-space: pre-wrap; color:#ccc; max-height: 130px; overflow-y: auto; }
-        .caps { display:flex; gap:6px; flex-wrap: wrap; }
-        .cap-chip { background:#1f3a24; color:#8fd99a; border:1px solid #2e5c37;
-                border-radius: 10px; padding: 2px 10px; font-size: 12px; }
-        .none-val { color: #777; font-style: italic; }
-    </style>
-</head>
-<body>
-    <h1>LLDP/CDP Discovery</h1>
-    <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Máy lắng nghe quảng bá LLDP và CDP trên từng cổng mạng.
-        Cắm dây vào một switch/router có bật các giao thức này, đợi 10-60 giây
-        (thiết bị thường quảng bá mỗi 30-60 giây) rồi bấm Quét lại.</p>
-    <p><a class="btn" href="/nettools/lldp">Quét lại</a></p>
-
-    {% if result.error %}
-    <div class="err">Lỗi: {{ result.error }}</div>
-    {% else %}
-        {% if result.neighbors %}
-            {% for n in result.neighbors %}
-            <div class="card">
-                <h2>{{ n.remote_name }}<span class="badge-proto">{{ n.protocol }}</span></h2>
-                <p class="via-if">Thấy qua cổng <strong>{{ n.iface }}</strong> của máy
-                    {% if n.age %}&middot; đã thấy {{ n.age }}{% endif %}</p>
-                <dl class="grid">
-                    <dt>Địa chỉ quản lý (Mgmt IP)</dt>
-                    <dd>
-                        {% if n.mgmt_ip %}
-                            <code>{{ n.mgmt_ip }}</code>
-                            {% if n.mgmt_mo_duoc %}&nbsp;<a href="http://{{ n.mgmt_ip }}" target="_blank" rel="noopener">Mở web ↗</a>
-                            {% else %}&nbsp;<span class="none-val">(địa chỉ nội bộ của thiết bị - không mở từ đây được)</span>{% endif %}
-                        {% else %}<span class="none-val">Thiết bị không quảng bá IP quản lý</span>{% endif %}
-                    </dd>
-
-                    <dt>Cổng trên thiết bị đó</dt>
-                    <dd>
-                        {% if n.port_descr %}<strong>{{ n.port_descr }}</strong>{% endif %}
-                        {% if n.port_id and n.port_id != n.port_descr %}
-                            <br><code style="font-size:12px;">{{ n.port_id }}</code>
-                        {% endif %}
-                        {% if not n.port_descr and not n.port_id %}<span class="none-val">-</span>{% endif %}
-                    </dd>
-
-                    <dt>Chassis ID</dt>
-                    <dd>{{ n.chassis_id or '<span class="none-val">-</span>'|safe }}</dd>
-
-                    <dt>Năng lực thiết bị</dt>
-                    <dd>
-                        {% if n.capabilities %}
-                        <div class="caps">
-                            {% for c in n.capabilities %}<span class="cap-chip">{{ c }}</span>{% endfor %}
-                        </div>
-                        {% else %}<span class="none-val">Không quảng bá</span>{% endif %}
-                    </dd>
-
-                    <dt>PoE (LLDP-MED)</dt>
-                    <dd>{{ n.poe_info or '<span class="none-val">Không có dữ liệu</span>'|safe }}</dd>
-
-                    {% if n.remote_descr %}
-                    <dt>Mô tả hệ thống</dt>
-                    <dd><div class="descr-box">{{ n.remote_descr }}</div></dd>
-                    {% endif %}
-                </dl>
-            </div>
-            {% endfor %}
-        {% else %}
-        <p style="margin-top:16px;">Chưa thấy thiết bị láng giềng nào qua LLDP/CDP. Có thể do:</p>
-        <ul>
-            <li>Switch đang cắm không bật LLDP/CDP</li>
-            <li>Vừa cắm dây, cần đợi 30-60 giây để trao đổi thông tin đầu tiên</li>
-            <li>Chưa bật chế độ tương thích CDP (cài lại phần mềm sẽ tự bật)</li>
-        </ul>
-        {% endif %}
-    {% endif %}
-
-    <details>
-        <summary>Xem dữ liệu JSON thô (chỉ để đối chiếu kỹ thuật khi cần - không cần đọc thường xuyên)</summary>
-        <pre>{{ raw_json }}</pre>
-    </details>
-</body>
-</html>
-"""
+LLDP_TEMPLATE = _taisan.doc("nettools/lldp.LLDP_TEMPLATE.html")
 
 
 @nettools_bp.route("/nettools/lldp")

@@ -9,6 +9,7 @@ Da xac nhan tren may nay (Pi 4, driver bcmgenet): rx-vlan-offload la
 Scapy, KHONG can mua them USB-Ethernet adapter nhu tai lieu nghien cuu
 ban dau lo ngai (tai lieu do gia dinh sai la Pi 3 dung chip smsc95xx).
 """
+from consolesystem.core import taisan as _taisan
 from flask import request, render_template_string
 
 from . import nettools_bp
@@ -93,92 +94,7 @@ def run_l2_scan(iface=None, duration=15):
     }
 
 
-L2_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>STP/LACP/VLAN Scan - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; }
-        h3 { color: #4CAF50; margin-top: 24px; }
-        a { color: #4CAF50; }
-        select, input[type=number] { padding: 8px; background: #333; color: #eee; border: 1px solid #555; }
-        button { padding: 9px 18px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #444; }
-        th { background: #2d2d2d; }
-        .err { background: #4a2d2d; border-left: 4px solid #f44336; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .hint { color: #999; font-size: 13px; }
-        .root { color: #ffb74d; }
-    </style>
-</head>
-<body>
-    <h1>STP / LACP / VLAN Scan</h1>
-    <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Bắt gói tin thụ động trong khoảng thời gian đã chọn, trên cổng
-    chọn bên dưới. Tag 802.1Q chỉ hiện ra nếu có traffic tagged thực sự đi
-    qua dây.</p>
-
-    <form method="POST" style="margin-top:16px;">
-        <label>Interface:</label>
-        <select name="iface">
-            {{ o_chon_cong|safe }}
-        </select>
-        <label style="margin-left:10px;">Thời gian bắt (giây):</label>
-        <input type="number" name="duration" value="{{ duration }}" min="5" max="60" style="width:70px;">
-        <button type="submit" style="margin-left:10px;">Bắt đầu quét</button>
-    </form>
-
-    {% if ran %}
-        {% if result.error %}
-        <div class="err">Lỗi: {{ result.error }}</div>
-        {% else %}
-        <h3>Spanning Tree (STP)</h3>
-        {% if result.stp %}
-        <table>
-            <tr><th>Root Bridge MAC</th><th>Root Priority</th><th>Bridge MAC</th><th>Bridge Priority</th><th>Port ID</th><th>Hello</th></tr>
-            {% for s in result.stp %}
-            <tr class="{{ 'root' if s.is_root_bridge else '' }}">
-                <td>{{ s.root_mac }}</td><td>{{ s.root_priority }}</td>
-                <td>{{ s.bridge_mac }}{% if s.is_root_bridge %} (ROOT BRIDGE){% endif %}</td>
-                <td>{{ s.bridge_priority }}</td><td>{{ s.port_id }}</td><td>{{ s.hello_time }}s</td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% else %}<p>Khong bat duoc BPDU nao (switch co the tat STP, hoac cong dang o trang thai forwarding on dinh khong gui BPDU thuong xuyen).</p>{% endif %}
-
-        <h3>LACP (Link Aggregation)</h3>
-        {% if result.lacp %}
-        <table>
-            <tr><th>Actor System</th><th>Actor Key</th><th>Actor Port</th><th>Partner System</th><th>Partner Key</th><th>Partner Port</th></tr>
-            {% for l in result.lacp %}
-            <tr>
-                <td>{{ l.actor_system }}</td><td>{{ l.actor_key }}</td><td>{{ l.actor_port }}</td>
-                <td>{{ l.partner_system }}</td><td>{{ l.partner_key }}</td><td>{{ l.partner_port }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% else %}<p>Khong bat duoc goi LACP nao (cong nay khong nam trong 1 EtherChannel/LAG).</p>{% endif %}
-
-        <h3>VLAN Tag (802.1Q)</h3>
-        {% if result.vlans %}
-        <table>
-            <tr><th>VLAN ID</th><th>Số gói thấy được</th></tr>
-            {% for vid, cnt in result.vlans.items() %}
-            <tr><td>{{ vid }}</td><td>{{ cnt }}</td></tr>
-            {% endfor %}
-        </table>
-        {% else %}<p>Không thấy VLAN tag nào. Đây là bị động - cần có traffic tagged
-        THỰC SỰ đi qua dây trong lúc quét mới thấy được (cổng access không tag sẽ
-        không bao giờ hiện gì ở đây, đó là bình thường).</p>{% endif %}
-        {% endif %}
-    {% endif %}
-</body>
-</html>
-"""
+L2_TEMPLATE = _taisan.doc("nettools/l2_sniff.L2_TEMPLATE.html")
 
 
 @nettools_bp.route("/nettools/l2-scan", methods=["GET", "POST"])

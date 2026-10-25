@@ -1,0 +1,211 @@
+
+<style>
+.ph-modal [hidden],.ph-cong[hidden],.ph-trong[hidden],.ph-tv[hidden]{display:none !important;}
+.ph-khung{display:flex;gap:12px;height:calc(100dvh - 84px);min-height:440px;}
+.ph-trai,.ph-phai{background:var(--the);border:1px solid var(--vien);border-radius:var(--bo);overflow:hidden;}
+.ph-trai{width:272px;flex:0 0 272px;display:flex;flex-direction:column;}
+.ph-trai .dau{padding:10px;border-bottom:1px solid var(--vien);}
+.ph-trai input{margin:0;max-width:none;}
+.ph-ds{overflow:auto;flex:1;padding:6px 8px 10px;}
+.ph-nhom{font-size:12px;font-weight:500;color:var(--chu-mo2);padding:14px 8px 5px;}
+.ph-muc{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;
+  transition:background-color .15s;}
+.ph-muc:hover{background:var(--the-noi);}
+.ph-muc.mo{background:var(--nhan-mo);}
+.ph-muc .ic{min-width:34px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font:600 11px var(--mono);flex:none;background:var(--the-noi);color:var(--chu-mo);}
+.ic.ssh{background:var(--nhan-mo);color:var(--nhan);} .ic.telnet{background:var(--vang-mo);color:var(--vang);}
+.ic.serial{background:var(--xanh-mo);color:var(--xanh);} .ic.local{background:var(--the-noi);color:var(--chu);}
+.ph-muc .chu{flex:1;min-width:0;} .ph-muc .chu b{display:block;font-size:14px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ph-muc .chu small{color:var(--chu-mo);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+.ph-muc .sua{opacity:0;border:none;background:none;color:var(--chu-mo);cursor:pointer;padding:4px;min-height:0;}
+.ph-muc:hover .sua{opacity:1;}
+.ph-phai{flex:1;min-width:0;display:flex;flex-direction:column;}
+.ph-tabs{display:flex;gap:2px;padding:8px 8px 0;border-bottom:1px solid var(--vien);overflow-x:auto;}
+.ph-tab{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px 8px 0 0;
+  cursor:pointer;white-space:nowrap;font-size:13.5px;color:var(--chu-mo);border:1px solid transparent;border-bottom:none;}
+.ph-tab:hover{color:var(--chu);}
+.ph-tab.on{background:var(--the-noi);border-color:var(--vien);color:var(--chu);font-weight:600;}
+.ph-tab .x{border:none;background:none;color:var(--chu-mo);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;min-height:0;min-width:0;}
+.ph-cong{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--vien);align-items:center;}
+.ph-cong button{padding:6px 9px;font-size:13px;min-height:36px;white-space:nowrap;gap:6px;}
+.ph-cong button svg.i,.ph-cong button svg.ph{width:17px;height:17px;}
+#nut-mau.on{background:var(--nhan-mo);color:var(--nhan);border-color:var(--nhan);}
+#nut-tv.on{background:var(--nhan-mo);color:var(--nhan);border-color:var(--nhan);}
+.ph-giua{flex:1;display:flex;min-height:0;}
+.ph-than{flex:1;position:relative;background:var(--pre-nen);min-width:0;}
+.ph-than iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;}
+.ph-than iframe.on{display:block;}
+.ph-trong{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  color:var(--chu-mo);text-align:center;padding:24px;gap:6px;}
+.ph-trong h3{margin:10px 0 2px;font-size:20px;color:var(--chu);letter-spacing:-.02em;}
+.ph-trong p{max-width:460px;margin:0;}
+.ph-trong .bd{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+.ph-trong svg.to{width:44px;height:44px;color:var(--chu-mo2);}
+.ph-nhanh{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+.ph-nhanh input{flex:1;min-width:240px;max-width:none;margin:0;font-family:var(--mono);}
+.ph-nhanh .tieude{font-weight:650;font-size:18px;letter-spacing:-.02em;margin-right:6px;white-space:nowrap;}
+
+/* ---- Ngan thu vien lenh (truot ra ben phai khung terminal) ---- */
+.ph-tv{width:340px;flex:0 0 340px;border-left:1px solid var(--vien);background:var(--the);display:flex;flex-direction:column;min-height:0;}
+.ph-tv .tvd{display:flex;align-items:center;gap:8px;padding:12px 14px 6px;}
+.ph-tv .tvd b{font-size:16px;font-weight:650;letter-spacing:-.01em;flex:1;}
+.ph-tv .tvd a,.ph-tv .tvd button{font-size:13px;min-height:32px;padding:4px 10px;}
+.ph-tv .tvt{padding:4px 14px 8px;}
+.ph-tv .tvt input{max-width:none;margin:0;}
+.ph-chip{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 8px;}
+.ph-chip button{min-height:30px;padding:3px 11px;font-size:12.5px;border-radius:999px;background:transparent;
+  color:var(--chu-mo);border:1px solid var(--vien-ro);font-weight:500;}
+.ph-chip button.on{background:var(--nhan-mo);color:var(--nhan);border-color:var(--nhan);}
+.ph-tvds{flex:1;overflow:auto;padding:0 8px 8px;min-height:90px;}
+.ph-the{display:block;width:100%;text-align:left;background:transparent;color:var(--chu);border:1px solid transparent;
+  border-radius:10px;padding:10px 12px;margin-bottom:2px;min-height:0;font-weight:400;}
+.ph-the:hover{background:var(--the-noi);}
+.ph-the.chon{background:var(--nhan-mo);border-color:var(--nhan);}
+.ph-the b{display:block;font-size:14px;font-weight:600;}
+.ph-the span{display:block;font-size:12.5px;color:var(--chu-mo);margin-top:2px;line-height:1.4;}
+.ph-the small{display:block;font:11.5px var(--mono);color:var(--chu-mo2);margin-top:5px;}
+.ph-sua{border-top:1px solid var(--vien);padding:12px 14px 14px;background:var(--nen-noi);max-height:58%;overflow:auto;}
+.ph-sua h4{margin:0 0 8px;font-size:14px;}
+.ph-sua label{margin:8px 0 4px;font-size:12.5px;}
+.ph-sua input{max-width:none;min-height:36px;padding:6px 10px;font-size:14px;margin:0;}
+.ph-sua textarea{width:100%;max-width:none;min-height:120px;font-size:13px;line-height:1.5;}
+.ph-sua .nut{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;}
+.ph-sua .nut button{white-space:nowrap;}
+.ph-sua .kq{font-size:12.5px;color:var(--xanh);flex:1 1 100%;order:3;}
+.ph-sua .kq.loi{color:var(--do);}
+.ph-sua .hd{font-size:12px;color:var(--chu-mo2);margin:8px 0 0;line-height:1.45;}
+.ph-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;
+  z-index:50;overflow:auto;padding:16px 0 300px;}
+.ph-modal.on{display:flex;}
+.ph-modal .hop{background:var(--the);border:1px solid var(--vien-ro);border-radius:var(--bo);padding:20px;width:min(520px,94vw);
+  max-height:90vh;overflow:auto;}
+.ph-modal label{display:block;font-size:13px;color:var(--chu-mo);margin:8px 0 3px;}
+.ph-modal .hai{display:flex;gap:10px;} .ph-modal .hai>div{flex:1;}
+.ph-modal select{width:100%;max-width:none;}
+.nh-hang{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--vien);}
+.nh-hang b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.nh-hang small{color:var(--chu-mo2);font-size:12.5px;white-space:nowrap;}
+.nh-hang button{min-height:32px;padding:3px 10px;font-size:12.5px;}
+.ph-nhom-trong{font-size:12px;color:var(--chu-mo2);padding:2px 8px 6px;}
+.ph-loai{display:flex;gap:6px;} .ph-loai button{flex:1;}
+.ph-loai button.chon{background:var(--nhan);color:var(--chu-tren-nhan);border-color:var(--nhan);font-weight:700;}
+@media (max-width:900px){.ph-khung{flex-direction:column;height:auto;}.ph-trai{width:auto;flex:none;max-height:260px;}
+  .ph-phai{height:80vh;}
+  .ph-giua{position:relative;} .ph-tv{position:absolute;inset:0;width:auto;flex:none;z-index:5;border-left:0;}}
+@media (prefers-reduced-motion:no-preference){
+  .ph-tv.vao{animation:tv-vao .3s var(--muot) both;}
+  @keyframes tv-vao{from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:none;}}
+}
+</style>
+
+<div class="ph-nhanh">
+  <span class="tieude">Phiên kết nối</span>
+  <input type="text" id="o-nhanh" placeholder="Kết nối nhanh: ssh admin@192.168.1.1" autocomplete="off">
+  <button id="nut-nhanh" type="button">[[i:go]] Kết nối</button>
+  <button id="nut-moi" type="button" class="gray">[[i:plus]] Phiên mới</button>
+  <button id="nut-nhom" type="button" class="gray" title="Tạo nhóm mới, đổi tên hoặc xoá nhóm để xếp các phiên cho gọn">[[i:plus]] Tạo nhóm</button>
+</div>
+
+<div class="ph-khung">
+  <div class="ph-trai">
+    <div class="dau"><input id="o-loc" type="search" placeholder="Tìm phiên..." autocomplete="off"></div>
+    <div class="ph-ds" id="ds"></div>
+  </div>
+  <div class="ph-phai">
+    <div class="ph-tabs" id="tabs"></div>
+    <div class="ph-cong" id="congcu" hidden>
+      <button type="button" id="nut-tv" data-lam="tv" title="Mở thư viện lệnh làm sẵn, chọn rồi gửi vào phiên này">[[i:book]] Thư viện lệnh</button>
+      <button type="button" id="nut-mau" data-lam="mau" class="gray" title="Tô màu chữ trên màn hình: dòng lỗi (đỏ), cảnh báo (vàng), trạng thái tốt (xanh), địa chỉ IP, MAC, tên cổng">[[p:paint-brush]] Tô màu</button>
+      <button type="button" data-lam="mk" class="gray" title="Gõ mật khẩu giúp khi thiết bị hỏi">[[i:key]] Gõ mật khẩu</button>
+      <button type="button" data-lam="log" class="gray" title="Tải toàn bộ nội dung màn hình về máy">[[i:save]] Lưu log</button>
+      <button type="button" data-lam="full" class="gray">[[i:search]] Toàn màn hình</button>
+      <button type="button" data-lam="ngat" class="gray" title="Kết thúc hẳn phiên (không chỉ đóng tab)">[[i:x]] Ngắt phiên</button>
+      <span id="tt-tab" class="hint" style="margin-left:auto;flex:1 1 0;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+    </div>
+    <div class="ph-giua">
+      <div class="ph-than" id="than">
+        <div class="ph-trong" id="trong">
+          [[i:term:to]]
+          <h3>Chưa mở phiên nào</h3>
+          <p>Chọn một phiên ở danh sách bên trái, hoặc bắt đầu nhanh:</p>
+          <div class="bd">
+            <button type="button" id="bd-local">[[i:term]] Terminal máy này</button>
+            <button type="button" id="bd-ssh" class="gray">[[i:key]] SSH / Telnet mới</button>
+          </div>
+          <p class="hint" style="margin-top:12px;">Hoặc gõ vào ô <b>Kết nối nhanh</b> phía trên, ví dụ <code>ssh admin@192.168.1.1</code>.</p>
+        </div>
+      </div>
+      <aside class="ph-tv" id="tv" hidden aria-label="Thư viện lệnh">
+        <div class="tvd"><b>Thư viện lệnh</b>
+          <a class="btn gray small" href="/commands" target="_blank" rel="noopener" title="Thêm, sửa, xoá lệnh trong thư viện">Quản lý</a>
+          <button type="button" class="gray small" id="tv-dong" aria-label="Đóng thư viện">[[i:x]]</button></div>
+        <div class="tvt"><input type="search" id="tv-tim" placeholder="Tìm lệnh: vlan, cổng, ip..." autocomplete="off"></div>
+        <div class="ph-chip" id="tv-chip"></div>
+        <div class="ph-tvds" id="tv-ds"></div>
+        <div class="ph-sua" id="tv-sua" hidden>
+          <h4 id="tv-ten"></h4>
+          <div id="tv-truong"></div>
+          <label for="tv-nd">Lệnh sẽ gửi (sửa được trước khi gửi)</label>
+          <textarea id="tv-nd" spellcheck="false"></textarea>
+          <div class="nut"><button type="button" id="tv-gui">[[i:go]] Gửi vào phiên</button><span class="kq" id="tv-kq"></span></div>
+          <p class="hd">Gửi từng dòng, đợi thiết bị in xong mới gửi dòng tiếp. Dòng cuối không tự bấm Enter để bạn kiểm tra lại.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- Hop quan ly nhom -->
+<div class="ph-modal" id="md-nhom"><div class="hop" style="width:min(460px,94vw);">
+  <h3 style="margin:0 0 4px;">Tạo và quản lý nhóm</h3>
+  <p class="hint" style="margin:0 0 10px;">Tạo nhóm trước, khi lưu phiên mới thì chọn nhóm trong danh sách thả xuống. Xoá nhóm không xoá phiên, chỉ chuyển phiên về "Đã lưu".</p>
+  <div id="nh-ds"></div>
+  <label>Thêm nhóm mới</label>
+  <div style="display:flex;gap:6px;"><input type="text" id="nh-ten" placeholder="VD: Trụ sở chính" maxlength="40" autocomplete="off">
+    <button type="button" id="nh-them">[[i:plus]] Thêm</button></div>
+  <div id="nh-loi" class="msg err" hidden style="margin-top:10px;"></div>
+  <div style="display:flex;margin-top:14px;"><button type="button" id="nh-dong" class="gray" style="margin-left:auto;">Đóng</button></div>
+</div></div>
+
+<!-- Hop sua phien -->
+<div class="ph-modal" id="md-phien"><div class="hop">
+  <h3 style="margin:0 0 6px;" id="md-tieude">Phiên mới</h3>
+  <input type="hidden" id="f-ma">
+  <label>Loại kết nối</label>
+  <div class="ph-loai" id="f-loai">
+    <button type="button" data-v="ssh">SSH</button><button type="button" data-v="telnet">Telnet</button>
+    <button type="button" data-v="serial">Serial (console)</button>
+  </div>
+  <div class="hai"><div><label>Tên gợi nhớ</label><input type="text" id="f-ten" placeholder="VD: Core switch tầng 3"></div>
+    <div><label>Nhóm</label><select id="f-nhom"></select>
+      <div id="f-nhom-moi" hidden style="display:flex;gap:6px;margin-top:6px;">
+        <input type="text" id="f-nhom-ten" placeholder="Tên nhóm mới, VD: Chi nhánh HN" maxlength="40" autocomplete="off">
+        <button type="button" id="f-nhom-tao">Tạo</button></div></div></div>
+  <div id="f-mang">
+    <div class="hai"><div style="flex:3"><label>Địa chỉ IP / tên máy</label><input type="text" id="f-host" placeholder="192.168.1.1"></div>
+      <div><label>Cổng</label><input type="text" id="f-port" placeholder="22"></div></div>
+    <div id="f-ssh">
+      <label>Tên đăng nhập</label><input type="text" id="f-user" placeholder="admin" autocapitalize="off">
+      <label>Mật khẩu (tùy chọn)</label><input id="f-mk" type="password" placeholder="Để trống = hỏi khi kết nối" autocomplete="new-password">
+      <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="f-luu-mk" style="width:auto;margin:0;">
+        Lưu mật khẩu để tự gõ khi kết nối <span class="hint">(lưu trên máy này, chỉ quản trị đọc được)</span></label>
+      <label style="display:flex;gap:8px;align-items:center;" id="f-xoa-mk-dong" hidden><input type="checkbox" id="f-xoa-mk" style="width:auto;margin:0;">
+        Xoá mật khẩu đã lưu</label>
+    </div>
+  </div>
+  <div id="f-serial" hidden>
+    <div class="hai"><div><label>Cổng console</label><select id="f-cong"></select></div>
+      <div><label>Tốc độ (baud)</label><select id="f-baud"></select></div></div>
+    <p class="hint">Cisco, Juniper, HPE, Aruba thường là <b>9600</b>. Một số thiết bị mới dùng <b>115200</b>.</p>
+  </div>
+  <label>Ghi chú</label><input type="text" id="f-ghichu" placeholder="VD: vị trí tủ rack, người phụ trách...">
+  <div id="f-loi" class="msg err" hidden style="margin-top:10px;"></div>
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+    <button type="button" id="f-luu-mo">Lưu & kết nối</button>
+    <button type="button" id="f-luu" class="gray">Lưu</button>
+    <button type="button" id="f-huy" class="gray">Huỷ</button>
+    <button type="button" id="f-xoa" class="red" style="margin-left:auto;" hidden>Xoá phiên</button>
+  </div>
+</div></div>

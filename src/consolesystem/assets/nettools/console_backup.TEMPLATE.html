@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sao lưu qua cáp console - Console System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        .hint { color:#8b93a1; font-size:13px; }
+        .khoi { background:#1b1e22; border:1px solid #2c3036; border-left:4px solid #22D3EE;
+                border-radius:9px; padding:17px 19px; margin-bottom:16px; }
+        .nut-tai { display:inline-block; background:#2563eb; color:#fff !important;
+                   padding:11px 15px; border-radius:6px; text-decoration:none;
+                   margin-right:7px; min-height:44px; line-height:22px; box-sizing:border-box; }
+    </style>
+</head>
+<body>
+    <h1>Sao lưu cấu hình qua cáp console</h1>
+    <p><a href="/nettools">← Network Tools</a></p>
+
+    {% if msg %}<div class="msg {{ 'ok' if ok else 'err' }}">{{ msg | safe }}</div>{% endif %}
+
+    <div class="msg info">
+        Dùng khi thiết bị <strong>mất IP quản lý / chưa cấu hình mạng</strong> nên không
+        TFTP được - chỉ còn cáp console. Máy sẽ bảo thiết bị in cấu hình ra màn
+        hình rồi hứng lại thành file (giống bật "session logging" trong PuTTY, nhưng tự động).
+    </div>
+
+    {% if not cong %}
+    <div class="msg warn">Chưa cắm cáp console nào. Cắm cáp USB-serial vào máy này rồi tải lại trang.</div>
+    {% else %}
+    <div class="msg warn">
+        <strong>Với Cisco/HP-Aruba: phải vào chế độ đặc quyền trước</strong> (dấu nhắc
+        kết thúc bằng <code>#</code>, ví dụ <code>Switch#</code>) - mở phiên console của cổng
+        đó, gõ <code>enable</code> (nhập mật khẩu nếu thiết bị hỏi) cho tới khi thấy dấu
+        <code>#</code>, rồi mới quay lại bấm chụp. Nếu còn đang ở dấu nhắc
+        <code>&gt;</code> thì thiết bị sẽ từ chối lệnh và máy sẽ báo rõ,
+        không lưu bản chụp lỗi.
+    </div>
+    <div class="khoi">
+        <h3>Chụp cấu hình</h3>
+        <form method="POST" action="/nettools/console-backup/chup">
+            <label>Cổng console</label>
+            <select name="dev" required>
+                {% for c in cong %}
+                <option value="{{ c.dev }}" {{ 'selected' if c.dev == dev_chon else '' }}>
+                  {{ c.dev }}{% if not c.co_phien %} (chưa mở phiên console){% endif %}</option>
+                {% endfor %}
+            </select>
+
+            <label>Dòng thiết bị</label>
+            <select name="ho">
+                {% for ma, h in ho_thiet_bi.items() %}
+                <option value="{{ ma }}">{{ h.ten }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Tên file (để trống = tự đặt theo ngày giờ)</label>
+            <input type="text" name="ten_file" placeholder="ví dụ: switch-tang3.cfg">
+
+            <div class="row" style="margin-top:14px;">
+                <button type="submit" data-busy="Đang chụp, có thể mất 1-3 phút...">
+                    Chụp cấu hình ngay</button>
+                <a class="btn gray" href="/phien?mo=serial-{{ dev_chon }}">↗ Mở phiên console (gõ enable ở đây)</a>
+            </div>
+        </form>
+        <p class="hint" style="margin-top:12px;">
+            Phải <strong>mở phiên console</strong> cho cổng đó trước (Phiên kết nối)
+            và thiết bị đã đăng nhập xong, đang ở dấu nhắc lệnh. Công đoạn chụp mất từ vài
+            giây đến vài phút tùy độ dài cấu hình và tốc độ baud.
+        </p>
+    </div>
+
+    <h3>Bản đã lưu ({{ ban_luu|length }})</h3>
+    <p class="hint">Lưu trên máy, chỉ quản trị viên đọc được - không nằm trong thư mục TFTP
+       nên thiết bị khác cắm vào cổng mạng không tải về được.</p>
+    <table>
+        <tr><th>Tên file</th><th style="width:110px;">Kích thước</th>
+            <th style="width:150px;">Thời gian</th><th style="width:210px;">Thao tác</th></tr>
+        {% for f in ban_luu %}
+        <tr>
+            <td>{{ f.ten }}</td>
+            <td>{{ (f.kich_thuoc / 1024) | round(1) }} KB</td>
+            <td class="hint">{{ f.thoi_gian }}</td>
+            <td style="white-space:nowrap;">
+                <a class="nut-tai" href="/nettools/console-backup/tai/{{ f.ten | urlencode }}" download>Tải về</a>
+                <form method="POST" action="/nettools/console-backup/xoa" style="display:inline;"
+                      onsubmit="return confirm('Xóa {{ f.ten }}?');">
+                    <input type="hidden" name="ten" value="{{ f.ten }}">
+                    <button type="submit" class="red">Xóa</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% if not ban_luu %}<p class="hint">Chưa có bản lưu nào.</p>{% endif %}
+    {% endif %}
+
+    <h3>Các cách khác để sao lưu khi không có mạng</h3>
+    <div class="khoi" style="border-left-color:#3b82f6;">
+        <p style="margin:0 0 9px;"><strong>USB cắm thẳng vào switch</strong> - nhanh nhất
+        NẾU thiết bị có cổng USB và hỗ trợ:</p>
+        <pre>copy running-config usbflash0:backup.cfg</pre>
+        <p class="hint" style="margin:0 0 11px;">Rất nhiều thiết bị không có cổng USB
+        (2960 đời cũ, switch nhỏ, nhiều hãng khác) - lúc đó dùng cách chụp qua console
+        ở trên, chạy được với mọi thiết bị có cổng console.</p>
+        <p style="margin:0 0 9px;"><strong>Không thể</strong> hút file qua cáp console
+        bằng USB cắm ở máy: cổng console chỉ truyền KÝ TỰ, không phải đường truyền file -
+        không có giao thức sẵn có nào trên switch để đẩy file nhị phân qua đường đó.</p>
+    </div>
+</body>
+</html>

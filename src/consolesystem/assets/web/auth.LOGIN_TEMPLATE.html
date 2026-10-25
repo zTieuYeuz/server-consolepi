@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đăng nhập - Console System</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+* { box-sizing:border-box; }
+body { margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+       background:radial-gradient(1200px 600px at 20% -10%, rgba(34,211,238,.14), transparent 60%),
+                  radial-gradient(900px 500px at 110% 110%, rgba(37,99,235,.16), transparent 60%), #0B0E14;
+       color:#E3E8EF; font-family:system-ui, -apple-system, "Segoe UI", Arial, sans-serif; padding:16px; }
+.box { background:#141A23; border:1px solid #1F2733; border-radius:14px;
+       padding:28px 30px; width:100%; max-width:400px; box-shadow:0 10px 40px rgba(0,0,0,.45); }
+.logo { display:block; height:58px; width:auto; margin:0 0 18px; }
+p.s { margin:0 0 18px; color:#8A94A6; font-size:13.5px; }
+label { display:block; margin:13px 0 5px; font-size:13px; color:#A8B0BD; }
+input { width:100%; padding:13px; background:#0F141C; color:#E3E8EF;
+        border:1px solid #2B3746; border-radius:8px; font-size:16px; }
+input:focus { outline:none; border-color:#22D3EE; box-shadow:0 0 0 3px rgba(34,211,238,.15); }
+button { width:100%; margin-top:20px; padding:14px; background:linear-gradient(135deg,#22D3EE,#2563EB);
+         color:#fff; font-weight:700; border:none; border-radius:8px; font-size:16px; cursor:pointer; min-height:48px; }
+button:active { transform:scale(.98); }
+.err { background:rgba(248,113,113,.12); border-left:4px solid #F87171; padding:11px 14px;
+       border-radius:6px; margin-top:15px; font-size:14px; }
+.hint { margin-top:18px; color:#5D6879; font-size:12px; line-height:1.6; }
+.ban-quyen { margin-top:18px; color:#5D6879; font-size:12px; text-align:center; }
+.ban-quyen b span { color:#22D3EE; }
+</style>
+</head>
+<body>
+<div class="box">
+  <img class="logo" src="/thuong-hieu/logo-full.svg" alt="zTieuYeuz - Console System">
+  <p class="s">Đăng nhập bằng tài khoản của thiết bị</p>
+  <form method="POST">
+    <label>Tài khoản</label>
+    <input type="text" name="username" value="{{ username or '' }}" autofocus autocapitalize="off" autocomplete="username">
+    <label>Mật khẩu</label>
+    <input type="password" name="password" autocomplete="current-password">
+    <button type="submit">Đăng nhập</button>
+  </form>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <div class="hint">Dùng chính tài khoản đăng nhập của máy (ví dụ <code>administrator</code>).
+  Giao diện không có tài khoản riêng và không lưu mật khẩu.</div>
+</div>
+<div class="ban-quyen">Console System{{ dau_an }} &middot; phát triển bởi <b><span>z</span>TieuYeu<span>z</span></b> &middot; &copy; 2026</div>
+<script src="/vkeyboard.js"></script>
+</body>
+</html>

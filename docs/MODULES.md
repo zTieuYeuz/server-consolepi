@@ -51,14 +51,14 @@ Sinh boi `tools/tao-tai-lieu-module.py` tu docstring dau moi file. Kien truc va 
 | `dos_chung.py` | 334 | Deploy OS - tien ich chung: duong dan an toan, liet ke file, luu tai len, ten khong dau. |
 | `dos_driver.py` | 254 | Deploy OS - DRIVER: goi driver, chon cho boot, khop model, giai nen. |
 | `dos_font.py` | 268 | Deploy OS - kho FONT (bo font): tao/xoa/them font, giai nen zip. |
-| `dos_giaodien.py` | 289 | Deploy OS - thanh tab dung chung (tabs_deployos), ngu canh Trien khai, JS tai font, bao cao o dia. |
+| `dos_giaodien.py` | 186 | Deploy OS - thanh tab dung chung (tabs_deployos), ngu canh Trien khai, JS tai font, bao cao o dia. |
 | `dos_hangso.py` | 108 | Deploy OS - hang so dung chung: duoi file cho phep, danh sach OS, mui gio, ngon ngu, ban phim, ten cac buoc wizard. |
 | `dos_kichban.py` | 449 | Deploy OS - KICH BAN (task sequence): luu/doc/xoa, wizard, cau hinh mac dinh, kiem tra san sang, phan vung mac dinh. |
 | `dos_os.py` | 143 | Deploy OS - he dieu hanh (anh WIM/ISO/SxS): liet ke, tao, xoa, chi so ban Pro. |
 | `dos_phanmem.py` | 283 | Deploy OS - danh muc PHAN MEM (.exe/.msi) va UNG DUNG nhieu file: doc/ghi thong tin, tham so cai im lang, giai nen, xoa. |
 | `dos_tomtat.py` | 166 | Deploy OS - tom tat kich ban cho giao dien (ten OS, tom tat day du, o tom tat, mo ta ngan). |
 | `dosui_caidat.py` | 283 | Tach tu deployos.py (B4). |
-| `dosui_chung.py` | 467 | Tach tu deployos.py (B4). |
+| `dosui_chung.py` | 110 | Tach tu deployos.py (B4). |
 | `dosui_console.py` | 494 | Tach tu deployos.py (B4). |
 | `dosui_driver.py` | 344 | Tach tu deployos.py (B4). |
 | `dosui_font.py` | 166 | Tach tu deployos.py (B4). |
@@ -82,7 +82,7 @@ Sinh boi `tools/tao-tai-lieu-module.py` tu docstring dau moi file. Kien truc va 
 | `un_baocao.py` | 392 | Unattend - script bao cao tong ket cuoi + lenh kiem tra card mang/o dia. |
 | `un_chonodia.py` | 335 | Unattend - chon o cai Windows (tu dong/tay), diskpart. |
 | `un_deploycmd.py` | 624 | Unattend - deploy.cmd (kieu MDT) va cac lenh WinPE: chep app/script, dat ten, bao lich su. |
-| `un_goapp_font.py` | 360 | Unattend - go app rac, cai font/ung dung/script/driver offline, .NET 3.5. |
+| `un_goapp_font.py` | 293 | Unattend - go app rac, cai font/ung dung/script/driver offline, .NET 3.5. |
 | `un_hangso.py` | 226 | Unattend - hang so Samba va ham dung chung nho (mat khau kho, driverpaths, credentials). |
 | `un_iso.py` | 256 | Unattend - ISO tu dong / dia mem ao chua autounattend. |
 | `un_kiemtra.py` | 336 | Unattend - bang kiem tra sau cai (muc kiem, lenh reg, buoc nguoi dung). |
@@ -106,7 +106,7 @@ Sinh boi `tools/tao-tai-lieu-module.py` tu docstring dau moi file. Kien truc va 
 
 | File | Dong | Vai tro |
 |---|---:|---|
-| `logs.py` | 561 | Console System - Trang "Nhat ky" (yeu cau: "phai co he thong log lai ghi |
+| `logs.py` | 363 | Console System - Trang "Nhat ky" (yeu cau: "phai co he thong log lai ghi |
 
 ## `consolesystem/features/network`
 
@@ -133,16 +133,16 @@ Sinh boi `tools/tao-tai-lieu-module.py` tu docstring dau moi file. Kien truc va 
 
 | File | Dong | Vai tro |
 |---|---:|---|
-| `tk_trang.py` | 1110 | Trien khai phan mem - GIAO DIEN. Cac tab: Tai nguyen / Kho trung tam (dung chung voi Deployment OS, chi bo He dieu hanh / |
+| `tk_trang.py` | 1047 | Trien khai phan mem - GIAO DIEN. Cac tab: Tai nguyen / Kho trung tam (dung chung voi Deployment OS, chi bo He dieu hanh / |
 
 ## `consolesystem/features/terminal`
 
 | File | Dong | Vai tro |
 |---|---:|---|
-| `commands.py` | 786 | Console Pi - Thu vien lenh (yeu cau so 6) |
-| `phien.py` | 1147 | Console System - PHIEN KET NOI kieu MobaXterm (27/09/2026, anh Thoai: "lam lai |
-| `soanlenh.py` | 294 | Console Pi - Cac khoi dung chung quanh khung terminal (Terminal / SSH / |
-| `ssh.py` | 292 | Console Pi - Tab SSH |
+| `commands.py` | 486 | Console Pi - Thu vien lenh (yeu cau so 6) |
+| `phien.py` | 481 | Console System - PHIEN KET NOI kieu MobaXterm (27/09/2026, anh Thoai: "lam lai |
+| `soanlenh.py` | 134 | Console Pi - Cac khoi dung chung quanh khung terminal (Terminal / SSH / |
+| `ssh.py` | 248 | Console Pi - Tab SSH |
 | `terminal.py` | 198 | Console Pi - Terminal local (yeu cau so 5) va SSH tuong tac (mot phan yeu cau 7) |
 
 ## `consolesystem/features/uem`
@@ -150,10 +150,10 @@ Sinh boi `tools/tao-tai-lieu-module.py` tu docstring dau moi file. Kien truc va 
 | File | Dong | Vai tro |
 |---|---:|---|
 | `uem_agent.py` | 670 | Quan ly may tram - AGENT v2 cho Windows (mo phong agent cua OpenUEM; khac cach lam: dich vu C# bien dich tai cho + HTTPS mTLS thay cho Go + NATS). |
-| `uem_agent_cs.py` | 1062 | Ma nguon C# cua AGENT Console System (dich vu Windows). KHONG co file .exe san: ma nay duoc BIEN DICH NGAY TREN MAY WINDOWS luc cai |
+| `uem_agent_cs.py` | 29 | Ma nguon C# cua AGENT Console System (dich vu Windows). KHONG co file .exe san: ma nay duoc BIEN DICH NGAY TREN MAY WINDOWS luc cai |
 | `uem_agent_goi.py` | 322 | Quan ly may tram - AGENT: tao FILE CAI (MSI hoac script PowerShell) co san dia chi Console System + ma ghi danh. |
 | `uem_agent_trang.py` | 391 | Quan ly may tram - AGENT: cac duong HTTPS (mTLS) cho agent, tab Agent cua may va muc Quan tri, Agent. |
-| `uem_baocao.py` | 231 | Quan ly may tram - THU THAP BAO CAO may (tuong duong "agent report" cua OpenUEM, nhung khong can agent). |
+| `uem_baocao.py` | 173 | Quan ly may tram - THU THAP BAO CAO may (tuong duong "agent report" cua OpenUEM, nhung khong can agent). |
 | `uem_buoc.py` | 365 | Quan ly may tram - CAC LOAI TAC VU (task) cua Profile, mo phong cac task Windows cua OpenUEM |
 | `uem_dulieu.py` | 71 | Quan ly may tram (UEM) - lop du lieu. Mo phong cac chuc nang cua OpenUEM (open-uem, Apache 2.0): kiem ke, bao mat, |
 | `uem_ketnoi.py` | 46 | Quan ly may tram - DIEM KET NOI DUY NHAT toi 1 may Windows. Moi noi can chay PowerShell tren may goi ket_noi(m): |
@@ -184,11 +184,11 @@ Sinh boi `tools/tao-tai-lieu-module.py` tu docstring dau moi file. Kien truc va 
 
 | File | Dong | Vai tro |
 |---|---:|---|
-| `auth.py` | 442 | Console Pi - Dang nhap bang tai khoan Linux cua chinh may (qua PAM) |
-| `css_tk.py` | 63 | CSS dung chung cua cac trang Trien khai phan mem va Quan ly may tram (tach tu tk_trang.py o B3 de uem khong phai import software_deploy). |
+| `auth.py` | 394 | Console Pi - Dang nhap bang tai khoan Linux cua chinh may (qua PAM) |
+| `css_tk.py` | 5 | CSS dung chung cua cac trang Trien khai phan mem va Quan ly may tram (tach tu tk_trang.py o B3 de uem khong phai import software_deploy). |
 | `docs.py` | 53 | Console System - trang "Tai lieu" tren may. |
 | `gioithieu.py` | 118 | Console System - nhan dien thuong hieu zTieuYeuz + phan "Gioi thieu". |
 | `health.py` | 223 | Console Pi - Suc khoe he thong va nut nguon. |
-| `home.py` | 937 | Console Pi - Trang Tong quan (yeu cau so 2 va 4) |
-| `layout.py` | 1596 | Console Pi - Khung giao dien dung chung (thanh dieu huong trai + noi dung phai) |
+| `home.py` | 807 | Console Pi - Trang Tong quan (yeu cau so 2 va 4) |
+| `layout.py` | 1004 | Console Pi - Khung giao dien dung chung (thanh dieu huong trai + noi dung phai) |
 | `ph_icons.py` | 29 | Icon Phosphor (MIT, https://phosphoricons.com) dang "regular", nhung san de khong can Internet. |

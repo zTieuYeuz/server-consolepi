@@ -2,6 +2,7 @@
 """
 Console Pi Network Tools - Ping / Traceroute (netool.io: Connectivity Test)
 """
+from consolesystem.core import taisan as _taisan
 import re
 import subprocess
 
@@ -63,46 +64,7 @@ def run_traceroute(host, iface=None, max_hops=20, timeout=2):
         return f"(loi: {e})"
 
 
-PING_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Ping / Traceroute - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; }
-        h3 { color: #4CAF50; margin-top: 20px; }
-        a { color: #4CAF50; }
-        input[type=text], select { padding: 8px; background: #333; color: #eee; border: 1px solid #555; }
-        button { padding: 9px 18px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        pre { background: #111; padding: 12px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
-    </style>
-</head>
-<body>
-    <h1>Ping / Traceroute</h1>
-    <p><a href="/nettools">← Network Tools</a></p>
-
-    <form method="POST" style="margin-top:16px;">
-        <label>Host/IP:</label>
-        <input type="text" name="host" value="{{ host or '' }}" placeholder="ví dụ 8.8.8.8 hoặc google.com" required>
-        <label style="margin-left:10px;">Interface:</label>
-        <select name="iface">
-            {{ o_chon_cong|safe }}
-        </select>
-        <button type="submit" style="margin-left:10px;">Chạy cả 2</button>
-    </form>
-
-    {% if ran %}
-    <h3>Ping</h3>
-    <pre>{{ ping_out }}</pre>
-    <h3>Traceroute</h3>
-    <pre>{{ trace_out }}</pre>
-    {% endif %}
-</body>
-</html>
-"""
+PING_TEMPLATE = _taisan.doc("nettools/connectivity.PING_TEMPLATE.html")
 
 
 @nettools_bp.route("/nettools/ping", methods=["GET", "POST"])

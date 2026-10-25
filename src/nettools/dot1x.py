@@ -13,6 +13,7 @@ that su cong Ethernet va co the lam rot ket noi hien tai. KHONG trien khai
 che do do trong ban nay de tranh rui ro lam mat ket noi quan ly toi Pi;
 eapol_test da du de kiem tra cau hinh RADIUS/EAP truoc khi trien khai that.)
 """
+from consolesystem.core import taisan as _taisan
 import os
 import subprocess
 import tempfile
@@ -98,96 +99,7 @@ def run_eapol_test(radius_ip, radius_port, radius_secret, eap, identity, passwor
     return {"ok": True, "error": None, "success": success, "output": output}
 
 
-DOT1X_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>802.1X Testing - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; }
-        a { color: #4CAF50; }
-        label { display: block; margin-top: 10px; }
-        input[type=text], input[type=password], input[type=number], select {
-            padding: 8px; width: 100%; max-width: 420px; background: #333; color: #eee;
-            border: 1px solid #555; box-sizing: border-box;
-        }
-        button { padding: 9px 18px; background: #4CAF50; color: white; border: none;
-            border-radius: 4px; cursor: pointer; margin-top: 14px; }
-        pre { background: #111; padding: 12px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
-        .err { background: #4a2d2d; border-left: 4px solid #f44336; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .ok { background: #2d4a2d; border-left: 4px solid #4CAF50; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .unknown { background: #4a3d2d; border-left: 4px solid #ff9800; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .hint { color: #999; font-size: 13px; }
-    </style>
-</head>
-<body>
-    <h1>802.1X Testing</h1>
-    <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Dùng <code>eapol_test</code> - chỉ nói chuyện UDP trực tiếp tới RADIUS server,
-    <strong>KHÔNG đụng đến cổng mạng đang dùng</strong>, nên an toàn, không làm gián đoạn kết nối hiện tại.
-    Nếu không có RADIUS server thật, công cụ vẫn chạy được nhưng sẽ báo "không kết luận được"
-    thay vì thành công/thất bại rõ ràng.</p>
-
-    <form method="POST">
-        <label>RADIUS Server IP:</label>
-        <input type="text" name="radius_ip" value="{{ radius_ip or '' }}" required placeholder="ví dụ 192.168.1.10">
-        <label>RADIUS Port:</label>
-        <input type="number" name="radius_port" value="{{ radius_port or 1812 }}" style="max-width:100px;">
-        <label>Shared Secret:</label>
-        <input type="text" name="radius_secret" value="{{ radius_secret or '' }}" required>
-
-        <label>EAP Method:</label>
-        <select name="eap" id="eapSel" onchange="togglePhase2()">
-            {% for m in eap_methods %}
-            <option value="{{ m }}" {{ 'selected' if m==eap else '' }}>{{ m }}</option>
-            {% endfor %}
-        </select>
-
-        <div id="phase2box">
-            <label>Phase 2 Auth (chỉ áp dụng PEAP/TTLS):</label>
-            <select name="phase2">
-                {% for p in phase2_methods %}
-                <option value="{{ p }}" {{ 'selected' if p==phase2 else '' }}>{{ p }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <label>Identity/Username:</label>
-        <input type="text" name="identity" value="{{ identity or '' }}" required>
-        <label>Password:</label>
-        <input type="password" name="password" value="{{ password or '' }}" required>
-
-        <button type="submit">Chạy test</button>
-    </form>
-    <script>
-      function togglePhase2(){
-        var eap = document.getElementById('eapSel').value;
-        document.getElementById('phase2box').style.display =
-          (eap === 'PEAP' || eap === 'TTLS') ? 'block' : 'none';
-      }
-      togglePhase2();
-    </script>
-
-    {% if ran %}
-        {% if result.error %}
-        <div class="err">Lỗi: {{ result.error }}</div>
-        {% elif result.success is sameas true %}
-        <div class="ok">EAP-SUCCESS - Xác thực thành công.</div>
-        {% elif result.success is sameas false %}
-        <div class="err">EAP-FAILURE - Xác thực thất bại (kiểm tra lại username/password/cấu hình RADIUS).</div>
-        {% else %}
-        <div class="unknown">Không kết luận được (có thể RADIUS server không phản hồi, sai IP/secret,
-        hoặc không có RADIUS thật trong môi trường này).</div>
-        {% endif %}
-        <h3 style="color:#22D3EE;">Output đầy đủ</h3>
-        <pre>{{ result.output }}</pre>
-    {% endif %}
-</body>
-</html>
-"""
+DOT1X_TEMPLATE = _taisan.doc("nettools/dot1x.DOT1X_TEMPLATE.html")
 
 
 @nettools_bp.route("/nettools/dot1x", methods=["GET", "POST"])

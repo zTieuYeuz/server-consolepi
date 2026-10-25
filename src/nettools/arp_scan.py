@@ -5,6 +5,7 @@ Console Pi Network Tools - ARP Scan (netool.io Phan 3)
 Quet toan bo thiet bi dang online trong subnet bang arp-scan. Hoat dong ca
 voi thiet bi chan ping/firewall vi ARP khong di qua tuong lua IP.
 """
+from consolesystem.core import taisan as _taisan
 import re
 import subprocess
 
@@ -70,58 +71,7 @@ def run_arp_scan(iface=None, target=None, timeout=30):
     return {"ok": True, "error": None, "hosts": hosts}
 
 
-ARP_SCAN_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>ARP Scan - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; }
-        a { color: #4CAF50; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #444; }
-        th { background: #2d2d2d; }
-        select, input[type=text] { padding: 8px; background: #333; color: #eee; border: 1px solid #555; }
-        button { padding: 9px 18px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .err { background: #4a2d2d; border-left: 4px solid #f44336; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .hint { color: #999; font-size: 13px; margin-top: 6px; }
-    </style>
-</head>
-<body>
-    <h1>ARP Scan</h1>
-    <p><a href="/nettools">← Network Tools</a></p>
-
-    <form method="POST" style="margin-top:16px;">
-        <label>Interface:</label>
-        <select name="iface">
-            {{ o_chon_cong|safe }}
-        </select>
-        <label style="margin-left:12px;">Dải IP (tùy chọn):</label>
-        <input type="text" name="target" value="{{ target or '' }}" placeholder="ví dụ 192.168.1.0/24 - để trống = tự dò mạng hiện tại">
-        <button type="submit" style="margin-left:12px;">Quét</button>
-        <div class="hint">Nếu cổng chưa có địa chỉ IP (cắm vào trunk port không DHCP), phải nhập tay dải CIDR.</div>
-    </form>
-
-    {% if ran %}
-        {% if result.error %}
-        <div class="err">Lỗi: {{ result.error }}</div>
-        {% else %}
-        <p style="margin-top:16px;">Tìm thấy <strong>{{ result.hosts|length }}</strong> thiet bi tren {{ iface }}:</p>
-        <table>
-            <tr><th>IP</th><th>MAC</th><th>Vendor</th></tr>
-            {% for h in result.hosts %}
-            <tr><td>{{ h.ip }}</td><td>{{ h.mac }}</td><td>{{ h.vendor }}</td></tr>
-            {% endfor %}
-        </table>
-        {% if not result.hosts %}<p>Không tìm thấy thiết bị nào.</p>{% endif %}
-        {% endif %}
-    {% endif %}
-</body>
-</html>
-"""
+ARP_SCAN_TEMPLATE = _taisan.doc("nettools/arp_scan.ARP_SCAN_TEMPLATE.html")
 
 
 @nettools_bp.route("/nettools/arp-scan", methods=["GET", "POST"])

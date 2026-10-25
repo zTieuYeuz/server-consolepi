@@ -17,6 +17,7 @@ switch/router lab de test truoc, bat buoc phai co luong an toan:
 Moi phien chay (test/run) deu duoc ghi log vao
 /var/log/console-pi-netmiko.log (KHONG ghi mat khau vao log).
 """
+from consolesystem.core import taisan as _taisan
 from consolesystem.core.nhatky import bo_qua as _bo_qua
 import time
 
@@ -113,136 +114,9 @@ def run_config(host, device_type, username, password, commands, save=False, port
     return {"ok": True, "error": None, "output": output, "saved": save}
 
 
-FORM_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Netmiko Config - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; }
-        h3 { color: #4CAF50; margin-top: 20px; }
-        a { color: #4CAF50; }
-        label { display: block; margin-top: 10px; }
-        input[type=text], input[type=password], input[type=number], select, textarea {
-            padding: 8px; width: 100%; max-width: 480px; background: #333; color: #eee;
-            border: 1px solid #555; box-sizing: border-box; font-family: monospace;
-        }
-        textarea { height: 120px; }
-        button { padding: 9px 18px; background: #4CAF50; color: white; border: none;
-            border-radius: 4px; cursor: pointer; margin-top: 12px; margin-right: 8px; }
-        button.secondary { background: #607d8b; }
-        pre { background: #111; padding: 12px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
-        .err { background: #4a2d2d; border-left: 4px solid #f44336; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .ok { background: #2d4a2d; border-left: 4px solid #4CAF50; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .warn { background: #4a3d2d; border-left: 4px solid #ff9800; padding: 12px 16px; border-radius: 4px; margin: 14px 0; }
-    </style>
-</head>
-<body>
-    <h1>Netmiko Config</h1>
-    <p><a href="/nettools">← Network Tools</a> &nbsp;|&nbsp;
-    {% if mode == 'test' %}
-    <a href="/nettools/netmiko">Sang form Cấu hình (ghi)</a>
-    {% else %}
-    <a href="/nettools/netmiko/test-form">Sang form Test kết nối (chỉ đọc)</a>
-    {% endif %}
-    </p>
-    <div class="warn">Công cụ này GHI thay đổi lên thiết bị thật qua SSH.
-    Luôn <strong>Test kết nối</strong> trước, rồi <strong>Xem trước lệnh</strong>,
-    cuối cùng mới <strong>Xác nhận và chạy</strong>. Không tự động lưu vĩnh viễn
-    (write memory) trừ khi bạn tích riêng.</div>
+FORM_TEMPLATE = _taisan.doc("nettools/netmiko_tool.FORM_TEMPLATE.html")
 
-    <form method="POST" action="{{ action_url }}">
-        <label>Địa chỉ IP switch:</label>
-        <input type="text" name="host" value="{{ host or '' }}" required placeholder="ví dụ 192.168.1.1">
-
-        <label>Device type:</label>
-        <select name="device_type">
-            {% for dt in device_types %}
-            <option value="{{ dt }}" {{ 'selected' if dt==device_type else '' }}>{{ dt }}</option>
-            {% endfor %}
-        </select>
-
-        <label>Port SSH:</label>
-        <input type="number" name="port" value="{{ port or 22 }}" style="max-width:100px;">
-
-        <label>Username:</label>
-        <input type="text" name="username" value="{{ username or '' }}" required>
-
-        <label>Password:</label>
-        <input type="password" name="password" value="{{ password or '' }}" required>
-
-        {% if mode == 'test' %}
-        <label>Lệnh đọc để test (không vào config mode):</label>
-        <input type="text" name="test_cmd" value="{{ test_cmd or 'show version' }}">
-        <button type="submit" class="secondary">Test kết nối (chỉ đọc)</button>
-        {% else %}
-        <label>Danh sách lệnh cấu hình (mỗi dòng 1 lệnh):</label>
-        <textarea name="commands">{{ commands_text or '' }}</textarea>
-        <button type="submit">Xem trước lệnh</button>
-        {% endif %}
-    </form>
-
-    {% if result %}
-        {% if result.error %}
-        <div class="err">Lỗi: {{ result.error }}</div>
-        {% else %}
-        <div class="ok">Thành công{% if result.saved %} (đã lưu vĩnh viễn){% endif %}.</div>
-        <h3>Output</h3>
-        <pre>{{ result.output }}</pre>
-        {% endif %}
-    {% endif %}
-</body>
-</html>
-"""
-
-PREVIEW_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Xem trước lệnh - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; }
-        a { color: #4CAF50; }
-        pre { background: #111; padding: 14px; border-radius: 4px; white-space: pre-wrap; }
-        .warn { background: #4a3d2d; border-left: 4px solid #ff9800; padding: 12px 16px; border-radius: 4px; margin: 14px 0; }
-        label { display: flex; align-items: center; gap: 8px; margin: 14px 0; }
-        button { padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button.cancel { background: #607d8b; }
-    </style>
-</head>
-<body>
-    <h1>Xem trước - CHƯA KẾT NỐI GÌ CẢ</h1>
-    <p><a href="/nettools/netmiko">← Quay lại form</a></p>
-
-    <p>Sẽ kết nối tới <strong>{{ host }}</strong> ({{ device_type }}) và chạy CHÍNH XÁC các lệnh sau:</p>
-    <pre>{{ commands_text }}</pre>
-
-    <div class="warn">Đây là bước ghi cấu hình THỰC SỰ lên thiết bị. Đọc lại kỹ trước khi xác nhận.</div>
-
-    <form method="POST" action="/nettools/netmiko/run"
-          onsubmit="return confirm('XÁC NHẬN chạy {{ commands|length }} lệnh cấu hình trên {{ host }}?');">
-        <input type="hidden" name="host" value="{{ host }}">
-        <input type="hidden" name="device_type" value="{{ device_type }}">
-        <input type="hidden" name="port" value="{{ port }}">
-        <input type="hidden" name="username" value="{{ username }}">
-        <input type="hidden" name="password" value="{{ password }}">
-        <input type="hidden" name="commands" value="{{ commands_text }}">
-        <label>
-            <input type="checkbox" name="save" value="1">
-            Cũng lưu vĩnh viễn (write memory / save config) - KHÓ HOÀN TÁC, mặc định KHÔNG tích
-        </label>
-        <button type="submit">Xác nhận và chạy</button>
-        <a href="/nettools/netmiko" class="cancel" style="display:inline-block; padding:10px 20px; background:#607d8b; color:white; border-radius:4px; text-decoration:none;">Hủy</a>
-    </form>
-</body>
-</html>
-"""
+PREVIEW_TEMPLATE = _taisan.doc("nettools/netmiko_tool.PREVIEW_TEMPLATE.html")
 
 
 @nettools_bp.route("/nettools/netmiko", methods=["GET"])

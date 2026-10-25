@@ -1,0 +1,206 @@
+
+<script>
+(function () {
+  "use strict";
+  var D = JSON.parse(document.getElementById("tv-data").textContent);
+  var ITEMS = D.items;            // [{i, name, desc, tags, commands}] - i = chi so that trong file
+  var NS = "http://www.w3.org/2000/svg";
+  var q = "", the = "", chon = null;
+  var $ = function (id) { return document.getElementById(id); };
+
+  var ICON = {
+    plus: "M12 5v14M5 12h14", search: "M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4", x: "M6 6l12 12M18 6L6 18",
+    send: "M4 12l16-8-6 16-3-7z", link: "M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1",
+    copy: "M9 9h11v11H9zM5 15V4h11", edit: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4", trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
+    dup: "M8 8h12v12H8zM4 16V4h12", save: "M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7"
+  };
+  function icon(n) {
+    var s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("aria-hidden", "true");
+    var p = document.createElementNS(NS, "path"); p.setAttribute("d", ICON[n]); s.appendChild(p); return s;
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e;
+  }
+  function bo(s) {   // bo dau de tim khong can go dau
+    return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+  }
+  function cacThe(it) { return (it.tags || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean); }
+  function soLenh(it) { return (it.commands || "").split("\n").filter(function (l) { return l.trim(); }).length; }
+  function khop(it) {
+    if (the && cacThe(it).map(bo).indexOf(the) < 0) return false;
+    if (!q) return true;
+    return bo([it.name, it.desc, it.tags, it.commands].join(" ")).indexOf(q) >= 0;
+  }
+  // to sang tu khoa dang tim trong ten (khong dung innerHTML)
+  function toSang(node, text) {
+    var k = q ? bo(text).indexOf(q) : -1;
+    if (k < 0) { node.textContent = text; return; }
+    node.appendChild(document.createTextNode(text.slice(0, k)));
+    node.appendChild(el("mark", null, text.slice(k, k + q.length)));
+    node.appendChild(document.createTextNode(text.slice(k + q.length)));
+  }
+
+  // ---------------------------------------------------------------- danh sach ben trai
+  function veThe() {
+    var dem = {}, ten = {};
+    ITEMS.forEach(function (it) { cacThe(it).forEach(function (t) { var k = bo(t); dem[k] = (dem[k] || 0) + 1; ten[k] = ten[k] || t; }); });
+    var h = $("tv-the"); h.textContent = "";
+    var tatca = el("button", the ? "" : "on", "Tất cả"); tatca.type = "button";
+    tatca.onclick = function () { the = ""; ve(); }; h.appendChild(tatca);
+    Object.keys(dem).sort().forEach(function (k) {
+      var b = el("button", the === k ? "on" : "", ten[k]); b.type = "button";
+      b.appendChild(el("small", null, String(dem[k])));
+      b.onclick = function () { the = (the === k) ? "" : k; ve(); };
+      h.appendChild(b);
+    });
+  }
+  function veDs() {
+    var ul = $("tv-list"); ul.textContent = "";
+    var hien = ITEMS.filter(khop).sort(function (a, b) { return a.name.localeCompare(b.name, "vi"); });
+    $("tv-dem").textContent = hien.length + " / " + ITEMS.length + " tập lệnh";
+    if (!hien.length) {
+      ul.appendChild(el("li", "tv-trong", ITEMS.length ? "Không có tập lệnh nào khớp. Thử từ khóa ngắn hơn hoặc bỏ lọc thẻ." : "Thư viện đang trống."));
+      return;
+    }
+    hien.forEach(function (it) {
+      var li = el("li"), b = el("button", chon === it.i ? "on" : ""); b.type = "button";
+      var t = el("b"); toSang(t, it.name); b.appendChild(t);
+      b.appendChild(el("em", null, soLenh(it) + " lệnh"));
+      if (it.desc) b.appendChild(el("small", null, it.desc));
+      b.onclick = function () { xem(it.i); };
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  function ve() { veThe(); veDs(); $("tv-xoa").style.display = q ? "block" : "none"; }
+
+  // ---------------------------------------------------------------- phan chi tiet
+  function postForm(action, fields) {
+    var f = el("form"); f.method = "POST"; f.action = action; f.style.display = "none";
+    Object.keys(fields).forEach(function (k) { var i = el("input"); i.type = "hidden"; i.name = k; i.value = fields[k]; f.appendChild(i); });
+    document.body.appendChild(f); f.submit();
+  }
+  function sao(text) {
+    function du() { var t = el("textarea"); t.value = text; t.style.position = "fixed"; t.style.opacity = "0"; document.body.appendChild(t); t.select();
+      try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(t); }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(du); else du();
+  }
+  function nutBam(cls, ic, nhan, fn, tag) {
+    var b = el(tag || "button", "tv-nut " + (cls || "")); if (!tag) b.type = "button";
+    b.appendChild(icon(ic)); b.appendChild(document.createTextNode(nhan)); if (fn) b.onclick = fn; return b;
+  }
+  function khungChiTiet() { var c = $("tv-ct"); var m = c.cloneNode(false); c.parentNode.replaceChild(m, c); return m; }
+  function thongBao(ct) {
+    if (!D.msg) return; ct.appendChild(el("div", "tv-thongbao " + (D.ok ? "ok" : "loi"), D.msg)); D.msg = "";
+  }
+  function hash(i) { try { history.replaceState(null, "", i == null ? location.pathname : "#" + i); } catch (e) {} }
+
+  function xem(i) {
+    chon = i; var it = ITEMS.filter(function (x) { return x.i === i; })[0]; hash(i); veDs();
+    var ct = khungChiTiet(); if (!it) { rong(); return; }
+    thongBao(ct);
+    ct.appendChild(el("h2", null, it.name));
+    if (it.desc) ct.appendChild(el("p", "tv-mo-ta", it.desc));
+    var tg = cacThe(it);
+    if (tg.length) { var t = el("div", "tv-tag"); tg.forEach(function (x) { t.appendChild(el("span", null, x)); }); ct.appendChild(t); }
+    var h = el("div", "tv-nut-hang");
+    h.appendChild(nutBam("chinh", "send", "Gửi vào Terminal", function () { postForm("/commands/send", { index: i, chon: i }); }));
+    var lk = nutBam("", "link", "Dùng trong Phiên kết nối", null, "a"); lk.href = "/phien?lenh=" + i; h.appendChild(lk);
+    var cp = nutBam("", "copy", "Sao chép", function () { sao(it.commands); cp.lastChild.textContent = "Đã chép"; setTimeout(function () { cp.lastChild.textContent = "Sao chép"; }, 1600); });
+    h.appendChild(cp);
+    h.appendChild(nutBam("", "edit", "Sửa", function () { sua(i); }));
+    h.appendChild(nutBam("", "dup", "Nhân bản", function () { moi({ name: it.name + " (bản sao)", desc: it.desc, tags: it.tags, commands: it.commands }); }));
+    h.appendChild(nutBam("nguy", "trash", "Xóa", function () { if (confirm("Xóa tập lệnh \"" + it.name + "\"?")) postForm("/commands/delete", { index: i }); }));
+    ct.appendChild(h);
+    var ma = el("div", "tv-ma"); ma.appendChild(el("span", null, soLenh(it) + " lệnh")); ct.appendChild(ma);
+    var pre = el("div", "tv-code"), coBien = false;
+    it.commands.replace(/\r/g, "").split("\n").forEach(function (dong) {
+      var d = el("div"); var re = /\{\{[^{}]+\}\}/g, k = 0, m;
+      if (!dong) d.appendChild(document.createTextNode(" "));
+      while ((m = re.exec(dong))) {
+        coBien = true; d.appendChild(document.createTextNode(dong.slice(k, m.index))); d.appendChild(el("i", null, m[0])); k = m.index + m[0].length;
+      }
+      if (dong) d.appendChild(document.createTextNode(dong.slice(k)));
+      pre.appendChild(d);
+    });
+    ct.appendChild(pre);
+    var g = el("p", "tv-goi");
+    if (coBien) { g.appendChild(document.createTextNode("Chỗ tô vàng như ")); g.appendChild(el("i", null, "{{ten}}")); g.appendChild(document.createTextNode(" là chỗ cần điền: mở bằng ")); g.appendChild(el("b", null, "Dùng trong Phiên kết nối")); g.appendChild(document.createTextNode(" thì có ô nhập để điền rồi mới gửi. ")); }
+    g.appendChild(document.createTextNode("Gửi vào Terminal chỉ dán lệnh, không tự bấm Enter ở dòng cuối: đọc lại rồi tự chạy."));
+    ct.appendChild(g);
+  }
+
+  var MAU = [
+    { ten: "Cisco: gán VLAN cho 1 cổng", name: "Gán VLAN cho cổng", desc: "Điền tên cổng và số VLAN khi dùng", tags: "cisco, vlan",
+      commands: "interface {{cổng}}\n switchport mode access\n switchport access vlan {{vlan}}\n no shutdown" },
+    { ten: "Linux: kiểm tra mạng", name: "Kiểm tra mạng Linux", desc: "Địa chỉ, đường đi, ping thử một máy", tags: "linux, mạng",
+      commands: "ip -br addr\nip route\nping -c 3 {{địa chỉ}}" },
+    { ten: "Windows: thông tin máy", name: "Thông tin máy Windows", desc: "Tên máy, địa chỉ mạng, phiên bản", tags: "windows, xem",
+      commands: "hostname\nipconfig /all\nsysteminfo" }
+  ];
+
+  function bieuMau(it, laSua) {
+    var ct = khungChiTiet(); thongBao(ct);
+    ct.appendChild(el("h2", null, laSua ? "Sửa tập lệnh" : "Thêm tập lệnh mới"));
+    ct.appendChild(el("p", "tv-mo-ta", laSua ? "Sửa xong bấm Lưu, thay đổi có hiệu lực ngay." : "Điền tên và các lệnh là đủ, mô tả và thẻ để sau cũng được."));
+    var f = el("form", "tv-f"); f.method = "POST"; f.action = laSua ? "/commands/update" : "/commands/add";
+    if (laSua) { var ix = el("input"); ix.type = "hidden"; ix.name = "index"; ix.value = it.i; f.appendChild(ix); }
+    var o = {};
+    function truong(nhan, ten, thuoc, ghiChu) {
+      var l = el("label", null, nhan); l.setAttribute("for", "tv-" + ten); f.appendChild(l);
+      var e = el(thuoc.t || "input"); if (!thuoc.t) e.type = "text"; e.name = ten; e.id = "tv-" + ten; e.value = it[ten] || "";
+      if (thuoc.ph) e.placeholder = thuoc.ph; if (thuoc.req) e.required = true; if (thuoc.rows) e.rows = thuoc.rows;
+      f.appendChild(e); o[ten] = e; if (ghiChu) f.appendChild(ghiChu); return e;
+    }
+    if (!laSua) {
+      var mau = el("div", "tv-mau"); mau.appendChild(el("span", null, "Bắt đầu nhanh từ mẫu:"));
+      MAU.forEach(function (m) { var b = el("button", null, m.ten); b.type = "button";
+        b.onclick = function () { ["name", "desc", "tags", "commands"].forEach(function (k) { o[k].value = m[k]; }); dem(); }; mau.appendChild(b); });
+      ct.appendChild(mau);
+    }
+    truong("Tên tập lệnh", "name", { req: true, ph: "Ví dụ: Gán VLAN cho 1 cổng" });
+    truong("Mô tả ngắn", "desc", { ph: "Ghi rõ chỗ nào cần sửa trước khi chạy" });
+    var gy = el("div", "tv-goiy");
+    var tg = truong("Thẻ, cách nhau bằng dấu phẩy (để lọc nhanh bên trái)", "tags", { ph: "cisco, vlan" }, gy);
+    var co = {}; ITEMS.forEach(function (x) { cacThe(x).forEach(function (t) { co[t] = 1; }); });
+    Object.keys(co).sort().slice(0, 12).forEach(function (t) {
+      var b = el("button", null, "+ " + t); b.type = "button";
+      b.onclick = function () { var c = cacThe({ tags: tg.value }); if (c.map(bo).indexOf(bo(t)) < 0) c.push(t); tg.value = c.join(", "); }; gy.appendChild(b);
+    });
+    var gc = el("p", "ghi"); gc.appendChild(document.createTextNode("Mỗi dòng một lệnh. Chỗ cần điền khi dùng thì viết dạng "));
+    gc.appendChild(el("i", null, "{{tên}}")); gc.appendChild(document.createTextNode(", ví dụ ")); gc.appendChild(el("i", null, "interface {{cổng}}"));
+    gc.appendChild(document.createTextNode(". "));
+    var dm = el("span"); gc.appendChild(dm);
+    var ta = truong("Các lệnh", "commands", { t: "textarea", req: true, ph: "show version\nshow ip interface brief" }, gc);
+    function dem() { var n = ta.value.split("\n").filter(function (l) { return l.trim(); }).length; dm.textContent = n ? n + " lệnh." : ""; }
+    ta.addEventListener("input", dem); dem();
+    ta.addEventListener("keydown", function (e) {      // Tab chen 2 dau cach thay vi nhay khoi o
+      if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); var s = ta.selectionStart; ta.value = ta.value.slice(0, s) + "  " + ta.value.slice(ta.selectionEnd); ta.selectionStart = ta.selectionEnd = s + 2; }
+    });
+    var h = el("div", "tv-nut-hang"); h.style.marginTop = "20px";
+    var ok = el("button", "tv-nut chinh"); ok.type = "submit"; ok.appendChild(icon("save")); ok.appendChild(document.createTextNode(laSua ? "Lưu thay đổi" : "Thêm vào thư viện")); h.appendChild(ok);
+    var hu = nutBam("", "x", "Hủy", function () { if (laSua) xem(it.i); else if (chon != null) xem(chon); else rong(); }); h.appendChild(hu);
+    f.appendChild(h); ct.appendChild(f);
+    o.name.focus();
+  }
+  function sua(i) { chon = i; hash(i); veDs(); bieuMau(ITEMS.filter(function (x) { return x.i === i; })[0], true); }
+  function moi(goc) { chon = null; hash(null); veDs(); bieuMau(goc || { name: "", desc: "", tags: "", commands: "" }, false); }
+  function rong() {
+    var ct = khungChiTiet(); thongBao(ct);
+    var r = el("div", "tv-rong"); r.appendChild(el("h2", null, ITEMS.length ? "Chọn một tập lệnh bên trái" : "Thư viện đang trống"));
+    r.appendChild(el("p", null, ITEMS.length ? "Hoặc bấm Thêm mới để lưu một tập lệnh của bạn." : "Bấm Thêm mới để lưu tập lệnh đầu tiên."));
+    ct.appendChild(r);
+  }
+
+  $("tv-tim").addEventListener("input", function (e) { q = bo(e.target.value.trim()); ve(); });
+  $("tv-xoa").addEventListener("click", function () { $("tv-tim").value = ""; q = ""; ve(); $("tv-tim").focus(); });
+  $("tv-moi").addEventListener("click", function () { moi(); });
+  ve();
+  var h0 = (location.hash || "").replace("#", "");
+  if (D.edit != null) sua(D.edit);
+  else if (D.chon != null && ITEMS.some(function (x) { return x.i === D.chon; })) xem(D.chon);
+  else if (/^\d+$/.test(h0) && ITEMS.some(function (x) { return x.i === +h0; })) xem(+h0);
+  else if (D.msg) rong();
+  else if (ITEMS.length) xem(ITEMS.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "vi"); })[0].i);
+  else moi();
+})();
+</script>

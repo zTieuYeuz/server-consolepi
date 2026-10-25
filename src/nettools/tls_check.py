@@ -24,6 +24,7 @@ KY THUAT (2 buoc, ca hai deu dung thu vien co san, khong can cai them):
      nhi phan (getpeercert(binary_form=True)) roi tu phan tich bang thu
      vien `cryptography` (da co san trong du an, dung cho IF/THEN Fernet).
 """
+from consolesystem.core import taisan as _taisan
 from consolesystem.core.nhatky import bo_qua as _bo_qua
 import re
 import socket
@@ -164,87 +165,7 @@ def kiem_tra_tls(host, port=443, timeout=5):
     }
 
 
-TLS_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Kiểm tra chứng chỉ TLS - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; } h3 { color: #4CAF50; margin-top: 22px; }
-        a { color: #4CAF50; }
-        input[type=text], input[type=number] { padding: 8px; background: #333; color: #eee; border: 1px solid #555; }
-        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #444; vertical-align: top; }
-        th { background: #2d2d2d; width: 200px; }
-        .card { background:#262626; border:1px solid #3a3a3a; border-left:4px solid #4CAF50;
-                border-radius:6px; padding:14px 16px; margin-top:16px; }
-        .banner-ok { background:#1f3a24; border-left:4px solid #4CAF50; padding:12px 16px;
-                    border-radius:4px; margin-top:14px; color:#8fd99a; }
-        .banner-warn { background: #4a3d1a; border-left: 4px solid #ffb74d; padding: 12px 16px; border-radius: 4px; margin-top: 14px; color:#ffd699; }
-        .err { background: #4a2d2d; border-left: 4px solid #f44336; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .hint { color: #999; font-size: 13px; }
-        .chip { display:inline-block; background:#333; border-radius:10px; padding:3px 10px; font-size:12px; margin-right:6px; }
-    </style>
-</head>
-<body>
-    <h1>Kiểm tra chứng chỉ TLS</h1>
-    <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Xem chi tiết chứng chỉ HTTPS của giao diện quản trị (switch/router/iLO/iDRAC).
-    Các thiết bị này thường dùng chứng chỉ TỰ KÝ - đó là BÌNH THƯỜNG, không phải lỗi. Công cụ này
-    giúp thấy rõ đang tin ai và còn bao nhiêu ngày trước khi hết hạn.</p>
-
-    <form method="POST" style="margin-top:16px;">
-        <label>Host/IP:</label>
-        <input type="text" name="host" value="{{ host or '' }}" placeholder="ví dụ 192.168.1.1" required>
-        <label style="margin-left:10px;">Port:</label>
-        <input type="number" name="port" value="{{ port or 443 }}" style="width:80px;">
-        <button type="submit" style="margin-left:10px;" data-busy="Đang kết nối...">Kiểm tra</button>
-    </form>
-
-    {% if ran %}
-        {% if not result.ok %}
-        <div class="err">{{ result.error }}</div>
-        {% else %}
-        {% if result.xac_thuc_duoc %}
-        <div class="banner-ok">Chứng chỉ HỢP LỆ, được hệ thống tin cậy (chuỗi chứng nhận hợp
-            lệ, đúng tên miền).</div>
-        {% else %}
-        <div class="banner-warn">
-            KHÔNG được hệ thống tin cậy tự động.
-            {% if result.tu_ky %}Chứng chỉ TỰ KÝ (rất phổ biến với thiết bị mạng - không nhất
-            thiết là vấn đề, nhưng trình duyệt sẽ luôn cảnh báo).{% endif %}
-            {% if not result.khop_ten %}Tên trong chứng chỉ KHÔNG khớp với địa chỉ đang truy cập.{% endif %}
-            <br><span class="hint">Chi tiết lỗi xác thực: {{ result.loi_xac_thuc }}</span>
-        </div>
-        {% endif %}
-
-        <div class="card">
-            <table style="margin:0;">
-                <tr><th>Subject (chủ thể)</th><td>{{ result.subject }}</td></tr>
-                <tr><th>Issuer (nơi cấp)</th><td>{{ result.issuer }}</td></tr>
-                <tr><th>Hiệu lực</th><td>{{ result.not_before }} → {{ result.not_after }}</td></tr>
-                <tr><th>Còn lại</th>
-                    <td>
-                        {% if result.ngay_con_lai < 0 %}<span style="color:#ff8a8a;font-weight:600;">Đã hết hạn {{ -result.ngay_con_lai }} ngày trước</span>
-                        {% elif result.ngay_con_lai < 30 %}<span style="color:#ffb74d;font-weight:600;">Còn {{ result.ngay_con_lai }} ngày - sắp hết hạn</span>
-                        {% else %}<span style="color:#8fd99a;">Còn {{ result.ngay_con_lai }} ngày</span>{% endif %}
-                    </td></tr>
-                <tr><th>Tự ký</th><td>{{ "Co" if result.tu_ky else "Khong" }}</td></tr>
-                <tr><th>Khớp tên miền</th><td>{{ "Co" if result.khop_ten else "Khong" }}</td></tr>
-                {% if result.ten_thay_the %}
-                <tr><th>Tên thay thế (SAN)</th><td>{% for t in result.ten_thay_the %}<span class="chip">{{ t }}</span>{% endfor %}</td></tr>
-                {% endif %}
-            </table>
-        </div>
-        {% endif %}
-    {% endif %}
-</body>
-</html>
-"""
+TLS_TEMPLATE = _taisan.doc("nettools/tls_check.TLS_TEMPLATE.html")
 
 
 @nettools_bp.route("/nettools/tls-check", methods=["GET", "POST"])

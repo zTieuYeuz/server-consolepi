@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>IF/THEN Automation - Console System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
+        h1 { color: #4CAF50; }
+        h3 { color: #4CAF50; margin-top: 24px; }
+        a { color: #4CAF50; }
+        label { display: block; margin-top: 10px; }
+        input[type=text], select, textarea, input[type=file], input[type=password] {
+            padding: 8px; width: 100%; max-width: 420px; background: #333; color: #eee;
+            border: 1px solid #555; box-sizing: border-box; font-family: monospace;
+        }
+        textarea { height: 80px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #444; }
+        th { background: #2d2d2d; }
+        button { padding: 9px 16px; background: #4CAF50; color: white; border: none;
+            border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button.del { background: #f44336; }
+        .msg { padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
+        .ok { background: #2d4a2d; border-left: 4px solid #4CAF50; }
+        .err { background: #4a2d2d; border-left: 4px solid #f44336; }
+        .suggest { background: #2d3d4a; border-left: 4px solid #2196F3; padding: 12px 16px;
+            border-radius: 4px; margin-top: 12px; }
+        .hint { color: #999; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <h1>IF/THEN Automation</h1>
+    <p><a href="/nettools">← Network Tools</a></p>
+    <p class="hint">Rule chỉ TẠO GỢI Ý sau khi quét LLDP - không tự động chạy lệnh lên thiết bị.
+    Bạn vẫn phải xác nhận qua màn hình xem trước của Netmiko.</p>
+
+    {% if msg %}<div class="msg {{ 'ok' if ok else 'err' }}">{{ msg }}</div>{% endif %}
+
+    <h3>▶ Quét và đối chiếu rule</h3>
+    <form method="POST" action="/nettools/ifthen/evaluate">
+        <button type="submit">Quét LLDP và kiểm tra rule khớp</button>
+    </form>
+
+    {% if suggestions is not none %}
+        {% if suggestions %}
+        {% for s in suggestions %}
+        <div class="suggest">
+            <p>Rule "<strong>{{ s.rule.name }}</strong>" KHỚP với thiết bị
+            <strong>{{ s.neighbor.remote_name }}</strong> ({{ s.neighbor.iface }}):</p>
+            <pre>{{ s.rule.commands | join('\n') }}</pre>
+            <form method="GET" action="/nettools/netmiko" style="display:inline;">
+                <button type="submit">Mở Netmiko để xác nhận chạy lệnh này</button>
+            </form>
+        </div>
+        {% endfor %}
+        {% else %}<p>Không có rule nào khớp với thiết bị đã phát hiện.</p>{% endif %}
+    {% endif %}
+
+    <h3>Danh sách rule đã lưu</h3>
+    <table>
+        <tr><th>Ten</th><th>Điều kiện</th><th>Device type</th><th></th></tr>
+        {% for i, r in rules %}
+        <tr>
+            <td>{{ r.name }}</td>
+            <td><code>{{ r.field }}</code> ~ <code>{{ r.pattern }}</code></td>
+            <td>{{ r.device_type }}</td>
+            <td>
+                <form method="POST" action="/nettools/ifthen/delete"
+                      onsubmit="return confirm('Xóa rule {{ r.name }}?');">
+                    <input type="hidden" name="index" value="{{ i }}">
+                    <button type="submit" class="del">Xóa</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% if not rules %}<p>Chưa có rule nào.</p>{% endif %}
+
+    <h3>Thêm rule mới</h3>
+    <form method="POST" action="/nettools/ifthen/add">
+        <label>Tên rule:</label>
+        <input type="text" name="name" required placeholder="ví dụ Switch tầng 3">
+        <label>Trường LLDP cần khớp:</label>
+        <select name="field">
+            <option value="remote_name">remote_name (hostname switch)</option>
+            <option value="mgmt_ip">mgmt_ip</option>
+            <option value="port_descr">port_descr</option>
+        </select>
+        <label>Pattern (regex):</label>
+        <input type="text" name="pattern" required placeholder="ví dụ SW-TANG3.*">
+        <label>Device type (Netmiko):</label>
+        <select name="device_type">
+            <option value="cisco_ios">cisco_ios</option>
+            <option value="cisco_xe">cisco_xe</option>
+            <option value="arista_eos">arista_eos</option>
+            <option value="hp_comware">hp_comware</option>
+            <option value="juniper_junos">juniper_junos</option>
+            <option value="mikrotik_routeros">mikrotik_routeros</option>
+        </select>
+        <label>Danh sách lệnh (mỗi dòng 1 lệnh):</label>
+        <textarea name="commands" placeholder="interface GigabitEthernet0/1&#10;switchport access vlan 10"></textarea>
+        <button type="submit">Lưu rule</button>
+    </form>
+
+    <h3>Export / Import (mã hóa)</h3>
+    <form method="POST" action="/nettools/ifthen/export">
+        <label>Passphrase để mã hóa:</label>
+        <input type="password" name="passphrase" required>
+        <button type="submit">Tải về file rule đã mã hóa</button>
+    </form>
+    <form method="POST" action="/nettools/ifthen/import" enctype="multipart/form-data" style="margin-top:16px;">
+        <label>File rule đã mã hóa:</label>
+        <input type="file" name="file" required>
+        <label>Passphrase để giải mã:</label>
+        <input type="password" name="passphrase" required>
+        <button type="submit">Nhập rule</button>
+    </form>
+</body>
+</html>

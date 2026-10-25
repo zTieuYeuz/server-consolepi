@@ -1,0 +1,45 @@
+
+<script>
+(function () {
+  "use strict";
+  var formKetNoi = document.getElementById("form_ket_noi");
+  if (!formKetNoi) return;
+  var baoServer = document.getElementById("bao_server");
+
+  // Gui bang fetch, KHONG tai lai trang. Truoc day day la form POST binh
+  // thuong nen moi lan bam Ket noi la ca trang tai lai -> trinh duyet hoi
+  // "Leave site?" (ttyd co dang ky canh bao truoc khi roi trang de khoi mat
+  // phien), va khung terminal cung bi nap lai tu dau.
+  formKetNoi.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var nut = document.getElementById("nut_ket_noi");
+    var chuCu = nut.innerHTML;
+    var oMk = formKetNoi.querySelector("[name=password]");
+    nut.disabled = true; nut.innerHTML = "Dang ket noi...";
+    baoServer.style.display = "none";
+
+    fetch(formKetNoi.action, {
+      method: "POST", body: new FormData(formKetNoi),
+      headers: { "X-Console-Pi": "fetch" }, cache: "no-store"
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("Server tra ve HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        baoServer.textContent = d.msg;
+        baoServer.className = "msg " + (d.ok ? "ok" : "err");
+        baoServer.style.display = "block";
+      })
+      .catch(function (err) {
+        baoServer.textContent = "Khong lien lac duoc voi server: " + err.message;
+        baoServer.className = "msg err";
+        baoServer.style.display = "block";
+      })
+      .finally(function () { nut.disabled = false; nut.innerHTML = chuCu; });
+
+    // Xoa mat khau khoi man hinh ngay sau khi gui di
+    oMk.value = "";
+  });
+})();
+</script>

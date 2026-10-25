@@ -14,6 +14,7 @@ address-table cua tung switch lien tiep, ngoai pham vi cong cu nay).
 Ve SVG bang Python thuan phia server (khong dung thu vien bieu do/JS ngoai,
 dung tinh than cua du an: it phu thuoc, tu kiem soat hoan toan noi dung).
 """
+from consolesystem.core import taisan as _taisan
 import html
 import re
 
@@ -166,63 +167,7 @@ def _ve_svg(iface, switch, hosts):
     return "".join(phan)
 
 
-TOPOLOGY_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Sơ đồ mạng - Console System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
-        h1 { color: #4CAF50; } h3 { color: #4CAF50; margin-top: 22px; }
-        a { color: #4CAF50; }
-        select { padding: 8px; background: #333; color: #eee; border: 1px solid #555; }
-        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #444; }
-        th { background: #2d2d2d; }
-        .card { background:#262626; border:1px solid #3a3a3a; border-left:4px solid #4CAF50;
-                border-radius:6px; padding:14px 16px; margin-top:16px; }
-        .err { background: #4a2d2d; border-left: 4px solid #f44336; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
-        .hint { color: #999; font-size: 13px; }
-    </style>
-</head>
-<body>
-    <h1>Sơ đồ mạng 1 đoạn</h1>
-    <p><a href="/nettools">← Network Tools</a></p>
-    <p class="hint">Ghép ARP Scan + LLDP/CDP Discovery thành 1 sơ đồ: máy → switch đang cắm vào
-    (nếu có quảng bá LLDP/CDP) → các thiết bị trên cùng đoạn mạng.</p>
-    <p class="hint"><strong>Giới hạn:</strong> chỉ vẽ được 1 đoạn mạng nối trực tiếp vào cổng
-    này - không vẽ được nhiều switch nối tiếp qua nhiều hop.</p>
-
-    <form method="POST" style="margin-top:16px;">
-        <label>Interface:</label>
-        <select name="iface">
-            {{ o_chon_cong|safe }}
-        </select>
-        <button type="submit" style="margin-left:10px;" data-busy="Đang quét ARP + LLDP...">Ve so do</button>
-    </form>
-
-    {% if ran %}
-        {% if not result.ok %}
-        <div class="err">{{ result.error }}</div>
-        {% else %}
-        <div class="card">{{ result.svg|safe }}</div>
-
-        <h3>Chi tiết ({{ result.hosts|length }} thiết bị)</h3>
-        <table>
-            <tr><th>IP</th><th>MAC</th><th>Vendor</th></tr>
-            {% for h in result.hosts %}
-            <tr><td>{{ h.ip }}</td><td>{{ h.mac }}</td><td>{{ h.vendor }}</td></tr>
-            {% endfor %}
-        </table>
-        {% if not result.hosts %}<p>Không tìm thấy thiết bị nào.</p>{% endif %}
-        {% endif %}
-    {% endif %}
-</body>
-</html>
-"""
+TOPOLOGY_TEMPLATE = _taisan.doc("nettools/topology.TOPOLOGY_TEMPLATE.html")
 
 
 @nettools_bp.route("/nettools/topology", methods=["GET", "POST"])

@@ -1,0 +1,95 @@
+
+<style>
+.tv { display:grid; grid-template-columns:minmax(300px,380px) minmax(0,1fr); gap:18px; align-items:start; }
+.tv-ds { position:sticky; top:12px; display:flex; flex-direction:column; gap:12px; max-height:calc(100vh - 120px); }
+.tv-tim { display:flex; gap:8px; }
+.tv-o { position:relative; flex:1; min-width:0; }
+.tv-o svg { position:absolute; left:12px; top:50%; width:18px; height:18px; transform:translateY(-50%);
+            stroke:var(--chu-mo2); fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+.tv-o input { width:100%; max-width:none; padding-left:38px; padding-right:38px; height:44px; margin:0; }
+.tv-o button { position:absolute; right:6px; top:50%; transform:translateY(-50%); width:32px; height:32px; min-height:32px;
+               padding:0; border-radius:8px; background:transparent; border:0; color:var(--chu-mo); cursor:pointer; display:none; }
+.tv-o button:hover { background:var(--hang-nen); color:var(--chu); }
+.tv-moi { height:44px; padding:0 16px; border-radius:8px; border:0; cursor:pointer; background:var(--nhan);
+          color:var(--chu-tren-nhan); font:600 14.5px var(--chu-font); display:inline-flex; align-items:center; gap:7px;
+          white-space:nowrap; transition:transform .5s var(--muot), filter .3s var(--muot); }
+.tv-moi:hover { filter:brightness(1.08); } .tv-moi:active { transform:scale(.97); }
+.tv-moi svg, .tv-nut svg { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.tv-the { display:flex; gap:6px; flex-wrap:wrap; }
+.tv-the button { background:transparent; border:1px solid var(--vien-ro); color:var(--chu-mo); border-radius:99px;
+                 padding:0 12px; height:32px; min-height:32px; font:500 13px var(--chu-font); cursor:pointer;
+                 transition:background .35s var(--muot), color .35s var(--muot), border-color .35s var(--muot); }
+.tv-the button:hover { color:var(--chu); border-color:var(--chu-mo2); }
+.tv-the button.on { background:var(--nhan-mo); color:var(--nhan); border-color:var(--nhan); }
+.tv-the button small { opacity:.7; margin-left:5px; font-size:11.5px; }
+.tv-dem { color:var(--chu-mo2); font-size:12.5px; margin:-2px 2px 0; }
+.tv-list { list-style:none; margin:0; padding:0; overflow:auto; border:1px solid var(--vien); border-radius:var(--bo);
+           background:var(--the); scrollbar-width:thin; }
+.tv-list li { margin:0; }
+.tv-list li + li button { border-top:1px solid var(--vien); }
+.tv-list button { width:100%; text-align:left; background:transparent; border:0; color:var(--chu); cursor:pointer;
+                  padding:13px 16px 13px 18px; min-height:62px; display:grid; grid-template-columns:1fr auto; gap:2px 12px;
+                  position:relative; font-family:var(--chu-font); border-radius:0; transition:background .3s var(--muot); }
+.tv-list button:hover { background:var(--hang-hover); }
+.tv-list button.on { background:var(--nhan-mo); }
+.tv-list button.on::before { content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:0 3px 3px 0; background:var(--nhan); }
+.tv-list b { font-size:14.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tv-list em { font-style:normal; font-size:12.5px; color:var(--chu-mo2); align-self:center; }
+.tv-list small { grid-column:1 / -1; color:var(--chu-mo); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tv-list mark { background:var(--vang-mo); color:var(--vang); border-radius:3px; padding:0 1px; }
+.tv-trong { padding:26px 18px; color:var(--chu-mo); font-size:14px; text-align:center; }
+.tv-vo { background:var(--the-noi); border:1px solid var(--vien); border-radius:var(--bo); padding:6px; min-width:0; }
+.tv-ct { background:var(--the); border-radius:calc(var(--bo) - 6px); padding:24px 26px 26px; min-height:360px; }
+.tv-ct h2 { margin:0 0 6px; font-size:22px; letter-spacing:-.02em; }
+.tv-mo-ta { color:var(--chu-mo); font-size:14.5px; line-height:1.5; margin:0 0 14px; }
+.tv-tag { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 18px; }
+.tv-tag span { background:var(--nhan-mo); color:var(--nhan); border-radius:99px; padding:3px 11px; font-size:12.5px; font-weight:500; }
+.tv-nut-hang { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px; }
+.tv-nut { height:44px; min-height:44px; padding:0 15px; border-radius:8px; cursor:pointer; text-decoration:none;
+          font:550 14px var(--chu-font); display:inline-flex; align-items:center; gap:7px; border:1px solid var(--vien-ro);
+          background:transparent; color:var(--chu); transition:transform .5s var(--muot), background .3s var(--muot), border-color .3s var(--muot); }
+.tv-nut:hover { background:var(--hang-nen); border-color:var(--chu-mo2); color:var(--chu); }
+.tv-nut:active { transform:scale(.97); }
+.tv-nut.chinh { background:var(--nhan); border-color:var(--nhan); color:var(--chu-tren-nhan); }
+.tv-nut.chinh:hover { filter:brightness(1.08); background:var(--nhan); color:var(--chu-tren-nhan); }
+.tv-nut.nguy { color:var(--do); border-color:var(--do-mo); }
+.tv-nut.nguy:hover { background:var(--do-mo); border-color:var(--do); color:var(--do); }
+.tv-ma { display:flex; justify-content:space-between; align-items:center; color:var(--chu-mo2); font-size:12.5px; margin:0 0 8px; }
+.tv-code { margin:0; background:var(--pre-nen); border:1px solid var(--vien); border-radius:10px; overflow:auto; max-height:46vh;
+           font:13.5px/1.65 var(--mono); color:var(--pre-chu); counter-reset:d; }
+.tv-code div { display:flex; padding:0 14px 0 0; white-space:pre; }
+.tv-code div:first-child { padding-top:12px; } .tv-code div:last-child { padding-bottom:12px; }
+.tv-code div::before { counter-increment:d; content:counter(d); flex:0 0 42px; text-align:right; padding-right:14px; color:var(--chu-mo2); opacity:.6; user-select:none; }
+.tv-code i { font-style:normal; background:var(--vang-mo); color:var(--vang); border-radius:4px; padding:0 3px; }
+.tv-goi { color:var(--chu-mo); font-size:13px; margin:12px 0 0; line-height:1.55; }
+.tv-goi i { font-style:normal; background:var(--vang-mo); color:var(--vang); border-radius:4px; padding:0 3px; font-family:var(--mono); }
+.tv-f label { display:block; font-size:13px; font-weight:600; color:var(--chu-mo); margin:16px 0 6px; }
+.tv-f label:first-of-type { margin-top:0; }
+.tv-f input[type=text], .tv-f textarea { width:100%; max-width:none; margin:0; }
+.tv-f textarea { font:13.5px/1.6 var(--mono); min-height:230px; resize:vertical; tab-size:2; }
+.tv-f .ghi { color:var(--chu-mo2); font-size:12.5px; margin:6px 0 0; line-height:1.5; }
+.tv-f .ghi i { font-style:normal; font-family:var(--mono); background:var(--vang-mo); color:var(--vang); border-radius:4px; padding:0 3px; }
+.tv-goiy { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.tv-goiy button { background:transparent; border:1px dashed var(--vien-ro); color:var(--chu-mo); border-radius:99px; padding:0 11px;
+                  height:30px; min-height:30px; font:500 12.5px var(--chu-font); cursor:pointer; }
+.tv-goiy button:hover { color:var(--nhan); border-color:var(--nhan); }
+.tv-mau { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:12px 14px; border:1px dashed var(--vien-ro);
+          border-radius:10px; margin:0 0 20px; color:var(--chu-mo); font-size:13.5px; }
+.tv-mau button { background:var(--hang-nen); border:1px solid var(--vien-ro); color:var(--chu); border-radius:8px; height:34px;
+                 min-height:34px; padding:0 12px; font:500 13px var(--chu-font); cursor:pointer; }
+.tv-mau button:hover { border-color:var(--nhan); color:var(--nhan); }
+.tv-rong { text-align:center; padding:60px 20px; color:var(--chu-mo); }
+.tv-rong h2 { color:var(--chu); }
+.tv-thongbao { margin:0 0 16px; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.5; border:1px solid; }
+.tv-thongbao.ok { background:var(--xanh-mo); color:var(--msg-ok); border-color:rgba(67,212,146,.35); }
+.tv-thongbao.loi { background:var(--do-mo); color:var(--msg-err); border-color:rgba(239,107,107,.4); }
+.tv-ct { animation:tv-vao .6s var(--muot) both; }
+@keyframes tv-vao { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce) { .tv-ct { animation:none; } }
+@media (max-width:900px) {
+  .tv { grid-template-columns:1fr; }
+  .tv-ds { position:static; max-height:none; }
+  .tv-list { max-height:300px; }
+  .tv-ct { padding:18px 16px 20px; }
+}
+</style>

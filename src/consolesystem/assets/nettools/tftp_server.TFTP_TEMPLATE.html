@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Máy chủ TFTP - Console System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #eee; padding: 20px; }
+        h1 { color: #4CAF50; } h3 { color: #4CAF50; margin-top: 22px; }
+        a { color: #4CAF50; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; }
+        button.red { background: #c0392b; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #444; }
+        th { background: #2d2d2d; }
+        .card { background:#262626; border:1px solid #3a3a3a; border-left:4px solid #4CAF50;
+                border-radius:6px; padding:14px 16px; margin-top:16px; }
+        .warn { background: #4a3d1a; border-left: 4px solid #ffb74d; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
+        .err { background: #4a2d2d; border-left: 4px solid #f44336; padding: 12px 16px; border-radius: 4px; margin-top: 14px; }
+        .hint { color: #999; font-size: 13px; }
+        pre { background:#111; padding:10px 12px; border-radius:6px; overflow-x:auto; font-size:13px; }
+        code.small { font-size:12px; color:#aaa; }
+        /* Dong lenh + nut Copy: nut nam CUOI dong lenh, xuong hang duoc tren
+           man hinh hep de khong bao gio de len chu. */
+        .lenh { display:flex; gap:9px; align-items:flex-start; flex-wrap:wrap; margin-bottom:6px; }
+        .lenh pre { flex:1 1 320px; margin:0; }
+        .nut-copy { flex:0 0 auto; }
+        .nut-tai { display:inline-block; background:#2563eb; color:#fff !important; padding:11px 15px;
+                   border-radius:6px; text-decoration:none; margin-right:7px; min-height:44px;
+                   line-height:22px; box-sizing:border-box; }
+    </style>
+</head>
+<body>
+    <h1>Máy chủ TFTP</h1>
+    <p><a href="/nettools">← Network Tools</a></p>
+
+    {% if msg %}<div class="{{ 'warn' if not ok else 'card' }}">{{ msg }}</div>{% endif %}
+
+    <div class="warn">
+        TFTP KHÔNG có xác thực - bất kỳ thiết bị nào cắm vào cổng <strong>{{ iface }}</strong> đều
+        đọc/ghi được file. Chỉ bật khi đang thực sự làm việc, tắt ngay sau khi xong.
+    </div>
+
+    {% if not da_cai %}
+    <div class="err">Chưa cài <code>tftpd-hpa</code> trên máy. Chạy lệnh sau rồi tải lại trang:
+        <pre>sudo apt install -y tftpd-hpa
+sudo systemctl disable --now tftpd-hpa   # tắt dịch vụ mặc định của gói, Console System tự quản lý riêng</pre>
+    </div>
+    {% else %}
+    <div class="card">
+        {% if dang_bat %}
+        <p>Đang bật trên <strong>{{ iface }}</strong>. File nhận được hiện ở bảng bên dưới.</p>
+        <form method="POST" action="/nettools/tftp/tat">
+            <button type="submit" class="red" data-busy="Đang tắt...">⏏ Tắt TFTP</button>
+        </form>
+        {% else %}
+        <p>Đang tắt.</p>
+        <form method="POST" action="/nettools/tftp/bat">
+            <button type="submit" data-busy="Đang bật...">▶ Bật TFTP trên {{ iface }}</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <h3>Cách dùng trên switch Cisco</h3>
+    <div class="card">
+        <p class="hint">IP của máy để điền vào lệnh:</p>
+        {% for ip in danh_sach_ip %}<code>{{ ip.iface }}: {{ ip.ip }}</code><br>{% endfor %}
+        {% if not danh_sach_ip %}<p class="hint">Chưa có IP trên cổng mạng nào.</p>{% endif %}
+        <p style="margin-top:11px;">Sao lưu cấu hình lên máy:</p>
+        <div class="lenh">
+            <pre id="lenh_backup">copy running-config tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-của-máy>' }}/backup.cfg</pre>
+            <button type="button" class="nut-copy" data-dich="lenh_backup">Copy</button>
+        </div>
+        <p>Nạp firmware/cấu hình từ máy xuống switch (đặt file vào thư mục <code>{{ tftp_root }}</code> của máy trước):</p>
+        <div class="lenh">
+            <pre id="lenh_firmware">copy tftp://{{ danh_sach_ip[0].ip if danh_sach_ip else '<IP-của-máy>' }}/firmware.bin flash:</pre>
+            <button type="button" class="nut-copy" data-dich="lenh_firmware">Copy</button>
+        </div>
+        <div id="bao_copy" class="hint" style="margin-top:8px;"></div>
+    </div>
+
+    <h3>File đã nhận ({{ files|length }})</h3>
+    <p class="hint">File switch đẩy lên hiện ở đây - bấm
+       <strong>Tải về</strong> để lấy về máy đang xem trang này.</p>
+    <table>
+        <tr><th>Tên file</th><th style="width:120px;">Kích thước</th><th style="width:150px;">Thời gian</th><th style="width:210px;">Thao tác</th></tr>
+        {% for f in files %}
+        <tr>
+            <td>{{ f.ten }}</td>
+            <td>{{ (f.kich_thuoc / 1024) | round(1) }} KB</td>
+            <td class="hint">{{ f.thoi_gian }}</td>
+            <td style="white-space:nowrap;">
+                <a class="nut-tai" href="/nettools/tftp/tai/{{ f.ten | urlencode }}"
+                   download>Tải về</a>
+                <form method="POST" action="/nettools/tftp/xoa" style="display:inline;"
+                      onsubmit="return confirm('Xóa {{ f.ten }}?');">
+                    <input type="hidden" name="ten" value="{{ f.ten }}">
+                    <button type="submit" class="red">Xóa</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% if not files %}<p class="hint">Chưa có file nào.</p>{% endif %}
+    {% endif %}
+
+<script>
+(function () {
+  "use strict";
+  var bao = document.getElementById("bao_copy");
+  function noi(chuoi, mau) {
+    if (!bao) return;
+    bao.textContent = chuoi;
+    bao.style.color = mau || "#999";
+  }
+
+  // Vao bang IP LAN thi trang chay HTTP thuong, navigator.clipboard KHONG
+  // ton tai (trinh duyet chi cho dung Clipboard API o ngu canh bao mat:
+  // HTTPS hoac localhost). execCommand cu van chay duoc tren HTTP nen phai
+  // giu lam phuong an du phong - cung cach lam nhu ui/soanlenh.py.
+  function copyCachCu(chu) {
+    var o = document.createElement("textarea");
+    o.value = chu;
+    o.style.position = "fixed";
+    o.style.left = "-9999px";
+    document.body.appendChild(o);
+    o.focus(); o.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(o);
+    noi(ok ? "Đã copy dòng lệnh." : "Trình duyệt không cho copy tự động - bôi đen dòng lệnh rồi copy tay.",
+        ok ? "#7ddc7d" : "#ffb74d");
+  }
+
+  var nut = document.querySelectorAll(".nut-copy");
+  for (var i = 0; i < nut.length; i++) {
+    nut[i].addEventListener("click", function () {
+      var dich = document.getElementById(this.getAttribute("data-dich"));
+      if (!dich) return;
+      var chu = dich.textContent.trim();
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(chu).then(
+          function () { noi("Đã copy dòng lệnh.", "#7ddc7d"); },
+          function () { copyCachCu(chu); });
+      } else {
+        copyCachCu(chu);
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

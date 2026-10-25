@@ -22,6 +22,7 @@ TU DIEN MAT KHAU - vi sao KHONG dung sshpass:
   - Neu qua 12 giay khong thay dau nhac (thiet bi cham, dung khoa, khong ket
     noi duoc...) thi BAO THAT la khong thay, khong im lang coi nhu xong.
 """
+from consolesystem.core import taisan as _taisan
 import sys as _sys
 _sys.modules["ui.ssh"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import re
@@ -155,52 +156,7 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
 # JS cua trang. De rieng ngoai f-string vi co rat nhieu dau ngoac nhon, nhet
 # vao f-string phai nhan doi het - rat de sai va kho doc.
 # ---------------------------------------------------------------------------
-SSH_JS = """
-<script>
-(function () {
-  "use strict";
-  var formKetNoi = document.getElementById("form_ket_noi");
-  if (!formKetNoi) return;
-  var baoServer = document.getElementById("bao_server");
-
-  // Gui bang fetch, KHONG tai lai trang. Truoc day day la form POST binh
-  // thuong nen moi lan bam Ket noi la ca trang tai lai -> trinh duyet hoi
-  // "Leave site?" (ttyd co dang ky canh bao truoc khi roi trang de khoi mat
-  // phien), va khung terminal cung bi nap lai tu dau.
-  formKetNoi.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var nut = document.getElementById("nut_ket_noi");
-    var chuCu = nut.innerHTML;
-    var oMk = formKetNoi.querySelector("[name=password]");
-    nut.disabled = true; nut.innerHTML = "Dang ket noi...";
-    baoServer.style.display = "none";
-
-    fetch(formKetNoi.action, {
-      method: "POST", body: new FormData(formKetNoi),
-      headers: { "X-Console-Pi": "fetch" }, cache: "no-store"
-    })
-      .then(function (r) {
-        if (!r.ok) throw new Error("Server tra ve HTTP " + r.status);
-        return r.json();
-      })
-      .then(function (d) {
-        baoServer.textContent = d.msg;
-        baoServer.className = "msg " + (d.ok ? "ok" : "err");
-        baoServer.style.display = "block";
-      })
-      .catch(function (err) {
-        baoServer.textContent = "Khong lien lac duoc voi server: " + err.message;
-        baoServer.className = "msg err";
-        baoServer.style.display = "block";
-      })
-      .finally(function () { nut.disabled = false; nut.innerHTML = chuCu; });
-
-    // Xoa mat khau khoi man hinh ngay sau khi gui di
-    oMk.value = "";
-  });
-})();
-</script>
-"""
+SSH_JS = _taisan.doc("features/terminal/ssh.SSH_JS.html")
 
 
 def _render(msg="", ok=True, prefill=""):

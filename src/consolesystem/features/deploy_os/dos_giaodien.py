@@ -2,6 +2,7 @@
 """Deploy OS - thanh tab dung chung (tabs_deployos), ngu canh Trien khai, JS tai font, bao cao o dia.
 
 (B4: tach nguyen van tu deployos.py; ten ham/hang giu nguyen, nguon van re-export.)"""
+from consolesystem.core import taisan as _taisan
 from ui.duongdan import DEPLOY_DIR, BOOT_DIR, APPS_DIR, SCRIPTS_DIR, KICHBAN_DIR, OS_DIR, DRIVERS_DIR, UNGDUNG_DIR, FONTS_DIR, EXT_SCRIPT  # noqa: F401  (B3: khai bao o core/duongdan.py)
 from consolesystem.features.deploy_os.dos_chung import (BUOC_DAU, EXT_DRIVER, EXT_OS_ISO, EXT_OS_WIM, EXT_SXS, SO_BUOC, THU_MUC_THEO_DUONG, _bao_dam_thu_muc, _bo_dau_py, _con_trong_gb, _don_file_do_dang, _duong_dan_trong, _hoan_tat_ghi_thang, _liet_ke, _luu_tai_len, _mo_file_dich, _thu_muc_os_theo_duong, _xoa_file, bo_dau, co_kich_thuoc, so_hien_thi, ten_an_toan)  # noqa: F401  (B4: nguyen van o module nay)
 from consolesystem.features.deploy_os.dos_phanmem import (GOI_Y_THAM_SO, HAU_TO_GO, _an_toan_trong_zip, _doc_meta_ungdung, _ghi_meta_ungdung, chuan_hoa_apps, chuan_hoa_ungdung, danh_sach_app, danh_sach_ungdung, dat_lenh_cai_ungdung, doc_thongtin_app, ghi_thongtin_app, giai_nen_ungdung, lay_ungdung, liet_ke_muc_ungdung, tao_ungdung_moi, tham_so_mac_dinh_app, xoa_muc_trong_ungdung, xoa_ungdung)  # noqa: F401  (B4: nguyen van o module nay)
@@ -112,111 +113,7 @@ def tabs_deployos(chinh, phu=""):
         h += "</div>"
     return h
 
-_JS_TAI_FONT = """
-<script>
-(function () {
-  "use strict";
-  var URL_LEN = "__URL__";
-  var DUOI = /\\.(ttf|otf|ttc|otc|zip|woff2?)$/i;
-  var hang = [], dang = false, tong = 0, xong = 0, them = 0, loi = [], batDau = 0;
-  var tha = document.getElementById("fo-tha"), tt = document.getElementById("fo-tt"),
-      thanh = document.getElementById("fo-thanh"), chu = document.getElementById("fo-chu"),
-      kq = document.getElementById("fo-ketqua");
-  function esc(t) { var d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
-  function co(n) {
-    if (n < 1048576) return Math.round(n / 1024) + " KB";
-    return (n / 1048576).toFixed(1) + " MB";
-  }
-  function hien() {
-    var pt = tong ? Math.round(xong * 100 / tong) : 0;
-    thanh.style.width = pt + "%";
-    chu.textContent = "Đang tải: " + xong + " / " + tong + " file (đã thêm " + them + " font)";
-  }
-  function them_vao(files) {
-    var bo = [];
-    Array.prototype.forEach.call(files, function (f) {
-      if (DUOI.test(f.name)) { hang.push(f); tong++; } else { bo.push(f.name); }
-    });
-    if (bo.length) loi.push("Bỏ qua " + bo.length + " file không phải font: " +
-      bo.slice(0, 5).join(", ") + (bo.length > 5 ? "..." : ""));
-    if (!hang.length && !dang) { ketThuc(); return; }
-    if (!dang) { dang = true; batDau = Date.now(); tt.style.display = "block"; kq.innerHTML = ""; hien(); tiep(); }
-  }
-  function tiep() {
-    var f = hang.shift();
-    if (!f) { ketThuc(); return; }
-    var x = new XMLHttpRequest();
-    x.open("POST", URL_LEN, true);
-    x.onload = function () {
-      var r;
-      try { r = JSON.parse(x.responseText); }
-      catch (e) { r = { ok: false, msg: f.name + ": máy trả lời lạ (mã " + x.status + ")", them: 0, bo_qua: [] }; }
-      if (r.ok) them += r.them; else loi.push(r.msg);
-      (r.bo_qua || []).forEach(function (m) { loi.push(m); });
-      xong++; hien(); tiep();
-    };
-    x.onerror = function () { loi.push(f.name + ": mất kết nối tới máy, file này chưa được lưu"); xong++; hien(); tiep(); };
-    var fd = new FormData();
-    fd.append("file", f, f.name);
-    x.send(fd);
-  }
-  function ketThuc() {
-    dang = false;
-    var giay = Math.max(1, Math.round((Date.now() - batDau) / 1000));
-    var h = '<div style="color:' + (them ? "#6ee7a0" : "#f59e0b") + ';">Xong: đã thêm <strong>' + them +
-            "</strong> font (" + giay + " giây).</div>";
-    if (loi.length) {
-      h += '<div style="color:#f59e0b;margin-top:6px;">Có ' + loi.length + " thông báo:</div><ul style='margin:4px 0 0;padding-left:20px;color:#fbbf24;'>" +
-           loi.slice(0, 40).map(function (m) { return "<li>" + esc(m) + "</li>"; }).join("") +
-           (loi.length > 40 ? "<li>... và " + (loi.length - 40) + " thông báo nữa</li>" : "") + "</ul>";
-    }
-    if (them) h += '<div style="margin-top:10px;"><a class="btn" href="">Tải lại trang để xem danh sách</a></div>';
-    kq.innerHTML = h;
-    tt.style.display = "none";
-    tong = xong = them = 0; loi = [];
-    if (!kq.querySelector("li") && h.indexOf("btn") > -1) setTimeout(function () { location.reload(); }, 1500);
-  }
-  document.getElementById("fo-file").addEventListener("change", function () { them_vao(this.files); this.value = ""; });
-  document.getElementById("fo-thumuc").addEventListener("change", function () { them_vao(this.files); this.value = ""; });
-
-  function layFiles(entry) {
-    return new Promise(function (res) {
-      if (entry.isFile) { entry.file(function (f) { res([f]); }, function () { res([]); }); return; }
-      var r = entry.createReader(), tat = [];
-      (function doc() {
-        r.readEntries(async function (es) {
-          if (!es.length) { res(tat); return; }
-          for (var i = 0; i < es.length; i++) tat = tat.concat(await layFiles(es[i]));
-          doc();
-        }, function () { res(tat); });
-      })();
-    });
-  }
-  ["dragenter", "dragover"].forEach(function (ev) {
-    tha.addEventListener(ev, function (e) { e.preventDefault(); tha.classList.add("keo"); });
-  });
-  ["dragleave", "drop"].forEach(function (ev) {
-    tha.addEventListener(ev, function (e) { e.preventDefault(); tha.classList.remove("keo"); });
-  });
-  tha.addEventListener("drop", async function (e) {
-    var items = e.dataTransfer && e.dataTransfer.items, tat = [];
-    if (items && items.length && items[0].webkitGetAsEntry) {
-      var entries = [];
-      for (var i = 0; i < items.length; i++) { var en = items[i].webkitGetAsEntry(); if (en) entries.push(en); }
-      for (var j = 0; j < entries.length; j++) tat = tat.concat(await layFiles(entries[j]));
-    } else { tat = Array.prototype.slice.call(e.dataTransfer.files); }
-    them_vao(tat);
-  });
-  var loc = document.getElementById("fo-loc");
-  if (loc) loc.addEventListener("input", function () {
-    var q = loc.value.toLowerCase().trim();
-    Array.prototype.forEach.call(document.querySelectorAll("#fo-bang tr[data-t]"), function (tr) {
-      tr.style.display = (!q || tr.getAttribute("data-t").indexOf(q) > -1) ? "" : "none";
-    });
-  });
-})();
-</script>
-"""
+_JS_TAI_FONT = _taisan.doc("features/deploy_os/dos_giaodien._JS_TAI_FONT.html")
 
 def ve_bao_cao_o_dia(kq, nut_chon=False):
     """HTML cho 1 bao cao "Do o dia" (ui/doodia.py). nut_chon=True: moi o co nut dien so o
