@@ -1,0 +1,577 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
+"""
+Console Pi - Tab Cai dat (yeu cau so 3: nut xoay man hinh)
+
+Xoay man hinh dung wlr-randr noi vao compositor cage dang chay. Luu lua chon
+vao config de kiosk-start.sh tu ap dung lai moi lan khoi dong.
+"""
+import sys as _sys
+_sys.modules["ui.settings"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
+import contextlib
+import json
+import os
+import subprocess
+import time
+
+from flask import request
+
+from ui.layout import render_page
+from ui.gioithieu import khoi_gioi_thieu, CSS_GIOI_THIEU
+from ui.terminal import load_config, save_config, get_term_credential
+from ui import duongdan as _DD
+
+ROTATIONS = [
+    ("normal", "0° - Bình thường"),
+    ("90", "90° - Xoay phải"),
+    ("180", "180° - Lật ngược"),
+    ("270", "270° - Xoay trái"),
+]
+
+WAYLAND_ENV = {
+    "WAYLAND_DISPLAY": "wayland-0",
+    "XDG_RUNTIME_DIR": "/run/user/1000",
+}
+
+
+def _wlr(args, timeout=10):
+    """Chay wlr-randr duoi quyen user dang giu phien Wayland (administrator)."""
+    # Flask chay quyen root, nhung phien Wayland thuoc user administrator,
+    # nen phai ha quyen va dat dung WAYLAND_DISPLAY/XDG_RUNTIME_DIR.
+    full = ["sudo", "-n", "-u", "administrator",
+            "env", f"WAYLAND_DISPLAY={WAYLAND_ENV['WAYLAND_DISPLAY']}",
+            f"XDG_RUNTIME_DIR={WAYLAND_ENV['XDG_RUNTIME_DIR']}",
+            "wlr-randr"] + args
+    try:
+        r = subprocess.run(full, capture_output=True, text=True, timeout=timeout)
+        return r.returncode == 0, (r.stdout + r.stderr)
+    except FileNotFoundError:
+        return False, "Chưa cài wlr-randr."
+    except Exception as e:
+        return False, str(e)
+
+
+def get_display_info():
+    """Tra ve (co_man_hinh, ten_output, transform_hien_tai, raw)."""
+    ok, out = _wlr([])
+    if not ok or not out.strip():
+        return False, "", "", out
+    name = ""
+    transform = "normal"
+    for line in out.splitlines():
+        if line and not line.startswith((" ", "\t")):
+            name = line.split()[0]
+        s = line.strip()
+        if s.lower().startswith("transform:"):
+            transform = s.split(":", 1)[1].strip()
+    return bool(name), name, transform, out
+
+
+def set_rotation(value):
+    ok_info, name, _, _ = get_display_info()
+    if not ok_info:
+        return False, ("Không tìm thấy màn hình đang hoạt động. "
+                       "Thiết bị này có thể không gắn màn hình, hoặc kiosk chưa chạy.")
+    ok, out = _wlr(["--output", name, "--transform", value])
+    if not ok:
+        return False, f"Xoay thất bại: {out.strip()[:200]}"
+
+    cfg = load_config()
+    cfg["screen_rotation"] = value
+    save_config(cfg)
+
+    # Ghi them ra file rieng cho kiosk-start.sh doc duoc.
+    # config.json chmod 600 thuoc root (giau mat khau terminal), ma kiosk
+    # chay duoi quyen user -> khong doc noi. Huong man hinh khong phai bi
+    # mat nen tach ra file 644 rieng.
+    try:
+        with open(ROTATION_FILE, "w") as f:
+            f.write(value + "\n")
+        os.chmod(ROTATION_FILE, 0o644)
+    except Exception:
+        pass
+
+    # Xoay toa do cam ung cho khop - bat buoc, neu khong se cham khong trung
+    touch_ok = sync_touch_matrix(value)
+    extra = (" Tọa độ cảm ứng đã xoay theo, giao diện màn hình đang khởi động lại."
+             if touch_ok else
+             " CẢNH BÁO: không cập nhật được tọa độ cảm ứng, chạm sẽ không trúng.")
+    return True, f"Đã xoay màn hình sang {value}.{extra}"
+
+
+
+# Ma tran hieu chinh toa do cam ung cho tung goc xoay.
+#
+# DA KIEM CHUNG THUC TE tren may nay: cage/wlroots KHONG tu xoay toa do cam
+# ung theo huong man hinh. Xoay man ma khong doi ma tran thi cham khong trung
+# nut va vuot nguoc chieu. Hai thu nay phai LUON di cung nhau.
+TOUCH_MATRIX = {
+    "normal": "1 0 0 0 1 0",
+    "90":     "0 -1 1 1 0 0",
+    "180":    "-1 0 1 0 -1 1",
+    "270":    "0 1 0 -1 0 1",
+}
+
+UDEV_RULE_FILE = "/etc/udev/rules.d/99-consolepi-touch.rules"
+ROTATION_FILE = _DD.FILE_XOAY_MAN_HINH
+
+
+def sync_touch_matrix(rotation):
+    """Cap nhat ma tran cam ung cho khop huong man hinh vua chon."""
+    matrix = TOUCH_MATRIX.get(rotation, TOUCH_MATRIX["normal"])
+    rule = (
+        "# Console Pi - tu sinh khi doi huong man hinh trong tab Cai dat.\n"
+        "# cage/wlroots khong tu xoay toa do cam ung nen phai chinh o day.\n"
+        f"# Hướng hiện tại: {rotation}\n"
+        f'ENV{{ID_INPUT_TOUCHSCREEN}}=="1", ENV{{LIBINPUT_CALIBRATION_MATRIX}}="{matrix}"\n'
+    )
+    try:
+        with open(UDEV_RULE_FILE, "w") as f:
+            f.write(rule)
+        subprocess.run(["udevadm", "control", "--reload-rules"],
+                       capture_output=True, timeout=10)
+        subprocess.run(["udevadm", "trigger", "--subsystem-match=input",
+                        "--action=change"], capture_output=True, timeout=10)
+        # cage chi doc cau hinh thiet bi luc MO thiet bi -> phai restart kiosk
+        subprocess.run(["systemctl", "restart", "console-pi-kiosk"],
+                       capture_output=True, timeout=30)
+        return True
+    except Exception:
+        return False
+
+
+def register_settings(app):
+    @app.route("/settings")
+    def settings_page():
+        return _render_settings()
+
+    @app.route("/settings/rotate", methods=["POST"])
+    def settings_rotate():
+        val = request.form.get("rotation", "normal")
+        if val not in [r[0] for r in ROTATIONS]:
+            return _render_settings(msg="Giá trị xoay không hợp lệ.", ok=False)
+        ok, msg = set_rotation(val)
+        return _render_settings(msg=msg, ok=ok)
+
+    @app.route("/settings/kiosk/bat", methods=["POST"])
+    def settings_kiosk_bat():
+        import subprocess
+        try:
+            r = subprocess.run(
+                ["systemctl", "enable", "--now",
+                 "console-pi-kiosk", "console-pi-kiosk-helper"],
+                capture_output=True, text=True, timeout=30)
+            if r.returncode == 0:
+                return _render_settings(
+                    msg="Đã bật giao diện màn hình. Nhìn vào màn hình của máy "
+                        "này sẽ thấy dashboard sau vài giây.", ok=True)
+            return _render_settings(
+                msg=f"Không bật được: {(r.stderr or r.stdout)[:200]}", ok=False)
+        except Exception as e:
+            return _render_settings(msg=f"Không bật được: {e}", ok=False)
+
+    @app.route("/settings/kiosk/tat", methods=["POST"])
+    def settings_kiosk_tat():
+        import subprocess
+        try:
+            r = subprocess.run(
+                ["systemctl", "disable", "--now",
+                 "console-pi-kiosk", "console-pi-kiosk-helper"],
+                capture_output=True, text=True, timeout=30)
+            if r.returncode == 0:
+                return _render_settings(
+                    msg="Đã tắt giao diện màn hình, lấy lại RAM cho máy.", ok=True)
+            return _render_settings(
+                msg=f"Không tắt được: {(r.stderr or r.stdout)[:200]}", ok=False)
+        except Exception as e:
+            return _render_settings(msg=f"Không tắt được: {e}", ok=False)
+
+    @app.route("/settings/don-rac", methods=["POST"])
+    def settings_don_rac():
+        from ui import baotri as bt
+        ok, msg = bt.don_rac(request.form.get("ma", ""))
+        return _render_settings(msg=msg, ok=ok)
+
+    @app.route("/settings/sao-luu")
+    def settings_sao_luu():
+        from flask import Response
+        from ui import duongdan as DD
+        if DD.BO_CUC_MOI:                                  # 2.0 (A5): goi sao luu co manifest + ma bam, tai ve dang luong
+            from ui import saoluu as SL
+            che_do = "toanbo" if request.args.get("che_do") == "toanbo" else "cauhinh"
+            return Response(SL.tao_luong(DD.GOC, che_do), mimetype="application/gzip", headers={
+                "Content-Disposition": f'attachment; filename="{SL.ten_goi(che_do)}"'})
+        from ui import baotri as bt
+        du, ten = bt.tao_ban_sao_luu()
+        return Response(du, mimetype="application/gzip", headers={
+            "Content-Disposition": f'attachment; filename="{ten}"'})
+
+    @app.route("/settings/nap-sao-luu", methods=["POST"])
+    def settings_nap_sao_luu():
+        from ui import duongdan as DD
+        f = request.files.get("file")
+        if not f or not getattr(f, "filename", ""):
+            return _render_settings(msg="Chưa chọn file sao lưu.", ok=False)
+        if DD.BO_CUC_MOI:
+            return _kiem_goi_tai_len(f)
+        from ui import baotri as bt
+        ok, msg = bt.nap_ban_sao_luu(f.read())
+        return _render_settings(msg=msg, ok=ok)
+
+    @app.route("/settings/khoi-phuc", methods=["POST"])
+    def settings_khoi_phuc():
+        from ui import duongdan as DD
+        from ui import saoluu as SL
+        from ui.home import _esc
+        ten = os.path.basename(request.form.get("ten", ""))
+        duong = os.path.join(DD.GOC, "backups", ten)
+        if not ten.startswith("tai-len-") or not os.path.isfile(duong) or not DD.BO_CUC_MOI:
+            return _render_settings(msg="Không tìm thấy file đã kiểm tra - hãy tải lên lại.", ok=False)
+        try:
+            subprocess.run(["systemctl", "stop", "console-pi-tftp"], capture_output=True, timeout=30)
+            kq = SL.khoi_phuc(duong, DD.GOC)
+        except SL.LoiSaoLuu as e:
+            return _render_settings(msg=f"Không khôi phục: {_esc(str(e))}. Dữ liệu hiện tại giữ nguyên.", ok=False)
+        finally:
+            subprocess.run(["systemctl", "start", "console-pi-tftp"], capture_output=True, timeout=30)
+        tb = SL.hau_khoi_phuc(DD.GOC)
+        with contextlib.suppress(OSError):
+            os.remove(duong)
+        subprocess.Popen(["sh", "-c", "sleep 3; systemctl restart console-pi-dashboard"], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return _render_settings(msg=(f"Đã khôi phục {kq['so_tep']} file. Trạng thái trước đó được lưu thành "
+                                     f"<code>{_esc(os.path.basename(kq['goi_truoc']))}</code> (thư mục sao lưu). "
+                                     + " ".join(_esc(x) for x in tb)
+                                     + " Dịch vụ đang khởi động lại - tải lại trang sau vài giây."), ok=True)
+
+    @app.route("/settings/regen-term-pass", methods=["POST"])
+    def regen_term_pass():
+        import secrets
+        cfg = load_config()
+        cfg["terminal_auth"] = "console:" + secrets.token_urlsafe(12)
+        save_config(cfg)
+        for svc in ("console-pi-term-local", "console-pi-term-ssh"):
+            subprocess.run(["systemctl", "restart", svc], capture_output=True, timeout=20)
+        return _render_settings(msg="Đã đổi mật khẩu terminal và khởi động lại dịch vụ.", ok=True)
+
+    return app
+
+
+def _kiem_goi_tai_len(f):
+    """Luu file tai len vao backups/, kiem TOAN BO (ma bam...) roi hoi xac nhan - chua dung toi du lieu."""
+    from ui import duongdan as DD
+    from ui import saoluu as SL
+    from ui.home import _esc
+    thu_muc = os.path.join(DD.GOC, "backups")
+    os.makedirs(thu_muc, exist_ok=True)
+    ten = "tai-len-%s-%s.tar.gz" % (time.strftime("%Y%m%d-%H%M%S"), os.urandom(3).hex())      # hau to ngau nhien: hai lan tai len cung giay khong de nhau
+    duong = os.path.join(thu_muc, ten)
+    f.save(duong)
+    try:
+        mf = SL.kiem_goi(duong)
+    except SL.LoiSaoLuu as e:
+        with contextlib.suppress(OSError):
+            os.remove(duong)
+        return _render_settings(msg=f"File này KHÔNG dùng được: {_esc(str(e))}", ok=False)
+    cu = "toàn bộ (gồm ảnh/bộ cài)" if mf["che_do"] == "toanbo" else "cấu hình"
+    return _render_settings(msg=(
+        f"File hợp lệ: bản sao lưu <strong>{cu}</strong>, {len(mf['tep'])} file, tạo lúc {_esc(mf['tao_luc'])} "
+        f"trên máy <strong>{_esc(mf['may'])}</strong> (mã {_esc(str(mf['phien_ban_ma']))}). "
+        f'<form method="POST" action="/settings/khoi-phuc" style="margin-top:10px;" '
+        f"onsubmit=\"return confirm('Khôi phục sẽ THAY cấu hình hiện tại bằng nội dung file này. Trạng thái hiện tại được tự sao lưu trước. Tiếp tục?');\">"
+        f'<input type="hidden" name="ten" value="{_esc(ten)}">'
+        f'<button type="submit" class="blue" data-busy="Đang khôi phục...">Xác nhận khôi phục</button></form>'), ok=True)
+
+
+def _render_settings(msg="", ok=True):
+    has_screen, name, transform, raw = get_display_info()
+    cfg = load_config()
+    saved = cfg.get("screen_rotation", "normal")
+    user, pw = get_term_credential()
+
+    msg_html = f'<div class="msg {"ok" if ok else "err"}">{msg}</div>' if msg else ""
+
+    if has_screen:
+        buttons = "".join(f"""
+          <form method="POST" action="/settings/rotate" style="display:inline;">
+            <input type="hidden" name="rotation" value="{val}">
+            <button type="submit" class="{'blue' if transform == val else 'gray'}" data-busy="Đang xoay...">{label}</button>
+          </form>""" for val, label in ROTATIONS)
+        screen_card = f"""
+        <div class="card">
+          <h3>Xoay màn hình</h3>
+          <table style="max-width:430px;margin-bottom:12px;">
+            <tr><th style="width:150px;">Màn hình</th><td><code>{name}</code></td></tr>
+            <tr><th>Hướng hiện tại</th><td><code>{transform}</code></td></tr>
+            <tr><th>Đã lưu cho lần sau</th><td><code>{saved}</code></td></tr>
+          </table>
+          <div class="row">{buttons}</div>
+          <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
+            Áp dụng ngay lập tức, không cần khởi động lại. Lựa chọn được ghi nhớ
+            và tự áp dụng lại mỗi lần Pi khởi động.
+          </p>
+        </div>"""
+    else:
+        screen_card = """
+        <div class="card">
+          <h3>Xoay màn hình</h3>
+          <div class="msg info" style="margin:0;">
+            Thiết bị này không gắn màn hình (hoặc giao diện màn hình chưa chạy),
+            nên không có gì để xoay. Đây là bình thường với máy dùng từ xa.
+          </div>
+        </div>"""
+
+    body = f"""
+    {msg_html}
+    {khoi_gioi_thieu()}
+    {screen_card}
+
+    <div class="card">
+      <h3>Mật khẩu terminal</h3>
+      <table style="max-width:430px;margin-bottom:12px;">
+        <tr><th style="width:150px;">Tài khoản</th><td><code>{user}</code></td></tr>
+        <tr><th>Mật khẩu</th><td><code id="term-mk" data-mk="{pw}">••••••••••</code>
+          <button type="button" class="small gray" style="margin-left:8px;"
+            onclick="var c=document.getElementById('term-mk');var h=c.textContent.indexOf('•')<0;
+                     c.textContent=h?'••••••••••':c.dataset.mk;this.textContent=h?'Hiện':'Ẩn';">Hiện</button>
+          <!-- Che mac dinh (26/09/2026): truoc day hien thang chu ro - ai liec man
+               hinh / chup anh la lo. Bam Hien moi thay. --></td></tr>
+      </table>
+      <form method="POST" action="/settings/regen-term-pass"
+            onsubmit="return confirm('Đổi mật khẩu terminal? Trình duyệt sẽ hỏi đăng nhập lại.');">
+        <button type="submit" class="gray">🔄 Đổi mật khẩu mới</button>
+      </form>
+      <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
+        Dùng cho 2 khung terminal (Terminal tại chỗ và SSH).
+      </p>
+    </div>
+
+    {_khoi_man_hinh()}
+
+    {_khoi_baotri()}
+
+    <div class="card">
+      <h3>Thông tin hệ thống</h3>
+      <table>
+        <tr><th style="width:180px;">Phiên bản</th><td><code>{_version()}</code></td></tr>
+        <tr><th>Tên máy</th><td><code>{__import__("socket").gethostname()}</code></td></tr>
+      </table>
+    </div>"""
+
+    return render_page(body, active="/settings", title="Cài đặt",
+                       subtitle="Giới thiệu, màn hình, mật khẩu terminal, thông tin hệ thống",
+                       extra_css=CSS_GIOI_THIEU)
+
+
+def _trang_thai_kiosk():
+    """
+    Tra (da_cai, dang_bat, dang_chay, co_man_hinh) cua giao dien kiosk.
+
+    Dung `systemctl is-enabled/is-active` thay vi doan theo file: day la
+    nguon su that duy nhat ve trang thai dich vu.
+    """
+    import subprocess, glob
+
+    def _ht(*lenh):
+        try:
+            r = subprocess.run(lenh, capture_output=True, text=True, timeout=5)
+            return r.stdout.strip()
+        except Exception:
+            return ""
+
+    da_cai = bool(_ht("systemctl", "list-unit-files", "console-pi-kiosk.service"))
+    dang_bat = _ht("systemctl", "is-enabled", "console-pi-kiosk") == "enabled"
+    dang_chay = _ht("systemctl", "is-active", "console-pi-kiosk") == "active"
+
+    # Man hinh THAT dang cam: doc /sys/class/drm/*/status - cach nay dung
+    # cho ca man hinh that lan man hinh ao cua may ao (VMware/QEMU deu bao
+    # "connected" khi cua so console dang mo).
+    co_man_hinh = False
+    for f in glob.glob("/sys/class/drm/*/status"):
+        try:
+            with open(f) as fh:
+                if fh.read().strip() == "connected":
+                    co_man_hinh = True
+                    break
+        except OSError:
+            continue
+    return da_cai, dang_bat, dang_chay, co_man_hinh
+
+
+def _khoi_man_hinh():
+    """
+    Bat/tat giao dien hien thang tren man hinh cua chinh may nay (kiosk).
+
+    VI SAO CAN NUT NAY (anh Thoai 20/09/2026): ban cai x86 tu nhan man hinh
+    luc khoi dong lan dau, nhung "tu nhan" khong bao gio dung 100%: may ao
+    luon bao co man hinh du khong ai nhin, con may chu cam trong rack thi
+    co the co cong VGA nhung khong ai cam day. Chromium ton ~300MB RAM -
+    dang ke tren may 2GB - nen phai cho nguoi dung tu quyet.
+    """
+    da_cai, dang_bat, dang_chay, co_man_hinh = _trang_thai_kiosk()
+
+    if not da_cai:
+        return '''
+    <div class="card">
+      <h3>Giao diện trên màn hình máy này</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0;">
+        Máy này chưa cài sẵn phần giao diện màn hình (cage + Chromium).
+        Tính năng này có sẵn trong bản cài Console System OS.</p>
+    </div>'''
+
+    if dang_chay:
+        trang_thai = ('<div class="msg ok" style="margin-top:0;">Đang <strong>BẬT</strong> '
+                      '&mdash; màn hình của máy này đang hiện dashboard.</div>')
+        nut = ('<form method="POST" action="/settings/kiosk/tat">'
+               '<button type="submit" class="red" data-busy="Đang tắt...">'
+               'Tắt giao diện màn hình</button></form>')
+    else:
+        canh = ("" if co_man_hinh else
+                '<div class="msg warn">Không phát hiện màn hình nào đang cắm. '
+                'Bật lên vẫn được nhưng sẽ không thấy gì.</div>')
+        trang_thai = ('<div class="msg warn" style="margin-top:0;">Đang <strong>TẮT</strong> '
+                      '&mdash; máy chỉ phục vụ qua trình duyệt từ máy khác.</div>' + canh)
+        nut = ('<form method="POST" action="/settings/kiosk/bat">'
+               '<button type="submit" data-busy="Đang bật...">'
+               'Bật giao diện màn hình</button></form>')
+
+    return f'''
+    <div class="card">
+      <h3>Giao diện trên màn hình máy này</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">
+        Bật lên thì màn hình gắn vào máy này sẽ hiện thẳng dashboard toàn
+        màn hình (như màn cảm ứng của Raspberry Pi), không cần máy khác.
+        Tắt đi thì máy chỉ phục vụ qua mạng.
+        <br>Tốn khoảng <strong>300 MB RAM</strong> cho trình duyệt &mdash;
+        đáng cân nhắc trên máy ít RAM nếu không ai nhìn màn hình.
+      </p>
+      {trang_thai}
+      {nut}
+    </div>'''
+
+
+def _the_sao_luu(bt):
+    """The Sao luu / Khoi phuc. Bo cuc moi (2.0): goi co ma bam + che do cauhinh/toanbo. Bo cuc cu: the cu."""
+    from ui import duongdan as DD
+    if DD.BO_CUC_MOI:
+        from ui.home import _esc
+        thu = os.path.join(DD.GOC, "backups")
+        ds = []
+        with contextlib.suppress(OSError):
+            ds = sorted((x for x in os.listdir(thu) if x.endswith(".tar.gz")), reverse=True)[:6]
+        hang = "".join(f"<tr><td><code>{_esc(x)}</code></td><td style='text-align:right'>{bt.co_kich_thuoc(os.path.getsize(os.path.join(thu, x)))}</td></tr>" for x in ds)
+        hang = hang or "<tr><td style='color:#8A94A6'>Chưa có bản tự sao lưu nào.</td></tr>"
+        return ('''
+    <div class="card">
+      <h3>Sao lưu &amp; Khôi phục</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">
+        <strong>Sao lưu cấu hình</strong> (vài MB): cấu hình, khoá, chứng chỉ, máy trạm, kịch bản cài đặt. Mất thẻ nhớ/ổ cứng thì khôi phục lại là chạy tiếp.
+        <br><strong>Sao lưu toàn bộ</strong> thêm ảnh Windows, bộ cài, kho file - có thể rất lớn (nhiều GB).
+        Mỗi file có mã băm từng tệp; lúc khôi phục hệ thống kiểm cả file trước khi đụng tới dữ liệu, và tự sao lưu trạng thái hiện tại.
+      </p>
+      <div class="msg warn" style="margin-top:0;">File sao lưu có <strong>mật khẩu, khoá bí mật và chứng chỉ</strong> - cất nơi kín đáo, đừng gửi lung tung.</div>
+      <div class="row">
+        <a class="btn" href="/settings/sao-luu?che_do=cauhinh">Tải sao lưu cấu hình</a>
+        <a class="btn gray" href="/settings/sao-luu?che_do=toanbo">Tải sao lưu toàn bộ</a>
+      </div>
+      <form method="POST" action="/settings/nap-sao-luu" enctype="multipart/form-data" style="margin-top:16px;">
+        <label>Khôi phục từ file sao lưu (.tar.gz) - sẽ kiểm tra file trước, rồi hỏi xác nhận</label>
+        <input type="file" name="file" accept=".gz,.tar.gz" required>
+        <button type="submit" class="gray" style="margin-top:10px;" data-busy="Đang kiểm tra file...">Kiểm tra file</button>
+      </form>
+      <h4 style="margin:16px 0 6px;">Bản tự sao lưu gần đây (trong máy, thư mục backups)</h4>
+      <div class="tbl-scroll"><table><tbody>''' + hang + '''</tbody></table></div>
+    </div>''')
+    return '''    <div class="card">
+      <h3>Sao lưu cấu hình</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">
+        Toàn bộ công sức cấu hình (kịch bản cài đặt, bảng tra tham số, thư
+        viện lệnh, kết nối kho trung tâm) chỉ nằm trên <strong>một thẻ nhớ</strong>
+        - mà thẻ nhớ là thứ hỏng vặt nhất trên Pi. Tải file này về cất ở máy
+        khác, mất thẻ thì nạp lại là xong.
+        <br>Ảnh Windows và bộ cài phần mềm <strong>không</strong> nằm trong đây
+        (tải lại được từ nguồn gốc, mà nhét vào thì file to không ai tải nổi).
+      </p>
+      <div class="msg warn" style="margin-top:0;">
+        File sao lưu có chứa <strong>mật khẩu</strong> trong kịch bản cài đặt
+        và token kho trung tâm - cất nơi kín đáo, đừng gửi lung tung.
+      </div>
+      <div class="row">
+        <a class="btn" href="/settings/sao-luu">Tải file sao lưu về</a>
+      </div>
+      <form method="POST" action="/settings/nap-sao-luu" enctype="multipart/form-data"
+            style="margin-top:16px;"
+            onsubmit="return confirm('Nạp lại cấu hình sẽ GHI ĐÈ kịch bản và bảng tham số hiện tại. Tiếp tục?');">
+        <label>Nạp lại từ file sao lưu (.tar.gz)</label>
+        <input type="file" name="file" accept=".gz,.tar.gz" required>
+        <button type="submit" class="gray" style="margin-top:10px;"
+                data-busy="Đang nạp...">Nạp lại cấu hình</button>
+      </form>
+    </div>'''
+
+
+def _khoi_baotri():
+    """
+    Hai cong cu bao tri (xem ui/baotri.py cho phan xu ly). De o trang Cai
+    dat vi day la viec "cham vao may" chu khong phai viec mang.
+    """
+    from ui import baotri as bt
+    from ui.home import _esc
+
+    dia, muc = bt.tinh_dung_luong()
+    mau = "#F87171" if dia["phan_tram"] >= 90 else (
+          "#FBBF24" if dia["phan_tram"] >= 80 else "#4ADE80")
+    hang_muc = "".join(
+        f'''<tr><td><a href="{m["lien_ket"]}">{_esc(m["nhan"])}</a></td>
+             <td style="text-align:right;font-family:ui-monospace,monospace;">
+             {bt.co_kich_thuoc(m["byte"])}</td></tr>'''
+        for m in muc)
+
+    rac = bt.tim_rac()
+    tong_rac = sum(r[2] for r in rac)
+    hang_rac = "".join(
+        f'''<tr>
+             <td>{_esc(nhan)}<br><small style="color:#8A94A6;">{_esc(gt)}</small></td>
+             <td style="text-align:right;font-family:ui-monospace,monospace;">
+               {bt.co_kich_thuoc(byte)}</td>
+             <td style="width:110px;">
+               <form method="POST" action="/settings/don-rac">
+                 <input type="hidden" name="ma" value="{ma}">
+                 <button type="submit" class="gray small"{" disabled" if byte <= 0 else ""}
+                         data-busy="Đang dọn...">Dọn</button>
+               </form></td>
+           </tr>'''
+        for ma, nhan, byte, gt in rac)
+
+    return f'''
+    <div class="card">
+      <h3>Dung lượng thẻ nhớ</h3>
+      <div style="background:#0B0E14;border:1px solid #1F2733;border-radius:8px;
+                  height:16px;overflow:hidden;margin-bottom:8px;">
+        <div style="height:100%;width:{dia["phan_tram"]}%;background:{mau};"></div>
+      </div>
+      <p style="margin:0 0 14px;color:#8A94A6;font-size:13.5px;">
+        Đã dùng <strong style="color:#E3E8EF;">{bt.co_kich_thuoc(dia["dung"])}</strong>
+        / {bt.co_kich_thuoc(dia["tong"])} ({dia["phan_tram"]}%) &mdash;
+        còn trống <strong style="color:{mau};">{bt.co_kich_thuoc(dia["trong"])}</strong>.
+      </p>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Dữ liệu của anh</th><th style="text-align:right;width:120px;">Chiếm</th></tr></thead>
+        <tbody>{hang_muc}</tbody>
+      </table></div>
+      <h3 style="margin-top:18px;">Dọn rác an toàn ({bt.co_kich_thuoc(tong_rac)})</h3>
+      <p class="hint" style="margin:0 0 10px;">Ba mục dưới đây xoá đi KHÔNG mất
+        dữ liệu nào của anh - hệ thống tự tạo lại khi cần.</p>
+      <div class="tbl-scroll"><table><tbody>{hang_rac}</tbody></table></div>
+    </div>
+
+    {_the_sao_luu(bt)}'''
+
+
+def _version():
+    for p in (_DD.FILE_VERSION, _DD.FILE_VERSION_TXT):
+        try:
+            with open(p) as f:
+                return f.read().strip()
+        except Exception:
+            continue
+    return "không rõ"

@@ -1,0 +1,1740 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
+"""
+Console Pi - Quan ly WiFi / AP / Bluetooth
+
+Phan LOGIC bên dưới duoc chuyen nguyen ven tu app.py cu (da qua nhieu vong
+debug thuc te: race condition voi systemd-networkd, vong doi D-Bus cua NAP,
+ngat ket noi truoc khi reset Bluetooth...). CHI thay doi phan hien thi de
+dung khung giao dien moi.
+"""
+import sys as _sys
+_sys.modules["ui.network"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
+import json
+import os
+import re
+import subprocess
+import threading
+import time
+
+from flask import request, redirect
+
+from ui.layout import render_page
+from ui import duongdan as _DD
+from consolesystem.core.esc import esc as _esc
+
+
+class _KetQuaRong:
+    """Ket qua gia khi lenh khong chay duoc - de noi goi cu dung `.stdout`
+    / `.returncode` binh thuong, khong phai kiem tra None o khap noi."""
+    returncode = 1
+    stdout = ""
+    stderr = ""
+
+
+def _lenh(cmd, timeout=15, **kw):
+    """
+    Chay lenh he thong, KHONG BAO GIO nem ngoai le ra ngoai.
+
+    VI SAO CAN (day la loi that suyt tao ra khi them timeout):
+    cac ham doi WiFi chay trong LUONG NEN (_switch_worker). Neu chi them
+    `timeout=` khong thoi ma lenh qua gio, Python nem TimeoutExpired ->
+    luong nen chet AM THAM -> WIFI_STATUS ket vinh vien o "Dang chuyen..."
+    trong khi AP da bi ha xuong roi. Nguoi dung mat ca duong vao Pi ma
+    man hinh khong bao gi ca - te hon han truoc khi co timeout.
+
+    Vay nen: het gio thi tra ve ket qua rong (returncode=1) de phia goi
+    xu ly nhu mot lan that bai binh thuong - va no da biet xu ly that bai.
+    """
+    try:
+        return subprocess.run(cmd, timeout=timeout, **kw)
+    except subprocess.TimeoutExpired:
+        try:
+            from ui.errlog import ghi_loi
+            ghi_loi("network", f"Lệnh quá {timeout}s, đã bỏ qua: {' '.join(map(str, cmd))}")
+        except Exception:
+            pass
+        return _KetQuaRong()
+    except (FileNotFoundError, OSError):
+        return _KetQuaRong()
+
+AP_IP = "192.168.50.1"
+FORCE_AP_FLAG = _DD.FILE_FORCE_AP
+NAMES_FILE = _DD.FILE_TEN_CONG
+def cong_wifi():
+    """
+    Ten cong WiFi cua may nay - xem ui/phancung.py. Truoc day viet cung
+    ten "wlan0" (dung tren Pi, sai tren laptop: wlp2s0, wlx00c0ca...).
+
+    May khong co card WiFi thi tra ve ten mac dinh de cac lenh ben duoi bao
+    loi ro rang, thay vi nhan chuoi rong roi sinh ra lenh vo nghia.
+    """
+    from ui import phancung as _pc
+    # "wlan0" o day la CHUOI co dinh lam nuoc cuoi, KHONG duoc goi lai
+    # chinh ham nay.
+    #
+    # LOI THAT DA GAP (20/09/2026, chi lo ra khi chay ISO tren may ao
+    # KHONG CO card WiFi): doan thay the hang loat luc go ten cong viet
+    # cung da thay ca chuoi "wlan0" nam trong chinh ve du phong nay, thanh
+    # `return _pc.cong_wifi() or cong_wifi()` - tu goi chinh no vo han.
+    # Tren Pi khong bao gio lo vi Pi CO WiFi nen ve dau luon dung; chi may
+    # khong co card WiFi moi roi xuong ve sau va vo trang /wifi voi
+    # RecursionError. Dung loai loi chi hien ra dung tren may dich.
+    return _pc.cong_wifi() or "wlan0"
+
+
+def wpa_conf():
+    """
+    File cau hinh wpa_supplicant GAN LIEN voi ten cong (Debian/Pi OS dung
+    quy uoc wpa_supplicant-<cong>.conf). Doi cong thi doi luon file - neu
+    giu nguyen ten cu, wpa_supplicant cua cong moi se doc nham file rong
+    va khong bao gio noi duoc WiFi.
+    """
+    return f"/etc/wpa_supplicant/wpa_supplicant-{cong_wifi()}.conf"
+NETWORK_BLOCK_RE = re.compile(r"network=\{.*?\}", re.S)
+
+WIFI_STATUS = {"state": "idle", "ssid": None, "msg": "", "ip": None, "saved": False}
+
+
+
+
+def ap_locked():
+    return os.path.exists(FORCE_AP_FLAG)
+
+
+def get_net_status():
+    ip = ""
+    try:
+        out = subprocess.run(["ip", "-4", "-o", "addr", "show", cong_wifi()],
+                             capture_output=True, text=True, timeout=5).stdout
+        for tok in out.split():
+            if "/" in tok and tok.count(".") == 3:
+                ip = tok.split("/")[0]
+                break
+    except Exception:
+        pass
+
+    ssid, mode = "", "?"
+    try:
+        info = subprocess.run(["iw", "dev", cong_wifi(), "info"],
+                              capture_output=True, text=True, timeout=5).stdout
+        for line in info.splitlines():
+            line = line.strip()
+            if line.startswith("ssid "):
+                ssid = line[5:].strip()
+            elif line.startswith("type "):
+                mode = line[5:].strip()
+    except Exception:
+        pass
+
+    if mode == "AP":
+        return ("AP", ssid or "ConsolePi", ip or AP_IP)
+    if ssid:
+        return ("Client", ssid, ip)
+    return ("Chưa kết nối", "", ip)
+
+
+# ---------------------------------------------------------------- WiFi
+# Ket qua quet WiFi duoc nho lai. Ly do: `iw scan` mat 2-3 giay, neu quet
+# moi lan tai trang thi trang WiFi luon cham 3 giay - rat kho chiu, nhat la
+# tren Pi doi thap. Gio trang hien ngay, quet chay nen va cap nhat sau.
+_SCAN_CACHE = {"ssids": [], "at": 0.0, "running": False}
+SCAN_TTL = 45          # giay - du lau de khong quet lien tuc
+
+
+def scan_wifi(force=False):
+    """Tra ve danh sach SSID da nho. KHONG quet o day (tranh lam cham trang)."""
+    if force or (time.time() - _SCAN_CACHE["at"] > SCAN_TTL):
+        start_scan_async()
+    return _SCAN_CACHE["ssids"]
+
+
+def _do_scan():
+    try:
+        r = subprocess.run(["iw", "dev", cong_wifi(), "scan"],
+                           capture_output=True, text=True, timeout=25)
+        ssids = []
+        for line in r.stdout.split("\n"):
+            line = line.strip()
+            if line.startswith("SSID:"):
+                v = line.replace("SSID:", "").strip()
+                if v and v not in ssids:
+                    ssids.append(v)
+        if ssids:
+            _SCAN_CACHE["ssids"] = ssids
+        _SCAN_CACHE["at"] = time.time()
+    except Exception:
+        _SCAN_CACHE["at"] = time.time()
+    finally:
+        _SCAN_CACHE["running"] = False
+
+
+def start_scan_async():
+    """Quet o luong nen de khong chan viec tai trang."""
+    if _SCAN_CACHE["running"]:
+        return
+    _SCAN_CACHE["running"] = True
+    threading.Thread(target=_do_scan, daemon=True).start()
+
+
+def scan_age():
+    """Bao nhieu giay truoc da quet - de hien cho nguoi dung biet do moi."""
+    if not _SCAN_CACHE["at"]:
+        return None
+    return int(time.time() - _SCAN_CACHE["at"])
+
+
+def load_saved_wifi_with_psk():
+    """
+    Nhu load_saved_wifi() nhung tra ve ca mat khau da luu (dang {ssid: psk}).
+    Dung rieng cho nut "Ket noi" bam thang tu danh sach da luu - khong bat
+    nguoi dung go lai mat khau ho da nhap tu truoc.
+    """
+    try:
+        with open(wpa_conf()) as f:
+            content = f.read()
+    except Exception:
+        return {}
+    out = {}
+    for block in NETWORK_BLOCK_RE.findall(content):
+        m = re.search(r'ssid="([^"]*)"', block)
+        if not m:
+            continue
+        p = re.search(r'psk="([^"]*)"', block)
+        out[m.group(1)] = p.group(1) if p else ""
+    return out
+
+
+def load_saved_wifi():
+    return list(load_saved_wifi_with_psk().keys())
+
+
+def save_wifi_permanently(ssid, password):
+    try:
+        with open(wpa_conf()) as f:
+            content = f.read()
+    except Exception:
+        return False
+    if f'ssid="{ssid}"' in content:
+        return False
+    with open(wpa_conf(), "a") as f:
+        f.write(f'\nnetwork={{\n    ssid="{ssid}"\n    psk="{password}"\n}}\n')
+    return True
+
+
+def delete_saved_wifi(ssid):
+    try:
+        with open(wpa_conf()) as f:
+            content = f.read()
+    except Exception:
+        return False
+    keep, removed = [], False
+    for block in NETWORK_BLOCK_RE.findall(content):
+        m = re.search(r'ssid="([^"]*)"', block)
+        if m and m.group(1) == ssid:
+            removed = True
+            continue
+        keep.append(block)
+    if not removed:
+        return False
+    header = NETWORK_BLOCK_RE.sub("", content).strip()
+    with open(wpa_conf(), "w") as f:
+        f.write("\n\n".join(p for p in ([header] + keep) if p).rstrip() + "\n")
+    return True
+
+
+def test_wifi_connection(ssid, password):
+    conf = (f'ctrl_interface=/var/run/wpa_supplicant\nupdate_config=1\ncountry=VN\n\n'
+            f'network={{\n    ssid="{ssid}"\n    psk="{password}"\n}}\n')
+    path = "/tmp/wpa_test.conf"
+    with open(path, "w") as f:
+        f.write(conf)
+
+    _lenh(["systemctl", "stop", "hostapd"], timeout=20)
+    _lenh(["systemctl", "stop", "dnsmasq"], timeout=20)
+    _lenh(["pkill", "-9", "wpa_supplicant"], timeout=10)
+    time.sleep(1)
+    _lenh(["ip", "addr", "flush", "dev", cong_wifi()], timeout=10)
+    _lenh(["ip", "link", "set", cong_wifi(), "down"], timeout=10)
+    time.sleep(1)
+    _lenh(["ip", "addr", "flush", "dev", cong_wifi()], timeout=10)
+    _lenh(["ip", "link", "set", cong_wifi(), "up"], timeout=10)
+    time.sleep(2)
+    _lenh(["wpa_supplicant", "-B", "-i", cong_wifi(), "-c", path], timeout=15)
+
+    for _ in range(25):
+        time.sleep(1)
+        r = _lenh(["wpa_cli", "-i", cong_wifi(), "status"],
+                           capture_output=True, text=True, timeout=10)
+        if "wpa_state=COMPLETED" in r.stdout:
+            _lenh(["networkctl", "reconfigure", cong_wifi()], timeout=15)
+            time.sleep(5)
+            return True
+    return False
+
+
+def restore_ap_mode():
+    _lenh(["pkill", "-9", "wpa_supplicant"], timeout=10)
+    _lenh(["ip", "addr", "flush", "dev", cong_wifi()], timeout=10)
+    _lenh(["ip", "addr", "add", f"{AP_IP}/24", "dev", cong_wifi()], timeout=10)
+    _lenh(["ip", "link", "set", cong_wifi(), "up"], timeout=10)
+    _lenh(["systemctl", "start", "hostapd"], timeout=20)
+    _lenh(["systemctl", "start", "dnsmasq"], timeout=20)
+    # Luoi an toan: systemd-networkd tung xoa mat IP nay ngay sau khi carrier len
+    for _ in range(4):
+        time.sleep(1)
+        out = _lenh(["ip", "-4", "-o", "addr", "show", cong_wifi()],
+                             capture_output=True, text=True, timeout=5).stdout
+        if AP_IP in out:
+            return
+    _lenh(["ip", "addr", "add", f"{AP_IP}/24", "dev", cong_wifi()], timeout=10)
+
+
+def _switch_worker(ssid, password, do_save):
+    """Doi HTTP response bay ve trinh duyet XONG roi moi ha AP."""
+    time.sleep(5)
+    WIFI_STATUS.update(state="switching", ssid=ssid,
+                       msg=f"Đang chuyển sang '{ssid}'...", ip=None, saved=False)
+    if test_wifi_connection(ssid, password):
+        saved = save_wifi_permanently(ssid, password) if do_save else False
+        _, _, ip = get_net_status()
+        WIFI_STATUS.update(state="connected", ssid=ssid, ip=ip, saved=saved,
+                           msg=f"Đã kết nối '{ssid}'" + (" và đã lưu." if saved else " (không lưu)."))
+    else:
+        restore_ap_mode()
+        WIFI_STATUS.update(state="failed", ssid=ssid, ip=AP_IP, saved=False,
+                           msg=f"Kết nối '{ssid}' thất bại. Đã quay lại AP ConsolePi.")
+
+
+# ---------------------------------------------------------- Bluetooth
+def co_bluetooth():
+    """May co bo Bluetooth (hci0...) khong.
+
+    LOI THAT (thu ban ISO tren may x86, 23/09/2026): may khong co Bluetooth
+    thi bluetoothd khong chay, `bluetoothctl devices` ngoi cho den het 5 giay
+    moi bo - trang Bluetooth mat 5 giay moi lan mo ma van trong tron, khong
+    noi vi sao. Hoi thang kernel truoc, khong co thi bo qua luon."""
+    try:
+        return any(t.startswith("hci") for t in os.listdir("/sys/class/bluetooth"))
+    except OSError:
+        return False
+
+
+def get_bt_paired_devices():
+    if not co_bluetooth():
+        return []
+    try:
+        out = subprocess.run(["bluetoothctl", "devices"],
+                             capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return []
+    devs = []
+    for line in out.splitlines():
+        p = line.split(None, 2)
+        if len(p) == 3 and p[0] == "Device":
+            devs.append((p[1], p[2]))
+    return devs
+
+
+def bt_reset(forget_devices=False):
+    """Ngat ket noi TUNG thiet bi truoc khi restart - ngat dot ngot tung
+    lam Windows bi kep radio Bluetooth (da gap thuc te)."""
+    for mac, _ in get_bt_paired_devices():
+        subprocess.run(["bluetoothctl", "disconnect", mac], capture_output=True, timeout=10)
+    time.sleep(1)
+    removed = []
+    if forget_devices:
+        for mac, name in get_bt_paired_devices():
+            subprocess.run(["bluetoothctl", "remove", mac], capture_output=True, timeout=15)
+            removed.append(name)
+    subprocess.run(["systemctl", "restart", "bluetooth"], timeout=20)
+    time.sleep(3)
+    subprocess.run(["systemctl", "restart", "bt-pan0"], timeout=15)
+    time.sleep(1)
+    subprocess.run(["systemctl", "restart", "dnsmasq-bt"], timeout=15)
+    time.sleep(2)
+    return removed
+
+
+
+# --------------------------------------------- Ghep cap thiet bi Bluetooth
+def bt_scan(seconds=10):
+    """Quét thiết bị Bluetooth xung quanh. Tra ve [(mac, ten)]."""
+    try:
+        subprocess.run(["bluetoothctl", "--timeout", str(seconds), "scan", "on"],
+                       capture_output=True, timeout=seconds + 8)
+    except Exception:
+        pass
+    found = []
+    try:
+        out = subprocess.run(["bluetoothctl", "devices"],
+                             capture_output=True, text=True, timeout=6).stdout
+        for line in out.splitlines():
+            p = line.split(None, 2)
+            if len(p) == 3 and p[0] == "Device":
+                found.append((p[1], p[2]))
+    except Exception:
+        pass
+    return found
+
+
+def bt_device_info(mac):
+    """Thong tin 1 thiet bi, kem phan loai (ban phim / may tinh / tai nghe...)."""
+    # 'bonded' KHAC 'paired'. BlueZ co the danh dau Paired=yes ma van khong
+    # luu duoc khoa lien ket (Bonded=no) - ban ghi ghep cap hong mot nua.
+    # Voi ban phim/chuot thi day la loi CHET NGUOI: BlueZ tu choi gan ho so
+    # HID ("Rejected connection from !bonded device"), nen thiet bi hien la
+    # Connected=yes nhung kernel khong tao /dev/input nao ca -> nguoi dung
+    # thay "dang ket noi" ma go khong an gi. Phai doc rieng de bat duoc.
+    info = {"paired": False, "bonded": False, "connected": False,
+            "trusted": False, "icon": "", "name": mac, "cod": 0, "uuids": []}
+    try:
+        out = subprocess.run(["bluetoothctl", "info", mac],
+                             capture_output=True, text=True, timeout=6).stdout
+        for line in out.splitlines():
+            t = line.strip()
+            if t.startswith("Name:"):      info["name"] = t[5:].strip()
+            elif t.startswith("Icon:"):    info["icon"] = t[5:].strip()
+            elif t.startswith("Paired:"):    info["paired"] = t.endswith("yes")
+            elif t.startswith("Bonded:"):    info["bonded"] = t.endswith("yes")
+            elif t.startswith("Connected:"): info["connected"] = t.endswith("yes")
+            elif t.startswith("Trusted:"):   info["trusted"] = t.endswith("yes")
+            elif t.startswith("Class:"):
+                try:
+                    info["cod"] = int(t.split()[1], 16)
+                except (IndexError, ValueError):
+                    pass
+            elif t.startswith("UUID:"):
+                m = re.search(r"\(([0-9a-fA-F-]{36})\)", t)
+                if m:
+                    info["uuids"].append(m.group(1))
+    except Exception:
+        pass
+    info["cls"] = classify_bt(info["cod"], info["uuids"], info["icon"])
+    return info
+
+
+BT_STATE_FILE = _DD.FILE_BT_STATE
+
+# Trang thai ghep cap dang chay (chay o luong nen de trang web khong bi treo)
+_PAIR = {"running": False, "mac": "", "step": "", "ok": None, "detail": ""}
+# Khoa cho bt_pair_start(): tranh 2 request POST toi gan nhau (vd nguoi dung
+# bam dup lien tuc, thuong xay ra that khi dang sot ruot) cung doc thay
+# "running=False" TRUOC KHI mot trong hai kip dat lai thanh True - dan den
+# 2 luong _pair_worker chay chong len nhau tren cung 1 luc, cung dung 1 kenh
+# Bluetooth (goi bluetoothctl "remove"/"pair" tu 2 noi cung luc).
+_KHOA_PAIR = threading.Lock()
+
+
+def _doc_ap():
+    """(ten WiFi, mat khau) cua AP do Pi phat - doc tu hostapd.conf."""
+    ssid, mk = "ConsolePi", ""
+    try:
+        with open("/etc/hostapd/hostapd.conf", encoding="utf-8") as f:
+            for dong in f:
+                k, _, v = dong.strip().partition("=")
+                if k == "ssid":
+                    ssid = v
+                elif k == "wpa_passphrase":
+                    mk = v
+    except OSError:
+        pass
+    return ssid, mk
+
+
+def _co_dich_vu_nap(mac):
+    """
+    Thiet bi kia co CHIA SE MANG khong (co dich vu NAP - 00001116)?
+
+    Phan biet voi PANU (00001115) la vai tro MAY XIN MANG. May Windows thong
+    thuong chi quang ba PANU, nen Pi khong the "goi sang xin mang" duoc.
+    """
+    try:
+        r = subprocess.run(["bluetoothctl", "info", mac],
+                           capture_output=True, text=True, timeout=8)
+        return "00001116-0000-1000-8000-00805f9b34fb" in r.stdout.lower()
+    except Exception:
+        return False
+
+
+def bt_da_vao_mang(mac):
+    """
+    Thiet bi da THUC SU vao mang Bluetooth PAN chua? Tra ve (roi, ip).
+
+    VI SAO PHAI TACH RIENG voi "Connected": Windows ghep cap xong la bao
+    "Connected" ngay, nhung do moi la ket noi Bluetooth (thuong la ho so am
+    thanh). Muon VAO MANG thi may tinh con phai tu chu dong noi vao dich vu
+    NAP - o Windows la chuot phai ConsolePi > Connect using > Access point.
+    Pi la ben CHO mang nen khong the tu ep may tinh vao mang duoc.
+
+    LOI THAT DA GAP: giao dien cu chi doc "Connected" nen hien "dang ket noi"
+    mau xanh cho may tinh, trong khi thuc te chua he co duong mang nao - nguoi
+    dung tuong da xong roi ngoi doi mai khong vao duoc 192.168.60.1.
+
+    Dau hieu vao mang THAT: co giao dien bnep gan vao cau pan0, va dnsmasq da
+    cap IP cho dung dia chi MAC do.
+    """
+    try:
+        cong = os.listdir("/sys/class/net/pan0/brif")
+    except Exception:
+        cong = []
+    if not any(c.startswith("bnep") for c in cong):
+        return False, ""
+
+    m = (mac or "").lower()
+    for duong in ("/var/lib/misc/dnsmasq.leases", "/var/lib/dnsmasq/dnsmasq.leases"):
+        try:
+            with open(duong) as f:
+                for dong in f:
+                    phan = dong.split()
+                    if len(phan) >= 3 and phan[1].lower() == m:
+                        return True, phan[2]
+        except Exception:
+            pass
+    return True, ""      # co duong mang nhung chua thay IP da cap
+
+
+def bt_agent_state():
+    """
+    Doc ma so ma agent dang hien (de nguoi dung go len ban phim).
+    Agent ghi file nay khi BlueZ hoi ma - xem scripts/bt-auto-agent.py
+    """
+    try:
+        with open(BT_STATE_FILE) as f:
+            d = json.load(f)
+        # Chi coi la con hieu luc trong 2 phut
+        if time.time() - d.get("at", 0) < 120:
+            return d
+    except Exception:
+        pass
+    return None
+
+
+def _thiet_bi_da_thay(mac):
+    """Kiểm tra BlueZ có đang "biet" thiet bi nay khong (da tung discover)."""
+    try:
+        out = subprocess.run(["bluetoothctl", "devices"],
+                             capture_output=True, text=True, timeout=6).stdout
+        return mac.lower() in out.lower()
+    except Exception:
+        return False
+
+
+def _pair_worker(mac):
+    """
+    Ghep cap o luong nen. Ban phim can nguoi dung go ma nen co the lau.
+
+    LO HONG DO TIN CAY DA TIM RA (chua gap that, phat hien khi ra soat lai):
+    doan kiem tra "su that" o cuoi ham (goi bt_device_info sau khi ghep) nam
+    NGOAI khoi try/finally chinh. Neu doan do nem loi bat ngo, ca ham se
+    thoat SOM ma KHONG BAO GIO chay toi dong "_PAIR['running'] = False" -
+    _PAIR se ket cung o trang thai "dang chay" MAI MAI, khien bt_pair_start()
+    tu choi moi lan ghep cap tiep theo voi thong bao "Dang ghep cap thiet bi
+    khac, doi mot chut" du that ra khong co gi dang chay ca. Nguoi dung se
+    phai khoi dong lai ca dashboard moi sua duoc, ma khong biet vi sao.
+
+    Sua bang try/finally BAO TRUM TOAN BO than ham: "_PAIR['running'] = False"
+    gio nam trong finally ngoai cung, chay dam bao du bat ky dong nao ben
+    trong nem loi gi di nua.
+    """
+    steps = []
+    try:
+        # Xoa sach ban ghi cu TRUOC KHI ghep. Ly do: BlueZ co the con giu mot
+        # ban ghi hong mot nua (Paired=yes nhung khong co khoa lien ket). Khi
+        # do lenh `pair` tra ve "Already Paired" va di tiep, nhung ho so HID
+        # van bi tu choi vinh vien - ghep bao nhieu lan cung khong khoi.
+        # Xoa truoc thi moi lan ghep deu la mot lan ghep that su moi.
+        subprocess.run(["bluetoothctl", "remove", mac],
+                       capture_output=True, timeout=15)
+
+        # LOI DA GAP THAT (quan trong): sau khi `remove`, BlueZ QUEN HAN thiet
+        # bi - no khong con nam trong danh sach "da biet" nua. Goi `pair` ngay
+        # sau do that bai tuc khac voi loi "Device ... not available", VI
+        # `pair` theo dia chi MAC chi hoat dong voi thiet bi da duoc discover.
+        #
+        # Rieng ban phim/chuot Bluetooth con co mot dac diem: sau khi bi tu
+        # choi ket noi (do chua bonded), no se tu dong thu KET NOI LAI toi
+        # dung dia chi Pi nhieu lan - day la "page request" truc tiep, KHONG
+        # phai quang ba discover, nen `bluetoothctl scan` thong thuong khong
+        # bat duoc no. No CHI hien ra duoc khi nguoi dung bat lai che do ghep
+        # cap tren CHINH ban phim (giu nut Connect cho den khi den nhap nhay
+        # NHANH - khac voi nhap nhay cham la dang co reconnect binh thuong).
+        #
+        # Vi vay o day ta quet toi da 20 giay, kiem tra dinh ky xem thiet bi
+        # da xuat hien chua, thay vi doi cung mot khoang thoi gian co dinh.
+        # GIU QUET CHAY SUOT ca qua trinh ghep cap, khong tat ngay khi vua
+        # thay thiet bi.
+        #
+        # LOI THAT DA GAP: truoc day thay thiet bi la tat quet ngay roi moi
+        # `pair`. BlueZ coi thiet bi vua quet duoc ma chua ghep cap la "tam
+        # thoi" va XOA khoi danh sach rat nhanh sau khi ngung quet - den luc
+        # chay `pair` thi bao thang "Device ... not available" du vai giay
+        # truoc con thay ro rang. Da tai hien duoc dung loi nay tren may that.
+        # Vi vay dat thoi gian quet du dai (120s) de phu het ca buoc pair/
+        # trust/connect, va chi tat quet o khoi finally bên dưới.
+        # Cua so quet 150 GIAY, khong phai 20.
+        #
+        # DAY LA SO DO THAT, khong phai uoc luong: ghep ban phim Samsung cua
+        # nguoi dung tren chinh may nay, ban phim mat **116 giay** ke tu luc
+        # bat dau quet moi chiu quang ba ra. Cua so cu 20 giay (va ca muc 60
+        # giay thu o ban sua truoc) DEU KHONG DU - trang bao "khong tim thay"
+        # du ban phim hoan toan binh thuong, va vi dung ngay o buoc quet nen
+        # khong de lai dau vet nao trong log de lan ra nguyen nhan.
+        #
+        # Ly do ban phim lau nhu vay: nguoi dung bam nut tren TRANG WEB truoc,
+        # roi moi cam ban phim len giu nut pairing; cong them nhieu ban phim
+        # phai giu nut vai giay moi vao che do quang ba.
+        TONG_GIAY_QUET = 150
+        _PAIR["step"] = "quet"
+        subprocess.Popen(["bluetoothctl", "--timeout", "120", "scan", "on"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        thay = False
+        for giay in range(TONG_GIAY_QUET):
+            time.sleep(1)
+            # Hien dem nguoc de nguoi dung biet con bao lau ma bam nut tren
+            # ban phim, thay vi ngoi doan.
+            _PAIR["step"] = f"quet (con {TONG_GIAY_QUET - giay}s - bam nut ghep cap tren ban phim ngay)"
+            if _thiet_bi_da_thay(mac):
+                thay = True
+                break
+
+        if not thay:
+            steps.append(("quet", False,
+                          f"Không tìm thấy thiết bị sau {TONG_GIAY_QUET}s quét. Bàn phím "
+                          "gần như chắc chắn CHƯA ở chế độ ghép cặp: giữ nút Connect/"
+                          "pairing trên bàn phím cho đến khi đèn nhấp nháy NHANH (nhấp "
+                          "nháy chậm là đang tìm lại máy cũ, không phải chế độ ghép cặp), "
+                          "rồi bấm Ghép cặp lại ngay. Bàn phím chỉ giữ chế độ này 1-3 "
+                          "phút. Nếu vẫn không thấy: thử thay pin."))
+        else:
+            for action, limit in (("pair", 60), ("trust", 10), ("connect", 25)):
+                _PAIR["step"] = action
+                r = subprocess.run(["bluetoothctl", action, mac],
+                                   capture_output=True, text=True, timeout=limit)
+                out = (r.stdout + r.stderr).strip().splitlines()
+                last = out[-1] if out else ""
+                good = any(k in last.lower() for k in
+                           ("success", "successful", "already"))
+                steps.append((action, good, last[:120]))
+                if action == "pair" and not good:
+                    break
+    except subprocess.TimeoutExpired:
+        steps.append((_PAIR["step"], False,
+                      "Quá thời gian chờ - bàn phím không phản hồi hoặc chưa gõ mã"))
+    except Exception as e:
+        steps.append((_PAIR["step"], False, str(e)[:120]))
+    finally:
+        # Luon tat quet du ghep cap thanh cong hay khong - de quet chay ngam
+        # se ton pin va lam nhieu song cho chinh ket noi vua tao.
+        try:
+            subprocess.run(["bluetoothctl", "scan", "off"],
+                           capture_output=True, timeout=8)
+        except Exception:
+            pass
+
+    # Tu day tro xuong nam trong try/finally RIENG: neu buoc kiem tra sau
+    # ghep gap loi bat ngo, "_PAIR['running']" van PHAI duoc dat lai False -
+    # thieu buoc nay thi tinh nang ghep cap se ket cung "dang chay" mai mai,
+    # tu choi moi lan ghep cap tiep theo cho den khi khoi dong lai dashboard.
+    try:
+        _PAIR["ok"] = all(g for _, g, _ in steps) and len(steps) == 4
+        _PAIR["detail"] = " | ".join(f"{a}: {m}" for a, _, m in steps)
+
+        # Kiem tra lai bang SU THAT chu khong tin chu "success" cua bluetoothctl:
+        # no bao thanh cong ca khi khoa lien ket khong duoc luu. Voi ban phim/chuot
+        # ma thieu khoa nay thi BlueZ se tu choi gan ho so HID va thiet bi khong
+        # go duoc gi - phai bao ro ngay tai day thay vi de nguoi dung ngoi doan.
+        if _PAIR["ok"]:
+            sau = bt_device_info(mac)
+            if not sau.get("bonded", False):
+                _PAIR["ok"] = False
+                _PAIR["detail"] += (" | CẢNH BÁO: ghép xong nhưng không lưu được khóa "
+                                    "liên kết (Bonded: no). Bàn phím sẽ không gõ được. "
+                                    "Hãy xóa ghép cặp trên CHÍNH BÀN PHÍM (thường giữ "
+                                    "nút Connect vài giây cho đến khi đèn nhấp nháy) "
+                                    "rồi ghép lại.")
+    except Exception as e:
+        _PAIR["ok"] = False
+        _PAIR["detail"] = (_PAIR.get("detail") or "") + f" | Lỗi khi kiểm tra lại sau ghép: {str(e)[:120]}"
+    finally:
+        _PAIR["step"] = "xong"
+        _PAIR["running"] = False
+
+
+def bt_pair_start(mac):
+    """Bat dau ghep cap o luong nen, tra ve ngay de trang web khong treo."""
+    with _KHOA_PAIR:
+        if _PAIR["running"]:
+            return False, "Đang ghép cặp thiết bị khác, đợi một chút."
+        _PAIR.update(running=True, mac=mac, step="pair", ok=None, detail="")
+    threading.Thread(target=_pair_worker, args=(mac,), daemon=True).start()
+    return True, ""
+
+
+def bt_pair_state():
+    return dict(_PAIR)
+
+
+def bt_connect_profile(mac, want=""):
+    """
+    Ket noi theo DUNG ho so cua thiet bi.
+
+    `bluetoothctl connect` chung chung de that bai voi thiet bi da ho so
+    (vd laptop quang cao ca A2DP lan PAN): BlueZ chon dai va bao loi. Voi may
+    tinh/dien thoai ta goi thang org.bluez.Network1.Connect(NAP) de lay mang;
+    voi ban phim/chuot thi connect binh thuong la dung (ho so HID).
+
+    Chi `trust` khi thiet bi DA BOND that su - khong phai luc nao cung trust.
+    khong trust thi lan sau bat len thiet bi khong tu noi lai duoc (kich ban 3
+    anh can), NHUNG trust mot thiet bi CHUA bond la co hai: ReconnectUUIDs
+    (main.conf) khien BlueZ lien tuc thu ket noi nen tren voi bat ky thiet bi
+    trusted nao quang bao HID/PAN - voi thiet bi chua bond, moi lan thu deu
+    bi tu choi ("Rejected connection from !bonded device"), tao thanh vong
+    lap spam nen VA con co the tranh chap tai nguyen HCI voi mot lan ghep cap
+    moi dang co gang thuc hien cung luc. Da gap that: bam "Ket noi" tren
+    thiet bi chua bond -> trust bi bat sai -> lan ghep cap lai sau do that
+    bai kho hieu vi adapter dang ban doi pho voi cac lan tu-ket-noi nen.
+    """
+    if not re.fullmatch(r"[0-9A-Fa-f:]{17}", mac or ""):
+        return False, "Địa chỉ MAC không hợp lệ."
+
+    info = bt_device_info(mac)
+    kind = want or info["cls"]["kind"]
+    ten = info["name"]
+
+    if not info.get("bonded", False):
+        return False, (f"{ten} chưa ghép cặp thật sự (thiếu khóa liên kết). "
+                       "Bấm 'Ghép cặp lại' thay vì 'Kết nối'.")
+
+    subprocess.run(["bluetoothctl", "trust", mac], capture_output=True, timeout=10)
+
+    if kind == "net":
+        # AI NOI CHUYEN VOI AI: trong Bluetooth PAN, ben CHO mang la "NAP",
+        # ben XIN mang la "PANU". Ket noi LUON do ben xin mang bat dau; ben
+        # cho mang chi ngoi doi, KHONG the tu goi sang.
+        #
+        # LOI THAT DA GAP: nut nay goi Network1.Connect("nap") - tuc la bao
+        # PI DI XIN MANG CUA MAY KIA. Voi may Windows chi quang ba PANU (may
+        # xin mang, khong chia se mang) thi BlueZ tra ve "Operation is not
+        # supported" - da do that tren may nguoi dung. Nguoi dung doc dong do
+        # khong the hieu la phai lam gi. Nay kiem tra truoc va noi thang viec
+        # can lam o may ben kia.
+        if not _co_dich_vu_nap(mac):
+            return False, (
+                f"{ten} chi dong vai tro MAY XIN MANG (PANU), no khong chia se mang. "
+                f"Pi moi la ben CHO mang, ma trong Bluetooth ben cho mang KHONG THE tu "
+                f"bat dau ket noi - phai lam tu chinh {ten}: mo Devices and Printers "
+                f"(go 'devicesandprinters' o o Run), chuot phai ConsolePi -> Connect using "
+                f"-> Access point. Xong may do se tu nhan IP dai 192.168.60.x.")
+        try:
+            import dbus
+            bus = dbus.SystemBus()
+            path = "/org/bluez/hci0/dev_" + mac.upper().replace(":", "_")
+            net = dbus.Interface(bus.get_object("org.bluez", path), "org.bluez.Network1")
+            iface = str(net.Connect("nap"))
+            return True, (f"Đã kết nối mạng Bluetooth với {ten} qua giao diện "
+                          f"{iface}. Máy đó sẽ cấp IP cho máy này.")
+        except Exception as e:
+            detail = str(e).split(":")[-1].strip()[:110]
+            return False, (f"Không nối được mạng (PAN) với {ten}: {detail}. "
+                           "Trên máy đó phải bật chia sẻ kết nối qua Bluetooth "
+                           "(Windows: Personal Area Network; Mac: Internet Sharing).")
+
+    r = subprocess.run(["bluetoothctl", "connect", mac],
+                       capture_output=True, text=True, timeout=25)
+    out = (r.stdout + r.stderr).strip().splitlines()
+    last = out[-1] if out else ""
+    good = "success" in last.lower() or "Connected: yes" in r.stdout
+    if good:
+        loai = info["cls"]["label"].lower()
+        return True, f"Đã kết nối {ten} ({loai})."
+    return False, f"Không kết nối được {ten}: {last[:120]}"
+
+
+def bt_unpair(mac):
+    try:
+        subprocess.run(["bluetoothctl", "disconnect", mac], capture_output=True, timeout=12)
+        r = subprocess.run(["bluetoothctl", "remove", mac],
+                           capture_output=True, text=True, timeout=12)
+        return r.returncode == 0, (r.stdout + r.stderr).strip()[:120]
+    except Exception as e:
+        return False, str(e)[:120]
+
+
+
+# ---------------------------------------------------------------------------
+# Phan loai thiet bi Bluetooth
+#
+# Truoc day chi dua vao truong `Icon` cua BlueZ voi bang 6 muc, nen laptop,
+# iPad, may Mac, dien thoai deu roi vao "khac" va nut "Ket noi" thi goi
+# `bluetoothctl connect` chung chung - khong biet nen noi ho so mang (PAN)
+# hay ho so ban phim (HID). Do la ly do ghep cap ban phim hay treo.
+#
+# Class of Device la mot so 24 bit theo chuan Bluetooth:
+#   bit 2-7   : minor class (y nghia phu thuoc major)
+#   bit 8-12  : major class  <- xac dinh LOAI thiet bi
+#   bit 13-23 : service class (co dich vu mang / audio / ... khong)
+# ---------------------------------------------------------------------------
+
+MAJOR_CLASSES = {
+    0: ("Không rõ", "🔗"),
+    1: ("May tinh", "💻"),
+    2: ("Dien thoai", "📱"),
+    3: ("Thiet bi mang", "🌐"),
+    4: ("Am thanh", "🎧"),
+    5: ("Ban phim / Chuot", "⌨️"),
+    6: ("May anh / May in", "🖨️"),
+    7: ("Thiet bi deo", "⌚"),
+    8: ("Do choi", "🧸"),
+    9: ("Y te", "🩺"),
+}
+
+# Minor class khi major = 1 (May tinh) va = 5 (Peripheral)
+MINOR_COMPUTER = {1: "May ban", 2: "May chu", 3: "Laptop",
+                  4: "Handheld", 5: "Palm", 6: "Wearable"}
+MINOR_PHONE = {1: "Dien thoai di dong", 2: "Dien thoai ban",
+               3: "Smart phone", 4: "Modem", 5: "ISDN"}
+
+UUID_HID = "00001124-0000-1000-8000-00805f9b34fb"   # Human Interface Device
+UUID_NAP = "00001116-0000-1000-8000-00805f9b34fb"   # Network Access Point
+UUID_PANU = "00001115-0000-1000-8000-00805f9b34fb"  # PAN User
+UUID_A2DP = "0000110b-0000-1000-8000-00805f9b34fb"  # Audio Sink
+
+
+def classify_bt(cod, uuids=None, icon=""):
+    """
+    Tra ve {"major", "label", "icon", "kind"} - `kind` la thu ma UI dung de
+    quyet dinh hien nut nao: "hid" (ban phim/chuot), "net" (may tinh, dien
+    thoai - noi mang qua PAN), "audio", hoac "other".
+
+    Uu tien UUID that su thiet bi quang cao, roi moi den Class of Device,
+    cuoi cung moi den Icon cua BlueZ (kem chinh xac nhat).
+    """
+    uuids = [str(u).lower() for u in (uuids or [])]
+    try:
+        cod = int(cod or 0)
+    except (TypeError, ValueError):
+        cod = 0
+
+    major = (cod >> 8) & 0x1F
+    minor = (cod >> 2) & 0x3F
+    label, emoji = MAJOR_CLASSES.get(major, ("Không rõ", "🔗"))
+
+    if major == 1 and minor in MINOR_COMPUTER:
+        label = MINOR_COMPUTER[minor]
+    elif major == 2 and minor in MINOR_PHONE:
+        label = MINOR_PHONE[minor]
+    elif major == 5:
+        # bit 6-7 cua minor: 01 = ban phim, 10 = chuot, 11 = ca hai
+        kb = minor & 0x10
+        ms = minor & 0x20
+        if kb and ms:
+            label, emoji = "Ban phim + Chuot", "⌨️"
+        elif ms:
+            label, emoji = "Chuot", "🖱️"
+        elif kb:
+            label, emoji = "Ban phim", "⌨️"
+
+    # UUID la bang chung manh nhat ve viec thiet bi LAM DUOC gi
+    if UUID_HID in uuids:
+        kind = "hid"
+        if major not in (5,):
+            label, emoji = (label or "Thiet bi nhap lieu"), "⌨️"
+    elif UUID_NAP in uuids or UUID_PANU in uuids:
+        kind = "net"
+    elif UUID_A2DP in uuids:
+        kind = "audio"
+    elif major == 5:
+        kind = "hid"
+    elif major in (1, 2, 3):
+        kind = "net"
+    elif major == 4:
+        kind = "audio"
+    else:
+        kind = "other"
+
+    # Khong doc duoc CoD (thiet bi BLE chi quang cao) -> dua vao Icon
+    if cod == 0 and icon:
+        fallback = {"input-keyboard": ("Ban phim", "⌨️", "hid"),
+                    "input-mouse": ("Chuot", "🖱️", "hid"),
+                    "computer": ("May tinh", "💻", "net"),
+                    "phone": ("Dien thoai", "📱", "net"),
+                    "audio-card": ("Loa", "🔊", "audio"),
+                    "audio-headset": ("Tai nghe", "🎧", "audio")}
+        if icon in fallback:
+            label, emoji, kind = fallback[icon]
+
+    return {"major": major, "label": label, "icon": emoji, "kind": kind}
+
+
+# Giu lai cho code cu chua chuyen sang classify_bt()
+ICON_MAP = {"input-keyboard": "⌨️", "input-mouse": "🖱️", "computer": "💻",
+            "phone": "📱", "audio-card": "🔊", "audio-headset": "🎧"}
+
+
+
+def wifi_disconnect():
+    """
+    Ngat WiFi mot cach AN TOAN de con noi lai duoc.
+
+    KHONG dung `ip addr flush` tran lan: tren may nay wlan0 do systemd-networkd
+    quan ly, xoa dia chi bang tay lam lech trang thai lease. Cach dung la ha
+    wpa_supplicant (ca dang unit lan dang -B do wifi-fallback.sh chay), roi bao
+    networkd cau hinh lai - mat carrier thi networkd tu bo dia chi.
+    """
+    subprocess.run(["systemctl", "stop", f"wpa_supplicant@{cong_wifi()}"],
+                   capture_output=True, timeout=15)
+    subprocess.run(["pkill", "-f", f"wpa_supplicant -B -i {cong_wifi()}"],
+                   capture_output=True, timeout=10)
+    time.sleep(1)
+    subprocess.run(["networkctl", "reconfigure", cong_wifi()],
+                   capture_output=True, timeout=15)
+    return True, ("Đã ngắt WiFi. Máy sẽ tự đánh giá lại trong vòng 2 phút: "
+                  "thấy mạng quen thì nối lại, không thấy thì bật AP ConsolePi.")
+
+
+def client_via_wlan():
+    """
+    Nguoi dung co dang truy cap QUA chinh WiFi nay khong?
+    Neu co, bam ngat WiFi se lam ho mat ket noi - phai canh bao truoc.
+    """
+    try:
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
+        ip = ip.split(",")[0].strip()
+        _, _, wlan_ip = get_net_status()
+        if not ip or not wlan_ip:
+            return False
+        # Cung 3 octet dau = cung dai mang wlan0
+        return ip.rsplit(".", 1)[0] == wlan_ip.rsplit(".", 1)[0]
+    except Exception:
+        return False
+
+
+# --------------------------------------------------- Gia MAC WiFi (phu)
+# LY DO THAT: anh Thoai dem may len cong ty, WiFi khach TU CHOI lien ket
+# ngay tu buoc dau (khong phai sai mat khau - xem wifi-fallback.sh). Da
+# kiem tra MAC that cua wlan0 (e4:5f:01:...) va xac nhan day la ma hang
+# (OUI) dang ky rieng cho Raspberry Pi Foundation - bat ky he thong mang
+# nao cung "doc" duoc day la mot Raspberry Pi chi tu MAC, va nhieu cong ty
+# chu dong chan cac thiet bi dang bo mach nhung/IoT tren WiFi khach vi ly
+# do bao mat. Doi MAC (gia dang mot thiet bi thong thuong) la cach vuot
+# qua kieu chan theo hang nay - CHI dung khi chinh chu (anh Thoai) xac
+# nhan cong ty khong cam viec nay, KHONG tu y bat mac dinh.
+MAC_SPOOF_FLAG = _DD.FILE_MAC_SPOOF
+
+
+def mac_that(iface=None):
+    """
+    MAC GOC tu phan cung (doc thang tu EEPROM qua ethtool), KHONG phu
+    thuoc da tung doi bang phan mem hay chua - dung de biet chac chan
+    "MAC that" la gi bat ky luc nao, khong can tu luu/nho rieng.
+    """
+    if iface is None:
+        iface = cong_wifi()
+    try:
+        r = subprocess.run(["ethtool", "-P", iface],
+                           capture_output=True, text=True, timeout=5)
+        m = re.search(r"([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})", r.stdout)
+        return m.group(1).lower() if m else ""
+    except Exception:
+        return ""
+
+
+def mac_hien_tai(iface=None):
+    if iface is None:
+        iface = cong_wifi()
+    try:
+        with open(f"/sys/class/net/{iface}/address") as f:
+            return f.read().strip().lower()
+    except OSError:
+        return ""
+
+
+def dang_gia_mac():
+    return os.path.exists(MAC_SPOOF_FLAG)
+
+
+def _tao_mac_gia():
+    """
+    Sinh 1 MAC ngau nhien kieu "locally administered" (bit thu 2 cua byte
+    dau = 1, vd bat dau bang 02) - day la quy uoc chuan de bao "day la MAC
+    do phan mem gan, khong phai cua hang san xuat nao ca", tranh trung voi
+    MAC that cua thiet bi khac tren cung mang.
+    """
+    import random
+    phan_con_lai = [random.randint(0, 255) for _ in range(5)]
+    return "02:" + ":".join(f"{b:02x}" for b in phan_con_lai)
+
+
+def bat_gia_mac(iface=None):
+    """
+    Bat che do gia MAC - sinh 1 MAC gia CO DINH (luu lai, dung lai moi lan
+    chu khong doi ngau nhien moi lan ket noi) va ap dung ngay neu doi duoc.
+
+    Vi sao MAC gia phai CO DINH: neu moi lan doi 1 MAC khac, mang cong ty
+    se thay "hang loat thiet bi la lien tuc xuat hien" - de bi he thong an
+    ninh mang danh dau la bat thuong hon la mot thiet bi ON DINH quay lai
+    nhieu lan.
+    """
+    if iface is None:
+        iface = cong_wifi()
+    if dang_gia_mac():
+        return True, "Đã bật sẵn."
+    mac_moi = _tao_mac_gia()
+    try:
+        with open(MAC_SPOOF_FLAG, "w") as f:
+            f.write(mac_moi + "\n")
+    except OSError as e:
+        return False, f"Không lưu được: {e}"
+
+    ok, msg = _ap_dung_mac(iface, mac_moi)
+    if ok:
+        return True, f"Đã bật giả MAC ({mac_moi}) và áp dụng ngay."
+    return True, (f"Đã bật giả MAC ({mac_moi}), nhưng áp dụng ngay không thành "
+                  f"công ({msg}) - sẽ tự áp dụng ở lần kết nối lại WiFi kế tiếp "
+                  f"(tối đa 2 phút).")
+
+
+def tat_gia_mac(iface=None):
+    """Tat va TRA VE NGAY MAC that - khong doi mac dinh phai doi WiFi thu cong."""
+    if iface is None:
+        iface = cong_wifi()
+    try:
+        os.remove(MAC_SPOOF_FLAG)
+    except OSError:
+        pass
+    that = mac_that(iface)
+    if not that:
+        return True, "Đã tắt giả MAC (không đọc được MAC gốc để trả về ngay - sẽ dùng MAC thật ở lần kết nối sau)."
+    ok, msg = _ap_dung_mac(iface, that)
+    if ok:
+        return True, f"Đã tắt giả MAC, trả lại MAC thật ({that}) ngay."
+    return True, f"Đã tắt giả MAC, nhưng trả về ngay không thành công ({msg}) - sẽ tự dùng MAC thật ở lần kết nối sau."
+
+
+def _ap_dung_mac(iface, mac):
+    """
+    Doi MAC that su tren interface. PHAI ha interface xuong truoc - hau het
+    driver WiFi (ke ca chip tren Pi) tu choi doi MAC luc interface dang UP.
+    Ngat wpa_supplicant truoc de tranh no giu interface o trang thai dang
+    dung du wifi (giong cach wifi_disconnect() da lam).
+    """
+    try:
+        subprocess.run(["systemctl", "stop", "wpa_supplicant@" + iface],
+                       capture_output=True, timeout=15)
+        subprocess.run(["pkill", "-f", f"wpa_supplicant -B -i {iface}"],
+                       capture_output=True, timeout=10)
+        subprocess.run(["ip", "link", "set", iface, "down"],
+                       capture_output=True, timeout=10, check=True)
+        r = subprocess.run(["ip", "link", "set", iface, "address", mac],
+                           capture_output=True, text=True, timeout=10)
+        subprocess.run(["ip", "link", "set", iface, "up"],
+                       capture_output=True, timeout=10)
+        if r.returncode != 0:
+            return False, (r.stderr or r.stdout).strip()[:200]
+        subprocess.run(["networkctl", "reconfigure", iface],
+                       capture_output=True, timeout=15)
+    except subprocess.CalledProcessError as e:
+        return False, str(e)
+    except Exception as e:
+        return False, str(e)
+    return True, "ok"
+
+
+# ------------------------------------------------------------- Trang
+def _wifi_page(msg="", ok=True):
+    mode, ssid, ip = get_net_status()
+    saved = load_saved_wifi()
+    locked = ap_locked()
+    state = WIFI_STATUS.get("state")
+    last = WIFI_STATUS.get("msg") if state in ("connected", "failed") else ""
+
+    msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
+    last_html = (f'<div class="msg {"err" if state == "failed" else "ok"}">{_esc(last)}</div>'
+                 if last else "")
+
+    # Ten + mat khau WiFi Pi tu phat (26/09/2026, anh Thoai): mat khau sinh
+    # ngau nhien rieng tung may luc cai nhung truoc day KHONG hien o dau -
+    # nguoi dung khong IT khong biet go lenh de xem. Hien o day (trang da
+    # qua dang nhap), an sau nut bam de khong lo khi dang chieu man hinh.
+    ap_ssid, ap_mk = _doc_ap()
+    ap_tt = (f"""
+      <table style="max-width:460px;margin:0 0 12px;">
+        <tr><td style="width:150px;">Tên WiFi</td><td><code>{_esc(ap_ssid)}</code></td></tr>
+        <tr><td>Mật khẩu</td><td><code id="ap-mk" data-mk="{_esc(ap_mk)}">••••••••••</code>
+          <button type="button" class="small gray" style="margin-left:8px;"
+            onclick="var c=document.getElementById('ap-mk');var h=c.textContent.indexOf('•')<0;
+                     c.textContent=h?'••••••••••':c.dataset.mk;this.textContent=h?'Hiện':'Ẩn';">Hiện</button></td></tr>
+        <tr><td>Địa chỉ giao diện</td><td><code>http://192.168.50.1</code></td></tr>
+      </table>""" if ap_mk else "")
+    ap_card = f"""
+    <div class="card">
+      <h3>Chế độ phát sóng (AP ConsolePi)</h3>
+      {ap_tt}
+      <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+        {"Đang KHÓA ở chế độ AP - máy sẽ không tự chuyển sang WiFi." if locked
+         else "Pi tự chuyển sang WiFi quen thuộc khi tìm thấy. Khóa AP để giữ nguyên sóng ConsolePi."}
+      </p>
+      <form method="POST" action="{'/release-ap' if locked else '/force-ap'}"
+            onsubmit="return confirm('{'Gỡ khóa AP?' if locked else 'Bật và KHÓA AP ConsolePi? Nếu đang kết nối qua WiFi sẽ bị đứt - nên làm khi đang cắm dây LAN.'}');">
+        <button type="submit" class="{'gray' if locked else 'blue'}">
+          {'🔓 Gỡ khóa AP' if locked else '🔒 Phát AP ConsolePi (khóa)'}
+        </button>
+      </form>
+    </div>"""
+
+    gia_mac = dang_gia_mac()
+    mac_goc = mac_that()
+    mac_dang_dung = mac_hien_tai()
+    if gia_mac:
+        mac_card_body = f"""
+        <p style="margin:0;"><span style="color:#6ee7a0;">🟢 Đang bật</span></p>
+        <table style="max-width:420px;margin-top:9px;">
+          <tr><td style="width:150px;">MAC đang dùng</td><td><code>{_esc(mac_dang_dung)}</code></td></tr>
+          <tr><td>MAC thật (phần cứng)</td><td><code>{_esc(mac_goc)}</code></td></tr>
+        </table>
+        <form method="POST" action="/wifi-mac-tat" style="margin-top:13px;"
+              onsubmit="return confirm('Tắt giả MAC và trả về MAC thật ngay?');">
+          <button type="submit" class="gray" data-busy="Đang tắt...">Tắt, trả về MAC thật</button>
+        </form>"""
+    else:
+        mac_card_body = f"""
+        <p style="margin:0;"><span style="color:#8b93a1;">⚪ Đang tắt</span> - đang dùng MAC
+          thật: <code>{_esc(mac_goc)}</code></p>
+        <form method="POST" action="/wifi-mac-bat" style="margin-top:13px;">
+          <button type="submit" class="gray" data-busy="Đang bật...">🎭 Bật giả MAC</button>
+        </form>"""
+
+    mac_card = f"""
+    <div class="card">
+      <h3>Giả MAC WiFi <span style="color:#8b93a1;font-size:12px;font-weight:400;">
+          (dùng khi mạng chặn thiết bị lạ)</span></h3>
+      <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+        Một số mạng công ty từ chối kết nối ngay từ đầu với thiết bị có địa chỉ MAC
+        thuộc hãng Raspberry Pi (như máy này) - không liên quan mật khẩu. Bật mục này
+        để giả dạng một thiết bị thông thường. MAC giả CỐ ĐỊNH (không đổi mỗi lần) để
+        không bị mạng đánh giá bất thường. Nên TẮT lại khi về nhà nếu router nhà có
+        đặt riêng địa chỉ IP cho MAC thật của máy này.</p>
+      {mac_card_body}
+    </div>"""
+
+    # Danh sach mang WiFi "nhin thay duoc" tu lan quet gan nhat, dung de to
+    # mau nut Ket noi trong bang WiFi đã lưu (yeu cau thuc te: biet ngay
+    # WiFi da luu nao dang trong tam voi ma khong can bam quet/thu tay tung
+    # cai). KHONG tu quet moi khi dang khoa AP - phat song wlan0 dang ban lam
+    # AP, ep quet luc nay co the lam gian doan song ConsolePi dang phat.
+    scanned_ssids = scan_wifi() if not locked else list(_SCAN_CACHE["ssids"])
+    visible_ssids = set(scanned_ssids)
+
+    def _connect_cell(s):
+        if s == ssid:
+            return '<span style="color:#6ee7a0;font-size:13px;">● Đang dùng</span>'
+        if locked:
+            return ('<button type="button" class="gray small" disabled '
+                     'title="AP đang khóa - gỡ khóa AP trước khi đổi WiFi">'
+                     '⚪ Kết nối</button>')
+        if s in visible_ssids:
+            return (f'<form method="POST" action="/wifi-connect-saved" style="display:inline;"'
+                     f' onsubmit="return confirm(\'Chuyển sang WiFi {_esc(s)}? '
+                     f'Kết nối hiện tại (nếu có) sẽ bị ngắt trong lúc chuyển.\');">'
+                     f'<input type="hidden" name="ssid" value="{_esc(s)}">'
+                     f'<button type="submit" data-busy="Đang kết nối...">'
+                     f'🟢 Kết nối</button></form>')
+        return ('<button type="button" class="gray small" disabled '
+                 'title="Không thấy mạng này trong lần quét gần nhất - có thể đang '
+                 'ngoài vùng phủ sóng hoặc đang tắt">⚪ Kết nối</button>')
+
+    saved_rows = "".join(f"""
+      <tr>
+        <td>{_esc(s)}</td>
+        <td>{_connect_cell(s)}</td>
+        <td><form method="POST" action="/wifi-delete"
+                  onsubmit="return confirm('Xóa WiFi {_esc(s)}?');">
+              <input type="hidden" name="ssid" value="{_esc(s)}">
+              <button type="submit" class="red small">Xóa</button>
+            </form></td>
+      </tr>""" for s in saved)
+
+    scan_form = ""
+    if not locked:
+        ssids = scanned_ssids
+        age = scan_age()
+        opts = "".join(f"<option>{_esc(s)}</option>" for s in ssids)
+        if not ssids:
+            fresh = "Đang quét lần đầu, bấm Quét lại sau vài giây..."
+        elif age is None:
+            fresh = ""
+        elif age < 60:
+            fresh = f"quét {age} giây trước"
+        else:
+            fresh = f"quét {age // 60} phút trước"
+        scan_form = f"""
+        <h2>Kết nối WiFi mới</h2>
+        <div class="card">
+          <form method="POST" action="/wifi-rescan" style="margin-bottom:12px;">
+            <button type="submit" class="gray small" data-busy="Đang quét WiFi...">🔄 Quét lại</button>
+            <span style="color:#8b93a1;font-size:13px;margin-left:9px;">{fresh}</span>
+          </form>
+          <form method="POST" action="/connect-wifi">
+            <label>Chọn WiFi ({len(ssids)} mạng tìm thấy)</label>
+            <select name="ssid" required>{opts}</select>
+            <label>Mật khẩu</label>
+            <input type="password" name="password" required>
+            <label style="display:flex;align-items:center;gap:9px;margin-top:13px;">
+              <input type="checkbox" name="save" value="1" checked style="width:20px;height:20px;">
+              <span>Lưu để lần sau tự kết nối</span>
+            </label>
+            <div class="row" style="margin-top:13px;"><button type="submit" data-busy="Đang kết nối, chờ 20-30 giây...">Kết nối</button></div>
+          </form>
+          <p style="color:#8b93a1;font-size:13px;margin-top:11px;">
+            Nếu đang xem qua WiFi, kết nối sẽ đứt khi Pi chuyển mạng. Sau 20-30 giây
+            hãy nối máy vào mạng mới rồi vào lại <code>http://server-console.local</code>.
+          </p>
+        </div>"""
+
+    # Nut ngat chi hien khi dang thuc su ket noi WiFi (khong phai che do AP)
+    disconnect_html = ""
+    if mode == "Client" and ssid:
+        warn = ""
+        if client_via_wlan():
+            warn = ('<div class="msg warn" style="margin:11px 0 0;">⚠️ Bạn đang truy cập '
+                    'QUA chính WiFi này. Ngắt sẽ làm mất kết nối của bạn - hãy cắm dây LAN '
+                    'hoặc nối vào AP ConsolePi trước.</div>')
+        disconnect_html = f"""
+        <form method="POST" action="/wifi-disconnect" style="margin-top:12px;"
+              onsubmit="return confirm('Ngắt kết nối WiFi {_esc(ssid)}?');">
+          <button type="submit" class="red" data-busy="Đang ngắt...">
+            ⏏ Ngắt kết nối WiFi
+          </button>
+          <span style="color:#8b93a1;font-size:13px;margin-left:9px;">
+            Không xóa WiFi đã lưu. Pi tự đánh giá lại sau tối đa 2 phút.
+          </span>
+        </form>{warn}"""
+
+    body = f"""
+    {msg_html}{last_html}
+    <div class="card">
+      <h3>Trạng thái hiện tại</h3>
+      <table style="max-width:470px;">
+        <tr><th style="width:150px;">Chế độ</th><td>{mode}</td></tr>
+        <tr><th>Mạng</th><td>{_esc(ssid) or '-'}</td></tr>
+        <tr><th>Địa chỉ IP</th><td><code>{ip or '-'}</code></td></tr>
+      </table>
+      {disconnect_html}
+    </div>
+    {ap_card}
+    {mac_card}
+    {scan_form}
+    <h2>WiFi đã lưu ({len(saved)})</h2>
+    {'' if locked or not saved else '<p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">'
+     '🟢 xanh = đang trong tầm sóng, bấm là kết nối ngay. ⚪ xám = không thấy '
+     'trong lần quét gần nhất, không bấm được.</p>'}
+    <table><tr><th>SSID</th><th style="width:120px;">Kết nối</th><th style="width:90px;">Thao tác</th></tr>{saved_rows}</table>
+    {'<p style="color:#8b93a1;">Chưa lưu WiFi nào. Pi sẽ tự phát AP ConsolePi khi không tìm thấy mạng quen.</p>' if not saved else ''}
+    <h2>Thêm WiFi thủ công</h2>
+    <div class="card">
+      <p style="color:#8b93a1;font-size:13px;margin:0 0 9px;">
+        Chỉ lưu vào danh sách, không kết nối ngay. Dùng khi biết trước WiFi nơi sắp đến.</p>
+      <form method="POST" action="/wifi-add">
+        <label>Tên WiFi (SSID)</label><input type="text" name="ssid" required>
+        <label>Mật khẩu</label><input type="password" name="password" required>
+        <div class="row" style="margin-top:13px;"><button type="submit">Lưu vào danh sách</button></div>
+      </form>
+    </div>"""
+
+    return render_page(body, active="/wifi", title="WiFi",
+                       subtitle="Kết nối mạng, quản lý WiFi đã lưu, chế độ phát sóng")
+
+
+def _bt_page(msg="", ok=True, scanned=None):
+    devs = get_bt_paired_devices()
+    infos = [(m, bt_device_info(m)) for m, _ in devs]
+    msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
+    if not co_bluetooth():
+        msg_html = ('<div class="msg warn">Máy này không có bộ Bluetooth (hoặc chưa bật '
+                    'trong BIOS/driver) - các chức năng trên trang này sẽ không dùng được.'
+                    '</div>') + msg_html
+
+    # --- Thiet bi da ghep cap ---
+    rows = ""
+    for mac, i in infos:
+        c = i["cls"]
+
+        # Trang thai phai noi DUNG SU THAT. Truong hop nguy hiem nhat la
+        # Connected=yes nhung Bonded=no: BlueZ tu choi gan ho so HID nen ban
+        # phim khong go duoc gi, ma giao dien cu van hien "dang ket noi" mau
+        # xanh -> nguoi dung ngoi cho mai khong hieu tai sao. Da gap that.
+        hong_bond = i["connected"] and not i.get("bonded", False)
+        if hong_bond:
+            state = ('<span style="color:#ff6b6b;">🔴 Nối được nhưng KHÔNG dùng được'
+                     '<br><small>Thiếu khóa liên kết (Bonded: no) - phải ghép cặp lại</small></span>')
+        elif i["connected"] and c["kind"] == "net":
+            # May tinh/dien thoai: "Connected" MOI CHI la ket noi Bluetooth,
+            # chua chac da vao mang. Phai noi ro 2 viec nay khac nhau.
+            vao_mang, ip_cap = bt_da_vao_mang(mac)
+            if vao_mang:
+                state = ('<span style="color:#7ddc7d;">🟢 đã vào mạng'
+                         + (f'<br><small>IP: {_esc(ip_cap)}</small>' if ip_cap else '')
+                         + '</span>')
+            else:
+                state = ('<span style="color:#ffd166;">🟡 có kết nối Bluetooth, '
+                         'CHƯA vào mạng<br><small>Trên máy đó: chuột phải '
+                         '<strong>ConsolePi</strong> &rarr; Connect using &rarr; '
+                         'Access point. Máy không tự ép vào mạng được.</small></span>')
+        elif i["connected"]:
+            state = "🟢 đang kết nối"
+        elif i["paired"]:
+            state = "⚪ đã ghép, chưa nối"
+        else:
+            state = "—"
+
+        # Nut phai khop voi LOAI thiet bi. Ban phim/chuot dung ho so HID;
+        # may tinh, dien thoai, iPad dung ho so mang PAN - goi nham thi
+        # BlueZ bao loi kho hieu hoac treo.
+        if c["kind"] == "net":
+            btn = ('<button type="submit" class="small" data-busy="Đang nối mạng...">'
+                   '🌐 Kết nối mạng (PAN)</button>')
+            prof = "net"
+        elif c["kind"] == "hid":
+            btn = ('<button type="submit" class="small" data-busy="Đang nối...">'
+                   '⌨️ Kết nối bàn phím/chuột</button>')
+            prof = "hid"
+
+        # Ban ghi ghep cap hong thi bam "Ket noi" bao nhieu lan cung vo ich -
+        # BlueZ se tu choi lai dung cho do. Cach duy nhat la xoa ban ghi roi
+        # ghep lai tu dau, nen dua thang nut do ra.
+        if hong_bond:
+            btn = ('<button type="submit" class="small" '
+                   'formaction="/bt-ghep-lai" data-busy="Đang xóa và ghép lại...">'
+                   '🔁 Ghép cặp lại</button>')
+            prof = ""
+        else:
+            btn = ('<button type="submit" class="small" data-busy="Đang nối...">'
+                   'Kết nối lại</button>')
+            prof = ""
+
+        rows += f"""
+        <tr>
+          <td>{c['icon']} <strong>{_esc(i['name'])}</strong><br>
+              <code style="font-size:12px;">{_esc(mac)}</code></td>
+          <td>{_esc(c['label'])}</td>
+          <td>{state}</td>
+          <td>
+            <form method="POST" action="/bt-connect" style="display:inline;">
+              <input type="hidden" name="mac" value="{_esc(mac)}">
+              <input type="hidden" name="profile" value="{prof}">
+              {btn}
+            </form>
+            <form method="POST" action="/bt-unpair" style="display:inline;"
+                  onsubmit="return confirm('Xóa ghép cặp {_esc(i['name'])}?');">
+              <input type="hidden" name="mac" value="{_esc(mac)}">
+              <button type="submit" class="red small">Xóa</button>
+            </form>
+          </td>
+        </tr>"""
+
+    # --- Ket qua quet (neu vua bam quet) ---
+    scan_html = ""
+    if scanned is not None:
+        paired_macs = {m for m, _ in devs}
+        new_rows = ""
+        for mac, name in scanned:
+            if mac in paired_macs:
+                continue
+            i = bt_device_info(mac)
+            c = i["cls"]
+            new_rows += f"""
+            <tr>
+              <td>{c['icon']} <strong>{_esc(name)}</strong><br>
+                  <code style="font-size:12px;">{_esc(mac)}</code></td>
+              <td>{_esc(c['label'])}</td>
+              <td>
+                <form method="POST" action="/bt-pair" style="display:inline;">
+                  <input type="hidden" name="mac" value="{_esc(mac)}">
+                  <button type="submit" class="blue small" data-busy="Dang ghep...">Ghép cặp</button>
+                </form>
+              </td>
+            </tr>"""
+        scan_html = f"""
+        <h2>Thiet bi tim thay ({len([1 for m,_ in scanned if m not in paired_macs])} chua ghep)</h2>
+        <table><tr><th>Thiết bị</th><th style="width:150px;">Loại</th>
+                   <th style="width:120px;">Thao tác</th></tr>{new_rows}</table>
+        {'<p style="color:#8b93a1;">Không thấy thiết bị mới nào. Nhớ bật chế độ ghép cặp trên bàn phím (thường giữ nút Connect vài giây đến khi đèn nhấp nháy).</p>' if not new_rows else ''}"""
+
+    # --- Khoi hien ma so / trang thai ghep cap ---
+    ag = bt_agent_state()
+    ps = bt_pair_state()
+    pair_html = ""
+
+    # "passkey" (ghep cap doi moi) va "pin" (ghep cap kieu cu, Bluetooth 2.x)
+    # deu la CUNG MOT VIEC doi voi nguoi dung: go day so nay tren ban phim roi
+    # bam Enter. Truoc day chi hien "passkey", con "pin" bi bo qua hoan toan ->
+    # ban phim cu doi go ma ma tren man hinh khong hien gi ca, nguoi dung chi
+    # thay "dang ghep cap" roi treo den het gio.
+    if ag and ag.get("kind") in ("passkey", "pin") and ag.get("go_tren_ban_phim", True):
+        kieu_cu = ag.get("kind") == "pin"
+        pair_html = f"""
+        <div class="card" style="border-left:4px solid #ffd166;background:#2a2519;">
+          <h3 style="color:#ffd166;">⌨️ Gõ mã này TRÊN BÀN PHÍM Bluetooth</h3>
+          <div style="font-size:44px;font-weight:700;letter-spacing:9px;
+                      font-family:ui-monospace,monospace;color:#fff;
+                      text-align:center;padding:14px 0;">{_esc(ag.get('value'))}</div>
+          <p style="text-align:center;color:#c9ced6;margin:0;">
+            Gõ dãy số trên rồi bấm <strong>Enter</strong> ngay trên bàn phím
+            <strong>{_esc(ag.get('device'))}</strong>.
+          </p>
+          <p style="text-align:center;color:#8b93a1;font-size:13px;margin-top:9px;">
+            {'Bàn phím đời cũ (ghép cặp kiểu PIN) - vẫn gõ y hệt như trên.'
+             if kieu_cu else f"Đã gõ {ag.get('entered', 0)} ký tự"}
+            &middot; trang tự làm mới mỗi 3 giây
+          </p>
+          <p style="text-align:center;color:#8b93a1;font-size:12px;margin-top:6px;">
+            Ban phim chua ket noi van go duoc ma nay - do la cach ghep cap chuan
+            (Windows/macOS cung lam y het).
+          </p>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ag and ag.get("kind") == "pin":
+        # Thiet bi khong go duoc (tai nghe/loa cu): chi thong bao, khong bat
+        # nguoi dung go gi ca.
+        pair_html = f"""
+        <div class="card" style="border-left:4px solid #6cb6ff;">
+          <h3>Đang dùng mã PIN <code style="font-size:20px;">{_esc(ag.get('value'))}</code></h3>
+          <p style="color:#8b93a1;margin:0;">Thiết bị <strong>{_esc(ag.get('device'))}</strong>
+          không phải bàn phím nên không gõ được mã. Pi dùng mã mặc định của nhà sản xuất.
+          Nếu thất bại, tra cứu mã PIN in trên thiết bị (hay gặp: 0000, 1234, 8888).</p>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ag and ag.get("kind") == "need-passkey":
+        pair_html = f"""
+        <div class="msg err">
+          <strong>Thiết bị này đòi Pi nhập mã do chính nó hiện ra.</strong><br>
+          <span style="font-size:13px;">
+          <strong>{_esc(ag.get('device'))}</strong> đang chờ một mã số mà nó hiện trên màn
+          hình của nó - Pi không đọc được mã đó nên bước này sẽ thất bại. Bàn phím/chuột
+          thông thường KHÔNG dùng kiểu này; nếu gặp, nhiều khả năng thiết bị đang ở sai
+          chế độ ghép cặp. Tắt rồi bật lại chế độ ghép cặp trên thiết bị và thử lại.
+          </span>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ag and ag.get("kind") == "cancelled":
+        pair_html = """
+        <div class="msg err">Thiết bị đã HỦY ghép cặp giữa chừng. Thường do hết thời gian
+        chờ trên thiết bị, hoặc mã gõ vào bị sai. Bật lại chế độ ghép cặp trên thiết bị
+        rồi bấm Ghép cặp lại.</div>"""
+    elif ag and ag.get("kind") == "confirm":
+        pair_html = f"""
+        <div class="card" style="border-left:4px solid #6cb6ff;">
+          <h3>Mã xác nhận: <code style="font-size:22px;">{_esc(ag.get('value'))}</code></h3>
+          <p style="color:#8b93a1;margin:0;">Đối chiếu với mã hiện trên
+          <strong>{_esc(ag.get('device'))}</strong> rồi bấm đồng ý bên đó.</p>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ps.get("running"):
+        pair_html = f"""
+        <div class="card" style="border-left:4px solid #6cb6ff;">
+          <h3>⏳ Đang ghép cặp {_esc(ps.get('mac'))}</h3>
+          <p style="color:#8b93a1;margin:0;">Bước hiện tại: <code>{_esc(ps.get('step'))}</code>.
+          Nếu là bàn phím, hãy <strong>bật chế độ ghép cặp trên bàn phím</strong>
+          (thường giữ nút Connect đến khi đèn nhấp nháy) và chờ mã số hiện ra.</p>
+        </div>
+        <meta http-equiv="refresh" content="3">"""
+    elif ps.get("ok") is False and ps.get("detail"):
+        pair_html = f"""
+        <div class="msg err">Ghép cặp thất bại.<br>
+        <span style="font-size:13px;">{_esc(ps.get('detail'))}</span></div>"""
+    elif ps.get("ok") is True:
+        pair_html = '<div class="msg ok">Đã ghép cặp và kết nối thành công.</div>'
+
+    body = f"""
+    {msg_html}
+    {pair_html}
+
+    <h2>Ghép bàn phím / chuột Bluetooth</h2>
+    <div class="card">
+      <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+        Dùng khi màn hình cảm ứng không tiện gõ chữ.
+      </p>
+      <ol style="color:#8b93a1;font-size:13px;margin:0 0 12px;padding-left:19px;line-height:1.75;">
+        <li>Bật chế độ ghép cặp trên bàn phím (thường giữ nút Connect đến khi đèn nhấp nháy)</li>
+        <li>Bam <strong>Quét thiết bị</strong> bên dưới</li>
+        <li>Bam <strong>Ghép cặp</strong> ở dòng bàn phím</li>
+        <li>Màn hình sẽ hiện <strong>6 chữ số</strong> - gõ dãy số đó <strong>tren chinh ban phim
+            Bluetooth</strong> rồi bấm Enter</li>
+      </ol>
+      <form method="POST" action="/bt-scan">
+        <button type="submit" data-busy="Dang quet 10 giay...">🔍 Quét thiết bị</button>
+      </form>
+    </div>
+    {scan_html}
+
+    <h2>Thiết bị đã ghép cặp ({len(devs)})</h2>
+    <table><tr><th>Thiết bị</th><th style="width:150px;">Loại</th>
+               <th style="width:160px;">Trạng thái</th>
+               <th style="width:230px;">Thao tác</th></tr>{rows}</table>
+    {'<p style="color:#8b93a1;">Chưa ghép cặp thiết bị nào.</p>' if not devs else ''}
+
+    <h2>Kết nối mạng qua Bluetooth (PAN)</h2>
+    <div class="card">
+      <p style="color:#8b93a1;font-size:13px;margin:0;">
+        Ghép máy tính/điện thoại với tên <strong>ConsolePi</strong>, sau đó vào
+        <code>http://192.168.60.1</code>. Tren Windows: mo
+        <code>devicesandprinters</code> &rarr; chuột phải ConsolePi &rarr;
+        <em>Connect using</em> &rarr; <em>Access point</em>.
+      </p>
+    </div>
+
+    <h2>Khởi động lại Bluetooth</h2>
+    <div class="card">
+      <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
+        Dùng khi không ghép cặp hoặc không kết nối lại được.
+      </p>
+      <form method="POST" action="/bt-reset" id="form_bt_reset"
+            onsubmit="return xacNhanBtReset(this);">
+        <label style="display:flex;align-items:center;gap:9px;">
+          <input type="checkbox" name="forget" value="1" id="chk_quen_thiet_bi" style="width:20px;height:20px;">
+          <span style="color:#ff6b6b;font-weight:600;">Quên tất cả thiết bị đã ghép cặp
+            (bàn phím/chuột/điện thoại đều phải ghép lại từ đầu)</span>
+        </label>
+        <div class="row" style="margin-top:13px;">
+          <button type="submit" class="gray" data-busy="Đang khởi động lại...">🔄 Reset Bluetooth</button>
+        </div>
+      </form>
+      <script>
+        // Loi that da gap: nguoi dung dang bi loi Bluetooth khac (vd khong
+        // vao mang PAN duoc) nen thu bam Reset de "sua dai", vo tinh tick
+        // nham o "Quen tat ca thiet bi" va mat luon ban phim da ghep cap
+        // thanh cong truoc do - phai ghep cap lai tu dau oan uong. Hop
+        // confirm() rieng, noi thang ban phim se mat, khi o do dang duoc
+        // tick, thay vi 1 dong canh bao chung chung de bam qua khong doc.
+        function xacNhanBtReset(form) {{
+          var quen = document.getElementById("chk_quen_thiet_bi").checked;
+          if (quen) {{
+            return confirm("CANH BAO: se QUEN HET moi thiet bi da ghep cap " +
+                            "(ban phim, chuot, dien thoai...). Phai ghep cap " +
+                            "lai TU DAU cho tung cai. Chi dung khi ban phim/" +
+                            "chuot dang loi that su, khong phai de sua loi vao " +
+                            "mang PAN (loi do khong lien quan den ghep cap).\\n\\n" +
+                            "Chac chan muon QUEN HET khong?");
+          }}
+          return confirm("Reset Bluetooth? Cac thiet bi dang noi se bi ngat " +
+                          "tam thoi (khong mat ghep cap, tu noi lai duoc).");
+        }}
+      </script>
+    </div>"""
+
+    return render_page(body, active="/bluetooth", title="Bluetooth",
+                       subtitle="Ghép bàn phím/chuột và kết nối mạng dự phòng")
+
+
+def _switching_page(ssid):
+    """Trang bao dang chuyen WiFi - dung chung cho connect-wifi va
+    wifi-connect-saved (WiFi da luu, bam Ket noi thang khong can go lai
+    mat khau)."""
+    body = f"""
+    <div class="msg warn">
+      <h3 style="margin:0 0 8px;">Đang chuyển sang '{_esc(ssid)}'</h3>
+      <p>Sau 20-30 giây: nối máy của bạn vào WiFi <strong>{_esc(ssid)}</strong>
+      rồi mở lại <a href="http://server-console.local">http://server-console.local</a>.</p>
+      <p>Nếu thất bại, Pi tự bật lại AP <strong>ConsolePi</strong> sau khoảng 30 giây.</p>
+    </div>
+    <p><a class="btn" href="/wifi">← Quay lại trang WiFi</a></p>"""
+    return render_page(body, active="/wifi", title="Đang chuyển mạng")
+
+
+def register_network(app):
+    @app.route("/wifi")
+    def wifi_page():
+        return _wifi_page()
+
+    @app.route("/bluetooth")
+    def bt_page():
+        return _bt_page()
+
+    @app.route("/rename", methods=["POST"])
+    def rename():
+        devname = request.form.get("devname")
+        name = request.form.get("name")
+        try:
+            with open(NAMES_FILE) as f:
+                names = json.load(f)
+        except Exception:
+            names = {}
+        names[devname] = name
+        with open(NAMES_FILE, "w") as f:
+            json.dump(names, f, ensure_ascii=False)
+        return redirect("/")
+
+    @app.route("/connect-wifi", methods=["POST"])
+    def connect_wifi():
+        ssid = request.form.get("ssid")
+        password = request.form.get("password")
+        do_save = request.form.get("save") == "1"
+        if ap_locked():
+            return _wifi_page(msg="AP đang bị KHÓA. Gỡ khóa trước khi đổi WiFi.", ok=False)
+        WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuẩn bị chuyển mạng...")
+        threading.Thread(target=_switch_worker, args=(ssid, password, do_save),
+                         daemon=True).start()
+        return _switching_page(ssid)
+
+    @app.route("/wifi-connect-saved", methods=["POST"])
+    def wifi_connect_saved():
+        """
+        Ket noi thang toi mot WiFi DA LUU tu bang danh sach - khong bat go
+        lai mat khau (Pi da co san tu luc luu). Yeu cau thuc te: dan network
+        di hien truong hay quay lai cac WiFi da dung truoc do, go lai mat
+        khau moi lan rat phien.
+        """
+        ssid = request.form.get("ssid", "")
+        if ap_locked():
+            return _wifi_page(msg="AP đang bị KHÓA. Gỡ khóa trước khi đổi WiFi.", ok=False)
+        creds = load_saved_wifi_with_psk()
+        if ssid not in creds:
+            return _wifi_page(msg=f"Không tìm thấy '{ssid}' trong danh sách đã lưu.", ok=False)
+        WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuẩn bị chuyển mạng...")
+        threading.Thread(target=_switch_worker, args=(ssid, creds[ssid], False),
+                         daemon=True).start()
+        return _switching_page(ssid)
+
+    @app.route("/wifi-disconnect", methods=["POST"])
+    def wifi_disconnect_route():
+        ok_d, msg = wifi_disconnect()
+        return _wifi_page(msg=msg, ok=ok_d)
+
+    @app.route("/wifi-mac-bat", methods=["POST"])
+    def wifi_mac_bat_route():
+        ok_m, msg = bat_gia_mac()
+        return _wifi_page(msg=msg, ok=ok_m)
+
+    @app.route("/wifi-mac-tat", methods=["POST"])
+    def wifi_mac_tat_route():
+        ok_m, msg = tat_gia_mac()
+        return _wifi_page(msg=msg, ok=ok_m)
+
+    @app.route("/wifi-rescan", methods=["POST"])
+    def wifi_rescan():
+        start_scan_async()
+        time.sleep(3)      # cho quet mot chut de nguoi dung thay ket qua ngay
+        return _wifi_page(msg="Đang quét lại. Nếu chưa thấy đủ, bấm Quét lại lần nữa.",
+                          ok=True)
+
+    @app.route("/wifi-add", methods=["POST"])
+    def wifi_add():
+        ssid = (request.form.get("ssid") or "").strip()
+        pw = request.form.get("password") or ""
+        if not ssid:
+            return _wifi_page(msg="Tên WiFi không được để trống.", ok=False)
+        if len(pw) < 8:
+            return _wifi_page(msg="Mật khẩu WPA2 phải từ 8 ký tự trở lên.", ok=False)
+        if '"' in ssid or '"' in pw:
+            return _wifi_page(msg='Không được chứa dấu nháy kép (").', ok=False)
+        if save_wifi_permanently(ssid, pw):
+            return _wifi_page(msg=f"Đã lưu '{ssid}'.", ok=True)
+        return _wifi_page(msg=f"'{ssid}' đã có trong danh sách.", ok=False)
+
+    @app.route("/wifi-delete", methods=["POST"])
+    def wifi_delete():
+        ssid = request.form.get("ssid", "")
+        if delete_saved_wifi(ssid):
+            return _wifi_page(msg=f"Đã xóa '{ssid}'.", ok=True)
+        return _wifi_page(msg=f"Không tìm thấy '{ssid}'.", ok=False)
+
+    @app.route("/force-ap", methods=["POST"])
+    def force_ap():
+        with open(FORCE_AP_FLAG, "w") as f:
+            f.write("locked\n")
+
+        def worker():
+            time.sleep(5)
+            restore_ap_mode()
+            WIFI_STATUS.update(state="ap_locked", ssid="ConsolePi", ip=AP_IP,
+                               msg="Đã KHÓA chế độ AP.")
+        threading.Thread(target=worker, daemon=True).start()
+        body = f"""
+        <div class="msg warn">
+          <h3 style="margin:0 0 8px;">Đang bật và KHÓA AP "ConsolePi"</h3>
+          <p>Sau 15-20 giây, nối vào WiFi <strong>ConsolePi</strong> rồi mở
+          <a href="http://{AP_IP}">http://{AP_IP}</a>.</p>
+          <p>Nếu đang xem qua WiFi, kết nối sẽ đứt. Qua dây LAN thì không ảnh hưởng.</p>
+        </div>
+        <p><a class="btn" href="/wifi">← Trang WiFi</a></p>"""
+        return render_page(body, active="/wifi", title="Đang bật AP")
+
+    @app.route("/release-ap", methods=["POST"])
+    def release_ap():
+        try:
+            os.remove(FORCE_AP_FLAG)
+        except FileNotFoundError:
+            pass
+
+        def worker():
+            time.sleep(3)
+            _lenh([_DD.SCRIPT_WIFI_FALLBACK], timeout=120)
+        threading.Thread(target=worker, daemon=True).start()
+        return _wifi_page(msg="Đã gỡ khóa AP. Máy sẽ quét lại và tự chọn WiFi quen thuộc.", ok=True)
+
+    @app.route("/bt-scan", methods=["POST"])
+    def bt_scan_route():
+        found = bt_scan(10)
+        return _bt_page(msg=f"Quét xong, thấy {len(found)} thiết bị.",
+                        ok=True, scanned=found)
+
+    @app.route("/bt-pair", methods=["POST"])
+    def bt_pair_route():
+        mac = request.form.get("mac", "")
+        started, err = bt_pair_start(mac)
+        if not started:
+            return _bt_page(msg=err, ok=False)
+        time.sleep(2)      # cho agent kip sinh ma so de hien ngay
+        return _bt_page(msg="Dang ghep cap - lam theo huong dan bên dưới.", ok=True)
+
+    @app.route("/bt-ghep-lai", methods=["POST"])
+    def bt_repair_route():
+        """
+        Xoa sach ban ghi ghep cap roi ghep lai tu dau.
+
+        Dung cho truong hop thiet bi bao Connected nhung Bonded=no: luc do bam
+        "Ket noi" bao nhieu lan cung bi BlueZ tu choi ("Rejected connection from
+        !bonded device"), chi co xoa han roi ghep lai moi khoi.
+        """
+        mac = request.form.get("mac", "")
+        started, err = bt_pair_start(mac)      # ham nay da tu xoa ban ghi cu
+        if not started:
+            return _bt_page(msg=err, ok=False)
+        time.sleep(2)
+        return _bt_page(
+            msg=("Đã xóa bản ghi cũ và đang ghép cặp lại. Nếu là bàn phím, hãy "
+                 "bật chế độ ghép cặp trên bàn phím (thường giữ nút Connect vài "
+                 "giây đến khi đèn nhấp nháy) rồi gõ mã số hiện bên dưới."),
+            ok=True)
+
+    @app.route("/bt-connect", methods=["POST"])
+    def bt_connect_route():
+        mac = request.form.get("mac", "")
+        want = request.form.get("profile", "")   # "net" | "hid" | "" (tu doan)
+        ok_c, msg = bt_connect_profile(mac, want)
+        return _bt_page(msg=msg, ok=ok_c)
+
+    @app.route("/bt-unpair", methods=["POST"])
+    def bt_unpair_route():
+        mac = request.form.get("mac", "")
+        ok_u, detail = bt_unpair(mac)
+        return _bt_page(msg=(f"Đã xóa ghép cặp {mac}." if ok_u
+                             else f"Không xóa được: {detail}"), ok=ok_u)
+
+    @app.route("/bt-reset", methods=["POST"])
+    def bt_reset_route():
+        forget = request.form.get("forget") == "1"
+        removed = bt_reset(forget_devices=forget)
+        m = "Đã khởi động lại Bluetooth."
+        if forget:
+            m += f" Đã quên {len(removed)} thiết bị - cần ghép cặp lại từ đầu."
+        return _bt_page(msg=m, ok=True)
+
+    @app.route("/wifi-status")
+    def wifi_status():
+        mode, ssid, ip = get_net_status()
+        return {"mode": mode, "ssid": ssid, "ip": ip,
+                "switch_state": WIFI_STATUS.get("state"),
+                "switch_msg": WIFI_STATUS.get("msg")}
+
+    return app

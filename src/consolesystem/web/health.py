@@ -1,0 +1,223 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
+"""
+Console Pi - Suc khoe he thong va nut nguon.
+
+Thay cho "% pin": may nay KHONG co pin nao Pi doc duoc (da do: i2cdetect bao
+0x36 nhung doc 6 lan ra 6 gia tri ngau nhien -> nhieu bus, khong phai chip;
+khong co HAT EEPROM, khong co UPS tren USB). Pin trong man hinh di dong khong
+co duong du lieu toi Pi.
+
+Nen thay vao do hien nhung thu DOC DUOC va quan trong hon voi Pi:
+  - Sut ap / qua nhiet (vcgencmd get_throttled) - nguyen nhan pho bien nhat
+    lam Pi treo hoac hong the nho, va no bao TRUOC khi hong
+  - Nhiet do CPU, tai he thong, RAM, dung luong dia, thoi gian chay
+
+DA BO HAN phan doc pin (thang 9/2026): da kiem chung lai bang thuc thi that -
+/sys/class/power_supply RONG, upower khong thay gi, khong co /dev/i2c-* nao.
+Giu lai code doc pin chi lam giao dien co mot dong "khong doc duoc" vinh vien
+va them mot muc Cai dat khong bao gio dung toi. Neu sau nay gan UPS HAT that
+thi lay lai tu lich su git (truoc ban 0.4.36).
+"""
+import sys as _sys
+_sys.modules["ui.health"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
+import os
+import re
+import subprocess
+import time
+
+_CACHE = {"t": 0.0, "data": None}
+CACHE_TTL = 3.0
+
+# Tung bit trong vcgencmd get_throttled. Bit 0-3 = dang xay ra NGAY BAY GIO,
+# bit 16-19 = da tung xay ra ke tu luc boot.
+THROTTLE_BITS = [
+    (0,  "Điện áp thấp", "now"),
+    (1,  "Bị giới hạn xung nhịp do nhiệt", "now"),
+    (2,  "Đang bị throttle", "now"),
+    (3,  "Chạm ngưỡng nhiệt độ", "now"),
+    (16, "Đã từng sụt áp", "past"),
+    (17, "Đã từng giới hạn xung nhịp", "past"),
+    (18, "Đã từng bị throttle", "past"),
+    (19, "Đã từng chạm ngưỡng nhiệt", "past"),
+]
+
+
+def _run(cmd, timeout=4):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return r.stdout.strip()
+    except Exception:
+        return ""
+
+
+def cpu_temp():
+    """Doc tu sysfs truoc (nhanh hon nhieu so voi goi vcgencmd). May x86
+    khong co thermal_zone0 thi tim tiep (cac vung khac, hwmon coretemp/
+    k10temp) - xem phancung.nhiet_do_cpu. Khong co cam bien nao (vd may ao)
+    -> None, giao dien noi ro "khong co cam bien" thay vi "? do C"."""
+    # KHONG doc mu zone0: tren may x86 (Dell OptiPlex that) zone0 la cam bien
+    # bo mach (acpitz), khong phai CPU - phancung.nhiet_do_cpu chon dung vung.
+    from ui.phancung import nhiet_do_cpu
+    return nhiet_do_cpu()
+
+
+def throttle_status():
+    """
+    Tra ve (ma_hex, [canh bao dang xay ra], [canh bao da tung xay ra]).
+    Khong co vcgencmd (may khong phai Pi) thi tra ve None.
+    """
+    out = _run(["vcgencmd", "get_throttled"])
+    m = re.search(r"throttled=0x([0-9a-fA-F]+)", out)
+    if not m:
+        return None
+    val = int(m.group(1), 16)
+    now, past = [], []
+    for bit, label, when in THROTTLE_BITS:
+        if val & (1 << bit):
+            (now if when == "now" else past).append(label)
+    return {"hex": f"0x{val:x}", "now": now, "past": past}
+
+
+def core_voltage():
+    m = re.search(r"([\d.]+)V", _run(["vcgencmd", "measure_volts"]))
+    return float(m.group(1)) if m else None
+
+
+def uptime_text():
+    try:
+        with open("/proc/uptime") as f:
+            secs = int(float(f.read().split()[0]))
+    except Exception:
+        return "?"
+    d, r = divmod(secs, 86400)
+    h, r = divmod(r, 3600)
+    mi = r // 60
+    if d:
+        return f"{d} ngày {h} giờ {mi} phút"
+    if h:
+        return f"{h} giờ {mi} phút"
+    return f"{mi} phút"
+
+
+def load_avg():
+    try:
+        with open("/proc/loadavg") as f:
+            p = f.read().split()
+        return f"{p[0]} / {p[1]} / {p[2]}"
+    except Exception:
+        return "?"
+
+
+# Lan doc /proc/stat truoc do, de tinh % CPU theo HIEU hai lan doc.
+_CPU_TRUOC = {"lam_viec": 0, "tong": 0}
+
+
+def cpu_percent():
+    """
+    % CPU dang dung, tinh theo HIEU giua lan doc nay va lan doc truoc.
+
+    VI SAO KHONG DUNG load average: load average la SO TIEN TRINH dang cho
+    chay, khong phai phan tram. Tren Pi 4 (4 nhan) load = 2.0 nghia la may
+    moi dung ~50%, nhung nguoi nhin tuong la "2%" hoac "200%" - khong ai
+    doc duoc. Con dung `top`/`vmstat` thi phai CHO 1 giay moi lay duoc mau
+    thu hai, tuc la moi lan mo trang deu treo 1 giay.
+
+    Cach nay khong cho gi ca: chi doc /proc/stat (tuc thi) roi so voi lan
+    doc truoc. Voi nhip lam moi 10 giay cua trang Tong quan, con so hien ra
+    chinh la trung binh cua 10 giay vua qua - dung thu nguoi dung can.
+
+    Lan goi DAU TIEN chua co moc so sanh nen tra ve None (giao dien hien
+    "đang đo"), tu lan thu hai tro di moi co so that.
+    """
+    try:
+        with open("/proc/stat") as f:
+            phan = f.readline().split()
+        if not phan or phan[0] != "cpu":
+            return None
+        so = [int(x) for x in phan[1:]]
+        # user nice system idle iowait irq softirq steal ...
+        tong = sum(so)
+        nhan_roi = so[3] + (so[4] if len(so) > 4 else 0)   # idle + iowait
+        lam_viec = tong - nhan_roi
+
+        d_tong = tong - _CPU_TRUOC["tong"]
+        d_lam = lam_viec - _CPU_TRUOC["lam_viec"]
+        _CPU_TRUOC.update(tong=tong, lam_viec=lam_viec)
+
+        if d_tong <= 0:
+            return None
+        return max(0, min(100, round(d_lam * 100 / d_tong)))
+    except Exception:
+        return None
+
+
+def mem_info():
+    """Tra ve (da_dung_MB, tong_MB, phan_tram). Dung 'available' cho dung thuc te."""
+    try:
+        vals = {}
+        with open("/proc/meminfo") as f:
+            for line in f:
+                k, _, v = line.partition(":")
+                vals[k] = int(v.split()[0])
+        total = vals["MemTotal"] // 1024
+        avail = vals.get("MemAvailable", vals["MemFree"]) // 1024
+        used = total - avail
+        return used, total, round(used * 100 / total)
+    except Exception:
+        return 0, 0, 0
+
+
+def disk_info(path="/"):
+    """
+    (da_dung_GB, tong_GB, phan_tram) - GB lam tron 1 chu so thap phan, tinh GIONG lenh `df`:
+    da dung = block da cap phat (f_blocks - f_bfree), tong = da dung + con trong cho nguoi dung (f_bavail),
+    phan tram = da dung / tong. LOI THAT (anh Thoai 22/10/2026: "dung luong dung 17 G nhung nhin hinh nhu moi
+    dung 10 G"): ban cu cat bo phan le va lay tong - con_trong nen tinh ca vung du tru 5% cua root vao "da dung"
+    (Pi 29 GB hien 20 GB trong khi df bao 18 GB), con thanh hien thi thi khong co nen thanh nen khong thay thang do.
+    """
+    try:
+        st = os.statvfs(path)
+        gb = 1024 ** 3
+        da_dung = (st.f_blocks - st.f_bfree) * st.f_frsize
+        trong = st.f_bavail * st.f_frsize
+        tong = da_dung + trong
+        return round(da_dung / gb, 1), round(tong / gb, 1), (round(da_dung * 100 / tong) if tong else 0)
+    except Exception:
+        return 0, 0, 0
+
+
+def snapshot():
+    """Toan bo chi so, co bo nho dem ngan de bam F5 lien tuc khong ton CPU."""
+    now = time.time()
+    if _CACHE["data"] and now - _CACHE["t"] < CACHE_TTL:
+        return _CACHE["data"]
+
+    mem_used, mem_total, mem_pct = mem_info()
+    disk_used, disk_total, disk_pct = disk_info()
+    data = {
+        "temp": cpu_temp(),
+        "throttle": throttle_status(),
+        "volts": core_voltage(),
+        "uptime": uptime_text(),
+        "load": load_avg(),
+        "cpu": cpu_percent(),
+        "mem": (mem_used, mem_total, mem_pct),
+        "disk": (disk_used, disk_total, disk_pct),
+    }
+    _CACHE.update(t=now, data=data)
+    return data
+
+
+def power_action(what):
+    """
+    Tat may / khoi dong lai. Dung `systemctl --no-block` de HTTP tra loi xong
+    truoc khi may thuc su tat - neu khong trinh duyet chi thay 'mat ket noi'
+    va nguoi dung khong biet lenh co an khong.
+    """
+    if what not in ("poweroff", "reboot"):
+        return False, "Lệnh không hợp lệ."
+    subprocess.Popen(["systemctl", "--no-block", what])
+    if what == "poweroff":
+        return True, ("Đang tắt máy. Đợi đến khi đèn xanh trên Pi ngừng nhấp nháy "
+                      "rồi hãy rút điện - rút sớm có thể hỏng thẻ nhớ.")
+    return True, "Đang khởi động lại. Trang sẽ sống lại sau khoảng 40-60 giây."

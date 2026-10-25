@@ -220,7 +220,7 @@ say "Trien khai vao $INSTALL_DIR"
 
 # (thu muc ma /opt/console-pi chi duoc tao o nhanh bo cuc cu ben duoi; bo cuc moi dung releases/ + lien ket)
 
-# --- Tach DU LIEU ra khoi MA NGUON (xem src/ui/duongdan.py) ---
+# --- Tach DU LIEU ra khoi MA NGUON (xem src/consolesystem/core/duongdan.py) ---
 #
 # LY DO THAT: truoc day du lieu nguoi dung (phan mem tai len, anh Windows
 # vai GB, kich ban, thu vien lenh, kho file) nam TRON trong /opt/console-pi
