@@ -135,7 +135,8 @@ def tao_ban(src, opt=GOC_OPT, mang_theo=None):
                 return ten                                     # y het ban da co
             n += 1
             ten = "%s-%d" % (ver, n)
-        rl = {"ten": ten, "phien_ban": ver, "tao_luc": time.strftime("%Y-%m-%d %H:%M:%S"), "nguon_git": _git(src), "so_tep": len(bam)}
+        rl = {"ten": ten, "phien_ban": ver, "so_phat_hanh": _so_phat_hanh(src), "tao_luc": time.strftime("%Y-%m-%d %H:%M:%S"),
+              "nguon_git": _git(src), "so_tep": len(bam)}
         with open(os.path.join(tam, TEN_RELEASE), "w", encoding="utf-8") as f:
             json.dump(dict(rl, tep=bam), f, indent=1, sort_keys=True)
         _khoa_chi_doc(tam)
@@ -144,6 +145,14 @@ def tao_ban(src, opt=GOC_OPT, mang_theo=None):
     except BaseException:
         xoa_ban(tam)
         raise
+
+
+def _so_phat_hanh(src):
+    """So phat hanh (chi TANG, dung de chong phat lai ban cu - xem capnhat/goi.py). Doc tu file SO_PHAT_HANH o goc cay nguon; mac dinh 1."""
+    try:
+        return max(1, int(open(os.path.join(src, "SO_PHAT_HANH"), encoding="utf-8").read().strip()))
+    except (OSError, ValueError):
+        return 1
 
 
 def _git(src):

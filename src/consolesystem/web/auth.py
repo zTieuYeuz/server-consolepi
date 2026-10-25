@@ -413,7 +413,15 @@ def register_auth(app):
         (PUBLIC_PATHS) tu truoc.
         """
         from flask import jsonify
-        resp = jsonify({"ok": True})
+        from flask import request as _rq
+        kq = {"ok": True}
+        # Bo nang cap (cung may) can biet BAN DANG CHAY that su de xac nhan nang cap xong; chi tra cho truy cap tu chinh may (loopback)
+        if _rq.remote_addr in ("127.0.0.1", "::1") and not _rq.headers.get("X-Forwarded-For") and not _rq.headers.get("X-Real-IP"):    # nginx luon them X-Real-IP
+            try:
+                kq["phien_ban"] = open(_DD.FILE_VERSION, encoding="utf-8").read().strip()
+            except OSError:
+                pass
+        resp = jsonify(kq)
         resp.headers["Access-Control-Allow-Origin"] = "*"
         return resp
 

@@ -14,6 +14,14 @@
 /bt-reset	POST	bt_reset_route
 /bt-scan	POST	bt_scan_route
 /bt-unpair	POST	bt_unpair_route
+/cap-nhat	GET	trang_cap_nhat
+/cap-nhat/bat-dau	POST	cap_nhat_bat_dau
+/cap-nhat/cai-dat	POST	cap_nhat_cai_dat
+/cap-nhat/dong-y	POST	cap_nhat_dong_y
+/cap-nhat/ha-cap	POST	cap_nhat_ha_cap
+/cap-nhat/huy	POST	cap_nhat_huy
+/cap-nhat/kiem-tra	POST	cap_nhat_kiem_tra
+/cap-nhat/tien-do	GET	cap_nhat_tien_do
 /commands	GET	commands_page
 /commands/add	POST	commands_add
 /commands/delete	POST	commands_delete

@@ -13,7 +13,7 @@ import tempfile
 import threading
 
 SRC = os.path.abspath(sys.argv[1])
-RA = sys.argv[2]
+RA = os.path.abspath(sys.argv[2])      # truoc khi chdir
 TMP = tempfile.mkdtemp(prefix="hv-")
 os.environ["CONSOLE_PI_DATA"] = TMP
 sys.path.insert(0, SRC)
@@ -42,7 +42,7 @@ def go(m, p, **kw):
     r = c.open(p, method=m, headers=H, follow_redirects=False, **kw)
     body = chuan(r.get_data())
     LOG.append({"m": m, "p": chuan(re.sub(r"[0-9a-f]{10,}", "<ID>", p).encode()), "s": r.status_code, "loc": chuan(re.sub(r"[0-9a-f]{8,}", "<ID>", r.headers.get("Location", "")).encode()),
-                "n": len(body), "h": hashlib.sha1(body.encode()).hexdigest()[:12]})
+                "n": len(body) if "hatang/chay" not in p else 0, "h": hashlib.sha1(body.encode()).hexdigest()[:12] if "hatang/chay" not in p else "~"})      # hatang/chay doc trang thai may that -> chi so ma tra ve
     if THU_BODY:
         open(os.path.join(THU_BODY, "%03d.txt" % len(LOG)), "w", encoding="utf-8").write(m + " " + p + "\n" + body)
     return r, body

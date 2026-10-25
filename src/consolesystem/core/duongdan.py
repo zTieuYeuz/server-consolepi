@@ -146,6 +146,11 @@ FILE_KHO_TRUNGTAM = _vt(_duong("kho-trungtam.json"), "secrets/kho-trungtam.json"
 # Thong tin dang nhap Cloudflare Access cho Kho trung tam (bi mat)
 FILE_CF_ACCESS = _vt(_duong("cf-access.json"), "secrets/cf-access.json")
 
+# Khoa RIENG CUA MAY de boc khoa giai ma goi cap nhat (kho cap luc dang ky, qua kenh ma hoa X25519) - xem capnhat/may.py
+FILE_KHOA_MAY = _vt(_duong("khoa-may.key"), "secrets/khoa-may.key")
+# Thu muc cap nhat: trang thai kiem tra, cong viec nang cap, goi da tai, ban sao luu truoc khi nang cap (bo cuc moi: <goc>/updates)
+DIR_CAP_NHAT = os.path.join(GOC, "updates")
+
 # Chia khoa ma hoa tai khoan Trien khai + thu muc PKI (chung chi/khoa CA)
 FILE_TK_KHOA = _vt(_duong("trienkhai", ".khoa"), "secrets/trienkhai.khoa")
 DIR_PKI = _vt(_duong("trienkhai", "pki"), "pki")

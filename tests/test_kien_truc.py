@@ -15,7 +15,7 @@ spec = importlib.util.spec_from_file_location("dothi", os.path.join(GOC, "tools"
 D = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(D)
 
-GOC_LAP_RAP = {"consolesystem.features.settings.settings", "consolesystem.web.home"}
+GOC_LAP_RAP = {"consolesystem.features.settings.settings", "consolesystem.web.home", "consolesystem.features.updates.thuc_te"}   # thuc_te noi bo nang cap voi sao luu/kho/he thong
 NO_KY_THUAT = {                     # (tu, den): ly do / buoc go
     ("consolesystem.features.software_deploy.tk_trang", "consolesystem.features.deploy_os.deployos"): "B4: danh muc phan mem/ung dung (app catalog) con nam trong deployos",
     ("consolesystem.integrations.tk_dongco", "consolesystem.features.deploy_os.deployos"): "B4: nhu tren (doc_thongtin_app, lay_ungdung, tham_so_mac_dinh_app)",

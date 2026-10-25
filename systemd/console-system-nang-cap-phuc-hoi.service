@@ -1,0 +1,14 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
+# Luc KHOI DONG MAY: neu bo nang cap dang chay do thi (mat dien, khoi dong lai giua chung) tiep tuc hoac HOAN TAC cho an toan. Khong co viec -> thoat ngay.
+[Unit]
+Description=Console System - phuc hoi nang cap do dang sau khi khoi dong
+After=local-fs.target network.target
+ConditionPathExists=/opt/console-pi/scripts/console-system-nang-cap.py
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/console-pi/scripts/console-system-nang-cap.py phuc-hoi
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

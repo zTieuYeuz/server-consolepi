@@ -26,6 +26,7 @@ from .gopy import register_gopy                            # noqa: F401
 from .phien import register_phien                          # noqa: F401
 from .gioithieu import register_gioithieu                  # noqa: F401
 from .tenmay import register_tenmay                        # noqa: F401
+from consolesystem.features.updates.capnhat_ui import register_capnhat   # noqa: F401,E402  (Phan C)
 
 
 def register_all(app):
@@ -56,4 +57,5 @@ def register_all(app):
     register_phien(app)
     register_gioithieu(app)
     register_tenmay(app)
+    register_capnhat(app)
     return app

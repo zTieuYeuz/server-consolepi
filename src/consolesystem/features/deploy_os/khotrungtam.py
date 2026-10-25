@@ -644,6 +644,12 @@ def tu_dang_ky():
         return False, "Trả lời của kho không giải mã được (sai khoá kho?)."
     if not kq.get("ok"):
         return False, kq.get("loi") or "Kho từ chối."
+    if kq.get("khoa_may"):                                      # 2.0: khoa rieng cua may de mo khoa goi cap nhat (chi di qua kenh ma hoa nay)
+        try:
+            from consolesystem.core.capnhat.may import luu_khoa_may
+            luu_khoa_may(_DD.FILE_KHOA_MAY, kq["khoa_may"])
+        except Exception as e:
+            print(f"[tu-dang-ky-kho] khong luu duoc khoa may: {type(e).__name__}", flush=True)
     if cu and cu.get("token") == kq.get("token") and cu["url"] == url:
         return True, "Đã cập nhật thông tin máy lên kho."
     return luu_cauhinh(url, kq["token"])

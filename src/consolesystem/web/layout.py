@@ -1083,6 +1083,7 @@ TIM_THEM = [
     ("802.1X Testing", "/nettools/dot1x", "Network Tools", "dot1x radius"),
     ("IF/THEN Automation", "/nettools/ifthen", "Network Tools", "ifthen rule"),
     ("Sao lưu cấu hình", "/settings/sao-luu", "Cài đặt", "backup sao luu"),
+    ("Cập nhật", "/cap-nhat", "Cài đặt", "cap nhat update phien ban nang cap ha cap"),
     ("Đăng xuất", "/logout", "Tài khoản", "logout thoat"),
 ]
 
@@ -1180,6 +1181,12 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     """
     chips = get_status_chips()
     che_do = che_do_giao_dien()
+    try:                                  # chuong bao co ban cap nhat moi (chi doc trang thai da luu; xem core/capnhat/may.py)
+        from consolesystem.core.capnhat.may import co_ban_moi_nhanh
+        chuong_html = ('<a href="/cap-nhat" class="btn" title="Có bản cập nhật mới - bấm để xem" style="position:relative">🔔'
+                       '<span style="position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:50%;background:#F87171"></span></a>') if co_ban_moi_nhanh() else ""
+    except Exception:
+        chuong_html = ""
     body_html = doi_mau_viet_cung(body_html)
     extra_css = doi_mau_viet_cung(extra_css)
     nen = nen_giao_dien(che_do)
@@ -1289,7 +1296,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
       <div class="chips">{chips_html}</div>
       <div class="spacer"></div>
       <div class="act">
-        <a href="{_duong_hien_tai(active)}" class="btn gray" title="Làm mới trang">{svg_icon("refresh")}</a>
+        {chuong_html}<a href="{_duong_hien_tai(active)}" class="btn gray" title="Làm mới trang">{svg_icon("refresh")}</a>
         {nut_nen}
         {nut_doi_cd}
       </div>
