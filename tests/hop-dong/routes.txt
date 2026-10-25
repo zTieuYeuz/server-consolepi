@@ -232,6 +232,7 @@
 /rename	POST	rename
 /settings	GET	settings_page
 /settings/don-rac	POST	settings_don_rac
+/settings/khoi-phuc	POST	settings_khoi_phuc
 /settings/kiosk/bat	POST	settings_kiosk_bat
 /settings/kiosk/tat	POST	settings_kiosk_tat
 /settings/nap-sao-luu	POST	settings_nap_sao_luu

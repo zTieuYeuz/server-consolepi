@@ -5,9 +5,11 @@ Console Pi - Tab Cai dat (yeu cau so 3: nut xoay man hinh)
 Xoay man hinh dung wlr-randr noi vao compositor cage dang chay. Luu lua chon
 vao config de kiosk-start.sh tu ap dung lai moi lan khoi dong.
 """
+import contextlib
 import json
 import os
 import subprocess
+import time
 
 from flask import request
 
@@ -190,6 +192,12 @@ def register_settings(app):
     @app.route("/settings/sao-luu")
     def settings_sao_luu():
         from flask import Response
+        from . import duongdan as DD
+        if DD.BO_CUC_MOI:                                  # 2.0 (A5): goi sao luu co manifest + ma bam, tai ve dang luong
+            from . import saoluu as SL
+            che_do = "toanbo" if request.args.get("che_do") == "toanbo" else "cauhinh"
+            return Response(SL.tao_luong(DD.GOC, che_do), mimetype="application/gzip", headers={
+                "Content-Disposition": f'attachment; filename="{SL.ten_goi(che_do)}"'})
         from . import baotri as bt
         du, ten = bt.tao_ban_sao_luu()
         return Response(du, mimetype="application/gzip", headers={
@@ -197,12 +205,41 @@ def register_settings(app):
 
     @app.route("/settings/nap-sao-luu", methods=["POST"])
     def settings_nap_sao_luu():
-        from . import baotri as bt
+        from . import duongdan as DD
         f = request.files.get("file")
         if not f or not getattr(f, "filename", ""):
             return _render_settings(msg="Chưa chọn file sao lưu.", ok=False)
+        if DD.BO_CUC_MOI:
+            return _kiem_goi_tai_len(f)
+        from . import baotri as bt
         ok, msg = bt.nap_ban_sao_luu(f.read())
         return _render_settings(msg=msg, ok=ok)
+
+    @app.route("/settings/khoi-phuc", methods=["POST"])
+    def settings_khoi_phuc():
+        from . import duongdan as DD
+        from . import saoluu as SL
+        from .home import _esc
+        ten = os.path.basename(request.form.get("ten", ""))
+        duong = os.path.join(DD.GOC, "backups", ten)
+        if not ten.startswith("tai-len-") or not os.path.isfile(duong) or not DD.BO_CUC_MOI:
+            return _render_settings(msg="Không tìm thấy file đã kiểm tra - hãy tải lên lại.", ok=False)
+        try:
+            subprocess.run(["systemctl", "stop", "console-pi-tftp"], capture_output=True, timeout=30)
+            kq = SL.khoi_phuc(duong, DD.GOC)
+        except SL.LoiSaoLuu as e:
+            return _render_settings(msg=f"Không khôi phục: {_esc(str(e))}. Dữ liệu hiện tại giữ nguyên.", ok=False)
+        finally:
+            subprocess.run(["systemctl", "start", "console-pi-tftp"], capture_output=True, timeout=30)
+        tb = SL.hau_khoi_phuc(DD.GOC)
+        with contextlib.suppress(OSError):
+            os.remove(duong)
+        subprocess.Popen(["sh", "-c", "sleep 3; systemctl restart console-pi-dashboard"], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return _render_settings(msg=(f"Đã khôi phục {kq['so_tep']} file. Trạng thái trước đó được lưu thành "
+                                     f"<code>{_esc(os.path.basename(kq['goi_truoc']))}</code> (thư mục sao lưu). "
+                                     + " ".join(_esc(x) for x in tb)
+                                     + " Dịch vụ đang khởi động lại - tải lại trang sau vài giây."), ok=True)
 
     @app.route("/settings/regen-term-pass", methods=["POST"])
     def regen_term_pass():
@@ -215,6 +252,32 @@ def register_settings(app):
         return _render_settings(msg="Đã đổi mật khẩu terminal và khởi động lại dịch vụ.", ok=True)
 
     return app
+
+
+def _kiem_goi_tai_len(f):
+    """Luu file tai len vao backups/, kiem TOAN BO (ma bam...) roi hoi xac nhan - chua dung toi du lieu."""
+    from . import duongdan as DD
+    from . import saoluu as SL
+    from .home import _esc
+    thu_muc = os.path.join(DD.GOC, "backups")
+    os.makedirs(thu_muc, exist_ok=True)
+    ten = "tai-len-%s-%s.tar.gz" % (time.strftime("%Y%m%d-%H%M%S"), os.urandom(3).hex())      # hau to ngau nhien: hai lan tai len cung giay khong de nhau
+    duong = os.path.join(thu_muc, ten)
+    f.save(duong)
+    try:
+        mf = SL.kiem_goi(duong)
+    except SL.LoiSaoLuu as e:
+        with contextlib.suppress(OSError):
+            os.remove(duong)
+        return _render_settings(msg=f"File này KHÔNG dùng được: {_esc(str(e))}", ok=False)
+    cu = "toàn bộ (gồm ảnh/bộ cài)" if mf["che_do"] == "toanbo" else "cấu hình"
+    return _render_settings(msg=(
+        f"File hợp lệ: bản sao lưu <strong>{cu}</strong>, {len(mf['tep'])} file, tạo lúc {_esc(mf['tao_luc'])} "
+        f"trên máy <strong>{_esc(mf['may'])}</strong> (mã {_esc(str(mf['phien_ban_ma']))}). "
+        f'<form method="POST" action="/settings/khoi-phuc" style="margin-top:10px;" '
+        f"onsubmit=\"return confirm('Khôi phục sẽ THAY cấu hình hiện tại bằng nội dung file này. Trạng thái hiện tại được tự sao lưu trước. Tiếp tục?');\">"
+        f'<input type="hidden" name="ten" value="{_esc(ten)}">'
+        f'<button type="submit" class="blue" data-busy="Đang khôi phục...">Xác nhận khôi phục</button></form>'), ok=True)
 
 
 def _render_settings(msg="", ok=True):
@@ -384,6 +447,66 @@ def _khoi_man_hinh():
     </div>'''
 
 
+def _the_sao_luu(bt):
+    """The Sao luu / Khoi phuc. Bo cuc moi (2.0): goi co ma bam + che do cauhinh/toanbo. Bo cuc cu: the cu."""
+    from . import duongdan as DD
+    if DD.BO_CUC_MOI:
+        from .home import _esc
+        thu = os.path.join(DD.GOC, "backups")
+        ds = []
+        with contextlib.suppress(OSError):
+            ds = sorted((x for x in os.listdir(thu) if x.endswith(".tar.gz")), reverse=True)[:6]
+        hang = "".join(f"<tr><td><code>{_esc(x)}</code></td><td style='text-align:right'>{bt.co_kich_thuoc(os.path.getsize(os.path.join(thu, x)))}</td></tr>" for x in ds)
+        hang = hang or "<tr><td style='color:#8A94A6'>Chưa có bản tự sao lưu nào.</td></tr>"
+        return ('''
+    <div class="card">
+      <h3>Sao lưu &amp; Khôi phục</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">
+        <strong>Sao lưu cấu hình</strong> (vài MB): cấu hình, khoá, chứng chỉ, máy trạm, kịch bản cài đặt. Mất thẻ nhớ/ổ cứng thì khôi phục lại là chạy tiếp.
+        <br><strong>Sao lưu toàn bộ</strong> thêm ảnh Windows, bộ cài, kho file - có thể rất lớn (nhiều GB).
+        Mỗi file có mã băm từng tệp; lúc khôi phục hệ thống kiểm cả file trước khi đụng tới dữ liệu, và tự sao lưu trạng thái hiện tại.
+      </p>
+      <div class="msg warn" style="margin-top:0;">File sao lưu có <strong>mật khẩu, khoá bí mật và chứng chỉ</strong> - cất nơi kín đáo, đừng gửi lung tung.</div>
+      <div class="row">
+        <a class="btn" href="/settings/sao-luu?che_do=cauhinh">Tải sao lưu cấu hình</a>
+        <a class="btn gray" href="/settings/sao-luu?che_do=toanbo">Tải sao lưu toàn bộ</a>
+      </div>
+      <form method="POST" action="/settings/nap-sao-luu" enctype="multipart/form-data" style="margin-top:16px;">
+        <label>Khôi phục từ file sao lưu (.tar.gz) - sẽ kiểm tra file trước, rồi hỏi xác nhận</label>
+        <input type="file" name="file" accept=".gz,.tar.gz" required>
+        <button type="submit" class="gray" style="margin-top:10px;" data-busy="Đang kiểm tra file...">Kiểm tra file</button>
+      </form>
+      <h4 style="margin:16px 0 6px;">Bản tự sao lưu gần đây (trong máy, thư mục backups)</h4>
+      <div class="tbl-scroll"><table><tbody>''' + hang + '''</tbody></table></div>
+    </div>''')
+    return '''    <div class="card">
+      <h3>Sao lưu cấu hình</h3>
+      <p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">
+        Toàn bộ công sức cấu hình (kịch bản cài đặt, bảng tra tham số, thư
+        viện lệnh, kết nối kho trung tâm) chỉ nằm trên <strong>một thẻ nhớ</strong>
+        - mà thẻ nhớ là thứ hỏng vặt nhất trên Pi. Tải file này về cất ở máy
+        khác, mất thẻ thì nạp lại là xong.
+        <br>Ảnh Windows và bộ cài phần mềm <strong>không</strong> nằm trong đây
+        (tải lại được từ nguồn gốc, mà nhét vào thì file to không ai tải nổi).
+      </p>
+      <div class="msg warn" style="margin-top:0;">
+        File sao lưu có chứa <strong>mật khẩu</strong> trong kịch bản cài đặt
+        và token kho trung tâm - cất nơi kín đáo, đừng gửi lung tung.
+      </div>
+      <div class="row">
+        <a class="btn" href="/settings/sao-luu">Tải file sao lưu về</a>
+      </div>
+      <form method="POST" action="/settings/nap-sao-luu" enctype="multipart/form-data"
+            style="margin-top:16px;"
+            onsubmit="return confirm('Nạp lại cấu hình sẽ GHI ĐÈ kịch bản và bảng tham số hiện tại. Tiếp tục?');">
+        <label>Nạp lại từ file sao lưu (.tar.gz)</label>
+        <input type="file" name="file" accept=".gz,.tar.gz" required>
+        <button type="submit" class="gray" style="margin-top:10px;"
+                data-busy="Đang nạp...">Nạp lại cấu hình</button>
+      </form>
+    </div>'''
+
+
 def _khoi_baotri():
     """
     Hai cong cu bao tri (xem ui/baotri.py cho phan xu ly). De o trang Cai
@@ -439,32 +562,7 @@ def _khoi_baotri():
       <div class="tbl-scroll"><table><tbody>{hang_rac}</tbody></table></div>
     </div>
 
-    <div class="card">
-      <h3>Sao lưu cấu hình</h3>
-      <p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">
-        Toàn bộ công sức cấu hình (kịch bản cài đặt, bảng tra tham số, thư
-        viện lệnh, kết nối kho trung tâm) chỉ nằm trên <strong>một thẻ nhớ</strong>
-        - mà thẻ nhớ là thứ hỏng vặt nhất trên Pi. Tải file này về cất ở máy
-        khác, mất thẻ thì nạp lại là xong.
-        <br>Ảnh Windows và bộ cài phần mềm <strong>không</strong> nằm trong đây
-        (tải lại được từ nguồn gốc, mà nhét vào thì file to không ai tải nổi).
-      </p>
-      <div class="msg warn" style="margin-top:0;">
-        File sao lưu có chứa <strong>mật khẩu</strong> trong kịch bản cài đặt
-        và token kho trung tâm - cất nơi kín đáo, đừng gửi lung tung.
-      </div>
-      <div class="row">
-        <a class="btn" href="/settings/sao-luu">Tải file sao lưu về</a>
-      </div>
-      <form method="POST" action="/settings/nap-sao-luu" enctype="multipart/form-data"
-            style="margin-top:16px;"
-            onsubmit="return confirm('Nạp lại cấu hình sẽ GHI ĐÈ kịch bản và bảng tham số hiện tại. Tiếp tục?');">
-        <label>Nạp lại từ file sao lưu (.tar.gz)</label>
-        <input type="file" name="file" accept=".gz,.tar.gz" required>
-        <button type="submit" class="gray" style="margin-top:10px;"
-                data-busy="Đang nạp...">Nạp lại cấu hình</button>
-      </form>
-    </div>'''
+    {_the_sao_luu(bt)}'''
 
 
 def _version():
