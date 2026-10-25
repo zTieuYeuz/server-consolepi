@@ -19,8 +19,8 @@ Type=simple
 # in.tftpd thoat ngay voi ma loi 66/NOINPUT vi thu muc chua ton tai.
 # Quyen 777 co chu dich: in.tftpd chay duoi user rieng "tftp" (giam quyen
 # sau --user tftp ben duoi), can ghi duoc de nhan file switch gui len.
-ExecStartPre=/bin/mkdir -p /opt/console-pi/tftp
-ExecStartPre=/bin/chmod 777 /opt/console-pi/tftp
+ExecStartPre=/bin/mkdir -p /var/lib/console-system/data/tftp
+ExecStartPre=/bin/chmod 777 /var/lib/console-system/data/tftp
 # --foreground    : chay doc lap (khong can inetd) VA KHONG tu phan nhanh
 #                   ve nen. DA GAP LOI THAT: dung "--listen" (khong co
 #                   -L/--foreground) thi in.tftpd tu detach/fork ra khoi
@@ -43,6 +43,6 @@ ExecStartPre=/bin/chmod 777 /opt/console-pi/tftp
 #                   giong het han che cua dnsmasq ma du an nay co chu dich
 #                   tranh bang cach dung tftpd-hpa thay vi dnsmasq.
 ExecStart=/usr/sbin/in.tftpd --foreground --user tftp --address 0.0.0.0:69 \
-    --secure --create /opt/console-pi/tftp
+    --secure --create /var/lib/console-system/data/tftp
 Restart=on-failure
 RestartSec=3

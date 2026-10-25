@@ -45,6 +45,13 @@ rm -f /etc/systemd/system/console-pi-ttyd@.service
 systemctl daemon-reload
 systemctl start getty@tty1 2>/dev/null || true
 
+if [[ -L /opt/console-pi ]]; then
+    # Bo cuc 2.0: /opt/console-pi chi la lien ket toi /opt/console-system/current (ma nam trong releases/, KHONG chua du lieu)
+    echo "==> Go ban phat hanh /opt/console-system (du lieu o /var/lib/console-system KHONG bi dong toi)"
+    rm -f /opt/console-pi
+    rm -rf /opt/console-system
+fi
+
 if [[ "$PURGE" == "yes" ]]; then
     echo "==> Xoa sach /opt/console-pi (ca cau hinh)"
     rm -rf /opt/console-pi
@@ -95,7 +102,7 @@ if [[ "$PURGE" == "yes" ]]; then
     echo "    (wlan0/dnsmasq/wpa_supplicant) - xoa tay neu muon ve trang thai goc"
 else
     echo "==> Xoa ma nguon, GIU LAI cau hinh"
-    rm -rf /opt/console-pi/{ui,nettools,scripts,app.py,VERSION}
+    [[ -L /opt/console-pi ]] || rm -rf /opt/console-pi/{ui,nettools,scripts,app.py,VERSION}
     echo "    Con lai: toan bo cau hinh va du lieu (/var/lib/console-system hoac /var/lib/console-pi; ban cu: config.json, command-library.json, port-names.json)"
 fi
 systemctl unmask wpa_supplicant 2>/dev/null || true

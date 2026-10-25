@@ -34,13 +34,10 @@ dung_cay() {   # $1 = amd64 | i386
     local R="$C/includes.chroot"
 
     # --- 1. Ma nguon ung dung -> /opt/console-pi (giong install.sh tren Pi)
-    mkdir -p "$R/opt/console-pi"
-    rsync -a --exclude='__pycache__' --exclude='*.pyc' "$REPO/src/" "$R/opt/console-pi/"
-    install -m 644 "$REPO/VERSION" "$R/opt/console-pi/VERSION"
-    # Cong cu cai them (cai-agent-tls.sh, cai-vnc.sh, cai-winrm.sh): trang Quan ly may tram va lan khoi dong dau goi toi /opt/console-pi/tools/
-    mkdir -p "$R/opt/console-pi/tools"
-    for f in "$REPO"/tools/cai-*.sh; do [ -f "$f" ] && install -m 755 "$f" "$R/opt/console-pi/tools/$(basename "$f")"; done
-    chmod 755 "$R/opt/console-pi/scripts/"*.sh "$R/opt/console-pi/scripts/"*.py 2>/dev/null || true
+    # 2.0 (A6): ma nam trong /opt/console-system/releases/<ban> (chi doc) + current + /opt/console-pi -> current (ten cu).
+    # COPYRIGHT, .dau-an, driver-san sinh o thu muc tam STAGE roi mang vao ban (ban chi doc sau khi dung xong).
+    # (tools/cai-*.sh cung nam trong ban: trang Quan ly may tram va lan khoi dong dau goi toi /opt/console-pi/tools/)
+    local STAGE; STAGE="$(mktemp -d)"
 
     # --- 1b. Ban quyen + DAU AN ban build (27/09/2026, yeu cau cua tac gia).
     # COPYRIGHT hien ro; .dau-an la chu ky HMAC-SHA256 bang KHOA RIENG chi nam
@@ -49,7 +46,7 @@ dung_cay() {   # $1 = amd64 | i386
     # 1 lan va nhac sao luu - mat khoa la mat kha nang chung minh ban build cu.
     # (KHONG dat trong /usr/share/doc: hook 0200-thu-gon xoa sach thu muc do)
     printf 'Console System\n(c) 2026 zTieuYeuz. All rights reserved.\nPhat trien boi zTieuYeuz - https://console-docs.home-server.id.vn\n' \
-        > "$R/opt/console-pi/COPYRIGHT"
+        > "$STAGE/COPYRIGHT"
     local KHOA_DA=/root/.config/zt/dau-an.key
     if [ ! -s "$KHOA_DA" ]; then
         mkdir -p "$(dirname "$KHOA_DA")"; chmod 700 "$(dirname "$KHOA_DA")"
@@ -58,7 +55,7 @@ dung_cay() {   # $1 = amd64 | i386
     fi
     local ND; ND="ConsoleSystem|$(tr -d ' \r\n' < "$REPO/VERSION")|$ARCH|$(date -u +%Y-%m-%dT%H:%MZ)|zTieuYeuz"
     local CK; CK="$(printf '%s' "$ND" | openssl dgst -sha256 -hmac "$(cat "$KHOA_DA")" -r | cut -d' ' -f1)"
-    printf '{"noi_dung": "%s", "chu_ky": "%s"}\n' "$ND" "$CK" > "$R/opt/console-pi/.dau-an"
+    printf '{"noi_dung": "%s", "chu_ky": "%s"}\n' "$ND" "$CK" > "$STAGE/.dau-an"
     # Cloudflare Access Service Token (tuy chon) cho kho trung tam: chi co khi
     # chu kho dat file rieng tren may build - khong bao gio nam trong repo.
     if [ -s /root/.config/zt/cf-access.json ]; then
@@ -71,8 +68,8 @@ dung_cay() {   # $1 = amd64 | i386
     # Microsoft Update Catalog theo url + sha256 trong src/ui/goi-driver.json (KHONG co file
     # nhi phan nao trong repo). Intel / VMware / Realtek khong nhung (giay phep khong cho).
     # Sai sha256 hoac khong tai duoc -> DUNG build, khong am tham ban ISO thieu driver.
-    mkdir -p "$R/opt/console-pi/driver-san" /var/cache/zt-driver-san
-    python3 - "$REPO/src/ui/goi-driver.json" "$R/opt/console-pi/driver-san" <<'PYEOF'
+    mkdir -p "$STAGE/driver-san" /var/cache/zt-driver-san
+    python3 - "$REPO/src/ui/goi-driver.json" "$STAGE/driver-san" <<'PYEOF'
 import hashlib, json, os, shutil, sys, urllib.request
 ds, dich = sys.argv[1], sys.argv[2]
 cache = "/var/cache/zt-driver-san"
@@ -94,6 +91,20 @@ open(os.path.join(dich, "README.txt"), "w").write(
     "ky boi Microsoft (WHQL). Lay tu Microsoft Update Catalog, kiem sha256 luc build.\n"
     "Console System (c) 2026 zTieuYeuz chi nhung san de dung khi may khong co mang.\n")
 PYEOF
+
+    # --- 1d. Dung ban phat hanh (stdlib thuan, nap theo duong dan de khong keo ca goi ui/flask vao may build)
+    python3 - "$REPO" "$R/opt/console-system" "$STAGE" <<'PYEOF'
+import importlib.util, os, sys
+repo, opt, stage = sys.argv[1:4]
+spec = importlib.util.spec_from_file_location("phathanh", os.path.join(repo, "src", "ui", "phathanh.py"))
+P = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(P)
+ten = P.tao_ban(repo, opt, mang_theo=stage)
+P.chuyen_ban(opt, ten)
+print("ban phat hanh:", ten)
+PYEOF
+    ln -sfn console-system/current "$R/opt/console-pi"       # lien ket TUONG DOI (so voi /opt): dung ca trong chroot lan tren may that
+    rm -rf "$STAGE"
 
     # --- 2. Don vi systemd + cau hinh: hook 0100 cai tu day vao he thong
     local S="$R/usr/local/share/console-system"
@@ -164,7 +175,7 @@ PYEOF
     if grep -q "%" "$C/package-lists/console-pi.list.chroot"; then
         echo "DUNG LAI: dau phan tram trong danh sach goi $ARCH"; exit 1
     fi
-    echo "  $(find "$C" -type f | wc -l) file cau hinh, $(find "$R/opt/console-pi" -name '*.py' | wc -l) file python"
+    echo "  $(find "$C" -type f | wc -l) file cau hinh, $(find "$R/opt/console-pi/" -name '*.py' | wc -l) file python"
 }
 
 case "$CHON" in

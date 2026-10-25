@@ -9,6 +9,26 @@ SRC=/home/administrator/consolepi-toolkit
 DST=/opt/console-pi
 BK=/home/administrator/console-pi-truoc-moi-$(date +%Y%m%d-%H%M).tgz
 
+. "$SRC/src/scripts/duong-dan.sh"       # CS_BO_CUC: cu | moi
+if [ "$CS_BO_CUC" = moi ]; then
+    # 2.0 (A6): dung ban phat hanh moi (chi doc) tu cay nguon, doi current, ap dung file he thong (nginx/smb/unit...), khoi dong lai
+    python3 "$SRC/src/scripts/console-system-release.py" cai --nguon "$SRC" --khong-khoi-dong-lai || exit 1
+    mkdir -p "$CS_DATA/o-dia" "$CS_DATA/lich-su-bao"
+    chown consolepi-deploy:consolepi-deploy "$CS_DATA/o-dia" "$CS_DATA/lich-su-bao" 2>/dev/null || true
+    [ -f "$DST/tools/cai-vnc.sh" ] && bash "$DST/tools/cai-vnc.sh" || echo "Canh bao: chua bat duoc nginx cho VNC"
+    command -v wixl >/dev/null 2>&1 || apt-get install -y -qq wixl >/dev/null 2>&1 || echo "Canh bao: khong cai duoc wixl"
+    [ -f "$DST/tools/cai-agent-tls.sh" ] && bash "$DST/tools/cai-agent-tls.sh" || echo "Canh bao: chua bat duoc cong mTLS 8443 cho agent"
+    systemctl daemon-reload
+    systemctl restart console-pi-dashboard
+    sleep 6
+    systemctl is-active console-pi-dashboard
+    for p in / /deployos /deployos/kichban; do
+        echo "$p -> $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8880$p)"
+    done
+    echo "Phien ban: $(cat "$DST/VERSION")  (ban phat hanh: $(python3 "$SRC/src/scripts/console-system-release.py" ds | grep '^\*'))"
+    echo "Neu co van de, lui ve ban truoc: sudo python3 $DST/scripts/console-system-release.py lui"
+    exit 0
+fi
 tar czf "$BK" -C /opt console-pi/app.py console-pi/ui console-pi/nettools console-pi/branding console-pi/scripts console-pi/VERSION \
     $(cd /opt && ls -d console-pi/pxe-boot 2>/dev/null)
 echo "Da sao luu ban cu: $BK"

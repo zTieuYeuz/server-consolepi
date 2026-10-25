@@ -218,7 +218,7 @@ fi
 # ------------------------------------------------- 4. Trien khai file
 say "Trien khai vao $INSTALL_DIR"
 
-mkdir -p "$INSTALL_DIR"/{scripts,captures}
+# (thu muc ma /opt/console-pi chi duoc tao o nhanh bo cuc cu ben duoi; bo cuc moi dung releases/ + lien ket)
 
 # --- Tach DU LIEU ra khoi MA NGUON (xem src/ui/duongdan.py) ---
 #
@@ -267,47 +267,56 @@ chmod 755 "$DATA_DIR"
 PRESERVE=( config.json command-library.json port-names.json
            flask-secret.key force-ap.flag nettools/ifthen-rules.json )
 
+if [[ "$CS_BO_CUC" == moi ]]; then
+    # 2.0 (A6): ma nam trong /opt/console-system/releases/<ban> (chi doc), current -> ban dang dung, /opt/console-pi -> current.
+    # Tu xu ly ca may moi lan may dang co /opt/console-pi la thu muc that (dung dich vu, doi thanh lien ket, giu thu muc cu .cu-*).
+    python3 "$SRC_DIR/src/scripts/console-system-release.py" cai --nguon "$SRC_DIR" --khong-khoi-dong-lai \
+        || die "Khong dung duoc ban phat hanh (xem thong bao tren)"
+    ok "Da dung ban phat hanh $(cat "$INSTALL_DIR/VERSION") (chi doc) va chuyen current"
+else
+    mkdir -p "$INSTALL_DIR"/{scripts,captures}
 copy_tree() {   # copy_tree <nguon> <dich>
-    local src="$1" dst="$2"
-    rm -rf "$dst"
-    cp -r "$src" "$dst"
-}
-
-copy_tree "$SRC_DIR/src/ui"       "$INSTALL_DIR/ui"
-copy_tree "$SRC_DIR/src/nettools" "$INSTALL_DIR/nettools.new"
-# File boot PXE ban ky kem san (iPXE + shim + wimboot) - xem src/pxe-boot/README.md
-copy_tree "$SRC_DIR/src/pxe-boot" "$INSTALL_DIR/pxe-boot"
-
-# Giu lai rule IF/THEN cu neu co
-if [[ -f "$INSTALL_DIR/nettools/ifthen-rules.json" ]]; then
-    cp "$INSTALL_DIR/nettools/ifthen-rules.json" "$INSTALL_DIR/nettools.new/" 2>/dev/null || true
+        local src="$1" dst="$2"
+        rm -rf "$dst"
+        cp -r "$src" "$dst"
+    }
+    
+    copy_tree "$SRC_DIR/src/ui"       "$INSTALL_DIR/ui"
+    copy_tree "$SRC_DIR/src/nettools" "$INSTALL_DIR/nettools.new"
+    # File boot PXE ban ky kem san (iPXE + shim + wimboot) - xem src/pxe-boot/README.md
+    copy_tree "$SRC_DIR/src/pxe-boot" "$INSTALL_DIR/pxe-boot"
+    
+    # Giu lai rule IF/THEN cu neu co
+    if [[ -f "$INSTALL_DIR/nettools/ifthen-rules.json" ]]; then
+        cp "$INSTALL_DIR/nettools/ifthen-rules.json" "$INSTALL_DIR/nettools.new/" 2>/dev/null || true
+    fi
+    rm -rf "$INSTALL_DIR/nettools"
+    mv "$INSTALL_DIR/nettools.new" "$INSTALL_DIR/nettools"
+    
+    install -m 644 "$SRC_DIR/src/app.py" "$INSTALL_DIR/app.py"
+    install -m 644 "$SRC_DIR/VERSION"    "$INSTALL_DIR/VERSION"
+    # Chi chep FILE. Neu gap thu muc (vd __pycache__ do Python sinh ra khi
+    # chay thu script), `install` bao loi va `set -e` lam dung ca ban cai -
+    # da tung xay ra that.
+    for f in "$SRC_DIR"/src/scripts/*; do
+        [[ -f "$f" ]] || continue
+        install -m 755 "$f" "$INSTALL_DIR/scripts/$(basename "$f")"
+    done
+    [[ -f "$SRC_DIR/uninstall.sh" ]] && install -m 755 "$SRC_DIR/uninstall.sh" "$INSTALL_DIR/uninstall.sh"
+    # Cong cu cai them (cai-winrm.sh, cai-vnc.sh) - giao dien Quan ly may tram nhac duong dan /opt/console-pi/tools/
+    mkdir -p "$INSTALL_DIR/tools"
+    for f in "$SRC_DIR"/tools/cai-*.sh; do
+        [[ -f "$f" ]] && install -m 755 "$f" "$INSTALL_DIR/tools/$(basename "$f")"
+    done
+    
+    find "$INSTALL_DIR" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+    
+    # Khong de file nao trong /opt/console-pi cho phep nguoi khac ghi - ai co
+    # shell tren may deu sua duoc noi dung dashboard hien ra.
+    find "$INSTALL_DIR" -perm -o+w -not -type l -exec chmod o-w {} + 2>/dev/null || true
+    chown -R "$MAIN_USER:$MAIN_USER" "$INSTALL_DIR/nettools" "$INSTALL_DIR/ui" "$INSTALL_DIR/captures" 2>/dev/null || true
+    ok "Da chep ma nguon"
 fi
-rm -rf "$INSTALL_DIR/nettools"
-mv "$INSTALL_DIR/nettools.new" "$INSTALL_DIR/nettools"
-
-install -m 644 "$SRC_DIR/src/app.py" "$INSTALL_DIR/app.py"
-install -m 644 "$SRC_DIR/VERSION"    "$INSTALL_DIR/VERSION"
-# Chi chep FILE. Neu gap thu muc (vd __pycache__ do Python sinh ra khi
-# chay thu script), `install` bao loi va `set -e` lam dung ca ban cai -
-# da tung xay ra that.
-for f in "$SRC_DIR"/src/scripts/*; do
-    [[ -f "$f" ]] || continue
-    install -m 755 "$f" "$INSTALL_DIR/scripts/$(basename "$f")"
-done
-[[ -f "$SRC_DIR/uninstall.sh" ]] && install -m 755 "$SRC_DIR/uninstall.sh" "$INSTALL_DIR/uninstall.sh"
-# Cong cu cai them (cai-winrm.sh, cai-vnc.sh) - giao dien Quan ly may tram nhac duong dan /opt/console-pi/tools/
-mkdir -p "$INSTALL_DIR/tools"
-for f in "$SRC_DIR"/tools/cai-*.sh; do
-    [[ -f "$f" ]] && install -m 755 "$f" "$INSTALL_DIR/tools/$(basename "$f")"
-done
-
-find "$INSTALL_DIR" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-
-# Khong de file nao trong /opt/console-pi cho phep nguoi khac ghi - ai co
-# shell tren may deu sua duoc noi dung dashboard hien ra.
-find "$INSTALL_DIR" -perm -o+w -not -type l -exec chmod o-w {} + 2>/dev/null || true
-chown -R "$MAIN_USER:$MAIN_USER" "$INSTALL_DIR/nettools" "$INSTALL_DIR/ui" "$INSTALL_DIR/captures" 2>/dev/null || true
-ok "Da chep ma nguon"
 
 # ------------------------------------------------- 5. File cau hinh he thong
 say "Cau hinh he thong"
@@ -734,6 +743,8 @@ for f in "$SRC_DIR"/systemd/*.service "$SRC_DIR"/systemd/*.timer; do
         continue
     fi
     install -m 644 "$f" "/etc/systemd/system/$base"
+    # Mau don vi viet theo bo cuc MOI; bo cuc cu thi doi ve duong dan thuc te
+    sed -i "s#/var/lib/console-system/data/#$CS_DATA/#g" "/etc/systemd/system/$base"
 done
 
 # Service kiosk (va nut noi Ve Dashboard chay cung tai khoan) chay duoi tai

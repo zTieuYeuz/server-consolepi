@@ -5,6 +5,8 @@ After=network.target
 
 [Service]
 Type=simple
+# Ma nam trong ban phat hanh CHI DOC (A6) -> bo nho dem bien dich dat ngoai thu muc ma
+Environment=PYTHONPYCACHEPREFIX=/var/cache/console-system/pycache
 ExecStart=/usr/bin/python3 /opt/console-pi/app.py
 Restart=always
 RestartSec=3
