@@ -70,7 +70,7 @@ done
 #                            xuyen suot du an) - nguoi dung tu bat khi can
 for s in console-system-dashboard console-system-term-local console-system-term-ssh console-system-term-phien \
          nginx lldpd avahi-daemon ssh NetworkManager \
-         console-system-lan-dau console-system-cai; do
+         console-system-lan-dau console-system-cai console-system-nang-cap-phuc-hoi; do
     systemctl enable "$s" >/dev/null 2>&1 || echo "[console-system] khong bat duoc $s"
 done
 # console-system-cai (trinh cai do hoa) bat san nhung CHI chay khi boot bang

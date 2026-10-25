@@ -18,6 +18,7 @@ echo "== He thong"
 kt "ten he thong la Console System"      grep -q '^PRETTY_NAME="Console System' /etc/os-release
 kt "os-release con VERSION_CODENAME"      grep -q '^VERSION_CODENAME=[a-z]' /etc/os-release
 kt "khong co dich vu nao loi"             test -z "$(systemctl --failed --no-legend)"
+kt "dich vu phuc hoi cap nhat luc khoi dong da bat (mat dien giua luc nang cap)" sh -c "systemctl is-enabled console-system-nang-cap-phuc-hoi"
 kt "da chay xong thiet lap lan dau"       test -f /var/lib/console-system/data/.da-thiet-lap
 kt "mat khau Samba rieng cho may nay"     test -s /var/lib/console-system/secrets/samba-deploy.key
 kt "tai khoan Samba consolepi-deploy (dung ten share/deploy.cmd)" sh -c "pdbedit -L | grep -q '^consolepi-deploy:'"
