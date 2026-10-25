@@ -105,7 +105,7 @@ command -v wixl >/dev/null 2>&1 || apt-get install -y -qq wixl >/dev/null 2>&1 |
 [ -f "$DST/tools/cai-agent-tls.sh" ] && bash "$DST/tools/cai-agent-tls.sh" || echo "Canh bao: chua bat duoc cong mTLS 8443 cho agent (xem thong bao tren)"
 
 # Kiem tra cu phap truoc khi khoi dong lai - loi thi tra ban cu, khong de web chet
-if ! python3 -m py_compile "$DST"/ui/*.py "$DST"/nettools/*.py "$DST"/app.py; then
+if ! python3 -m py_compile $(find "$DST/ui" "$DST/consolesystem" "$DST/nettools" -name "*.py") "$DST"/app.py; then
     echo "LOI cu phap - tra lai ban cu"
     tar xzf "$BK" -C /opt
     exit 1

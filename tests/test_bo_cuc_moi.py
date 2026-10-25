@@ -8,8 +8,8 @@ import sys
 import pytest
 
 GOC = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(GOC, "src", "ui"))
-import dichuyen as M  # noqa: E402
+sys.path.insert(0, os.path.join(GOC, "src"))
+from consolesystem.core import dichuyen as M  # noqa: E402
 
 MAU_30 = "/root/ban-sao-30"
 MAU_30_OPT = "/root/ban-sao-30-opt"

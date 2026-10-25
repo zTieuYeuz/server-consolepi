@@ -7,14 +7,11 @@
     dichuyen.py kiem-bo-cuc [--moi ...] | hoantac-bo-cuc [--moi ...]       (DUNG dich vu truoc khi chuyen)
 Mac dinh thu muc du lieu = $CONSOLE_PI_DATA hoac /var/lib/console-pi."""
 import argparse
-import importlib.util
 import os
 import sys
 
-_M = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ui", "dichuyen.py")
-_spec = importlib.util.spec_from_file_location("dichuyen", _M)
-M = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(M)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from consolesystem.core import dichuyen as M  # noqa: E402     (chi dung thu vien chuan, khong keo flask)
 
 
 def main(argv=None):

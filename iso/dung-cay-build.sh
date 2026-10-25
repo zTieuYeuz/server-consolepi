@@ -96,7 +96,7 @@ PYEOF
     python3 - "$REPO" "$R/opt/console-system" "$STAGE" <<'PYEOF'
 import importlib.util, os, sys
 repo, opt, stage = sys.argv[1:4]
-spec = importlib.util.spec_from_file_location("phathanh", os.path.join(repo, "src", "ui", "phathanh.py"))
+spec = importlib.util.spec_from_file_location("phathanh", os.path.join(repo, "src", "consolesystem", "core", "phathanh.py"))
 P = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(P)
 ten = P.tao_ban(repo, opt, mang_theo=stage)

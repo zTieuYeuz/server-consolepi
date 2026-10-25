@@ -6,8 +6,8 @@ import sys
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src", "ui"))
-import dichuyen as M  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from consolesystem.core import dichuyen as M  # noqa: E402
 
 
 def bam(root):
