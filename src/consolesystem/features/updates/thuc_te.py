@@ -27,7 +27,16 @@ def _kt():
 
 
 def kho_thuc():
+    """Kho dung de cap nhat: mac dinh kho trung tam (cung token/Cloudflare Access); co the chi dinh KHO RIENG trong updates/cau-hinh.json
+    (kho_url + kho_token) - dung cho kenh thu nghiem qua LAN va cho thu nghiem."""
     KT = _kt()
+    from consolesystem.core.capnhat import may as M
+    try:
+        cfg = M.cau_hinh(M.Moi())
+    except Exception:
+        cfg = {}
+    if cfg.get("kho_url") and cfg.get("kho_token"):
+        return KhoCapNhat(lambda: {"url": KT.chuan_hoa_url(cfg["kho_url"]), "token": cfg["kho_token"]}, lambda: {}, KT._phien_ban)
     return KhoCapNhat(KT.doc_cauhinh, KT.cf_access_headers, KT._phien_ban)
 
 
@@ -93,6 +102,10 @@ def suc_khoe(ten_ban):
 
 
 def token():
+    from consolesystem.core.capnhat import may as M
+    cfg = M.cau_hinh(M.Moi())
+    if cfg.get("kho_url") and cfg.get("kho_token"):
+        return cfg["kho_token"]
     c = _kt().doc_cauhinh()
     if not c:
         raise N.LoiNangCap("chua ket noi kho")

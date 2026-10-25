@@ -83,7 +83,7 @@ class Moi:
 
 # ----------------------------------------------------------------------------------------------- cau hinh / hien tai
 def cau_hinh(moi):
-    d = {"kenh": "on-dinh", "hoi_dinh_ky": True}
+    d = {"kenh": "on-dinh", "hoi_dinh_ky": True, "kho_url": None, "kho_token": None}      # kho_url/kho_token: kho RIENG cho cap nhat (kho LAN thu nghiem); mac dinh dung kho trung tam
     d.update(moi.kho_json("cau-hinh.json", {}).doc())
     if d["kenh"] not in KENH:
         d["kenh"] = "on-dinh"
