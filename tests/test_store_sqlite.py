@@ -241,3 +241,18 @@ def test_chuyen_bo_cuc_tu_choi_khi_wal_chua_gop(tmp_path):
     with pytest.raises(DM.LoiDichuyen, match="WAL"):
         DM.dua_ve_bo_cuc_moi(str(cu), str(tmp_path / "opt"), str(tmp_path / "moi"))
     assert not (tmp_path / "moi").exists()
+
+
+def test_hai_tien_trinh_cung_nhap_json_khong_ghi_de_du_lieu_moi(tmp_path, db):
+    """Tien trinh A nhap xong va da ghi them du lieu moi; tien trinh B (da thay file JSON truoc do) khong duoc ghi de bang JSON cu."""
+    cu = tmp_path / "may.json"
+    cu.write_text(json.dumps([tao_may(1)]))
+    a = KhoSqlite(db, "may", [], duong_json_cu=str(cu))
+    b = KhoSqlite(db, "may", [], duong_json_cu=str(cu))
+    cu.write_text(json.dumps([tao_may(1)]))                    # B "thay" file con do
+    a.doc()
+    a.sua(lambda d: d.append(tao_may(2)))                        # du lieu moi sau khi nhap
+    c = SQ.ket_noi(db)
+    b._san_sang_the_he = None
+    assert b._nhap_json_cu(c) == "da co nguoi nhap"
+    assert [x["id"] for x in a.doc()] == ["m001", "m002"]

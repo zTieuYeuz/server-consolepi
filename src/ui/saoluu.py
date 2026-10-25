@@ -37,7 +37,7 @@ PHAM_VI_TOANBO = PHAM_VI_CAUHINH + ("deploy", "storage")
 GOC_CHO_PHEP = {"schema_version.json", "config", "secrets", "pki", "data", "deploy", "storage"}
 LOAI_TRU = ("data/trienkhai/cache",)           # bo nho tam, tai lai duoc
 TEN_DB = "data/console.db"                    # co so du lieu SQLite dang chay: KHONG chep file song (WAL) ma dung ban chup nhat quan
-TEP_DB_PHU = (TEN_DB + "-wal", TEN_DB + "-shm")
+TEP_DB_PHU = (TEN_DB + "-wal", TEN_DB + "-shm", TEN_DB + "-journal")
 THU_MUC_THAY_CA_CAY = ("config", "secrets", "pki", "data")     # khoi phuc: thay nguyen cay
 THU_MUC_GHEP = ("deploy", "storage")                            # khoi phuc toan bo: ghi de tung file, khong xoa file thua
 
@@ -127,8 +127,12 @@ def _ghi_tar_ds(goc, che_do, fileobj, mode, files, dirs):
             ti = tf.gettarinfo(dirs[arc], arcname=arc)
             tf.addfile(ti)
         for arc in sorted(files):
-            ti = tf.gettarinfo(files[arc], arcname=arc)
-            with open(files[arc], "rb") as f:
+            try:
+                ti = tf.gettarinfo(files[arc], arcname=arc)
+                f = open(files[arc], "rb")
+            except FileNotFoundError:
+                continue                                  # tep tam bien mat giua luc liet ke va luc doc (khong dua vao goi)
+            with f:
                 doc = _DocBam(f)
                 tf.addfile(ti, doc)
             if doc.n != ti.size:

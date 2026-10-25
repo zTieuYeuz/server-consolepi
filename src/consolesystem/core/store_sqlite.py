@@ -68,6 +68,9 @@ class KhoSqlite:
         d = KhoJson(self._json_cu, self.mac_dinh).doc()           # cung co che hong->.bak->giu .hong-*
         c.execute("BEGIN IMMEDIATE")
         try:
+            if c.execute("SELECT 1 FROM meta WHERE ten=?", (self.ten,)).fetchone() or c.execute("SELECT 1 FROM %s LIMIT 1" % self._bang).fetchone():
+                c.execute("ROLLBACK")                       # tien trinh khac vua nhap xong: KHONG ghi de du lieu moi bang JSON cu
+                return "da co nguoi nhap"
             self._ghi_trong_tx(c, d)
             ban_doc = self._doc_trong_tx(c)
             if _dump(ban_doc) != _dump(d):
