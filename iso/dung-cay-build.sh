@@ -94,11 +94,11 @@ PYEOF
 
     # --- 1d. Dung ban phat hanh (stdlib thuan, nap theo duong dan de khong keo ca goi ui/flask vao may build)
     python3 - "$REPO" "$R/opt/console-system" "$STAGE" <<'PYEOF'
-import importlib.util, os, sys
+import os, sys
 repo, opt, stage = sys.argv[1:4]
-spec = importlib.util.spec_from_file_location("phathanh", os.path.join(repo, "src", "consolesystem", "core", "phathanh.py"))
-P = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(P)
+sys.path.insert(0, os.path.join(repo, "src"))
+from consolesystem.core import phathanh as P      # goi chuan (module chi dung stdlib; khong keo flask)
+assert "flask" not in sys.modules, "phathanh khong duoc keo flask vao may build"
 ten = P.tao_ban(repo, opt, mang_theo=stage)
 P.chuyen_ban(opt, ten)
 print("ban phat hanh:", ten)
