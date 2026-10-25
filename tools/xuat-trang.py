@@ -10,7 +10,8 @@ import sys
 import tempfile
 import threading
 
-TMP = tempfile.mkdtemp(prefix="trang-")
+DAU_RA = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else None     # truoc khi chdir
+TMP = os.environ.get("CS_XUAT_DATA") or tempfile.mkdtemp(prefix="trang-")   # CS_XUAT_DATA: thu muc du lieu mau (nen la BAN SAO)
 os.environ["CONSOLE_PI_DATA"] = TMP
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
 sys.path.insert(0, SRC)
@@ -29,7 +30,7 @@ def chuan(b):
     return b
 
 # trang doc trang thai may that (dung luong o, suc khoe...) -> khac nhau giua cac lan chay, chi so ma tra ve
-THEO_MAY = {"/", "/api/suckhoe", "/settings", "/storage", "/logs"}
+THEO_MAY = {"/", "/api/suckhoe", "/settings", "/storage", "/logs", "/deployos/caidat/hatang/chay"}
 
 
 class QuaGio(Exception):
@@ -62,8 +63,8 @@ def main():
         finally:
             signal.alarm(0)
     out = "\n".join(dong) + "\n"
-    if len(sys.argv) > 1:
-        open(sys.argv[1], "w", encoding="utf-8").write(out)
+    if DAU_RA:
+        open(DAU_RA, "w", encoding="utf-8").write(out)
     else:
         sys.stdout.write(out)
 

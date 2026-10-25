@@ -19,9 +19,10 @@ import uuid
 from datetime import date, datetime, timedelta
 
 from .duongdan import THU_MUC_DU_LIEU
+from . import duongdan as _DD
 
 DIR = os.path.join(THU_MUC_DU_LIEU, "trienkhai")
-_KHOA_FILE = os.path.join(DIR, ".khoa")
+_KHOA_FILE = _DD.FILE_TK_KHOA
 _khoa_luong = threading.RLock()
 THU = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
 

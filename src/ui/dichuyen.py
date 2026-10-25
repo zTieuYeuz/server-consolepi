@@ -232,3 +232,146 @@ def _m1_up(ngu):
 MIGRATIONS = [
     (1, "moc-xuat-phat-1.9.5", _m1_up, lambda ngu: None),
 ]
+
+
+# ============================================================ A3: chuyen sang bo cuc /var/lib/console-system
+# Bo cuc moi:  config/ secrets/ pki/ data/ deploy/ storage/ backups/ updates/   (+ .bo-cuc-moi la dau "da chuyen")
+# Bo cuc cu:   /var/lib/console-pi (du lieu, lan ca trienkhai/pki, kho-trungtam.json...) + vai file canh ma o /opt/console-pi
+# Nguyen tac: SAO CHEP -> kiem ma bam TUNG file -> doi ten nguyen tu -> chuong trinh doi sang cho moi.
+# Ban CU khong bi sua/xoa (hoan tac = doi ten thu muc moi di cho khac). deploy/ va storage/ (nang, nhieu GB) KHONG chep:
+# o bo cuc moi chung la lien ket toi thu muc cu (chuyen han o buoc sau, khi da chay on dinh).
+DAU_BO_CUC_MOI = ".bo-cuc-moi"
+THU_MUC_LIEN_KET = ("deploy", "storage")
+
+# (nguon, duong tuong doi) -> duong dich trong thu muc moi. nguon: "opt" = /opt/console-pi, "dl" = thu muc du lieu cu.
+ANH_XA = {
+    ("opt", "config.json"): "config/config.json",
+    ("opt", "port-names.json"): "config/port-names.json",
+    ("opt", "screen-rotation"): "config/screen-rotation",
+    ("opt", "force-ap.flag"): "config/force-ap.flag",
+    ("opt", "wifi-mac-spoof.flag"): "config/wifi-mac-spoof.flag",
+    ("opt", "flask-secret.key"): "secrets/flask-secret.key",
+    ("dl", "command-library.json"): "config/command-library.json",
+    ("dl", "samba-deploy.key"): "secrets/samba-deploy.key",
+    ("dl", "kho-trungtam.json"): "secrets/kho-trungtam.json",
+    ("dl", "cf-access.json"): "secrets/cf-access.json",
+    ("dl", "trienkhai/.khoa"): "secrets/trienkhai.khoa",
+    ("dl", "trienkhai/pki"): "pki",
+}
+
+
+def _bam_file(duong):
+    import hashlib
+    h = hashlib.sha256()
+    with open(duong, "rb") as f:
+        for kh in iter(lambda: f.read(1 << 20), b""):
+            h.update(kh)
+    return h.hexdigest()
+
+
+def _chep_va_kiem(nguon, dich, lan=3):
+    """Chep 1 file giu quyen/chu so huu/gio; bam nguon truoc & sau khi chep phai bang bam dich (nguon doi giua chung -> chep lai)."""
+    os.makedirs(os.path.dirname(dich), exist_ok=True)
+    for _ in range(lan):
+        b1 = _bam_file(nguon)
+        shutil.copy2(nguon, dich)
+        st = os.stat(nguon)
+        with contextlib.suppress(OSError):
+            os.chown(dich, st.st_uid, st.st_gid)
+        if b1 == _bam_file(dich) == _bam_file(nguon):
+            return b1
+    raise LoiDichuyen("file doi lien tuc khi chep (dung dich vu roi chay lai): %s" % nguon)
+
+
+def _ds_nguon(cu, opt):
+    """Liet ke (nguon_tuyet_doi, dich_tuong_doi) cho moi file can chep."""
+    xong_dl = {}
+    ra = []
+    for (loai, rel), dich in ANH_XA.items():
+        goc = opt if loai == "opt" else cu
+        p = os.path.join(goc, rel)
+        if os.path.isdir(p):
+            for d, _ds, fs in os.walk(p):
+                for f in sorted(fs):
+                    fp = os.path.join(d, f)
+                    ra.append((fp, os.path.join(dich, os.path.relpath(fp, p))))
+        elif os.path.isfile(p):
+            ra.append((p, dich))
+        if loai == "dl":
+            xong_dl[rel] = True
+    daco = {rel for (loai, rel) in ANH_XA if loai == "dl"}
+    if os.path.isdir(cu):
+        for d, ds, fs in os.walk(cu):
+            rd = os.path.relpath(d, cu)
+            ds[:] = sorted(x for x in ds if not (rd == "." and x in THU_MUC_LIEN_KET))
+            for x in ds:          # thu muc rong cung giu (ma dung makedirs, nhung giu cho giong het)
+                rx = os.path.normpath(os.path.join(rd, x))
+                if not any(rx == m or rx.startswith(m + os.sep) for m in daco):
+                    ra.append((None, os.path.join("data", rx)))
+            for f in sorted(fs):
+                rel = os.path.normpath(os.path.join(rd, f))
+                if any(rel == m or rel.startswith(m + os.sep) for m in daco):
+                    continue           # da co trong anh xa
+                ra.append((os.path.join(d, f), os.path.join("data", rel)))
+    return ra
+
+
+def dua_ve_bo_cuc_moi(cu, opt, moi):
+    """Chep du lieu bo cuc cu sang bo cuc moi. Tra ve so file da chep. Loi -> don dep ban dang chep, KHONG dong toi ban cu."""
+    if os.path.exists(os.path.join(moi, DAU_BO_CUC_MOI)):
+        raise LoiDichuyen("%s da la bo cuc moi" % moi)
+    if os.path.exists(moi) and os.listdir(moi):
+        raise LoiDichuyen("%s da co noi dung, khong ghi de" % moi)
+    tam = moi + ".dang-chuyen"
+    shutil.rmtree(tam, ignore_errors=True)
+    os.makedirs(tam, mode=0o755)
+    try:
+        bang = {}
+        for nguon, dich in _ds_nguon(cu, opt):
+            if nguon is None:
+                os.makedirs(os.path.join(tam, dich), exist_ok=True)
+                continue
+            bang[dich] = _chep_va_kiem(nguon, os.path.join(tam, dich))
+        for ten in ("config", "secrets", "pki", "data", "backups", "updates"):
+            os.makedirs(os.path.join(tam, ten), exist_ok=True)
+        os.chmod(os.path.join(tam, "secrets"), 0o700)
+        os.chmod(os.path.join(tam, "pki"), 0o700)
+        for ten in THU_MUC_LIEN_KET:
+            goc = os.path.join(cu, ten)
+            if os.path.isdir(goc):
+                os.symlink(goc, os.path.join(tam, ten))          # nang: de nguyen o cho cu, bo cuc moi tro toi
+            else:
+                os.makedirs(os.path.join(tam, ten), exist_ok=True)      # khong dong vao ban cu
+        ghi_nguyen_tu(os.path.join(tam, "da-chep.json"),
+                      json.dumps({"tu": cu, "opt": opt, "gio": time.strftime("%Y-%m-%d %H:%M:%S"), "sha256": bang},
+                                 indent=1, sort_keys=True).encode("utf-8"), 0o600)
+        _ghi_phien_ban(tam, 1)
+        ghi_nguyen_tu(os.path.join(tam, DAU_BO_CUC_MOI), b"2\n", 0o644)       # ghi CUOI: co dau nay moi coi la da chuyen
+        if os.path.isdir(moi):
+            os.rmdir(moi)
+        os.rename(tam, moi)
+    except BaseException:
+        shutil.rmtree(tam, ignore_errors=True)
+        raise
+    return len(bang)
+
+
+def kiem_bo_cuc_moi(moi):
+    """Bam lai tung file trong thu muc moi so voi da-chep.json. Tra ve danh sach file sai (rong = tot)."""
+    with open(os.path.join(moi, "da-chep.json"), encoding="utf-8") as f:
+        bang = json.load(f)["sha256"]
+    sai = []
+    for dich, b in bang.items():
+        p = os.path.join(moi, dich)
+        if not os.path.isfile(p) or _bam_file(p) != b:
+            sai.append(dich)
+    return sai
+
+
+def hoan_tac_bo_cuc(moi):
+    """Chuyen thu muc moi di cho khac (KHONG xoa) -> chuong trinh tu quay ve bo cuc cu. Tra ve ten moi."""
+    if not os.path.exists(os.path.join(moi, DAU_BO_CUC_MOI)):
+        raise LoiDichuyen("%s khong phai bo cuc moi" % moi)
+    dich = "%s.da-hoan-tac-%s" % (moi, time.strftime("%Y%m%d-%H%M%S"))
+    os.rename(moi, dich)
+    return dich

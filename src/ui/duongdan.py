@@ -32,6 +32,32 @@ import os
 # ---------------------------------------------------------------- ma nguon
 THU_MUC_MA_NGUON = "/opt/console-pi"
 
+# 2.0 (A3): co HAI bo cuc. Cu: du lieu o /var/lib/console-pi (lan secrets, pki) + vai file canh ma o /opt/console-pi.
+# Moi: /var/lib/console-system/{config,secrets,pki,data,deploy,storage,...}. Dau ".bo-cuc-moi" trong thu muc goc = da chuyen
+# (ghi CUOI CUNG boi ui/dichuyen.dua_ve_bo_cuc_moi). Chua co dau thi chay y nhu 1.9.5.
+GOC_BO_CUC_CU = "/var/lib/console-pi"
+GOC_BO_CUC_MOI = "/var/lib/console-system"
+
+
+def _la_moi(goc):
+    return os.path.exists(os.path.join(goc, ".bo-cuc-moi"))
+
+
+_GOC_ENV = os.environ.get("CONSOLE_PI_DATA")
+GOC = _GOC_ENV or (GOC_BO_CUC_MOI if _la_moi(GOC_BO_CUC_MOI) else GOC_BO_CUC_CU)
+BO_CUC_MOI = _la_moi(GOC)
+THU_MUC_DU_LIEU = os.path.join(GOC, "data") if BO_CUC_MOI else GOC
+
+
+def _duong(*phan):
+    return os.path.join(THU_MUC_DU_LIEU, *phan)
+
+
+def _vt(cu, moi):
+    """Vi tri theo bo cuc dang dung: cu = duong tuyet doi o bo cuc cu, moi = duong tuong doi trong thu muc goc moi."""
+    return os.path.join(GOC, moi) if BO_CUC_MOI else cu
+
+
 
 
 def _ma(*phan):
@@ -40,14 +66,14 @@ def _ma(*phan):
 
 # A1 (2.0): moi duong dan CUNG truoc day rai trong ma deu khai bao o day. GIA TRI GIU NGUYEN (chua doi vi tri that).
 # --- file/thu muc canh ma nguon (se chuyen sang bo cuc moi o buoc A3)
-FILE_CONFIG = _ma("config.json")
-FILE_FLASK_SECRET = _ma("flask-secret.key")
+FILE_CONFIG = _vt(_ma("config.json"), "config/config.json")
+FILE_FLASK_SECRET = _vt(_ma("flask-secret.key"), "secrets/flask-secret.key")
 FILE_VERSION = _ma("VERSION")
 FILE_VERSION_TXT = _ma("version.txt")
-FILE_XOAY_MAN_HINH = _ma("screen-rotation")
-FILE_TEN_CONG = _ma("port-names.json")
-FILE_FORCE_AP = _ma("force-ap.flag")
-FILE_MAC_SPOOF = _ma("wifi-mac-spoof.flag")
+FILE_XOAY_MAN_HINH = _vt(_ma("screen-rotation"), "config/screen-rotation")
+FILE_TEN_CONG = _vt(_ma("port-names.json"), "config/port-names.json")
+FILE_FORCE_AP = _vt(_ma("force-ap.flag"), "config/force-ap.flag")
+FILE_MAC_SPOOF = _vt(_ma("wifi-mac-spoof.flag"), "config/wifi-mac-spoof.flag")
 SCRIPT_WIFI_FALLBACK = _ma("scripts", "wifi-fallback.sh")
 DIR_DRIVER_SAN = _ma("driver-san")
 DIR_CAPTURES = _ma("captures")
@@ -67,19 +93,14 @@ LOG_NETMIKO = "/var/log/console-pi-netmiko.log"
 # ----------------------------------------------------------------- du lieu
 # Cho phep doi bang bien moi truong (tien khi chay thu tren may khac, hoac
 # khi muon de du lieu tren o USB gan ngoai).
-THU_MUC_DU_LIEU = os.environ.get("CONSOLE_PI_DATA", "/var/lib/console-pi")
-
-
-def _duong(*phan):
-    return os.path.join(THU_MUC_DU_LIEU, *phan)
 
 
 # Du lieu Deployment OS: anh Windows/Linux, phan mem, ung dung nhieu file,
 # driver, script, kich ban, file boot. Day la thu muc NANG NHAT (nhieu GB).
-DEPLOY_DIR = _duong("deploy")
+DEPLOY_DIR = os.path.join(GOC, "deploy")
 
 # Kho file dung chung (tab "Kho file")
-STORAGE_DIR = _duong("storage")
+STORAGE_DIR = os.path.join(GOC, "storage")
 
 # Bang tra tham so cai dat im lang (tab "Tham so cai dat")
 
@@ -88,21 +109,25 @@ STORAGE_DIR = _duong("storage")
 FILE_DRIVER_SAN = _duong("driver-san.da-nap.json")
 
 # Thu vien lenh thiet bi mang cua nguoi dung (tab "Thu vien lenh")
-FILE_THU_VIEN_LENH = _duong("command-library.json")
+FILE_THU_VIEN_LENH = _vt(_duong("command-library.json"), "config/command-library.json")
 
 # Mat khau tai khoan Samba dung cho PXE deploy - install.sh tu sinh ngau
 # nhien, quyen 600. De ben DU LIEU chu khong phai ben ma nguon vi no phai
 # song sot qua cac lan cai lai code (neu mat, CSDL Samba va file khoa lech
 # nhau -> WinPE khong ket noi duoc kho nua).
-FILE_KHOA_SAMBA = _duong("samba-deploy.key")
+FILE_KHOA_SAMBA = _vt(_duong("samba-deploy.key"), "secrets/samba-deploy.key")
 
 # Cau hinh ket noi Kho luu tru trung tam (URL + token rieng cua Pi nay) -
 # xem ui/khotrungtam.py. Token la bi mat, de ben DU LIEU (khong phai ma
 # nguon) vi cung ly do voi FILE_KHOA_SAMBA o tren.
-FILE_KHO_TRUNGTAM = _duong("kho-trungtam.json")
+FILE_KHO_TRUNGTAM = _vt(_duong("kho-trungtam.json"), "secrets/kho-trungtam.json")
 
 # Thong tin dang nhap Cloudflare Access cho Kho trung tam (bi mat)
-FILE_CF_ACCESS = _duong("cf-access.json")
+FILE_CF_ACCESS = _vt(_duong("cf-access.json"), "secrets/cf-access.json")
+
+# Chia khoa ma hoa tai khoan Trien khai + thu muc PKI (chung chi/khoa CA)
+FILE_TK_KHOA = _vt(_duong("trienkhai", ".khoa"), "secrets/trienkhai.khoa")
+DIR_PKI = _vt(_duong("trienkhai", "pki"), "pki")
 
 
 def bao_dam_thu_muc_du_lieu():

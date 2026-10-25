@@ -31,7 +31,8 @@ FILE_NGINX = "/etc/nginx/conf.d/console-pi-agent-tls.conf"
 
 
 def _dir():
-    d = os.path.join(DL.DIR, "pki")
+    from . import duongdan as DD
+    d = DD.DIR_PKI if DD.BO_CUC_MOI else os.path.join(DL.DIR, "pki")
     os.makedirs(d, mode=0o700, exist_ok=True)
     try:
         os.chmod(d, 0o700)
