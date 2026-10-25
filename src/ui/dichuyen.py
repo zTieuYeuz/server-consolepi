@@ -313,6 +313,8 @@ def _ds_nguon(cu, opt):
                 if not any(rx == m or rx.startswith(m + os.sep) for m in daco):
                     ra.append((None, os.path.join("data", rx)))
             for f in sorted(fs):
+                if f.endswith(("-wal", "-shm")) and f.startswith("console.db"):
+                    continue
                 rel = os.path.normpath(os.path.join(rd, f))
                 if any(rel == m or rel.startswith(m + os.sep) for m in daco):
                     continue           # da co trong anh xa
@@ -326,6 +328,9 @@ def dua_ve_bo_cuc_moi(cu, opt, moi):
         raise LoiDichuyen("%s da la bo cuc moi" % moi)
     if os.path.exists(moi) and os.listdir(moi):
         raise LoiDichuyen("%s da co noi dung, khong ghi de" % moi)
+    for wal in (os.path.join(cu, "console.db-wal"), os.path.join(cu, "data", "console.db-wal")):
+        if os.path.exists(wal) and os.path.getsize(wal) > 0:
+            raise LoiDichuyen("co so du lieu dang mo (WAL chua gop) - dung dich vu truoc khi chuyen: %s" % wal)
     tam = moi + ".dang-chuyen"
     shutil.rmtree(tam, ignore_errors=True)
     os.makedirs(tam, mode=0o755)

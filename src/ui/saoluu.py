@@ -27,6 +27,7 @@ import time
 
 from . import dichuyen as DM
 from . import duongdan as DD
+from consolesystem.core import sqlite as SQ
 
 DINH_DANG = 1
 SAN_PHAM = "console-system"
@@ -35,6 +36,8 @@ PHAM_VI_CAUHINH = ("schema_version.json", "config", "secrets", "pki", "data", "d
 PHAM_VI_TOANBO = PHAM_VI_CAUHINH + ("deploy", "storage")
 GOC_CHO_PHEP = {"schema_version.json", "config", "secrets", "pki", "data", "deploy", "storage"}
 LOAI_TRU = ("data/trienkhai/cache",)           # bo nho tam, tai lai duoc
+TEN_DB = "data/console.db"                    # co so du lieu SQLite dang chay: KHONG chep file song (WAL) ma dung ban chup nhat quan
+TEP_DB_PHU = (TEN_DB + "-wal", TEN_DB + "-shm")
 THU_MUC_THAY_CA_CAY = ("config", "secrets", "pki", "data")     # khoi phuc: thay nguyen cay
 THU_MUC_GHEP = ("deploy", "storage")                            # khoi phuc toan bo: ghi de tung file, khong xoa file thua
 
@@ -75,7 +78,7 @@ def liet_ke(goc, che_do):
                 dirs[base + "/" + x] = os.path.join(d, x)
             for f in sorted(fs):
                 fp = os.path.join(d, f)
-                if os.path.islink(fp) or _bi_loai(base + "/" + f):
+                if os.path.islink(fp) or _bi_loai(base + "/" + f) or (base + "/" + f) in (TEN_DB,) + TEP_DB_PHU:
                     continue
                 files[base + "/" + f] = fp
     return files, dirs
@@ -103,7 +106,21 @@ def _schema_hien_tai(goc):
 
 
 def _ghi_tar(goc, che_do, fileobj, mode="w:gz"):
-    files, dirs = liet_ke(goc, che_do)
+    tam_db = None
+    try:
+        files, dirs = liet_ke(goc, che_do)
+        db = os.path.join(goc, TEN_DB)
+        if os.path.exists(db):                       # ban chup nhat quan cua co so du lieu dang chay (API backup cua SQLite)
+            tam_db = tempfile.mkdtemp(prefix=".sao-luu-db-", dir=goc)
+            SQ.snapshot(db, os.path.join(tam_db, "console.db"))
+            files[TEN_DB] = os.path.join(tam_db, "console.db")
+        return _ghi_tar_ds(goc, che_do, fileobj, mode, files, dirs)
+    finally:
+        if tam_db:
+            shutil.rmtree(tam_db, ignore_errors=True)
+
+
+def _ghi_tar_ds(goc, che_do, fileobj, mode, files, dirs):
     ds_tep = []
     with tarfile.open(fileobj=fileobj, mode=mode) as tf:
         for arc in sorted(dirs):
@@ -340,6 +357,7 @@ def khoi_phuc(duong, goc=None):
         finally:
             shutil.rmtree(tam, ignore_errors=True)
         shutil.rmtree(ben_canh, ignore_errors=True)
+        SQ.lam_moi()                         # co so du lieu da doi file: moi luong phai mo lai ket noi
         DM._nhat_ky(goc, viec="khoi-phuc", tu=os.path.basename(duong), phien_ban_ma=mf.get("phien_ban_ma"), goi_truoc=truoc)
     return {"manifest": mf, "goi_truoc": truoc, "so_tep": len(mf["tep"])}
 

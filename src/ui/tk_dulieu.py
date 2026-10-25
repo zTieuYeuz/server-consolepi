@@ -21,6 +21,7 @@ from datetime import date, datetime, timedelta
 from .duongdan import THU_MUC_DU_LIEU
 from . import duongdan as _DD
 from consolesystem.core.store import KhoJson
+from consolesystem.core.store_sqlite import KhoSqlite
 
 DIR = os.path.join(THU_MUC_DU_LIEU, "trienkhai")
 _KHOA_FILE = _DD.FILE_TK_KHOA
@@ -44,13 +45,22 @@ class Kho(KhoJson):
         super().ghi(d)
 
 
-MAY = Kho("may.json", [])               # [{id, ten, ip, mac, ghi_chu, bao_mat:{...}}]
+def KhoLon(ten, mac_dinh):
+    """Kho DU LIEU LON/TANG DAN: luu trong SQLite (console.db), chi ghi phan doi; tu nhap file JSON cu lan dau (B1b).
+    Dat bien moi truong CS_KHO_JSON=1 de quay ve JSON (khong dung SQLite) khi can chan doan."""
+    if os.environ.get("CS_KHO_JSON"):
+        return Kho(ten + ".json", mac_dinh)
+    return KhoSqlite(os.path.join(THU_MUC_DU_LIEU, "console.db"), ten, mac_dinh,
+                     duong_json_cu=os.path.join(DIR, ten + ".json"), khoa=_khoa_luong)
+
+
+MAY = KhoLon("may", [])               # [{id, ten, ip, mac, ghi_chu, bao_mat:{...}}]
 NHOM_MAY = Kho("nhom_may.json", [])     # [{id, ten, may:[id,...]}]
 TAI_KHOAN = Kho("tai_khoan.json", [])   # [{id, ten, user, mk}]  mk = chuoi Fernet
 NHOM_TN = Kho("nhom_tn.json", [])       # [{id, ten, muc:[{loai, ref, ten}]}]
 LICH = Kho("lich.json", [])             # [{id, ten, kieu, gio, ...}]
 KICH_BAN = Kho("kich_ban.json", [])     # [{id, ten, buoc:[...], nhom_may:[id], may:[id], lich_id, tai_khoan_id}]
-TRANG_THAI = Kho("chay.json", {})       # {kb_id: {...}}
+TRANG_THAI = KhoLon("chay", {})       # {kb_id: {...}}
 
 
 def moi_id():

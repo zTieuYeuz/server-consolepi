@@ -30,7 +30,7 @@ def chuan(b):
     return b
 
 # trang doc trang thai may that (dung luong o, suc khoe...) -> khac nhau giua cac lan chay, chi so ma tra ve
-THEO_MAY = {"/", "/api/suckhoe", "/settings", "/storage", "/logs", "/deployos/caidat/hatang/chay"}
+THEO_MAY = {"/", "/api/suckhoe", "/settings", "/storage", "/logs", "/deployos/caidat/hatang/chay", "/deployos/kho"}
 
 
 class QuaGio(Exception):

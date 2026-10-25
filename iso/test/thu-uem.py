@@ -574,12 +574,18 @@ except Exception:
 # nhip KHONG ghi dia moi lan (may.json lon): chi khi doi thong tin / moi 10 phut
 import os as _os
 UA._NHIP.pop("m1", None); UA.xu_ly_nhip(DL.tim(DL.MAY.doc(), "m1"), {"ver": UA.PHIEN_BAN, "host": "H", "dang": []}, "10.1.1.1")
-mt = _os.stat(DL.MAY.duong).st_mtime_ns
+def _dau_ghi():
+    """So lan ghi: SQLite -> tong dong da doi; JSON -> thoi diem sua file (kho 'may' hien o SQLite tu B1b)."""
+    if hasattr(DL.MAY, "_db"):
+        from consolesystem.core import sqlite as _SQ
+        return _SQ.ket_noi(DL.MAY._db).total_changes
+    return _os.stat(DL.MAY.duong).st_mtime_ns
+mt = _dau_ghi()
 for _ in range(4): UA.xu_ly_nhip(DL.tim(DL.MAY.doc(), "m1"), {"ver": UA.PHIEN_BAN, "host": "H", "dang": []}, "10.1.1.1")
-kt("agent: 4 nhip lien tiep khong ghi lai may.json", _os.stat(DL.MAY.duong).st_mtime_ns == mt)
+kt("agent: 4 nhip lien tiep khong ghi lai kho may", _dau_ghi() == mt)
 kt("agent: trang thai van 'dang song' tu bo nho", UA.con_song(DL.tim(DL.MAY.doc(), "m1")) and UA.trang_thai(DL.tim(DL.MAY.doc(), "m1"))[0] == "online")
 UA.xu_ly_nhip(DL.tim(DL.MAY.doc(), "m1"), {"ver": UA.PHIEN_BAN, "host": "H2", "dang": []}, "10.1.1.1")
-kt("agent: doi ten may thi ghi dia", _os.stat(DL.MAY.duong).st_mtime_ns != mt and DL.tim(DL.MAY.doc(), "m1")["agent"]["may"] == "H2")
+kt("agent: doi ten may thi ghi dia", _dau_ghi() != mt and DL.tim(DL.MAY.doc(), "m1")["agent"]["may"] == "H2")
 # ---- XSS: moi truong van ban tu nguoi dung deu phai bi escape tren MOI trang
 X = "<script>alert(7)</script>"
 DL.TAI_KHOAN.sua(lambda d: d.append({"id": "tkx", "ten": X, "user": X, "mk": DL.ma_hoa("x")}))

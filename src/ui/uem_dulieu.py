@@ -12,15 +12,15 @@ Dung CHUNG kho may + tai khoan quan tri voi muc "Trien khai phan mem" (tk_dulieu
   bao_cao_luc   thoi diem lay bao cao cuoi    ket_noi      {"ok": bool, "loi": str, "luc": ts}
 """
 from . import tk_dulieu as DL
-from .tk_dulieu import Kho, moi_id, tim
+from .tk_dulieu import Kho, KhoLon, moi_id, tim
 
 THE = Kho("uem_the.json", [])                # [{id, ten, mau, mo_ta}]
 METADATA = Kho("uem_metadata.json", [])      # [{id, ten, mo_ta}]  (dinh nghia truong tuy chinh cap to chuc)
 DIA_DIEM = Kho("uem_dia_diem.json", [])      # [{id, ten, mo_ta}]
 PROFILES = Kho("uem_profiles.json", [])      # [{id, ten, mo_ta, bat, ap_dung_tat_ca, the:[id], tasks:[...]}]
-BAO_CAO_TAC_VU = Kho("uem_tac_vu.json", {})  # {may_id: [{luc, nguon, ten, ok, tb}]}  (lich su tac vu / task reports)
-TRIEN_KHAI = Kho("uem_trien_khai.json", [])  # lich su cai/go/cap nhat WinGet [{luc, may_id, goi_id, ten_goi, hanh_dong, ok, tb}]
-TRANG_THAI_PROFILE = Kho("uem_profile_tt.json", {})  # {profile_id: {may_id: {task_id: {ok, tb, luc, lan}}}}
+BAO_CAO_TAC_VU = KhoLon("uem_tac_vu", {})  # {may_id: [{luc, nguon, ten, ok, tb}]}  (lich su tac vu / task reports)
+TRIEN_KHAI = KhoLon("uem_trien_khai", [])  # lich su cai/go/cap nhat WinGet [{luc, may_id, goi_id, ten_goi, hanh_dong, ok, tb}]
+TRANG_THAI_PROFILE = KhoLon("uem_profile_tt", {})  # {profile_id: {may_id: {task_id: {ok, tb, luc, lan}}}}
 CAI_DAT = Kho("uem_cai_dat.json", {})
 
 MAC_DINH = {"tan_suat_bao_cao": 60, "tan_suat_profile": 30, "so_dong_trang": 10, "tu_dong_giam_sat": True,
