@@ -14,7 +14,7 @@
 # Bi mat rieng tung may (mat khau AP, khoa Samba, khoa SSH...) XOA khoi anh de moi
 # the tu sinh moi - khong dung chung giua cac may da ban.
 set -euo pipefail
-REPO="${REPO:-/root/consolepi-toolkit}"
+REPO="${REPO:-/root/repos-tu-pi/consolepi-toolkit}"       # repo git = nguon duy nhat (tu 2.0)
 RA="${RA:-/build/pi}"
 CACHE=/var/cache/zt-pi
 URL="https://downloads.raspberrypi.com/raspios_lite_arm64_latest"
@@ -79,6 +79,9 @@ say "Xoa bi mat rieng tung may + don dep"
 rm -f "$M/etc/hostapd/hostapd.conf" "$M/var/lib/console-pi/samba-deploy.key" \
       "$M/opt/console-pi/flask-secret.key" "$M/var/lib/console-pi/kho-trungtam.json" \
       "$M"/etc/ssh/ssh_host_*
+# Bo cuc 2.0: bi mat + PKI (CA, khoa tung may) cung phai sinh MOI tren tung may, khong nam san trong anh
+rm -f "$M"/var/lib/console-system/secrets/{flask-secret.key,samba-deploy.key,kho-trungtam.json,khoa-may.key,trienkhai.khoa,cf-access.json}
+rm -rf "$M"/var/lib/console-system/pki/* "$M"/var/lib/console-system/updates/*
 chroot "$M" sh -c 'pdbedit -x consolepi-deploy >/dev/null 2>&1 || true'
 : > "$M/etc/machine-id"
 rm -f "$M/var/lib/dbus/machine-id"
