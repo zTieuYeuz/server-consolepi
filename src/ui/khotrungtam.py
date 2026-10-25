@@ -38,6 +38,7 @@ import time
 import requests
 
 from .duongdan import FILE_KHO_TRUNGTAM, bao_dam_thu_muc_du_lieu
+from . import duongdan as _DD
 
 TIMEOUT_DANH_SACH = 10
 TIMEOUT_TAI = 30
@@ -45,7 +46,7 @@ SO_LAN_THU_LAI = 20           # dut mang: thu lai toi da 20 lan (moi lan tai tie
 
 
 def _phien_ban():
-    for p in ("/opt/console-pi/VERSION",
+    for p in (_DD.FILE_VERSION,
               os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
                   os.path.abspath(__file__)))), "VERSION")):
         try:
@@ -61,7 +62,7 @@ def _phien_ban():
 # nay KHONG nam trong ma nguon: may build chep vao anh ISO tu file rieng (xem
 # iso/dung-cay-build.sh), hoac dat tay file duoi day (quyen 600). Khong co file
 # -> khong gui gi (dung khi kho chi dung Bypass cho /api/*).
-FILE_CF_ACCESS = "/var/lib/console-pi/cf-access.json"
+FILE_CF_ACCESS = _DD.FILE_CF_ACCESS
 
 
 def cf_access_headers():

@@ -32,6 +32,38 @@ import os
 # ---------------------------------------------------------------- ma nguon
 THU_MUC_MA_NGUON = "/opt/console-pi"
 
+
+
+def _ma(*phan):
+    return os.path.join(THU_MUC_MA_NGUON, *phan)
+
+
+# A1 (2.0): moi duong dan CUNG truoc day rai trong ma deu khai bao o day. GIA TRI GIU NGUYEN (chua doi vi tri that).
+# --- file/thu muc canh ma nguon (se chuyen sang bo cuc moi o buoc A3)
+FILE_CONFIG = _ma("config.json")
+FILE_FLASK_SECRET = _ma("flask-secret.key")
+FILE_VERSION = _ma("VERSION")
+FILE_VERSION_TXT = _ma("version.txt")
+FILE_XOAY_MAN_HINH = _ma("screen-rotation")
+FILE_TEN_CONG = _ma("port-names.json")
+FILE_FORCE_AP = _ma("force-ap.flag")
+FILE_MAC_SPOOF = _ma("wifi-mac-spoof.flag")
+SCRIPT_WIFI_FALLBACK = _ma("scripts", "wifi-fallback.sh")
+DIR_DRIVER_SAN = _ma("driver-san")
+DIR_CAPTURES = _ma("captures")
+DIR_BACKUPS = _ma("backups")
+DIR_TFTP = _ma("tftp")
+FILE_IFTHEN = _ma("nettools", "ifthen-rules.json")
+# --- trang thai tam (chi ton tai luc may chay)
+FLAG_DIRECT = "/run/console-pi-direct.flag"
+FLAG_PXE = "/run/console-pi-pxe.flag"
+FLAG_TFTP = "/run/console-pi-tftp.flag"
+FILE_BT_STATE = "/run/console-pi-bt.json"
+FILE_BOOT_STATUS = "/run/console-pi-boot-status.json"
+# --- nhat ky kiem toan
+LOG_DHCPTEST = "/var/log/console-pi-dhcptest.log"
+LOG_NETMIKO = "/var/log/console-pi-netmiko.log"
+
 # ----------------------------------------------------------------- du lieu
 # Cho phep doi bang bien moi truong (tien khi chay thu tren may khac, hoac
 # khi muon de du lieu tren o USB gan ngoai).
@@ -68,6 +100,9 @@ FILE_KHOA_SAMBA = _duong("samba-deploy.key")
 # xem ui/khotrungtam.py. Token la bi mat, de ben DU LIEU (khong phai ma
 # nguon) vi cung ly do voi FILE_KHOA_SAMBA o tren.
 FILE_KHO_TRUNGTAM = _duong("kho-trungtam.json")
+
+# Thong tin dang nhap Cloudflare Access cho Kho trung tam (bi mat)
+FILE_CF_ACCESS = _duong("cf-access.json")
 
 
 def bao_dam_thu_muc_du_lieu():

@@ -57,8 +57,9 @@ import subprocess
 import threading
 
 from . import deployos as _d
+from . import duongdan as _DD
 
-STATE_FLAG = "/run/console-pi-pxe.flag"
+STATE_FLAG = _DD.FLAG_PXE
 DNSMASQ_CONF = "/etc/dnsmasq-pxe.conf"
 PI_IP = "192.168.98.1"
 PI_CIDR = f"{PI_IP}/24"
@@ -842,7 +843,7 @@ def register_pxe(app):
                    ".iso", "", }
     TEN_PHUC_VU_RIENG = {"wimboot", TEN_BCD_BIOS, TEN_BCD_UEFI}
 
-    _GOC_NGINX = "/var/lib/console-pi/deploy"
+    _GOC_NGINX = _DD.DEPLOY_DIR
 
     def _gui_tep(thu_muc, ten):
         """

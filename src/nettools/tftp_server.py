@@ -44,9 +44,10 @@ import time
 from flask import request, render_template_string, send_from_directory, abort
 
 from . import nettools_bp
+from ui import duongdan as _DD
 
-TFTP_ROOT = "/opt/console-pi/tftp"
-STATE_FLAG = "/run/console-pi-tftp.flag"
+TFTP_ROOT = _DD.DIR_TFTP
+STATE_FLAG = _DD.FLAG_TFTP
 # Chi la nhan hien thi: in.tftpd chay voi --address 0.0.0.0:69 (xem
 # systemd/console-pi-tftp.service) nen nghe tren MOI cong. Truoc day ghi
 # "eth0" - sai ca tren Pi lan may x86 (cong ten ens3/enp1s0...).

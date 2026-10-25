@@ -35,6 +35,7 @@ import time
 import uuid
 
 from .duongdan import THU_MUC_DU_LIEU
+from . import duongdan as _DD
 
 THU_MUC = os.path.join(THU_MUC_DU_LIEU, "gopy")
 
@@ -87,7 +88,7 @@ def thong_tin_may():
         except OSError:
             pass
     phien_ban = ""
-    for p in ("/opt/console-pi/VERSION",
+    for p in (_DD.FILE_VERSION,
               os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
                   os.path.abspath(__file__)))), "VERSION")):
         try:

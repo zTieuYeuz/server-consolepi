@@ -52,8 +52,9 @@ import time
 from flask import request, render_template_string, send_from_directory, abort
 
 from . import nettools_bp
+from ui import duongdan as _DD
 
-BACKUP_DIR = "/opt/console-pi/backups"
+BACKUP_DIR = _DD.DIR_BACKUPS
 
 # Cac lenh in cau hinh theo tung dong thiet bi. Truoc khi in phai TAT PHAN
 # TRANG (khong co thi thiet bi dung lai o "--More--" va cho bam phim, ban

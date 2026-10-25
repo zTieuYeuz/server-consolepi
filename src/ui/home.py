@@ -16,9 +16,10 @@ from flask import request
 
 from .layout import render_page, get_status_chips, gan_phien_tmux
 from . import health
+from . import duongdan as _DD
 
 BASE_TTYD_PORT = 8001
-NAMES_FILE = "/opt/console-pi/port-names.json"
+NAMES_FILE = _DD.FILE_TEN_CONG
 
 SERVICES = [
     ("console-pi-dashboard", "Dashboard web"),

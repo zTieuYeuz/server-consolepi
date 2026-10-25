@@ -17,6 +17,7 @@ import time
 from flask import request, redirect
 
 from .layout import render_page
+from . import duongdan as _DD
 
 
 class _KetQuaRong:
@@ -54,8 +55,8 @@ def _lenh(cmd, timeout=15, **kw):
         return _KetQuaRong()
 
 AP_IP = "192.168.50.1"
-FORCE_AP_FLAG = "/opt/console-pi/force-ap.flag"
-NAMES_FILE = "/opt/console-pi/port-names.json"
+FORCE_AP_FLAG = _DD.FILE_FORCE_AP
+NAMES_FILE = _DD.FILE_TEN_CONG
 def cong_wifi():
     """
     Ten cong WiFi cua may nay - xem ui/phancung.py. Truoc day viet cung
@@ -412,7 +413,7 @@ def bt_device_info(mac):
     return info
 
 
-BT_STATE_FILE = "/run/console-pi-bt.json"
+BT_STATE_FILE = _DD.FILE_BT_STATE
 
 # Trang thai ghep cap dang chay (chay o luong nen de trang web khong bi treo)
 _PAIR = {"running": False, "mac": "", "step": "", "ok": None, "detail": ""}
@@ -918,7 +919,7 @@ def client_via_wlan():
 # do bao mat. Doi MAC (gia dang mot thiet bi thong thuong) la cach vuot
 # qua kieu chan theo hang nay - CHI dung khi chinh chu (anh Thoai) xac
 # nhan cong ty khong cam viec nay, KHONG tu y bat mac dinh.
-MAC_SPOOF_FLAG = "/opt/console-pi/wifi-mac-spoof.flag"
+MAC_SPOOF_FLAG = _DD.FILE_MAC_SPOOF
 
 
 def mac_that(iface=None):
@@ -1667,7 +1668,7 @@ def register_network(app):
 
         def worker():
             time.sleep(3)
-            _lenh(["/opt/console-pi/scripts/wifi-fallback.sh"], timeout=120)
+            _lenh([_DD.SCRIPT_WIFI_FALLBACK], timeout=120)
         threading.Thread(target=worker, daemon=True).start()
         return _wifi_page(msg="Đã gỡ khóa AP. Máy sẽ quét lại và tự chọn WiFi quen thuộc.", ok=True)
 

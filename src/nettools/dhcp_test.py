@@ -25,6 +25,7 @@ import time
 from flask import request, render_template_string
 
 from . import nettools_bp
+from ui import duongdan as _DD
 
 
 def _cong_mac_dinh():
@@ -49,7 +50,7 @@ CLOUDFLARE_BYTES = 25_000_000
 # (mang la, cong ty) dung luc khong the SSH/nho su ho tro tu xa duoc - neu
 # ket qua chi hien tren man hinh roi mat di (tat may, chuyen trang), khong
 # con cach nao xem lai OFFER/ACK that su chua gi de doi chieu sau nay.
-AUDIT_LOG = "/var/log/console-pi-dhcptest.log"
+AUDIT_LOG = _DD.LOG_DHCPTEST
 
 
 def _ghi_nhat_ky(iface, offers, internet_result):

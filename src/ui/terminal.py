@@ -26,8 +26,9 @@ from flask import request
 
 
 from .layout import render_page, gan_phien_tmux
+from . import duongdan as _DD
 
-CONFIG_FILE = "/opt/console-pi/config.json"
+CONFIG_FILE = _DD.FILE_CONFIG
 
 LOCAL_SESSION = "consolepi-local"
 SSH_SESSION = "consolepi-ssh"

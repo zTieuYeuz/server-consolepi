@@ -12,6 +12,7 @@ Console System - nhan dien thuong hieu zTieuYeuz + phan "Gioi thieu".
 import os
 
 from flask import abort, send_file
+from . import duongdan as _DD
 
 THU_MUC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "branding")
 TAC_GIA = "zTieuYeuz"
@@ -49,7 +50,7 @@ def dau_an_an(chu="zTieuYeuz"):
 
 
 def _phien_ban():
-    for p in ("/opt/console-pi/VERSION",
+    for p in (_DD.FILE_VERSION,
               os.path.join(os.path.dirname(THU_MUC), "..", "VERSION")):
         try:
             return open(p).read().strip()

@@ -30,6 +30,7 @@ import threading
 import time
 
 from . import deployos as _d
+from . import duongdan as _DD
 
 FILE_DANH_SACH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               "goi-driver.json")
@@ -155,7 +156,7 @@ def _giai_nen_va_cai(g, f_tai, tam, da, tu_san=False):
 # Intel / VMware / Realtek KHONG nhung (giay phep khong cho kem san pham ban ra) - van
 # tai bang nut. File .cab nam o DIR_SAN do may build bo vao (iso/dung-cay-build.sh, da
 # kiem sha256); khoi dong dashboard lan dau thi giai nen vao DRIVERS_DIR - khong can mang.
-DIR_SAN = "/opt/console-pi/driver-san"
+DIR_SAN = _DD.DIR_DRIVER_SAN
 
 
 _khoa_nap = threading.Lock()

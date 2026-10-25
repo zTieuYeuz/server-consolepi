@@ -19,8 +19,9 @@ from flask import request, render_template_string
 
 from . import nettools_bp
 from .lldp import get_lldp_neighbors
+from ui import duongdan as _DD
 
-RULES_FILE = "/opt/console-pi/nettools/ifthen-rules.json"
+RULES_FILE = _DD.FILE_IFTHEN
 
 
 def load_rules():

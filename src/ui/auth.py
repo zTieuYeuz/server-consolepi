@@ -17,10 +17,11 @@ from flask import request, redirect, session, render_template_string
 
 # Duong dan cac trang khong can dang nhap
 from .gioithieu import DUONG_CONG_KHAI as _LOGO
+from . import duongdan as _DD
 # Logo/favicon cong khai: trang dang nhap phai hien duoc logo truoc khi dang nhap
 PUBLIC_PATHS = {"/login", "/vkeyboard.js", "/dashboard.js", "/healthz", "/_auth"} | _LOGO
 
-SECRET_FILE = "/opt/console-pi/flask-secret.key"
+SECRET_FILE = _DD.FILE_FLASK_SECRET
 
 
 def get_or_create_secret():
@@ -107,7 +108,7 @@ def local_bypass_enabled():
     """
     try:
         import json
-        with open("/opt/console-pi/config.json") as f:
+        with open(_DD.FILE_CONFIG) as f:
             return bool(json.load(f).get("local_screen_no_login", True))
     except Exception:
         return True

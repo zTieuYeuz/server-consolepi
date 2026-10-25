@@ -15,6 +15,7 @@ import time
 from flask import request, render_template_string, send_from_directory, abort
 
 from . import nettools_bp
+from ui import duongdan as _DD
 
 
 def _cong_mac_dinh():
@@ -29,7 +30,7 @@ def _o_chon_cong(dang_chon=""):
     from ui.phancung import o_chon_cong
     return o_chon_cong(dang_chon)
 
-LOCAL_CAPTURE_DIR = "/opt/console-pi/captures"
+LOCAL_CAPTURE_DIR = _DD.DIR_CAPTURES
 MAX_DURATION_SEC = 600  # 10 phut, chan runaway capture lam day dia
 MIN_FREE_MB = 200
 

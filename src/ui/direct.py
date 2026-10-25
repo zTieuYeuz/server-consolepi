@@ -19,8 +19,9 @@ import ipaddress
 import os
 import re
 import subprocess
+from . import duongdan as _DD
 
-STATE_FLAG = "/run/console-pi-direct.flag"
+STATE_FLAG = _DD.FLAG_DIRECT
 DNSMASQ_CONF = "/etc/dnsmasq-direct.conf"
 def cong():
     """Cong co day cua may nay - xem ui/phancung.py. Truoc day viet cung

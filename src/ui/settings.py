@@ -14,6 +14,7 @@ from flask import request
 from .layout import render_page
 from .gioithieu import khoi_gioi_thieu, CSS_GIOI_THIEU
 from .terminal import load_config, save_config, get_term_credential
+from . import duongdan as _DD
 
 ROTATIONS = [
     ("normal", "0° - Bình thường"),
@@ -107,7 +108,7 @@ TOUCH_MATRIX = {
 }
 
 UDEV_RULE_FILE = "/etc/udev/rules.d/99-consolepi-touch.rules"
-ROTATION_FILE = "/opt/console-pi/screen-rotation"
+ROTATION_FILE = _DD.FILE_XOAY_MAN_HINH
 
 
 def sync_touch_matrix(rotation):
@@ -467,7 +468,7 @@ def _khoi_baotri():
 
 
 def _version():
-    for p in ("/opt/console-pi/VERSION", "/opt/console-pi/version.txt"):
+    for p in (_DD.FILE_VERSION, _DD.FILE_VERSION_TXT):
         try:
             with open(p) as f:
                 return f.read().strip()

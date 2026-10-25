@@ -22,8 +22,9 @@ import time
 from flask import request, render_template_string
 
 from . import nettools_bp
+from ui import duongdan as _DD
 
-AUDIT_LOG = "/var/log/console-pi-netmiko.log"
+AUDIT_LOG = _DD.LOG_NETMIKO
 
 DEVICE_TYPES = [
     "cisco_ios", "cisco_xe", "cisco_nxos", "arista_eos",

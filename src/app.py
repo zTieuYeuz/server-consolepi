@@ -68,7 +68,7 @@ except Exception:
 # la nap cac thu vien nang (scapy, cryptography, netmiko va toan bo module
 # nettools) o dong "from nettools import..." ben duoi. Ghi 1 moc truoc va 1
 # moc sau dong do la biet duoc dang "ket" o buoc nao that su, khong doan.
-BOOT_STATUS_FILE = "/run/console-pi-boot-status.json"
+BOOT_STATUS_FILE = "/run/console-pi-boot-status.json"   # ngoai le co y: dat TRUOC khi nap ui/nettools (xem ui/duongdan.py FILE_BOOT_STATUS)
 
 
 def _bao_tien_do(phan_tram, thong_diep):
