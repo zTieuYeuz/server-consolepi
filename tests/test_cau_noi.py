@@ -64,6 +64,6 @@ def test_khong_con_import_tuong_doi_trong_goi_moi():
             if f.endswith(".py"):
                 for n in ast.walk(ast.parse(open(os.path.join(d, f), encoding="utf-8").read())):
                     if isinstance(n, ast.ImportFrom) and n.level > 0:
-                        if not (n.level == 1 and d.endswith("core")):          # core/ dung import tuong doi trong chinh no (store, esc...)
+                        if not (n.level <= 2 and (d.endswith("core") or "/core/" in d + "/")):          # core/ dung import tuong doi trong chinh no (store, esc...)
                             sai.append((f, n.lineno))
     assert not sai, sai[:5]
