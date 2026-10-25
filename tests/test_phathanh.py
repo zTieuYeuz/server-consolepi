@@ -216,3 +216,28 @@ def test_ban_that_cua_repo_dung_duoc():
         b = os.path.join(t, "releases", ten)
         assert os.path.exists(os.path.join(b, "app.py")) and os.path.exists(os.path.join(b, "system/systemd/console-pi-dashboard.service"))
         P.xoa_ban(b)
+
+
+def test_cli_bat_lai_dich_vu_da_dung_du_khi_loi(nguon, may_cu, tmp_path, monkeypatch):
+    """Loi that 25/10 tren .30: dich vu bi dung de doi thu muc ma khong duoc bat lai (tftp con 'inactive')."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("csr", os.path.join(GOC, "src", "scripts", "console-system-release.py"))
+    csr = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(csr)
+    cu, goc = may_cu
+    lenh = []
+
+    class R:
+        def __init__(self, rc):
+            self.returncode, self.stdout, self.stderr = rc, "", ""
+
+    monkeypatch.setattr(csr, "_sc", lambda *a: lenh.append(a) or R(0))
+    monkeypatch.setattr(csr.P, "TEN_CU", cu)
+    monkeypatch.setattr(csr.DD, "BO_CUC_MOI", True)
+    monkeypatch.setattr(csr.DD, "GOC", goc)
+
+    def hong(*a, **k):
+        raise csr.P.LoiPhatHanh("hong gia")
+    monkeypatch.setattr(csr.P, "nhap_khau_cu", hong)
+    assert csr.main(["cai", "--nguon", nguon, "--opt", str(tmp_path / "opt"), "--khong-khoi-dong-lai"]) == 1
+    assert ("start", "console-pi-tftp") in lenh and ("start", "console-pi-dashboard") in lenh

@@ -67,10 +67,15 @@ def main(argv=None):
                 return 1
             la_thu_muc_that = os.path.isdir(P.TEN_CU) and not os.path.islink(P.TEN_CU)
             if la_thu_muc_that:
+                dang_chay = [s for s in DICH_VU if _sc("is-active", "--quiet", s).returncode == 0]
                 for s in DICH_VU:
                     _sc("stop", s)
-                ten, cu = P.nhap_khau_cu(a.opt, P.TEN_CU, DD.GOC, a.nguon)
-                print("da chuyen %s thanh lien ket; thu muc cu giu o %s" % (P.TEN_CU, cu))
+                try:
+                    ten, cu = P.nhap_khau_cu(a.opt, P.TEN_CU, DD.GOC, a.nguon)
+                    print("da chuyen %s thanh lien ket; thu muc cu giu o %s" % (P.TEN_CU, cu))
+                finally:
+                    for s in dang_chay:          # dich vu minh da dung PHAI bat lai du co bao loi hay co --khong-khoi-dong-lai
+                        _sc("start", s)
             else:
                 ten = P.tao_ban(a.nguon, a.opt, mang_theo=os.path.realpath(P.TEN_CU) if os.path.exists(P.TEN_CU) else None)
                 P.chuyen_ban(a.opt, ten)
