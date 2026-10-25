@@ -282,16 +282,19 @@ def _dich_vu_cua(x, tien_to, dev_glob=("/dev/ttyUSB*", "/dev/ttyACM*")):
 
 
 def chuyen_ten_dich_vu(ban, etc_goc="/", chay=_chay_that, thu=False):
-    """2.0: dich vu console-pi-X -> console-system-X. May con unit ten cu (file that) thi: dung + go (disable --now), chuyen thu muc .d, de unit ten moi
-    (co `Alias=` ten cu) duoc cai o ap_dung. Tra ve danh sach ten da chuyen. Unit moi chua co thi KHONG go unit cu (tranh mat dich vu)."""
+    """2.0: dich vu console-pi-X -> console-system-X. May con unit ten cu (file that) thi: ghi nho cai nao DANG CHAY, dung + go (disable --now),
+    chuyen thu muc .d, tao san file ten moi (ap_dung sau do thay noi dung ban moi, co `Alias=` ten cu). Viec enable + chay lai ten moi lam trong
+    ap_dung SAU khi file moi da nam dung cho (de Alias duoc tao). Unit moi chua co trong ban thi KHONG go unit cu.
+    Tra ve {x: [(ten moi, dang chay truoc do), ...]}."""
     sd = os.path.join(ban, "system", "systemd")
-    ra = []
+    ra = {}
     for x in TEN_DV_DOI:
         cu = os.path.join(etc_goc, "etc/systemd/system/console-pi-%s.service" % x)
         moi_nguon = os.path.join(sd, "console-system-%s.service" % x)
         if not (os.path.isfile(cu) and not os.path.islink(cu) and os.path.isfile(moi_nguon)):
             continue
-        ra.append(x)
+        ra[x] = [(ten_moi, (not thu) and chay(["systemctl", "is-active", "--quiet", ten_cu])[0] == 0)
+                 for ten_cu, ten_moi in zip(_dich_vu_cua(x, "console-pi-"), _dich_vu_cua(x, "console-system-"))]
         if thu:
             continue
         for ten_cu in _dich_vu_cua(x, "console-pi-"):
@@ -300,20 +303,25 @@ def chuyen_ten_dich_vu(ban, etc_goc="/", chay=_chay_that, thu=False):
         if os.path.isdir(d_cu) and not os.path.exists(d_moi):
             os.rename(d_cu, d_moi)
         moi = os.path.join(etc_goc, "etc/systemd/system/console-system-%s.service" % x)
-        shutil.copyfile(cu, moi)                    # tao san de ap_dung thay noi dung (ap_dung chi cap nhat file DA TON TAI)
+        shutil.copyfile(cu, moi)
         os.remove(cu)
-    if ra and not thu:
-        chay(["systemctl", "daemon-reload"])
-        for x in ra:
-            for ten_moi in _dich_vu_cua(x, "console-system-"):
-                chay(["systemctl", "enable", ten_moi])
     return ra
+
+
+def _kich_hoat_ten_moi(chuyen, chay):
+    chay(["systemctl", "daemon-reload"])
+    for x, cac in chuyen.items():
+        for ten_moi, dang_chay in cac:
+            chay(["systemctl", "enable", ten_moi])
+            if dang_chay:
+                chay(["systemctl", "start", ten_moi])
 
 
 def ap_dung(ban, sao_luu_vao, etc_goc="/", chay=_chay_that, thu=False):
     """Dua file he thong cua `ban` ra /etc (etc_goc="/" ; thu muc tam khi test). Tra ve bao cao dict. Khong nap lai dich vu khi thu=True."""
     bc = {"doi": [], "khong_doi": 0, "bo_qua": [], "loi": [], "unit_doi": [], "da_tra_lai": [], "chuyen_ten": []}
-    bc["chuyen_ten"] = chuyen_ten_dich_vu(ban, etc_goc, chay, thu)
+    chuyen = chuyen_ten_dich_vu(ban, etc_goc, chay, thu)
+    bc["chuyen_ten"] = list(chuyen)
     ts = time.strftime("%Y%m%d-%H%M%S")
     kho = os.path.join(sao_luu_vao, "etc-" + ts)
     da_ghi = []      # (dich, duong ban sao luu hoac None, kieu)
@@ -336,6 +344,8 @@ def ap_dung(ban, sao_luu_vao, etc_goc="/", chay=_chay_that, thu=False):
         os.chmod(tam, 0o644)
         os.replace(tam, dich)
         da_ghi.append((dich, bk, kieu, dich_abs))
+    if chuyen and not thu:
+        _kich_hoat_ten_moi(chuyen, chay)
     if thu or not da_ghi:
         return bc
 

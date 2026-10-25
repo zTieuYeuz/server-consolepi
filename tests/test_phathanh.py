@@ -261,6 +261,8 @@ def test_doi_ten_dich_vu_cu_sang_moi_khi_cap_nhat(nguon, tmp_path):
     cmds = [" ".join(c) for c in gia.lenh]
     assert "systemctl disable --now console-pi-dashboard" in cmds and "systemctl enable console-system-dashboard" in cmds
     assert cmds.index("systemctl disable --now console-pi-dashboard") < cmds.index("systemctl enable console-system-dashboard")
+    assert "systemctl start console-system-dashboard" in cmds                          # truoc do dang chay -> chay lai ten moi
+    assert cmds.index("systemctl enable console-system-dashboard") > min(i for i, c in enumerate(cmds) if c == "systemctl daemon-reload")
     gia2 = Gia()                                                                                          # lan hai: khong con gi de chuyen
     assert P.ap_dung(ban, str(tmp_path / "bk"), str(e), gia2)["chuyen_ten"] == []
 
