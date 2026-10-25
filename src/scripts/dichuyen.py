@@ -17,7 +17,8 @@ from consolesystem.core import dichuyen as M  # noqa: E402     (chi dung thu vie
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("lenh", choices=("trangthai", "chay", "hoantac", "bo-cuc-moi", "kiem-bo-cuc", "hoantac-bo-cuc", "khoi-tao-moi"))
-    ap.add_argument("--thu-muc", default=os.environ.get("CONSOLE_PI_DATA", "/var/lib/console-pi"))
+    ap.add_argument("--thu-muc", default=os.environ.get("CONSOLE_PI_DATA") or (
+        "/var/lib/console-system" if os.path.exists("/var/lib/console-system/.bo-cuc-moi") else "/var/lib/console-pi"))
     ap.add_argument("--tu", default="/var/lib/console-pi")
     ap.add_argument("--opt", default="/opt/console-pi")
     ap.add_argument("--moi", default="/var/lib/console-system")
