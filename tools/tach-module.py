@@ -119,7 +119,7 @@ def main(argv):
     # bo docstring+alias cua nguon: chi giu cac dong import
     imps = []
     for n in cay.body:
-        if isinstance(n, (ast.Import, ast.ImportFrom)) and n.lineno < dau:
+        if isinstance(n, (ast.Import, ast.ImportFrom)):               # MOI import cap cao cua nguon (vi tri nao cung duoc), ruff go phan thua
             imps.append("\n".join(dong[n.lineno - 1:n.end_lineno]))
     imps = [x for x in imps if "import sys as _sys" not in x]
     khoi_chuyen = collections.defaultdict(list)
