@@ -19,11 +19,9 @@ Cac nut deu gui bang fetch (khong tai lai trang) vi 2 ly do THAT:
 import json
 
 from .commands import load_library
+from consolesystem.core.esc import esc as _esc
 
 
-def _esc(s):
-    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
 
 
 # JS de rieng ngoai f-string vi co rat nhieu dau ngoac nhon - nhet vao

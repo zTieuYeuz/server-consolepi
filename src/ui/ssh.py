@@ -32,14 +32,12 @@ from .layout import render_page, gan_phien_tmux
 from .commands import load_library, dan_thong_minh
 from .soanlenh import khoi_soan_lenh, khoi_copy_terminal
 from .terminal import SSH_SESSION, tmux_session_exists, service_active
+from consolesystem.core.esc import esc as _esc
 
 # Dau nhac mat khau cua ssh ("...'s password:", "Enter passphrase for key ...:")
 _DAU_NHAC_MK = re.compile(r"(?:password|passphrase).*:\s*$", re.I)
 
 
-def _esc(s):
-    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
 
 
 def _chup_man_hinh(session):

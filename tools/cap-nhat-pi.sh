@@ -35,6 +35,7 @@ echo "Da sao luu ban cu: $BK"
 
 # ui + nettools: chep de (khong xoa file rieng cua Pi nhu ifthen-rules.json)
 cp -r "$SRC/src/ui/." "$DST/ui/"
+mkdir -p "$DST/consolesystem" && cp -r "$SRC/src/consolesystem/." "$DST/consolesystem/"
 cp -r "$SRC/src/nettools/." "$DST/nettools/"
 # Logo + font Geist cua giao dien moi (18/10/2026)
 mkdir -p "$DST/branding" && cp -r "$SRC/src/branding/." "$DST/branding/"

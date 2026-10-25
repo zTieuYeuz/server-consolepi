@@ -19,6 +19,7 @@ from .layout import render_page
 
 # Duong dan du lieu tap trung - xem ui/duongdan.py
 from .duongdan import FILE_THU_VIEN_LENH as LIB_FILE
+from consolesystem.core.esc import esc as _esc
 
 # 5 tap lenh co ban hay dung nhat khi lam viec voi switch Cisco
 DEFAULT_LIBRARY = [
@@ -371,9 +372,6 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.25, toi_da_dong=120):
                   f"đọc lại rồi tự bấm để chạy.")
 
 
-def _esc(s):
-    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
 
 
 # ---------------------------------------------------------------------------

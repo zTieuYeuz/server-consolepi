@@ -24,6 +24,7 @@ import threading
 import time
 
 from .duongdan import THU_MUC_DU_LIEU
+from consolesystem.core.esc import esc_html_rong as _esc
 
 FILE_LUU = os.path.join(THU_MUC_DU_LIEU, "tien-trinh.json")
 
@@ -191,8 +192,6 @@ def register_tiendo(app):
     from .layout import render_page
     import html as _h
 
-    def _esc(s):
-        return _h.escape(str(s or ""))
 
     # ---------------------------------------------------------------- API
     # May dich (Windows) POST vao day. KHONG can dang nhap - luc do may do

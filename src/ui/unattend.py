@@ -38,8 +38,6 @@ from . import datten as _tm
 
 
 
-def _esc(s):
-    return _x.escape(str(s or ""))
 
 
 # Tai khoan Samba RIENG (user he thong "nologin", khong the dang nhap
@@ -56,6 +54,7 @@ TEN_TAI_KHOAN_SAMBA = "consolepi-deploy"
 # tung bi viet cung o day (da phat hien va sua truoc khi commit lan dau,
 # chua tung bi day len GitHub).
 from .duongdan import FILE_KHOA_SAMBA as _FILE_KHOA_SAMBA
+from consolesystem.core.esc import esc_xml as _esc
 
 
 def _doc_mat_khau_samba():

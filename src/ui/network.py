@@ -18,6 +18,7 @@ from flask import request, redirect
 
 from .layout import render_page
 from . import duongdan as _DD
+from consolesystem.core.esc import esc as _esc
 
 
 class _KetQuaRong:
@@ -92,9 +93,6 @@ NETWORK_BLOCK_RE = re.compile(r"network=\{.*?\}", re.S)
 WIFI_STATUS = {"state": "idle", "ssid": None, "msg": "", "ip": None, "saved": False}
 
 
-def _esc(s):
-    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
 
 
 def ap_locked():

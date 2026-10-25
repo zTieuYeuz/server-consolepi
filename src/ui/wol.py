@@ -29,6 +29,7 @@ import threading
 import time
 
 from .duongdan import THU_MUC_DU_LIEU
+from consolesystem.core.esc import esc_html_rong as _esc
 
 FILE_MAY = os.path.join(THU_MUC_DU_LIEU, "wol-may.json")   # may them tay (MAC + ten)
 CONG = (9, 7)
@@ -238,8 +239,6 @@ def register_wol(app):
     from . import deployos as _d
     import html as _h
 
-    def _esc(s):
-        return _h.escape(str(s or ""))
 
     @app.route("/deployos/caidat/wol")
     def deployos_wol():

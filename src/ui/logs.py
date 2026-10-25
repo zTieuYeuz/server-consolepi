@@ -33,6 +33,7 @@ from flask import Response, request
 
 from .layout import render_page, svg_icon
 from .errlog import LOG_FILE, LOG_THAO_TAC, DICH_VU_CAN_THEO_DOI, doc_nhat_ky, doc_journal_dich_vu
+from consolesystem.core.esc import esc as _esc
 
 # Khoang thoi gian: ma -> (nhan, doi so --since cua journalctl, so giay)
 KHOANG = {
@@ -51,9 +52,6 @@ SO_DONG_HIEN = 1500          # hien toi da tren trang (Pi yeu, trinh duyet cam u
 FILE_LOG_MAU = "console-pi-*.log"
 
 
-def _esc(s):
-    return (str(s or "").replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
 
 
 def _bo_dau(s):

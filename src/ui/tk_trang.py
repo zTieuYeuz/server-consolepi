@@ -14,11 +14,9 @@ from flask import jsonify, redirect, request, send_file, session
 from . import tk_dongco as DC
 from . import tk_dulieu as DL
 from .layout import render_page, svg_icon
+from consolesystem.core.esc import esc_none as _esc
 
 
-def _esc(s):
-    return (str(s if s is not None else "").replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
 
 
 CSS = """

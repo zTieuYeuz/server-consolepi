@@ -22,7 +22,7 @@ import time
 
 GOC_OPT = "/opt/console-system"
 TEN_CU = "/opt/console-pi"
-MUC_MA = ("app.py", "ui", "nettools", "scripts", "static", "branding", "pxe-boot")
+MUC_MA = ("app.py", "ui", "nettools", "consolesystem", "scripts", "static", "branding", "pxe-boot")
 MUC_MANG_THEO = (".dau-an", "COPYRIGHT", "driver-san")      # do ISO/Pi them, khong co trong cay nguon
 GIU_BAN = 3
 TEN_RELEASE = "RELEASE.json"

@@ -27,6 +27,8 @@ from flask import request
 
 from .layout import render_page, gan_phien_tmux
 from . import duongdan as _DD
+from consolesystem.core.cauhinh import kho as _cauhinh_kho
+from consolesystem.core.store import LoiDuLieu
 
 CONFIG_FILE = _DD.FILE_CONFIG
 
@@ -36,21 +38,20 @@ LOCAL_PORT = 8010
 SSH_PORT = 8011
 
 
+def _kho_cauhinh():
+    return _cauhinh_kho(CONFIG_FILE)
+
+
 def load_config():
+    """config.json. File hong -> khoi phuc tu .bak hoac giu lai .hong-* (xem core/store.py), khong am tham tra {} roi ghi de."""
     try:
-        with open(CONFIG_FILE) as f:
-            return json.load(f)
-    except Exception:
+        return _kho_cauhinh().doc()
+    except LoiDuLieu:
         return {}
 
 
 def save_config(cfg):
-    old = os.umask(0o077)
-    try:
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(cfg, f, indent=2)
-    finally:
-        os.umask(old)
+    _kho_cauhinh().ghi(cfg)           # quyen 0600, ghi nguyen tu (tam + fsync + doi ten)
 
 
 def get_term_credential():

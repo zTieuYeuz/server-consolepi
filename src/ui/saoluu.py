@@ -51,7 +51,7 @@ def phien_ban_ma():
 
 
 def _bi_loai(arc):
-    return arc.endswith(".tmp") or arc.endswith(".lock") or any(arc == t or arc.startswith(t + "/") for t in LOAI_TRU)
+    return arc.endswith((".tmp", ".lock", ".bak")) or ".hong-" in arc or any(arc == t or arc.startswith(t + "/") for t in LOAI_TRU)
 
 
 def liet_ke(goc, che_do):

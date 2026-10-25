@@ -20,10 +20,9 @@ from . import uem_dulieu as UD
 from . import uem_trienkhai as UT
 from . import uem_winget as UW
 from .layout import render_page, svg_icon
+from consolesystem.core.esc import esc_html as _esc
 
 
-def _esc(s):
-    return html.escape(str(s if s is not None else ""), quote=True)
 
 
 TABS = [("tq", "Tổng quan", "/uem"), ("may", "Máy tính", "/uem/may"), ("pm", "Phần mềm", "/uem/phan-mem"), ("bm", "Bảo mật", "/uem/bao-mat"),

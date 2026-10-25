@@ -20,6 +20,7 @@ from datetime import date, datetime, timedelta
 
 from .duongdan import THU_MUC_DU_LIEU
 from . import duongdan as _DD
+from consolesystem.core.store import KhoJson
 
 DIR = os.path.join(THU_MUC_DU_LIEU, "trienkhai")
 _KHOA_FILE = _DD.FILE_TK_KHOA
@@ -31,39 +32,16 @@ def _bao_dam():
     os.makedirs(DIR, mode=0o750, exist_ok=True)
 
 
-class Kho:
-    """1 danh sach (list) hoac tu dien (dict) luu o 1 file JSON."""
+class Kho(KhoJson):
+    """1 danh sach (list) hoac tu dien (dict) luu o 1 file JSON. Co che doc/ghi nguyen tu + du phong + chong am tham mat du lieu
+    nam o consolesystem/core/store.py (B1): file hong -> khoi phuc tu .bak hoac giu lai .hong-*, KHONG tra rong roi ghi de."""
 
     def __init__(self, ten, mac_dinh):
-        self.duong = os.path.join(DIR, ten)
-        self.mac_dinh = mac_dinh
-
-    def doc(self):
-        with _khoa_luong:
-            try:
-                with open(self.duong, encoding="utf-8") as f:
-                    d = json.load(f)
-                    if isinstance(d, type(self.mac_dinh)):
-                        return d
-            except (OSError, ValueError):
-                pass
-            return type(self.mac_dinh)()
+        super().__init__(os.path.join(DIR, ten), mac_dinh, khoa=_khoa_luong)
 
     def ghi(self, d):
-        with _khoa_luong:
-            _bao_dam()
-            tam = self.duong + ".tmp"
-            with open(tam, "w", encoding="utf-8") as f:
-                json.dump(d, f, ensure_ascii=False, indent=1)
-            os.replace(tam, self.duong)
-
-    def sua(self, ham):
-        """doc -> ham(d) (sua tai cho) -> ghi. Tra ve gia tri ham tra."""
-        with _khoa_luong:
-            d = self.doc()
-            kq = ham(d)
-            self.ghi(d)
-            return kq
+        _bao_dam()
+        super().ghi(d)
 
 
 MAY = Kho("may.json", [])               # [{id, ten, ip, mac, ghi_chu, bao_mat:{...}}]
