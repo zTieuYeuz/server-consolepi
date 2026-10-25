@@ -3,6 +3,7 @@
 """Lenh migration du lieu (A2). Khong can dich vu web.
     dichuyen.py trangthai | chay [--den N] | hoantac [--ve N]     [--thu-muc DUONG]
     dichuyen.py bo-cuc-moi [--tu /var/lib/console-pi] [--opt /opt/console-pi] [--moi /var/lib/console-system]
+    dichuyen.py khoi-tao-moi [--moi ...]     (may cai moi, chua co du lieu cu)
     dichuyen.py kiem-bo-cuc [--moi ...] | hoantac-bo-cuc [--moi ...]       (DUNG dich vu truoc khi chuyen)
 Mac dinh thu muc du lieu = $CONSOLE_PI_DATA hoac /var/lib/console-pi."""
 import argparse
@@ -18,7 +19,7 @@ _spec.loader.exec_module(M)
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("lenh", choices=("trangthai", "chay", "hoantac", "bo-cuc-moi", "kiem-bo-cuc", "hoantac-bo-cuc"))
+    ap.add_argument("lenh", choices=("trangthai", "chay", "hoantac", "bo-cuc-moi", "kiem-bo-cuc", "hoantac-bo-cuc", "khoi-tao-moi"))
     ap.add_argument("--thu-muc", default=os.environ.get("CONSOLE_PI_DATA", "/var/lib/console-pi"))
     ap.add_argument("--tu", default="/var/lib/console-pi")
     ap.add_argument("--opt", default="/opt/console-pi")
@@ -33,6 +34,8 @@ def main(argv=None):
             print("xong, phien ban du lieu:", M.chay(a.thu_muc, M.MIGRATIONS, den=a.den))
         elif a.lenh == "bo-cuc-moi":
             print("da chep %d file sang %s; ban cu giu nguyen o %s" % (M.dua_ve_bo_cuc_moi(a.tu, a.opt, a.moi), a.moi, a.tu))
+        elif a.lenh == "khoi-tao-moi":
+            print("da tao bo cuc moi o %s" % a.moi if M.tao_bo_cuc_moi(a.moi) else "%s da la bo cuc moi" % a.moi)
         elif a.lenh == "kiem-bo-cuc":
             sai = M.kiem_bo_cuc_moi(a.moi)
             print("file sai: %s" % (sai or "khong"))

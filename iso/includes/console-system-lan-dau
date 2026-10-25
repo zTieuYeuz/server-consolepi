@@ -7,12 +7,13 @@
 # tuc la khong con la bi mat. Nguyen tac nay da ap dung cho mat khau Samba
 # va tai khoan kho trung tam tu truoc; day la lan ap dung thu ba.
 set -e
-DAU="/var/lib/console-pi/.da-thiet-lap"
+. /opt/console-pi/scripts/duong-dan.sh
+DAU="$CS_DATA/.da-thiet-lap"
 [ -f "$DAU" ] && exit 0
-mkdir -p /var/lib/console-pi
+mkdir -p "$CS_DATA" "$(dirname "$CS_KHOA_SAMBA")"
 
 # 1. Mat khau kho Samba - rieng cho tung may
-KHOA=/var/lib/console-pi/samba-deploy.key
+KHOA="$CS_KHOA_SAMBA"
 if [ ! -f "$KHOA" ]; then
     head -c 18 /dev/urandom | base64 | tr -d "/+=" | head -c 20 > "$KHOA"
     chmod 600 "$KHOA"
@@ -30,9 +31,9 @@ fi
 
 # 1b. Thu muc nhan bao cao tu WinPE (share [cs-o-dia] "Do o dia", [cs-lich-su] "Lich su cai dat") thuoc
 # consolepi-deploy - tai khoan Samba ghi vao do (khong co `force user`, xem config/smb.conf).
-mkdir -p /var/lib/console-pi/o-dia /var/lib/console-pi/lich-su-bao
+mkdir -p "$CS_DATA/o-dia" "$CS_DATA/lich-su-bao"
 if id -u consolepi-deploy >/dev/null 2>&1; then
-    chown consolepi-deploy:consolepi-deploy /var/lib/console-pi/o-dia /var/lib/console-pi/lich-su-bao
+    chown consolepi-deploy:consolepi-deploy "$CS_DATA/o-dia" "$CS_DATA/lich-su-bao"
 fi
 
 # 1c. PKI rieng tung may cho agent Quan ly may tram (CA + chung chi may chu + cong mTLS 8443). TUYET DOI khong tao san trong ISO:

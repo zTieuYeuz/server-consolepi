@@ -375,3 +375,17 @@ def hoan_tac_bo_cuc(moi):
     dich = "%s.da-hoan-tac-%s" % (moi, time.strftime("%Y%m%d-%H%M%S"))
     os.rename(moi, dich)
     return dich
+
+
+def tao_bo_cuc_moi(moi):
+    """May CAI MOI HOAN TOAN (khong co du lieu cu): tao san bo cuc moi, dau ghi cuoi cung."""
+    if os.path.exists(os.path.join(moi, DAU_BO_CUC_MOI)):
+        return False
+    for ten in ("config", "secrets", "pki", "data", "deploy", "storage", "backups", "updates"):
+        os.makedirs(os.path.join(moi, ten), exist_ok=True)
+    os.chmod(moi, 0o755)
+    os.chmod(os.path.join(moi, "secrets"), 0o700)
+    os.chmod(os.path.join(moi, "pki"), 0o700)
+    _ghi_phien_ban(moi, 1)
+    ghi_nguyen_tu(os.path.join(moi, DAU_BO_CUC_MOI), b"2\n", 0o644)
+    return True

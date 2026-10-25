@@ -27,9 +27,10 @@ AP_IP="192.168.50.1"
 # PHAI khop dung duong dan MAC_SPOOF_FLAG trong ui/network.py (ham
 # bat_gia_mac()/tat_gia_mac()) - do la noi nguoi dung bat/tat tinh nang
 # tu dashboard, file nay chi doc lai de biet co ap dung MAC gia khong.
-MAC_SPOOF_FLAG="/opt/console-pi/wifi-mac-spoof.flag"
+[ -r /opt/console-pi/scripts/duong-dan.sh ] && . /opt/console-pi/scripts/duong-dan.sh
+MAC_SPOOF_FLAG="${CS_FILE_MAC_SPOOF:-/opt/console-pi/wifi-mac-spoof.flag}"
 
-FORCE_AP_FLAG="/opt/console-pi/force-ap.flag"
+FORCE_AP_FLAG="${CS_FILE_FORCE_AP:-/opt/console-pi/force-ap.flag}"
 # Danh dau da mat ket noi 1 lan - can 2 lan lien tiep moi ket noi lai
 LOST_FLAG="/run/console-pi-wifi-lost.flag"
 

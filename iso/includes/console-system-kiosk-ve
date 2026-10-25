@@ -38,9 +38,10 @@
 #      khong bien nao cuu duoc (wlroots 0.15 bat buoc card co PRIME import,
 #      bochs dung drm_vram_helper khong co). Nen canh gac ca duong CPU: hong
 #      thi TRA tty1 cho dong lenh (getty) - co logo + dia chi IP de vao web.
-#   Muon thu lai GPU: sudo rm /var/lib/console-pi/kiosk-ve-cpu
+#   Muon thu lai GPU: sudo rm /var/lib/console-system/data/kiosk-ve-cpu   (may cai tu 2.0; ban cu: /var/lib/console-pi/kiosk-ve-cpu)
 ENV=/run/console-pi-kiosk.env
-DAU_CPU=/var/lib/console-pi/kiosk-ve-cpu
+[ -r /opt/console-pi/scripts/duong-dan.sh ] && . /opt/console-pi/scripts/duong-dan.sh
+DAU_CPU="${CS_DATA:-/var/lib/console-pi}/kiosk-ve-cpu"
 DEM=/run/console-pi-kiosk.gpu-that-bai
 
 chuan_bi() {
@@ -65,7 +66,7 @@ chuan_bi() {
         ly_do="da ghi nho: lan truoc ve bang GPU that bai"
     elif [ "$(cat "$DEM" 2>/dev/null || echo 0)" -ge 2 ]; then
         ly_do="kiosk thoat loi 2 lan lien khi ve bang GPU"
-        mkdir -p /var/lib/console-pi && touch "$DAU_CPU"
+        mkdir -p "$(dirname "$DAU_CPU")" && touch "$DAU_CPU"
     elif [ -n "$ao" ] && [ "$ao" != "none" ]; then
         ly_do="may ao ($ao)"
     else
@@ -139,7 +140,7 @@ canh_gac_nen() {
         logger -t console-pi-kiosk "$hong khi ve bang CPU - khong hien duoc giao dien tren card nay, tra tty1 ve dong lenh (getty@tty1). Dashboard van mo duoc tu may khac qua web."
         systemctl start --no-block getty@tty1.service
     else
-        mkdir -p /var/lib/console-pi && touch "$DAU_CPU"
+        mkdir -p "$(dirname "$DAU_CPU")" && touch "$DAU_CPU"
         logger -t console-pi-kiosk "$hong khi ve bang GPU - doi sang ve bang CPU (ghi nho $DAU_CPU)"
         # KHONG dung `systemctl restart`: cage dang treo bo qua SIGTERM ->
         # dung qua gio -> ket qua "failed" -> OnFailure bat getty@tty1,

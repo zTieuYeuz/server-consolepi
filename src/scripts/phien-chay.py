@@ -25,7 +25,16 @@ import termios
 import time
 import tty
 
-DU_LIEU = os.environ.get("CONSOLE_PI_DATA", "/var/lib/console-pi")
+def _thu_muc_du_lieu():
+    """Cung quy tac voi ui/duongdan.py (tien trinh doc lap nen khong nap ui): dau .bo-cuc-moi -> <goc>/data."""
+    goc = os.environ.get("CONSOLE_PI_DATA")
+    if not goc:
+        moi = "/var/lib/console-system"
+        goc = moi if os.path.exists(os.path.join(moi, ".bo-cuc-moi")) else "/var/lib/console-pi"
+    return os.path.join(goc, "data") if os.path.exists(os.path.join(goc, ".bo-cuc-moi")) else goc
+
+
+DU_LIEU = _thu_muc_du_lieu()
 FILE_PHIEN = os.path.join(DU_LIEU, "phien.json")
 MAU = {"xanh": "\033[1;32m", "vang": "\033[1;33m", "do": "\033[1;31m", "xam": "\033[0;37m",
        "het": "\033[0m"}

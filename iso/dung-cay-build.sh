@@ -62,8 +62,8 @@ dung_cay() {   # $1 = amd64 | i386
     # Cloudflare Access Service Token (tuy chon) cho kho trung tam: chi co khi
     # chu kho dat file rieng tren may build - khong bao gio nam trong repo.
     if [ -s /root/.config/zt/cf-access.json ]; then
-        mkdir -p "$R/var/lib/console-pi"
-        install -m 600 /root/.config/zt/cf-access.json "$R/var/lib/console-pi/cf-access.json"
+        mkdir -p "$R/var/lib/console-system/secrets"      # bo cuc moi 2.0 (hook 0100 khoi tao bo cuc, giu file nay)
+        install -m 600 /root/.config/zt/cf-access.json "$R/var/lib/console-system/secrets/cf-access.json"
     fi
 
     # --- 1c. Driver VirtIO NHUNG SAN (30/09/2026, anh Thoai: "de san driver card mang, o cung").

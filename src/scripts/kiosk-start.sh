@@ -26,7 +26,8 @@ LOADING_URL="file:///opt/console-pi/scripts/kiosk-loading.html"
 # Hai cho nay PHAI cung mot huong, lech la cham khong trung.
 # Doc tu file rieng (khong doc config.json vi file do chmod 600 thuoc root
 # de giau mat khau terminal - script nay chay quyen user nen khong doc duoc).
-ROTATE="$(cat /opt/console-pi/screen-rotation 2>/dev/null || echo normal)"
+[ -r /opt/console-pi/scripts/duong-dan.sh ] && . /opt/console-pi/scripts/duong-dan.sh
+ROTATE="$(cat "${CS_FILE_XOAY:-/opt/console-pi/screen-rotation}" 2>/dev/null || echo normal)"
 
 if [ -n "$ROTATE" ] && [ "$ROTATE" != "normal" ]; then
     OUTPUT=$(wlr-randr 2>/dev/null | awk '/^[A-Za-z]/ {print $1; exit}')

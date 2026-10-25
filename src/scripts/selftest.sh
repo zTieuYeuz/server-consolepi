@@ -177,7 +177,8 @@ grep -q "KeepConfiguration=static" /etc/systemd/network/12-wlan0.network 2>/dev/
     && dat "12-wlan0.network dung KeepConfiguration=static" \
     || tach "12-wlan0.network sai KeepConfiguration - WiFi se khong xin lai duoc IP"
 
-if [ -f /opt/console-pi/force-ap.flag ]; then
+[ -r /opt/console-pi/scripts/duong-dan.sh ] && . /opt/console-pi/scripts/duong-dan.sh
+if [ -f "${CS_FILE_FORCE_AP:-/opt/console-pi/force-ap.flag}" ]; then
     luu "Dang KHOA che do AP - Pi se khong tu chuyen sang WiFi"
 fi
 systemctl is-active --quiet hostapd && dat "Dang phat AP ConsolePi" \

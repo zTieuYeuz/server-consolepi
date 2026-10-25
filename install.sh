@@ -233,9 +233,11 @@ mkdir -p "$INSTALL_DIR"/{scripts,captures}
 # cung khong sao (chi lam khi con thu muc cu). Dung `mv` chu khong `cp`:
 # hai cho nam cung phan vung nen di chuyen la TUC THI, khong ton them
 # dung luong the nho - rat quan trong voi anh Windows vai GB.
-DATA_DIR=/var/lib/console-pi
-mkdir -p "$DATA_DIR"
-chmod 755 "$DATA_DIR"
+# 2.0: bo cuc moi /var/lib/console-system {config,secrets,pki,data,deploy,storage} - xem src/scripts/chon-bo-cuc.sh.
+# Tinh luc nay ($CS_*): bo cuc cu -> buoc quet ben duoi chuyen vao /var/lib/console-pi nhu truoc, roi chon_bo_cuc chep
+# sang bo cuc moi (loi thi giu bo cuc cu). May moi hoan toan -> tao thang bo cuc moi.
+. "$SRC_DIR/src/scripts/duong-dan.sh"
+DATA_DIR="$CS_DATA"        # KHONG tao san o day: may moi hoan toan phai di thang vao bo cuc moi (chon_bo_cuc)
 
 for muc in deploy storage tham-so-cai-dat.json command-library.json \
            samba-deploy.key; do
@@ -248,10 +250,18 @@ for muc in deploy storage tham-so-cai-dat.json command-library.json \
         mv "$cu" "$cu.cu-$(date +%Y%m%d-%H%M%S)"
         warn "Da co $moi - giu ban cu lai de doi chieu: $cu.cu-*"
     else
+        mkdir -p "$DATA_DIR"
         mv "$cu" "$moi"
         ok "Da chuyen du lieu '$muc' sang $DATA_DIR (khong con bi ban cai dat dung toi)"
     fi
 done
+
+# Nap bo cuc (mot lan, SAU buoc quet o tren). Bo cuc moi: cau hinh/khoa/chung chi KHONG con nam trong /opt.
+. "$SRC_DIR/src/scripts/chon-bo-cuc.sh"
+chon_bo_cuc "$SRC_DIR"
+DATA_DIR="$CS_DATA"
+mkdir -p "$DATA_DIR"
+chmod 755 "$DATA_DIR"
 
 # Cac file cau hinh cua NGUOI DUNG - khong bao gio ghi de
 PRESERVE=( config.json command-library.json port-names.json
@@ -512,9 +522,10 @@ if [[ "$WANT_SCREEN" == "yes" ]]; then
     fi
     CFG_ROT="$(python3 -c "
 import json
-try: print(json.load(open('/opt/console-pi/config.json')).get('screen_rotation',''))
+import sys
+try: print(json.load(open(sys.argv[1])).get('screen_rotation',''))
 except Exception: print('')
-" 2>/dev/null || echo '')"
+" "$CS_FILE_CONFIG" 2>/dev/null || echo '')"
 
     ROT="${LIVE_ROT:-$CFG_ROT}"
 
@@ -536,13 +547,14 @@ EOF
 
         # File rieng cho kiosk-start.sh (chay quyen user, khong doc duoc
         # config.json vi file do chmod 600 thuoc root)
-        echo "$ROT" > /opt/console-pi/screen-rotation
-        chmod 644 /opt/console-pi/screen-rotation
+        mkdir -p "$(dirname "$CS_FILE_XOAY")"
+        echo "$ROT" > "$CS_FILE_XOAY"
+        chmod 644 "$CS_FILE_XOAY"
 
         # Ghi them vao config de giao dien Cai dat hien dung trang thai
-        python3 - "$ROT" <<'PY' 2>/dev/null || true
+        python3 - "$ROT" "$CS_FILE_CONFIG" <<'PY' 2>/dev/null || true
 import json, os, sys
-p = "/opt/console-pi/config.json"
+p = sys.argv[2]
 try: cfg = json.load(open(p))
 except Exception: cfg = {}
 cfg["screen_rotation"] = sys.argv[1]
@@ -563,6 +575,8 @@ fi
 if [[ -f "$SRC_DIR/config/nginx-console-pi.conf" ]]; then
     install -m 644 "$SRC_DIR/config/nginx-console-pi.conf" \
             /etc/nginx/sites-available/console-pi.conf
+    # Mau cau hinh viet theo bo cuc MOI; bo cuc cu thi doi ve duong dan thuc te
+    sed -i "s#/var/lib/console-system/deploy#$CS_DEPLOY#g" /etc/nginx/sites-available/console-pi.conf
     ln -sf /etc/nginx/sites-available/console-pi.conf \
            /etc/nginx/sites-enabled/console-pi.conf
     rm -f /etc/nginx/sites-enabled/default
@@ -663,7 +677,7 @@ fi
 #
 # MAT KHAU: KHONG BAO GIO viet cung trong code/file cau hinh (repo nay la
 # PUBLIC tren GitHub) - tu sinh ngau nhien 1 lan duy nhat, luu vao
-# /opt/console-pi/samba-deploy.key (quyen 600, chi root doc duoc), giu
+# $CS_KHOA_SAMBA (bo cuc moi: secrets/samba-deploy.key; cu: /var/lib/console-pi/samba-deploy.key; quyen 600, chi root doc duoc), giu
 # nguyen qua cac lan chay lai install.sh sau nay (khong sinh lai neu da
 # co). ui/unattend.py doc dung file nay luc sinh unattend.xml.
 if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
@@ -672,6 +686,11 @@ if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
     # Ket qua WinPE cho trang "Lich su cai dat" (share [cs-lich-su])
     mkdir -p "$DATA_DIR/lich-su-bao"
     install -m 644 "$SRC_DIR/config/smb.conf" /etc/samba/smb.conf
+    # Duong dan cac share theo bo cuc dang dung (mau viet theo bo cuc moi)
+    sed -i -e "s#/var/lib/console-system/deploy#$CS_DEPLOY#g" \
+           -e "s#/var/lib/console-system/data/o-dia#$DATA_DIR/o-dia#g" \
+           -e "s#/var/lib/console-system/data/lich-su-bao#$DATA_DIR/lich-su-bao#g" \
+           -e "s#/var/lib/console-system/secrets/samba-deploy.key#$CS_KHOA_SAMBA#g" /etc/samba/smb.conf
     if testparm -s >/dev/null 2>&1; then
         ok "Cau hinh Samba hop le"
     else
@@ -682,7 +701,7 @@ if [[ -f "$SRC_DIR/config/smb.conf" ]]; then
         useradd --system --no-create-home --shell /usr/sbin/nologin consolepi-deploy
     # Thu muc nhan bao cao tu WinPE (share ghi duoc [cs-o-dia], [cs-lich-su]) thuoc consolepi-deploy
     chown consolepi-deploy:consolepi-deploy "$DATA_DIR/o-dia" "$DATA_DIR/lich-su-bao"
-    KHOA_SAMBA="$DATA_DIR/samba-deploy.key"
+    KHOA_SAMBA="$CS_KHOA_SAMBA"
     if [[ ! -s "$KHOA_SAMBA" ]]; then
         MAT_KHAU_MOI=$(tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 24 || true)
         [[ ${#MAT_KHAU_MOI} -eq 24 ]] || die "Khong sinh duoc mat khau Samba"

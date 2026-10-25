@@ -32,8 +32,9 @@ chown -R administrator:administrator "$DST/ui" "$DST/nettools" "$DST/branding"
 # 1.7.7: da go tinh nang "Cho AI / may khac truy cap" (token + /ai + /api). cp -r khong xoa
 # file da bi go khoi repo nen don tay: file code, khoa token trong config, nhat ky cu.
 rm -f "$DST/ui/api.py"
-if [ -f "$DST/config.json" ]; then
-    python3 - "$DST/config.json" <<'PYEOF'
+. "$DST/scripts/duong-dan.sh"       # bo cuc du lieu dang dung (cu/moi)
+if [ -f "$CS_FILE_CONFIG" ]; then
+    python3 - "$CS_FILE_CONFIG" <<'PYEOF'
 import json, os, sys
 p = sys.argv[1]
 c = json.load(open(p))
@@ -51,12 +52,17 @@ rm -f /var/log/console-pi-api.log
 
 # 1.8.0: share Samba [cs-o-dia] nhan bao cao "Do o dia". Chi cai smb.conf khi KHAC ban dang
 # chay, kiem testparm truoc - loi thi tra ban cu (khong de Samba hong). smbd chi chay khi PXE bat.
-mkdir -p /var/lib/console-pi/o-dia && chown consolepi-deploy:consolepi-deploy /var/lib/console-pi/o-dia 2>/dev/null || chown nobody:nogroup /var/lib/console-pi/o-dia
+mkdir -p "$CS_DATA/o-dia" && chown consolepi-deploy:consolepi-deploy "$CS_DATA/o-dia" 2>/dev/null || chown nobody:nogroup "$CS_DATA/o-dia"
 # 1.8.7: share [cs-lich-su] - WinPE bao ket qua cho trang Lich su cai dat
-mkdir -p /var/lib/console-pi/lich-su-bao && chown consolepi-deploy:consolepi-deploy /var/lib/console-pi/lich-su-bao 2>/dev/null || chown nobody:nogroup /var/lib/console-pi/lich-su-bao
-if [ -f "$SRC/config/smb.conf" ] && ! cmp -s "$SRC/config/smb.conf" /etc/samba/smb.conf; then
+mkdir -p "$CS_DATA/lich-su-bao" && chown consolepi-deploy:consolepi-deploy "$CS_DATA/lich-su-bao" 2>/dev/null || chown nobody:nogroup "$CS_DATA/lich-su-bao"
+# Mau smb.conf viet theo bo cuc MOI -> doi sang duong dan thuc te truoc khi so sanh/cai
+SMB_MOI="$(mktemp)"
+sed -e "s#/var/lib/console-system/deploy#$CS_DEPLOY#g" -e "s#/var/lib/console-system/data/o-dia#$CS_DATA/o-dia#g" \
+    -e "s#/var/lib/console-system/data/lich-su-bao#$CS_DATA/lich-su-bao#g" \
+    -e "s#/var/lib/console-system/secrets/samba-deploy.key#$CS_KHOA_SAMBA#g" "$SRC/config/smb.conf" > "$SMB_MOI"
+if [ -f "$SRC/config/smb.conf" ] && ! cmp -s "$SMB_MOI" /etc/samba/smb.conf; then
     cp -a /etc/samba/smb.conf "/etc/samba/smb.conf.truoc-$(date +%Y%m%d-%H%M)"
-    install -m 644 "$SRC/config/smb.conf" /etc/samba/smb.conf
+    install -m 644 "$SMB_MOI" /etc/samba/smb.conf
     if testparm -s >/dev/null 2>&1; then
         echo "Da cap nhat smb.conf"
         systemctl is-active --quiet smbd && smbcontrol smbd reload-config
@@ -65,6 +71,7 @@ if [ -f "$SRC/config/smb.conf" ] && ! cmp -s "$SRC/config/smb.conf" /etc/samba/s
         cp -a "$(ls -t /etc/samba/smb.conf.truoc-* | head -1)" /etc/samba/smb.conf
     fi
 fi
+rm -f "$SMB_MOI"
 
 # 1.9.5: cong cu .sh cua ui nam o /opt/console-pi/tools (ui nhac "sudo bash /opt/console-pi/tools/cai-winrm.sh")
 mkdir -p "$DST/tools"

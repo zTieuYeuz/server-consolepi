@@ -27,6 +27,7 @@ trap 'rm -rf "$TAM"' EXIT
 echo "== 1. Du lieu + cau hinh Console Pi"
 DS=(
   /var/lib/console-pi
+  /var/lib/console-system
   /opt/console-pi/config.json
   /opt/console-pi/port-names.json
   /opt/console-pi/flask-secret.key
@@ -46,6 +47,7 @@ CO=()
 for p in "${DS[@]}"; do [ -e "$p" ] && CO+=("$p"); done
 sudo tar -czf "$TAM/pi-$NGAY.tar.gz" \
   --exclude=/var/lib/console-pi/deploy/os \
+  --exclude=/var/lib/console-system/deploy/os \
   --exclude=/var/lib/console-pi/deploy/ungdung \
   --exclude=/var/lib/console-pi/deploy/fonts \
   --exclude='/var/lib/console-pi/deploy/apps/*.exe' \

@@ -59,13 +59,14 @@ if [[ "$PURGE" == "yes" ]]; then
     # co canh bao nao. Day la thu KHONG TAI TAO LAI DUOC tu GitHub.
     #
     # Chi nhac cho nguoi dung biet no nam o dau de tu quyet dinh.
-    if [[ -d /var/lib/console-pi ]]; then
+    for d in /var/lib/console-system /var/lib/console-pi; do
+        [[ -d "$d" ]] || continue
         echo
         echo "  LUU Y: du lieu cua ban KHONG bi xoa, van nam o:"
-        echo "     /var/lib/console-pi   ($(du -sh /var/lib/console-pi 2>/dev/null | cut -f1))"
-        echo "  Muon xoa han thi tu chay:  sudo rm -rf /var/lib/console-pi"
+        echo "     $d   ($(du -sh "$d" 2>/dev/null | cut -f1))"
+        echo "  Muon xoa han thi tu chay:  sudo rm -rf $d"
         echo
-    fi
+    done
 
     # Token Cloudflare Tunnel: PHAI xoa khi purge - de lai la de lo mot token
     # con hieu luc co the dung lai duong ham cu tu xa, du dich vu da tat.
@@ -95,7 +96,7 @@ if [[ "$PURGE" == "yes" ]]; then
 else
     echo "==> Xoa ma nguon, GIU LAI cau hinh"
     rm -rf /opt/console-pi/{ui,nettools,scripts,app.py,VERSION}
-    echo "    Con lai: config.json, command-library.json, port-names.json"
+    echo "    Con lai: toan bo cau hinh va du lieu (/var/lib/console-system hoac /var/lib/console-pi; ban cu: config.json, command-library.json, port-names.json)"
 fi
 systemctl unmask wpa_supplicant 2>/dev/null || true
 echo "==> Xong. Cac goi apt van giu nguyen (go tay neu can)."

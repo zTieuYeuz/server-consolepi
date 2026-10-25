@@ -7,6 +7,7 @@
 set -e
 F=${1:?thieu bo cai}; TS=${2:?thieu tham so hoac --tu-do}
 [ -f "$F" ] || F=/var/lib/console-pi/deploy/apps/$F
+[ -f "$F" ] || F=/var/lib/console-system/deploy/apps/${F##*/}
 sudo test -f "$F" || { echo "Khong thay $1"; exit 1; }
 TEN=$(basename "$F")
 sudo cat "$F" | ssh build-consolepi "cat > /tmp/thu-$TEN"
