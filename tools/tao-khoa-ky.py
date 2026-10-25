@@ -2,7 +2,7 @@
 """C0: tao khoa ky cho he thong cap nhat. Mat khau khoa: bien moi truong CS_KHOA_MAT_KHAU_<VAI_TRO> (goc/phat-hanh/lenh-khoa) hoac CS_KHOA_MAT_KHAU,
 hoac o nhap an - KHONG BAO GIO qua tham so dong lenh.
     tao-khoa-ky.py THU_MUC --vai-tro goc [--vai-tro phat-hanh] [--vai-tro lenh-khoa]     tao cap khoa (khong ghi de khoa rieng da co)
-    tao-khoa-ky.py THU_MUC --tin-cay --so-hieu N [--han-ngay 365] [--ra FILE]            khoa GOC ky tai lieu tin cay liet ke khoa phat-hanh + lenh-khoa
+    tao-khoa-ky.py THU_MUC --tin-cay --so-hieu N [--han-ngay 365] [--han-tai-lieu 180] [--ra FILE]            khoa GOC ky tai lieu tin cay liet ke khoa phat-hanh + lenh-khoa
     tao-khoa-ky.py THU_MUC --xem                                                         in dau van tay cac khoa cong khai"""
 import argparse
 import glob
@@ -21,7 +21,8 @@ def main(argv=None):
     ap.add_argument("--vai-tro", action="append", choices=K.VAI_TRO)
     ap.add_argument("--tin-cay", action="store_true")
     ap.add_argument("--so-hieu", type=int, default=1)
-    ap.add_argument("--han-ngay", type=int, default=365)
+    ap.add_argument("--han-ngay", type=int, default=365, help="han cua TUNG KHOA trong tai lieu tin cay")
+    ap.add_argument("--han-tai-lieu", type=int, default=180, help="han cua CHINH tai lieu tin cay (het han = may khach ngung tin cac khoa; phai ky lai bang khoa goc truoc ngay do)")
     ap.add_argument("--ra")
     ap.add_argument("--xem", action="store_true")
     a = ap.parse_args(argv)
@@ -41,7 +42,7 @@ def main(argv=None):
                 if os.path.exists(p):
                     pub, _ = K.doc_khoa_cong_khai(p)
                     ds.append({"vai_tro": vt, "khoa_cong_khai": K.b64(pub), "den": het})
-            doc = K.tao_tai_lieu_tin_cay(ds, a.so_hieu, int(time.time()) + 30 * 86400, goc, K.dau_van_tay(pub_goc))
+            doc = K.tao_tai_lieu_tin_cay(ds, a.so_hieu, int(time.time()) + a.han_tai_lieu * 86400, goc, K.dau_van_tay(pub_goc))
             ra = a.ra or os.path.join(a.thu_muc, "tin-cay.json")
             json.dump(doc, open(ra, "w", encoding="utf-8"), indent=1)
             print("da ky tai lieu tin cay so_hieu=%d (%d khoa) -> %s" % (a.so_hieu, len(ds), ra))
