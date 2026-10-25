@@ -10,7 +10,7 @@
 # chinh may: gan tai khoan cho giao dien, sinh bi mat rieng cua may nay (mat khau AP,
 # khoa Samba...), bat dich vu. Goi da co san nen KHONG can mang (~1-2 phut).
 set -u
-DAU=/var/lib/console-pi/.pi-da-thiet-lap
+DAU=/var/lib/console-system/data/.pi-da-thiet-lap
 NGUON=/opt/console-system-src
 [ -f "$DAU" ] && exit 0
 # Khoa SSH rieng cua may nay (anh the nho da xoa khoa luc dung - khong dung chung)
