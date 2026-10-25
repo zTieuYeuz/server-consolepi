@@ -18,8 +18,8 @@ echo "== He thong"
 kt "ten he thong la Console System"      grep -q '^PRETTY_NAME="Console System' /etc/os-release
 kt "os-release con VERSION_CODENAME"      grep -q '^VERSION_CODENAME=[a-z]' /etc/os-release
 kt "khong co dich vu nao loi"             test -z "$(systemctl --failed --no-legend)"
-kt "da chay xong thiet lap lan dau"       test -f /var/lib/console-pi/.da-thiet-lap
-kt "mat khau Samba rieng cho may nay"     test -s /var/lib/console-pi/samba-deploy.key
+kt "da chay xong thiet lap lan dau"       test -f /var/lib/console-system/data/.da-thiet-lap
+kt "mat khau Samba rieng cho may nay"     test -s /var/lib/console-system/secrets/samba-deploy.key
 kt "tai khoan Samba consolepi-deploy (dung ten share/deploy.cmd)" sh -c "pdbedit -L | grep -q '^consolepi-deploy:'"
 kt "khoa SSH may da sinh"                 test -s /etc/ssh/ssh_host_ed25519_key
 kt "nguon apt khong con tro vao USB"      khong grep -qs '^deb cdrom' /etc/apt/sources.list
@@ -48,15 +48,15 @@ kt "trinh duyet kiosk dang mo dashboard"  sh -c "curl -s http://127.0.0.1:9222/j
 
 echo "== Driver VirtIO nhung san trong ISO (khong can mang)"
 kt "co 3 file .cab VirtIO trong /opt/console-pi/driver-san"  test "$(ls /opt/console-pi/driver-san/virtio_*.cab 2>/dev/null | wc -l)" = 3
-kt "3 goi VirtIO da duoc nap san vao thu muc driver"          test -s /var/lib/console-pi/deploy/drivers/goi-virtio_netkvm/_thongtin.json -a -s /var/lib/console-pi/deploy/drivers/goi-virtio_viostor/_thongtin.json -a -s /var/lib/console-pi/deploy/drivers/goi-virtio_vioscsi/_thongtin.json
+kt "3 goi VirtIO da duoc nap san vao thu muc driver"          test -s /var/lib/console-system/deploy/drivers/goi-virtio_netkvm/_thongtin.json -a -s /var/lib/console-system/deploy/drivers/goi-virtio_viostor/_thongtin.json -a -s /var/lib/console-system/deploy/drivers/goi-virtio_vioscsi/_thongtin.json
 
 # May co Internet -> tu tai not cac goi con thieu (toi da ~3 phut)
 for _i in $(seq 36); do
-    [ "$(ls /var/lib/console-pi/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 15 ] && break
+    [ "$(ls /var/lib/console-system/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 15 ] && break
     sleep 5
 done
 kt "du 15 goi driver pho bien (3 VirtIO nhung san + 12 tu tai khi co Internet)" \
-   test "$(ls /var/lib/console-pi/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 15
+   test "$(ls /var/lib/console-system/deploy/drivers/goi-*/_thongtin.json 2>/dev/null | wc -l)" -ge 15
 
 echo "== Cong cu Deployment OS"
 for c in parted wimlib-imagex mkfs.vfat mcopy genisoimage; do
@@ -90,10 +90,10 @@ kt "co wixl (tao file MSI agent)"          sh -c "command -v wixl"
 kt "venv WinRM nap duoc pypsrp"            /opt/console-pi-venv/winrm/bin/python3 -c "from pypsrp.client import Client"
 kt "co cong cu cai them (tools/cai-*.sh)"  sh -c "test -x /opt/console-pi/tools/cai-agent-tls.sh && test -x /opt/console-pi/tools/cai-winrm.sh && test -x /opt/console-pi/tools/cai-vnc.sh"
 kt "co file agent dung san (cs-agent.exe, mau MSI)" sh -c "test -s /opt/console-pi/ui/agent_bin/cs-agent.exe && test -s /opt/console-pi/ui/agent_bin/ConsoleSystemAgent.wxs.tpl"
-kt "PKI rieng da tao (CA + chung chi may chu)" sh -c "test -s /var/lib/console-pi/trienkhai/pki/ca.pem && test -s /var/lib/console-pi/trienkhai/pki/server.pem"
+kt "PKI rieng da tao (CA + chung chi may chu)" sh -c "test -s /var/lib/console-system/pki/ca.pem && test -s /var/lib/console-system/pki/server.pem"
 kt "cong mTLS agent 8443 dang nghe"        sh -c "ss -ltn | grep -q ':8443 '"
 kt "cong 8443 khong co chung chi khach -> 403/404 (khong mo)" sh -c "c=\$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 https://127.0.0.1:8443/uem/agent/ping); [ \"\$c\" = 403 ] || [ \"\$c\" = 404 ]"
-kt "khong co CA/khoa nao trong ISO goc (tao luc khoi dong dau)" sh -c "test \$(stat -c %Y /var/lib/console-pi/trienkhai/pki/ca.pem) -gt \$(stat -c %Y /opt/console-pi/VERSION)"
+kt "khong co CA/khoa nao trong ISO goc (tao luc khoi dong dau)" sh -c "test \$(stat -c %Y /var/lib/console-system/pki/ca.pem) -gt \$(stat -c %Y /opt/console-pi/VERSION)"
 for p in /uem /uem/may /uem/phan-mem /uem/bao-mat /uem/trien-khai /uem/profiles /uem/bao-cao /uem/quan-tri /uem/quan-tri/agent /uem/chua-ho-tro /deployos/trienkhai; do
     kt "trang $p mo duoc" sh -c "c=\$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -H 'X-ConsolePi-Local: 1' http://127.0.0.1:8880$p); [ \"\$c\" = 200 ] || [ \"\$c\" = 302 ]"
 done

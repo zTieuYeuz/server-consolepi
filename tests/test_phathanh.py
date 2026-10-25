@@ -275,3 +275,16 @@ def test_doi_ten_dich_vu_thu_khong_dong_vao_may(nguon, tmp_path):
     gia = Gia()
     bc = P.ap_dung(os.path.join(opt, "releases", ten), str(tmp_path / "bk"), str(e), gia, thu=True)
     assert bc["chuyen_ten"] == ["dashboard"] and gia.lenh == [] and os.path.exists(str(e / "etc/systemd/system/console-pi-dashboard.service"))
+
+
+def test_script_va_cong_cu_cai_trong_ban_co_quyen_chay(nguon, tmp_path):
+    """Loi that khi dung ISO 2.0: tools/cai-agent-tls.sh (644 trong repo) khong chay duoc -> PKI/mTLS khong tao luc khoi dong dau."""
+    viet(os.path.join(nguon, "tools/cai-xyz.sh"), "#!/bin/sh\n")
+    os.chmod(os.path.join(nguon, "tools/cai-xyz.sh"), 0o644)
+    viet(os.path.join(nguon, "src/scripts/chay.sh"), "#!/bin/sh\n")
+    os.chmod(os.path.join(nguon, "src/scripts/chay.sh"), 0o644)
+    opt = str(tmp_path / "opt")
+    ten = P.tao_ban(nguon, opt)
+    for rel in ("tools/cai-xyz.sh", "scripts/chay.sh"):
+        assert os.access(os.path.join(opt, "releases", ten, rel), os.X_OK), rel
+    assert P.kiem_ban(opt, ten) == []

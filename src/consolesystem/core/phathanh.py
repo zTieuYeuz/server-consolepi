@@ -84,6 +84,11 @@ def dung_cay(src, dich, mang_theo=None):
     for f in sorted(os.listdir(os.path.join(src, "tools"))) if os.path.isdir(os.path.join(src, "tools")) else []:
         if f.startswith("cai-") and f.endswith(".sh"):
             _chep(os.path.join(src, "tools", f), os.path.join(dich, "tools", f))
+    for thu_muc in ("scripts", "tools"):                  # nhu `install -m 755` cua ban cu: script dung truc tiep phai co quyen chay
+        d = os.path.join(dich, thu_muc)
+        for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+            if os.path.isfile(os.path.join(d, f)) and not os.path.islink(os.path.join(d, f)):
+                os.chmod(os.path.join(d, f), 0o755)
     he = os.path.join(dich, "system")
     for thu_muc in ("systemd", "config"):
         if os.path.isdir(os.path.join(src, thu_muc)):
