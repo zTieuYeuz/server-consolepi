@@ -26,7 +26,7 @@ kt "nguon apt khong con tro vao USB"      khong grep -qs '^deb cdrom' /etc/apt/s
 kt "da go file tang toc build dpkg"       test ! -e /etc/apt/apt.conf.d/00-toc-do-build
 
 echo "== Dich vu chinh"
-for s in console-pi-dashboard nginx ssh console-pi-term-local console-pi-term-ssh console-pi-term-phien; do
+for s in console-system-dashboard nginx ssh console-system-term-local console-system-term-ssh console-system-term-phien; do
     kt "$s dang chay" systemctl is-active --quiet $s
 done
 echo "== An toan mang: KHONG tu phat DHCP/WiFi/TFTP/Samba khi cam vao mang khach"
@@ -43,7 +43,7 @@ if [ -n "$PXE_BAT" ]; then echo "BO QUA cong 67 (nguoi dung dang bat PXE)"
 else kt "khong co gi nghe cong 67 (DHCP)"  khong sh -c "ss -ulpn | grep -q ':67 '"; fi
 
 echo "== Kiosk (man hinh)"
-kt "kiosk dang chay"                      systemctl is-active --quiet console-pi-kiosk
+kt "kiosk dang chay"                      systemctl is-active --quiet console-system-kiosk
 kt "trinh duyet kiosk dang mo dashboard"  sh -c "curl -s http://127.0.0.1:9222/json | grep -q 8880"
 
 echo "== Driver VirtIO nhung san trong ISO (khong can mang)"
@@ -83,7 +83,7 @@ kt "trang chu co nut Home/menu"           sh -c "curl -s -H 'X-ConsolePi-Local: 
 kt "1.7.5: trang File boot co khung Boot WinPE"  sh -c "curl -s -H 'X-ConsolePi-Local: 1' http://127.0.0.1:8880/deployos/console | grep -q 'Boot WinPE (menu PXE)'"
 kt "1.7.5: o buoc kich ban bam duoc (data-den)"    sh -c "L=\$(curl -s -i -H 'X-ConsolePi-Local: 1' 'http://127.0.0.1:8880/deployos/wizard/bat-dau?che_do=luu' | sed -n 's/^[Ll]ocation: *//p' | tr -d '\r'); curl -s -H 'X-ConsolePi-Local: 1' \"http://127.0.0.1:8880\${L#http://127.0.0.1:8880}\" | grep -c 'data-den=' | grep -q '^[1-9]'"
 kt "dashboard tra loi qua cong 80"        sh -c "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/ | grep -qE '200|302'"
-kt "khong co traceback trong log web"     khong sh -c "journalctl -u console-pi-dashboard -b | grep -q Traceback"
+kt "khong co traceback trong log web"     khong sh -c "journalctl -u console-system-dashboard -b | grep -q Traceback"
 
 echo "== Quan ly may tram + Agent (1.9.5)"
 kt "co wixl (tao file MSI agent)"          sh -c "command -v wixl"

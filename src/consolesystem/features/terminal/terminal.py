@@ -154,7 +154,7 @@ def register_terminal(app):
         warn = ('<strong>Lưu ý:</strong> Terminal của chính Pi với <strong>quyền root</strong> '
                '- gõ lệnh cẩn thận')
         body = _terminal_body("Terminal tại chỗ", "/term-local", LOCAL_SESSION,
-                              "console-pi-term-local.service", warn)
+                              "console-system-term-local.service", warn)
         html = render_page(body, active="/terminal", title="Terminal",
                            subtitle="Dòng lệnh trực tiếp trên Pi (phiên tmux giữ nguyên khi đóng trình duyệt)")
         # Bao cho ban phim ao biet go phim vao phien tmux nao
@@ -183,7 +183,7 @@ def register_terminal(app):
         warn = ('<strong>Lưu ý:</strong> Terminal của chính Pi với <strong>quyền root</strong> '
                 '- gõ lệnh cẩn thận')
         body = _terminal_body("Terminal tại chỗ", "/term-local", LOCAL_SESSION,
-                              "console-pi-term-local.service", warn)
+                              "console-system-term-local.service", warn)
         html = render_page(f'<div class="msg {"ok" if ok else "err"}">{msg}</div>' + body,
                            active="/terminal", title="Terminal", subtitle="")
         return gan_phien_tmux(html, LOCAL_SESSION)

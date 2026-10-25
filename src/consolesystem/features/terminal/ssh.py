@@ -160,11 +160,11 @@ SSH_JS = _taisan.doc("features/terminal/ssh.SSH_JS.html")
 
 
 def _render(msg="", ok=True, prefill=""):
-    term_running = service_active("console-pi-term-ssh.service")
+    term_running = service_active("console-system-term-ssh.service")
     msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
     term_status = ("" if term_running else
                    '<div class="msg err">Dich vu terminal SSH chua chay: '
-                   '<code>sudo systemctl start console-pi-term-ssh</code></div>')
+                   '<code>sudo systemctl start console-system-term-ssh</code></div>')
 
     # Bo trong: chi 1 hang nhap gon, khong tieu de/doan giai thich dai - de
     # danh cang nhieu chieu cao cang tot cho khung terminal.

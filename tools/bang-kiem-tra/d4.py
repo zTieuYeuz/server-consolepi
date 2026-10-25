@@ -25,7 +25,7 @@ Lập lịch|Hằng tuần / tháng / năm|Tạo các lịch|Tính ngày đúng 
 Triển khai|Chạy / Dừng + popup tiến độ|Bấm Chạy kịch bản trên nhiều máy|Popup tiến độ từng máy (Đang chạy/xong/lỗi); song song tối đa 10; nút Dừng; chạy lại khi kịch bản không lịch đã xong|2+ máy|C|TH
 Triển khai|Chạy nhanh|Chạy nhanh một bước|Tự tắt sau khi xong|Windows|T|TH
 Triển khai|Máy không tồn tại / tắt|Có máy offline trong đợt|Báo "chờ máy lên", KHÔNG làm hỏng máy khác|Máy offline|C|TH
-Triển khai|Khởi động lại dịch vụ giữa lượt chạy|Restart console-pi-dashboard khi đang chạy|Vẫn chạy tiếp (bước dài đang chạy sẽ chạy lại từ đầu)|-|T|TH
+Triển khai|Khởi động lại dịch vụ giữa lượt chạy|Restart console-system-dashboard khi đang chạy|Vẫn chạy tiếp (bước dài đang chạy sẽ chạy lại từ đầu)|-|T|TH
 Chức năng khác|Kiểm kê một máy + CSV|Chức năng khác / Máy > Kiểm kê|Bảng thông tin + danh sách phần mềm có ô tìm + Tải CSV|Windows|C|TH
 Chức năng khác|Bảo mật / Nguồn điện nhanh|Dùng các nút|Hoạt động|Windows|T|TH
 Thông tin chung|Mật khẩu admin lưu mã hoá|Xem file dữ liệu|Không có mật khẩu rõ trong dữ liệu/nhật ký|-|C|TT

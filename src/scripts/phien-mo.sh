@@ -2,7 +2,7 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console System - mo 1 PHIEN KET NOI (kieu MobaXterm) trong tmux.
 #
-# ttyd (console-pi-term-phien, cong 8012, chi 127.0.0.1) chay script nay voi
+# ttyd (console-system-term-phien, cong 8012, chi 127.0.0.1) chay script nay voi
 # doi so lay tu URL: /term-phien/?arg=<ma_phien>. Moi phien la 1 phien tmux
 # rieng "phien-<ma>" -> dong tab / tai lai trang KHONG mat phien, mo lai la
 # thay dung man hinh cu; mo cung phien tren 2 may thi thay cung 1 man hinh.
@@ -33,7 +33,7 @@ case "$MA" in
         exec tmux new-session -A -s consolepi-local \
             bash --rcfile /opt/console-pi/scripts/console-bashrc ;;
     serial-tty*)
-        # Cong console: DUNG CHUNG phien voi dich vu console-pi-ttyd@<cong>
+        # Cong console: DUNG CHUNG phien voi dich vu console-system-ttyd@<cong>
         # (1 cong serial chi 1 chuong trinh giu duoc - mo 2 microcom se tranh
         # nhau ky tu). Doi toc do baud: phien-chay.py lo (respawn microcom).
         CONG="${MA#serial-}"

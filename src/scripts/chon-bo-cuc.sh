@@ -22,7 +22,7 @@ chon_bo_cuc() {
         # Co du lieu cu: dung dich vu ghi du lieu trong luc chep (khoi dong lai o cuoi cai dat)
         local s
         if [[ -z "${CS_KHONG_DUNG_DICH_VU:-}" ]]; then
-            for s in console-pi-dashboard console-pi-tftp; do systemctl stop "$s" >/dev/null 2>&1 || true; done
+            for s in console-system-dashboard console-system-tftp; do systemctl stop "$s" >/dev/null 2>&1 || true; done
         fi
         if python3 "$lenh" bo-cuc-moi --tu "$CS_GOC_CU" --opt "$CS_OPT" --moi "$CS_GOC_MOI" >/dev/null \
            && python3 "$lenh" kiem-bo-cuc --moi "$CS_GOC_MOI" >/dev/null; then

@@ -3,7 +3,7 @@
 Description=Console Pi - tu kiem tra sau khi khoi dong
 # Cho moi thu on dinh roi moi kiem tra: wifi-fallback chay lan dau sau ~2 phut,
 # Bluetooth can thoi gian noi lai thiet bi da ghep.
-After=multi-user.target console-pi-dashboard.service nginx.service
+After=multi-user.target console-system-dashboard.service nginx.service
 Wants=network-online.target
 
 [Service]
@@ -15,4 +15,5 @@ RemainAfterExit=yes
 StandardOutput=null
 
 [Install]
+Alias=console-pi-selftest.service
 WantedBy=multi-user.target

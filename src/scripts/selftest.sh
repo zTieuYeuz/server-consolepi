@@ -38,9 +38,9 @@ printf "\n${BLU}Console Pi - tu kiem tra${NC}  (%s, da chay %s)\n" \
 # ---------------------------------------------------------------- dich vu
 muc "Dich vu"
 kiem_dich_vu nginx                    "Web server"
-kiem_dich_vu console-pi-dashboard     "Dashboard"
-kiem_dich_vu console-pi-term-local    "Terminal cuc bo"
-kiem_dich_vu console-pi-term-ssh      "Terminal SSH"
+kiem_dich_vu console-system-dashboard     "Dashboard"
+kiem_dich_vu console-system-term-local    "Terminal cuc bo"
+kiem_dich_vu console-system-term-ssh      "Terminal SSH"
 kiem_dich_vu bluetooth                "Bluetooth"
 kiem_dich_vu avahi-daemon             "mDNS (.local)"
 kiem_dich_vu lldpd                    "LLDP/CDP"
@@ -94,7 +94,7 @@ if [ -z "$PORTS" ]; then
 else
     for dev in $PORTS; do
         d=$(basename "$dev")
-        if systemctl is-active --quiet "console-pi-ttyd@$d"; then
+        if systemctl is-active --quiet "console-system-ttyd@$d"; then
             # LOI THAT DA GAP (ngu yen tu truoc gio vi chua bao gio co cap
             # console that de kich hoat nhanh nay): dung cong 80 (duong cong
             # cong) thay vi 8880 (kiosk, duoc mien dang nhap) - giong dung
@@ -106,7 +106,7 @@ else
             [ "$code" = "200" ] && dat "$d mo duoc console" \
                                 || tach "$d: ttyd chay nhung nginx tra ve $code"
         else
-            tach "$d: dich vu console-pi-ttyd@$d khong chay"
+            tach "$d: dich vu console-system-ttyd@$d khong chay"
         fi
     done
 fi

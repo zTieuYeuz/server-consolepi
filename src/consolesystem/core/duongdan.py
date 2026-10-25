@@ -93,7 +93,7 @@ FILE_IFTHEN = _vt(_ma("nettools", "ifthen-rules.json"), "config/ifthen-rules.jso
 # --- trang thai tam (chi ton tai luc may chay)
 FLAG_DIRECT = "/run/console-pi-direct.flag"
 FLAG_PXE = "/run/console-pi-pxe.flag"
-FLAG_TFTP = "/run/console-pi-tftp.flag"
+FLAG_TFTP = "/run/console-system-tftp.flag"
 FILE_BT_STATE = "/run/console-pi-bt.json"
 FILE_BOOT_STATUS = "/run/console-pi-boot-status.json"
 # --- nhat ky kiem toan

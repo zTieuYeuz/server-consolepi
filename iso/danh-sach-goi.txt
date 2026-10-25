@@ -233,7 +233,7 @@ wireplumber
 # LOI THAT (bat duoc 23/09/2026 khi cam cap USB-serial gia lap vao may ao
 # cai tu ISO): moi ban ISO tu truoc den nay DEU THIEU microcom, ma
 # scripts/ttyd-one.sh goi thang lenh nay de mo cong serial. Ket qua: dich
-# vu console-pi-ttyd@ttyUSB0 van "active", trang Console van hien cong,
+# vu console-system-ttyd@ttyUSB0 van "active", trang Console van hien cong,
 # nhung bam "Mo Console" thi khong co phien nao - API tra "Khong tao duoc
 # phien console cho ttyUSB0". Tuc la chuc nang CHINH cua san pham (cam cap
 # console vao switch) hong tren may cai tu ISO. install.sh tren Pi co cai

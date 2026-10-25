@@ -1,8 +1,8 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 [Unit]
 Description=Console Pi - Giao dien kiosk tren man hinh cam ung
-After=console-pi-dashboard.service systemd-user-sessions.service
-Wants=console-pi-dashboard.service
+After=console-system-dashboard.service systemd-user-sessions.service
+Wants=console-system-dashboard.service
 Conflicts=getty@tty1.service
 After=getty@tty1.service
 
@@ -34,4 +34,5 @@ Restart=always
 RestartSec=5
 
 [Install]
+Alias=console-pi-kiosk.service
 WantedBy=multi-user.target

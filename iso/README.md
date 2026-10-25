@@ -53,7 +53,7 @@ sự phục vụ được**.
 | `calamares/lang/calamares_vi.qm` (sinh bang `calamares/lang/sua-ban-dich-vi.py`) | `/usr/share/calamares/lang/` |
 | `calamares/he-thong/console-system-grub-install` | `/usr/local/sbin/` |
 | `calamares/he-thong/console-system-cai.service` | `/etc/systemd/system/` |
-| `calamares/he-thong/05-khi-cai-dat.conf` | `/etc/systemd/system/console-pi-kiosk.service.d/` va `console-pi-kiosk-helper.service.d/` |
+| `calamares/he-thong/05-khi-cai-dat.conf` | `/etc/systemd/system/console-system-kiosk.service.d/` va `console-system-kiosk-helper.service.d/` |
 
 ## Trình cài đồ hoạ (Calamares)
 

@@ -44,7 +44,7 @@ from consolesystem.integrations import cloudflare as _CF
 # (anh Thoai 19/09/2026: "chuyen thanh ten console system").
 #
 # CO Y KHONG doi cac ten NOI BO: duong dan /opt/console-pi, ten dich vu
-# console-pi-dashboard, ten kho ma nguon... Doi chung phai sua 15 file, 7
+# console-system-dashboard, ten kho ma nguon... Doi chung phai sua 15 file, 7
 # don vi systemd, cau hinh nginx va ca ban da cai tren may dang chay - rui
 # ro cao ma nguoi dung khong nhin thay mot chut loi ich nao. Ten hien thi
 # la thu duy nhat nguoi dung thay.

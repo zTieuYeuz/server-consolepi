@@ -19,9 +19,9 @@ if [ "$CS_BO_CUC" = moi ]; then
     command -v wixl >/dev/null 2>&1 || apt-get install -y -qq wixl >/dev/null 2>&1 || echo "Canh bao: khong cai duoc wixl"
     [ -f "$DST/tools/cai-agent-tls.sh" ] && bash "$DST/tools/cai-agent-tls.sh" || echo "Canh bao: chua bat duoc cong mTLS 8443 cho agent"
     systemctl daemon-reload
-    systemctl restart console-pi-dashboard
+    systemctl restart console-system-dashboard
     sleep 6
-    systemctl is-active console-pi-dashboard
+    systemctl is-active console-system-dashboard
     for p in / /deployos /deployos/kichban; do
         echo "$p -> $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8880$p)"
     done
@@ -112,11 +112,11 @@ if ! python3 -m py_compile $(find "$DST/ui" "$DST/consolesystem" "$DST/nettools"
 fi
 find "$DST" -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
 
-systemctl restart console-pi-dashboard
+systemctl restart console-system-dashboard
 sleep 6
-systemctl is-active console-pi-dashboard
+systemctl is-active console-system-dashboard
 for p in / /deployos /deployos/kichban; do
     echo "$p -> $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8880$p)"
 done
 echo "Phien ban: $(cat $DST/VERSION)"
-echo "Neu co van de, tra lai ban cu: sudo tar xzf $BK -C /opt && sudo systemctl restart console-pi-dashboard"
+echo "Neu co van de, tra lai ban cu: sudo tar xzf $BK -C /opt && sudo systemctl restart console-system-dashboard"

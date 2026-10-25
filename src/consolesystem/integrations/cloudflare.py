@@ -11,7 +11,7 @@ CONF_DIR = "/etc/cloudflared"
 TOKEN_FILE = os.path.join(CONF_DIR, "console-pi-token")
 
 
-SERVICE = "console-pi-tunnel"
+SERVICE = "console-system-tunnel"
 
 
 def da_cai():

@@ -1,5 +1,5 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
-"""Nhat ky dung chung: ghi ra stderr de systemd/journald gom (`journalctl -u console-pi-dashboard`). Dinh dang giu kieu '[ten] noi dung'."""
+"""Nhat ky dung chung: ghi ra stderr de systemd/journald gom (`journalctl -u console-system-dashboard`). Dinh dang giu kieu '[ten] noi dung'."""
 import logging
 import sys
 

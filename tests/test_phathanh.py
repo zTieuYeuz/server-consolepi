@@ -29,8 +29,8 @@ def nguon(tmp_path):
     viet(str(s / "tools/cai-vnc.sh"), "vnc", 0o755)
     viet(str(s / "tools/khac.sh"), "khong-duoc-mang-theo")
     viet(str(s / "uninstall.sh"), "un")
-    viet(str(s / "systemd/console-pi-dashboard.service"), "[Service]\nExecStart=/usr/bin/python3 /opt/console-pi/app.py\n")
-    viet(str(s / "systemd/console-pi-tftp.service"), "[Service]\nTFTP=/var/lib/console-system/data/tftp\n")
+    viet(str(s / "systemd/console-system-dashboard.service"), "[Service]\nExecStart=/usr/bin/python3 /opt/console-pi/app.py\n")
+    viet(str(s / "systemd/console-system-tftp.service"), "[Service]\nTFTP=/var/lib/console-system/data/tftp\n")
     viet(str(s / "config/nginx-console-pi.conf"), "nginx-v2")
     viet(str(s / "config/smb.conf"), "smb-v2")
     viet(str(s / "config/logrotate-console-pi"), "lr-v2")
@@ -45,7 +45,7 @@ def test_ban_chua_dung_noi_dung_va_chi_doc(nguon, tmp_path):
     assert ten == "2.0.0"
     b = os.path.join(opt, "releases", ten)
     for rel in ("app.py", "ui/a.py", "scripts/x.sh", "static/s.css", "VERSION", "tools/cai-vnc.sh", "uninstall.sh",
-                "system/systemd/console-pi-tftp.service", "system/config/nginx-console-pi.conf", P.TEN_RELEASE):
+                "system/systemd/console-system-tftp.service", "system/config/nginx-console-pi.conf", P.TEN_RELEASE):
         assert os.path.exists(os.path.join(b, rel)), rel
     assert not os.path.exists(os.path.join(b, "tools/khac.sh")) and not os.path.exists(os.path.join(b, "ui/__pycache__"))
     for d, ds, fs in os.walk(b):
@@ -114,8 +114,8 @@ class Gia:
 
 def etc_gia(tmp_path):
     e = tmp_path / "etc"
-    viet(str(e / "etc/systemd/system/console-pi-dashboard.service"), "CU-dashboard")
-    viet(str(e / "etc/systemd/system/console-pi-tftp.service"), "[Service]\nTFTP=/var/lib/console-system/data/tftp\n")   # da dung
+    viet(str(e / "etc/systemd/system/console-system-dashboard.service"), "CU-dashboard")
+    viet(str(e / "etc/systemd/system/console-system-tftp.service"), "[Service]\nTFTP=/var/lib/console-system/data/tftp\n")   # da dung
     viet(str(e / "etc/nginx/sites-available/console-pi.conf"), "nginx-v1")
     viet(str(e / "etc/samba/smb.conf"), "smb-v1")
     # logrotate/udev/journald KHONG co tren may -> bo qua
@@ -127,14 +127,14 @@ def test_apply_chi_doi_file_khac_va_bo_qua_file_may_khong_cai(nguon, tmp_path):
     ten = P.tao_ban(nguon, opt)
     gia = Gia()
     bc = P.ap_dung(os.path.join(opt, "releases", ten), str(tmp_path / "bk"), e, gia)
-    assert sorted(bc["doi"]) == ["/etc/nginx/sites-available/console-pi.conf", "/etc/samba/smb.conf", "/etc/systemd/system/console-pi-dashboard.service"]
+    assert sorted(bc["doi"]) == ["/etc/nginx/sites-available/console-pi.conf", "/etc/samba/smb.conf", "/etc/systemd/system/console-system-dashboard.service"]
     assert bc["khong_doi"] == 1 and "/etc/logrotate.d/console-pi" in bc["bo_qua"] and "/etc/udev/rules.d/99-consolepi-serial.rules" in bc["bo_qua"]
     assert open(os.path.join(e, "etc/samba/smb.conf")).read() == "smb-v2"
     bk = [os.path.join(d, f) for d, _s, fs in os.walk(str(tmp_path / "bk")) for f in fs]
     assert len(bk) == 3 and any(open(x).read() == "smb-v1" for x in bk)                          # ban cu duoc sao luu
     cmds = [c[0] + " " + " ".join(c[1:]) for c in gia.lenh]
     assert "nginx -t" in cmds and "testparm -s" in cmds and "systemctl daemon-reload" in cmds
-    assert bc["unit_doi"] == ["console-pi-dashboard.service"]
+    assert bc["unit_doi"] == ["console-system-dashboard.service"]
 
 
 def test_apply_lan_hai_khong_lam_gi(nguon, tmp_path):
@@ -214,7 +214,7 @@ def test_ban_that_cua_repo_dung_duoc():
         ten = P.tao_ban(GOC, t)
         assert P.kiem_ban(t, ten) == []
         b = os.path.join(t, "releases", ten)
-        assert os.path.exists(os.path.join(b, "app.py")) and os.path.exists(os.path.join(b, "system/systemd/console-pi-dashboard.service"))
+        assert os.path.exists(os.path.join(b, "app.py")) and os.path.exists(os.path.join(b, "system/systemd/console-system-dashboard.service"))
         P.xoa_ban(b)
 
 
@@ -240,4 +240,36 @@ def test_cli_bat_lai_dich_vu_da_dung_du_khi_loi(nguon, may_cu, tmp_path, monkeyp
         raise csr.P.LoiPhatHanh("hong gia")
     monkeypatch.setattr(csr.P, "nhap_khau_cu", hong)
     assert csr.main(["cai", "--nguon", nguon, "--opt", str(tmp_path / "opt"), "--khong-khoi-dong-lai"]) == 1
-    assert ("start", "console-pi-tftp") in lenh and ("start", "console-pi-dashboard") in lenh
+    assert ("start", "console-system-tftp") in lenh and ("start", "console-system-dashboard") in lenh
+
+
+def test_doi_ten_dich_vu_cu_sang_moi_khi_cap_nhat(nguon, tmp_path):
+    """2.0: may con unit console-pi-dashboard (file that) -> go ten cu (disable --now), chuyen thu muc .d, unit ten moi co noi dung cua ban, enable ten moi."""
+    opt = str(tmp_path / "opt")
+    e = tmp_path / "etc"
+    viet(str(e / "etc/systemd/system/console-pi-dashboard.service"), "CU-dashboard-ten-cu")
+    viet(str(e / "etc/systemd/system/console-pi-dashboard.service.d/o.conf"), "[Service]\nX=1\n")
+    ten = P.tao_ban(nguon, opt)
+    ban = os.path.join(opt, "releases", ten)
+    gia = Gia()
+    bc = P.ap_dung(ban, str(tmp_path / "bk"), str(e), gia)
+    assert bc["chuyen_ten"] == ["dashboard"]
+    sd = str(e / "etc/systemd/system")
+    assert not os.path.exists(sd + "/console-pi-dashboard.service") and not os.path.exists(sd + "/console-pi-dashboard.service.d")
+    assert open(sd + "/console-system-dashboard.service.d/o.conf").read().endswith("X=1\n")            # drop-in giu lai
+    assert open(sd + "/console-system-dashboard.service").read() == open(os.path.join(ban, "system/systemd/console-system-dashboard.service")).read()
+    cmds = [" ".join(c) for c in gia.lenh]
+    assert "systemctl disable --now console-pi-dashboard" in cmds and "systemctl enable console-system-dashboard" in cmds
+    assert cmds.index("systemctl disable --now console-pi-dashboard") < cmds.index("systemctl enable console-system-dashboard")
+    gia2 = Gia()                                                                                          # lan hai: khong con gi de chuyen
+    assert P.ap_dung(ban, str(tmp_path / "bk"), str(e), gia2)["chuyen_ten"] == []
+
+
+def test_doi_ten_dich_vu_thu_khong_dong_vao_may(nguon, tmp_path):
+    opt = str(tmp_path / "opt")
+    e = tmp_path / "etc"
+    viet(str(e / "etc/systemd/system/console-pi-dashboard.service"), "cu")
+    ten = P.tao_ban(nguon, opt)
+    gia = Gia()
+    bc = P.ap_dung(os.path.join(opt, "releases", ten), str(tmp_path / "bk"), str(e), gia, thu=True)
+    assert bc["chuyen_ten"] == ["dashboard"] and gia.lenh == [] and os.path.exists(str(e / "etc/systemd/system/console-pi-dashboard.service"))

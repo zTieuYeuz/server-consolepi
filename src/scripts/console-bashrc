@@ -65,7 +65,7 @@ alias ports='ss -tlnp'
 alias myip='ip -brief -color addr'
 alias routes='ip -brief -color route'
 alias serial='ls -l /dev/ttyUSB* /dev/ttyACM* 2>/dev/null'
-alias logs='journalctl -u console-pi-dashboard -n 50'
+alias logs='journalctl -u console-system-dashboard -n 50'
 
 # ---------------------------------------------------------- Loi chao dau tien
 if [ -z "$CONSOLE_PI_GREETED" ]; then

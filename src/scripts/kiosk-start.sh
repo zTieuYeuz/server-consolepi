@@ -82,7 +82,7 @@ fi
 # huong thang sang youtube.com). Da THAT BAI THAT SU: nguoi dung bam vao 1
 # lien ket trong YouTube, bi dua sang mot website khac (datbike.vn) roi KET
 # CUNG luon o do - vuot canh khong dua ve duoc, phai remote vao chay
-# `systemctl restart console-pi-kiosk` moi cuu duoc man hinh. Nguyen nhan:
+# `systemctl restart console-system-kiosk` moi cuu duoc man hinh. Nguyen nhan:
 # co che nay cua Chromium chu yeu lam cho touchpad/chuot tren Windows/macOS,
 # tren Linux voi man hinh cam ung thuan khong duoc trien khai day du/dang
 # tin cay. Da TAT LAI ve mac dinh (=0) - khong dua vao cu chi nay nua.

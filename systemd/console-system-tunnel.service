@@ -37,4 +37,5 @@ Restart=always
 RestartSec=5
 
 [Install]
+Alias=console-pi-tunnel.service
 WantedBy=multi-user.target

@@ -50,10 +50,10 @@ from ui import duongdan as _DD
 TFTP_ROOT = _DD.DIR_TFTP
 STATE_FLAG = _DD.FLAG_TFTP
 # Chi la nhan hien thi: in.tftpd chay voi --address 0.0.0.0:69 (xem
-# systemd/console-pi-tftp.service) nen nghe tren MOI cong. Truoc day ghi
+# systemd/console-system-tftp.service) nen nghe tren MOI cong. Truoc day ghi
 # "eth0" - sai ca tren Pi lan may x86 (cong ten ens3/enp1s0...).
 IFACE = "mọi cổng mạng"
-DON_VI_SYSTEMD = "console-pi-tftp"
+DON_VI_SYSTEMD = "console-system-tftp"
 
 
 def _sh(cmd, timeout=15):

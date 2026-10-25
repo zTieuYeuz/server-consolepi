@@ -53,7 +53,7 @@ touch "$DAU"
 # HAI VAN DE PHAI XU LY, ca hai deu chi lo ra tren may x86 chu khong phai
 # tren Pi:
 #
-# (a) TEN NGUOI DUNG VIET CUNG. File console-pi-kiosk.service ghi thang
+# (a) TEN NGUOI DUNG VIET CUNG. File console-system-kiosk.service ghi thang
 #     "User=administrator" va "XDG_RUNTIME_DIR=/run/user/1000" - dung tren
 #     con Pi (tai khoan ten administrator) nhung SAI tren ban ISO: ban
 #     chay thu tu USB dung tai khoan "user", con ban cai len o cung thi
@@ -87,7 +87,7 @@ if [ -n "$_nd" ]; then
         usermod -aG sudo "$_nd" 2>/dev/null \
             && echo "[console-system] da them $_nd vao nhom sudo (thieu tu luc cai)"
     fi
-    for _u in console-pi-kiosk console-pi-kiosk-helper; do
+    for _u in console-system-kiosk console-system-kiosk-helper; do
         mkdir -p "/etc/systemd/system/${_u}.service.d"
         {
             echo "[Service]"
@@ -109,14 +109,14 @@ if [ -n "$_nd" ]; then
     {
         echo "[Service]"
         echo "ExecStartPre=+/usr/local/sbin/console-system-kiosk-ve chuan-bi"
-        echo "EnvironmentFile=-/run/console-pi-kiosk.env"
+        echo "EnvironmentFile=-/run/console-system-kiosk.env"
         # KHONG co ExecStartPost: lenh do cung bi vhangup tty1 (TTYVHangup
         # ap cho moi lenh Exec*) -> giet cage bang SIGHUP (LOI THAT
         # 26/09/2026). Canh gac nay do "chuan-bi" tha chay nen.
         echo "ExecStopPost=+/usr/local/sbin/console-system-kiosk-ve sau-khi-dung"
         echo "TimeoutStopSec=15"
-    } > /etc/systemd/system/console-pi-kiosk.service.d/15-cho-man-hinh.conf
-    rm -f /etc/systemd/system/console-pi-kiosk.service.d/16-ve-bang-cpu.conf
+    } > /etc/systemd/system/console-system-kiosk.service.d/15-cho-man-hinh.conf
+    rm -f /etc/systemd/system/console-system-kiosk.service.d/16-ve-bang-cpu.conf
 
     # --- Kiosk loi thi TRA tty1 ve cho dong lenh ---
     # Kiosk chiem tty1 va tat getty (Conflicts=getty@tty1). Neu cage/Chromium
@@ -125,7 +125,7 @@ if [ -n "$_nd" ]; then
     # dau nhac dang nhap lan dia chi IP de vao web. Gioi han: loi 5 lan trong
     # 5 phut thi dung han va bat lai getty@tty1 - man hinh quay ve dong lenh
     # co logo + dia chi IP nhu may khong co man hinh.
-    mkdir -p /etc/systemd/system/console-pi-kiosk.service.d
+    mkdir -p /etc/systemd/system/console-system-kiosk.service.d
     {
         echo "[Unit]"
         echo "StartLimitIntervalSec=300"
@@ -148,9 +148,9 @@ if [ -n "$_nd" ]; then
         #    bat lai/restart/disable --now - ca 7 truong hop dung).
         cat <<'DROPIN'
 [Service]
-ExecStopPost=+/bin/sh -c '[ "$$SERVICE_RESULT" = success ] || exit 0; systemctl list-jobs --no-legend | grep -qE "console-pi-kiosk.service +(start|restart|try-restart|reload-or-start)" && exit 0; systemctl start --no-block getty@tty1.service; true'
+ExecStopPost=+/bin/sh -c '[ "$$SERVICE_RESULT" = success ] || exit 0; systemctl list-jobs --no-legend | grep -qE "console-system-kiosk.service +(start|restart|try-restart|reload-or-start)" && exit 0; systemctl start --no-block getty@tty1.service; true'
 DROPIN
-    } > /etc/systemd/system/console-pi-kiosk.service.d/20-tra-man-hinh.conf
+    } > /etc/systemd/system/console-system-kiosk.service.d/20-tra-man-hinh.conf
     # Bo gioi han khoi dong lai cua getty tren tty1. Ly do - da do that:
     # OnFailure bat getty moi lan kiosk loi, roi kiosk thu lai thi lai tat
     # getty (Conflicts). Qua lai 5 lan trong vai giay thi CHINH getty bi
@@ -165,7 +165,7 @@ DROPIN
 
     # LOI THAT (23/09/2026, anh Thoai cai len mini PC Dell co cam man
     # hinh): cai xong KHONG vao kiosk, chi co dong lenh - bat tay bang
-    # `systemctl start console-pi-kiosk` thi hien binh thuong. Truoc day
+    # `systemctl start console-system-kiosk` thi hien binh thuong. Truoc day
     # chi bat kiosk khi luc nay doc /sys/class/drm/*/status thay
     # "connected", nhung script nay chay RAT SOM trong luc boot - driver man
     # hinh chua nap xong thi chua co gi de doc, ket luan nham "khong co man
@@ -190,8 +190,8 @@ DROPIN
         # nhung moi trang deu 502 - coi nhu ca he thong chet.
         # SUA: enable (ghi dau moc, khong sinh viec) roi start --no-block
         # (xep hang xong tra ve ngay), de systemd tu chay kiosk khi den luot.
-        systemctl enable console-pi-kiosk console-pi-kiosk-helper >/dev/null 2>&1 || true
-        if systemctl start --no-block console-pi-kiosk console-pi-kiosk-helper >/dev/null 2>&1; then
+        systemctl enable console-system-kiosk console-system-kiosk-helper >/dev/null 2>&1 || true
+        if systemctl start --no-block console-system-kiosk console-system-kiosk-helper >/dev/null 2>&1; then
             echo "[console-system] da bat giao dien kiosk"
         else
             echo "[console-system] khong bat duoc kiosk"

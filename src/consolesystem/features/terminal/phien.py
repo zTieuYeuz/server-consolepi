@@ -13,7 +13,7 @@ mo duoc 1 thiet bi 1 luc va phai go lai IP moi lan. Nay 1 trang duy nhat:
     khau giup, luu log man hinh, ngat phien, mo toan man hinh.
   - Rot ket noi -> Enter de ket noi lai (xem scripts/phien-chay.py).
 
-Terminal that su: ttyd console-pi-term-phien (cong 8012, sau nginx
+Terminal that su: ttyd console-system-term-phien (cong 8012, sau nginx
 /term-phien/?arg=<ma>) chay scripts/phien-mo.sh -> tmux.
 
 BAO MAT:

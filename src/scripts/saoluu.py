@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from ui import duongdan as DD  # noqa: E402
 from ui import saoluu as S  # noqa: E402
 
-DICH_VU = ("console-pi-dashboard", "console-pi-tftp")
+DICH_VU = ("console-system-dashboard", "console-system-tftp")
 
 
 def main(argv=None):

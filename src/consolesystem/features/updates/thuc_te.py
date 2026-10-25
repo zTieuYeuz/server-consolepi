@@ -16,8 +16,8 @@ from consolesystem.core.capnhat import nangcap as N
 from consolesystem.core.lenh import chay as chay_lenh
 from consolesystem.integrations.kho_capnhat import KhoCapNhat
 
-DICH_VU_CHINH = "console-pi-dashboard"
-DICH_VU_KHAC = ("console-pi-tftp",)
+DICH_VU_CHINH = "console-system-dashboard"
+DICH_VU_KHAC = ("console-system-tftp",)
 CONG_NOI_BO = 5000
 
 

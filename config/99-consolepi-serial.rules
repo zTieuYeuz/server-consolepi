@@ -1,7 +1,7 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console Pi - tu nhan moi loai cap console
 #
-# Truoc day phai `systemctl enable console-pi-ttyd@ttyUSB0` san cho tung
+# Truoc day phai `systemctl enable console-system-ttyd@ttyUSB0` san cho tung
 # thiet bi. Cap la chua tung cam thi khong co gi khoi dong dich vu.
 #
 # Dong duoi bat systemd khoi dong dich vu cho BAT KY cong serial USB nao vua
@@ -10,4 +10,4 @@
 #   ttyACM*  thiet bi CDC-ACM (cap console micro-USB cua Cisco...)
 SUBSYSTEM=="tty", ACTION=="add", ENV{ID_BUS}=="usb", \
     KERNEL=="ttyUSB*|ttyACM*", TAG+="systemd", \
-    ENV{SYSTEMD_WANTS}+="console-pi-ttyd@%k.service"
+    ENV{SYSTEMD_WANTS}+="console-system-ttyd@%k.service"

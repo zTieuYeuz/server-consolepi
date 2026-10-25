@@ -1,6 +1,17 @@
 # Changelog
 
-## 1.9.5 - 22/10/2026 (CHƯA PHÁT HÀNH, bản thử cho anh Thoại)
+## 2.0.0 - 25/10/2026
+
+**Đại tu kiến trúc + hệ thống Cập nhật bảo mật.** Gộp toàn bộ 1.9.5 (Triển khai phần mềm, Quản lý máy trạm, agent v2, kho tải nhiều... xem mục 1.9.5 bên dưới).
+
+- **Bố cục mới:** dữ liệu gom về `/var/lib/console-system/{config,secrets,pki,data,deploy,storage,backups,updates}`; chương trình ở `/opt/console-system/releases/<bản>` (chỉ đọc) + `current`; `/opt/console-pi` giữ làm đường dẫn tương thích. Có công cụ chuyển bố cục có sao lưu và hoàn tác.
+- **Cập nhật ngay trong Console System (mục Cài đặt > Cập nhật):** chuông báo bản mới; gói ký số Ed25519 + mã hóa AES-256-GCM; danh mục ký có hạn ngắn; cập nhật tuần tự từng bản; tự sao lưu trước khi cập nhật; tự hoàn tác nếu migration/khởi động/kiểm sức khỏe lỗi; phục hồi an toàn sau mất điện; hạ cấp về bản trước; chống sửa đổi chương trình (bảng băm đã ký); khóa/mở khóa máy bán tự động khi nghi ngờ; màn hình điều khoản. Kênh "ổn định" (mọi máy) và "thử nghiệm" (chỉ mạng LAN).
+- **Sao lưu/Khôi phục** (Cài đặt): gói có mã băm, hai chế độ (cấu hình / toàn bộ).
+- **Dữ liệu lớn** (máy, báo cáo, lịch sử) chuyển sang SQLite; JSON nhỏ ghi nguyên tử, không bao giờ im lặng trả rỗng khi file hỏng.
+- **Mã nguồn:** tách `consolesystem/{core,web,features,integrations}`; `deployos.py` 6.8k dòng và `unattend.py` 4k dòng tách thành các module nhỏ; 37 khối HTML/CSS/JS/PowerShell/C# lớn đưa ra `assets/`; lưới kiểm thử (hợp đồng route, 96 trang, golden 48 file, 75 hành vi, ~280 test) và `tools/ci.sh`.
+- **Lưu ý khi lên 2.0 từ 1.9.x:** cài lại bằng ISO 2.0 hoặc chạy cập nhật một lần; sau đó mọi bản sau tự cập nhật qua tab Cập nhật. Dịch vụ đổi tên `console-system-*` (tên cũ vẫn chạy được khi lên từ bản cũ).
+
+## 1.9.5 - 22/10/2026 (gộp vào 2.0.0, không phát hành riêng)
 
 **Triển khai phần mềm kiểu PDQ qua WinRM** (`ui/tk_dongco.py`, `tk_dulieu.py`, `tk_trang.py`; menu System Utilities). 7 tab: Tài nguyên, Kho trung tâm, Lập lịch, Máy - nhóm máy (Danh sách, Nhóm, Quét mạng, Tài khoản quản trị), Kịch bản, Triển khai (Chạy/Dừng + popup tiến độ), Chức năng khác. Bước: phần mềm exe/msi, ứng dụng nhiều file, script, WinGet, nguồn điện (bật WoL/tắt/khởi động lại), kiểm kê, bảo mật. Mật khẩu admin lưu mã hóa (Fernet). Lập lịch hằng ngày/tuần/tháng/năm, chạy song song tối đa 10 máy, thử lại máy tắt/bước lỗi.
 

@@ -10,15 +10,15 @@ PURGE="no"
 [[ "${1:-}" == "--purge" ]] && PURGE="yes"
 
 # LOI THAT DA TIM RA (ra soat lai code, khong phai da gap that): danh sach
-# nay truoc day THIEU console-pi-tftp, console-pi-tunnel, console-pi-selftest,
+# nay truoc day THIEU console-system-tftp, console-system-tunnel, console-system-selftest,
 # dnsmasq-direct. Neu nguoi dung tung bat TFTP hoac Truy cap tu xa (Cloudflare
 # Tunnel) qua giao dien web roi sau do go cai dat, cac dich vu do se BI BO
-# LAI CHAY NGAM tren may - rieng console-pi-tunnel la nghiem trong nhat vi no
+# LAI CHAY NGAM tren may - rieng console-system-tunnel la nghiem trong nhat vi no
 # tiep tuc PHOI PI RA INTERNET du nguoi dung tuong da go sach roi.
-SERVICES=( console-pi-dashboard console-pi-kiosk console-pi-kiosk-helper
-           console-pi-term-local
-           console-pi-term-ssh console-pi-selftest console-pi-tftp
-           console-pi-tunnel bt-pan0 bt-agent bt-nap dnsmasq-bt
+SERVICES=( console-system-dashboard console-system-kiosk console-system-kiosk-helper
+           console-system-term-local
+           console-system-term-ssh console-system-selftest console-system-tftp
+           console-system-tunnel bt-pan0 bt-agent bt-nap dnsmasq-bt
            dnsmasq-direct wifi-fallback.timer wifi-fallback )
 
 echo "==> Dung va go cac dich vu"
@@ -36,12 +36,12 @@ if [[ -f /etc/nginx/sites-enabled/console-pi.conf || -f /etc/nginx/sites-availab
     systemctl reload nginx 2>/dev/null || true
     echo "    Da go site nginx cua Console Pi (nginx van chay, khong con site nao duoc bat)"
 fi
-for u in /etc/systemd/system/console-pi-ttyd@*.service \
-         /etc/systemd/system/multi-user.target.wants/console-pi-ttyd@* \
-         /etc/systemd/system/dev-ttyUSB*.device.wants/console-pi-ttyd@*; do
+for u in /etc/systemd/system/console-system-ttyd@*.service \
+         /etc/systemd/system/multi-user.target.wants/console-system-ttyd@* \
+         /etc/systemd/system/dev-ttyUSB*.device.wants/console-system-ttyd@*; do
     [[ -e "$u" ]] && rm -f "$u"
 done
-rm -f /etc/systemd/system/console-pi-ttyd@.service
+rm -f /etc/systemd/system/console-system-ttyd@.service
 systemctl daemon-reload
 systemctl start getty@tty1 2>/dev/null || true
 

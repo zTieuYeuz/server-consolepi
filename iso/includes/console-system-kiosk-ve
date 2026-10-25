@@ -2,9 +2,9 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 # Console System - chon cach VE cho giao dien kiosk (GPU hay CPU) va canh gac.
 #
-# Goi tu drop-in cua console-pi-kiosk.service (do console-system-lan-dau
+# Goi tu drop-in cua console-system-kiosk.service (do console-system-lan-dau
 # sinh ra - CHI ban ISO x86, con Pi khong dung file nay):
-#   ExecStartPre=+ ... chuan-bi   -> cho card do hoa, ghi /run/console-pi-kiosk.env
+#   ExecStartPre=+ ... chuan-bi   -> cho card do hoa, ghi /run/console-system-kiosk.env
 #                                    va tha CANH GAC chay nen (xem canh_gac_nen)
 #   ExecStopPost=+ ... sau-khi-dung -> dem so lan kiosk THOAT LOI khi ve bang GPU
 #
@@ -39,10 +39,10 @@
 #      bochs dung drm_vram_helper khong co). Nen canh gac ca duong CPU: hong
 #      thi TRA tty1 cho dong lenh (getty) - co logo + dia chi IP de vao web.
 #   Muon thu lai GPU: sudo rm /var/lib/console-system/data/kiosk-ve-cpu   (may cai tu 2.0; ban cu: /var/lib/console-pi/kiosk-ve-cpu)
-ENV=/run/console-pi-kiosk.env
+ENV=/run/console-system-kiosk.env
 [ -r /opt/console-pi/scripts/duong-dan.sh ] && . /opt/console-pi/scripts/duong-dan.sh
 DAU_CPU="${CS_DATA:-/var/lib/console-pi}/kiosk-ve-cpu"
-DEM=/run/console-pi-kiosk.gpu-that-bai
+DEM=/run/console-system-kiosk.gpu-that-bai
 
 chuan_bi() {
     udevadm settle -t 30 >/dev/null 2>&1 || true
@@ -100,7 +100,7 @@ chuan_bi() {
     # tien trinh con cua ExecStartPre truoc khi chay cage (da thu: tien trinh
     # nen bien mat). BindsTo: kiosk dung/khoi dong lai thi canh gac cu tu tat.
     systemd-run --quiet --no-block --collect \
-        -p BindsTo=console-pi-kiosk.service -p After=console-pi-kiosk.service \
+        -p BindsTo=console-system-kiosk.service -p After=console-system-kiosk.service \
         "$0" canh-gac-nen "$(date +%s)" >/dev/null 2>&1 || true
 }
 
@@ -137,11 +137,11 @@ canh_gac_nen() {
         # cage treo bo qua SIGTERM thi TimeoutStopSec=15 roi SIGKILL.
         # Lan khoi dong may sau van thu lai kiosk (doi card/man hinh la tu
         # hien lai) - chi mat toi da ~90 giay man hinh den.
-        logger -t console-pi-kiosk "$hong khi ve bang CPU - khong hien duoc giao dien tren card nay, tra tty1 ve dong lenh (getty@tty1). Dashboard van mo duoc tu may khac qua web."
+        logger -t console-system-kiosk "$hong khi ve bang CPU - khong hien duoc giao dien tren card nay, tra tty1 ve dong lenh (getty@tty1). Dashboard van mo duoc tu may khac qua web."
         systemctl start --no-block getty@tty1.service
     else
         mkdir -p "$(dirname "$DAU_CPU")" && touch "$DAU_CPU"
-        logger -t console-pi-kiosk "$hong khi ve bang GPU - doi sang ve bang CPU (ghi nho $DAU_CPU)"
+        logger -t console-system-kiosk "$hong khi ve bang GPU - doi sang ve bang CPU (ghi nho $DAU_CPU)"
         # KHONG dung `systemctl restart`: cage dang treo bo qua SIGTERM ->
         # dung qua gio -> ket qua "failed" -> OnFailure bat getty@tty1,
         # getty (Conflicts) huy luon buoc chay lai kiosk -> ve dong lenh
@@ -149,7 +149,7 @@ canh_gac_nen() {
         # Giet thang cage (SIGKILL) de Restart=always tu chay lai - lan
         # chay lai thay dau ghi nho -> ve bang CPU. Kiosk dung thi chinh unit
         # canh gac nay cung bi tat (BindsTo) - la viec cuoi cung nen khong sao.
-        systemctl kill -s KILL console-pi-kiosk.service
+        systemctl kill -s KILL console-system-kiosk.service
     fi
     exit 0
 }

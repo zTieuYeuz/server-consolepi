@@ -149,8 +149,8 @@ PYEOF
         install -m 644 "$I"/bootloader-grub/*.cfg "$C/bootloaders/grub-pc/"
         # Trinh cai do hoa Calamares (chi ban 64-bit)
         mkdir -p "$R/etc/calamares" "$R/usr/share/calamares/lang" \
-                 "$R/etc/systemd/system/console-pi-kiosk.service.d" \
-                 "$R/etc/systemd/system/console-pi-kiosk-helper.service.d"
+                 "$R/etc/systemd/system/console-system-kiosk.service.d" \
+                 "$R/etc/systemd/system/console-system-kiosk-helper.service.d"
         cp -r "$I/calamares/settings.conf" "$I/calamares/modules" "$I/calamares/branding" "$R/etc/calamares/"
         # Phien ban trinh cai lay tu VERSION (truoc 26/09/2026 viet cung "1.0"
         # trong branding.desc - lech voi ban phat hanh that).
@@ -161,8 +161,8 @@ PYEOF
         install -m 644 "$I/calamares/lang/calamares_vi.qm" "$R/usr/share/calamares/lang/"
         install -m 755 "$I/calamares/he-thong/console-system-grub-install" "$R/usr/local/sbin/"
         install -m 644 "$I/calamares/he-thong/console-system-cai.service" "$R/etc/systemd/system/"
-        install -m 644 "$I/calamares/he-thong/05-khi-cai-dat.conf" "$R/etc/systemd/system/console-pi-kiosk.service.d/"
-        install -m 644 "$I/calamares/he-thong/05-khi-cai-dat.conf" "$R/etc/systemd/system/console-pi-kiosk-helper.service.d/"
+        install -m 644 "$I/calamares/he-thong/05-khi-cai-dat.conf" "$R/etc/systemd/system/console-system-kiosk.service.d/"
+        install -m 644 "$I/calamares/he-thong/05-khi-cai-dat.conf" "$R/etc/systemd/system/console-system-kiosk-helper.service.d/"
     else
         install -m 755 "$I/i386/hook-console-system.chroot" "$C/hooks/live/0100-console-system.hook.chroot"
         install -m 644 "$I/i386/danh-sach-goi.txt" "$C/package-lists/console-pi.list.chroot"

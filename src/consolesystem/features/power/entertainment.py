@@ -11,7 +11,7 @@ vong truoc - khong doan):
      lui" lam duong quay ve. THAT BAI THAT SU: bam vao 1 lien ket trong
      YouTube, bi dua sang mot website khac (datbike.vn) roi KET CUNG luon o
      do - vuot canh khong dua ve duoc, phai remote vao chay
-     `systemctl restart console-pi-kiosk` moi cuu duoc man hinh.
+     `systemctl restart console-system-kiosk` moi cuu duoc man hinh.
   3. Giai phap that su dung tin cay duoc: mot tien trinh nen rieng
      (scripts/kiosk-helper.py) dieu khien Chromium tu ben ngoai qua giao
      thuc DevTools cua chinh no de TIEM vao MOI trang duoc tai (bat ke la

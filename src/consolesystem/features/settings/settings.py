@@ -133,7 +133,7 @@ def sync_touch_matrix(rotation):
         subprocess.run(["udevadm", "trigger", "--subsystem-match=input",
                         "--action=change"], capture_output=True, timeout=10)
         # cage chi doc cau hinh thiet bi luc MO thiet bi -> phai restart kiosk
-        subprocess.run(["systemctl", "restart", "console-pi-kiosk"],
+        subprocess.run(["systemctl", "restart", "console-system-kiosk"],
                        capture_output=True, timeout=30)
         return True
     except Exception:
@@ -159,7 +159,7 @@ def register_settings(app):
         try:
             r = subprocess.run(
                 ["systemctl", "enable", "--now",
-                 "console-pi-kiosk", "console-pi-kiosk-helper"],
+                 "console-system-kiosk", "console-system-kiosk-helper"],
                 capture_output=True, text=True, timeout=30)
             if r.returncode == 0:
                 return _render_settings(
@@ -176,7 +176,7 @@ def register_settings(app):
         try:
             r = subprocess.run(
                 ["systemctl", "disable", "--now",
-                 "console-pi-kiosk", "console-pi-kiosk-helper"],
+                 "console-system-kiosk", "console-system-kiosk-helper"],
                 capture_output=True, text=True, timeout=30)
             if r.returncode == 0:
                 return _render_settings(
@@ -228,16 +228,16 @@ def register_settings(app):
         if not ten.startswith("tai-len-") or not os.path.isfile(duong) or not DD.BO_CUC_MOI:
             return _render_settings(msg="Không tìm thấy file đã kiểm tra - hãy tải lên lại.", ok=False)
         try:
-            subprocess.run(["systemctl", "stop", "console-pi-tftp"], capture_output=True, timeout=30)
+            subprocess.run(["systemctl", "stop", "console-system-tftp"], capture_output=True, timeout=30)
             kq = SL.khoi_phuc(duong, DD.GOC)
         except SL.LoiSaoLuu as e:
             return _render_settings(msg=f"Không khôi phục: {_esc(str(e))}. Dữ liệu hiện tại giữ nguyên.", ok=False)
         finally:
-            subprocess.run(["systemctl", "start", "console-pi-tftp"], capture_output=True, timeout=30)
+            subprocess.run(["systemctl", "start", "console-system-tftp"], capture_output=True, timeout=30)
         tb = SL.hau_khoi_phuc(DD.GOC)
         with contextlib.suppress(OSError):
             os.remove(duong)
-        subprocess.Popen(["sh", "-c", "sleep 3; systemctl restart console-pi-dashboard"], start_new_session=True,
+        subprocess.Popen(["sh", "-c", "sleep 3; systemctl restart console-system-dashboard"], start_new_session=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return _render_settings(msg=(f"Đã khôi phục {kq['so_tep']} file. Trạng thái trước đó được lưu thành "
                                      f"<code>{_esc(os.path.basename(kq['goi_truoc']))}</code> (thư mục sao lưu). "
@@ -250,7 +250,7 @@ def register_settings(app):
         cfg = load_config()
         cfg["terminal_auth"] = "console:" + secrets.token_urlsafe(12)
         save_config(cfg)
-        for svc in ("console-pi-term-local", "console-pi-term-ssh"):
+        for svc in ("console-system-term-local", "console-system-term-ssh"):
             subprocess.run(["systemctl", "restart", svc], capture_output=True, timeout=20)
         return _render_settings(msg="Đã đổi mật khẩu terminal và khởi động lại dịch vụ.", ok=True)
 
@@ -379,9 +379,9 @@ def _trang_thai_kiosk():
         except Exception:
             return ""
 
-    da_cai = bool(_ht("systemctl", "list-unit-files", "console-pi-kiosk.service"))
-    dang_bat = _ht("systemctl", "is-enabled", "console-pi-kiosk") == "enabled"
-    dang_chay = _ht("systemctl", "is-active", "console-pi-kiosk") == "active"
+    da_cai = bool(_ht("systemctl", "list-unit-files", "console-system-kiosk.service"))
+    dang_bat = _ht("systemctl", "is-enabled", "console-system-kiosk") == "enabled"
+    dang_chay = _ht("systemctl", "is-active", "console-system-kiosk") == "active"
 
     # Man hinh THAT dang cam: doc /sys/class/drm/*/status - cach nay dung
     # cho ca man hinh that lan man hinh ao cua may ao (VMware/QEMU deu bao

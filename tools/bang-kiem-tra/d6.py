@@ -49,7 +49,7 @@ Agent chi tiết|Agent chạy nhiều PowerShell song song|Giao 5 lệnh cùng l
 Agent chi tiết|Lệnh chạy quá thời gian|Giao lệnh Start-Sleep dài hơn timeout|Bị dừng đúng timeout, báo lỗi|Windows|C|CH
 Agent chi tiết|Output lớn|Lệnh in rất nhiều dòng|Trả về đủ/cắt có thông báo, không treo agent|Windows|T|CH
 Agent chi tiết|Ngắt mạng giữa lúc chuyển file|Cắt mạng khi tải 1 GB|Báo lỗi, tạo lại được; file dở được dọn|Windows|C|CH
-Agent chi tiết|Server khởi động lại|Restart console-pi-dashboard|Agent thấy 502, tự nối lại; việc đang chờ trong RAM mất, profile giữ|Windows|C|TH
+Agent chi tiết|Server khởi động lại|Restart console-system-dashboard|Agent thấy 502, tự nối lại; việc đang chờ trong RAM mất, profile giữ|Windows|C|TH
 Agent chi tiết|Đồng hồ máy lệch nhiều|Chỉnh giờ máy lệch >10 phút|TLS thất bại hoặc chẩn đoán cảnh báo lệch giờ|Windows|T|CH
 Agent chi tiết|Máy đổi IP / đổi mạng|Chuyển mạng khi agent chạy|Agent nối lại; Địa chỉ nguồn cập nhật|Windows|C|CH
 Agent chi tiết|Cài MSI đè / cài lại trên máy đã có agent|Cài lại MSI|Không tạo máy trùng; chứng chỉ mới thay chứng chỉ cũ|Windows|C|CH

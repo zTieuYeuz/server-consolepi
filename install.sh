@@ -160,7 +160,7 @@ fi
 
 # Goi tftpd-hpa TU BAT SAN dich vu cua no ngay khi cai (postinst script) -
 # di nguoc nguyen tac "khong tu bat dich vu mang khong xac thuc luc boot"
-# cua du an nay. Console Pi dung unit rieng (console-pi-tftp.service, bat/
+# cua du an nay. Console Pi dung unit rieng (console-system-tftp.service, bat/
 # tat qua tab May chu TFTP), nen phai tat han dich vu mac dinh cua goi o day.
 if systemctl is-enabled --quiet tftpd-hpa 2>/dev/null || systemctl is-active --quiet tftpd-hpa 2>/dev/null; then
     systemctl disable --now tftpd-hpa 2>/dev/null || true
@@ -735,11 +735,30 @@ fi
 # ------------------------------------------------- 6. Dich vu systemd
 say "Cai dat dich vu"
 
+# 2.0: dich vu doi ten console-pi-* -> console-system-* (ten cu van dung duoc nho Alias=). May dang chay ban cu:
+# dung + go dich vu ten cu (file that) truoc, de unit ten moi (cung Alias ten cu) cai duoc va khong tranh cong.
+for u in dashboard kiosk-helper kiosk selftest term-local term-phien term-ssh tftp tunnel ttyd@; do
+    old="/etc/systemd/system/console-pi-$u.service"
+    [[ "$u" == ttyd@ ]] && old="/etc/systemd/system/console-pi-ttyd@.service"
+    if [[ -f "$old" && ! -L "$old" ]]; then
+        if [[ "$u" == ttyd@ ]]; then
+            for t in /dev/ttyUSB* /dev/ttyACM*; do [[ -e "$t" ]] && systemctl disable --now "console-pi-ttyd@$(basename "$t")" >/dev/null 2>&1 || true; done
+        else
+            systemctl disable --now "console-pi-$u" >/dev/null 2>&1 || true
+        fi
+        [[ -d "${old%.service}.service.d" && ! -e "/etc/systemd/system/console-system-$u.service.d" ]] && \
+            mv "${old%.service}.service.d" "/etc/systemd/system/console-system-$u.service.d"
+        rm -f "$old"
+        ok "Da chuyen ten dich vu console-pi-$u -> console-system-$u"
+    fi
+done
+systemctl daemon-reload
+
 for f in "$SRC_DIR"/systemd/*.service "$SRC_DIR"/systemd/*.timer; do
     [[ -e "$f" ]] || continue
     base="$(basename "$f")"
     # Kiosk va nut noi Ve Dashboard cua no chi cai khi co man hinh
-    if [[ ( "$base" == "console-pi-kiosk.service" || "$base" == "console-pi-kiosk-helper.service" ) \
+    if [[ ( "$base" == "console-system-kiosk.service" || "$base" == "console-system-kiosk-helper.service" ) \
           && "$WANT_SCREEN" != "yes" ]]; then
         continue
     fi
@@ -750,14 +769,14 @@ done
 
 # Service kiosk (va nut noi Ve Dashboard chay cung tai khoan) chay duoi tai
 # khoan chinh, khong hardcode "administrator"
-if [[ "$WANT_SCREEN" == "yes" && -f /etc/systemd/system/console-pi-kiosk.service ]]; then
+if [[ "$WANT_SCREEN" == "yes" && -f /etc/systemd/system/console-system-kiosk.service ]]; then
     UID_MAIN="$(id -u "$MAIN_USER")"
     sed -i "s/^User=.*/User=$MAIN_USER/; s/^Group=.*/Group=$MAIN_USER/; \
             s|XDG_RUNTIME_DIR=/run/user/[0-9]*|XDG_RUNTIME_DIR=/run/user/$UID_MAIN|" \
-        /etc/systemd/system/console-pi-kiosk.service
-    [[ -f /etc/systemd/system/console-pi-kiosk-helper.service ]] && \
+        /etc/systemd/system/console-system-kiosk.service
+    [[ -f /etc/systemd/system/console-system-kiosk-helper.service ]] && \
         sed -i "s/^User=.*/User=$MAIN_USER/; s/^Group=.*/Group=$MAIN_USER/" \
-            /etc/systemd/system/console-pi-kiosk-helper.service
+            /etc/systemd/system/console-system-kiosk-helper.service
 fi
 
 systemctl daemon-reload
@@ -765,11 +784,11 @@ systemctl daemon-reload
 # Thu tu quan trong: dashboard phai khoi dong lai TRUOC nginx.
 # Ban cu cua dashboard lang nghe 0.0.0.0:80, ban moi chuyen sang
 # 127.0.0.1:5000 - neu bat nginx truoc thi cong 80 con bi giu, nginx chet.
-ENABLE_LIST=( console-pi-dashboard console-pi-term-local console-pi-term-ssh console-pi-term-phien
+ENABLE_LIST=( console-system-dashboard console-system-term-local console-system-term-ssh console-system-term-phien
               bt-pan0 dnsmasq-bt bt-agent bt-nap
               wifi-fallback.timer lldpd bluetooth avahi-daemon nginx
-              wpa_supplicant@wlan0 console-pi-selftest console-system-nang-cap-phuc-hoi )
-[[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( console-pi-kiosk console-pi-kiosk-helper )
+              wpa_supplicant@wlan0 console-system-selftest console-system-nang-cap-phuc-hoi )
+[[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( console-system-kiosk console-system-kiosk-helper )
 
 for s in "${ENABLE_LIST[@]}"; do
     systemctl enable "$s" >/dev/null 2>&1 || warn "Khong bat duoc $s"
@@ -781,7 +800,7 @@ done
 # micro-USB cua Cisco.
 for dev in /dev/ttyUSB* /dev/ttyACM*; do
     [[ -e "$dev" ]] || continue
-    systemctl enable "console-pi-ttyd@$(basename "$dev")" >/dev/null 2>&1 || true
+    systemctl enable "console-system-ttyd@$(basename "$dev")" >/dev/null 2>&1 || true
 done
 
 ok "Da bat ${#ENABLE_LIST[@]} dich vu"
@@ -793,7 +812,7 @@ for s in "${ENABLE_LIST[@]}"; do
 done
 for dev in /dev/ttyUSB*; do
     [[ -e "$dev" ]] || continue
-    systemctl restart "console-pi-ttyd@$(basename "$dev")" >/dev/null 2>&1 || true
+    systemctl restart "console-system-ttyd@$(basename "$dev")" >/dev/null 2>&1 || true
 done
 sleep 3
 
@@ -824,7 +843,7 @@ FAIL=0
 if systemd-detect-virt --chroot -q 2>/dev/null; then
     ok "Dang trong chroot - bo qua kiem tra dich vu (se chay o lan khoi dong dau)"
 else
-for s in nginx console-pi-dashboard console-pi-term-local console-pi-term-ssh console-pi-term-phien; do
+for s in nginx console-system-dashboard console-system-term-local console-system-term-ssh console-system-term-phien; do
     if systemctl is-active --quiet "$s"; then
         ok "$s: dang chay"
     else
@@ -836,7 +855,7 @@ done
 if curl -fsS --max-time 5 -o /dev/null http://127.0.0.1/healthz 2>/dev/null; then
     ok "Dashboard phan hoi tot"
 else
-    warn "Dashboard chua phan hoi - xem 'journalctl -u console-pi-dashboard -n 30'"
+    warn "Dashboard chua phan hoi - xem 'journalctl -u console-system-dashboard -n 30'"
     FAIL=$((FAIL+1))
 fi
 fi  # het nhanh khong-chroot

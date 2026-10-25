@@ -132,8 +132,8 @@ cap-nhat)
     sudo install -m 644 $S/VERSION $D/VERSION
     sudo find $D -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
     sudo python3 -m py_compile $D/ui/*.py $D/nettools/*.py $D/app.py
-    sudo systemctl restart console-pi-dashboard; sleep 5
-    systemctl is-active console-pi-dashboard' ;;
+    sudo systemctl restart console-system-dashboard; sleep 5
+    systemctl is-active console-system-dashboard' ;;
 
 khach)
   FW=$1; L2=$2; shift 2

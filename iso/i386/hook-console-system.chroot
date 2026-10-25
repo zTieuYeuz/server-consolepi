@@ -26,7 +26,7 @@ chmod 755 /var/lib/console-pi
 # khong nam trong kho Debian (kiem tra that: ca trixie lan bookworm deu
 # "Candidate: (none)"), nen khong the them vao danh sach goi duoc. Ban cai
 # len Pi lay ttyd tu GitHub (xem install.sh) con ban ISO thi tu truoc den
-# gio quen han buoc do -> console-pi-term-local chay roi chet lap vo han
+# gio quen han buoc do -> console-system-term-local chay roi chet lap vo han
 # voi ma 127 (khong tim thay lenh), nginx thi van song nen nguoi dung chi
 # thay 502 chu khong biet thieu cai gi.
 #
@@ -52,13 +52,13 @@ for f in /usr/local/share/console-system/systemd/*.service /usr/local/share/cons
 done
 
 # CHI bat nhung dich vu co y nghia tren may x86. CO Y BO:
-#   - console-pi-kiosk*    : can man hinh cam ung + cage, may ban khong co
+#   - console-system-kiosk*    : can man hinh cam ung + cage, may ban khong co
 #   - bt-*, dnsmasq-bt     : Bluetooth PAN cua RasPad
 #   - wifi-fallback        : gan chat cach Pi quan ly wlan0
 #   - dnsmasq-pxe/direct   : dich vu mang KHONG xac thuc, khong bao gio
 #                            duoc tu bat luc khoi dong (nguyen tac an toan
 #                            xuyen suot du an) - nguoi dung tu bat khi can
-for s in console-pi-dashboard console-pi-term-local console-pi-term-ssh console-pi-term-phien \
+for s in console-system-dashboard console-system-term-local console-system-term-ssh console-system-term-phien \
          nginx lldpd avahi-daemon ssh NetworkManager \
          console-system-lan-dau; do
     systemctl enable "$s" >/dev/null 2>&1 || echo "[console-system] khong bat duoc $s"

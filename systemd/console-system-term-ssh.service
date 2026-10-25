@@ -1,7 +1,7 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 [Unit]
 Description=Console Pi - Terminal cho SSH (ttyd + tmux)
-After=network.target console-pi-dashboard.service
+After=network.target console-system-dashboard.service
 
 [Service]
 Type=exec
@@ -10,4 +10,5 @@ Restart=always
 RestartSec=3
 
 [Install]
+Alias=console-pi-term-ssh.service
 WantedBy=multi-user.target

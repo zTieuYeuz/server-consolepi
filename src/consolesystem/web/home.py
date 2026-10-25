@@ -27,14 +27,14 @@ BASE_TTYD_PORT = 8001
 NAMES_FILE = _DD.FILE_TEN_CONG
 
 SERVICES = [
-    ("console-pi-dashboard", "Dashboard web"),
-    ("console-pi-term-local", "Terminal tại chỗ"),
-    ("console-pi-term-ssh", "Terminal SSH"),
+    ("console-system-dashboard", "Dashboard web"),
+    ("console-system-term-local", "Terminal tại chỗ"),
+    ("console-system-term-ssh", "Terminal SSH"),
     ("lldpd", "LLDP/CDP discovery"),
     ("bluetooth", "Bluetooth"),
     ("bt-nap", "Bluetooth PAN"),
     ("wifi-fallback.timer", "Tự chuyển WiFi/AP"),
-    ("console-pi-kiosk", "Màn hình cảm ứng"),
+    ("console-system-kiosk", "Màn hình cảm ứng"),
 ]
 
 
