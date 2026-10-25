@@ -1,1 +1,5 @@
-{"ghi_chu": "Khoa CONG KHAI goc cua nha phat hanh (Ed25519, base64 32 byte). De trong cho den khi chu san pham tao khoa that bang tools/tao-khoa-ky.py roi chay tools/gan-khoa-goc.py. De trong = cap nhat tu dong BI TAT.", "khoa_cong_khai": null, "id": null}
+{
+ "ghi_chu": "Khoa CONG KHAI goc cua nha phat hanh (Ed25519). Doi khoa nay = phai phat hanh lai ma nguon/ISO.",
+ "khoa_cong_khai": "KFKrx6oZ9Ezg0oOalA8QRMrE+I3YpKta/fSjHwg5WNo=",
+ "id": "f76a43605ae81c67"
+}
