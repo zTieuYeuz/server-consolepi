@@ -288,3 +288,11 @@ def test_script_va_cong_cu_cai_trong_ban_co_quyen_chay(nguon, tmp_path):
     for rel in ("tools/cai-xyz.sh", "scripts/chay.sh"):
         assert os.access(os.path.join(opt, "releases", ten, rel), os.X_OK), rel
     assert P.kiem_ban(opt, ten) == []
+
+
+def test_script_goi_truc_tiep_tu_systemd_co_quyen_chay():
+    """Loi that 26/10/2026: phien-mo.sh mode 644 -> ttyd khong chay duoc -> SSH/terminal phien hong. Moi file src/scripts/*.sh|py phai 755 trong git."""
+    import subprocess
+    out = subprocess.run(["git", "ls-files", "-s", "src/scripts"], capture_output=True, text=True, cwd=os.path.join(os.path.dirname(__file__), "..")).stdout
+    sai = [l.split()[-1] for l in out.splitlines() if l.split()[-1].endswith((".sh", ".py")) and l.split()[0] != "100755"]
+    assert not sai, sai
