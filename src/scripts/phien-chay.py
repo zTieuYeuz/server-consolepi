@@ -127,6 +127,22 @@ def telnet(host, cong):
 
 
 # ------------------------------------------------------------ chay
+# Thiet bi mang doi cu (Cisco 2960/3750 IOS cu...) chi biet thuat toan SSH da bi OpenSSH moi tat mac dinh -> tu bat them khi thiet bi bao "no matching ..."
+SSH_CU = ["-o", "KexAlgorithms=+diffie-hellman-group14-sha1,diffie-hellman-group1-sha1,diffie-hellman-group-exchange-sha1",
+          "-o", "HostKeyAlgorithms=+ssh-rsa", "-o", "PubkeyAcceptedAlgorithms=+ssh-rsa",
+          "-o", "Ciphers=+aes128-cbc,aes192-cbc,aes256-cbc,3des-cbc", "-o", "MACs=+hmac-sha1"]
+
+
+def can_che_do_cu(argv):
+    """Thu ket noi KHONG tuong tac (BatchMode) de xem thiet bi co bao 'no matching key exchange/host key/cipher/mac' khong."""
+    thu = argv[:1] + ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8"] + argv[1:] + ["true"]
+    try:
+        r = subprocess.run(thu, capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return bool(re.search(r"no matching (key exchange|host key type|cipher|MAC)", r.stderr or "", re.I))
+
+
 def lenh_cua(p):
     loai = p.get("loai")
     if loai == "ssh":
@@ -153,6 +169,9 @@ def mot_lan(p):
             in_ra(f"Không kết nối được: {e}", "do")
         return
     argv = lenh_cua(p)
+    if loai == "ssh" and can_che_do_cu(argv):
+        argv = argv[:1] + SSH_CU + argv[1:]
+        in_ra("Thiết bị dùng thuật toán SSH đời cũ: tự bật chế độ tương thích (kém an toàn hơn, chỉ dùng trong mạng quản trị).", "vang")
     if loai == "ssh":
         in_ra(f"== SSH {argv[-1]} cổng {argv[argv.index('-p') + 1]}  ({ten}) ==", "xanh")
     else:
