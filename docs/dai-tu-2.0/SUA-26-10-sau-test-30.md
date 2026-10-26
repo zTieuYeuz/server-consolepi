@@ -40,3 +40,8 @@ Luồng: cài ISO → trang RustDesk bước 1 cài máy chủ → bước 2 nh�
 - Chạy file .bat thật trên .33: lần đầu lỗi (script ghi ra không BOM, PowerShell 5.1 đọc sai tiếng Việt) → đã sửa, chạy lại cài xong và in ID.
 - Chưa thử: cổng chuyển tiếp khi kết nối thật phải đi relay, tên miền thật ngoài Internet, NAT loopback.
 
+
+## RustDesk: một file MSI (26/10, 23:30)
+- Bước 2 còn 2 ô (tên miền hoặc IP WAN, mật khẩu); máy chủ chuyển tiếp riêng ở mục Nâng cao. Anh chọn NAT thẳng từ IP WAN (`itserver.asuscomm.com` → 118.68.146.97, không CGNAT).
+- Bỏ .bat/.ps1, thay bằng `Cai-RustDesk-ConsoleSystem.msi` (wixl): chứa sẵn bộ cài RustDesk 1.5.0 chính thức (SHA-256 ghim, tải 1 lần về thư mục dữ liệu) + script điền máy chủ ID / chuyển tiếp / key / mật khẩu chung, chạy bằng custom action deferred SYSTEM (loại 3122), nhật ký `C:\Windows\Temp\cs-rustdesk-cai.log`. MSI tự tạo lại vào kho Phần mềm khi đổi cấu hình; cài qua bước Phần mềm của Triển khai phần mềm thì ID tự ghi vào Console.
+- Thử thật .33: gỡ RustDesk → kịch bản WinRM bước Phần mềm cài MSI: mã thoát 0, ID 163846525 ghi lại, dịch vụ chạy, cấu hình `itserver.asuscomm.com`, đăng ký UDP 21116 qua router. Chưa thử: bấm đúp MSI có UAC trên máy người dùng, máy ngoài Internet thật.
