@@ -248,9 +248,11 @@
 /rustdesk/api/cau-hinh	POST	rustdesk_api_cfg
 /rustdesk/api/dong-bo	POST	rustdesk_api_dong_bo
 /rustdesk/api/hanh-dong	POST	rustdesk_api_hd
+/rustdesk/api/kho	POST	rustdesk_api_kho
 /rustdesk/api/mat-khau	POST	rustdesk_api_mk
 /rustdesk/api/thiet-bi	GET	rustdesk_api_dev
 /rustdesk/api/trang-thai	GET	rustdesk_api_tt
+/rustdesk/cai-rustdesk.bat	GET	rustdesk_bat
 /rustdesk/client-cai.ps1	GET	rustdesk_script
 /rustdesk/doi-may-chu.ps1	GET	rustdesk_script_doi
 /settings	GET	settings_page

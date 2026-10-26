@@ -272,6 +272,10 @@ def _b_script(c, ip, b, may):
             out, err = _chay_ps(c, f.read())
         if err:
             return False, f"{ten}: lỗi: {err}"
+        ma = re.search(r"RUSTDESK_ID=(\d{6,12})", out)
+        if ma:                                  # file cai RustDesk (trang RustDesk luu vao kho): ghi ID de tab Ho tro tu xa ket noi duoc
+            RD.ghi_may(may.get("id", ""), ma.group(1))
+            return True, f"{ten}: chạy xong, ID RustDesk {ma.group(1)}."
         return True, f"{ten}: chạy xong. {out.strip()[:300]}".strip()
     d = _dir_tep(ten)
     dich = d + "\\" + ten
