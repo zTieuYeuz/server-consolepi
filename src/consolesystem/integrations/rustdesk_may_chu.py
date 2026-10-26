@@ -336,12 +336,37 @@ def _tham_so(host, khoa, mat_khau=""):
 
 
 def script_cau_hinh(host=None, khoa=None):
-    """Chi dat dia chi may chu + khoa (+ WebSocket) cho RustDesk DA CAI, khong cai lai, khong doi mat khau."""
+    """Chay qua agent (SYSTEM): neu may CO RustDesk thi doi dia chi may chu/khoa/WebSocket o ca cau hinh DICH VU lan cau hinh cua TUNG NGUOI DUNG
+    (app RustDesk cua nguoi dung doc cau hinh rieng trong %AppData%), roi in ID. May chua cai RustDesk: bo qua (RUSTDESK_CHUA_CAI). Khong doi mat khau."""
     host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
     if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
         raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
-    return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\nif (-not (Test-Path $rd)) { throw 'Máy chưa cài RustDesk.' }\n"
-            + KHOI_CAU_HINH % _tham_so(host, khoa) + "\n'RUSTDESK_CFG_OK'")
+    ws = dung_ws()
+    khoi = KHOI_CAU_HINH % _tham_so(host, khoa)
+    tung_nguoi = r"""
+Get-Process rustdesk -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -ne 0 } | Stop-Process -Force
+Start-Sleep 2
+$set = [ordered]@{ 'custom-rendezvous-server' = '@HOST@'; 'relay-server' = '@HOST@'; 'key' = '@KEY@' }@WS@
+Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+  $f = Join-Path $_.FullName 'AppData\Roaming\RustDesk\config\RustDesk2.toml'
+  if (Test-Path -LiteralPath $f) {
+    $t = [IO.File]::ReadAllText($f)
+    if ($t -notmatch '(?m)^\[options\]') { $t = $t.TrimEnd() + "`r`n[options]`r`n" }
+    foreach ($k in $set.Keys) {
+      $line = $k + " = '" + $set[$k] + "'"
+      $re = '(?m)^' + [regex]::Escape($k) + ' = .*$'
+      if ($t -match $re) { $t = [regex]::Replace($t, $re, $line.Replace('$', '$$')) } else { $t = [regex]::Replace($t, '(?m)^\[options\]', '[options]' + "`r`n" + $line.Replace('$', '$$')) }
+    }
+    $t = [regex]::Replace($t, '(?m)^rendezvous_server = .*$', "rendezvous_server = '@HOST@@CONG@'")
+    [IO.File]::WriteAllText($f, $t, (New-Object Text.UTF8Encoding($false)))
+  }
+}
+$id = ((& $rd --get-id | Out-String).Trim())
+'RUSTDESK_ID=' + $id
+'RUSTDESK_CFG_OK'"""
+    tung_nguoi = (tung_nguoi.replace("@HOST@", host).replace("@KEY@", khoa).replace("@CONG@", "" if ws else ":21116")
+                  .replace("@WS@", "\n$set['allow-websocket'] = 'Y'" if ws else ""))
+    return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\nif (-not (Test-Path $rd)) { 'RUSTDESK_CHUA_CAI'; return }\n" + khoi + "\n" + tung_nguoi)
 
 
 def script_cau_hinh_nguoi_dung(host=None, khoa=None):

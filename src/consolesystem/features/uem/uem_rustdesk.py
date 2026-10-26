@@ -117,20 +117,30 @@ def _dong_bo_nen(chi=None):
 
 
 def _ap_cau_hinh_nen():
-    """Day dia chi may chu + khoa + WebSocket xuong cac may DA co RustDesk (qua agent/WinRM) - may da cai truoc khi doi dia chi."""
+    """Day dia chi may chu + khoa + WebSocket xuong MOI may co agent (qua agent/WinRM): may co RustDesk thi doi, may chua cai thi bo qua.
+    May tim thay ID thi them vao danh sach RustDesk (mat khau de trong cho toi khi dat mat khau chung / nhap tay)."""
     try:
         sc = RD.script_cau_hinh()
-        ds = {m["id"]: m for m in DL.MAY.doc()}
-        ok_n = loi_n = 0
-        for mid in list(RD.doc_cfg()["may"]):
-            if mid not in ds:
+        ok_n = loi_n = bo_qua = 0
+        for m in DL.MAY.doc():
+            if m.get("an") or not UA.co_agent(m):
                 continue
-            ok, out = DK._chay(ds[mid], sc)
-            if ok and "RUSTDESK_CFG_OK" in (out or ""):
+            ok, out = DK._chay(m, sc)
+            out = out or ""
+            if ok and "RUSTDESK_CHUA_CAI" in out:
+                bo_qua += 1
+            elif ok and "RUSTDESK_CFG_OK" in out:
                 ok_n += 1
+                i = re.search(r"RUSTDESK_ID=(\d{6,12})", out)
+                if i:
+                    d = RD.doc_cfg()
+                    if m["id"] not in d["may"]:
+                        d["may"][m["id"]] = {"id": i.group(1), "mk": "", "luc": int(time.time()), "dong_bo": not d.get("mk_chung")}
+                        RD.luu_cfg(d)
             else:
                 loi_n += 1
-        _DONG_BO["tb"] = "Áp dụng địa chỉ máy chủ xong: %d máy thành công, %d máy chưa được (tắt hoặc mất agent)." % (ok_n, loi_n)
+        _DONG_BO["tb"] = ("Áp dụng địa chỉ máy chủ xong: %d máy đã đổi, %d máy chưa cài RustDesk (bỏ qua), %d máy lỗi (tắt hoặc mất agent). "
+                          "Máy đã đổi cần mở lại ứng dụng RustDesk." % (ok_n, bo_qua, loi_n))
     except RuntimeError as e:
         _DONG_BO["tb"] = str(e)
     finally:

@@ -145,13 +145,14 @@ kich.clear()
 _c = RD.doc_cfg(); _c["may"]["m-agent"] = {"id": "123456789", "mk": "MatKhau#Chung1", "dong_bo": True}; RD.luu_cfg(_c)
 RD.khoa_cong_khai = lambda: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 Gia_execute = Gia.execute_ps
-Gia.execute_ps = lambda self, script: ("RUSTDESK_CFG_OK\r\n", Luong(), False) if "RUSTDESK_CFG_OK" in script else Gia_execute(self, script)
+Gia.execute_ps = lambda self, script: (kich.append(script) or "RUSTDESK_ID=987654321\r\nRUSTDESK_CFG_OK\r\n", Luong(), False) if "RUSTDESK_CFG_OK" in script else Gia_execute(self, script)
 kq["rd_ap_cau_hinh_api"] = post("/rustdesk/api/ap-cau-hinh", {}).get_json()["ok"] is True
 for _ in range(30):
     if "xong" in (c.get("/rustdesk/api/thiet-bi", headers=H).get_json()["dong_bo"]["tb"]):
         break
     _t.sleep(0.2)
-kq["rd_ap_cau_hinh_ket_qua"] = "1 máy thành công" in c.get("/rustdesk/api/thiet-bi", headers=H).get_json()["dong_bo"]["tb"]
+kq["rd_ap_cau_hinh_ket_qua"] = "1 máy đã đổi" in c.get("/rustdesk/api/thiet-bi", headers=H).get_json()["dong_bo"]["tb"]
+kq["rd_ap_cau_hinh_tung_nguoi"] = "C:\\Users" in kich[-1] and "RUSTDESK_CHUA_CAI" in kich[-1]
 kq["rd_doi_may_chu_409"] = c.get("/rustdesk/doi-may-chu.ps1", headers=H).status_code in (200, 409)
 _s = RD.script_cau_hinh_nguoi_dung("rd.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 kq["rd_doi_may_chu_script"] = "--option custom-rendezvous-server 'rd.example.com'" in _s and "--option key" in _s
