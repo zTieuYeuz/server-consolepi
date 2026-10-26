@@ -75,9 +75,10 @@ def khoi_tu_xa(m):
     if not st["da_cai"]:
         return ('<div class="card"><h3>Điều khiển bằng RustDesk</h3><p class="tk-ghi">Chưa cài máy chủ RustDesk. Vào <a href="/rustdesk">RustDesk</a> để cài, rồi cài client lên máy này.</p></div>')
     if not ban:
+        goi_y = next((x["id"] for x in RD.thiet_bi() if x["ip"] == m.get("ip")), "")      # ID cua may da dang ky voi may chu tu cung dia chi IP
         return ('<div class="card"><h3>Điều khiển bằng RustDesk</h3><p class="tk-ghi">Máy này chưa có ID RustDesk trong Console System. Cách 1: vào <a href="/rustdesk">RustDesk</a>, '
                 'chọn máy rồi bấm <b>Cài lên máy đã chọn</b> (máy phải có agent). Cách 2: anh đã tự cài RustDesk trên máy này (trỏ về máy chủ <b>' + _e(st["host_hieu_luc"]) + '</b>) thì nhập ID và mật khẩu vào đây:</p>'
-                f'<form method="POST" action="/uem/may/{m["id"]}/rustdesk/luu" class="tk-hang"><input type="text" name="id" placeholder="ID RustDesk (số)" required style="max-width:200px;margin:0;">'
+                f'<form method="POST" action="/uem/may/{m["id"]}/rustdesk/luu" class="tk-hang"><input type="text" name="id" value="' + _e(goi_y) + '" placeholder="ID RustDesk (số)" required style="max-width:200px;margin:0;">'
                 '<input type="text" name="mk" placeholder="Mật khẩu cố định" required autocomplete="off" style="max-width:220px;margin:0;"><button class="tk-nut chinh" type="submit">Lưu</button></form></div>')
     i, mk = _e(ban["id"]), _e(ban["mk"])
     return (f'<div class="card"><h3>Điều khiển bằng RustDesk</h3>'
