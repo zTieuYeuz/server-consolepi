@@ -279,7 +279,7 @@ def _trang_quet():
     body = f"""
     <div class="tk-canhbao"><b>Quét mạng</b> tìm các máy đang mở cổng WinRM (5985), SMB (445) hoặc RDP (3389) trong mạng LAN,
       kèm tên và địa chỉ MAC. Chọn máy muốn quản lý, đặt tên dễ nhớ rồi thêm vào danh sách (có thể tạo luôn một nhóm máy).<br>
-      Máy cần cài phần mềm phải <b>bật WinRM</b> (PowerShell Administrator: <code>Enable-PSRemoting -Force</code>; máy không vào domain thêm
+      Máy cần cài phần mềm phải <b>bật WinRM</b> (cách dễ nhất: <a href="/deployos/trienkhai/bat-winrm.ps1">tải script bat-winrm.ps1</a> và chạy bằng PowerShell Administrator; hoặc thủ công <code>Enable-PSRemoting -Force</code>; máy không vào domain thêm
       <code>LocalAccountTokenFilterPolicy=1</code> - xem tab Kiểm tra bảo mật). Console System không tự bật hộ.</div>
     <div class="card">
       <form method="POST" action="/deployos/trienkhai/may/quet" class="tk-hang">
@@ -523,7 +523,7 @@ def _trang_trienkhai():
 
 
 _MODAL = """<div class="tk-modal" id="tk-modal" hidden><div class="tk-mbox"><div class="tk-mdau"><h3 id="tk-mten"></h3>
-  <span class="tk-chip" id="tk-mchip"></span><button type="button" class="tk-nut" id="tk-dong">Đóng</button></div>
+  <span class="tk-chip" id="tk-mchip"></span><button type="button" class="tk-nut" id="tk-xoa-xong" title="Xóa các dòng máy đã thành công">Xóa dòng thành công</button><button type="button" class="tk-nut" id="tk-xoa-loi" title="Xóa các dòng máy không thành công">Xóa dòng lỗi</button><button type="button" class="tk-nut" id="tk-dong">Đóng</button></div>
   <div class="tk-mthan" id="tk-mthan"></div></div></div>"""
 
 JS_MODAL = """
@@ -545,7 +545,9 @@ JS_MODAL = """
       var m=d.may[ip], de=e('details','tk-may'); if(mo[ip]) de.open=true; de.ontoggle=function(){mo[ip]=de.open;};
       var s=e('summary'); s.appendChild(e('b',null,m.ten)); s.appendChild(e('span','tk-ghi',ip)); var sp=e('span'); sp.style.flex='1'; s.appendChild(sp);
       var done=m.buoc.filter(function(x){return x.tt==='ok';}).length; s.appendChild(e('span','tk-ghi',done+'/'+m.buoc.length+' bước'));
-      s.appendChild(e('span','tk-chip '+(MAU[m.tt]||''),TT[m.tt]||m.tt)); de.appendChild(s);
+      s.appendChild(e('span','tk-chip '+(MAU[m.tt]||''),TT[m.tt]||m.tt));
+      if (m.tt==='xong'||m.tt==='loi'){ var xb=e('button','tk-nut','✕'); xb.type='button'; xb.title='Xóa dòng này'; xb.onclick=function(ev){ ev.preventDefault(); ev.stopPropagation(); xoa('ip',ip); }; s.appendChild(xb); }
+      de.appendChild(s);
       m.buoc.forEach(function(x,k){
         var r=e('div','tk-b '+x.tt); r.appendChild(e('span','dau',x.tt==='ok'?'✓':x.tt==='loi'?'✗':x.tt==='dang'?'…':(k+1)+'.'));
         var n=e('div'); n.appendChild(document.createTextNode(x.ten)); if(x.tb){ n.appendChild(e('small',null,x.tb)); } r.appendChild(n); de.appendChild(r); });
@@ -555,6 +557,9 @@ JS_MODAL = """
     b.appendChild(e('h4','tk-tieude','Nhật ký')); b.appendChild(e('div','tk-nk',(d.nhat_ky||[]).slice().reverse().join('\\n')||'(chưa có)'));
     b.scrollTop=giu;
   }
+  function xoa(loai,ip){ if(!id) return; if(loai!=='ip' && !confirm('Xóa các dòng kết quả này khỏi bảng tiến độ?')) return;
+    fetch('/deployos/trienkhai/tt/'+id+'/xoa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loai:loai,ip:ip||''})}).then(function(){ clearTimeout(timer); hoi(); }); }
+  $('tk-xoa-xong').onclick=function(){ xoa('xong'); }; $('tk-xoa-loi').onclick=function(){ xoa('loi'); };
   function hoi(){ if(!id) return; fetch('/deployos/trienkhai/tt/'+id).then(function(r){return r.json();}).then(ve).catch(function(){}); timer=setTimeout(hoi,2000); }
   function mo_(i,t){ id=i; mo={}; $('tk-mten').textContent=t; $('tk-modal').hidden=false; clearTimeout(timer); hoi(); }
   function dong(){ id=null; clearTimeout(timer); $('tk-modal').hidden=true; }
@@ -669,6 +674,39 @@ def register_trienkhai(app):
         nhan, mau, _x, _t = _tom_tat_kb(kb, st)
         return jsonify({"nhan": nhan, "mau": mau, "lich": DL.mo_ta_lich(DL.tim(DL.LICH.doc(), kb.get("lich_id"))),
                         "may": st.get("may", {}), "nhat_ky": st.get("nhat_ky", [])})
+
+    @app.route("/deployos/trienkhai/tt/<kb_id>/xoa", methods=["POST"])
+    def tk_tt_xoa(kb_id):
+        """Xoa dong ket qua cua may DA XONG hoac LOI khoi bang tien do (khong dong vao may dang chay/cho thu lai)."""
+        j = request.get_json(silent=True) or {}
+        loai, ip = j.get("loai", ""), j.get("ip", "")
+        if loai not in ("xong", "loi", "ca-hai", "ip"):
+            return jsonify({"ok": False, "loi": "Yêu cầu không hợp lệ."}), 400
+        dem = [0]
+
+        def ghi(tt):
+            st = tt.get(kb_id)
+            if not st:
+                return
+            may = st.get("may") or {}
+            for k in list(may):
+                t = may[k].get("tt")
+                if t not in ("xong", "loi"):
+                    continue
+                if (loai == "ip" and k == ip) or loai == "ca-hai" or t == loai:
+                    del may[k]
+                    dem[0] += 1
+            if dem[0]:
+                DC._nhat_ky(st, "-", f"Đã xóa {dem[0]} dòng kết quả khỏi bảng tiến độ.")
+        DC._luu(ghi)
+        return jsonify({"ok": True, "da_xoa": dem[0]})
+
+    @app.route("/deployos/trienkhai/bat-winrm.ps1")
+    def tk_script_winrm():
+        """Tai script bat WinRM tren may Windows (chay bang PowerShell Administrator)."""
+        from flask import Response
+        return Response(_taisan.doc("windows/bat-winrm.ps1").replace("\r\n", "\n").replace("\n", "\r\n"), mimetype="text/plain; charset=utf-8",
+                        headers={"Content-Disposition": "attachment; filename=bat-winrm.ps1"})
 
     # ---- Lap lich
     @app.route("/deployos/trienkhai/lich")
