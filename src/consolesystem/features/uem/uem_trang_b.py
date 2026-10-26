@@ -209,6 +209,12 @@ def _o_nhap(f, gt=None):
     return h
 
 
+GIAI_THICH_PROFILE = """<div class="card"><h3>Profile là gì?</h3>
+<p><b>Profile là một "bộ cài đặt chuẩn" áp dụng cho nhiều máy cùng lúc.</b> Bạn khai báo <i>máy phải như thế nào</i> (ví dụ: có Chrome và 7-Zip, có tài khoản "ketoan", tắt Remote Desktop), Console System tự kiểm tra từng máy và chỉ làm phần chưa đúng. Cứ vài phút kiểm tra lại, máy nào bị đổi/hỏng sẽ được đưa về đúng, máy mới thêm vào cũng được cấu hình theo.</p>
+<ol class="tk-ghi" style="margin:8px 0 0 18px;line-height:1.7;"><li><b>Tạo profile</b> và đặt tên, ví dụ "Máy văn phòng chuẩn".</li><li><b>Chọn áp dụng cho máy nào</b>: tất cả, một nhóm máy, hoặc máy có một thẻ.</li><li><b>Thêm các việc cần làm</b> (tác vụ): cài phần mềm, sửa registry, tạo người dùng, chạy PowerShell...</li><li><b>Bật profile</b>. Xem kết quả từng máy ở cuối trang, máy lỗi sẽ hiện trong mục Vấn đề.</li></ol>
+<p class="tk-ghi">Khác với <b>Triển khai</b>: Triển khai chạy một lần cho các máy bạn chọn; Profile là cấu hình <b>duy trì liên tục</b>. Bấm "Áp dụng ngay" nếu không muốn chờ chu kỳ kiểm tra.</p></div>"""
+
+
 def trang_profiles():
     ds = UD.PROFILES.doc()
     the_ds = UD.THE.doc()
@@ -220,7 +226,7 @@ def trang_profiles():
         pham_vi = "Tất cả máy" if p.get("ap_dung_tat_ca") else (", ".join(ds_nhom + [t["ten"] for t in the_ds if t["id"] in p.get("the", [])]) or "Chưa chọn nhóm máy hoặc thẻ")
         hang += (f'<tr><td><a href="/uem/profiles/{p["id"]}"><b>{_esc(p["ten"])}</b></a><div class="tk-ghi">{_esc(p.get("mo_ta", ""))}</div></td><td>{_esc(pham_vi)}</td><td>{len(may)}</td>'
                  f'<td>{len(p.get("tasks", []))}</td><td>{chip("Bật", "xanh") if p.get("bat") else chip("Tắt")}</td><td>{chip(str(loi) + " máy lỗi", "do") if loi else chip("Không lỗi", "xanh")}</td></tr>')
-    body = f"""<div class="card">{('<table class="tk-bang"><tr><th>Profile</th><th>Áp dụng cho</th><th>Số máy</th><th>Tác vụ</th><th>Trạng thái</th><th>Vấn đề</th></tr>' + hang + '</table>') if ds else '<p class="tk-ghi">Chưa có profile nào.</p>'}</div>
+    body = GIAI_THICH_PROFILE + f"""<h2>Các profile hiện có</h2><div class="card">{('<table class="tk-bang"><tr><th>Profile</th><th>Áp dụng cho</th><th>Số máy</th><th>Tác vụ</th><th>Trạng thái</th><th>Vấn đề</th></tr>' + hang + '</table>') if ds else '<p class="tk-ghi">Chưa có profile nào.</p>'}</div>
     <h2>Tạo profile mới</h2><div class="card"><form method="POST" action="/uem/profiles/tao" class="tk-f"><label>Tên profile</label><input type="text" name="ten" required placeholder="Ví dụ: Máy văn phòng chuẩn">
       <label>Mô tả</label><input type="text" name="mo_ta"><div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Tạo</button></div></form></div>
     <p class="tk-ghi">Profile là danh sách tác vụ khai báo trạng thái mong muốn (cài/gỡ phần mềm WinGet, registry, người dùng và nhóm cục bộ, MSI, PowerShell). Console System tự kiểm tra từng máy
@@ -276,19 +282,20 @@ def trang_profile(pid):
     van = UP.van_de(pid)
     hv = "".join(f'<tr><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td><td>{_esc(tk)}</td><td>{_esc(tb)}</td></tr>' for m, tk, tb in van)
     body = f"""<p><a class="tk-nut" href="/uem/profiles">Danh sách profile</a></p>
-    <div class="card"><form method="POST" action="/uem/profiles/{pid}/luu" class="tk-f"><label>Tên</label><input type="text" name="ten" value="{_esc(p["ten"])}" required>
+    <p class="tk-ghi">Làm lần lượt 3 bước: <b>1</b> đặt tên và bật, <b>2</b> chọn áp dụng cho máy nào, <b>3</b> thêm các việc cần làm. Kết quả từng máy ở cuối trang.</p>
+    <div class="card"><h3>Bước 1 và 2: Tên, trạng thái và phạm vi áp dụng</h3><form method="POST" action="/uem/profiles/{pid}/luu" class="tk-f"><label>Tên</label><input type="text" name="ten" value="{_esc(p["ten"])}" required>
       <label>Mô tả</label><input type="text" name="mo_ta" value="{_esc(p.get("mo_ta", ""))}">
       <label class="tk-o"><input type="checkbox" name="ap_dung_tat_ca" value="1"{" checked" if p.get("ap_dung_tat_ca") else ""}><span><b>Áp dụng cho tất cả máy</b><small>Bỏ chọn để chỉ áp dụng cho nhóm máy hoặc máy có thẻ bên dưới</small></span></label>
-      <label>Nhóm máy áp dụng</label><div class="tk-luoi">{o_nhom or '<span class="tk-ghi">Chưa có nhóm máy, tạo ở Máy tính (chọn máy, Thêm vào nhóm).</span>'}</div>
-      <label>Thẻ áp dụng</label><div class="tk-luoi">{o_the or '<span class="tk-ghi">Chưa có thẻ, tạo ở Quản trị, Thẻ.</span>'}</div>
+      <label>Bước 2: áp dụng cho nhóm máy nào</label><div class="tk-luoi">{o_nhom or '<span class="tk-ghi">Chưa có nhóm máy, tạo ở Máy tính (chọn máy, Thêm vào nhóm).</span>'}</div>
+      <label>Hoặc áp dụng cho máy có thẻ</label><div class="tk-luoi">{o_the or '<span class="tk-ghi">Chưa có thẻ, tạo ở Quản trị, Thẻ.</span>'}</div>
       <label class="tk-o"><input type="checkbox" name="bat" value="1"{" checked" if p.get("bat") else ""}><span><b>Bật profile</b><small>Tắt = tạm dừng, không áp dụng nữa</small></span></label>
       <div class="tk-hang" style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Lưu</button></div></form>
       <div class="tk-hang" style="margin-top:10px;"><form method="POST" action="/uem/profiles/{pid}/ap-dung"><button class="tk-nut xanh" type="submit">Áp dụng ngay lên {len(may)} máy</button></form>
       <form method="POST" action="/uem/profiles/{pid}/xoa" onsubmit="return confirm('Xóa profile này? Máy giữ nguyên cấu hình đã áp dụng.');"><button class="tk-nut do" type="submit">Xóa profile</button></form></div></div>
-    <h2>Tác vụ ({n})</h2><div class="card">{('<table class="tk-bang"><tr><th>#</th><th>Tác vụ</th><th></th></tr>' + ht + '</table>') if ht else '<p class="tk-ghi">Chưa có tác vụ nào.</p>'}
+    <h2>Bước 3: Việc cần làm trên máy - tác vụ ({n})</h2><p class="tk-ghi">Các tác vụ chạy lần lượt từ trên xuống. Mỗi tác vụ khai báo trạng thái mong muốn; máy đã đúng thì tự bỏ qua.</p><div class="card">{('<table class="tk-bang"><tr><th>#</th><th>Tác vụ</th><th></th></tr>' + ht + '</table>') if ht else '<p class="tk-ghi">Chưa có tác vụ nào.</p>'}
       <h3 id="form-task" style="margin-top:18px;">{"Sửa tác vụ" if sua else "Thêm tác vụ"}</h3>
       <form method="GET" class="tk-f tk-hang"><select name="loai" style="margin:0;height:42px;max-width:420px;" onchange="this.form.submit()">{chon}</select>{f'<input type="hidden" name="sua" value="{_esc(sua["id"])}">' if sua else ""}<noscript><button class="tk-nut">Chọn</button></noscript></form>{form_task}</div>
-    <h2>Trạng thái các máy ({len(may)})</h2><div class="card">{('<table class="tk-bang"><tr><th>Máy</th><th>Trạng thái</th><th>Lần cuối</th><th>Tóm tắt</th></tr>' + hm + '</table>') if hm else '<p class="tk-ghi">Chưa có máy nào thuộc phạm vi áp dụng (chọn nhóm máy hoặc gán thẻ cho máy).</p>'}</div>
+    <h2>Kết quả trên từng máy ({len(may)})</h2><div class="card">{('<table class="tk-bang"><tr><th>Máy</th><th>Trạng thái</th><th>Lần cuối</th><th>Tóm tắt</th></tr>' + hm + '</table>') if hm else '<p class="tk-ghi">Chưa có máy nào thuộc phạm vi áp dụng (chọn nhóm máy hoặc gán thẻ cho máy).</p>'}</div>
     <h2>Vấn đề ({len(van)})</h2><div class="card">{('<table class="tk-bang"><tr><th>Máy</th><th>Tác vụ</th><th>Lỗi</th></tr>' + hv + '</table>') if hv else '<p class="tk-ghi">Không có vấn đề nào.</p>'}</div>"""
     return trang(body, "pf")
 
