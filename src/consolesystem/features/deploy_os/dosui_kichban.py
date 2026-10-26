@@ -511,14 +511,10 @@ def _noi_dung_buoc(ma, d, buoc):
                 </div>
 
                 <label class="chon" style="margin-top:14px;">
-                  <input type="checkbox" name="tu_dang_nhap" value="1"{tdn_ch}>
-                  <span class="t">Giữ tự động đăng nhập MÃI MÃI</span>
-                  <div class="d">Lần đầu sau khi cài xong thì máy <strong>luôn
-                  tự đăng nhập</strong> (giống MDT) — để phần mềm cài nốt và
-                  hiện được bảng báo cáo. Tích ô này nghĩa là những lần bật máy
-                  sau <em>cũng</em> không hỏi mật khẩu: tiện cho máy kiosk, máy
-                  trưng bày, nhưng ai chạm vào máy cũng dùng được. Không tích
-                  thì từ lần thứ hai trở đi máy hỏi mật khẩu bình thường.</div>
+                  <input type="checkbox" name="tu_dang_nhap" value="1"{tdn_ch}
+                         onchange="if(this.checked&&!confirm('CẢNH BÁO: máy tính sẽ LUÔN tự động đăng nhập tài khoản Administrator. Rất nguy hiểm, ai chạm vào máy cũng dùng được toàn quyền. Hãy suy nghĩ kỹ trước khi xác nhận. Bạn chắc chắn muốn bật?')){{this.checked=false;}}">
+                  <span class="t">Tự động đăng nhập tài khoản Administrator</span>
+                  <div class="d" style="color:#f59e0b;"><strong>Máy tính luôn đăng nhập tự động tài khoản Administrator, rất nguy hiểm, suy nghĩ kỹ trước khi xác nhận.</strong></div>
                 </label>
 """
 
