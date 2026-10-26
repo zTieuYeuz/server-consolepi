@@ -27,7 +27,7 @@ from ui import uem_ketnoi as UK
 from ui import uem_trienkhai as UT
 from ui import uem_agent_trang as UAT
 from ui import uem_agent as UA
-from ui import uem_dieukhien as UDK
+from consolesystem.features.uem import uem_dieukhien as UDK
 from ui import uem_pki as PKI
 from ui import uem_vnc as UV
 from ui import uem_winget as UW

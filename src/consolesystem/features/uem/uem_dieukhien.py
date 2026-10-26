@@ -4,8 +4,6 @@ Quan ly may tram - DIEU KHIEN TU XA: dong lenh (CMD/PowerShell), Dich vu (Servic
 Moi thao tac di qua UK.ket_noi: agent dang song (khong can WinRM) hoac WinRM neu da gan tai khoan. Moi lenh ghi vao tab "Tac vu" cua may.
 AN TOAN: ten dich vu / PID duoc kiem chat theo mau; lenh nguoi dung go vao dong lenh duoc chuyen bang base64 (khong noi chuoi vao script).
 """
-import sys as _sys
-_sys.modules["ui.uem_dieukhien"] = _sys.modules[__name__]
 import base64
 import json
 import re
