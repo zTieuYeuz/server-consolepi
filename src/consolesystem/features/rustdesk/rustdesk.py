@@ -25,7 +25,7 @@ TRANG = """<style>.rd-k{font-family:monospace;word-break:break-all;user-select:a
 <div class="card"><h3><span class="rd-buoc">3</span>File cài đặt RustDesk</h3>
 <p class="tk-ghi">File đã điền sẵn máy chủ ID, máy chủ chuyển tiếp, key và mật khẩu chung ở bước 2. Chạy trên máy Windows nào (trong LAN hay ngoài Internet) thì máy đó tự tải RustDesk chính thức, cài im lặng và kết nối về máy chủ này. Đổi thông tin ở bước 2 thì file tự cập nhật.</p>
 <div>Máy chủ ID: <span class="rd-k" id="rd-h"></span> &nbsp; Máy chủ chuyển tiếp: <span class="rd-k" id="rd-r"></span></div><div style="margin-top:6px;">Key: <span class="rd-k" id="rd-key">(chưa có, cài máy chủ trước)</span></div>
-<div class="tk-hang" style="margin-top:10px;"><a class="tk-nut chinh" href="/rustdesk/cai-rustdesk.bat">Tải file cài (.bat, bấm đúp là chạy)</a><a class="tk-nut" href="/rustdesk/client-cai.ps1">Tải bản PowerShell (.ps1)</a><button class="tk-nut" id="rd-kho" type="button">Cập nhật vào kho</button></div>
+<div class="tk-hang" style="margin-top:10px;"><button class="tk-nut chinh" type="button" onclick="location.href='/rustdesk/cai-rustdesk.bat'">Tải file cài (.bat, bấm đúp là chạy)</button><button class="tk-nut" type="button" onclick="location.href='/rustdesk/client-cai.ps1'">Tải bản PowerShell (.ps1)</button><button class="tk-nut" id="rd-kho" type="button">Cập nhật vào kho</button></div>
 <div class="tk-ghi" id="rd-kho-tb" style="margin-top:6px;"></div>
 <p class="tk-ghi" style="margin-top:8px;">Lưu ý: file chứa mật khẩu chung, chỉ đưa cho người được phép.</p></div>
 <div class="card"><h3><span class="rd-buoc">4</span>Triển khai xuống máy</h3>
