@@ -518,14 +518,17 @@ def _cai_api_nen():
         _lenh.chay(["systemctl", "enable", "--now", DV_API], timeout=30)
         d = doc_cfg()
         if not d.get("api_mk"):
-            time.sleep(4)
+            # Dat mat khau admin ngau nhien va luu lai (lan dau rustdesk-api chi in mat khau ra nhat ky). Lan chay dau con dang tao CSDL -> thu lai vai lan.
             mk = secrets.token_urlsafe(9)
             env = dict(os.environ, **_env_api())
-            r = _lenh.chay([os.path.join(cu, "apimain"), "reset-admin-pwd", mk], timeout=30, cwd=cu, env=env)
-            if r.ok:
-                d = doc_cfg()
-                d["api_mk"] = mk
-                luu_cfg(d)
+            for _ in range(8):
+                time.sleep(3)
+                r = _lenh.chay([os.path.join(cu, "apimain"), "reset-admin-pwd", mk], timeout=30, cwd=cu, env=env)
+                if r.ok and "success" in (r.out + r.err):
+                    d = doc_cfg()
+                    d["api_mk"] = mk
+                    luu_cfg(d)
+                    break
         _CAI_API.update(ok=True, tb="Đã cài và chạy rustdesk-api %s." % VER_API)
     except Exception as e:                       # tai ve / giai nen / quyen: hien nguyen nhan
         _CAI_API.update(ok=False, tb="Lỗi: %s" % e)
