@@ -439,7 +439,9 @@ def _duong_hop_le(p):
 def liet_ke_thu_muc(m, duong):
     c, mk = _ket_noi_may(m)
     if not duong:
-        ps = ("Get-PSDrive -PSProvider FileSystem | ForEach-Object { [pscustomobject]@{Name=$_.Root;Length=0;Dir=$true;Time=''} } | ConvertTo-Json -Compress")
+        # Chi o co phuong tien (Size co gia tri): o DVD/USB rong khong co dia thi Windows van liet ke nhung bam vao se loi "khong ton tai"
+        ps = ("$r = @(Get-CimInstance Win32_LogicalDisk | Where-Object { $_.Size } | ForEach-Object { [pscustomobject]@{Name=($_.DeviceID + '\\');Length=0;Dir=$true;Time=''} }); "
+              "if ($r.Count -eq 0) { '[]' } else { ConvertTo-Json -InputObject $r -Compress }")
     else:
         ps = (f"$ErrorActionPreference='Stop'; $r = @(Get-ChildItem -LiteralPath {DC._q(duong)} -Force | Select-Object -First 1000 | ForEach-Object "
               "{ [pscustomobject]@{Name=$_.Name;Length=[int64]($(if($_.PSIsContainer){0}else{$_.Length}));Dir=[bool]$_.PSIsContainer;Time=$_.LastWriteTime.ToString('s')} }); "
