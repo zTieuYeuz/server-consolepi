@@ -331,8 +331,8 @@ Start-Sleep 5
 
 def _tham_so(host, khoa, mat_khau=""):
     ws = dung_ws()
-    return {"host": host, "khoa": khoa, "mk": mat_khau, "cong": "" if ws else ":21116", "ws_toml": "\nallow-websocket = 'Y'" if ws else "",
-            "ws_opt": "\n& $rd --option allow-websocket Y | Out-Null" if ws else ""}
+    return {"host": host, "khoa": khoa, "mk": mat_khau, "cong": "" if ws else ":21116", "ws_toml": "\nallow-websocket = '%s'" % ("Y" if ws else "N"),
+            "ws_opt": "\n& $rd --option allow-websocket %s | Out-Null" % ("Y" if ws else "N")}
 
 
 def script_cau_hinh(host=None, khoa=None):
@@ -365,7 +365,7 @@ $id = ((& $rd --get-id | Out-String).Trim())
 'RUSTDESK_ID=' + $id
 'RUSTDESK_CFG_OK'"""
     tung_nguoi = (tung_nguoi.replace("@HOST@", host).replace("@KEY@", khoa).replace("@CONG@", "" if ws else ":21116")
-                  .replace("@WS@", "\n$set['allow-websocket'] = 'Y'" if ws else ""))
+                  .replace("@WS@", "\n$set['allow-websocket'] = '%s'" % ("Y" if ws else "N")))
     return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\nif (-not (Test-Path $rd)) { 'RUSTDESK_CHUA_CAI'; return }\n" + khoi + "\n" + tung_nguoi)
 
 
@@ -375,7 +375,7 @@ def script_cau_hinh_nguoi_dung(host=None, khoa=None):
     host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
     if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
         raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
-    ws = "\n& $rd --option allow-websocket Y | Out-Null" if dung_ws() else ""
+    ws = "\n& $rd --option allow-websocket %s | Out-Null" % ("Y" if dung_ws() else "N")
     return ("$ErrorActionPreference = 'Stop'\n"
             "$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\n"
             "if (-not (Test-Path $rd)) { throw 'Máy này chưa cài RustDesk (cần bản cài đặt, không phải bản chạy trực tiếp).' }\n"

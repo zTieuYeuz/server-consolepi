@@ -140,7 +140,7 @@ sc2 = RD.script_client("abcdef123456", "rustdesk.example.com", "AAAAAAAAAAAAAAAA
 kq["rd_ws_bat"] = RD.dung_ws() and "allow-websocket = 'Y'" in sc2 and "'rustdesk.example.com'" in sc2 and ":21116" not in sc2
 post("/rustdesk/api/cau-hinh", {"host": "rustdesk.example.com", "ws": False})
 sc3 = RD.script_client("abcdef123456", "rustdesk.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-kq["rd_ws_tat"] = (not RD.dung_ws()) and "allow-websocket" not in sc3 and ":21116" in sc3
+kq["rd_ws_tat"] = (not RD.dung_ws()) and "allow-websocket = 'N'" in sc3 and ":21116" in sc3
 kich.clear()
 _c = RD.doc_cfg(); _c["may"]["m-agent"] = {"id": "123456789", "mk": "MatKhau#Chung1", "dong_bo": True}; RD.luu_cfg(_c)
 RD.khoa_cong_khai = lambda: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
