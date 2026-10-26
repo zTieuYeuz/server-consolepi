@@ -279,7 +279,7 @@ def _trang_quet():
     body = f"""
     <div class="tk-canhbao"><b>Quét mạng</b> tìm các máy đang mở cổng WinRM (5985), SMB (445) hoặc RDP (3389) trong mạng LAN,
       kèm tên và địa chỉ MAC. Chọn máy muốn quản lý, đặt tên dễ nhớ rồi thêm vào danh sách (có thể tạo luôn một nhóm máy).<br>
-      Máy cần cài phần mềm phải <b>bật WinRM</b> (cách dễ nhất: <a href="/deployos/trienkhai/bat-winrm.ps1">tải script bat-winrm.ps1</a> và chạy bằng PowerShell Administrator; hoặc thủ công <code>Enable-PSRemoting -Force</code>; máy không vào domain thêm
+      Máy cần cài phần mềm phải <b>bật WinRM</b> (cách dễ nhất: <a href="/deployos/trienkhai/bat-winrm.ps1">tải script bat-winrm.ps1</a> rồi trong PowerShell Administrator chạy <code>powershell -ExecutionPolicy Bypass -File .\\bat-winrm.ps1</code> (nếu chạy thẳng <code>.\\bat-winrm.ps1</code> Windows sẽ báo "running scripts is disabled"); hoặc thủ công <code>Enable-PSRemoting -Force</code>; máy không vào domain thêm
       <code>LocalAccountTokenFilterPolicy=1</code> - xem tab Kiểm tra bảo mật). Console System không tự bật hộ.</div>
     <div class="card">
       <form method="POST" action="/deployos/trienkhai/may/quet" class="tk-hang">
