@@ -279,10 +279,18 @@ def script_client(mat_khau, host=None, khoa=None):
         raise RuntimeError("Mật khẩu không hợp lệ.")
     return r"""$ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$exe = Join-Path $env:TEMP 'rustdesk-setup.exe'
-Invoke-WebRequest -UseBasicParsing -Uri '%(url)s' -OutFile $exe
-if ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLower() -ne '%(sha)s') { Remove-Item $exe -Force; throw 'File RustDesk tải về không khớp SHA-256, đã hủy.' }
+$exe = Join-Path $env:TEMP ('rustdesk-setup-' + [guid]::NewGuid().ToString('N') + '.exe')
+$ok = $false
+for ($i = 1; $i -le 3 -and -not $ok; $i++) {
+    try {
+        Invoke-WebRequest -UseBasicParsing -Uri '%(url)s' -OutFile $exe
+        $ok = ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLower() -eq '%(sha)s')
+    } catch { Start-Sleep 5 }
+    if (-not $ok) { Remove-Item $exe -Force -ErrorAction SilentlyContinue }
+}
+if (-not $ok) { throw 'Không tải được RustDesk hoặc file không khớp SHA-256 (đã thử 3 lần).' }
 Start-Process $exe -ArgumentList '--silent-install' -Wait
+Remove-Item $exe -Force -ErrorAction SilentlyContinue
 Start-Sleep 10
 $rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
 if (-not (Test-Path $rd)) { throw 'Không thấy rustdesk.exe sau khi cài.' }
