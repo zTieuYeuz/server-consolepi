@@ -34,6 +34,7 @@ from datetime import datetime
 from ui import tk_dulieu as DL
 from consolesystem.core import duongdan as _DD
 from consolesystem.core import magic_packet as _MP
+from consolesystem.integrations import rustdesk_may_chu as RD
 
 TOI_DA_SONG_SONG = 10
 CONG_TAI = int(os.environ.get("TK_CONG_TAI", "80"))      # cong Console System phuc vu file (nginx 80)
@@ -186,6 +187,9 @@ def _b_phanmem(c, ip, b, may):
     if not os.path.isfile(duong):
         return False, f"Không còn file phần mềm {ten} trong Tài nguyên."
     meta = D.doc_thongtin_app()
+    if RD.la_bo_cai_rustdesk(ten) and not (meta.get(ten) or "").strip():
+        # Bo cai RustDesk trong Tai nguyen: cai bang chinh file nay (kiem SHA-256) va dien san May chu ID / chuyen tiep / Key cua Console System
+        return _b_rustdesk(c, ip, b, may, url=url_tai(ip, duong), sha=RD.sha256_tep(duong))
     doi = (meta.get(ten) or "").strip() or D.tham_so_mac_dinh_app(ten)
     doi_msi = doi or "/qn /norestart"
     if ten.lower().endswith(".msi"):
@@ -299,6 +303,14 @@ def _b_winget(c, ip, b, may):
     return False, f"WinGet {id_}: mã thoát {ma}. " + re.sub(r"\s+", " ", out)[-250:]
 
 
+def _b_rustdesk(c, ip, b, may, url=None, sha=None):
+    def chay(sc):
+        out, err = _chay_ps(c, sc)
+        return not err or "RUSTDESK_ID=" in out, (out + " " + err).strip()
+    ok, tb, _id = RD.cai_va_ghi(chay, may.get("id", ""), url=url, sha=sha)
+    return ok, tb
+
+
 def _b_nguon(c, ip, b, may):
     hd = b.get("ref")
     if hd == "tat":
@@ -398,8 +410,8 @@ def _b_kiemke(c, ip, b, may):
 
 
 _BUOC = {"kiemke": _b_kiemke, "phanmem": _b_phanmem, "ungdung": _b_ungdung, "script": _b_script, "winget": _b_winget,
-         "nguon": _b_nguon, "baomat": _b_baomat}
-TEN_LOAI_BUOC = {"phanmem": "Phần mềm", "ungdung": "Ứng dụng nhiều file", "script": "Script", "winget": "WinGet",
+         "nguon": _b_nguon, "baomat": _b_baomat, "rustdesk": _b_rustdesk}
+TEN_LOAI_BUOC = {"phanmem": "Phần mềm", "ungdung": "Ứng dụng nhiều file", "script": "Script", "winget": "WinGet", "rustdesk": "RustDesk",
                  "nguon": "Nguồn điện", "baomat": "Kiểm tra bảo mật", "kiemke": "Kiểm kê máy", "nhom": "Nhóm tài nguyên"}
 TEN_NGUON = {"bat": "Bật máy (Wake-on-LAN)", "tat": "Tắt máy", "khoi_dong_lai": "Khởi động lại"}
 
@@ -411,6 +423,8 @@ def nhan_buoc(b):
         return "Kiểm tra bảo mật"
     if b["loai"] == "kiemke":
         return "Kiểm kê phần cứng và phần mềm"
+    if b["loai"] == "rustdesk":
+        return "Cài RustDesk (kèm máy chủ ID / chuyển tiếp)"
     return b.get("ten") or b.get("ref") or "?"
 
 

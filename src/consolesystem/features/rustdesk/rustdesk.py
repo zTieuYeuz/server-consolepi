@@ -13,25 +13,21 @@ TRANG = """<style>.rd-2{display:grid;grid-template-columns:repeat(auto-fit,minma
 <div class="card"><h3>RustDesk Server tích hợp</h3>
 <p class="tk-ghi">Chạy máy chủ RustDesk (ID server + relay) ngay trên Console System để điều khiển máy từ xa không phụ thuộc máy chủ công cộng. Bản RustDesk Server miễn phí <b>không có trang quản trị web</b> (bản Pro mới có); trang này hiển thị đúng những gì máy chủ lưu: khóa, cổng, danh sách thiết bị đã đăng ký.</p>
 <div id="rd-tt">Đang tải...</div><div class="tk-hang" style="margin-top:10px;" id="rd-nut"></div><div class="tk-ghi" id="rd-tb"></div></div>
-<div class="card"><h3>Trang quản trị và Web client (rustdesk-api)</h3>
-<p class="tk-ghi">rustdesk-api (mã nguồn mở lejianwen, MIT) chạy trên cổng 21114: trang quản trị web (người dùng, thiết bị, sổ địa chỉ, phiên kết nối) và <b>RustDesk Web Client</b> để điều khiển máy ngay trong trình duyệt. Đi qua Cloudflare được vì chỉ dùng HTTPS và WebSocket. Máy <b>được điều khiển</b> vẫn đăng ký với máy chủ qua UDP 21116 (trong LAN thì sẵn; máy ngoài Internet cần mở cổng router).</p>
-<div id="ra-tt">Đang tải...</div><div class="tk-hang" style="margin-top:8px;" id="ra-nut"></div><div class="tk-ghi" id="ra-tb"></div>
-<label style="margin-top:12px;display:block;">Tên miền web qua Cloudflare (để trống nếu chỉ dùng trong LAN)</label>
-<div class="tk-hang"><input type="text" id="ra-web" placeholder="vd rustdesk.home-server.id.vn" style="max-width:340px;margin:0;"><button class="tk-nut chinh" id="ra-web-luu" type="button">Lưu</button></div>
-<p class="tk-ghi" style="margin-top:8px;">Trên Cloudflare Zero Trust, tunnel của tên miền này cần 3 dòng theo đúng thứ tự: <code>/ws/id</code> → <code>http://IP-máy-này:21118</code>, <code>/ws/relay</code> → <code>http://IP-máy-này:21119</code>, rồi dòng không path → <code>http://IP-máy-này:21114</code>.</p></div>
-<div class="rd-2"><div class="card"><h3>Cấu hình</h3><p class="tk-ghi">Địa chỉ để các máy RustDesk tìm tới máy chủ này: tên miền hoặc IP công cộng nếu có máy ở ngoài Internet; để trống = dùng IP LAN (chỉ trong mạng nội bộ).</p>
-<input type="text" id="rd-host" placeholder="vd rd.ten-mien-cua-ban.com" style="width:100%;"><label class="tk-o" style="margin-top:8px;"><input type="checkbox" id="rd-ws"><span><b>Dùng WebSocket (đường Cloudflare)</b><small>KHÔNG bật cho máy được điều khiển: RustDesk Server miễn phí chỉ nhận máy đăng ký ID qua UDP 21116 (qua WebSocket máy chủ trả NOT_SUPPORT), mà Cloudflare không chuyển UDP. Để máy ngoài Internet dùng được, hãy mở cổng trên router (bên dưới) và để trống ô này.</small></span></label>
-<div class="tk-hang" style="margin-top:8px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button><button class="tk-nut" id="rd-ap" type="button" title="Máy đã cài RustDesk từ trước chưa đổi địa chỉ: bấm để đẩy địa chỉ, khóa và WebSocket xuống các máy (cần agent)">Áp dụng xuống các máy đã cài</button></div><div class="tk-ghi" id="rd-ap-tb"></div>
-<p class="tk-ghi" style="margin-top:12px;"><b>Để máy ngoài Internet remote được:</b> trên router chuyển tiếp (port forward) về máy này: <b>TCP 21115-21119</b> và <b>UDP 21116</b>. Địa chỉ ở trên dùng tên DDNS của router (ví dụ <code>itserver.asuscomm.com</code>) hoặc IP công cộng. Cloudflare Tunnel KHÔNG thay được bước mở cổng này. Agent Console System vẫn chỉ hoạt động trong LAN, nên máy ở ngoài cài RustDesk bằng script thủ công bên dưới.</p></div>
-<div class="card"><h3>Khóa và cấu hình cho client</h3><p class="tk-ghi">Dán vào RustDesk, Cài đặt, Mạng, Máy chủ ID/Relay:</p>
-<div>ID server / Relay: <span class="rd-k" id="rd-h"></span></div><div style="margin-top:6px;">Key:</div><div class="rd-k" id="rd-key">(chưa có, cài máy chủ trước)</div>
-<p class="tk-ghi" style="margin-top:10px;">Cài tay trên máy Windows bất kỳ (kể cả ngoài Internet): mở PowerShell quản trị và chạy file tải ở đây (đã nhúng máy chủ và khóa, tải bản chính thức có kiểm SHA-256):</p>
-<a class="tk-nut" href="/rustdesk/client-cai.ps1">Tải script cài client (.ps1)</a>
-<p class="tk-ghi" style="margin-top:10px;">Máy đã cài RustDesk từ trước (kể cả máy anh đang ngồi, không có agent) mà vẫn báo kết nối tới địa chỉ cũ: tải file này, bấm chuột phải chạy bằng PowerShell Administrator để đổi sang máy chủ hiện tại.</p>
-<a class="tk-nut" href="/rustdesk/doi-may-chu.ps1">Tải script đổi máy chủ cho RustDesk đã cài (.ps1)</a></div></div>
+<div class="rd-2"><div class="card"><h3>Máy chủ ID và máy chủ chuyển tiếp</h3><p class="tk-ghi">Địa chỉ các máy RustDesk dùng để tìm tới máy chủ này. Có máy ở ngoài Internet thì nhập <b>tên miền hoặc IP công cộng</b>; để trống = dùng IP LAN (chỉ trong mạng nội bộ). Máy chủ chuyển tiếp để trống = trùng máy chủ ID.</p>
+<label>Máy chủ ID</label><input type="text" id="rd-host" placeholder="tên miền hoặc IP công cộng" style="width:100%;">
+<label style="margin-top:8px;display:block;">Máy chủ chuyển tiếp (relay)</label><input type="text" id="rd-relay" placeholder="để trống = trùng máy chủ ID" style="width:100%;">
+<div class="tk-hang" style="margin-top:8px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button><button class="tk-nut" id="rd-ap" type="button" title="Đẩy máy chủ ID, chuyển tiếp và key xuống các máy đã cài RustDesk (cần agent)">Áp dụng xuống các máy đã cài</button></div><div class="tk-ghi" id="rd-ap-tb"></div>
+<p class="tk-ghi" style="margin-top:12px;"><b>Cổng cần mở ra Internet</b> (chuyển tiếp về máy này, IP LAN <b id="rd-lan"></b>):</p>
+<table class="rd-tb"><tr><th>Cổng</th><th>Giao thức</th><th>Dùng cho</th></tr><tr><td>21115</td><td>TCP</td><td>Kiểm tra NAT</td></tr><tr><td>21116</td><td>TCP và UDP</td><td>Máy chủ ID (đăng ký ID, gọi kết nối)</td></tr><tr><td>21117</td><td>TCP</td><td>Máy chủ chuyển tiếp</td></tr></table>
+<p class="tk-ghi">Máy trong LAN cũng sẽ dùng địa chỉ này, nên router cần hỗ trợ NAT loopback (hairpin); nếu không, máy trong LAN báo lỗi kết nối.</p></div>
+<div class="card"><h3>Khóa và cấu hình cho client</h3><p class="tk-ghi">Điền vào RustDesk, Cài đặt, Mạng (các cách cài bên dưới đều tự điền sẵn):</p>
+<div>Máy chủ ID: <span class="rd-k" id="rd-h"></span></div><div style="margin-top:6px;">Máy chủ chuyển tiếp: <span class="rd-k" id="rd-r"></span></div><div style="margin-top:6px;">Key:</div><div class="rd-k" id="rd-key">(chưa có, cài máy chủ trước)</div>
+<p class="tk-ghi" style="margin-top:10px;"><b>Cài tự động:</b> thẻ <b>Cài RustDesk lên máy Windows có agent</b> bên dưới, hoặc bước <b>RustDesk</b> trong <a href="/deployos/trienkhai/kichban">Triển khai phần mềm</a>. Bộ cài RustDesk tải lên Tài nguyên cũng được cài kèm cấu hình.</p>
+<p class="tk-ghi"><b>Cài tay</b> (máy không có agent, kể cả ngoài Internet): tải file, chạy bằng PowerShell quản trị.</p>
+<div class="tk-hang"><a class="tk-nut" href="/rustdesk/client-cai.ps1">Tải script cài client (.ps1)</a><a class="tk-nut" href="/rustdesk/doi-may-chu.ps1" title="Máy đã cài RustDesk từ trước, chỉ đổi máy chủ ID / chuyển tiếp / key">Script đổi máy chủ cho RustDesk đã cài</a></div></div></div>
 <div class="card"><h3>Mật khẩu cố định chung cho mọi máy</h3><p class="tk-ghi">Đặt một mật khẩu, Console System đẩy xuống <b>tất cả máy đã cài RustDesk</b> qua agent. Đổi mật khẩu ở đây thì mọi máy đổi theo; máy đang tắt sẽ chờ, bấm <b>Đồng bộ lại</b> khi máy bật. Máy cài mới cũng dùng mật khẩu này.</p>
 <div class="tk-hang"><input type="text" id="rd-mk" autocomplete="off" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -" style="max-width:340px;margin:0;"><button class="tk-nut chinh" id="rd-mk-luu" type="button">Lưu và áp dụng cho tất cả</button><button class="tk-nut" id="rd-mk-bo" type="button">Đồng bộ lại</button></div><div class="tk-ghi" id="rd-mk-tb" style="margin-top:6px;"></div></div>
-<div class="card"><h3>Cài RustDesk lên máy Windows có agent</h3><p class="tk-ghi">Chọn máy rồi bấm Cài. Mỗi máy được đặt một mật khẩu cố định riêng, hiện ở bảng bên dưới.</p><div id="rd-may" class="tk-luoi"></div>
+<div class="card"><h3>Cài RustDesk lên máy Windows có agent</h3><p class="tk-ghi">Chọn máy rồi bấm Cài: tải bản chính thức, cài im lặng, điền sẵn máy chủ ID / chuyển tiếp / key và đặt mật khẩu chung (chưa đặt mật khẩu chung thì mỗi máy một mật khẩu riêng, hiện ở bảng bên dưới).</p><div id="rd-may" class="tk-luoi"></div>
 <div style="margin-top:8px;"><button class="tk-nut chinh" id="rd-cai-client" type="button">Cài lên máy đã chọn</button> <span class="tk-ghi" id="rd-ct"></span></div>
 <table class="rd-tb" id="rd-bang-may" style="margin-top:10px;"></table></div>
 <div class="card"><h3>Thiết bị đã đăng ký với máy chủ</h3><table class="rd-tb" id="rd-dev"></table></div>
@@ -47,23 +43,13 @@ function ve(d){
  if(!d.da_cai) n='<button class="tk-nut chinh" data-v="cai"'+(d.cai.dang?' disabled':'')+'>Cài máy chủ RustDesk</button>';
  else n='<button class="tk-nut xanh" data-v="start">Chạy</button><button class="tk-nut" data-v="restart">Khởi động lại</button><button class="tk-nut" data-v="stop">Dừng</button><button class="tk-nut do" data-v="go">Gỡ dịch vụ</button>';
  $('rd-nut').innerHTML=n; $('rd-tb').textContent=d.cai.tb||'';
- if(document.activeElement!==$('rd-host')) $('rd-host').value=d.host||''; $('rd-ws').checked=!!d.ws; $('rd-h').textContent=d.host_hieu_luc||'(chưa xác định)'; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
+ if(document.activeElement!==$('rd-host')) $('rd-host').value=d.host||''; if(document.activeElement!==$('rd-relay')) $('rd-relay').value=d.relay||'';
+ $('rd-h').textContent=d.host_hieu_luc||'(chưa xác định)'; $('rd-r').textContent=d.relay_hieu_luc||'(chưa xác định)'; $('rd-lan').textContent=d.ip_lan||'?'; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
  if(d.cai.dang) setTimeout(tai,1500);}
-function veApi(a){ if(!a) return;
- var h='rustdesk-api <b>'+e(a.ban)+'</b>: '+(a.da_cai?(chip('Dịch vụ '+(a.chay?'chạy':'dừng'),a.chay)+chip('Cổng 21114 '+(a.cong?'mở':'đóng'),a.cong)):'<span class="rd-chip loi">Chưa cài</span>');
- if(a.da_cai){ h+='<div style="margin-top:8px;">Tài khoản quản trị: <b>admin</b> / <span class="rd-k">'+e(a.admin_mk||'(xem nhật ký dịch vụ)')+'</span></div>';
-  h+='<div style="margin-top:6px;">Trong LAN: <a href="'+e(a.url_lan)+'/_admin/" target="_blank">Trang quản trị</a> · <a href="'+e(a.url_lan)+'/webclient/" target="_blank">Web client</a></div>';
-  if(a.url_web) h+='<div style="margin-top:4px;">Qua Internet: <a href="'+e(a.url_web)+'/_admin/" target="_blank">'+e(a.url_web)+'/_admin/</a> · <a href="'+e(a.url_web)+'/webclient/" target="_blank">Web client</a></div>'; }
- $('ra-tt').innerHTML=h;
- $('ra-nut').innerHTML=a.da_cai?'<button class="tk-nut" data-a="restart">Khởi động lại</button><button class="tk-nut" data-a="stop">Dừng</button><button class="tk-nut" data-a="start">Chạy</button><button class="tk-nut" data-a="cai">Cài lại/cập nhật</button><button class="tk-nut do" data-a="go">Gỡ dịch vụ</button>':'<button class="tk-nut chinh" data-a="cai"'+(a.cai.dang?' disabled':'')+'>Cài rustdesk-api</button>';
- $('ra-tb').textContent=a.cai.tb||''; if(document.activeElement!==$('ra-web')) $('ra-web').value=a.web_host||''; }
-function tai(){api('/rustdesk/api/trang-thai').then(function(d){ve(d);veApi(d.api); if(d.api&&d.api.cai.dang) setTimeout(tai,1500);});}
+function tai(){api('/rustdesk/api/trang-thai').then(ve);}
 $('rd-nut').addEventListener('click',function(ev){var v=ev.target.dataset.v; if(!v)return; if(v==='go'&&!confirm('Gỡ dịch vụ RustDesk Server?'))return;
  api(v==='cai'?'/rustdesk/api/cai':'/rustdesk/api/hanh-dong',{viec:v}).then(function(d){$('rd-tb').textContent=d.tb||'';tai();});});
-$('ra-nut').addEventListener('click',function(ev){var v=ev.target.dataset.a; if(!v)return; if(v==='go'&&!confirm('Gỡ dịch vụ rustdesk-api?'))return;
- api(v==='cai'?'/rustdesk/api/api-cai':'/rustdesk/api/api-hanh-dong',{viec:v}).then(function(d){$('ra-tb').textContent=d.tb||'';tai();});});
-$('ra-web-luu').onclick=function(){api('/rustdesk/api/web-host',{host:$('ra-web').value}).then(function(d){$('ra-tb').textContent=d.tb;tai();});};
-$('rd-luu').onclick=function(){api('/rustdesk/api/cau-hinh',{host:$('rd-host').value,ws:$('rd-ws').checked}).then(function(d){$('rd-tb').textContent=d.tb;tai();});};
+$('rd-luu').onclick=function(){api('/rustdesk/api/cau-hinh',{host:$('rd-host').value,relay:$('rd-relay').value}).then(function(d){$('rd-tb').textContent=d.tb;tai();});};
 function dev(){api('/rustdesk/api/thiet-bi').then(function(d){var h='<tr><th>ID</th><th>IP gần nhất</th><th>Đăng ký lúc</th><th>Ghi chú</th></tr>';
  (d.ds||[]).forEach(function(x){h+='<tr><td><b>'+e(x.id)+'</b></td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td><td>'+e(x.ghi_chu)+'</td></tr>';});
  if(!(d.ds||[]).length) h+='<tr><td colspan="4" class="tk-ghi">Chưa có thiết bị nào đăng ký.</td></tr>'; $('rd-dev').innerHTML=h;
@@ -100,27 +86,10 @@ def register_rustdesk(app):
         ok, tb = RD.hanh_dong(str((request.get_json(silent=True) or {}).get("viec", "")))
         return jsonify({"ok": ok, "tb": tb})
 
-    @app.route("/rustdesk/api/api-cai", methods=["POST"])
-    def rustdesk_api_api_cai():
-        ok = RD.bat_dau_cai_api()
-        return jsonify({"ok": ok, "tb": "Đang cài rustdesk-api..." if ok else "Đang có một lần cài chạy."})
-
-    @app.route("/rustdesk/api/api-hanh-dong", methods=["POST"])
-    def rustdesk_api_api_hd():
-        ok, tb = RD.hanh_dong_api(str((request.get_json(silent=True) or {}).get("viec", "")))
-        return jsonify({"ok": ok, "tb": tb})
-
-    @app.route("/rustdesk/api/web-host", methods=["POST"])
-    def rustdesk_api_web_host():
-        ok, tb = RD.dat_web_host(str((request.get_json(silent=True) or {}).get("host", "")))
-        return jsonify({"ok": ok, "tb": tb})
-
     @app.route("/rustdesk/api/cau-hinh", methods=["POST"])
     def rustdesk_api_cfg():
         j = request.get_json(silent=True) or {}
-        ok, tb = RD.dat_host(str(j.get("host", "")))
-        if ok and "ws" in j:
-            RD.dat_ws(j["ws"])
+        ok, tb = RD.dat_may_chu(str(j.get("host", "")), str(j.get("relay", "")))
         return jsonify({"ok": ok, "tb": tb})
 
     @app.route("/rustdesk/doi-may-chu.ps1")
@@ -135,7 +104,7 @@ def register_rustdesk(app):
     @app.route("/rustdesk/client-cai.ps1")
     def rustdesk_script():
         try:
-            sc = RD.script_client(secrets.token_hex(6))
+            sc = RD.script_client(RD.mk_chung() or secrets.token_hex(6))
         except RuntimeError as e:
             return Response(str(e), status=409, mimetype="text/plain; charset=utf-8")
         return Response("\ufeff" + sc.replace("\n", "\r\n") + "\r\n", mimetype="text/plain; charset=utf-8",

@@ -630,7 +630,7 @@ def _trang_khac():
     <form method="POST" action="/deployos/trienkhai/nhanh" class="card tk-f">
       <label>Chọn máy</label><div class="tk-luoi">{luoi or '<p class="tk-ghi">Chưa có máy nào trong danh sách.</p>'}</div>
       <label>Việc cần làm</label>
-      <select name="viec" id="n-viec"><option value="baomat">Kiểm tra bảo mật ngay</option><option value="kiemke">Kiểm kê phần cứng và phần mềm</option><option value="khoi_dong_lai">Khởi động lại</option>
+      <select name="viec" id="n-viec"><option value="baomat">Kiểm tra bảo mật ngay</option><option value="kiemke">Kiểm kê phần cứng và phần mềm</option><option value="rustdesk">Cài RustDesk (kèm máy chủ ID / chuyển tiếp)</option><option value="khoi_dong_lai">Khởi động lại</option>
         <option value="tat">Tắt máy</option><option value="bat">Bật máy (Wake-on-LAN)</option><option value="winget">Cài từ WinGet</option></select>
       <div id="n-wg" style="display:none;"><label>Mã gói WinGet (vd Google.Chrome, 7zip.7zip, VideoLAN.VLC)</label>
         <input type="text" name="winget" placeholder="Google.Chrome"></div>
@@ -1042,6 +1042,8 @@ def register_trienkhai(app):
                     sach.append({"loai": loai, "ref": ref, "ten": g["ten"]})
             elif loai == "kiemke":
                 sach.append({"loai": "kiemke", "ref": ""})
+            elif loai == "rustdesk":
+                sach.append({"loai": "rustdesk", "ref": ""})
             else:
                 sach.append({"loai": "baomat", "ref": ""})
             if len(sach) > n0 and mot:
@@ -1087,6 +1089,8 @@ def register_trienkhai(app):
             buoc, ten = [{"loai": "kiemke", "ref": ""}], "Kiểm kê máy"
         elif viec == "baomat":
             buoc, ten = [{"loai": "baomat", "ref": ""}], "Kiểm tra bảo mật"
+        elif viec == "rustdesk":
+            buoc, ten = [{"loai": "rustdesk", "ref": ""}], "Cài RustDesk"
         elif viec in DC.TEN_NGUON:
             buoc, ten = [{"loai": "nguon", "ref": viec}], DC.TEN_NGUON[viec]
         elif viec == "winget":

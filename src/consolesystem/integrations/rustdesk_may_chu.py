@@ -7,10 +7,10 @@
   * Khoa: hbbs tu tao cap khoa id_ed25519(.pub) o lan chay dau; chay voi `-k _` nen client PHAI co khoa moi ket noi duoc.
   * Danh sach thiet bi: doc (chi doc) co so du lieu hbbs db_v2.sqlite3, bang peer. Ban mien phi cua RustDesk Server KHONG co trang quan tri web
     (trang quan tri co nguoi dung/nhom/chia se la ban Pro tra phi) - trang nay hien thi nhung gi hbbs thuc su luu.
-  * Client Windows: script PowerShell tai ban cai CHINH THUC (ghim SHA-256), cai im lang, tro ve may chu nay va dat mat khau co dinh. Chay duoc qua
-    agent (1 nut) HOAC dan thu cong tren may o ngoai Internet (script tai ve tu trang nay).
-  * Ra Internet: can chuyen tiep cong tren router toi may nay: TCP 21115-21119 va UDP 21116, va nhap ten mien / IP cong cong o muc Cau hinh.
-    (Duong ham Cloudflare khong chuyen duoc giao thuc RustDesk.)
+  * Client Windows: script PowerShell tai ban cai CHINH THUC (ghim SHA-256), cai im lang, dien san May chu ID + May chu chuyen tiep + Key,
+    dat mat khau co dinh. Dung chung cho: nut Cai tren trang RustDesk (agent), buoc "RustDesk" cua Trien khai phan mem (WinRM), file .ps1 cai tay.
+  * Ra Internet: router chuyen tiep TCP 21115-21117 + UDP 21116 ve may nay; nhap ten mien / IP cong cong vao May chu ID (va May chu chuyen tiep
+    neu khac). Client RustDesk dung giao thuc rieng (TCP/UDP), khong di qua Cloudflare Tunnel (chi HTTP) duoc.
 """
 import hashlib
 import json
@@ -71,6 +71,7 @@ def doc_cfg():
     except (OSError, ValueError):
         d = {}
     d.setdefault("host", "")
+    d.setdefault("relay", "")
     d.setdefault("may", {})
     return d
 
@@ -120,8 +121,14 @@ def script_dat_mk(mk):
 
 
 def host_hieu_luc():
-    """Dia chi ma client se dung: cau hinh tay, neu chua co thi IP LAN (chi dung duoc trong mang noi bo)."""
+    """May chu ID ma client se dung: cau hinh tay (ten mien / IP cong cong), neu chua co thi IP LAN (chi dung duoc trong mang noi bo)."""
     return doc_cfg().get("host") or ip_lan()
+
+
+def relay_hieu_luc():
+    """May chu chuyen tiep (relay): cau hinh rieng, neu de trong thi trung May chu ID."""
+    d = doc_cfg()
+    return d.get("relay") or d.get("host") or ip_lan()
 
 
 def kien_truc():
@@ -156,8 +163,8 @@ def _cong_nghe(cong):
 def trang_thai():
     cfg = doc_cfg()
     return {"kien_truc": kien_truc(), "ban": VER_SERVER, "da_cai": da_cai(), "hbbs": _hoat_dong(DV_HBBS), "hbbr": _hoat_dong(DV_HBBR),
-            "cong": {str(c): _cong_nghe(c) for c in (21115, 21116, 21117)}, "khoa": khoa_cong_khai(), "host": cfg["host"], "ws": bool(cfg.get("ws")), "host_hieu_luc": host_hieu_luc(),
-            "ip_lan": ip_lan(), "cai": dict(_CAI), "api": trang_thai_api()}
+            "cong": {str(c): _cong_nghe(c) for c in (21115, 21116, 21117)}, "khoa": khoa_cong_khai(), "host": cfg["host"], "relay": cfg["relay"],
+            "host_hieu_luc": host_hieu_luc(), "relay_hieu_luc": relay_hieu_luc(), "ip_lan": ip_lan(), "cai": dict(_CAI)}
 
 
 # ------------------------------------------------------------------ cai may chu
@@ -186,11 +193,11 @@ def _unit(ten, mo_ta, lenh_chay):
 
 
 def ghi_dich_vu():
-    host = host_hieu_luc()
-    if not MAU_HOST.fullmatch(host or ""):
+    relay = relay_hieu_luc()
+    if not MAU_HOST.fullmatch(relay or ""):
         raise RuntimeError("Chưa có địa chỉ máy chủ hợp lệ. Nhập tên miền hoặc IP ở mục Cấu hình.")
     os.makedirs(_chay_dir(), mode=0o700, exist_ok=True)
-    f = {DV_HBBS: _unit(DV_HBBS, "Console System - RustDesk ID server (hbbs)", "%s/hbbs -r %s:21117 -k _" % (_bin(), host)),
+    f = {DV_HBBS: _unit(DV_HBBS, "Console System - RustDesk ID server (hbbs)", "%s/hbbs -r %s:21117 -k _" % (_bin(), relay)),
          DV_HBBR: _unit(DV_HBBR, "Console System - RustDesk relay (hbbr)", "%s/hbbr -k _" % _bin())}
     for ten, nd in f.items():
         ghi_nguyen_tu("/etc/systemd/system/%s.service" % ten, nd.encode("utf-8"), 0o644)
@@ -263,29 +270,19 @@ def hanh_dong(viec):
     return True, {"start": "Đã chạy", "stop": "Đã dừng", "restart": "Đã khởi động lại"}[viec] + " RustDesk Server."
 
 
-def dung_ws():
-    return bool(doc_cfg().get("ws"))
-
-
-def dat_ws(bat):
+def dat_may_chu(host, relay=""):
+    """Luu May chu ID va May chu chuyen tiep (de trong relay = trung May chu ID). Khoi dong lai hbbs de bao dung dia chi relay cho client."""
+    host, relay = (host or "").strip(), (relay or "").strip()
+    for x in (host, relay):
+        if x and not MAU_HOST.fullmatch(x):
+            return False, "Địa chỉ không hợp lệ (chỉ chữ, số, dấu chấm, gạch ngang; không ghi cổng)."
     d = doc_cfg()
-    d["ws"] = bool(bat)
-    luu_cfg(d)
-    return True, "Đã %s chế độ WebSocket (đường Cloudflare) cho máy cài mới." % ("bật" if bat else "tắt")
-
-
-def dat_host(host):
-    host = (host or "").strip()
-    if host and not MAU_HOST.fullmatch(host):
-        return False, "Địa chỉ không hợp lệ (chỉ chữ, số, dấu chấm, gạch ngang)."
-    d = doc_cfg()
-    d["host"] = host
+    d["host"], d["relay"] = host, relay
+    d.pop("ws", None)
     luu_cfg(d)
     if da_cai():
         hanh_dong("restart")
-    if api_da_cai():
-        hanh_dong_api("restart")
-    return True, "Đã lưu địa chỉ máy chủ RustDesk."
+    return True, "Đã lưu máy chủ ID và máy chủ chuyển tiếp. Máy cài mới sẽ dùng địa chỉ này; máy đã cài thì bấm Áp dụng xuống các máy đã cài."
 
 
 # ------------------------------------------------------------------ thiet bi (doc DB cua hbbs)
@@ -311,44 +308,49 @@ def thiet_bi():
 
 
 # ------------------------------------------------------------------ client Windows
+MAU_KHOA = re.compile(r"[A-Za-z0-9+/=]{20,100}")
+
+# Ghi cau hinh cho DICH VU RustDesk (chay duoi LocalService) roi dung lenh --option cua RustDesk cho chac. allow-websocket = 'N': ve duong UDP/TCP thuong
+# (may tung bat WebSocket o ban truoc se tu tat).
 KHOI_CAU_HINH = r"""$cfg = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config'
 New-Item -ItemType Directory -Force -Path $cfg | Out-Null
 @"
-rendezvous_server = '%(host)s%(cong)s'
+rendezvous_server = '%(host)s:21116'
 nat_type = 1
 serial = 0
 
 [options]
 custom-rendezvous-server = '%(host)s'
-relay-server = '%(host)s'
-key = '%(khoa)s'%(ws_toml)s
+relay-server = '%(relay)s'
+key = '%(khoa)s'
+allow-websocket = 'N'
 "@ | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
 Restart-Service RustDesk -ErrorAction SilentlyContinue
 Start-Sleep 5
 & $rd --option custom-rendezvous-server '%(host)s' | Out-Null
-& $rd --option relay-server '%(host)s' | Out-Null
-& $rd --option key '%(khoa)s' | Out-Null%(ws_opt)s
+& $rd --option relay-server '%(relay)s' | Out-Null
+& $rd --option key '%(khoa)s' | Out-Null
+& $rd --option allow-websocket N | Out-Null
 """
 
 
-def _tham_so(host, khoa, mat_khau=""):
-    ws = dung_ws()
-    return {"host": host, "khoa": khoa, "mk": mat_khau, "cong": "" if ws else ":21116", "ws_toml": "\nallow-websocket = '%s'" % ("Y" if ws else "N"),
-            "ws_opt": "\n& $rd --option allow-websocket %s | Out-Null" % ("Y" if ws else "N")}
-
-
-def script_cau_hinh(host=None, khoa=None):
-    """Chay qua agent (SYSTEM): neu may CO RustDesk thi doi dia chi may chu/khoa/WebSocket o ca cau hinh DICH VU lan cau hinh cua TUNG NGUOI DUNG
-    (app RustDesk cua nguoi dung doc cau hinh rieng trong %AppData%), roi in ID. May chua cai RustDesk: bo qua (RUSTDESK_CHUA_CAI). Khong doi mat khau."""
-    host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
-    if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
+def _may_chu(host=None, relay=None, khoa=None):
+    host = host or host_hieu_luc()
+    relay = relay or (relay_hieu_luc() if host == host_hieu_luc() else host)
+    khoa = khoa or khoa_cong_khai()
+    if not MAU_HOST.fullmatch(host or "") or not MAU_HOST.fullmatch(relay or "") or not MAU_KHOA.fullmatch(khoa or ""):
         raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
-    ws = dung_ws()
-    khoi = KHOI_CAU_HINH % _tham_so(host, khoa)
+    return {"host": host, "relay": relay, "khoa": khoa}
+
+
+def script_cau_hinh(host=None, khoa=None, relay=None):
+    """Chay qua agent (SYSTEM): neu may CO RustDesk thi doi May chu ID / chuyen tiep / khoa o ca cau hinh DICH VU lan cau hinh cua TUNG NGUOI DUNG
+    (app RustDesk cua nguoi dung doc cau hinh rieng trong %AppData%), roi in ID. May chua cai RustDesk: bo qua (RUSTDESK_CHUA_CAI). Khong doi mat khau."""
+    t = _may_chu(host, relay, khoa)
     tung_nguoi = r"""
 Get-Process rustdesk -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -ne 0 } | Stop-Process -Force
 Start-Sleep 2
-$set = [ordered]@{ 'custom-rendezvous-server' = '@HOST@'; 'relay-server' = '@HOST@'; 'key' = '@KEY@' }@WS@
+$set = [ordered]@{ 'custom-rendezvous-server' = '@HOST@'; 'relay-server' = '@RELAY@'; 'key' = '@KEY@'; 'allow-websocket' = 'N' }
 Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object {
   $f = Join-Path $_.FullName 'AppData\Roaming\RustDesk\config\RustDesk2.toml'
   if (Test-Path -LiteralPath $f) {
@@ -359,46 +361,48 @@ Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object
       $re = '(?m)^' + [regex]::Escape($k) + ' = .*$'
       if ($t -match $re) { $t = [regex]::Replace($t, $re, $line.Replace('$', '$$')) } else { $t = [regex]::Replace($t, '(?m)^\[options\]', '[options]' + "`r`n" + $line.Replace('$', '$$')) }
     }
-    $t = [regex]::Replace($t, '(?m)^rendezvous_server = .*$', "rendezvous_server = '@HOST@@CONG@'")
+    $t = [regex]::Replace($t, '(?m)^rendezvous_server = .*$', "rendezvous_server = '@HOST@:21116'")
     [IO.File]::WriteAllText($f, $t, (New-Object Text.UTF8Encoding($false)))
   }
 }
 $id = ((& $rd --get-id | Out-String).Trim())
 'RUSTDESK_ID=' + $id
 'RUSTDESK_CFG_OK'"""
-    tung_nguoi = (tung_nguoi.replace("@HOST@", host).replace("@KEY@", khoa).replace("@CONG@", "" if ws else ":21116")
-                  .replace("@WS@", "\n$set['allow-websocket'] = '%s'" % ("Y" if ws else "N")))
-    return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\nif (-not (Test-Path $rd)) { 'RUSTDESK_CHUA_CAI'; return }\n" + khoi + "\n" + tung_nguoi)
+    tung_nguoi = tung_nguoi.replace("@HOST@", t["host"]).replace("@RELAY@", t["relay"]).replace("@KEY@", t["khoa"])
+    return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\nif (-not (Test-Path $rd)) { 'RUSTDESK_CHUA_CAI'; return }\n"
+            + KHOI_CAU_HINH % t + "\n" + tung_nguoi)
 
 
-def script_cau_hinh_nguoi_dung(host=None, khoa=None):
-    """Script cho nguoi dung tu chay tren MAY MINH DANG NGOI (khong can agent): doi dia chi may chu/khoa/WebSocket cua RustDesk da cai.
+def script_cau_hinh_nguoi_dung(host=None, khoa=None, relay=None):
+    """Script cho nguoi dung tu chay tren MAY MINH DANG NGOI (khong can agent): doi May chu ID / chuyen tiep / khoa cua RustDesk da cai.
     Dung lenh --option cua RustDesk nen ghi dung cau hinh cua nguoi dang dang nhap va cua dich vu."""
-    host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
-    if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
-        raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
-    ws = "\n& $rd --option allow-websocket %s | Out-Null" % ("Y" if dung_ws() else "N")
+    t = _may_chu(host, relay, khoa)
     return ("$ErrorActionPreference = 'Stop'\n"
             "$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\n"
             "if (-not (Test-Path $rd)) { throw 'Máy này chưa cài RustDesk (cần bản cài đặt, không phải bản chạy trực tiếp).' }\n"
             "Get-Process rustdesk -ErrorAction SilentlyContinue | Stop-Process -Force\nStart-Sleep 2\n"
-            "& $rd --option custom-rendezvous-server '%(h)s' | Out-Null\n& $rd --option relay-server '%(h)s' | Out-Null\n"
-            "& $rd --option key '%(k)s' | Out-Null%(w)s\n"
-            "Start-Process $rd\nWrite-Host 'Đã đổi RustDesk sang máy chủ %(h)s. Đợi vài giây cho góc dưới RustDesk báo Ready.' -ForegroundColor Green\n"
-            "Read-Host 'Nhan Enter de dong'\n") % {"h": host, "k": khoa, "w": ws}
+            "& $rd --option custom-rendezvous-server '%(host)s' | Out-Null\n& $rd --option relay-server '%(relay)s' | Out-Null\n"
+            "& $rd --option key '%(khoa)s' | Out-Null\n& $rd --option allow-websocket N | Out-Null\n"
+            "Start-Process $rd\nWrite-Host 'Đã đổi RustDesk sang máy chủ ID %(host)s, chuyển tiếp %(relay)s. Đợi vài giây cho góc dưới RustDesk báo Ready.' -ForegroundColor Green\n"
+            "Read-Host 'Nhan Enter de dong'\n") % t
 
 
-def script_client(mat_khau, host=None, khoa=None):
-    """PowerShell cai RustDesk client (ban chinh thuc, SHA-256 ghim), tro ve may chu nay, dat mat khau co dinh, in ra ID."""
-    host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
-    ws = dung_ws()
-    if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
-        raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
+def script_client(mat_khau, host=None, khoa=None, relay=None, url=None, sha=None):
+    """PowerShell cai RustDesk client roi DIEN SAN May chu ID / chuyen tiep / Key, dat mat khau co dinh, in ra ID.
+    Mac dinh tai ban chinh thuc tu GitHub (SHA-256 ghim); url/sha cho phep dung file .exe/.msi trong Tai nguyen cua Console System."""
+    t = _may_chu(host, relay, khoa)
     if not (re.fullmatch(r"[A-Za-z0-9]{8,64}", mat_khau) or MAU_MK.fullmatch(mat_khau)):
         raise RuntimeError("Mật khẩu không hợp lệ.")
+    url, sha = url or URL_CLIENT, (sha or SHA_CLIENT).lower()
+    if not re.fullmatch(r"https?://[A-Za-z0-9._:/%?=&+\-]{4,500}", url) or not re.fullmatch(r"[0-9a-f]{64}", sha):
+        raise RuntimeError("Đường tải bộ cài RustDesk không hợp lệ.")
+    msi = url.lower().split("?")[0].endswith(".msi")
+    cai = ("Start-Process msiexec.exe -ArgumentList ('/i \"' + $exe + '\" /qn /norestart') -Wait" if msi else
+           # KHONG dung -Wait: --silent-install mo ung dung/dich vu va khong thoat, se treo vo han. Doi file cai xong roi di tiep.
+           "Start-Process $exe -ArgumentList '--silent-install'")
     return r"""$ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$exe = Join-Path $env:TEMP ('rustdesk-setup-' + [guid]::NewGuid().ToString('N') + '.exe')
+$exe = Join-Path $env:TEMP ('rustdesk-setup-' + [guid]::NewGuid().ToString('N') + '%(duoi)s')
 $ok = $false
 for ($i = 1; $i -le 3 -and -not $ok; $i++) {
     try {
@@ -408,208 +412,45 @@ for ($i = 1; $i -le 3 -and -not $ok; $i++) {
     if (-not $ok) { Remove-Item $exe -Force -ErrorAction SilentlyContinue }
 }
 if (-not $ok) { throw 'Không tải được RustDesk hoặc file không khớp SHA-256 (đã thử 3 lần).' }
-# KHONG dung -Wait: --silent-install mo ung dung/dich vu va khong thoat, se treo vo han. Doi file cai xong roi di tiep.
-Start-Process $exe -ArgumentList '--silent-install'
+%(cai)s
 $rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
-for ($i = 0; $i -lt 60 -and -not (Test-Path $rd); $i++) { Start-Sleep 2 }
+for ($i = 0; $i -lt 60 -and -not ((Test-Path $rd) -and (Get-Service RustDesk -ErrorAction SilentlyContinue)); $i++) { Start-Sleep 2 }
 Start-Sleep 12
 Remove-Item $exe -Force -ErrorAction SilentlyContinue
 if (-not (Test-Path $rd)) { throw 'Không thấy rustdesk.exe sau khi cài.' }
 %(khoi)s& $rd --password '%(mk)s' | Out-Null
 $id = ((& $rd --get-id | Out-String).Trim())
-'RUSTDESK_ID=' + $id""" % {"url": URL_CLIENT, "sha": SHA_CLIENT, "mk": mat_khau, "khoi": KHOI_CAU_HINH % _tham_so(host, khoa, mat_khau)}
+'RUSTDESK_ID=' + $id""" % {"url": url, "sha": sha, "mk": mat_khau, "cai": cai, "duoi": ".msi" if msi else ".exe", "khoi": KHOI_CAU_HINH % t}
 
 
-# ------------------------------------------------------------------ rustdesk-api (lejianwen, MIT): trang quan tri web + web client
-VER_API = "v2.7"
-URL_API = "https://github.com/lejianwen/rustdesk-api/releases/download/%s/linux-%%s.tar.gz" % VER_API
-SHA_API = {
-    "amd64": "d0689a353fd756815cfe560ce7cb98f764602de60d0403b51db4e5a9bd84d22a",
-    "arm64v8": "830bbab588c39c7d39130e28fe4aa01f00150ebaa0385a48d1fc664cba33ccfc",
-    "armv7": "9e3b520999cc060441c56c0713fc4d49387ec957670ce9a6e8453352882c75f3",
-}
-TEN_GOI_API = {"amd64": "amd64", "arm64v8": "arm64", "armv7": "armv7l"}
-DV_API = "console-system-rustdesk-api"
-CONG_API = 21114
-_CAI_API = {"dang": False, "tb": "", "ok": None}
+def la_bo_cai_rustdesk(ten):
+    """File trong Tai nguyen co phai bo cai RustDesk khong (de Trien khai phan mem cai kem cau hinh may chu)."""
+    return bool(re.fullmatch(r"rustdesk[^\\/]*\.(exe|msi)", os.path.basename(ten or "").lower()))
 
 
-def _api_dir():
-    return os.path.join(_goc(), "api")
+def sha256_tep(duong):
+    h = hashlib.sha256()
+    with open(duong, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
 
 
-def api_da_cai():
-    return os.path.isfile(os.path.join(_api_dir(), "apimain"))
-
-
-def web_host():
-    return doc_cfg().get("web_host", "")
-
-
-def dat_web_host(h):
-    h = (h or "").strip().lower()
-    if h and not MAU_HOST.fullmatch(h):
-        return False, "Tên miền web không hợp lệ."
-    d = doc_cfg()
-    d["web_host"] = h
-    luu_cfg(d)
-    if api_da_cai():
-        ghi_dich_vu_api()
-        _lenh.chay(["systemctl", "restart", DV_API], timeout=30)
-    return True, "Đã lưu tên miền web."
-
-
-def _env_api():
-    """Bien moi truong cho rustdesk-api: ID/relay = dia chi client dung (UDP 21116), API va WebSocket = ten mien web (Cloudflare) neu co."""
-    h, w = host_hieu_luc(), web_host()
-    if not MAU_HOST.fullmatch(h or ""):
-        raise RuntimeError("Chưa có địa chỉ máy chủ hợp lệ.")
-    env = {"RUSTDESK_API_LANG": "en", "RUSTDESK_API_RUSTDESK_ID_SERVER": "%s:21116" % h, "RUSTDESK_API_RUSTDESK_RELAY_SERVER": "%s:21117" % h,
-           "RUSTDESK_API_RUSTDESK_API_SERVER": ("https://%s" % w) if w else ("http://%s:%d" % (h, CONG_API)),
-           "RUSTDESK_API_RUSTDESK_KEY_FILE": os.path.join(_chay_dir(), "id_ed25519.pub"),
-           "RUSTDESK_API_RUSTDESK_WS_HOST": ("wss://%s" % w) if w else "",
-           "RUSTDESK_API_GIN_API_ADDR": "0.0.0.0:%d" % CONG_API, "RUSTDESK_API_APP_REGISTER": "false"}
-    return env
-
-
-SHIM_WS = r"""/* Console System: web client RustDesk (v1) luon goi wss://<may>:21118 va :21119. Qua Cloudflare/HTTPS chi co cong 443 nen doi sang
-   duong dan /ws/id va /ws/relay cua chinh ten mien dang mo trang (Cloudflare Tunnel chuyen ve hbbs/hbbr). Mo trong LAN bang http thi giu nguyen. */
-(function () {
-  if (location.protocol !== "https:" || !window.WebSocket) return;
-  var W = window.WebSocket;
-  function doi(u) {
-    try {
-      var x = new URL(u);
-      if (x.port === "21118") return "wss://" + location.host + "/ws/id";
-      if (x.port === "21119") return "wss://" + location.host + "/ws/relay";
-    } catch (e) {}
-    return u;
-  }
-  function P(u, p) { return p === undefined ? new W(doi(u)) : new W(doi(u), p); }
-  P.prototype = W.prototype;
-  P.CONNECTING = 0; P.OPEN = 1; P.CLOSING = 2; P.CLOSED = 3;
-  window.WebSocket = P;
-})();
-"""
-
-
-def va_web_client(thu_muc=None):
-    """Chen SHIM_WS vao resources/web/index.html cua rustdesk-api (lam lai sau moi lan cai/cap nhat; khong chen 2 lan)."""
-    web = os.path.join(thu_muc or _api_dir(), "resources", "web")
-    idx = os.path.join(web, "index.html")
-    if not os.path.isfile(idx):
-        return False
-    with open(os.path.join(web, "cs-ws-shim.js"), "w", encoding="utf-8") as f:
-        f.write(SHIM_WS)
-    with open(idx, encoding="utf-8") as f:
-        h = f.read()
-    if "cs-ws-shim.js" not in h:
-        h = h.replace("<head>", '<head>\n  <script src="cs-ws-shim.js"></script>', 1)
-        with open(idx, "w", encoding="utf-8") as f:
-            f.write(h)
-    return True
-
-
-def ghi_dich_vu_api():
-    env = "".join("Environment=%s=%s\n" % (k, v) for k, v in _env_api().items())
-    nd = ("[Unit]\nDescription=Console System - RustDesk API (trang quan tri web + web client)\nAfter=network.target %s.service\n\n[Service]\nType=simple\n"
-          "WorkingDirectory=%s\n%sExecStart=%s/apimain\nRestart=always\nRestartSec=3\n\n[Install]\nWantedBy=multi-user.target\n"
-          % (DV_HBBS, _api_dir(), env, _api_dir()))
-    ghi_nguyen_tu("/etc/systemd/system/%s.service" % DV_API, nd.encode("utf-8"), 0o644)
-    _lenh.chay(["systemctl", "daemon-reload"], timeout=30)
-
-
-def _cai_api_nen():
-    import shutil
-    import tarfile
+def cai_va_ghi(chay_ps, may_id, url=None, sha=None):
+    """Cai RustDesk len 1 may KEM May chu ID / chuyen tiep / Key va mat khau (mat khau chung neu co, khong thi giu mat khau cu / tao moi),
+    roi luu ID vao danh sach may. chay_ps(script) -> (ok, out) la cach chay tren may (agent hoac WinRM). Tra (ok, thong_diep, id)."""
+    ban = doc_cfg()["may"].get(may_id) or {}
+    mk = mk_chung() or ban.get("mk") or secrets.token_hex(6)
     try:
-        ar = kien_truc()
-        if ar not in SHA_API:
-            raise RuntimeError("Kiến trúc %s chưa có bản rustdesk-api." % platform.machine())
-        if not khoa_cong_khai():
-            raise RuntimeError("Cài và chạy máy chủ RustDesk (hbbs) trước để có khóa.")
-        os.makedirs(_goc(), mode=0o700, exist_ok=True)
-        tam = os.path.join(_goc(), "api-%s.tgz" % secrets.token_hex(3))
-        _CAI_API["tb"] = "Đang tải rustdesk-api %s..." % VER_API
-        _tai(URL_API % TEN_GOI_API[ar], tam, SHA_API[ar])
-        giai = os.path.join(_goc(), "api-moi")
-        shutil.rmtree(giai, ignore_errors=True)
-        with tarfile.open(tam) as t:
-            for m in t.getmembers():                      # chong file doc hai trong goi (duong dan tuyet doi / ..)
-                if m.name.startswith("/") or ".." in m.name.split("/") or m.issym() or m.islnk():
-                    raise RuntimeError("Gói rustdesk-api có đường dẫn lạ: %s" % m.name)
-            t.extractall(giai)
-        os.unlink(tam)
-        moi = os.path.join(giai, "release")
-        cu = _api_dir()
-        for giu in ("data", "runtime"):                    # giu co so du lieu (tai khoan, so dia chi) khi cai lai
-            if os.path.isdir(os.path.join(cu, giu)):
-                shutil.rmtree(os.path.join(moi, giu), ignore_errors=True)
-                shutil.move(os.path.join(cu, giu), os.path.join(moi, giu))
-        _lenh.chay(["systemctl", "stop", DV_API], timeout=30)
-        shutil.rmtree(cu, ignore_errors=True)
-        shutil.move(moi, cu)
-        shutil.rmtree(giai, ignore_errors=True)
-        os.chmod(os.path.join(cu, "apimain"), 0o755)
-        va_web_client(cu)
-        _CAI_API["tb"] = "Đang tạo dịch vụ..."
-        ghi_dich_vu_api()
-        _lenh.chay(["systemctl", "enable", "--now", DV_API], timeout=30)
-        d = doc_cfg()
-        if not d.get("api_mk"):
-            # Dat mat khau admin ngau nhien va luu lai (lan dau rustdesk-api chi in mat khau ra nhat ky). Lan chay dau con dang tao CSDL -> thu lai vai lan.
-            mk = secrets.token_urlsafe(9)
-            env = dict(os.environ, **_env_api())
-            for _ in range(8):
-                time.sleep(3)
-                r = _lenh.chay([os.path.join(cu, "apimain"), "reset-admin-pwd", mk], timeout=30, cwd=cu, env=env)
-                if r.ok and "success" in (r.out + r.err):
-                    d = doc_cfg()
-                    d["api_mk"] = mk
-                    luu_cfg(d)
-                    break
-        _CAI_API.update(ok=True, tb="Đã cài và chạy rustdesk-api %s." % VER_API)
-    except Exception as e:                       # tai ve / giai nen / quyen: hien nguyen nhan
-        _CAI_API.update(ok=False, tb="Lỗi: %s" % e)
-    finally:
-        _CAI_API["dang"] = False
-
-
-def bat_dau_cai_api():
-    with _KHOA:
-        if _CAI_API["dang"]:
-            return False
-        _CAI_API.update(dang=True, ok=None, tb="Bắt đầu...")
-    threading.Thread(target=_cai_api_nen, daemon=True, name="rustdesk-api-cai").start()
-    return True
-
-
-def hanh_dong_api(viec):
-    if not api_da_cai():
-        return False, "Chưa cài rustdesk-api."
-    if viec == "go":
-        _lenh.chay(["systemctl", "disable", "--now", DV_API], timeout=30)
-        try:
-            os.unlink("/etc/systemd/system/%s.service" % DV_API)
-        except OSError as _loi:
-            _bo_qua(_loi)
-        _lenh.chay(["systemctl", "daemon-reload"], timeout=30)
-        return True, "Đã gỡ dịch vụ rustdesk-api (dữ liệu vẫn giữ)."
-    if viec not in ("start", "stop", "restart"):
-        return False, "Hành động không hợp lệ."
-    if viec != "stop":
-        va_web_client()
-        try:
-            ghi_dich_vu_api()
-        except RuntimeError as e:
-            return False, str(e)
-    _lenh.chay(["systemctl", viec, DV_API], timeout=30)
-    return True, "Xong."
-
-
-def trang_thai_api():
-    d = doc_cfg()
-    w = d.get("web_host", "")
-    lan = "http://%s:%d" % (ip_lan(), CONG_API)
-    return {"ban": VER_API, "da_cai": api_da_cai(), "chay": _hoat_dong(DV_API), "cong": _cong_nghe(CONG_API), "web_host": w,
-            "admin_user": "admin", "admin_mk": d.get("api_mk", ""), "url_lan": lan, "url_web": ("https://%s" % w) if w else "", "cai": dict(_CAI_API)}
+        sc = script_client(mk, url=url, sha=sha)
+    except RuntimeError as e:
+        return False, str(e), ""
+    ok, out = chay_ps(sc)
+    ma = re.search(r"RUSTDESK_ID=(\d{6,12})", out or "")
+    if not ok or not ma:
+        return False, re.sub(r"\s+", " ", out or "Không lấy được ID RustDesk.")[-400:], ""
+    if may_id:
+        cfg = doc_cfg()
+        cfg["may"][may_id] = {"id": ma.group(1), "mk": mk, "luc": int(time.time()), "dong_bo": True}
+        luu_cfg(cfg)
+    return True, "Đã cài RustDesk (máy chủ ID %s, chuyển tiếp %s), ID %s." % (host_hieu_luc(), relay_hieu_luc(), ma.group(1)), ma.group(1)

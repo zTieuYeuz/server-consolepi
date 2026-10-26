@@ -1,7 +1,6 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """RustDesk phia quan ly may tram: cai client RustDesk len may qua agent/WinRM va liet ke may/ID/mat khau. Logic may chu: integrations/rustdesk_may_chu.py."""
 import re
-import secrets
 import time
 
 from flask import jsonify, request
@@ -13,23 +12,8 @@ from ui import uem_agent as UA
 
 
 def cai_client_may(m):
-    """Cai qua agent/WinRM. Tra (ok, thong_diep, id)."""
-    cfg = RD.doc_cfg()
-    ban = cfg["may"].get(m["id"]) or {}
-    mk = RD.mk_chung() or ban.get("mk") or secrets.token_hex(6)
-    try:
-        sc = RD.script_client(mk)
-    except RuntimeError as e:
-        return False, str(e), ""
-    ok, out = DK._chay(m, sc)
-    ma = re.search(r"RUSTDESK_ID=(\d{6,12})", out or "")
-    if not ok or not ma:
-        return False, (out or "Không lấy được ID RustDesk.")[-400:], ""
-    cfg = RD.doc_cfg()
-    cfg["may"][m["id"]] = {"id": ma.group(1), "mk": mk, "luc": int(time.time()), "dong_bo": True}
-    RD.luu_cfg(cfg)
-    return True, "Đã cài RustDesk, ID %s." % ma.group(1), ma.group(1)
-
+    """Cai qua agent/WinRM, kem May chu ID / chuyen tiep / Key. Tra (ok, thong_diep, id)."""
+    return RD.cai_va_ghi(lambda sc: DK._chay(m, sc), m["id"])
 
 
 def register_uem_rustdesk(app):
@@ -117,7 +101,7 @@ def _dong_bo_nen(chi=None):
 
 
 def _ap_cau_hinh_nen():
-    """Day dia chi may chu + khoa + WebSocket xuong MOI may co agent (qua agent/WinRM): may co RustDesk thi doi, may chua cai thi bo qua.
+    """Day May chu ID / chuyen tiep + khoa xuong MOI may co agent (qua agent/WinRM): may co RustDesk thi doi, may chua cai thi bo qua.
     May tim thay ID thi them vao danh sach RustDesk (mat khau de trong cho toi khi dat mat khau chung / nhap tay)."""
     try:
         sc = RD.script_cau_hinh()
@@ -181,7 +165,7 @@ def khoi_tu_xa(m):
     i, mk = _e(ban["id"]), _e(ban["mk"])
     return (f'<div class="card"><h3>Điều khiển bằng RustDesk</h3>'
             f'<p class="tk-ghi">RustDesk không chạy trong trình duyệt (khác VNC phía trên): bấm nút để mở <b>ứng dụng RustDesk đã cài trên máy của anh</b> và kết nối thẳng xuống máy này. '
-            f'Cần cài RustDesk client trên máy đang ngồi và trỏ về máy chủ <b>{_e(st["host_hieu_luc"])}</b> (Cài đặt, Mạng, ID/Relay server, dán key ở trang RustDesk).</p>'
+            f'Cần cài RustDesk client trên máy đang ngồi, điền Máy chủ ID <b>{_e(st["host_hieu_luc"])}</b>, Máy chủ chuyển tiếp <b>{_e(st["relay_hieu_luc"])}</b> và Key ở trang RustDesk.</p>'
             f'<div class="uem-2"><div>ID: <span class="rd-k" style="font-family:monospace;user-select:all;">{i}</span></div><div>Mật khẩu: <span style="font-family:monospace;user-select:all;">{mk}</span></div></div>'
             f'<div class="tk-hang" style="margin-top:10px;"><a class="tk-nut chinh" href="rustdesk://connection/new/{i}?password={mk}">Mở RustDesk và kết nối</a>'
             f'<a class="tk-nut" href="/rustdesk">Trang RustDesk (khóa, tải client)</a></div></div>')

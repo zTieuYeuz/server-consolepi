@@ -135,12 +135,32 @@ kq["mk_chung_day_xuong_may"] = RD.doc_cfg()["may"]["m-agent"].get("mk") == "MatK
 kq["mk_chung_gui_dung_lenh"] = "--password 'MatKhau#Chung1'" in kich[-1]
 d = c.get("/rustdesk/api/thiet-bi", headers=H).get_json()
 kq["mk_chung_hien_thi"] = d["mk_chung"] == "MatKhau#Chung1" and d["may"][0]["dong_bo"] is True
-post("/rustdesk/api/cau-hinh", {"host": "rustdesk.example.com", "ws": True})
-sc2 = RD.script_client("abcdef123456", "rustdesk.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-kq["rd_ws_bat"] = RD.dung_ws() and "allow-websocket = 'Y'" in sc2 and "'rustdesk.example.com'" in sc2 and ":21116" not in sc2
-post("/rustdesk/api/cau-hinh", {"host": "rustdesk.example.com", "ws": False})
-sc3 = RD.script_client("abcdef123456", "rustdesk.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-kq["rd_ws_tat"] = (not RD.dung_ws()) and "allow-websocket = 'N'" in sc3 and ":21116" in sc3
+K = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+kq["rd_relay_xau"] = post("/rustdesk/api/cau-hinh", {"host": "id.example.com", "relay": "a b"}).get_json()["ok"] is False
+post("/rustdesk/api/cau-hinh", {"host": "id.example.com", "relay": ""})
+kq["rd_relay_mac_dinh"] = RD.relay_hieu_luc() == "id.example.com"
+post("/rustdesk/api/cau-hinh", {"host": "id.example.com", "relay": "relay.example.com"})
+sc2 = RD.script_client("abcdef123456", khoa=K)
+kq["rd_client_id_relay"] = ("custom-rendezvous-server = 'id.example.com'" in sc2 and "relay-server = 'relay.example.com'" in sc2
+                            and "rendezvous_server = 'id.example.com:21116'" in sc2 and "allow-websocket = 'N'" in sc2 and "--password 'abcdef123456'" in sc2)
+sc3 = RD.script_client("abcdef123456", khoa=K, url="http://10.0.0.1/tk/tai/x/rustdesk-1.4.exe", sha="b" * 64)
+kq["rd_client_file_rieng"] = "http://10.0.0.1/tk/tai/x/rustdesk-1.4.exe" in sc3 and "b" * 64 in sc3 and RD.SHA_CLIENT not in sc3
+kq["rd_client_msi"] = "msiexec.exe" in RD.script_client("abcdef123456", khoa=K, url="http://10.0.0.1/a/RustDesk.msi", sha="c" * 64)
+try:
+    RD.script_client("abcdef123456", khoa=K, url="http://x/a'; calc", sha="c" * 64)
+    kq["rd_url_xau_bi_chan"] = False
+except RuntimeError:
+    kq["rd_url_xau_bi_chan"] = True
+kq["rd_nhan_bo_cai"] = RD.la_bo_cai_rustdesk("rustdesk-1.4.2-x86_64.exe") and RD.la_bo_cai_rustdesk("RustDesk.msi") and not RD.la_bo_cai_rustdesk("chrome.exe")
+from consolesystem.integrations import tk_dongco as DC  # noqa: E402
+_kb = []
+DC._chay_ps = lambda cc, sc: (_kb.append(sc) or ("RUSTDESK_ID=555666777\r\n", ""))
+_rk = RD.khoa_cong_khai
+RD.khoa_cong_khai = lambda: K
+ok_b, tb_b = DC._BUOC["rustdesk"](None, "10.9.9.1", {"loai": "rustdesk", "ref": ""}, {"id": "m-buoc", "ip": "10.9.9.1"})
+kq["tk_buoc_rustdesk"] = ok_b and "555666777" in tb_b and RD.doc_cfg()["may"]["m-buoc"]["id"] == "555666777" and "relay-server = 'relay.example.com'" in _kb[-1]
+kq["tk_buoc_ten"] = DC.nhan_buoc({"loai": "rustdesk", "ref": ""}).startswith("Cài RustDesk")
+RD.khoa_cong_khai = _rk
 kich.clear()
 _c = RD.doc_cfg(); _c["may"]["m-agent"] = {"id": "123456789", "mk": "MatKhau#Chung1", "dong_bo": True}; RD.luu_cfg(_c)
 RD.khoa_cong_khai = lambda: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
@@ -155,13 +175,8 @@ kq["rd_ap_cau_hinh_ket_qua"] = "1 máy đã đổi" in c.get("/rustdesk/api/thie
 kq["rd_ap_cau_hinh_tung_nguoi"] = "C:\\Users" in kich[-1] and "RUSTDESK_CHUA_CAI" in kich[-1]
 kq["rd_doi_may_chu_409"] = c.get("/rustdesk/doi-may-chu.ps1", headers=H).status_code in (200, 409)
 _s = RD.script_cau_hinh_nguoi_dung("rd.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-kq["rd_doi_may_chu_script"] = "--option custom-rendezvous-server 'rd.example.com'" in _s and "--option key" in _s
+kq["rd_doi_may_chu_script"] = "--option custom-rendezvous-server 'rd.example.com'" in _s and "--option relay-server 'rd.example.com'" in _s and "--option key" in _s
 t = c.get("/rustdesk/api/trang-thai", headers=H).get_json()
-kq["ra_tt"] = t["api"]["da_cai"] is False and t["api"]["ban"] == RD.VER_API
-kq["ra_web_xau"] = post("/rustdesk/api/web-host", {"host": "a b"}).get_json()["ok"] is False
-kq["ra_web_ok"] = post("/rustdesk/api/web-host", {"host": "Rustdesk.Example.com"}).get_json()["ok"] is True and RD.web_host() == "rustdesk.example.com"
-_e = RD._env_api()
-kq["ra_env"] = _e["RUSTDESK_API_RUSTDESK_WS_HOST"] == "wss://rustdesk.example.com" and _e["RUSTDESK_API_RUSTDESK_API_SERVER"] == "https://rustdesk.example.com" and _e["RUSTDESK_API_RUSTDESK_ID_SERVER"].endswith(":21116")
-kq["ra_hd_chua_cai"] = post("/rustdesk/api/api-hanh-dong", {"viec": "start"}).get_json()["ok"] is False
-kq["ra_sha_du"] = set(RD.SHA_API) == set(RD.TEN_GOI_API)
+kq["rd_tt_relay"] = t["relay_hieu_luc"] == "relay.example.com" and "api" not in t
+kq["rd_trang_khong_con_web"] = all(x not in c.get("/rustdesk", headers=H).get_data(as_text=True) for x in ("rustdesk-api", "WebSocket", "itserver"))
 print("KETQUA " + json.dumps(kq))
