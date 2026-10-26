@@ -23,3 +23,10 @@
 | 5.9 | Tab "Sửa lỗi in/chia sẻ" (kịch bản duyệt sẵn) | xong, test client giả; chưa thử Windows thật |
 
 Chưa làm được: kiểm trực tiếp SSH tới 192.168.110.21 / 192.168.100.2 qua giao diện (chỉ xác nhận SSH tới .21 đăng nhập được từ máy build; 192.168.100.2 chưa thử).
+
+## RustDesk qua web (26/10 tối)
+- RustDesk Server bản miễn phí (hbbs 1.1.16) **không nhận máy đăng ký ID qua TCP/WebSocket** (trả `NOT_SUPPORT`, xem `handle_tcp` trong mã nguồn). Máy được điều khiển phải tới máy chủ bằng UDP 21116: trong LAN thì sẵn, ngoài Internet cần mở cổng router. Cloudflare Tunnel không chuyển UDP.
+- Phía điều khiển dùng **rustdesk-api v2.7** (lejianwen, MIT) tích hợp trong trang RustDesk: trang quản trị `/_admin/` + web client `/webclient/` trên cổng 21114, cài từ bản chính thức ghim SHA-256, dịch vụ `console-system-rustdesk-api`, mật khẩu admin ngẫu nhiên lưu trong `rustdesk.json`.
+- Web client v1 luôn gọi `wss://<máy>:21118/21119`; Console chèn `cs-ws-shim.js` đổi sang `wss://<tên miền>/ws/id` và `/ws/relay` khi mở qua HTTPS.
+- Cloudflare tunnel cần 3 dòng: `/ws/id` → `:21118`, `/ws/relay` → `:21119`, dòng không path → `:21114`.
+- Đã thử thật: mở `https://rustdesk.home-server.id.vn/webclient/` → nhập ID 163846525 + mật khẩu → hiện màn hình máy .33 trong trình duyệt.
