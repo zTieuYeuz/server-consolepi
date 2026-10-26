@@ -16,9 +16,15 @@ Agent lam:
 
 from consolesystem.core import taisan as _taisan
 
-VER_FILE = "2.3.2"
+import hashlib
+
+VER_GOC = "2.3.2"
 
 SOURCE = _taisan.doc("features/uem/uem_agent_cs.SOURCE.cs")
+
+# Phien ban = so goc + 8 ky tu dau cua SHA-256 ma nguon: SUA MA AGENT LA PHIEN BAN DOI THEO, moi agent cu tu cap nhat khi bao nhip
+# (khong con phu thuoc viec nho tang so bang tay).
+VER_FILE = VER_GOC + "-" + hashlib.sha256(SOURCE.encode("utf-8")).hexdigest()[:8]
 
 
 def nguon():
