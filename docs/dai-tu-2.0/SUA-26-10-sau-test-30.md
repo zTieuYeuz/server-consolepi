@@ -32,3 +32,11 @@ Chưa làm được: kiểm trực tiếp SSH tới 192.168.110.21 / 192.168.100
 - Bộ cài chạy qua WMI `Win32_Process.Create` để tách khỏi phiên WinRM (WinRM đóng phiên giết tiến trình con, làm máy mất dịch vụ RustDesk khi cài đè); chờ dịch vụ mới chạy rồi mới cấu hình.
 - Thử thật trên .33: gỡ RustDesk → cài bằng agent (1 phút 23 giây) → `RustDesk2.toml` dịch vụ đúng máy chủ/key, nhật ký RustDesk `start udp: 192.168.110.30:21116` + độ trễ. Cài qua kịch bản WinRM 2 lần (lần đầu máy thiếu dịch vụ, lần sau cài đè): xong, dịch vụ chạy, đăng ký lại. Cài lại bằng agent sau khi cố ý đổi cấu hình người dùng sang `dummy.invalid`: file được sửa về .30.
 - Chưa thử: địa chỉ công khai thật (chờ anh mở cổng và đưa tên miền/IP), máy ở ngoài Internet, NAT loopback của router.
+
+## RustDesk theo luồng người dùng (26/10 khuya)
+Luồng: cài ISO → trang RustDesk bước 1 cài máy chủ → bước 2 nhập tên miền/IP công cộng, cổng NGOÀI của máy chủ ID (P) và chuyển tiếp (R), mật khẩu chung → bảng hướng dẫn NAT tự tính: P-1/TCP → 21115, P/TCP+UDP → 21116, R/TCP → 21117 (3 cổng, 4 dòng NAT) → bước 3 file cài `Cai-RustDesk-ConsoleSystem` (.bat bấm đúp / .ps1) điền sẵn tất cả, tự lưu và tự cập nhật trong kho Triển khai phần mềm (Tài nguyên, Script) → bước 4 deploy (Script từ kho, bước RustDesk, nút agent, hoặc gửi .bat) → bước 5 tab Hỗ trợ từ xa của máy.
+- Chạy file từ kho bằng Triển khai phần mềm: ID tự ghi vào Console (tab Hỗ trợ từ xa dùng được ngay).
+- Thử thật: tạm chuyển cổng trên .30 (nft) 1221/1222/1300 → 21115/21116/21117, cấu hình cổng ngoài 1222/1300, chạy file từ kho qua WinRM trên .33: ID ghi lại, cấu hình dịch vụ + người dùng là `:1222` / `:1300`, nhật ký RustDesk `nat response from :1222` và `:1221`, `start udp :1222`. Đã trả về cấu hình LAN và gỡ chuyển cổng.
+- Chạy file .bat thật trên .33: lần đầu lỗi (script ghi ra không BOM, PowerShell 5.1 đọc sai tiếng Việt) → đã sửa, chạy lại cài xong và in ID.
+- Chưa thử: cổng chuyển tiếp khi kết nối thật phải đi relay, tên miền thật ngoài Internet, NAT loopback.
+
