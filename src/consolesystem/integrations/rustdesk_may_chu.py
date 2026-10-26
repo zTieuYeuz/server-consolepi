@@ -347,6 +347,13 @@ def script_cau_hinh(host=None, khoa=None, relay=None):
     """Chay qua agent (SYSTEM): neu may CO RustDesk thi doi May chu ID / chuyen tiep / khoa o ca cau hinh DICH VU lan cau hinh cua TUNG NGUOI DUNG
     (app RustDesk cua nguoi dung doc cau hinh rieng trong %AppData%), roi in ID. May chua cai RustDesk: bo qua (RUSTDESK_CHUA_CAI). Khong doi mat khau."""
     t = _may_chu(host, relay, khoa)
+    return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\nif (-not (Test-Path $rd)) { 'RUSTDESK_CHUA_CAI'; return }\n"
+            + KHOI_CAU_HINH % t + "\n" + _khoi_tung_nguoi(t) + "\n$id = ((& $rd --get-id | Out-String).Trim())\n'RUSTDESK_ID=' + $id\n'RUSTDESK_CFG_OK'")
+
+
+def _khoi_tung_nguoi(t):
+    """Ghi May chu ID / chuyen tiep / khoa vao cau hinh RIENG cua tung nguoi dung (C:\\Users\\*\\AppData\\Roaming\\RustDesk): app RustDesk cua nguoi dung
+    doc file nay, may tung tro may chu khac se van bao dia chi cu neu chi doi cau hinh dich vu."""
     tung_nguoi = r"""
 Get-Process rustdesk -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -ne 0 } | Stop-Process -Force
 Start-Sleep 2
@@ -364,13 +371,8 @@ Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object
     $t = [regex]::Replace($t, '(?m)^rendezvous_server = .*$', "rendezvous_server = '@HOST@:21116'")
     [IO.File]::WriteAllText($f, $t, (New-Object Text.UTF8Encoding($false)))
   }
-}
-$id = ((& $rd --get-id | Out-String).Trim())
-'RUSTDESK_ID=' + $id
-'RUSTDESK_CFG_OK'"""
-    tung_nguoi = tung_nguoi.replace("@HOST@", t["host"]).replace("@RELAY@", t["relay"]).replace("@KEY@", t["khoa"])
-    return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\nif (-not (Test-Path $rd)) { 'RUSTDESK_CHUA_CAI'; return }\n"
-            + KHOI_CAU_HINH % t + "\n" + tung_nguoi)
+}"""
+    return tung_nguoi.replace("@HOST@", t["host"]).replace("@RELAY@", t["relay"]).replace("@KEY@", t["khoa"])
 
 
 def script_cau_hinh_nguoi_dung(host=None, khoa=None, relay=None):
@@ -430,8 +432,9 @@ Start-Sleep 8
 Remove-Item $exe -Force -ErrorAction SilentlyContinue
 if (-not (Test-Path $rd) -or -not (Get-Service RustDesk -ErrorAction SilentlyContinue)) { throw 'Không thấy rustdesk.exe hoặc dịch vụ RustDesk sau khi cài (đã chờ 3 phút).' }
 %(khoi)s& $rd --password '%(mk)s' | Out-Null
+%(tung_nguoi)s
 $id = ((& $rd --get-id | Out-String).Trim())
-'RUSTDESK_ID=' + $id""" % {"url": url, "sha": sha, "mk": mat_khau, "cai": cai, "duoi": ".msi" if msi else ".exe", "khoi": KHOI_CAU_HINH % t}
+'RUSTDESK_ID=' + $id""" % {"url": url, "sha": sha, "mk": mat_khau, "cai": cai, "duoi": ".msi" if msi else ".exe", "khoi": KHOI_CAU_HINH % t, "tung_nguoi": _khoi_tung_nguoi(t)}
 
 
 def la_bo_cai_rustdesk(ten):

@@ -437,7 +437,10 @@ def giai_buoc(kb):
             for m in (g or {}).get("muc", []):
                 ra.append({"loai": m["loai"], "ref": m["ref"], "ten": m.get("ten", m["ref"]), "mot_lan": bool(b.get("mot_lan"))})
         else:
-            ra.append({"loai": b["loai"], "ref": b.get("ref", ""), "ten": b.get("ten", ""), "mot_lan": bool(b.get("mot_lan"))})
+            ref = b.get("ref", "")
+            if b["loai"] == "rustdesk":       # "chi cai mot lan" tinh theo dia chi may chu: doi may chu ID / chuyen tiep / khoa thi lan sau cai lai
+                ref = "%s|%s|%s" % (RD.host_hieu_luc(), RD.relay_hieu_luc(), RD.khoa_cong_khai()[:12])
+            ra.append({"loai": b["loai"], "ref": ref, "ten": b.get("ten", ""), "mot_lan": bool(b.get("mot_lan"))})
     return ra
 
 

@@ -142,7 +142,8 @@ kq["rd_relay_mac_dinh"] = RD.relay_hieu_luc() == "id.example.com"
 post("/rustdesk/api/cau-hinh", {"host": "id.example.com", "relay": "relay.example.com"})
 sc2 = RD.script_client("abcdef123456", khoa=K)
 kq["rd_client_id_relay"] = ("custom-rendezvous-server = 'id.example.com'" in sc2 and "relay-server = 'relay.example.com'" in sc2
-                            and "rendezvous_server = 'id.example.com:21116'" in sc2 and "allow-websocket = 'N'" in sc2 and "--password 'abcdef123456'" in sc2)
+                            and "rendezvous_server = 'id.example.com:21116'" in sc2 and "allow-websocket = 'N'" in sc2 and "--password 'abcdef123456'" in sc2
+                            and "AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml" in sc2 and "'relay-server' = 'relay.example.com'" in sc2)
 sc3 = RD.script_client("abcdef123456", khoa=K, url="http://10.0.0.1/tk/tai/x/rustdesk-1.4.exe", sha="b" * 64)
 kq["rd_client_file_rieng"] = "http://10.0.0.1/tk/tai/x/rustdesk-1.4.exe" in sc3 and "b" * 64 in sc3 and RD.SHA_CLIENT not in sc3
 kq["rd_client_msi"] = "msiexec.exe" in RD.script_client("abcdef123456", khoa=K, url="http://10.0.0.1/a/RustDesk.msi", sha="c" * 64)
@@ -160,6 +161,7 @@ RD.khoa_cong_khai = lambda: K
 ok_b, tb_b = DC._BUOC["rustdesk"](None, "10.9.9.1", {"loai": "rustdesk", "ref": ""}, {"id": "m-buoc", "ip": "10.9.9.1"})
 kq["tk_buoc_rustdesk"] = ok_b and "555666777" in tb_b and RD.doc_cfg()["may"]["m-buoc"]["id"] == "555666777" and "relay-server = 'relay.example.com'" in _kb[-1]
 kq["tk_buoc_ten"] = DC.nhan_buoc({"loai": "rustdesk", "ref": ""}).startswith("Cài RustDesk")
+kq["tk_buoc_mot_lan_theo_may_chu"] = DC.giai_buoc({"buoc": [{"loai": "rustdesk", "ref": ""}]})[0]["ref"].startswith("id.example.com|relay.example.com|")
 RD.khoa_cong_khai = _rk
 kich.clear()
 _c = RD.doc_cfg(); _c["may"]["m-agent"] = {"id": "123456789", "mk": "MatKhau#Chung1", "dong_bo": True}; RD.luu_cfg(_c)
