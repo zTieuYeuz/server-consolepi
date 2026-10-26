@@ -157,7 +157,7 @@ def trang_thai():
     cfg = doc_cfg()
     return {"kien_truc": kien_truc(), "ban": VER_SERVER, "da_cai": da_cai(), "hbbs": _hoat_dong(DV_HBBS), "hbbr": _hoat_dong(DV_HBBR),
             "cong": {str(c): _cong_nghe(c) for c in (21115, 21116, 21117)}, "khoa": khoa_cong_khai(), "host": cfg["host"], "ws": bool(cfg.get("ws")), "host_hieu_luc": host_hieu_luc(),
-            "ip_lan": ip_lan(), "cai": dict(_CAI)}
+            "ip_lan": ip_lan(), "cai": dict(_CAI), "api": trang_thai_api()}
 
 
 # ------------------------------------------------------------------ cai may chu
@@ -283,6 +283,8 @@ def dat_host(host):
     luu_cfg(d)
     if da_cai():
         hanh_dong("restart")
+    if api_da_cai():
+        hanh_dong_api("restart")
     return True, "Đã lưu địa chỉ máy chủ RustDesk."
 
 
@@ -415,4 +417,156 @@ Remove-Item $exe -Force -ErrorAction SilentlyContinue
 if (-not (Test-Path $rd)) { throw 'Không thấy rustdesk.exe sau khi cài.' }
 %(khoi)s& $rd --password '%(mk)s' | Out-Null
 $id = ((& $rd --get-id | Out-String).Trim())
-'RUSTDESK_ID=' + $id""" % {"url": URL_CLIENT, "sha": SHA_CLIENT, "host": host, "khoa": khoa, "mk": mat_khau, "khoi": KHOI_CAU_HINH % _tham_so(host, khoa, mat_khau)}
+'RUSTDESK_ID=' + $id""" % {"url": URL_CLIENT, "sha": SHA_CLIENT, "mk": mat_khau, "khoi": KHOI_CAU_HINH % _tham_so(host, khoa, mat_khau)}
+
+
+# ------------------------------------------------------------------ rustdesk-api (lejianwen, MIT): trang quan tri web + web client
+VER_API = "v2.7"
+URL_API = "https://github.com/lejianwen/rustdesk-api/releases/download/%s/linux-%%s.tar.gz" % VER_API
+SHA_API = {
+    "amd64": "d0689a353fd756815cfe560ce7cb98f764602de60d0403b51db4e5a9bd84d22a",
+    "arm64v8": "830bbab588c39c7d39130e28fe4aa01f00150ebaa0385a48d1fc664cba33ccfc",
+    "armv7": "9e3b520999cc060441c56c0713fc4d49387ec957670ce9a6e8453352882c75f3",
+}
+TEN_GOI_API = {"amd64": "amd64", "arm64v8": "arm64", "armv7": "armv7l"}
+DV_API = "console-system-rustdesk-api"
+CONG_API = 21114
+_CAI_API = {"dang": False, "tb": "", "ok": None}
+
+
+def _api_dir():
+    return os.path.join(_goc(), "api")
+
+
+def api_da_cai():
+    return os.path.isfile(os.path.join(_api_dir(), "apimain"))
+
+
+def web_host():
+    return doc_cfg().get("web_host", "")
+
+
+def dat_web_host(h):
+    h = (h or "").strip().lower()
+    if h and not MAU_HOST.fullmatch(h):
+        return False, "Tên miền web không hợp lệ."
+    d = doc_cfg()
+    d["web_host"] = h
+    luu_cfg(d)
+    if api_da_cai():
+        ghi_dich_vu_api()
+        _lenh.chay(["systemctl", "restart", DV_API], timeout=30)
+    return True, "Đã lưu tên miền web."
+
+
+def _env_api():
+    """Bien moi truong cho rustdesk-api: ID/relay = dia chi client dung (UDP 21116), API va WebSocket = ten mien web (Cloudflare) neu co."""
+    h, w = host_hieu_luc(), web_host()
+    if not MAU_HOST.fullmatch(h or ""):
+        raise RuntimeError("Chưa có địa chỉ máy chủ hợp lệ.")
+    env = {"RUSTDESK_API_LANG": "en", "RUSTDESK_API_RUSTDESK_ID_SERVER": "%s:21116" % h, "RUSTDESK_API_RUSTDESK_RELAY_SERVER": "%s:21117" % h,
+           "RUSTDESK_API_RUSTDESK_API_SERVER": ("https://%s" % w) if w else ("http://%s:%d" % (h, CONG_API)),
+           "RUSTDESK_API_RUSTDESK_KEY_FILE": os.path.join(_chay_dir(), "id_ed25519.pub"),
+           "RUSTDESK_API_RUSTDESK_WS_HOST": ("wss://%s" % w) if w else "",
+           "RUSTDESK_API_GIN_API_ADDR": "0.0.0.0:%d" % CONG_API, "RUSTDESK_API_APP_REGISTER": "false"}
+    return env
+
+
+def ghi_dich_vu_api():
+    env = "".join("Environment=%s=%s\n" % (k, v) for k, v in _env_api().items())
+    nd = ("[Unit]\nDescription=Console System - RustDesk API (trang quan tri web + web client)\nAfter=network.target %s.service\n\n[Service]\nType=simple\n"
+          "WorkingDirectory=%s\n%sExecStart=%s/apimain\nRestart=always\nRestartSec=3\n\n[Install]\nWantedBy=multi-user.target\n"
+          % (DV_HBBS, _api_dir(), env, _api_dir()))
+    ghi_nguyen_tu("/etc/systemd/system/%s.service" % DV_API, nd.encode("utf-8"), 0o644)
+    _lenh.chay(["systemctl", "daemon-reload"], timeout=30)
+
+
+def _cai_api_nen():
+    import shutil
+    import tarfile
+    try:
+        ar = kien_truc()
+        if ar not in SHA_API:
+            raise RuntimeError("Kiến trúc %s chưa có bản rustdesk-api." % platform.machine())
+        if not khoa_cong_khai():
+            raise RuntimeError("Cài và chạy máy chủ RustDesk (hbbs) trước để có khóa.")
+        os.makedirs(_goc(), mode=0o700, exist_ok=True)
+        tam = os.path.join(_goc(), "api-%s.tgz" % secrets.token_hex(3))
+        _CAI_API["tb"] = "Đang tải rustdesk-api %s..." % VER_API
+        _tai(URL_API % TEN_GOI_API[ar], tam, SHA_API[ar])
+        giai = os.path.join(_goc(), "api-moi")
+        shutil.rmtree(giai, ignore_errors=True)
+        with tarfile.open(tam) as t:
+            for m in t.getmembers():                      # chong file doc hai trong goi (duong dan tuyet doi / ..)
+                if m.name.startswith("/") or ".." in m.name.split("/") or m.issym() or m.islnk():
+                    raise RuntimeError("Gói rustdesk-api có đường dẫn lạ: %s" % m.name)
+            t.extractall(giai)
+        os.unlink(tam)
+        moi = os.path.join(giai, "release")
+        cu = _api_dir()
+        for giu in ("data", "runtime"):                    # giu co so du lieu (tai khoan, so dia chi) khi cai lai
+            if os.path.isdir(os.path.join(cu, giu)):
+                shutil.rmtree(os.path.join(moi, giu), ignore_errors=True)
+                shutil.move(os.path.join(cu, giu), os.path.join(moi, giu))
+        _lenh.chay(["systemctl", "stop", DV_API], timeout=30)
+        shutil.rmtree(cu, ignore_errors=True)
+        shutil.move(moi, cu)
+        shutil.rmtree(giai, ignore_errors=True)
+        os.chmod(os.path.join(cu, "apimain"), 0o755)
+        _CAI_API["tb"] = "Đang tạo dịch vụ..."
+        ghi_dich_vu_api()
+        _lenh.chay(["systemctl", "enable", "--now", DV_API], timeout=30)
+        d = doc_cfg()
+        if not d.get("api_mk"):
+            time.sleep(4)
+            mk = secrets.token_urlsafe(9)
+            env = dict(os.environ, **_env_api())
+            r = _lenh.chay([os.path.join(cu, "apimain"), "reset-admin-pwd", mk], timeout=30, cwd=cu, env=env)
+            if r.ok:
+                d = doc_cfg()
+                d["api_mk"] = mk
+                luu_cfg(d)
+        _CAI_API.update(ok=True, tb="Đã cài và chạy rustdesk-api %s." % VER_API)
+    except Exception as e:                       # tai ve / giai nen / quyen: hien nguyen nhan
+        _CAI_API.update(ok=False, tb="Lỗi: %s" % e)
+    finally:
+        _CAI_API["dang"] = False
+
+
+def bat_dau_cai_api():
+    with _KHOA:
+        if _CAI_API["dang"]:
+            return False
+        _CAI_API.update(dang=True, ok=None, tb="Bắt đầu...")
+    threading.Thread(target=_cai_api_nen, daemon=True, name="rustdesk-api-cai").start()
+    return True
+
+
+def hanh_dong_api(viec):
+    if not api_da_cai():
+        return False, "Chưa cài rustdesk-api."
+    if viec == "go":
+        _lenh.chay(["systemctl", "disable", "--now", DV_API], timeout=30)
+        try:
+            os.unlink("/etc/systemd/system/%s.service" % DV_API)
+        except OSError as _loi:
+            _bo_qua(_loi)
+        _lenh.chay(["systemctl", "daemon-reload"], timeout=30)
+        return True, "Đã gỡ dịch vụ rustdesk-api (dữ liệu vẫn giữ)."
+    if viec not in ("start", "stop", "restart"):
+        return False, "Hành động không hợp lệ."
+    if viec != "stop":
+        try:
+            ghi_dich_vu_api()
+        except RuntimeError as e:
+            return False, str(e)
+    _lenh.chay(["systemctl", viec, DV_API], timeout=30)
+    return True, "Xong."
+
+
+def trang_thai_api():
+    d = doc_cfg()
+    w = d.get("web_host", "")
+    lan = "http://%s:%d" % (ip_lan(), CONG_API)
+    return {"ban": VER_API, "da_cai": api_da_cai(), "chay": _hoat_dong(DV_API), "cong": _cong_nghe(CONG_API), "web_host": w,
+            "admin_user": "admin", "admin_mk": d.get("api_mk", ""), "url_lan": lan, "url_web": ("https://%s" % w) if w else "", "cai": dict(_CAI_API)}

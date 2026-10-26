@@ -13,6 +13,12 @@ TRANG = """<style>.rd-2{display:grid;grid-template-columns:repeat(auto-fit,minma
 <div class="card"><h3>RustDesk Server tích hợp</h3>
 <p class="tk-ghi">Chạy máy chủ RustDesk (ID server + relay) ngay trên Console System để điều khiển máy từ xa không phụ thuộc máy chủ công cộng. Bản RustDesk Server miễn phí <b>không có trang quản trị web</b> (bản Pro mới có); trang này hiển thị đúng những gì máy chủ lưu: khóa, cổng, danh sách thiết bị đã đăng ký.</p>
 <div id="rd-tt">Đang tải...</div><div class="tk-hang" style="margin-top:10px;" id="rd-nut"></div><div class="tk-ghi" id="rd-tb"></div></div>
+<div class="card"><h3>Trang quản trị và Web client (rustdesk-api)</h3>
+<p class="tk-ghi">rustdesk-api (mã nguồn mở lejianwen, MIT) chạy trên cổng 21114: trang quản trị web (người dùng, thiết bị, sổ địa chỉ, phiên kết nối) và <b>RustDesk Web Client</b> để điều khiển máy ngay trong trình duyệt. Đi qua Cloudflare được vì chỉ dùng HTTPS và WebSocket. Máy <b>được điều khiển</b> vẫn đăng ký với máy chủ qua UDP 21116 (trong LAN thì sẵn; máy ngoài Internet cần mở cổng router).</p>
+<div id="ra-tt">Đang tải...</div><div class="tk-hang" style="margin-top:8px;" id="ra-nut"></div><div class="tk-ghi" id="ra-tb"></div>
+<label style="margin-top:12px;display:block;">Tên miền web qua Cloudflare (để trống nếu chỉ dùng trong LAN)</label>
+<div class="tk-hang"><input type="text" id="ra-web" placeholder="vd rustdesk.home-server.id.vn" style="max-width:340px;margin:0;"><button class="tk-nut chinh" id="ra-web-luu" type="button">Lưu</button></div>
+<p class="tk-ghi" style="margin-top:8px;">Trên Cloudflare Zero Trust, tunnel của tên miền này cần 3 dòng theo đúng thứ tự: <code>/ws/id</code> → <code>http://IP-máy-này:21118</code>, <code>/ws/relay</code> → <code>http://IP-máy-này:21119</code>, rồi dòng không path → <code>http://IP-máy-này:21114</code>.</p></div>
 <div class="rd-2"><div class="card"><h3>Cấu hình</h3><p class="tk-ghi">Địa chỉ để các máy RustDesk tìm tới máy chủ này: tên miền hoặc IP công cộng nếu có máy ở ngoài Internet; để trống = dùng IP LAN (chỉ trong mạng nội bộ).</p>
 <input type="text" id="rd-host" placeholder="vd rd.ten-mien-cua-ban.com" style="width:100%;"><label class="tk-o" style="margin-top:8px;"><input type="checkbox" id="rd-ws"><span><b>Dùng WebSocket (đường Cloudflare)</b><small>KHÔNG bật cho máy được điều khiển: RustDesk Server miễn phí chỉ nhận máy đăng ký ID qua UDP 21116 (qua WebSocket máy chủ trả NOT_SUPPORT), mà Cloudflare không chuyển UDP. Để máy ngoài Internet dùng được, hãy mở cổng trên router (bên dưới) và để trống ô này.</small></span></label>
 <div class="tk-hang" style="margin-top:8px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button><button class="tk-nut" id="rd-ap" type="button" title="Máy đã cài RustDesk từ trước chưa đổi địa chỉ: bấm để đẩy địa chỉ, khóa và WebSocket xuống các máy (cần agent)">Áp dụng xuống các máy đã cài</button></div><div class="tk-ghi" id="rd-ap-tb"></div>
@@ -43,9 +49,20 @@ function ve(d){
  $('rd-nut').innerHTML=n; $('rd-tb').textContent=d.cai.tb||'';
  if(document.activeElement!==$('rd-host')) $('rd-host').value=d.host||''; $('rd-ws').checked=!!d.ws; $('rd-h').textContent=d.host_hieu_luc||'(chưa xác định)'; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
  if(d.cai.dang) setTimeout(tai,1500);}
-function tai(){api('/rustdesk/api/trang-thai').then(ve);}
+function veApi(a){ if(!a) return;
+ var h='rustdesk-api <b>'+e(a.ban)+'</b>: '+(a.da_cai?(chip('Dịch vụ '+(a.chay?'chạy':'dừng'),a.chay)+chip('Cổng 21114 '+(a.cong?'mở':'đóng'),a.cong)):'<span class="rd-chip loi">Chưa cài</span>');
+ if(a.da_cai){ h+='<div style="margin-top:8px;">Tài khoản quản trị: <b>admin</b> / <span class="rd-k">'+e(a.admin_mk||'(xem nhật ký dịch vụ)')+'</span></div>';
+  h+='<div style="margin-top:6px;">Trong LAN: <a href="'+e(a.url_lan)+'/_admin/" target="_blank">Trang quản trị</a> · <a href="'+e(a.url_lan)+'/webclient/" target="_blank">Web client</a></div>';
+  if(a.url_web) h+='<div style="margin-top:4px;">Qua Internet: <a href="'+e(a.url_web)+'/_admin/" target="_blank">'+e(a.url_web)+'/_admin/</a> · <a href="'+e(a.url_web)+'/webclient/" target="_blank">Web client</a></div>'; }
+ $('ra-tt').innerHTML=h;
+ $('ra-nut').innerHTML=a.da_cai?'<button class="tk-nut" data-a="restart">Khởi động lại</button><button class="tk-nut" data-a="stop">Dừng</button><button class="tk-nut" data-a="start">Chạy</button><button class="tk-nut" data-a="cai">Cài lại/cập nhật</button><button class="tk-nut do" data-a="go">Gỡ dịch vụ</button>':'<button class="tk-nut chinh" data-a="cai"'+(a.cai.dang?' disabled':'')+'>Cài rustdesk-api</button>';
+ $('ra-tb').textContent=a.cai.tb||''; if(document.activeElement!==$('ra-web')) $('ra-web').value=a.web_host||''; }
+function tai(){api('/rustdesk/api/trang-thai').then(function(d){ve(d);veApi(d.api); if(d.api&&d.api.cai.dang) setTimeout(tai,1500);});}
 $('rd-nut').addEventListener('click',function(ev){var v=ev.target.dataset.v; if(!v)return; if(v==='go'&&!confirm('Gỡ dịch vụ RustDesk Server?'))return;
  api(v==='cai'?'/rustdesk/api/cai':'/rustdesk/api/hanh-dong',{viec:v}).then(function(d){$('rd-tb').textContent=d.tb||'';tai();});});
+$('ra-nut').addEventListener('click',function(ev){var v=ev.target.dataset.a; if(!v)return; if(v==='go'&&!confirm('Gỡ dịch vụ rustdesk-api?'))return;
+ api(v==='cai'?'/rustdesk/api/api-cai':'/rustdesk/api/api-hanh-dong',{viec:v}).then(function(d){$('ra-tb').textContent=d.tb||'';tai();});});
+$('ra-web-luu').onclick=function(){api('/rustdesk/api/web-host',{host:$('ra-web').value}).then(function(d){$('ra-tb').textContent=d.tb;tai();});};
 $('rd-luu').onclick=function(){api('/rustdesk/api/cau-hinh',{host:$('rd-host').value,ws:$('rd-ws').checked}).then(function(d){$('rd-tb').textContent=d.tb;tai();});};
 function dev(){api('/rustdesk/api/thiet-bi').then(function(d){var h='<tr><th>ID</th><th>IP gần nhất</th><th>Đăng ký lúc</th><th>Ghi chú</th></tr>';
  (d.ds||[]).forEach(function(x){h+='<tr><td><b>'+e(x.id)+'</b></td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td><td>'+e(x.ghi_chu)+'</td></tr>';});
@@ -81,6 +98,21 @@ def register_rustdesk(app):
     @app.route("/rustdesk/api/hanh-dong", methods=["POST"])
     def rustdesk_api_hd():
         ok, tb = RD.hanh_dong(str((request.get_json(silent=True) or {}).get("viec", "")))
+        return jsonify({"ok": ok, "tb": tb})
+
+    @app.route("/rustdesk/api/api-cai", methods=["POST"])
+    def rustdesk_api_api_cai():
+        ok = RD.bat_dau_cai_api()
+        return jsonify({"ok": ok, "tb": "Đang cài rustdesk-api..." if ok else "Đang có một lần cài chạy."})
+
+    @app.route("/rustdesk/api/api-hanh-dong", methods=["POST"])
+    def rustdesk_api_api_hd():
+        ok, tb = RD.hanh_dong_api(str((request.get_json(silent=True) or {}).get("viec", "")))
+        return jsonify({"ok": ok, "tb": tb})
+
+    @app.route("/rustdesk/api/web-host", methods=["POST"])
+    def rustdesk_api_web_host():
+        ok, tb = RD.dat_web_host(str((request.get_json(silent=True) or {}).get("host", "")))
         return jsonify({"ok": ok, "tb": tb})
 
     @app.route("/rustdesk/api/cau-hinh", methods=["POST"])

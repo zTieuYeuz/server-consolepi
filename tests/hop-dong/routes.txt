@@ -243,6 +243,8 @@
 /rename	POST	rename
 /rustdesk	GET	rustdesk_trang
 /rustdesk/api/ap-cau-hinh	POST	rustdesk_api_ap_cau_hinh
+/rustdesk/api/api-cai	POST	rustdesk_api_api_cai
+/rustdesk/api/api-hanh-dong	POST	rustdesk_api_api_hd
 /rustdesk/api/cai	POST	rustdesk_api_cai
 /rustdesk/api/cai-client	POST	rustdesk_api_cai_client
 /rustdesk/api/cau-hinh	POST	rustdesk_api_cfg
@@ -251,6 +253,7 @@
 /rustdesk/api/mat-khau	POST	rustdesk_api_mk
 /rustdesk/api/thiet-bi	GET	rustdesk_api_dev
 /rustdesk/api/trang-thai	GET	rustdesk_api_tt
+/rustdesk/api/web-host	POST	rustdesk_api_web_host
 /rustdesk/client-cai.ps1	GET	rustdesk_script
 /rustdesk/doi-may-chu.ps1	GET	rustdesk_script_doi
 /settings	GET	settings_page

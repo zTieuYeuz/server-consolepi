@@ -156,4 +156,12 @@ kq["rd_ap_cau_hinh_tung_nguoi"] = "C:\\Users" in kich[-1] and "RUSTDESK_CHUA_CAI
 kq["rd_doi_may_chu_409"] = c.get("/rustdesk/doi-may-chu.ps1", headers=H).status_code in (200, 409)
 _s = RD.script_cau_hinh_nguoi_dung("rd.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 kq["rd_doi_may_chu_script"] = "--option custom-rendezvous-server 'rd.example.com'" in _s and "--option key" in _s
+t = c.get("/rustdesk/api/trang-thai", headers=H).get_json()
+kq["ra_tt"] = t["api"]["da_cai"] is False and t["api"]["ban"] == RD.VER_API
+kq["ra_web_xau"] = post("/rustdesk/api/web-host", {"host": "a b"}).get_json()["ok"] is False
+kq["ra_web_ok"] = post("/rustdesk/api/web-host", {"host": "Rustdesk.Example.com"}).get_json()["ok"] is True and RD.web_host() == "rustdesk.example.com"
+_e = RD._env_api()
+kq["ra_env"] = _e["RUSTDESK_API_RUSTDESK_WS_HOST"] == "wss://rustdesk.example.com" and _e["RUSTDESK_API_RUSTDESK_API_SERVER"] == "https://rustdesk.example.com" and _e["RUSTDESK_API_RUSTDESK_ID_SERVER"].endswith(":21116")
+kq["ra_hd_chua_cai"] = post("/rustdesk/api/api-hanh-dong", {"viec": "start"}).get_json()["ok"] is False
+kq["ra_sha_du"] = set(RD.SHA_API) == set(RD.TEN_GOI_API)
 print("KETQUA " + json.dumps(kq))
