@@ -91,7 +91,7 @@ kq["sl_tham_xau"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-go-share", 
 kq["sl_duong_xau"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-tao-share", "tham": {"ten": "D", "duong": "D:\\a;calc", "nguoi": "Everyone"}}).get_json()["ok"] is False
 kq["sl_tao_share"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-tao-share", "tham": {"ten": "DuLieu", "duong": "D:\\DuLieu", "nguoi": "Everyone"}}).get_json()["ok"] is True and "New-SmbShare -Name 'DuLieu'" in kich[-1]
 kq["sl_tab"] = c.get("/uem/may/m-agent/sua-loi", headers=H).status_code == 200
-from consolesystem.features.rustdesk import rustdesk as RD  # noqa: E402
+from consolesystem.integrations import rustdesk_may_chu as RD  # noqa: E402
 kq["rd_trang"] = c.get("/rustdesk", headers=H).status_code == 200
 t = c.get("/rustdesk/api/trang-thai", headers=H).get_json()
 kq["rd_tt_chua_cai"] = t["da_cai"] is False and t["ban"] == RD.VER_SERVER

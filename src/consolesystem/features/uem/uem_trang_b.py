@@ -29,6 +29,7 @@ from ui import uem_agent_trang as UAT
 from ui import uem_agent as UA
 from consolesystem.features.uem import uem_dieukhien as UDK
 from consolesystem.features.uem import uem_sualoi as USL
+from consolesystem.features.uem import uem_rustdesk as URD
 from ui import uem_pki as PKI
 from ui import uem_vnc as UV
 from ui import uem_winget as UW
@@ -661,6 +662,7 @@ def register_uem(app):
     UAT.register_agent(app)
     UDK.register_dieukhien(app)
     USL.register_sualoi(app)
+    URD.register_uem_rustdesk(app)
 
     @app.route("/uem")
     def uem_tq():
