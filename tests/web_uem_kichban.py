@@ -94,12 +94,15 @@ kq["sl_duong_xau"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-tao-share"
 kq["sl_tao_share"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-tao-share", "tham": {"ten": "DuLieu", "duong": "D:\\DuLieu", "nguoi": "Everyone"}}).get_json()["ok"] is True and "New-SmbShare -Name 'DuLieu'" in kich[-1]
 kq["sl_tab"] = c.get("/uem/may/m-agent/sua-loi", headers=H).status_code == 200
 from consolesystem.integrations import rustdesk_may_chu as RD  # noqa: E402
+_gia = os.path.join(os.environ["CONSOLE_PI_DATA"], "rustdesk-gia.exe")
+open(_gia, "wb").write(b"MZ-gia")
+RD._exe_client = lambda: _gia
 kq["rd_trang"] = c.get("/rustdesk", headers=H).status_code == 200
 t = c.get("/rustdesk/api/trang-thai", headers=H).get_json()
 kq["rd_tt_chua_cai"] = t["da_cai"] is False and t["ban"] == RD.VER_SERVER
 kq["rd_host_xau"] = post("/rustdesk/api/cau-hinh", {"host": "a b;c"}).get_json()["ok"] is False
 kq["rd_host_ok"] = post("/rustdesk/api/cau-hinh", {"host": "rd.example.com"}).get_json()["ok"] is True and RD.host_hieu_luc() == "rd.example.com"
-kq["rd_script_chua_co_khoa"] = c.get("/rustdesk/client-cai.ps1", headers=H).status_code == 409
+kq["rd_script_chua_co_khoa"] = c.get("/rustdesk/Cai-RustDesk-ConsoleSystem.msi", headers=H).status_code == 409
 sc = RD.script_client("abcdef123456", "rd.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 kq["rd_script"] = RD.SHA_CLIENT in sc and "--silent-install" in sc and "rd.example.com" in sc and "RUSTDESK_ID=" in sc
 try:
@@ -171,19 +174,19 @@ sc4 = RD.script_client("abcdef123456", khoa=K)
 kq["rd_client_cong_ngoai"] = ("custom-rendezvous-server = 'rd.test.com:1222'" in sc4 and "relay-server = 'rd.test.com:1300'" in sc4
                               and "rendezvous_server = 'rd.test.com:1222'" in sc4 and "--option custom-rendezvous-server 'rd.test.com:1222'" in sc4)
 _c = RD.doc_cfg(); _c["mk_chung"] = ""; RD.luu_cfg(_c)
-kq["rd_tep_can_mk"] = c.get("/rustdesk/cai-rustdesk.bat", headers=H).status_code == 409
+kq["rd_msi_can_mk"] = RD.cap_nhat_kho(cho=True)[0] is False and c.get("/rustdesk/Cai-RustDesk-ConsoleSystem.msi", headers=H).status_code == 409
 _c = RD.doc_cfg(); _c["mk_chung"] = "MatKhau#Chung1"; RD.luu_cfg(_c)
-r_bat = c.get("/rustdesk/cai-rustdesk.bat", headers=H)
-import base64 as _b64  # noqa: E402
-_ps = _b64.b64decode("".join(x[6:] for x in r_bat.get_data(as_text=True).splitlines() if x.startswith("::B64:"))).decode("utf-8")
-kq["rd_tep_bat_bom"] = _ps.startswith("\ufeff")
-kq["rd_tep_bat"] = r_bat.status_code == 200 and r_bat.get_data(as_text=True).startswith("@echo off") and "rd.test.com:1222" in _ps and "--password 'MatKhau#Chung1'" in _ps
-kq["rd_kho_ghi"] = post("/rustdesk/api/kho", {}).get_json()["ok"] is True and RD.tep_kho_tt()["co"]
-_kho = os.path.join(DC._DD.SCRIPTS_DIR, RD.TEN_TEP_KHO)
-kq["rd_kho_noi_dung"] = "rd.test.com:1300" in open(_kho, encoding="utf-8-sig").read()
-ok_s, tb_s = DC._b_script(None, "10.9.9.1", {"loai": "script", "ref": RD.TEN_TEP_KHO}, {"id": "m-script", "ip": "10.9.9.1"})
-kq["tk_script_ghi_id"] = ok_s and "555666777" in tb_s and RD.doc_cfg()["may"]["m-script"] == {**RD.doc_cfg()["may"]["m-script"], "id": "555666777", "mk": "MatKhau#Chung1"}
-kq["rd_trang_buoc"] = all(x in c.get("/rustdesk", headers=H).get_data(as_text=True) for x in ("Thông tin kết nối ra Internet", "cai-rustdesk.bat", "Kết nối hỗ trợ từ xa"))
+ok_k, tb_k = RD.cap_nhat_kho(cho=True)
+r_msi = c.get("/rustdesk/Cai-RustDesk-ConsoleSystem.msi", headers=H)
+kq["rd_msi_tao"] = ok_k and RD.tep_kho_tt()["co"] and r_msi.status_code == 200 and r_msi.data[:4] == b"\xd0\xcf\x11\xe0"
+_ps = RD.script_tep_cai()
+kq["rd_msi_script"] = "rd.test.com:1222" in _ps and "--password 'MatKhau#Chung1'" in _ps and "$PSScriptRoot" in _ps and "Invoke-WebRequest" not in _ps
+_skb = os.path.join(DC._DD.SCRIPTS_DIR, "thu-rd.ps1")
+os.makedirs(DC._DD.SCRIPTS_DIR, exist_ok=True)
+open(_skb, "w").write("'x'")
+ok_s, tb_s = DC._b_script(None, "10.9.9.1", {"loai": "script", "ref": "thu-rd.ps1"}, {"id": "m-script", "ip": "10.9.9.1"})
+kq["tk_script_ghi_id"] = ok_s and "555666777" in tb_s and RD.doc_cfg()["may"]["m-script"]["id"] == "555666777"
+kq["rd_trang_buoc"] = all(x in c.get("/rustdesk", headers=H).get_data(as_text=True) for x in ("Thông tin kết nối ra Internet", "Cai-RustDesk-ConsoleSystem.msi", "Kết nối hỗ trợ từ xa"))
 post("/rustdesk/api/cau-hinh", {"host": "id.example.com", "relay": "relay.example.com"})
 RD.khoa_cong_khai = _rk
 kich.clear()

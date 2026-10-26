@@ -209,7 +209,14 @@ def _b_phanmem(c, ip, b, may):
         ma, err = _chay_tien_trinh(c, "msiexec.exe", f'/i "{dich}" {doi_msi}', d)
     else:
         ma, err = _chay_tien_trinh(c, dich, doi, d)
-    return _ket_qua_ma(ma, err, ten)
+    ok, tb = _ket_qua_ma(ma, err, ten)
+    if ok and ten == RD.TEN_MSI:                # goi RustDesk cua trang RustDesk: ghi ID de tab Ho tro tu xa ket noi duoc
+        out, _e = _chay_ps(c, "& (Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe') --get-id | Out-String")
+        ma_id = re.search(r"\b(\d{6,12})\b", out or "")
+        if ma_id:
+            RD.ghi_may(may.get("id", ""), ma_id.group(1))
+            tb += f", ID RustDesk {ma_id.group(1)}"
+    return ok, tb
 
 
 def _chu_ky_thu_muc(p):

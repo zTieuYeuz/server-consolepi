@@ -338,6 +338,19 @@ def thiet_bi():
 
 
 # ------------------------------------------------------------------ client Windows
+TAI_VE = r"""$ErrorActionPreference = 'Stop'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$exe = Join-Path $env:TEMP ('rustdesk-setup-' + [guid]::NewGuid().ToString('N') + '%(duoi)s')
+$ok = $false
+for ($i = 1; $i -le 3 -and -not $ok; $i++) {
+    try {
+        Invoke-WebRequest -UseBasicParsing -Uri '%(url)s' -OutFile $exe
+        $ok = ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLower() -eq '%(sha)s')
+    } catch { Start-Sleep 5 }
+    if (-not $ok) { Remove-Item $exe -Force -ErrorAction SilentlyContinue }
+}
+if (-not $ok) { throw 'Không tải được RustDesk hoặc file không khớp SHA-256 (đã thử 3 lần).' }
+"""
 MAU_KHOA = re.compile(r"[A-Za-z0-9+/=]{20,100}")
 
 # Ghi cau hinh cho DICH VU RustDesk (chay duoi LocalService) roi dung lenh --option cua RustDesk cho chac. allow-websocket = 'N': ve duong UDP/TCP thuong
@@ -422,9 +435,10 @@ def script_cau_hinh_nguoi_dung(host=None, khoa=None, relay=None):
             "Read-Host 'Nhan Enter de dong'\n") % t
 
 
-def script_client(mat_khau, host=None, khoa=None, relay=None, url=None, sha=None):
+def script_client(mat_khau, host=None, khoa=None, relay=None, url=None, sha=None, ben_canh=False):
     """PowerShell cai RustDesk client roi DIEN SAN May chu ID / chuyen tiep / Key, dat mat khau co dinh, in ra ID.
-    Mac dinh tai ban chinh thuc tu GitHub (SHA-256 ghim); url/sha cho phep dung file .exe/.msi trong Tai nguyen cua Console System."""
+    Mac dinh tai ban chinh thuc tu GitHub (SHA-256 ghim); url/sha cho phep dung file .exe/.msi trong Tai nguyen cua Console System;
+    ben_canh=True: dung bo cai rustdesk-setup.exe nam CANH script (goi MSI), khong can Internet de tai."""
     t = _may_chu(host, relay, khoa)
     if not (re.fullmatch(r"[A-Za-z0-9]{8,64}", mat_khau) or MAU_MK.fullmatch(mat_khau)):
         raise RuntimeError("Mật khẩu không hợp lệ.")
@@ -437,19 +451,12 @@ def script_client(mat_khau, host=None, khoa=None, relay=None, url=None, sha=None
     lenh = ("msiexec.exe /i \"' + $exe + '\" /qn /norestart" if msi else "\"' + $exe + '\" --silent-install")
     cai = "$t0 = Get-Date\n$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = ('%s') }\n" % lenh + \
           "if ($r.ReturnValue -ne 0) { throw ('Không chạy được bộ cài RustDesk (mã ' + $r.ReturnValue + ').') }"
-    return r"""$ErrorActionPreference = 'Stop'
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$exe = Join-Path $env:TEMP ('rustdesk-setup-' + [guid]::NewGuid().ToString('N') + '%(duoi)s')
-$ok = $false
-for ($i = 1; $i -le 3 -and -not $ok; $i++) {
-    try {
-        Invoke-WebRequest -UseBasicParsing -Uri '%(url)s' -OutFile $exe
-        $ok = ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLower() -eq '%(sha)s')
-    } catch { Start-Sleep 5 }
-    if (-not $ok) { Remove-Item $exe -Force -ErrorAction SilentlyContinue }
-}
-if (-not $ok) { throw 'Không tải được RustDesk hoặc file không khớp SHA-256 (đã thử 3 lần).' }
-%(cai)s
+    tai = TAI_VE if not ben_canh else (
+        "$ErrorActionPreference = 'Stop'\n$goc = Join-Path $PSScriptRoot 'rustdesk-setup.exe'\n"
+        "if (-not (Test-Path $goc) -or (Get-FileHash $goc -Algorithm SHA256).Hash.ToLower() -ne '%(sha)s') { throw 'Bộ cài RustDesk trong gói bị thiếu hoặc sai SHA-256.' }\n"
+        "$exe = Join-Path $env:TEMP ('rustdesk-setup-' + [guid]::NewGuid().ToString('N') + '.exe')\nCopy-Item $goc $exe -Force\n")
+    tai = tai % {"url": url, "sha": sha, "duoi": ".msi" if msi else ".exe"}
+    return (tai + r"""%(cai)s
 $rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
 $ErrorActionPreference = 'Continue'
 $moi = $false
@@ -467,7 +474,7 @@ if (-not (Test-Path $rd) -or -not (Get-Service RustDesk -ErrorAction SilentlyCon
 %(khoi)s& $rd --password '%(mk)s' | Out-Null
 %(tung_nguoi)s
 $id = ((& $rd --get-id | Out-String).Trim())
-'RUSTDESK_ID=' + $id""" % {"url": url, "sha": sha, "mk": mat_khau, "cai": cai, "duoi": ".msi" if msi else ".exe", "khoi": KHOI_CAU_HINH % t, "tung_nguoi": _khoi_tung_nguoi(t)}
+'RUSTDESK_ID=' + $id""" % {"mk": mat_khau, "cai": cai, "khoi": KHOI_CAU_HINH % t, "tung_nguoi": _khoi_tung_nguoi(t)})
 
 
 def la_bo_cai_rustdesk(ten):
@@ -513,53 +520,141 @@ def ghi_may(may_id, id_, mk=None):
     luu_cfg(cfg)
 
 
-# ------------------------------------------------------------------ file cai dat (tai ve + kho Trien khai phan mem)
-TEN_TEP_KHO = "Cai-RustDesk-ConsoleSystem.ps1"
+# ------------------------------------------------------------------ file cai dat MSI (tai ve + kho Trien khai phan mem)
+# 1 file .msi duy nhat: chua san bo cai RustDesk chinh thuc (SHA-256 ghim) + script dien may chu ID / chuyen tiep / key / mat khau.
+# Cai bang bam dup, msiexec /qn, GPO, buoc "Phan mem" cua Trien khai phan mem... Custom action chay script bang SYSTEM (deferred, khong impersonate).
+TEN_MSI = "Cai-RustDesk-ConsoleSystem.msi"
+_KHO = {"dang": False, "tb": ""}
+WXS = """<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="Console System - RustDesk (@ID@)" Language="1033" Codepage="1252" Version="@VER@" Manufacturer="Console System" UpgradeCode="7E2D41C3-9A58-4B6F-8E17-3C0A9D5F2B84">
+    <Package Id="*" Description="RustDesk + cau hinh may chu Console System" Manufacturer="Console System" InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Media Id="1" Cabinet="rd.cab" EmbedCab="yes" />
+    <MajorUpgrade DowngradeErrorMessage="Da co ban moi hon." AllowSameVersionUpgrades="yes" />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="CSDIR" Name="ConsoleSystem">
+          <Directory Id="INSTALLDIR" Name="RustDeskSetup">
+            <Component Id="RdSetup" Guid="5C1E7A20-8B3D-4F61-9A2C-1D4E6F8A0B35" Win64="yes">
+              <File Id="RdSetupExe" Name="rustdesk-setup.exe" Source="rustdesk-setup.exe" KeyPath="yes" />
+            </Component>
+            <Component Id="RdScript" Guid="6D2F8B31-9C4E-4072-8B3D-2E5F709B1C46" Win64="yes">
+              <File Id="RdScriptPs1" Name="cai-rustdesk.ps1" Source="cai-rustdesk.ps1" KeyPath="yes" />
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+    <Feature Id="Main" Title="RustDesk" Level="1">
+      <ComponentRef Id="RdSetup" />
+      <ComponentRef Id="RdScript" />
+    </Feature>
+    <CustomAction Id="RdDatPs" Property="RDPSEXE" Value="[System64Folder]WindowsPowerShell\\v1.0\\powershell.exe" />
+    <CustomAction Id="RdCai" Property="RDPSEXE" Execute="deferred" Impersonate="no" Return="check"
+      ExeCommand="-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLDIR]cai-rustdesk.ps1&quot;" />
+    <InstallExecuteSequence>
+      <Custom Action="RdDatPs" Sequence="1001">NOT REMOVE</Custom>
+      <Custom Action="RdCai" Sequence="6590">NOT REMOVE</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>
+"""
+
+
+def _exe_client():
+    """Bo cai RustDesk client chinh thuc, tai 1 lan va giu trong thu muc du lieu (kiem SHA-256)."""
+    d = os.path.join(_goc(), "client")
+    os.makedirs(d, exist_ok=True)
+    f = os.path.join(d, "rustdesk-%s-x86_64.exe" % VER_CLIENT)
+    if not (os.path.isfile(f) and sha256_tep(f) == SHA_CLIENT):
+        _tai(URL_CLIENT, f + ".tai", SHA_CLIENT)
+        os.replace(f + ".tai", f)
+    return f
 
 
 def script_tep_cai():
-    """Script cai dung cho file tai ve va kho: mat khau CHUNG (bat buoc, de Ho tro tu xa ket noi duoc), in ID + dia chi o cuoi."""
+    """Script trong goi MSI: mat khau CHUNG (bat buoc, de Ho tro tu xa ket noi duoc), ghi nhat ky C:\\Windows\\Temp\\cs-rustdesk-cai.log."""
     mk = mk_chung()
     if not mk:
         raise RuntimeError("Chưa đặt mật khẩu chung (bước 2). File cài cần mật khẩu này để Hỗ trợ từ xa kết nối được.")
     dc = dia_chi()
-    return ("# Console System - cai RustDesk kem May chu ID %s, chuyen tiep %s. Tao luc %s, tu cap nhat khi doi cau hinh.\n"
-            % (dc["id"], dc["relay"], time.strftime("%Y-%m-%d %H:%M"))
-            + script_client(mk) + "\nWrite-Host ('ID RustDesk cua may nay: ' + $id + '  (may chu ID %s)') -ForegroundColor Green" % dc["id"])
+    return ("# Console System - cai RustDesk kem May chu ID %s, chuyen tiep %s. Tao luc %s.\n" % (dc["id"], dc["relay"], time.strftime("%Y-%m-%d %H:%M"))
+            + "Start-Transcript -Path (Join-Path $env:windir 'Temp\\cs-rustdesk-cai.log') -Force | Out-Null\ntry {\n"
+            + script_client(mk, ben_canh=True) + "\n} finally { Stop-Transcript | Out-Null }\n")
 
 
-def tep_bat(ps1):
-    """File .bat bam doi la chay: tu xin quyen Administrator, tach script PowerShell nhung o cuoi file ra %TEMP% roi chay voi -ExecutionPolicy Bypass."""
-    import base64
-    b = base64.b64encode(("\ufeff" + ps1).encode("utf-8")).decode("ascii")     # BOM: PowerShell 5.1 doc file khong BOM theo ANSI, hong chu tieng Viet
-    dong = "\r\n".join("::B64:" + b[i:i + 200] for i in range(0, len(b), 200))
-    return ("@echo off\r\n"
-            "net session >nul 2>&1 || (powershell -NoProfile -Command \"Start-Process -Verb RunAs -FilePath '%~f0'\" & exit /b)\r\n"
-            "set \"CSP=%TEMP%\\cs-cai-rustdesk.ps1\"\r\n"
-            "echo Dang cai RustDesk, vui long doi 1-3 phut...\r\n"
-            "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$t=(Get-Content -LiteralPath '%~f0' | Where-Object { $_ -like '::B64:*' } | ForEach-Object { $_.Substring(6) }) -join ''; [IO.File]::WriteAllBytes($env:CSP,[Convert]::FromBase64String($t))\"\r\n"
-            "powershell -NoProfile -ExecutionPolicy Bypass -File \"%CSP%\"\r\n"
-            "del \"%CSP%\" >nul 2>&1\r\n"
-            "pause\r\nexit /b\r\n") + dong + "\r\n"
+def tao_msi(dich):
+    """Dong goi MSI vao `dich` (can wixl)."""
+    import shutil
+    import subprocess
+    import tempfile
+    wixl = shutil.which("wixl")
+    if not wixl:
+        raise RuntimeError("Máy chủ chưa có công cụ wixl để đóng gói MSI (sudo apt install wixl).")
+    sc = script_tep_cai()
+    tmp = tempfile.mkdtemp(prefix="cs-rd-msi-")
+    try:
+        shutil.copyfile(_exe_client(), os.path.join(tmp, "rustdesk-setup.exe"))
+        with open(os.path.join(tmp, "cai-rustdesk.ps1"), "w", encoding="utf-8-sig", newline="\r\n") as f:
+            f.write(sc)
+        tg = time.localtime()
+        ver = "1.%d.%d" % (tg.tm_year % 100, tg.tm_yday * 100 + tg.tm_hour * 4 + tg.tm_min // 15)
+        wxs = WXS.replace("@VER@", ver).replace("@ID@", re.sub(r"[^A-Za-z0-9.:\-]", "", dia_chi()["id"]))
+        with open(os.path.join(tmp, "rd.wxs"), "w", encoding="utf-8") as f:
+            f.write(wxs)
+        r = subprocess.run([wixl, "-a", "x64", "-o", "out.msi", "rd.wxs"], cwd=tmp, capture_output=True, text=True, timeout=300)
+        if r.returncode != 0 or not os.path.isfile(os.path.join(tmp, "out.msi")):
+            raise RuntimeError("wixl lỗi: " + (r.stderr or r.stdout)[-300:])
+        os.makedirs(os.path.dirname(dich), exist_ok=True)
+        shutil.move(os.path.join(tmp, "out.msi"), dich + ".moi")
+        os.chmod(dich + ".moi", 0o644)
+        os.replace(dich + ".moi", dich)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def _duong_kho():
-    return os.path.join(_DD.SCRIPTS_DIR, TEN_TEP_KHO)
+    return os.path.join(_DD.APPS_DIR, TEN_MSI)
 
 
 def tep_kho_tt():
     try:
-        return {"ten": TEN_TEP_KHO, "co": True, "luc": int(os.path.getmtime(_duong_kho()))}
+        return {"ten": TEN_MSI, "co": True, "luc": int(os.path.getmtime(_duong_kho())), "dang": _KHO["dang"], "tb": _KHO["tb"]}
     except OSError:
-        return {"ten": TEN_TEP_KHO, "co": False, "luc": 0}
+        return {"ten": TEN_MSI, "co": False, "luc": 0, "dang": _KHO["dang"], "tb": _KHO["tb"]}
 
 
-def cap_nhat_kho():
-    """Ghi / cap nhat file cai vao kho Trien khai phan mem (Tai nguyen, Script). (ok, thong_diep). Chua du dieu kien thi bo qua, bao ly do."""
+def _kho_nen():
     try:
-        sc = script_tep_cai()
+        tao_msi(_duong_kho())
+        try:                                         # ban cu (script .ps1) khong dung nua
+            os.unlink(os.path.join(_DD.SCRIPTS_DIR, "Cai-RustDesk-ConsoleSystem.ps1"))
+        except OSError:
+            pass
+        _KHO["tb"] = "Đã tạo %s trong kho Triển khai phần mềm (Tài nguyên, Phần mềm)." % TEN_MSI
+    except Exception as e:                           # tai bo cai / wixl / quyen: bao cho nguoi dung
+        _KHO["tb"] = "Lỗi tạo file MSI: %s" % e
+    finally:
+        _KHO["dang"] = False
+
+
+def cap_nhat_kho(cho=False):
+    """Tao lai file MSI trong kho (chay nen, lan dau phai tai bo cai RustDesk). cho=True: chay ngay va doi xong. (ok, thong_diep)."""
+    try:
+        script_tep_cai()
+        _may_chu()
     except RuntimeError as e:
         return False, "File cài chưa tạo được: %s" % e
-    os.makedirs(_DD.SCRIPTS_DIR, exist_ok=True)
-    ghi_nguyen_tu(_duong_kho(), ("\ufeff" + sc.replace("\n", "\r\n") + "\r\n").encode("utf-8"), 0o644)
-    return True, "Đã cập nhật file %s trong kho Triển khai phần mềm." % TEN_TEP_KHO
+    for _ in range(600 if cho else 0):             # cho=True: doi lan tao dang chay xong roi tao lai voi cau hinh moi nhat
+        if not _KHO["dang"]:
+            break
+        time.sleep(1)
+    with _KHOA:
+        if _KHO["dang"]:
+            return True, "Đang tạo file MSI..."
+        _KHO.update(dang=True, tb="Đang tạo file MSI (lần đầu phải tải bộ cài RustDesk)...")
+    if cho:
+        _kho_nen()
+        return not _KHO["tb"].startswith("Lỗi"), _KHO["tb"]
+    threading.Thread(target=_kho_nen, daemon=True, name="rustdesk-msi").start()
+    return True, "Đang tạo lại file MSI trong kho Triển khai phần mềm."

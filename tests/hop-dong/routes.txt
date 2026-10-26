@@ -242,6 +242,7 @@
 /remote/xoa-token	POST	remote_clear
 /rename	POST	rename
 /rustdesk	GET	rustdesk_trang
+/rustdesk/Cai-RustDesk-ConsoleSystem.msi	GET	rustdesk_msi
 /rustdesk/api/ap-cau-hinh	POST	rustdesk_api_ap_cau_hinh
 /rustdesk/api/cai	POST	rustdesk_api_cai
 /rustdesk/api/cai-client	POST	rustdesk_api_cai_client
@@ -252,8 +253,6 @@
 /rustdesk/api/mat-khau	POST	rustdesk_api_mk
 /rustdesk/api/thiet-bi	GET	rustdesk_api_dev
 /rustdesk/api/trang-thai	GET	rustdesk_api_tt
-/rustdesk/cai-rustdesk.bat	GET	rustdesk_bat
-/rustdesk/client-cai.ps1	GET	rustdesk_script
 /rustdesk/doi-may-chu.ps1	GET	rustdesk_script_doi
 /settings	GET	settings_page
 /settings/don-rac	POST	settings_don_rac

@@ -22,20 +22,20 @@ TRANG = """<style>.rd-k{font-family:monospace;word-break:break-all;user-select:a
 <div class="tk-hang" style="margin-top:10px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button></div><div class="tk-ghi" id="rd-luu-tb" style="margin-top:6px;"></div>
 <div class="rd-hd" id="rd-hd"></div></div>
 <div class="card"><h3><span class="rd-buoc">3</span>File cài đặt RustDesk</h3>
-<p class="tk-ghi">File đã điền sẵn máy chủ ID, máy chủ chuyển tiếp, key và mật khẩu chung ở bước 2. Chạy trên máy Windows nào (trong LAN hay ngoài Internet) thì máy đó tự tải RustDesk chính thức, cài im lặng và kết nối về máy chủ này. Đổi thông tin ở bước 2 thì file tự cập nhật.</p>
+<p class="tk-ghi">Một file <b>.msi</b> duy nhất, chứa sẵn bộ cài RustDesk chính thức và đã điền máy chủ ID, máy chủ chuyển tiếp, key, mật khẩu chung ở bước 2. Máy nào (trong LAN hay ngoài Internet, không cần mạng để tải thêm) bấm đúp hoặc chạy <code>msiexec /i Cai-RustDesk-ConsoleSystem.msi /qn</code> là cài xong và kết nối về máy chủ này. File nằm sẵn trong kho Triển khai phần mềm và tự tạo lại khi đổi thông tin ở bước 2.</p>
 <div>Máy chủ ID: <span class="rd-k" id="rd-h"></span> &nbsp; Máy chủ chuyển tiếp: <span class="rd-k" id="rd-r"></span></div><div style="margin-top:6px;">Key: <span class="rd-k" id="rd-key">(chưa có, cài máy chủ trước)</span></div>
-<div class="tk-hang" style="margin-top:10px;"><button class="tk-nut chinh" type="button" onclick="location.href='/rustdesk/cai-rustdesk.bat'">Tải file cài (.bat, bấm đúp là chạy)</button><button class="tk-nut" type="button" onclick="location.href='/rustdesk/client-cai.ps1'">Tải bản PowerShell (.ps1)</button><button class="tk-nut" id="rd-kho" type="button">Cập nhật vào kho</button></div>
+<div class="tk-hang" style="margin-top:10px;"><button class="tk-nut chinh" type="button" id="rd-tai-msi" onclick="location.href='/rustdesk/Cai-RustDesk-ConsoleSystem.msi'">Tải file cài RustDesk (.msi)</button><button class="tk-nut" id="rd-kho" type="button">Tạo lại file</button></div>
 <div class="tk-ghi" id="rd-kho-tb" style="margin-top:6px;"></div>
 <p class="tk-ghi" style="margin-top:8px;">Lưu ý: file chứa mật khẩu chung, chỉ đưa cho người được phép.</p></div>
 <div class="card"><h3><span class="rd-buoc">4</span>Triển khai xuống máy</h3>
-<p class="tk-ghi"><b>Cách A - qua Triển khai phần mềm</b> (máy có WinRM): vào <a href="/deployos/trienkhai/kichban">Kịch bản</a>, thêm bước <b>Script</b> chọn <b>Cai-RustDesk-ConsoleSystem.ps1</b> (hoặc bước <b>RustDesk</b>), chọn máy rồi Chạy. Xong là ID của máy tự ghi vào Console.<br>
-<b>Cách B - máy có agent</b>: chọn máy bên dưới rồi bấm Cài.<br><b>Cách C - máy ở xa, không quản lý được</b>: gửi file .bat ở bước 3 cho người dùng bấm đúp; cuối cùng cửa sổ hiện ID, nhập ID đó vào tab Hỗ trợ từ xa của máy.</p>
+<p class="tk-ghi"><b>Cách A - qua Triển khai phần mềm</b> (máy có WinRM): vào <a href="/deployos/trienkhai/kichban">Kịch bản</a>, thêm bước <b>Phần mềm</b> chọn <b>Cai-RustDesk-ConsoleSystem.msi</b>, chọn máy rồi Chạy. Xong là ID của máy tự ghi vào Console.<br>
+<b>Cách B - máy có agent</b>: chọn máy bên dưới rồi bấm Cài.<br><b>Cách C - máy ở xa, không quản lý được</b>: gửi file .msi ở bước 3 cho người dùng bấm đúp; sau đó mở RustDesk trên máy đó xem ID, nhập ID vào tab Hỗ trợ từ xa của máy.</p>
 <div id="rd-may" class="tk-luoi"></div>
 <div class="tk-hang" style="margin-top:8px;"><button class="tk-nut chinh" id="rd-cai-client" type="button">Cài lên máy đã chọn</button><button class="tk-nut" id="rd-ap" type="button" title="Máy đã cài RustDesk từ trước: đẩy máy chủ ID, chuyển tiếp và key mới xuống (qua agent)">Áp dụng địa chỉ xuống máy đã cài</button><button class="tk-nut" id="rd-mk-bo" type="button">Đồng bộ lại mật khẩu</button></div>
 <div class="tk-ghi" id="rd-ct"></div><div class="tk-ghi" id="rd-mk-tb"></div>
 <table class="rd-tb" id="rd-bang-may" style="margin-top:10px;"></table></div>
 <div class="card"><h3><span class="rd-buoc">5</span>Kết nối hỗ trợ từ xa</h3>
-<p class="tk-ghi">Vào <a href="/uem">Quản lý máy trạm</a>, mở máy cần hỗ trợ, tab <b>Hỗ trợ từ xa</b>, bấm <b>Mở RustDesk và kết nối</b>. Máy anh đang ngồi cũng cần RustDesk trỏ về máy chủ này: chạy luôn file .bat ở bước 3 trên máy của anh là xong.</p></div>
+<p class="tk-ghi">Vào <a href="/uem">Quản lý máy trạm</a>, mở máy cần hỗ trợ, tab <b>Hỗ trợ từ xa</b>, bấm <b>Mở RustDesk và kết nối</b>. Máy anh đang ngồi cũng cần RustDesk trỏ về máy chủ này: cài luôn file .msi ở bước 3 trên máy của anh là xong.</p></div>
 <div class="card"><h3>Thiết bị đã đăng ký với máy chủ</h3><table class="rd-tb" id="rd-dev"></table></div>
 <script>(function(){var $=function(i){return document.getElementById(i);};var D0={},MK0='';
 function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -58,7 +58,8 @@ function ve(d){D0=d;
  $('rd-tb').textContent=d.cai.tb||'';
  [['rd-host',d.host],['rd-relay',d.relay],['rd-mk',d.mk_chung]].forEach(function(a){if(document.activeElement!==$(a[0])&&!$(a[0]).dataset.sua) $(a[0]).value=a[1]||'';});
  if(d.relay) $('rd-relay').closest('details').open=true; MK0=d.mk_chung||''; $('rd-h').textContent=d.dia_chi.id; $('rd-r').textContent=d.dia_chi.relay; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
- $('rd-kho-tb').textContent=d.kho.co?('Đã có trong kho Triển khai phần mềm (Tài nguyên, Script): '+d.kho.ten+', cập nhật '+new Date(d.kho.luc*1000).toLocaleString()):'Chưa có trong kho (cần cài máy chủ và đặt mật khẩu chung ở bước 2).';
+ $('rd-kho-tb').textContent=d.kho.dang?d.kho.tb:(d.kho.co?('Đã có trong kho Triển khai phần mềm (Tài nguyên, Phần mềm): '+d.kho.ten+', tạo lúc '+new Date(d.kho.luc*1000).toLocaleString()):(d.kho.tb||'Chưa có (cần cài máy chủ và đặt mật khẩu chung ở bước 2).'));
+ $('rd-tai-msi').disabled=!d.kho.co||d.kho.dang; if(d.kho.dang) setTimeout(tai,2000);
  hd(); if(d.cai.dang) setTimeout(tai,1500);}
 function tai(){api('/rustdesk/api/trang-thai').then(ve);}
 ['rd-host','rd-relay','rd-mk'].forEach(function(i){$(i).addEventListener('input',function(){$(i).dataset.sua='1';hd();});});
@@ -125,19 +126,10 @@ def register_rustdesk(app):
         ok, tb = RD.cap_nhat_kho()
         return jsonify({"ok": ok, "tb": tb})
 
-    def _tep(duoi):
-        try:
-            sc = RD.script_tep_cai()
-        except RuntimeError as e:
-            return Response(str(e), status=409, mimetype="text/plain; charset=utf-8")
-        nd = RD.tep_bat(sc) if duoi == "bat" else "\ufeff" + sc.replace("\n", "\r\n") + "\r\n"
-        return Response(nd, mimetype="application/octet-stream" if duoi == "bat" else "text/plain; charset=utf-8",
-                        headers={"Content-Disposition": "attachment; filename=Cai-RustDesk-ConsoleSystem.%s" % duoi})
-
-    @app.route("/rustdesk/client-cai.ps1")
-    def rustdesk_script():
-        return _tep("ps1")
-
-    @app.route("/rustdesk/cai-rustdesk.bat")
-    def rustdesk_bat():
-        return _tep("bat")
+    @app.route("/rustdesk/Cai-RustDesk-ConsoleSystem.msi")
+    def rustdesk_msi():
+        import os
+        from flask import send_file
+        if not RD.tep_kho_tt()["co"]:
+            return Response("Chưa có file MSI: cài máy chủ và đặt mật khẩu chung ở bước 2.", status=409, mimetype="text/plain; charset=utf-8")
+        return send_file(os.path.join(RD._DD.APPS_DIR, RD.TEN_MSI), as_attachment=True, download_name=RD.TEN_MSI, mimetype="application/x-msi")
