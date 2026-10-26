@@ -311,6 +311,8 @@ def trang_may():
     hang = ""
     dem_kieu = {}
     for m in ds:
+        if m.get("an"):
+            continue                                     # da xoa khoi quan ly (may co agent), tu hien lai khi agent bao nhip
         r = bc(m)
         cs, os_, usr = r.get("computer") or {}, r.get("operatingsystem") or {}, (r.get("operatingsystem") or {}).get("username", "")
         nhan, mau = trang_thai_may(m)
@@ -382,7 +384,7 @@ def trang_may():
 # ----------------------------------------------------------------- chi tiet may
 TAB_MAY = [("tq", "Tổng quan"), ("phan-cung", "Phần cứng"), ("he-dieu-hanh", "Hệ điều hành"), ("o-dia", "Ổ đĩa"), ("man-hinh", "Màn hình"),
            ("mang", "Card mạng"), ("may-in", "Máy in"), ("chia-se", "Chia sẻ"), ("phan-mem", "Phần mềm"), ("cap-nhat", "Cập nhật"),
-           ("duyet-file", "Duyệt file"), ("tu-xa", "Hỗ trợ từ xa"), ("agent", "Agent"), ("nguon", "Nguồn điện"), ("trien-khai", "Triển khai"), ("tac-vu", "Tác vụ"),
+           ("duyet-file", "Duyệt file"), ("cli", "Dòng lệnh"), ("dich-vu", "Dịch vụ"), ("tien-trinh", "Tiến trình"), ("tu-xa", "Hỗ trợ từ xa"), ("agent", "Agent"), ("nguon", "Nguồn điện"), ("tac-vu", "Tác vụ"),
            ("ghi-chu", "Ghi chú"), ("metadata", "Thông tin thêm"), ("quan-ly", "Quản lý")]
 
 
@@ -419,7 +421,7 @@ def bang(cot, hang, trong="Không có dữ liệu."):
 
 def tab_may(m, tab):
     r = bc(m)
-    if tab not in ("ghi-chu", "metadata", "quan-ly", "tu-xa", "agent", "nguon", "trien-khai", "tac-vu", "duyet-file") and not r:
+    if tab not in ("ghi-chu", "metadata", "quan-ly", "tu-xa", "agent", "nguon", "trien-khai", "tac-vu", "duyet-file", "cli", "dich-vu", "tien-trinh") and not r:
         return khung_may(m, tab, _chua_bao_cao(m))
     cs, os_ = r.get("computer") or {}, r.get("operatingsystem") or {}
     if tab == "tq":

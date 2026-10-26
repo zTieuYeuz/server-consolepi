@@ -88,7 +88,8 @@ def tab_agent(m):
         <form method="POST" action="{ma}/cai" onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Đang cài, chờ khoảng 1 phút...';"><button class="tk-nut chinh" type="submit"{"" if (co_tk and san_sang) else " disabled"}>{"Cài lại / cập nhật agent qua WinRM" if tt != "chua_cai" else "Cài agent qua WinRM"}</button></form>
         <form method="POST" action="{ma}/ma"><button class="tk-nut" type="submit"{"" if san_sang else " disabled"}>Tạo lệnh cài (máy chưa bật WinRM)</button></form>
         <form method="POST" action="{ma}/chungchi" onsubmit="return confirm('Cấp chứng chỉ mới cho agent này? Chứng chỉ cũ dùng tiếp đến khi agent đổi xong.');"><button class="tk-nut" type="submit"{"" if tt == "online" else " disabled"}>Cấp lại chứng chỉ</button></form>
-        <form method="POST" action="{ma}/go" onsubmit="return confirm('Gỡ agent khỏi máy này?');"><button class="tk-nut do" type="submit">Gỡ agent</button></form></div>
+        <form method="POST" action="{ma}/go" onsubmit="return confirm('Gỡ agent khỏi máy này?');"><button class="tk-nut do" type="submit">Gỡ agent</button></form>
+        <form method="POST" action="/uem/may/{m['id']}/xoa" onsubmit="return confirm('Xóa máy này khỏi danh sách quản lý? Agent vẫn cài trên máy; khi máy được bật và agent kết nối lại, máy sẽ tự xuất hiện lại.');"><button class="tk-nut do" type="submit">Xóa máy khỏi quản lý</button></form></div>
       {"" if co_tk else '<p class="tk-ghi">Cài qua WinRM cần gán tài khoản quản trị ở tab Quản lý.</p>'}</div>{lenh}
     <div class="card" style="margin-top:14px;"><h3>Agent làm gì</h3>
       <p>Một dịch vụ Windows (ConsoleSystemAgent, chạy SYSTEM, tự khởi động, tự chạy lại khi lỗi) kết nối mTLS tới Console System. Báo cáo, profile, WinGet, điều khiển từ xa, duyệt file... đều chạy được qua agent

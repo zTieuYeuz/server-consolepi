@@ -13,7 +13,7 @@ import re
 import tempfile
 import time
 
-from flask import Response, abort, jsonify, request, send_file
+from flask import Response, abort, jsonify, redirect, request, send_file
 
 from ui import duongdan as _DD
 from ui import tk_dongco as DC
@@ -26,6 +26,8 @@ from ui import uem_trang as T
 from ui import uem_ketnoi as UK
 from ui import uem_trienkhai as UT
 from ui import uem_agent_trang as UAT
+from ui import uem_agent as UA
+from ui import uem_dieukhien as UDK
 from ui import uem_pki as PKI
 from ui import uem_vnc as UV
 from ui import uem_winget as UW
@@ -131,7 +133,9 @@ def _chon_may_html(sel=None, ten_nhom="may"):
     the_ds = UD.THE.doc()
     o = "".join(f'<label class="tk-o"><input type="checkbox" name="{ten_nhom}" value="{m["id"]}"{" checked" if sel and m["id"] in sel else ""}><span><b>{_esc(ten_may(m))}</b>'
                 f'<small>{_esc(m["ip"])}{"" if m.get("tai_khoan_id") else " · chưa gán tài khoản"}</small></span></label>' for m in ds if m.get("giam_sat", True))
-    chip_nhom = "".join(f'<button type="button" class="tk-nut" onclick="var s={json.dumps(g.get("may", []))};document.querySelectorAll(\'input[name={ten_nhom}]\').forEach(function(c){{if(s.indexOf(c.value)>=0)c.checked=true;}});">Chọn nhóm {_esc(g["ten"])} ({len(g.get("may", []))})</button> ' for g in nhom if g.get("may"))
+    chip_nhom = "".join(
+        '<button type="button" class="tk-nut" onclick="' + _esc("var s=" + json.dumps(g.get("may", [])) + ";document.querySelectorAll('input[name=" + ten_nhom + "]').forEach(function(c){if(s.indexOf(c.value)>=0)c.checked=true;});")
+        + f'">Chọn nhóm {_esc(g["ten"])} ({len(g.get("may", []))})</button> ' for g in nhom if g.get("may"))
     return (f'<div style="margin-bottom:8px;">{chip_nhom}</div>' if chip_nhom else "") + o or '<p class="tk-ghi">Chưa có máy nào, thêm ở <a href="/uem/may">Máy tính</a>.</p>'
 
 
@@ -560,7 +564,7 @@ def tab_trien_khai_may(m):
 def tab_tac_vu(m):
     ls = list(reversed(UD.BAO_CAO_TAC_VU.doc().get(m["id"], [])))[:100]
     hang = [[gio(x["luc"]), {"profile": "Profile", "trien_khai": "Triển khai", "tu_xa": "Điều khiển"}.get(x["nguon"], x["nguon"]), x["ten"], chip("Thành công" if x["ok"] else "Lỗi", "xanh" if x["ok"] else "do"), x["tb"]] for x in ls]
-    return T.khung_may(m, "tac-vu", f'<div class="card">{bang(["Lúc", "Nguồn", "Tác vụ", "Kết quả", "Chi tiết"], hang, "Chưa có tác vụ nào chạy trên máy này.")}</div>')
+    return T.khung_may(m, "tac-vu", f'<p class="tk-ghi">Cài/gỡ phần mềm: dùng trang <a href="/uem/trien-khai">Triển khai WinGet</a> rồi tick máy này; lịch sử cài của máy nằm ở bảng dưới (nguồn "Triển khai").</p><div class="card">{bang(["Lúc", "Nguồn", "Tác vụ", "Kết quả", "Chi tiết"], hang, "Chưa có tác vụ nào chạy trên máy này.")}</div>')
 
 
 def tab_may_b(m, tab):
@@ -647,6 +651,7 @@ def register_uem(app):
     UV.khoi_dong_bridge()
     PKI.nap_lai_neu_doi()
     UAT.register_agent(app)
+    UDK.register_dieukhien(app)
 
     @app.route("/uem")
     def uem_tq():
@@ -736,6 +741,9 @@ def register_uem(app):
             DL.MAY.sua(lambda ds: [x.update(giam_sat=(viec == "bat")) for x in ds if x["id"] in ids])
             return chuyen("/uem/may", f"Đã {'bật' if viec == 'bat' else 'vô hiệu'} giám sát {len(ids)} máy.")
         if viec == "xoa":
+            co_ag = {x["id"] for x in DL.MAY.doc() if x["id"] in ids and UA.co_agent(x)}
+            DL.MAY.sua(lambda ds: [x.update(an=True) for x in ds if x["id"] in co_ag])
+            ids = [i for i in ids if i not in co_ag] if not isinstance(ids, set) else ids - co_ag
             DL.MAY.sua(lambda ds: ds.__setitem__(slice(None), [x for x in ds if x["id"] not in ids]))
             DL.NHOM_MAY.sua(lambda gs: [g.update(may=[i for i in g.get("may", []) if i not in ids]) for g in gs])
             return chuyen("/uem/may", f"Đã xóa {len(ids)} máy khỏi danh sách.")
@@ -747,12 +755,16 @@ def register_uem(app):
     def uem_may_ct(mid, tab=""):
         m = may_theo_id(mid)
         tab = tab or "tq"
+        if tab == "trien-khai":                          # tab rieng tung may bi bo (5.3): cai/go phan mem lam o trang Trien khai WinGet chung
+            return redirect("/uem/trien-khai")
         if tab not in {k for k, _ in T.TAB_MAY}:
             abort(404)
         if tab == "agent":
             return UAT.tab_agent(m)
         if tab in ("duyet-file", "tu-xa", "nguon", "trien-khai", "tac-vu"):
             return tab_may_b(m, tab)
+        if tab in ("cli", "dich-vu", "tien-trinh"):
+            return {"cli": UDK.tab_cli, "dich-vu": UDK.tab_dich_vu, "tien-trinh": UDK.tab_tien_trinh}[tab](m)
         return T.tab_may(m, tab)
 
     @app.route("/uem/may/<mid>/bao-cao-ngay", methods=["POST"])
@@ -807,7 +819,11 @@ def register_uem(app):
 
     @app.route("/uem/may/<mid>/xoa", methods=["POST"])
     def uem_may_xoa(mid):
-        may_theo_id(mid)
+        m = may_theo_id(mid)
+        if UA.co_agent(m):
+            # May da cai agent: chi AN khoi danh sach quan ly (giu chung chi). Khi agent bao nhip lai (may duoc bat len) se tu hien lai.
+            UD.sua_may(mid, an=True)
+            return chuyen("/uem/may", "Đã xóa máy khỏi quản lý. Khi máy được bật và agent kết nối lại, máy sẽ tự xuất hiện lại.")
         DL.MAY.sua(lambda ds: ds.__setitem__(slice(None), [x for x in ds if x["id"] != mid]))
         return chuyen("/uem/may", "Đã xóa máy khỏi danh sách.")
 

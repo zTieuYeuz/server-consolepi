@@ -392,7 +392,7 @@ def xu_ly_nhip(m, body, ip_nguon):
     mid = m["id"]
     ban, host = str(body.get("ver", ""))[:20], str(body.get("host", ""))[:60]
     cu = _NHIP.get(mid)
-    doi = cu is None or cu["ban"] != ban or cu["ip"] != ip_nguon or cu["may"] != host or now - cu["luu_luc"] > 600
+    doi = m.get("an") or cu is None or cu["ban"] != ban or cu["ip"] != ip_nguon or cu["may"] != host or now - cu["luu_luc"] > 600
     _NHIP[mid] = {"luc": now, "ban": ban, "may": host, "ip": ip_nguon, "luu_luc": now if doi else cu["luu_luc"]}
     if doi:                                          # chi ghi dia khi doi thong tin hoac moi 10 phut (may.json lon, khong ghi moi nhip)
         def ghi(ds):
@@ -401,6 +401,7 @@ def xu_ly_nhip(m, body, ip_nguon):
                 return
             a = x.setdefault("agent", {})
             a.update(luc_cuoi=now, ban=ban, may=host, ip_nguon=ip_nguon)
+            x.pop("an", None)                        # may da bi xoa khoi quan ly nay hien lai
             if ip_nguon and x.get("ip") != ip_nguon and a.get("tu_dong_ip", True):
                 x["ip"] = ip_nguon                   # may doi IP (DHCP) -> cap nhat de khong mat may
         DL.MAY.sua(ghi)
