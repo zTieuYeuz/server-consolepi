@@ -130,6 +130,7 @@ def khung_ket_noi():
       <div class="tk-hang" style="align-items:center;gap:10px;margin-top:12px;"><b style="min-width:150px;"></b>
         <button type="button" class="tk-nut chinh" id="kn-msi"{dis}>Tạo file MSI</button>
         <button type="button" class="tk-nut chinh" id="kn-ps1"{dis}>Tạo script</button>
+        <button type="button" class="tk-nut chinh" id="kn-bat"{dis}>Tạo file .bat (chuột đúp là cài)</button>
         <span class="tk-ghi">File chứa địa chỉ, dấu vân tay CA và một mã ghi danh; không chứa mật khẩu hay chứng chỉ.{"" if ok else " Bật kết nối an toàn ở khung trên trước."} Tick nhiều địa chỉ để agent tự chuyển sang địa chỉ dự phòng khi địa chỉ đầu không nối được (ví dụ domain khi ở ngoài, IP LAN khi ở công ty).</span></div>
       <div id="kn-tl" style="display:none;margin-top:12px;"></div></div>{_JS_KN}"""
 
@@ -148,16 +149,16 @@ function ve(v,t){var h='<div class="tl">';v.buoc.forEach(function(b){h+='<div cl
  t.style.display='block';t.innerHTML='<b>Tiến trình tạo file</b>'+h+'</div>'}
 function tao(loai){var f=new FormData();f.append('loai',loai);f.append('ten',document.getElementById('kn-ten').value);f.append('dia_chi',Array.prototype.map.call(document.querySelectorAll('#kn-dc input:checked'),function(x){return x.value}).join(','));
  f.append('passkey',document.getElementById('kn-pk').value);f.append('trien_khai',document.getElementById('kn-tk').checked?'1':'0');
- var t=document.getElementById('kn-tl'),nm=document.getElementById('kn-msi'),np=document.getElementById('kn-ps1');nm.disabled=np.disabled=true;
+ var t=document.getElementById('kn-tl'),nm=document.getElementById('kn-msi'),np=document.getElementById('kn-ps1'),nb=document.getElementById('kn-bat');nm.disabled=np.disabled=nb.disabled=true;
  t.style.display='block';t.innerHTML='<span class="tk-ghi">Đang bắt đầu...</span>';
  fetch('/uem/quan-tri/agent/tao',{method:'POST',body:f,credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
-  if(!j.id){t.innerHTML='<div class="msg warn">'+E(j.loi||'Lỗi')+'</div>';nm.disabled=np.disabled=false;return}
+  if(!j.id){t.innerHTML='<div class="msg warn">'+E(j.loi||'Lỗi')+'</div>';nm.disabled=np.disabled=nb.disabled=false;return}
   (function poll(){fetch('/uem/quan-tri/agent/tao/'+j.id+'.json',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(v){ve(v,t);
-   if(v.tt==='dang'){setTimeout(poll,350)}else{nm.disabled=np.disabled=false;
+   if(v.tt==='dang'){setTimeout(poll,350)}else{nm.disabled=np.disabled=nb.disabled=false;
     fetch(location.pathname,{credentials:'same-origin'}).then(function(r){return r.text()}).then(function(h){var d=new DOMParser().parseFromString(h,'text/html'),n=d.getElementById('goi-ds'),o=document.getElementById('goi-ds');if(n&&o)o.innerHTML=n.innerHTML})}
   }).catch(function(){setTimeout(poll,1000)})})()
- }).catch(function(e){t.innerHTML='<div class="msg warn">'+E(e)+'</div>';nm.disabled=np.disabled=false})}
-document.getElementById('kn-msi').onclick=function(){tao('msi')};document.getElementById('kn-ps1').onclick=function(){tao('ps1')};
+ }).catch(function(e){t.innerHTML='<div class="msg warn">'+E(e)+'</div>';nm.disabled=np.disabled=nb.disabled=false})}
+document.getElementById('kn-msi').onclick=function(){tao('msi')};document.getElementById('kn-ps1').onclick=function(){tao('ps1')};document.getElementById('kn-bat').onclick=function(){tao('bat')};
 var cu=null;function ip(){fetch('/uem/quan-tri/agent/thongtin.json',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
  var k=j.ips.join(',');if(cu!==null&&k!==cu){document.getElementById('kn-doi').textContent='IP vừa thay đổi'}cu=k;
  document.getElementById('kn-ips').innerHTML=j.ips.map(function(i){return '<span class="tk-chip xanh">'+E(i)+'</span>'}).join(' ')||'<span class="tk-ghi">Không có địa chỉ mạng</span>'}).catch(function(){})}
@@ -176,7 +177,7 @@ def khung_goi():
             dung = f'đã cài {ma["da_dung"]} máy' + (f' / tối đa {ma["toi_da"]}' if ma["toi_da"] else "") + (", không hết hạn" if ma["het_han"] > 4e9 else f', hết hạn {gio(ma["het_han"])}')
         else:
             dung = "mã đã hết hạn"
-        loai = "MSI" if g["loai"] == "msi" else "Script PowerShell"
+        loai = {"msi": "MSI", "bat": "File .bat"}.get(g["loai"], "Script PowerShell")
         kho = ""
         ghi_msi = ""
         if g["loai"] == "msi":

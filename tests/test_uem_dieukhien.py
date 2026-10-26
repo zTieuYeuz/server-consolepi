@@ -19,3 +19,16 @@ def test_kich_ban_web_uem(tmp_path):
     kq = json.loads(dong[0][7:])
     sai = [k for k, v in kq.items() if v is not True]
     assert not sai, (sai, r.stderr[-800:])
+
+
+def test_file_cai_agent_bat_tu_nang_quyen_va_bo_qua_execution_policy():
+    sys.path.insert(0, os.path.join(GOC, "src"))
+    import base64
+    import re
+    from consolesystem.features.uem import uem_agent_goi as G
+    ps1 = "# test\r\n$Servers = @('https://10.0.0.1:8443'); Write-Host 'xin chao'\r\n" * 40
+    bat = G._bat(ps1)
+    assert "-ExecutionPolicy Bypass" in bat and "-Verb RunAs" in bat
+    b64 = "".join(re.findall(r"^::B64:(.*?)\r?$", bat, re.M))
+    assert base64.b64decode(b64).decode("utf-8") == ps1
+    assert all(len(l) < 300 for l in bat.splitlines())

@@ -138,7 +138,7 @@ def dia_chi_chon():
 
 
 def _ten_file(ten, loai):
-    t = re.sub(r"\.(msi|ps1)$", "", (ten or "").strip(), flags=re.I)
+    t = re.sub(r"\.(msi|ps1|bat)$", "", (ten or "").strip(), flags=re.I)
     t = re.sub(r"[^A-Za-z0-9._ \-]", "", t).strip(" .")[:60] or "ConsoleSystemAgent"
     return t + "." + loai
 
@@ -175,6 +175,22 @@ def _script(url, pin, ma, ten, pk=""):
             "  Write-Host $r\r\n"
             "} catch { Write-Host ('LOI: ' + $_) -ForegroundColor Red }\r\n"
             "Read-Host 'Nhan Enter de dong'\r\n")
+
+
+def _bat(ps1_text):
+    """File .bat bam doi la chay: tu xin quyen Administrator, tach script PowerShell nhung o cuoi file ra %TEMP% roi chay voi -ExecutionPolicy Bypass
+    (khong bi loi 'running scripts is disabled', khong can chuot phai 'Run with PowerShell')."""
+    import base64
+    b = base64.b64encode(ps1_text.encode("utf-8")).decode("ascii")
+    dong = "\r\n".join("::B64:" + b[i:i + 200] for i in range(0, len(b), 200))
+    dau = ("@echo off\r\n"
+           "net session >nul 2>&1 || (powershell -NoProfile -Command \"Start-Process -Verb RunAs -FilePath '%~f0'\" & exit /b)\r\n"
+           "set \"CSP=%TEMP%\\cs-cai-agent.ps1\"\r\n"
+           "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$t=(Get-Content -LiteralPath '%~f0' | Where-Object { $_ -like '::B64:*' } | ForEach-Object { $_.Substring(6) }) -join ''; [IO.File]::WriteAllBytes($env:CSP,[Convert]::FromBase64String($t))\"\r\n"
+           "powershell -NoProfile -ExecutionPolicy Bypass -File \"%CSP%\"\r\n"
+           "del \"%CSP%\" >nul 2>&1\r\n"
+           "exit /b\r\n")
+    return dau + dong + "\r\n"
 
 
 def _msi(thu_muc, server, pin, ma, pk=""):
@@ -228,11 +244,12 @@ def _chay(j, loai, ten, ds_dia_chi, ngay, toi_da, pk, pk_goc=""):
             return ((f"Hạn {ngay} ngày, " if ngay else "Không hết hạn, ") + (f"tối đa {toi_da} máy" if toi_da else "không giới hạn số máy")) + (", có passkey (chỉ lưu dấu băm PBKDF2)" if pk else ", không đặt passkey")
 
         def b4():
-            if loai == "ps1":
-                st["duong"] = os.path.join(tmp, "out.ps1")
+            if loai in ("ps1", "bat"):
+                st["duong"] = os.path.join(tmp, "out." + loai)
+                nd = _script(",".join(st["urls"]), st["pin"], st["ma"], ten, pk)
                 with open(st["duong"], "w", encoding="utf-8", newline="") as f:
-                    f.write(_script(",".join(st["urls"]), st["pin"], st["ma"], ten, pk))
-                return "Đã ghi địa chỉ, dấu vân tay CA và mã vào script."
+                    f.write(nd if loai == "ps1" else _bat(nd))
+                return "Đã ghi địa chỉ, dấu vân tay CA và mã vào " + ("script." if loai == "ps1" else "file .bat (chạy bằng chuột đúp).")
             st["duong"] = _msi(tmp, ",".join(ds_dia_chi), st["pin"], st["ma"], pk)
             return "Đã ghép địa chỉ, dấu vân tay CA và mã vào gói và đóng gói MSI (x64)."
 
@@ -268,7 +285,7 @@ def _chay(j, loai, ten, ds_dia_chi, ngay, toi_da, pk, pk_goc=""):
             return "Đã lưu, có thể tải ở danh sách bên dưới."
 
         for ten_buoc, fn in (("Kiểm tra địa chỉ và cổng mTLS", b1), ("Lấy dấu vân tay CA để ghim", b2), ("Tạo mã ghi danh", b3),
-                             ("Ghép thông tin vào " + ("script" if loai == "ps1" else "gói MSI"), b4), ("Kiểm tra lại file", b5), ("Lưu để tải về", b6)):
+                             ("Ghép thông tin vào " + ("script" if loai == "ps1" else "file .bat" if loai == "bat" else "gói MSI"), b4), ("Kiểm tra lại file", b5), ("Lưu để tải về", b6)):
             _buoc(j, ten_buoc, fn)
         with _KHOA:                                                          # luu dong thoi gian cung file
             ds = _doc()
@@ -287,7 +304,7 @@ def _chay(j, loai, ten, ds_dia_chi, ngay, toi_da, pk, pk_goc=""):
 
 def bat_dau(loai, ten, dia_chi, ngay=0, toi_da=0, passkey="", cho_trien_khai=False):
     """Kiem tra dau vao roi chay nen. Tra ve id viec; ValueError neu dau vao sai."""
-    if loai not in ("msi", "ps1"):
+    if loai not in ("msi", "ps1", "bat"):
         raise ValueError("Loại file không hợp lệ.")
     ds_dia_chi = []
     for d in re.split(r"[,\s]+", (dia_chi or "").strip()):
