@@ -1,0 +1,435 @@
+# Console System - (c) 2026 zTieuYeuz. All rights reserved.
+"""
+RustDesk tich hop: may chu RustDesk (hbbs = ID/rendezvous, hbbr = relay) chay ngay tren Console System + cai client RustDesk len may Windows.
+
+  * "Cai may chu": tai ban phat hanh CHINH THUC cua rustdesk/rustdesk-server tu GitHub (ghim phien ban + SHA-256 trong ma), giai nen hbbs/hbbr,
+    tao 2 dich vu systemd console-system-rustdesk-hbbs / -hbbr (chi tao khi nguoi dung bam Cai, khong tu bat luc cai Console System).
+  * Khoa: hbbs tu tao cap khoa id_ed25519(.pub) o lan chay dau; chay voi `-k _` nen client PHAI co khoa moi ket noi duoc.
+  * Danh sach thiet bi: doc (chi doc) co so du lieu hbbs db_v2.sqlite3, bang peer. Ban mien phi cua RustDesk Server KHONG co trang quan tri web
+    (trang quan tri co nguoi dung/nhom/chia se la ban Pro tra phi) - trang nay hien thi nhung gi hbbs thuc su luu.
+  * Client Windows: script PowerShell tai ban cai CHINH THUC (ghim SHA-256), cai im lang, tro ve may chu nay va dat mat khau co dinh. Chay duoc qua
+    agent (1 nut) HOAC dan thu cong tren may o ngoai Internet (script tai ve tu trang nay).
+  * Ra Internet: can chuyen tiep cong tren router toi may nay: TCP 21115-21119 va UDP 21116, va nhap ten mien / IP cong cong o muc Cau hinh.
+    (Duong ham Cloudflare khong chuyen duoc giao thuc RustDesk.)
+"""
+import hashlib
+import json
+import os
+import platform
+import re
+import secrets
+import socket
+import sqlite3
+import threading
+import time
+import urllib.request
+import zipfile
+
+from flask import jsonify, request, Response
+
+from consolesystem.core import lenh as _lenh
+from consolesystem.core import duongdan as _DD
+from consolesystem.core.esc import esc_html as _esc
+from consolesystem.core.nhatky import bo_qua as _bo_qua
+from consolesystem.core.store import ghi_nguyen_tu
+
+VER_SERVER = "1.1.16"
+URL_SERVER = "https://github.com/rustdesk/rustdesk-server/releases/download/%s/rustdesk-server-linux-%%s.zip" % VER_SERVER
+SHA_SERVER = {
+    "amd64": "0565c41affe6c3f409b0bddfaf5a24ccbf3f64f5f8e3fec250b69a0d5f6bdbcf",
+    "arm64v8": "6a4ae3c5ca257a4278ded72fd17eb2ca4eeb0356a5425e63a3e7fcb0ec6c155c",
+    "armv7": "2e832e901680bc4eb8d5d17df867e2bc9731c0bdf064b27c35084494fc279be2",
+    "i386": "a10d2db36ceabec730ea2458dc0466b9fb46eda3f2ee90ab29a0bff8f92a7c22",
+}
+KIEN_TRUC = {"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64v8", "arm64": "arm64v8", "armv7l": "armv7", "i686": "i386", "i386": "i386"}
+VER_CLIENT = "1.5.0"
+URL_CLIENT = "https://github.com/rustdesk/rustdesk/releases/download/%s/rustdesk-%s-x86_64.exe" % (VER_CLIENT, VER_CLIENT)
+SHA_CLIENT = "8555777215510d83d2d61c9dc984e4fcc838bd7e79f9d18a42585431f5e8bb47"
+DV_HBBS, DV_HBBR = "console-system-rustdesk-hbbs", "console-system-rustdesk-hbbr"
+CONG_TCP = (21115, 21116, 21117, 21118, 21119)
+MAU_HOST = re.compile(r"[A-Za-z0-9][A-Za-z0-9.\-]{0,253}")
+
+
+def _goc():
+    return os.path.join(_DD.THU_MUC_DU_LIEU, "rustdesk")
+
+
+def _bin():
+    return os.path.join(_goc(), "bin")
+
+
+def _chay_dir():
+    return os.path.join(_goc(), "chay")
+
+
+def _cfg_file():
+    return os.path.join(_goc(), "rustdesk.json")
+
+
+def doc_cfg():
+    try:
+        with open(_cfg_file(), encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        d = {}
+    d.setdefault("host", "")
+    d.setdefault("may", {})
+    return d
+
+
+def luu_cfg(d):
+    os.makedirs(_goc(), mode=0o700, exist_ok=True)
+    ghi_nguyen_tu(_cfg_file(), json.dumps(d, ensure_ascii=False, indent=1).encode("utf-8"), 0o600)
+
+
+def ip_lan():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("10.255.255.255", 1))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except OSError:
+        return ""
+
+
+def host_hieu_luc():
+    """Dia chi ma client se dung: cau hinh tay, neu chua co thi IP LAN (chi dung duoc trong mang noi bo)."""
+    return doc_cfg().get("host") or ip_lan()
+
+
+def kien_truc():
+    return KIEN_TRUC.get(platform.machine().lower())
+
+
+def da_cai():
+    return all(os.path.isfile(os.path.join(_bin(), x)) for x in ("hbbs", "hbbr"))
+
+
+def khoa_cong_khai():
+    try:
+        with open(os.path.join(_chay_dir(), "id_ed25519.pub"), encoding="ascii") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def _hoat_dong(dv):
+    return _lenh.chay(["systemctl", "is-active", dv], timeout=8).out.strip() == "active"
+
+
+def _cong_nghe(cong):
+    s = socket.socket()
+    s.settimeout(0.6)
+    try:
+        return s.connect_ex(("127.0.0.1", cong)) == 0
+    finally:
+        s.close()
+
+
+def trang_thai():
+    cfg = doc_cfg()
+    return {"kien_truc": kien_truc(), "ban": VER_SERVER, "da_cai": da_cai(), "hbbs": _hoat_dong(DV_HBBS), "hbbr": _hoat_dong(DV_HBBR),
+            "cong": {str(c): _cong_nghe(c) for c in (21115, 21116, 21117)}, "khoa": khoa_cong_khai(), "host": cfg["host"], "host_hieu_luc": host_hieu_luc(),
+            "ip_lan": ip_lan(), "cai": dict(_CAI)}
+
+
+# ------------------------------------------------------------------ cai may chu
+_CAI = {"dang": False, "tb": "", "ok": None}
+_KHOA = threading.Lock()
+
+
+def _tai(url, dich, sha, tien_do=None):
+    req = urllib.request.Request(url, headers={"User-Agent": "ConsoleSystem"})
+    h = hashlib.sha256()
+    with urllib.request.urlopen(req, timeout=60) as r, open(dich, "wb") as f:
+        while True:
+            b = r.read(1 << 16)
+            if not b:
+                break
+            h.update(b)
+            f.write(b)
+    if h.hexdigest() != sha:
+        os.unlink(dich)
+        raise RuntimeError("Tệp tải về không khớp mã SHA-256 đã ghim (%s). Không cài." % h.hexdigest()[:12])
+
+
+def _unit(ten, mo_ta, lenh_chay):
+    return ("[Unit]\nDescription=%s\nAfter=network.target\n\n[Service]\nType=simple\nWorkingDirectory=%s\nExecStart=%s\nRestart=always\nRestartSec=3\n\n"
+            "[Install]\nWantedBy=multi-user.target\n" % (mo_ta, _chay_dir(), lenh_chay))
+
+
+def ghi_dich_vu():
+    host = host_hieu_luc()
+    if not MAU_HOST.fullmatch(host or ""):
+        raise RuntimeError("Chưa có địa chỉ máy chủ hợp lệ. Nhập tên miền hoặc IP ở mục Cấu hình.")
+    os.makedirs(_chay_dir(), mode=0o700, exist_ok=True)
+    f = {DV_HBBS: _unit(DV_HBBS, "Console System - RustDesk ID server (hbbs)", "%s/hbbs -r %s:21117 -k _" % (_bin(), host)),
+         DV_HBBR: _unit(DV_HBBR, "Console System - RustDesk relay (hbbr)", "%s/hbbr -k _" % _bin())}
+    for ten, nd in f.items():
+        ghi_nguyen_tu("/etc/systemd/system/%s.service" % ten, nd.encode("utf-8"), 0o644)
+    _lenh.chay(["systemctl", "daemon-reload"], timeout=30)
+
+
+def _cai_nen():
+    try:
+        ar = kien_truc()
+        if not ar:
+            raise RuntimeError("Kiến trúc %s chưa được hỗ trợ." % platform.machine())
+        os.makedirs(_bin(), mode=0o755, exist_ok=True)
+        tam = os.path.join(_goc(), "tai-%s.zip" % secrets.token_hex(3))
+        _CAI["tb"] = "Đang tải RustDesk Server %s..." % VER_SERVER
+        _tai(URL_SERVER % ar, tam, SHA_SERVER[ar])
+        with zipfile.ZipFile(tam) as z:
+            for ten in ("hbbs", "hbbr"):
+                nd = z.read("%s/%s" % (ar, ten))
+                dich = os.path.join(_bin(), ten)
+                with open(dich + ".moi", "wb") as f:
+                    f.write(nd)
+                os.chmod(dich + ".moi", 0o755)
+                os.replace(dich + ".moi", dich)
+        os.unlink(tam)
+        _CAI["tb"] = "Đang tạo dịch vụ..."
+        ghi_dich_vu()
+        for dv in (DV_HBBR, DV_HBBS):
+            _lenh.chay(["systemctl", "enable", "--now", dv], timeout=30)
+        for _ in range(20):
+            if khoa_cong_khai():
+                break
+            time.sleep(0.5)
+        _CAI.update(ok=True, tb="Đã cài và chạy RustDesk Server %s." % VER_SERVER)
+    except Exception as e:                       # tai ve / giai nen / quyen: hien nguyen nhan cho nguoi dung
+        _CAI.update(ok=False, tb="Lỗi: %s" % e)
+    finally:
+        _CAI["dang"] = False
+
+
+def bat_dau_cai():
+    with _KHOA:
+        if _CAI["dang"]:
+            return False
+        _CAI.update(dang=True, ok=None, tb="Bắt đầu...")
+    threading.Thread(target=_cai_nen, daemon=True, name="rustdesk-cai").start()
+    return True
+
+
+def hanh_dong(viec):
+    if not da_cai():
+        return False, "Chưa cài máy chủ RustDesk."
+    if viec == "go":
+        for dv in (DV_HBBS, DV_HBBR):
+            _lenh.chay(["systemctl", "disable", "--now", dv], timeout=30)
+            try:
+                os.unlink("/etc/systemd/system/%s.service" % dv)
+            except OSError as _loi:
+                _bo_qua(_loi)
+        _lenh.chay(["systemctl", "daemon-reload"], timeout=30)
+        return True, "Đã dừng và gỡ dịch vụ (khóa và danh sách thiết bị vẫn giữ trong thư mục dữ liệu)."
+    if viec not in ("start", "stop", "restart"):
+        return False, "Hành động không hợp lệ."
+    if viec != "stop":
+        try:
+            ghi_dich_vu()
+        except RuntimeError as e:
+            return False, str(e)
+    for dv in (DV_HBBR, DV_HBBS):
+        _lenh.chay(["systemctl", viec, dv], timeout=30)
+    return True, {"start": "Đã chạy", "stop": "Đã dừng", "restart": "Đã khởi động lại"}[viec] + " RustDesk Server."
+
+
+def dat_host(host):
+    host = (host or "").strip()
+    if host and not MAU_HOST.fullmatch(host):
+        return False, "Địa chỉ không hợp lệ (chỉ chữ, số, dấu chấm, gạch ngang)."
+    d = doc_cfg()
+    d["host"] = host
+    luu_cfg(d)
+    if da_cai():
+        hanh_dong("restart")
+    return True, "Đã lưu địa chỉ máy chủ RustDesk."
+
+
+# ------------------------------------------------------------------ thiet bi (doc DB cua hbbs)
+def thiet_bi():
+    db = os.path.join(_chay_dir(), "db_v2.sqlite3")
+    if not os.path.isfile(db):
+        return []
+    try:
+        c = sqlite3.connect("file:%s?mode=ro" % db, uri=True, timeout=3)
+        c.row_factory = sqlite3.Row
+        ds = []
+        for r in c.execute("SELECT id, created_at, user, status, note, info FROM peer ORDER BY created_at DESC LIMIT 1000"):
+            try:
+                info = json.loads(r["info"] or "{}")
+            except ValueError:
+                info = {}
+            ds.append({"id": r["id"], "tao": r["created_at"], "ip": str(info.get("ip", "")).replace("::ffff:", ""), "ghi_chu": r["note"] or ""})
+        c.close()
+        return ds
+    except sqlite3.Error as e:
+        _bo_qua(e)
+        return []
+
+
+# ------------------------------------------------------------------ client Windows
+def script_client(mat_khau, host=None, khoa=None):
+    """PowerShell cai RustDesk client (ban chinh thuc, SHA-256 ghim), tro ve may chu nay, dat mat khau co dinh, in ra ID."""
+    host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
+    if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
+        raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
+    if not re.fullmatch(r"[A-Za-z0-9]{8,64}", mat_khau):
+        raise RuntimeError("Mật khẩu không hợp lệ.")
+    return r"""$ErrorActionPreference = 'Stop'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$exe = Join-Path $env:TEMP 'rustdesk-setup.exe'
+Invoke-WebRequest -UseBasicParsing -Uri '%(url)s' -OutFile $exe
+if ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLower() -ne '%(sha)s') { Remove-Item $exe -Force; throw 'File RustDesk tải về không khớp SHA-256, đã hủy.' }
+Start-Process $exe -ArgumentList '--silent-install' -Wait
+Start-Sleep 10
+$rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
+if (-not (Test-Path $rd)) { throw 'Không thấy rustdesk.exe sau khi cài.' }
+$cfg = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config'
+New-Item -ItemType Directory -Force -Path $cfg | Out-Null
+@"
+rendezvous_server = '%(host)s:21116'
+nat_type = 1
+serial = 0
+
+[options]
+custom-rendezvous-server = '%(host)s'
+relay-server = '%(host)s'
+key = '%(khoa)s'
+"@ | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
+Restart-Service RustDesk -ErrorAction SilentlyContinue
+Start-Sleep 5
+& $rd --option custom-rendezvous-server '%(host)s' | Out-Null
+& $rd --option relay-server '%(host)s' | Out-Null
+& $rd --option key '%(khoa)s' | Out-Null
+& $rd --password '%(mk)s' | Out-Null
+$id = ((& $rd --get-id | Out-String).Trim())
+'RUSTDESK_ID=' + $id""" % {"url": URL_CLIENT, "sha": SHA_CLIENT, "host": host, "khoa": khoa, "mk": mat_khau}
+
+
+def cai_client_may(m):
+    """Cai qua agent/WinRM. Tra (ok, thong_diep, id)."""
+    from consolesystem.features.uem import uem_dieukhien as DK
+    cfg = doc_cfg()
+    ban = cfg["may"].get(m["id"]) or {}
+    mk = ban.get("mk") or secrets.token_hex(6)
+    try:
+        sc = script_client(mk)
+    except RuntimeError as e:
+        return False, str(e), ""
+    ok, out = DK._chay(m, sc)
+    ma = re.search(r"RUSTDESK_ID=(\d{6,12})", out or "")
+    if not ok or not ma:
+        return False, (out or "Không lấy được ID RustDesk.")[-400:], ""
+    cfg = doc_cfg()
+    cfg["may"][m["id"]] = {"id": ma.group(1), "mk": mk, "luc": int(time.time())}
+    luu_cfg(cfg)
+    return True, "Đã cài RustDesk, ID %s." % ma.group(1), ma.group(1)
+
+
+# ------------------------------------------------------------------ giao dien
+TRANG = """<style>.rd-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}.rd-k{font-family:monospace;word-break:break-all;user-select:all;background:#111;padding:8px;border-radius:6px}
+.rd-chip{display:inline-block;padding:2px 9px;border-radius:10px;background:#333;margin-right:6px}.rd-chip.ok{background:#1f6f2e}.rd-chip.loi{background:#8a2a2a}
+.rd-tb{width:100%;border-collapse:collapse}.rd-tb td,.rd-tb th{padding:6px 8px;border-bottom:1px solid #333;text-align:left}</style>
+<div class="card"><h3>RustDesk Server tích hợp</h3>
+<p class="tk-ghi">Chạy máy chủ RustDesk (ID server + relay) ngay trên Console System để điều khiển máy từ xa không phụ thuộc máy chủ công cộng. Bản RustDesk Server miễn phí <b>không có trang quản trị web</b> (bản Pro mới có); trang này hiển thị đúng những gì máy chủ lưu: khóa, cổng, danh sách thiết bị đã đăng ký.</p>
+<div id="rd-tt">Đang tải...</div><div class="tk-hang" style="margin-top:10px;" id="rd-nut"></div><div class="tk-ghi" id="rd-tb"></div></div>
+<div class="rd-2"><div class="card"><h3>Cấu hình</h3><p class="tk-ghi">Địa chỉ để các máy RustDesk tìm tới máy chủ này: tên miền hoặc IP công cộng nếu có máy ở ngoài Internet; để trống = dùng IP LAN (chỉ trong mạng nội bộ).</p>
+<input type="text" id="rd-host" placeholder="vd rd.ten-mien-cua-ban.com" style="width:100%;"><div style="margin-top:8px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button></div>
+<p class="tk-ghi" style="margin-top:12px;"><b>Để máy ngoài Internet remote được:</b> trên router chuyển tiếp (port forward) về máy này: <b>TCP 21115-21119</b> và <b>UDP 21116</b>. (Cloudflare Tunnel không chuyển được giao thức RustDesk.) Agent Console System vẫn chỉ hoạt động trong LAN, nên máy ở ngoài cài RustDesk bằng script thủ công bên dưới.</p></div>
+<div class="card"><h3>Khóa và cấu hình cho client</h3><p class="tk-ghi">Dán vào RustDesk, Cài đặt, Mạng, Máy chủ ID/Relay:</p>
+<div>ID server / Relay: <span class="rd-k" id="rd-h"></span></div><div style="margin-top:6px;">Key:</div><div class="rd-k" id="rd-key">(chưa có, cài máy chủ trước)</div>
+<p class="tk-ghi" style="margin-top:10px;">Cài tay trên máy Windows bất kỳ (kể cả ngoài Internet): mở PowerShell quản trị và chạy file tải ở đây (đã nhúng máy chủ và khóa, tải bản chính thức có kiểm SHA-256):</p>
+<a class="tk-nut" href="/rustdesk/client-cai.ps1">Tải script cài client (.ps1)</a></div></div>
+<div class="card"><h3>Cài RustDesk lên máy Windows có agent</h3><p class="tk-ghi">Chọn máy rồi bấm Cài. Mỗi máy được đặt một mật khẩu cố định riêng, hiện ở bảng bên dưới.</p><div id="rd-may" class="tk-luoi"></div>
+<div style="margin-top:8px;"><button class="tk-nut chinh" id="rd-cai-client" type="button">Cài lên máy đã chọn</button> <span class="tk-ghi" id="rd-ct"></span></div>
+<table class="rd-tb" id="rd-bang-may" style="margin-top:10px;"></table></div>
+<div class="card"><h3>Thiết bị đã đăng ký với máy chủ</h3><table class="rd-tb" id="rd-dev"></table></div>
+<script>(function(){var $=function(i){return document.getElementById(i);};
+function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function api(u,b){return fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(function(r){return r.json();});}
+function chip(t,ok){return '<span class="rd-chip '+(ok?'ok':'loi')+'">'+t+'</span>';}
+function ve(d){
+ var h='Phiên bản máy chủ: <b>'+e(d.ban)+'</b> ('+e(d.kien_truc||'chưa hỗ trợ')+')<br>';
+ h+=d.da_cai?(chip('ID server (hbbs) '+(d.hbbs?'chạy':'dừng'),d.hbbs)+chip('Relay (hbbr) '+(d.hbbr?'chạy':'dừng'),d.hbbr)+chip('Cổng 21116 '+(d.cong['21116']?'mở':'đóng'),d.cong['21116'])):'<span class="rd-chip loi">Chưa cài</span>';
+ $('rd-tt').innerHTML=h;
+ var n='';
+ if(!d.da_cai) n='<button class="tk-nut chinh" data-v="cai"'+(d.cai.dang?' disabled':'')+'>Cài máy chủ RustDesk</button>';
+ else n='<button class="tk-nut xanh" data-v="start">Chạy</button><button class="tk-nut" data-v="restart">Khởi động lại</button><button class="tk-nut" data-v="stop">Dừng</button><button class="tk-nut do" data-v="go">Gỡ dịch vụ</button>';
+ $('rd-nut').innerHTML=n; $('rd-tb').textContent=d.cai.tb||'';
+ if(document.activeElement!==$('rd-host')) $('rd-host').value=d.host||''; $('rd-h').textContent=d.host_hieu_luc||'(chưa xác định)'; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
+ if(d.cai.dang) setTimeout(tai,1500);}
+function tai(){api('/rustdesk/api/trang-thai').then(ve);}
+$('rd-nut').addEventListener('click',function(ev){var v=ev.target.dataset.v; if(!v)return; if(v==='go'&&!confirm('Gỡ dịch vụ RustDesk Server?'))return;
+ api(v==='cai'?'/rustdesk/api/cai':'/rustdesk/api/hanh-dong',{viec:v}).then(function(d){$('rd-tb').textContent=d.tb||'';tai();});});
+$('rd-luu').onclick=function(){api('/rustdesk/api/cau-hinh',{host:$('rd-host').value}).then(function(d){$('rd-tb').textContent=d.tb;tai();});};
+function dev(){api('/rustdesk/api/thiet-bi').then(function(d){var h='<tr><th>ID</th><th>IP gần nhất</th><th>Đăng ký lúc</th><th>Ghi chú</th></tr>';
+ (d.ds||[]).forEach(function(x){h+='<tr><td><b>'+e(x.id)+'</b></td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td><td>'+e(x.ghi_chu)+'</td></tr>';});
+ if(!(d.ds||[]).length) h+='<tr><td colspan="4" class="tk-ghi">Chưa có thiết bị nào đăng ký.</td></tr>'; $('rd-dev').innerHTML=h;
+ var m='<tr><th>Máy</th><th>ID RustDesk</th><th>Mật khẩu</th></tr>'; (d.may||[]).forEach(function(x){m+='<tr><td>'+e(x.ten)+'</td><td><b>'+e(x.id)+'</b></td><td><span class="rd-k">'+e(x.mk)+'</span></td></tr>';});
+ $('rd-bang-may').innerHTML=(d.may||[]).length?m:''; var o=''; (d.agent||[]).forEach(function(x){o+='<label class="tk-o"><input type="checkbox" name="rdm" value="'+e(x.id)+'"><span><b>'+e(x.ten)+'</b><small>'+e(x.ip)+(x.online?'':' (offline)')+'</small></span></label>';});
+ $('rd-may').innerHTML=o||'<span class="tk-ghi">Chưa có máy nào cài agent.</span>';});}
+$('rd-cai-client').onclick=function(){var ids=[].slice.call(document.querySelectorAll('input[name=rdm]:checked')).map(function(i){return i.value;}); if(!ids.length){$('rd-ct').textContent='Chọn ít nhất một máy.';return;}
+ $('rd-ct').textContent='Đang cài (có thể mất 1-2 phút mỗi máy)...'; api('/rustdesk/api/cai-client',{may:ids}).then(function(d){$('rd-ct').textContent=(d.kq||[]).map(function(x){return x.ten+': '+x.tb;}).join(' | ');dev();});};
+tai(); dev(); setInterval(function(){if(!document.hidden)tai();},8000);})();</script>"""
+
+
+def register_rustdesk(app):
+    from ui.layout import render_page
+
+    @app.route("/rustdesk")
+    def rustdesk_trang():
+        return render_page(TRANG, active="/rustdesk", title="RustDesk", subtitle="Máy chủ RustDesk tích hợp và cài client lên máy Windows")
+
+    @app.route("/rustdesk/api/trang-thai")
+    def rustdesk_api_tt():
+        return jsonify(trang_thai())
+
+    @app.route("/rustdesk/api/cai", methods=["POST"])
+    def rustdesk_api_cai():
+        ok = bat_dau_cai()
+        return jsonify({"ok": ok, "tb": "Đang cài, theo dõi ở trên..." if ok else "Đang có một lần cài chạy."})
+
+    @app.route("/rustdesk/api/hanh-dong", methods=["POST"])
+    def rustdesk_api_hd():
+        ok, tb = hanh_dong(str((request.get_json(silent=True) or {}).get("viec", "")))
+        return jsonify({"ok": ok, "tb": tb})
+
+    @app.route("/rustdesk/api/cau-hinh", methods=["POST"])
+    def rustdesk_api_cfg():
+        ok, tb = dat_host(str((request.get_json(silent=True) or {}).get("host", "")))
+        return jsonify({"ok": ok, "tb": tb})
+
+    @app.route("/rustdesk/api/thiet-bi")
+    def rustdesk_api_dev():
+        from ui import tk_dulieu as DL
+        from ui import uem_agent as UA
+        cfg = doc_cfg()
+        ds_may = DL.MAY.doc()
+        ten = {m["id"]: (m.get("ten") or m["ip"]) for m in ds_may}
+        agent = [{"id": m["id"], "ten": m.get("ten") or m["ip"], "ip": m["ip"], "online": UA.con_song(m)} for m in ds_may if UA.co_agent(m) and not m.get("an")]
+        may = [{"ten": ten.get(k, k), "id": v.get("id", ""), "mk": v.get("mk", "")} for k, v in cfg["may"].items()]
+        return jsonify({"ds": thiet_bi(), "may": may, "agent": agent})
+
+    @app.route("/rustdesk/api/cai-client", methods=["POST"])
+    def rustdesk_api_cai_client():
+        from ui import tk_dulieu as DL
+        ids = (request.get_json(silent=True) or {}).get("may") or []
+        kq = []
+        for m in DL.MAY.doc():
+            if m["id"] in ids:
+                ok, tb, _id = cai_client_may(m)
+                kq.append({"ten": m.get("ten") or m["ip"], "ok": ok, "tb": tb})
+        return jsonify({"ok": True, "kq": kq})
+
+    @app.route("/rustdesk/client-cai.ps1")
+    def rustdesk_script():
+        try:
+            sc = script_client(secrets.token_hex(6))
+        except RuntimeError as e:
+            return Response(str(e), status=409, mimetype="text/plain; charset=utf-8")
+        return Response("\ufeff" + sc.replace("\n", "\r\n") + "\r\n", mimetype="text/plain; charset=utf-8",
+                        headers={"Content-Disposition": "attachment; filename=cai-rustdesk-client.ps1"})

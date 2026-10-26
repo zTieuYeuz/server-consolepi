@@ -91,4 +91,25 @@ kq["sl_tham_xau"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-go-share", 
 kq["sl_duong_xau"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-tao-share", "tham": {"ten": "D", "duong": "D:\\a;calc", "nguoi": "Everyone"}}).get_json()["ok"] is False
 kq["sl_tao_share"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-tao-share", "tham": {"ten": "DuLieu", "duong": "D:\\DuLieu", "nguoi": "Everyone"}}).get_json()["ok"] is True and "New-SmbShare -Name 'DuLieu'" in kich[-1]
 kq["sl_tab"] = c.get("/uem/may/m-agent/sua-loi", headers=H).status_code == 200
+from consolesystem.features.rustdesk import rustdesk as RD  # noqa: E402
+kq["rd_trang"] = c.get("/rustdesk", headers=H).status_code == 200
+t = c.get("/rustdesk/api/trang-thai", headers=H).get_json()
+kq["rd_tt_chua_cai"] = t["da_cai"] is False and t["ban"] == RD.VER_SERVER
+kq["rd_host_xau"] = post("/rustdesk/api/cau-hinh", {"host": "a b;c"}).get_json()["ok"] is False
+kq["rd_host_ok"] = post("/rustdesk/api/cau-hinh", {"host": "rd.example.com"}).get_json()["ok"] is True and RD.host_hieu_luc() == "rd.example.com"
+kq["rd_script_chua_co_khoa"] = c.get("/rustdesk/client-cai.ps1", headers=H).status_code == 409
+sc = RD.script_client("abcdef123456", "rd.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+kq["rd_script"] = RD.SHA_CLIENT in sc and "--silent-install" in sc and "rd.example.com" in sc and "RUSTDESK_ID=" in sc
+try:
+    RD.script_client("x'; calc", "rd.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+    kq["rd_mk_xau"] = False
+except RuntimeError:
+    kq["rd_mk_xau"] = True
+try:
+    RD.script_client("abcdef123456", "rd.example.com", "k'; calc")
+    kq["rd_khoa_xau"] = False
+except RuntimeError:
+    kq["rd_khoa_xau"] = True
+kq["rd_hanh_dong_chua_cai"] = post("/rustdesk/api/hanh-dong", {"viec": "start"}).get_json()["ok"] is False
+kq["rd_thiet_bi"] = c.get("/rustdesk/api/thiet-bi", headers=H).get_json()["ds"] == []
 print("KETQUA " + json.dumps(kq))

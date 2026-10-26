@@ -79,6 +79,7 @@ NAV_ITEMS = [
         ("/uem/profiles", "Profiles", "📋"),
         ("/uem/bao-cao", "Báo cáo", "📄"),
         ("/uem/quan-tri", "Quản trị", "⚙️"),
+        ("/rustdesk", "RustDesk", "🛰️"),
         ("/uem/chua-ho-tro", "Chưa hỗ trợ", "ℹ️"),
     ]),
 
