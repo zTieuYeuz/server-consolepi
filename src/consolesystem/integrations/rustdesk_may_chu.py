@@ -309,6 +309,41 @@ def thiet_bi():
 
 
 # ------------------------------------------------------------------ client Windows
+KHOI_CAU_HINH = r"""$cfg = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config'
+New-Item -ItemType Directory -Force -Path $cfg | Out-Null
+@"
+rendezvous_server = '%(host)s%(cong)s'
+nat_type = 1
+serial = 0
+
+[options]
+custom-rendezvous-server = '%(host)s'
+relay-server = '%(host)s'
+key = '%(khoa)s'%(ws_toml)s
+"@ | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
+Restart-Service RustDesk -ErrorAction SilentlyContinue
+Start-Sleep 5
+& $rd --option custom-rendezvous-server '%(host)s' | Out-Null
+& $rd --option relay-server '%(host)s' | Out-Null
+& $rd --option key '%(khoa)s' | Out-Null%(ws_opt)s
+"""
+
+
+def _tham_so(host, khoa, mat_khau=""):
+    ws = dung_ws()
+    return {"host": host, "khoa": khoa, "mk": mat_khau, "cong": "" if ws else ":21116", "ws_toml": "\nallow-websocket = 'Y'" if ws else "",
+            "ws_opt": "\n& $rd --option allow-websocket Y | Out-Null" if ws else ""}
+
+
+def script_cau_hinh(host=None, khoa=None):
+    """Chi dat dia chi may chu + khoa (+ WebSocket) cho RustDesk DA CAI, khong cai lai, khong doi mat khau."""
+    host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
+    if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
+        raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
+    return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\nif (-not (Test-Path $rd)) { throw 'Máy chưa cài RustDesk.' }\n"
+            + KHOI_CAU_HINH % _tham_so(host, khoa) + "\n'RUSTDESK_CFG_OK'")
+
+
 def script_client(mat_khau, host=None, khoa=None):
     """PowerShell cai RustDesk client (ban chinh thuc, SHA-256 ghim), tro ve may chu nay, dat mat khau co dinh, in ra ID."""
     host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
@@ -336,24 +371,6 @@ for ($i = 0; $i -lt 60 -and -not (Test-Path $rd); $i++) { Start-Sleep 2 }
 Start-Sleep 12
 Remove-Item $exe -Force -ErrorAction SilentlyContinue
 if (-not (Test-Path $rd)) { throw 'Không thấy rustdesk.exe sau khi cài.' }
-$cfg = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config'
-New-Item -ItemType Directory -Force -Path $cfg | Out-Null
-@"
-rendezvous_server = '%(host)s%(cong)s'
-nat_type = 1
-serial = 0
-
-[options]
-custom-rendezvous-server = '%(host)s'
-relay-server = '%(host)s'
-key = '%(khoa)s'%(ws_toml)s
-"@ | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
-Restart-Service RustDesk -ErrorAction SilentlyContinue
-Start-Sleep 5
-& $rd --option custom-rendezvous-server '%(host)s' | Out-Null
-& $rd --option relay-server '%(host)s' | Out-Null
-& $rd --option key '%(khoa)s' | Out-Null%(ws_opt)s
-& $rd --password '%(mk)s' | Out-Null
+%(khoi)s& $rd --password '%(mk)s' | Out-Null
 $id = ((& $rd --get-id | Out-String).Trim())
-'RUSTDESK_ID=' + $id""" % {"url": URL_CLIENT, "sha": SHA_CLIENT, "host": host, "khoa": khoa, "mk": mat_khau,
-           "cong": "" if ws else ":21116", "ws_toml": "\nallow-websocket = 'Y'" if ws else "", "ws_opt": "\n& $rd --option allow-websocket Y | Out-Null" if ws else ""}
+'RUSTDESK_ID=' + $id""" % {"url": URL_CLIENT, "sha": SHA_CLIENT, "host": host, "khoa": khoa, "mk": mat_khau, "khoi": KHOI_CAU_HINH % _tham_so(host, khoa, mat_khau)}

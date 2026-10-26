@@ -66,6 +66,10 @@ def register_uem_rustdesk(app):
             dong_bo()
         return jsonify({"ok": ok, "tb": tb})
 
+    @app.route("/rustdesk/api/ap-cau-hinh", methods=["POST"])
+    def rustdesk_api_ap_cau_hinh():
+        return jsonify({"ok": ap_cau_hinh(), "tb": "Đang áp dụng..."})
+
     @app.route("/rustdesk/api/dong-bo", methods=["POST"])
     def rustdesk_api_dong_bo():
         if not RD.mk_chung():
@@ -110,6 +114,36 @@ def _dong_bo_nen(chi=None):
         _DONG_BO["tb"] = "Đồng bộ xong: %d máy thành công, %d máy chưa được (máy tắt hoặc mất agent, bấm Đồng bộ lại sau)." % (ok_n, loi_n)
     finally:
         _DONG_BO["dang"] = False
+
+
+def _ap_cau_hinh_nen():
+    """Day dia chi may chu + khoa + WebSocket xuong cac may DA co RustDesk (qua agent/WinRM) - may da cai truoc khi doi dia chi."""
+    try:
+        sc = RD.script_cau_hinh()
+        ds = {m["id"]: m for m in DL.MAY.doc()}
+        ok_n = loi_n = 0
+        for mid in list(RD.doc_cfg()["may"]):
+            if mid not in ds:
+                continue
+            ok, out = DK._chay(ds[mid], sc)
+            if ok and "RUSTDESK_CFG_OK" in (out or ""):
+                ok_n += 1
+            else:
+                loi_n += 1
+        _DONG_BO["tb"] = "Áp dụng địa chỉ máy chủ xong: %d máy thành công, %d máy chưa được (tắt hoặc mất agent)." % (ok_n, loi_n)
+    except RuntimeError as e:
+        _DONG_BO["tb"] = str(e)
+    finally:
+        _DONG_BO["dang"] = False
+
+
+def ap_cau_hinh():
+    if _DONG_BO["dang"]:
+        return False
+    _DONG_BO.update(dang=True, tb="Đang áp dụng địa chỉ máy chủ xuống các máy...")
+    import threading
+    threading.Thread(target=_ap_cau_hinh_nen, daemon=True, name="rustdesk-ap-cau-hinh").start()
+    return True
 
 
 def dong_bo(chi=None):

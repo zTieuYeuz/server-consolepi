@@ -141,4 +141,15 @@ kq["rd_ws_bat"] = RD.dung_ws() and "allow-websocket = 'Y'" in sc2 and "'rustdesk
 post("/rustdesk/api/cau-hinh", {"host": "rustdesk.example.com", "ws": False})
 sc3 = RD.script_client("abcdef123456", "rustdesk.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 kq["rd_ws_tat"] = (not RD.dung_ws()) and "allow-websocket" not in sc3 and ":21116" in sc3
+kich.clear()
+_c = RD.doc_cfg(); _c["may"]["m-agent"] = {"id": "123456789", "mk": "MatKhau#Chung1", "dong_bo": True}; RD.luu_cfg(_c)
+RD.khoa_cong_khai = lambda: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+Gia_execute = Gia.execute_ps
+Gia.execute_ps = lambda self, script: ("RUSTDESK_CFG_OK\r\n", Luong(), False) if "RUSTDESK_CFG_OK" in script else Gia_execute(self, script)
+kq["rd_ap_cau_hinh_api"] = post("/rustdesk/api/ap-cau-hinh", {}).get_json()["ok"] is True
+for _ in range(30):
+    if "xong" in (c.get("/rustdesk/api/thiet-bi", headers=H).get_json()["dong_bo"]["tb"]):
+        break
+    _t.sleep(0.2)
+kq["rd_ap_cau_hinh_ket_qua"] = "1 máy thành công" in c.get("/rustdesk/api/thiet-bi", headers=H).get_json()["dong_bo"]["tb"]
 print("KETQUA " + json.dumps(kq))
