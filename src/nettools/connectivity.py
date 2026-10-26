@@ -73,18 +73,21 @@ def ping_route():
     iface = request.form.get("iface") or _cong_mac_dinh()
     ran = request.method == "POST" and bool(host)
 
+    che_do = request.form.get("che_do") if request.form.get("che_do") in ("ping", "traceroute") else "ca-hai"
     ping_out = trace_out = ""
     if ran:
         if not _host_hop_le(host):
             ping_out = trace_out = ("(dia chi khong hop le - chi cho chu, so va "
                                     "cac dau . - : , khong duoc bat dau bang dau -)")
         else:
-            ping_out = run_ping(host, iface=iface)
-            trace_out = run_traceroute(host, iface=iface)
+            if che_do in ("ping", "ca-hai"):
+                ping_out = run_ping(host, iface=iface)
+            if che_do in ("traceroute", "ca-hai"):
+                trace_out = run_traceroute(host, iface=iface)
 
     return render_template_string(
         PING_TEMPLATE, o_chon_cong=_o_chon_cong(iface), host=host, iface=iface, ran=ran,
-        ping_out=ping_out, trace_out=trace_out,
+        ping_out=ping_out, trace_out=trace_out, che_do=che_do,
     )
 
 

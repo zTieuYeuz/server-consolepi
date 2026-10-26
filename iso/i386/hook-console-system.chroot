@@ -45,6 +45,14 @@ chmod 755 /usr/local/bin/ttyd
     echo "[console-system] ttyd tai ve nhung khong chay duoc"; exit 1; }
 echo "[console-system] da cai ttyd: $(/usr/local/bin/ttyd --version 2>&1 | head -1)"
 
+# --- lldpd: bat nhan CDP (switch Cisco) giong ban cai tren Pi (install.sh) - thieu thi trang LLDP/CDP tren ISO khac Pi ---
+if [ -f /etc/default/lldpd ]; then
+    sed -i 's/^#*DAEMON_ARGS=.*/DAEMON_ARGS="-c"/' /etc/default/lldpd
+    grep -q '^DAEMON_ARGS=' /etc/default/lldpd || echo 'DAEMON_ARGS="-c"' >> /etc/default/lldpd
+else
+    echo 'DAEMON_ARGS="-c"' > /etc/default/lldpd
+fi
+
 # --- 2. Cac don vi systemd ---
 for f in /usr/local/share/console-system/systemd/*.service /usr/local/share/console-system/systemd/*.timer; do
     [ -f "$f" ] || continue

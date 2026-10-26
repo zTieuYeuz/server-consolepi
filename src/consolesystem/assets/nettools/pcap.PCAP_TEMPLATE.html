@@ -22,6 +22,16 @@
 </head>
 <body>
     <h1>PCAP Capture</h1>
+    <details style="background:#262626;border:1px solid #444;border-radius:6px;padding:10px 14px;margin:10px 0;max-width:820px;">
+        <summary style="cursor:pointer;color:#4CAF50;">Công cụ này bắt được gì, dùng khi nào? (bấm để xem)</summary>
+        <p>Bắt gói tin trên <b>cổng mạng (Ethernet/Wi-Fi) bạn chọn</b>, không phải cổng console serial. Cắm cáp mạng bình thường thì chỉ thấy lưu lượng <b>của chính máy này</b> và gói broadcast/multicast (DHCP, ARP, LLDP, 802.1X, DNS...). Vì vậy rất hợp để:</p>
+        <ul>
+            <li>Xem máy này xin IP/DNS/802.1X có gì sai (lọc <code>port 67 or port 68</code>, <code>ether proto 0x888e</code>, <code>port 53</code>).</li>
+            <li>Bắt toàn bộ lưu lượng của máy khác khi cắm vào <b>cổng SPAN/mirror</b> của switch.</li>
+            <li>Bộ lọc mẫu: <code>host 192.168.1.10</code>, <code>icmp</code>, <code>tcp port 22</code>. File .pcap tải về mở bằng Wireshark.</li>
+        </ul>
+        <p>Nếu chỉ cần xem sự cố của máy khác mà không có cổng SPAN thì công cụ này ít tác dụng, hãy dùng Ping/Traceroute, ARP Scan, LLDP.</p>
+    </details>
     <p><a href="/nettools">← Network Tools</a></p>
     <p class="hint">Thư mục đang dùng: <code>{{ capture_dir }}</code>
     {% if is_usb %}(USB drive){% else %}(ổ đĩa của máy - nên cắm USB để an toàn hơn){% endif %}</p>

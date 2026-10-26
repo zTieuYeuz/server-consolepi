@@ -26,14 +26,16 @@
         <select name="iface">
             {{ o_chon_cong|safe }}
         </select>
-        <button type="submit" style="margin-left:10px;">Chạy cả 2</button>
+        <button type="submit" name="che_do" value="ping" style="margin-left:10px;">Ping</button>
+        <button type="submit" name="che_do" value="traceroute" style="margin-left:6px;">Traceroute</button>
+        <button type="submit" name="che_do" value="ca-hai" style="margin-left:6px;background:#2d6a31;">Chạy cả 2</button>
     </form>
 
     {% if ran %}
-    <h3>Ping</h3>
-    <pre>{{ ping_out }}</pre>
-    <h3>Traceroute</h3>
-    <pre>{{ trace_out }}</pre>
+    {% if che_do in ('ping', 'ca-hai') %}<h3>Ping</h3>
+    <pre>{{ ping_out }}</pre>{% endif %}
+    {% if che_do in ('traceroute', 'ca-hai') %}<h3>Traceroute</h3>
+    <pre>{{ trace_out }}</pre>{% endif %}
     {% endif %}
 </body>
 </html>
