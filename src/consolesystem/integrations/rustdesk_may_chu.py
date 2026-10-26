@@ -166,7 +166,7 @@ def trang_thai():
     cfg = doc_cfg()
     return {"kien_truc": kien_truc(), "ban": VER_SERVER, "da_cai": da_cai(), "hbbs": _hoat_dong(DV_HBBS), "hbbr": _hoat_dong(DV_HBBR),
             "cong": {str(c): _cong_nghe(c) for c in (21115, 21116, 21117)}, "khoa": khoa_cong_khai(), "host": cfg["host"], "relay": cfg["relay"],
-            "cong_id": cfg["cong_id"], "cong_relay": cfg["cong_relay"], "mk_chung": cfg.get("mk_chung", ""), "dia_chi": dia_chi(),
+            "cong_id": cfg["cong_id"], "cong_relay": cfg["cong_relay"], "ten_nat": cfg.get("ten_nat", ""), "ten_udp": cfg.get("ten_udp", ""), "mk_chung": cfg.get("mk_chung", ""), "dia_chi": dia_chi(),
             "kho": tep_kho_tt(), "host_hieu_luc": host_hieu_luc(), "relay_hieu_luc": relay_hieu_luc(), "ip_lan": ip_lan(), "cai": dict(_CAI)}
 
 
@@ -290,17 +290,18 @@ def dia_chi():
             "cong_id": p, "cong_relay": q}
 
 
-def dat_may_chu(host, relay="", cong_id=None, cong_relay=None):
+def dat_may_chu(host, relay="", cong_id=None, cong_relay=None, ten_nat="", ten_udp=""):
     """Luu ten mien / IP cong cong + cong ngoai cua May chu ID va chuyen tiep. Khoi dong lai hbbs (bao dung dia chi relay), cap nhat file cai trong kho."""
     host, relay = (host or "").strip().lower(), (relay or "").strip().lower()
-    for x in (host, relay):
+    ten_nat, ten_udp = (ten_nat or "").strip().lower(), (ten_udp or "").strip().lower()
+    for x in (host, relay, ten_nat, ten_udp):
         if x and not MAU_HOST.fullmatch(x):
             return False, "Tên miền / IP không hợp lệ (chỉ chữ, số, dấu chấm, gạch ngang; cổng nhập ở ô riêng)."
     p, q = _cong(cong_id, CONG_ID), _cong(cong_relay, CONG_RELAY)
     if not p or not q or len({p - 1, p, q}) < 3:
         return False, "Cổng không hợp lệ: số từ 2 đến 65535, cổng chuyển tiếp phải khác cổng ID và cổng ID - 1."
     d = doc_cfg()
-    d.update(host=host, relay=relay, cong_id=p, cong_relay=q)
+    d.update(host=host, relay=relay, cong_id=p, cong_relay=q, ten_nat=ten_nat, ten_udp=ten_udp)   # ten_nat/ten_udp: chi de huong dan NAT
     d.pop("ws", None)
     luu_cfg(d)
     if da_cai():
