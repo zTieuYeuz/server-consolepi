@@ -15,12 +15,10 @@ TRANG = """<style>.rd-k{font-family:monospace;word-break:break-all;user-select:a
 <p class="tk-ghi">Máy chủ RustDesk (ID server hbbs + relay hbbr) chạy ngay trên Console System. Bấm cài một lần, Console tự tải bản chính thức (kiểm SHA-256) và tạo khóa.</p>
 <div id="rd-tt">Đang tải...</div><div class="tk-hang" style="margin-top:10px;" id="rd-nut"></div><div class="tk-ghi" id="rd-tb"></div></div>
 <div class="card"><h3><span class="rd-buoc">2</span>Thông tin kết nối ra Internet</h3>
-<p class="tk-ghi">Nhập tên miền (hoặc IP công cộng) trỏ về router cho từng cổng. Cổng cố định 21115, 21116, 21117. Để trống ô 2 = chỉ dùng trong LAN.</p>
-<div class="rd-o"><div><label for="rd-nat">1. Tên miền kiểm tra NAT (TCP 21115)</label><input type="text" id="rd-nat" placeholder="để trống = trùng ô 2"></div>
-<div><label for="rd-host">2. Tên miền máy chủ ID (TCP 21116)</label><input type="text" id="rd-host" placeholder="vd id.congty.com"></div>
-<div><label for="rd-udp">3. Tên miền máy chủ ID (UDP 21116)</label><input type="text" id="rd-udp" placeholder="để trống = trùng ô 2"></div>
-<div><label for="rd-relay">4. Tên miền máy chủ chuyển tiếp (TCP 21117)</label><input type="text" id="rd-relay" placeholder="để trống = trùng ô 2"></div>
-<div><label for="rd-mk">5. Mật khẩu cố định chung cho các máy</label><input type="text" id="rd-mk" autocomplete="off" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -"></div></div>
+<p class="tk-ghi">Nhập tên miền (trỏ về IP WAN của router) hoặc IP WAN, và mật khẩu chung. Cổng cố định 21115, 21116, 21117. Để trống tên miền = chỉ dùng trong LAN.</p>
+<div class="rd-o"><div><label for="rd-host">Tên miền hoặc IP WAN</label><input type="text" id="rd-host" placeholder="vd rustdesk.congty.com"></div>
+<div><label for="rd-mk">Mật khẩu cố định chung cho các máy</label><input type="text" id="rd-mk" autocomplete="off" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -"></div></div>
+<details style="margin-top:8px;"><summary class="tk-ghi">Nâng cao: máy chủ chuyển tiếp ở địa chỉ khác</summary><div class="rd-o" style="margin-top:6px;"><div><label for="rd-relay">Tên miền máy chủ chuyển tiếp (TCP 21117)</label><input type="text" id="rd-relay" placeholder="để trống = trùng tên miền ở trên"></div></div></details>
 <div class="tk-hang" style="margin-top:10px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button></div><div class="tk-ghi" id="rd-luu-tb" style="margin-top:6px;"></div>
 <div class="rd-hd" id="rd-hd"></div></div>
 <div class="card"><h3><span class="rd-buoc">3</span>File cài đặt RustDesk</h3>
@@ -43,13 +41,12 @@ TRANG = """<style>.rd-k{font-family:monospace;word-break:break-all;user-select:a
 function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function api(u,b){return fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(function(r){return r.json();});}
 function chip(t,ok){return '<span class="rd-chip '+(ok?'ok':'loi')+'">'+t+'</span>';}
-function hd(){var v=function(i){return $(i).value.trim().toLowerCase();},h=v('rd-host'),lan=D0.ip_lan||'IP-Console',id=h||lan,nat=v('rd-nat')||id,udp=v('rd-udp')||id,rl=v('rd-relay')||id,x='';
- x+='<b>Hướng dẫn mở cổng (NAT / port forward) trên router</b>'+(h?'':' <span class="rd-chip loi">chưa nhập tên miền ô 2: chỉ dùng trong LAN</span>')+'<br>Cần mở <b>3 cổng</b> (4 dòng NAT vì cổng 21116 cần cả TCP và UDP), chuyển về máy Console System <b>'+e(lan)+'</b>:';
+function hd(){var v=function(i){return $(i).value.trim().toLowerCase();},h=v('rd-host'),lan=D0.ip_lan||'IP-Console',id=h||lan,nat=id,udp=id,rl=v('rd-relay')||id,x='';
+ x+='<b>Hướng dẫn mở cổng (NAT / port forward) trên router</b>'+(h?'':' <span class="rd-chip loi">chưa nhập tên miền: chỉ dùng trong LAN</span>')+'<br>Cần mở <b>3 cổng</b> (4 dòng NAT vì cổng 21116 cần cả TCP và UDP), chuyển về máy Console System <b>'+e(lan)+'</b>:';
  x+='<table class="rd-tb" style="margin-top:6px;"><tr><th>Bên ngoài (Internet)</th><th>Giao thức</th><th>Chuyển về (trong LAN)</th><th>Dùng cho</th></tr>';
  [[nat,21115,'TCP','Kiểm tra NAT'],[id,21116,'TCP','Máy chủ ID: gọi kết nối'],[udp,21116,'UDP','Máy chủ ID: đăng ký ID (bắt buộc UDP)'],[rl,21117,'TCP','Máy chủ chuyển tiếp']].forEach(function(a){
   x+='<tr><td><b>'+e(a[0])+':'+a[1]+'</b></td><td>'+a[2]+'</td><td>'+e(lan)+':'+a[1]+'</td><td>'+a[3]+'</td></tr>';});
  x+='</table><div style="margin-top:8px;">Client RustDesk sẽ dùng: Máy chủ ID <span class="rd-k">'+e(id)+'</span>, Máy chủ chuyển tiếp <span class="rd-k">'+e(rl)+'</span>, Key ở bước 3 (file cài tự điền).</div>';
- if(nat!==id||udp!==id) x+='<div style="margin-top:6px;"><span class="rd-chip loi">Lưu ý</span> RustDesk luôn gọi kiểm tra NAT (21115) và UDP 21116 bằng <b>tên máy chủ ID ở ô 2</b>. Tên ở ô 1 và ô 3 chỉ dùng được nếu trỏ <b>cùng IP công cộng</b> với ô 2.</div>';
  if(h&&!/^[0-9.]+$/.test(h)) x+='<div class="tk-ghi" style="margin-top:6px;">Các tên miền phải trỏ (bản ghi A hoặc DDNS) về IP công cộng của router. Nếu quản lý DNS trên Cloudflare thì để <b>DNS only</b> (đám mây xám).</div>';
  x+='<div class="tk-ghi" style="margin-top:6px;">Máy trong LAN cũng dùng các địa chỉ này, nên router cần hỗ trợ NAT loopback (hairpin).</div>';
  $('rd-hd').innerHTML=x;}
@@ -59,17 +56,17 @@ function ve(d){D0=d;
  $('rd-tt').innerHTML=h;
  $('rd-nut').innerHTML=!d.da_cai?'<button class="tk-nut chinh" data-v="cai"'+(d.cai.dang?' disabled':'')+'>Cài máy chủ RustDesk</button>':'<button class="tk-nut xanh" data-v="start">Chạy</button><button class="tk-nut" data-v="restart">Khởi động lại</button><button class="tk-nut" data-v="stop">Dừng</button><button class="tk-nut do" data-v="go">Gỡ dịch vụ</button>';
  $('rd-tb').textContent=d.cai.tb||'';
- [['rd-host',d.host],['rd-nat',d.ten_nat],['rd-udp',d.ten_udp],['rd-relay',d.relay],['rd-mk',d.mk_chung]].forEach(function(a){if(document.activeElement!==$(a[0])&&!$(a[0]).dataset.sua) $(a[0]).value=a[1]||'';});
- MK0=d.mk_chung||''; $('rd-h').textContent=d.dia_chi.id; $('rd-r').textContent=d.dia_chi.relay; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
+ [['rd-host',d.host],['rd-relay',d.relay],['rd-mk',d.mk_chung]].forEach(function(a){if(document.activeElement!==$(a[0])&&!$(a[0]).dataset.sua) $(a[0]).value=a[1]||'';});
+ if(d.relay) $('rd-relay').closest('details').open=true; MK0=d.mk_chung||''; $('rd-h').textContent=d.dia_chi.id; $('rd-r').textContent=d.dia_chi.relay; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
  $('rd-kho-tb').textContent=d.kho.co?('Đã có trong kho Triển khai phần mềm (Tài nguyên, Script): '+d.kho.ten+', cập nhật '+new Date(d.kho.luc*1000).toLocaleString()):'Chưa có trong kho (cần cài máy chủ và đặt mật khẩu chung ở bước 2).';
  hd(); if(d.cai.dang) setTimeout(tai,1500);}
 function tai(){api('/rustdesk/api/trang-thai').then(ve);}
-['rd-host','rd-nat','rd-udp','rd-relay','rd-mk'].forEach(function(i){$(i).addEventListener('input',function(){$(i).dataset.sua='1';hd();});});
+['rd-host','rd-relay','rd-mk'].forEach(function(i){$(i).addEventListener('input',function(){$(i).dataset.sua='1';hd();});});
 $('rd-nut').addEventListener('click',function(ev){var v=ev.target.dataset.v; if(!v)return; if(v==='go'&&!confirm('Gỡ dịch vụ RustDesk Server?'))return;
  api(v==='cai'?'/rustdesk/api/cai':'/rustdesk/api/hanh-dong',{viec:v}).then(function(d){$('rd-tb').textContent=d.tb||'';tai();});});
 $('rd-luu').onclick=function(){var mk=$('rd-mk').value.trim();
- api('/rustdesk/api/cau-hinh',{host:$('rd-host').value,relay:$('rd-relay').value,ten_nat:$('rd-nat').value,ten_udp:$('rd-udp').value}).then(function(d){
-  var t=d.tb; var xong=function(){['rd-host','rd-nat','rd-udp','rd-relay','rd-mk'].forEach(function(i){delete $(i).dataset.sua;});$('rd-luu-tb').textContent=t;tai();setTimeout(dev,1500);};
+ api('/rustdesk/api/cau-hinh',{host:$('rd-host').value,relay:$('rd-relay').value,ten_nat:'',ten_udp:''}).then(function(d){
+  var t=d.tb; var xong=function(){['rd-host','rd-relay','rd-mk'].forEach(function(i){delete $(i).dataset.sua;});$('rd-luu-tb').textContent=t;tai();setTimeout(dev,1500);};
   if(d.ok&&mk!==MK0) api('/rustdesk/api/mat-khau',{mk:mk}).then(function(m){t+=' '+m.tb;xong();}); else xong();});};
 $('rd-kho').onclick=function(){api('/rustdesk/api/kho',{}).then(function(d){$('rd-kho-tb').textContent=d.tb;tai();});};
 function dev(){api('/rustdesk/api/thiet-bi').then(function(d){var h='<tr><th>ID</th><th>IP gần nhất</th><th>Đăng ký lúc</th><th>Ghi chú</th></tr>';
