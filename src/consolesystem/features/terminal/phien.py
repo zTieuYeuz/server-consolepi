@@ -367,7 +367,7 @@ def register_phien(app):
             ds.append(d)
         for p in _doc()["phien"]:
             if p.get("tam"):
-                ds.append(dict(_cong_khai(p), nhom_hien="Kết nối nhanh gần đây"))
+                ds.append(dict(_cong_khai(p), nhom_hien="Kết nối nhanh gần đây", tam=True))
         d_doc = _doc()
         nhom = _nhom_ds(d_doc)
         dem = {n: sum(1 for p in luu_ds if (p.get("nhom") or "") == n) for n in nhom}

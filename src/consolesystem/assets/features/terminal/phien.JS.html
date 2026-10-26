@@ -36,6 +36,7 @@
         h += '<div class="ph-muc'+(mo?' mo':'')+'" data-ma="'+esc(p.ma)+'" title="'+esc(p.ghi_chu||'')+'">'
           + '<span class="ic '+p.loai+'">'+NHAN[p.loai]+'</span><span class="chu"><b>'+esc(p.ten)+'</b><small>'
           + esc(moTa(p)) + (p.co_mat_khau?', đã lưu mật khẩu':'') + '</small></span>'
+          + (p.tam ? '<button class="sua" data-xoa-tam="'+esc(p.ma)+'" title="Xoá phiên này" aria-label="Xoá phiên này">✕</button>' : '')
           + (p.sua ? '<button class="sua" data-sua="'+esc(p.ma)+'" title="Sửa">✎</button>' : '') + '</div>';
       });
     });
@@ -234,6 +235,9 @@
     if (DANG===ma) DANG = MO.length ? MO[MO.length-1].ma : null; veTabs();
   }
   $('ds').addEventListener('click', function(e){
+    var xt = e.target.closest('[data-xoa-tam]');
+    if (xt){ e.stopPropagation(); var mt = xt.dataset.xoaTam;
+      api('/phien/api/xoa', {ma:mt}).then(function(){ dongTab(mt); taiDs(); }); return; }
     var s = e.target.closest('[data-sua]'); if (s){ e.stopPropagation(); moForm(DS.filter(function(p){return p.ma===s.dataset.sua;})[0]); return; }
     var m = e.target.closest('[data-ma]'); if (!m) return;
     var p = DS.filter(function(x){ return x.ma===m.dataset.ma; })[0]; if (p) moTab(p, true);

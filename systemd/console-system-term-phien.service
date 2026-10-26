@@ -11,7 +11,7 @@ ExecStart=/usr/local/bin/ttyd -p 8012 -i 127.0.0.1 -b /term-phien -W -a \
     -t fontSize=15 -t "fontFamily=ui-monospace, Menlo, Consolas, monospace" \
     -t disableLeaveAlert=true -t disableResizeOverlay=true \
     -t "theme={\"background\":\"#0f1114\",\"foreground\":\"#d5dae2\",\"cursor\":\"#4CAF50\",\"selectionBackground\":\"#2f4a5f\"}" \
-    /opt/console-pi/scripts/phien-mo.sh
+    /bin/bash /opt/console-pi/scripts/phien-mo.sh
 Restart=always
 RestartSec=3
 
