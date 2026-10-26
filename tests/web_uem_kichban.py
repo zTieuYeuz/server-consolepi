@@ -135,4 +135,10 @@ kq["mk_chung_day_xuong_may"] = RD.doc_cfg()["may"]["m-agent"].get("mk") == "MatK
 kq["mk_chung_gui_dung_lenh"] = "--password 'MatKhau#Chung1'" in kich[-1]
 d = c.get("/rustdesk/api/thiet-bi", headers=H).get_json()
 kq["mk_chung_hien_thi"] = d["mk_chung"] == "MatKhau#Chung1" and d["may"][0]["dong_bo"] is True
+post("/rustdesk/api/cau-hinh", {"host": "rustdesk.example.com", "ws": True})
+sc2 = RD.script_client("abcdef123456", "rustdesk.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+kq["rd_ws_bat"] = RD.dung_ws() and "allow-websocket = 'Y'" in sc2 and "'rustdesk.example.com'" in sc2 and ":21116" not in sc2
+post("/rustdesk/api/cau-hinh", {"host": "rustdesk.example.com", "ws": False})
+sc3 = RD.script_client("abcdef123456", "rustdesk.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+kq["rd_ws_tat"] = (not RD.dung_ws()) and "allow-websocket" not in sc3 and ":21116" in sc3
 print("KETQUA " + json.dumps(kq))

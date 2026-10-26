@@ -14,7 +14,8 @@ TRANG = """<style>.rd-2{display:grid;grid-template-columns:repeat(auto-fit,minma
 <p class="tk-ghi">Chạy máy chủ RustDesk (ID server + relay) ngay trên Console System để điều khiển máy từ xa không phụ thuộc máy chủ công cộng. Bản RustDesk Server miễn phí <b>không có trang quản trị web</b> (bản Pro mới có); trang này hiển thị đúng những gì máy chủ lưu: khóa, cổng, danh sách thiết bị đã đăng ký.</p>
 <div id="rd-tt">Đang tải...</div><div class="tk-hang" style="margin-top:10px;" id="rd-nut"></div><div class="tk-ghi" id="rd-tb"></div></div>
 <div class="rd-2"><div class="card"><h3>Cấu hình</h3><p class="tk-ghi">Địa chỉ để các máy RustDesk tìm tới máy chủ này: tên miền hoặc IP công cộng nếu có máy ở ngoài Internet; để trống = dùng IP LAN (chỉ trong mạng nội bộ).</p>
-<input type="text" id="rd-host" placeholder="vd rd.ten-mien-cua-ban.com" style="width:100%;"><div style="margin-top:8px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button></div>
+<input type="text" id="rd-host" placeholder="vd rd.ten-mien-cua-ban.com" style="width:100%;"><label class="tk-o" style="margin-top:8px;"><input type="checkbox" id="rd-ws"><span><b>Dùng đường Cloudflare (WebSocket)</b><small>Bật khi địa chỉ ở trên là tên miền qua Cloudflare Tunnel (đường /ws/id và /ws/relay). Áp dụng cho máy cài mới và script cài tay.</small></span></label>
+<div style="margin-top:8px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button></div>
 <p class="tk-ghi" style="margin-top:12px;"><b>Để máy ngoài Internet remote được:</b> trên router chuyển tiếp (port forward) về máy này: <b>TCP 21115-21119</b> và <b>UDP 21116</b>. (Cloudflare Tunnel không chuyển được giao thức RustDesk.) Agent Console System vẫn chỉ hoạt động trong LAN, nên máy ở ngoài cài RustDesk bằng script thủ công bên dưới.</p></div>
 <div class="card"><h3>Khóa và cấu hình cho client</h3><p class="tk-ghi">Dán vào RustDesk, Cài đặt, Mạng, Máy chủ ID/Relay:</p>
 <div>ID server / Relay: <span class="rd-k" id="rd-h"></span></div><div style="margin-top:6px;">Key:</div><div class="rd-k" id="rd-key">(chưa có, cài máy chủ trước)</div>
@@ -38,12 +39,12 @@ function ve(d){
  if(!d.da_cai) n='<button class="tk-nut chinh" data-v="cai"'+(d.cai.dang?' disabled':'')+'>Cài máy chủ RustDesk</button>';
  else n='<button class="tk-nut xanh" data-v="start">Chạy</button><button class="tk-nut" data-v="restart">Khởi động lại</button><button class="tk-nut" data-v="stop">Dừng</button><button class="tk-nut do" data-v="go">Gỡ dịch vụ</button>';
  $('rd-nut').innerHTML=n; $('rd-tb').textContent=d.cai.tb||'';
- if(document.activeElement!==$('rd-host')) $('rd-host').value=d.host||''; $('rd-h').textContent=d.host_hieu_luc||'(chưa xác định)'; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
+ if(document.activeElement!==$('rd-host')) $('rd-host').value=d.host||''; $('rd-ws').checked=!!d.ws; $('rd-h').textContent=d.host_hieu_luc||'(chưa xác định)'; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
  if(d.cai.dang) setTimeout(tai,1500);}
 function tai(){api('/rustdesk/api/trang-thai').then(ve);}
 $('rd-nut').addEventListener('click',function(ev){var v=ev.target.dataset.v; if(!v)return; if(v==='go'&&!confirm('Gỡ dịch vụ RustDesk Server?'))return;
  api(v==='cai'?'/rustdesk/api/cai':'/rustdesk/api/hanh-dong',{viec:v}).then(function(d){$('rd-tb').textContent=d.tb||'';tai();});});
-$('rd-luu').onclick=function(){api('/rustdesk/api/cau-hinh',{host:$('rd-host').value}).then(function(d){$('rd-tb').textContent=d.tb;tai();});};
+$('rd-luu').onclick=function(){api('/rustdesk/api/cau-hinh',{host:$('rd-host').value,ws:$('rd-ws').checked}).then(function(d){$('rd-tb').textContent=d.tb;tai();});};
 function dev(){api('/rustdesk/api/thiet-bi').then(function(d){var h='<tr><th>ID</th><th>IP gần nhất</th><th>Đăng ký lúc</th><th>Ghi chú</th></tr>';
  (d.ds||[]).forEach(function(x){h+='<tr><td><b>'+e(x.id)+'</b></td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td><td>'+e(x.ghi_chu)+'</td></tr>';});
  if(!(d.ds||[]).length) h+='<tr><td colspan="4" class="tk-ghi">Chưa có thiết bị nào đăng ký.</td></tr>'; $('rd-dev').innerHTML=h;
@@ -81,7 +82,10 @@ def register_rustdesk(app):
 
     @app.route("/rustdesk/api/cau-hinh", methods=["POST"])
     def rustdesk_api_cfg():
-        ok, tb = RD.dat_host(str((request.get_json(silent=True) or {}).get("host", "")))
+        j = request.get_json(silent=True) or {}
+        ok, tb = RD.dat_host(str(j.get("host", "")))
+        if ok and "ws" in j:
+            RD.dat_ws(j["ws"])
         return jsonify({"ok": ok, "tb": tb})
 
     @app.route("/rustdesk/client-cai.ps1")

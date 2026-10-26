@@ -156,7 +156,7 @@ def _cong_nghe(cong):
 def trang_thai():
     cfg = doc_cfg()
     return {"kien_truc": kien_truc(), "ban": VER_SERVER, "da_cai": da_cai(), "hbbs": _hoat_dong(DV_HBBS), "hbbr": _hoat_dong(DV_HBBR),
-            "cong": {str(c): _cong_nghe(c) for c in (21115, 21116, 21117)}, "khoa": khoa_cong_khai(), "host": cfg["host"], "host_hieu_luc": host_hieu_luc(),
+            "cong": {str(c): _cong_nghe(c) for c in (21115, 21116, 21117)}, "khoa": khoa_cong_khai(), "host": cfg["host"], "ws": bool(cfg.get("ws")), "host_hieu_luc": host_hieu_luc(),
             "ip_lan": ip_lan(), "cai": dict(_CAI)}
 
 
@@ -263,6 +263,17 @@ def hanh_dong(viec):
     return True, {"start": "Đã chạy", "stop": "Đã dừng", "restart": "Đã khởi động lại"}[viec] + " RustDesk Server."
 
 
+def dung_ws():
+    return bool(doc_cfg().get("ws"))
+
+
+def dat_ws(bat):
+    d = doc_cfg()
+    d["ws"] = bool(bat)
+    luu_cfg(d)
+    return True, "Đã %s chế độ WebSocket (đường Cloudflare) cho máy cài mới." % ("bật" if bat else "tắt")
+
+
 def dat_host(host):
     host = (host or "").strip()
     if host and not MAU_HOST.fullmatch(host):
@@ -301,6 +312,7 @@ def thiet_bi():
 def script_client(mat_khau, host=None, khoa=None):
     """PowerShell cai RustDesk client (ban chinh thuc, SHA-256 ghim), tro ve may chu nay, dat mat khau co dinh, in ra ID."""
     host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
+    ws = dung_ws()
     if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
         raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
     if not (re.fullmatch(r"[A-Za-z0-9]{8,64}", mat_khau) or MAU_MK.fullmatch(mat_khau)):
@@ -327,20 +339,21 @@ if (-not (Test-Path $rd)) { throw 'Không thấy rustdesk.exe sau khi cài.' }
 $cfg = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config'
 New-Item -ItemType Directory -Force -Path $cfg | Out-Null
 @"
-rendezvous_server = '%(host)s:21116'
+rendezvous_server = '%(host)s%(cong)s'
 nat_type = 1
 serial = 0
 
 [options]
 custom-rendezvous-server = '%(host)s'
 relay-server = '%(host)s'
-key = '%(khoa)s'
+key = '%(khoa)s'%(ws_toml)s
 "@ | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
 Restart-Service RustDesk -ErrorAction SilentlyContinue
 Start-Sleep 5
 & $rd --option custom-rendezvous-server '%(host)s' | Out-Null
 & $rd --option relay-server '%(host)s' | Out-Null
-& $rd --option key '%(khoa)s' | Out-Null
+& $rd --option key '%(khoa)s' | Out-Null%(ws_opt)s
 & $rd --password '%(mk)s' | Out-Null
 $id = ((& $rd --get-id | Out-String).Trim())
-'RUSTDESK_ID=' + $id""" % {"url": URL_CLIENT, "sha": SHA_CLIENT, "host": host, "khoa": khoa, "mk": mat_khau}
+'RUSTDESK_ID=' + $id""" % {"url": URL_CLIENT, "sha": SHA_CLIENT, "host": host, "khoa": khoa, "mk": mat_khau,
+           "cong": "" if ws else ":21116", "ws_toml": "\nallow-websocket = 'Y'" if ws else "", "ws_opt": "\n& $rd --option allow-websocket Y | Out-Null" if ws else ""}
