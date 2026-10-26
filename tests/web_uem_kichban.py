@@ -176,6 +176,7 @@ _c = RD.doc_cfg(); _c["mk_chung"] = "MatKhau#Chung1"; RD.luu_cfg(_c)
 r_bat = c.get("/rustdesk/cai-rustdesk.bat", headers=H)
 import base64 as _b64  # noqa: E402
 _ps = _b64.b64decode("".join(x[6:] for x in r_bat.get_data(as_text=True).splitlines() if x.startswith("::B64:"))).decode("utf-8")
+kq["rd_tep_bat_bom"] = _ps.startswith("\ufeff")
 kq["rd_tep_bat"] = r_bat.status_code == 200 and r_bat.get_data(as_text=True).startswith("@echo off") and "rd.test.com:1222" in _ps and "--password 'MatKhau#Chung1'" in _ps
 kq["rd_kho_ghi"] = post("/rustdesk/api/kho", {}).get_json()["ok"] is True and RD.tep_kho_tt()["co"]
 _kho = os.path.join(DC._DD.SCRIPTS_DIR, RD.TEN_TEP_KHO)

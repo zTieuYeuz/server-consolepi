@@ -530,7 +530,7 @@ def script_tep_cai():
 def tep_bat(ps1):
     """File .bat bam doi la chay: tu xin quyen Administrator, tach script PowerShell nhung o cuoi file ra %TEMP% roi chay voi -ExecutionPolicy Bypass."""
     import base64
-    b = base64.b64encode(ps1.encode("utf-8")).decode("ascii")
+    b = base64.b64encode(("\ufeff" + ps1).encode("utf-8")).decode("ascii")     # BOM: PowerShell 5.1 doc file khong BOM theo ANSI, hong chu tieng Viet
     dong = "\r\n".join("::B64:" + b[i:i + 200] for i in range(0, len(b), 200))
     return ("@echo off\r\n"
             "net session >nul 2>&1 || (powershell -NoProfile -Command \"Start-Process -Verb RunAs -FilePath '%~f0'\" & exit /b)\r\n"
