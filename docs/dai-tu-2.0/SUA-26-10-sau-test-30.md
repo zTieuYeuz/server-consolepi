@@ -19,14 +19,15 @@
 | 5.5 | Agent tự cập nhật: đã có sẵn (so sánh phiên bản mỗi nhịp, tự biên dịch bản mới). Thêm test ép tăng `VER_FILE` khi sửa mã C# | xong |
 | 5.6 | Profile: giải thích + sắp xếp theo bước | xong |
 | 5.7 | Lỗi hiển thị nút "Chọn nhóm máy" (dấu `"` trong thuộc tính HTML) | xong |
-| 5.8 | RustDesk Server tích hợp + cài client qua agent / script | xong phần máy chủ (chạy thật hbbs trên máy build); client Windows chưa thử thật |
+| 5.8 | RustDesk Server tích hợp + cài client kèm máy chủ ID / chuyển tiếp (agent, Triển khai phần mềm, script) | xong, thử thật trên .30 + .33 (agent và WinRM) |
 | 5.9 | Tab "Sửa lỗi in/chia sẻ" (kịch bản duyệt sẵn) | xong, test client giả; chưa thử Windows thật |
 
 Chưa làm được: kiểm trực tiếp SSH tới 192.168.110.21 / 192.168.100.2 qua giao diện (chỉ xác nhận SSH tới .21 đăng nhập được từ máy build; 192.168.100.2 chưa thử).
 
-## RustDesk qua web (26/10 tối)
-- RustDesk Server bản miễn phí (hbbs 1.1.16) **không nhận máy đăng ký ID qua TCP/WebSocket** (trả `NOT_SUPPORT`, xem `handle_tcp` trong mã nguồn). Máy được điều khiển phải tới máy chủ bằng UDP 21116: trong LAN thì sẵn, ngoài Internet cần mở cổng router. Cloudflare Tunnel không chuyển UDP.
-- Phía điều khiển dùng **rustdesk-api v2.7** (lejianwen, MIT) tích hợp trong trang RustDesk: trang quản trị `/_admin/` + web client `/webclient/` trên cổng 21114, cài từ bản chính thức ghim SHA-256, dịch vụ `console-system-rustdesk-api`, mật khẩu admin ngẫu nhiên lưu trong `rustdesk.json`.
-- Web client v1 luôn gọi `wss://<máy>:21118/21119`; Console chèn `cs-ws-shim.js` đổi sang `wss://<tên miền>/ws/id` và `/ws/relay` khi mở qua HTTPS.
-- Cloudflare tunnel cần 3 dòng: `/ws/id` → `:21118`, `/ws/relay` → `:21119`, dòng không path → `:21114`.
-- Đã thử thật: mở `https://rustdesk.home-server.id.vn/webclient/` → nhập ID 163846525 + mật khẩu → hiện màn hình máy .33 trong trình duyệt.
+## RustDesk làm lại (26/10 tối, theo yêu cầu anh)
+- Bỏ hướng web: gõ chữ qua web client không ổn. Đã gỡ khỏi mã: thẻ rustdesk-api, chế độ WebSocket, hướng dẫn Cloudflare. RustDesk Server bản miễn phí chỉ nhận máy đăng ký ID qua UDP 21116, Cloudflare Tunnel không chuyển UDP.
+- Cấu hình chỉ còn **Máy chủ ID** và **Máy chủ chuyển tiếp** (để trống = trùng máy chủ ID; cả hai để trống = IP LAN). Cổng cần mở ra Internet: TCP 21115, 21116, 21117 và UDP 21116. Máy trong LAN cũng dùng địa chỉ công khai nên router cần NAT loopback.
+- Cài client luôn kèm máy chủ ID / chuyển tiếp / key / mật khẩu chung, dùng chung `cai_va_ghi()`: nút Cài ở trang RustDesk (agent), bước **RustDesk** trong Triển khai phần mềm (WinRM, kể cả Chạy nhanh), bộ cài `rustdesk*.exe/.msi` trong Tài nguyên (kiểm SHA-256 chính file đó). Danh mục WinGet không có gói RustDesk.
+- Bộ cài chạy qua WMI `Win32_Process.Create` để tách khỏi phiên WinRM (WinRM đóng phiên giết tiến trình con, làm máy mất dịch vụ RustDesk khi cài đè); chờ dịch vụ mới chạy rồi mới cấu hình.
+- Thử thật trên .33: gỡ RustDesk → cài bằng agent (1 phút 23 giây) → `RustDesk2.toml` dịch vụ đúng máy chủ/key, nhật ký RustDesk `start udp: 192.168.110.30:21116` + độ trễ. Cài qua kịch bản WinRM 2 lần (lần đầu máy thiếu dịch vụ, lần sau cài đè): xong, dịch vụ chạy, đăng ký lại.
+- Chưa thử: địa chỉ công khai thật (chờ anh mở cổng và đưa tên miền/IP), máy ở ngoài Internet, NAT loopback của router.
