@@ -289,10 +289,12 @@ for ($i = 1; $i -le 3 -and -not $ok; $i++) {
     if (-not $ok) { Remove-Item $exe -Force -ErrorAction SilentlyContinue }
 }
 if (-not $ok) { throw 'Không tải được RustDesk hoặc file không khớp SHA-256 (đã thử 3 lần).' }
-Start-Process $exe -ArgumentList '--silent-install' -Wait
-Remove-Item $exe -Force -ErrorAction SilentlyContinue
-Start-Sleep 10
+# KHONG dung -Wait: --silent-install mo ung dung/dich vu va khong thoat, se treo vo han. Doi file cai xong roi di tiep.
+Start-Process $exe -ArgumentList '--silent-install'
 $rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
+for ($i = 0; $i -lt 60 -and -not (Test-Path $rd); $i++) { Start-Sleep 2 }
+Start-Sleep 12
+Remove-Item $exe -Force -ErrorAction SilentlyContinue
 if (-not (Test-Path $rd)) { throw 'Không thấy rustdesk.exe sau khi cài.' }
 $cfg = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config'
 New-Item -ItemType Directory -Force -Path $cfg | Out-Null

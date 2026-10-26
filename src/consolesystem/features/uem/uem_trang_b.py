@@ -519,7 +519,7 @@ def tab_tu_xa(m):
             '<div class="msg warn">Chưa cấu hình nginx cho điều khiển từ xa. Chạy trong Terminal: <code>sudo bash /opt/console-pi/tools/cai-vnc.sh</code> rồi tải lại trang.</div>')
     trang_thai = (chip("Đã cài TightVNC " + _esc(v.get("ban", "")), "xanh") if v.get("da_cai") else chip("Chưa cài" if "da_cai" in v else "Chưa kiểm tra", "vang"))
     nut_tat = ("onsubmit=\"var b=this.querySelector('button');b.disabled=true;b.textContent='Đang xử lý, chờ khoảng 1 phút...';\"")
-    return T.khung_may(m, "tu-xa", f'''{canh}<div class="card"><h3>Điều khiển màn hình ngay trong trình duyệt (VNC)</h3>
+    return T.khung_may(m, "tu-xa", URD.khoi_tu_xa(m) + f'''{canh}<div class="card"><h3>Điều khiển màn hình ngay trong trình duyệt (VNC)</h3>
       <p>Thấy và điều khiển đúng màn hình đang hiện trên máy, kể cả màn hình đăng nhập. Mỗi phiên dùng mã PIN ngẫu nhiên, đóng tab là tự tắt. <b>Máy có agent</b>: kết nối đi ngược qua mTLS, TightVNC chỉ nghe 127.0.0.1 (không mở cổng ra mạng). <b>Máy chỉ có WinRM</b>: Console System kết nối thẳng tới cổng 5900, chỉ cho đúng IP Console System.</p>
       <p>Trạng thái: {trang_thai}</p>
       <div class="tk-hang">

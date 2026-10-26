@@ -33,6 +33,20 @@ def cai_client_may(m):
 
 
 def register_uem_rustdesk(app):
+    from consolesystem.features.uem.uem_dieukhien import may_theo_id
+    from ui.uem_trang import chuyen
+
+    @app.route("/uem/may/<mid>/rustdesk/luu", methods=["POST"])
+    def uem_rustdesk_luu(mid):
+        m = may_theo_id(mid)
+        i, mk = (request.form.get("id") or "").replace(" ", ""), (request.form.get("mk") or "").strip()
+        if not re.fullmatch(r"\d{6,12}", i) or not re.fullmatch(r"[A-Za-z0-9!@#$%^&*._\-]{4,64}", mk):
+            return chuyen(f"/uem/may/{mid}/tu-xa", "ID phải là 6 đến 12 chữ số; mật khẩu 4 đến 64 ký tự (chữ, số, ký hiệu thường).", False)
+        cfg = RD.doc_cfg()
+        cfg["may"][m["id"]] = {"id": i, "mk": mk, "luc": int(time.time())}
+        RD.luu_cfg(cfg)
+        return chuyen(f"/uem/may/{mid}/tu-xa", "Đã lưu ID và mật khẩu RustDesk của máy.")
+
     @app.route("/rustdesk/api/thiet-bi")
     def rustdesk_api_dev():
         cfg = RD.doc_cfg()
@@ -51,3 +65,24 @@ def register_uem_rustdesk(app):
                 ok, tb, _id = cai_client_may(m)
                 kq.append({"ten": m.get("ten") or m["ip"], "ok": ok, "tb": tb})
         return jsonify({"ok": True, "kq": kq})
+
+
+def khoi_tu_xa(m):
+    """The 'Dieu khien bang RustDesk' cho tab Ho tro tu xa cua may: ID + mat khau da luu, nut mo ung dung RustDesk tren may nguoi quan tri."""
+    from consolesystem.core.esc import esc_html as _e
+    ban = (RD.doc_cfg().get("may") or {}).get(m["id"])
+    st = RD.trang_thai()
+    if not st["da_cai"]:
+        return ('<div class="card"><h3>Điều khiển bằng RustDesk</h3><p class="tk-ghi">Chưa cài máy chủ RustDesk. Vào <a href="/rustdesk">RustDesk</a> để cài, rồi cài client lên máy này.</p></div>')
+    if not ban:
+        return ('<div class="card"><h3>Điều khiển bằng RustDesk</h3><p class="tk-ghi">Máy này chưa có ID RustDesk trong Console System. Cách 1: vào <a href="/rustdesk">RustDesk</a>, '
+                'chọn máy rồi bấm <b>Cài lên máy đã chọn</b> (máy phải có agent). Cách 2: anh đã tự cài RustDesk trên máy này (trỏ về máy chủ <b>' + _e(st["host_hieu_luc"]) + '</b>) thì nhập ID và mật khẩu vào đây:</p>'
+                f'<form method="POST" action="/uem/may/{m["id"]}/rustdesk/luu" class="tk-hang"><input type="text" name="id" placeholder="ID RustDesk (số)" required style="max-width:200px;margin:0;">'
+                '<input type="text" name="mk" placeholder="Mật khẩu cố định" required autocomplete="off" style="max-width:220px;margin:0;"><button class="tk-nut chinh" type="submit">Lưu</button></form></div>')
+    i, mk = _e(ban["id"]), _e(ban["mk"])
+    return (f'<div class="card"><h3>Điều khiển bằng RustDesk</h3>'
+            f'<p class="tk-ghi">RustDesk không chạy trong trình duyệt (khác VNC phía trên): bấm nút để mở <b>ứng dụng RustDesk đã cài trên máy của anh</b> và kết nối thẳng xuống máy này. '
+            f'Cần cài RustDesk client trên máy đang ngồi và trỏ về máy chủ <b>{_e(st["host_hieu_luc"])}</b> (Cài đặt, Mạng, ID/Relay server, dán key ở trang RustDesk).</p>'
+            f'<div class="uem-2"><div>ID: <span class="rd-k" style="font-family:monospace;user-select:all;">{i}</span></div><div>Mật khẩu: <span style="font-family:monospace;user-select:all;">{mk}</span></div></div>'
+            f'<div class="tk-hang" style="margin-top:10px;"><a class="tk-nut chinh" href="rustdesk://connection/new/{i}?password={mk}">Mở RustDesk và kết nối</a>'
+            f'<a class="tk-nut" href="/rustdesk">Trang RustDesk (khóa, tải client)</a></div></div>')

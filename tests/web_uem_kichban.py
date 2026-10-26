@@ -112,4 +112,10 @@ except RuntimeError:
     kq["rd_khoa_xau"] = True
 kq["rd_hanh_dong_chua_cai"] = post("/rustdesk/api/hanh-dong", {"viec": "start"}).get_json()["ok"] is False
 kq["rd_thiet_bi"] = c.get("/rustdesk/api/thiet-bi", headers=H).get_json()["ds"] == []
+t = c.get("/uem/may/m-agent/tu-xa", headers=H).get_data(as_text=True)
+kq["rd_the_chua_cai"] = "Điều khiển bằng RustDesk" in t and "Chưa cài máy chủ RustDesk" in t
+c.post("/uem/may/m-agent/rustdesk/luu", data={"id": "123456789", "mk": "abc123"}, headers=H)
+kq["rd_luu_tay"] = RD.doc_cfg()["may"].get("m-agent", {}).get("id") == "123456789"
+c.post("/uem/may/m-agent/rustdesk/luu", data={"id": "12x", "mk": "a"}, headers=H)
+kq["rd_luu_xau_bi_chan"] = RD.doc_cfg()["may"]["m-agent"]["id"] == "123456789"
 print("KETQUA " + json.dumps(kq))
