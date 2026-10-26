@@ -325,7 +325,7 @@ relay-server = '%(relay)s'
 key = '%(khoa)s'
 allow-websocket = 'N'
 "@ | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
-Restart-Service RustDesk -ErrorAction SilentlyContinue
+try { Restart-Service RustDesk -ErrorAction Stop } catch { Start-Sleep 5; Start-Service RustDesk -ErrorAction SilentlyContinue }
 Start-Sleep 5
 & $rd --option custom-rendezvous-server '%(host)s' | Out-Null
 & $rd --option relay-server '%(relay)s' | Out-Null
@@ -397,9 +397,11 @@ def script_client(mat_khau, host=None, khoa=None, relay=None, url=None, sha=None
     if not re.fullmatch(r"https?://[A-Za-z0-9._:/%?=&+\-]{4,500}", url) or not re.fullmatch(r"[0-9a-f]{64}", sha):
         raise RuntimeError("Đường tải bộ cài RustDesk không hợp lệ.")
     msi = url.lower().split("?")[0].endswith(".msi")
-    cai = ("Start-Process msiexec.exe -ArgumentList ('/i \"' + $exe + '\" /qn /norestart') -Wait" if msi else
-           # KHONG dung -Wait: --silent-install mo ung dung/dich vu va khong thoat, se treo vo han. Doi file cai xong roi di tiep.
-           "Start-Process $exe -ArgumentList '--silent-install'")
+    # Bo cai chay qua WMI (Win32_Process.Create) de TACH khoi phien WinRM: WinRM dong phien thi giet moi tien trinh con, bo cai dang go/cai lai
+    # dich vu se bi cat ngang (may mat dich vu RustDesk). --silent-install khong tu thoat nen khong cho no; cho DICH VU MOI chay (bat dau sau luc cai).
+    lenh = ("msiexec.exe /i \"' + $exe + '\" /qn /norestart" if msi else "\"' + $exe + '\" --silent-install")
+    cai = "$t0 = Get-Date\n$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = ('%s') }\n" % lenh + \
+          "if ($r.ReturnValue -ne 0) { throw ('Không chạy được bộ cài RustDesk (mã ' + $r.ReturnValue + ').') }"
     return r"""$ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $exe = Join-Path $env:TEMP ('rustdesk-setup-' + [guid]::NewGuid().ToString('N') + '%(duoi)s')
@@ -414,10 +416,19 @@ for ($i = 1; $i -le 3 -and -not $ok; $i++) {
 if (-not $ok) { throw 'Không tải được RustDesk hoặc file không khớp SHA-256 (đã thử 3 lần).' }
 %(cai)s
 $rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
-for ($i = 0; $i -lt 60 -and -not ((Test-Path $rd) -and (Get-Service RustDesk -ErrorAction SilentlyContinue)); $i++) { Start-Sleep 2 }
-Start-Sleep 12
+$ErrorActionPreference = 'Continue'
+$moi = $false
+for ($i = 0; $i -lt 90 -and -not $moi; $i++) {
+    Start-Sleep 2
+    $s = Get-CimInstance Win32_Service -Filter "Name='RustDesk'" -ErrorAction SilentlyContinue
+    if ($s -and $s.State -eq 'Running' -and (Test-Path $rd)) {
+        $p = Get-Process -Id $s.ProcessId -ErrorAction SilentlyContinue
+        $moi = [bool]($p -and $p.StartTime -gt $t0)
+    }
+}
+Start-Sleep 8
 Remove-Item $exe -Force -ErrorAction SilentlyContinue
-if (-not (Test-Path $rd)) { throw 'Không thấy rustdesk.exe sau khi cài.' }
+if (-not (Test-Path $rd) -or -not (Get-Service RustDesk -ErrorAction SilentlyContinue)) { throw 'Không thấy rustdesk.exe hoặc dịch vụ RustDesk sau khi cài (đã chờ 3 phút).' }
 %(khoi)s& $rd --password '%(mk)s' | Out-Null
 $id = ((& $rd --get-id | Out-String).Trim())
 'RUSTDESK_ID=' + $id""" % {"url": url, "sha": sha, "mk": mat_khau, "cai": cai, "duoi": ".msi" if msi else ".exe", "khoi": KHOI_CAU_HINH % t}
