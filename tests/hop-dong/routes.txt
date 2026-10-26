@@ -113,6 +113,7 @@
 /deployos/tiendo	GET	deployos_tiendo
 /deployos/tiendo/xoa	POST	deployos_tiendo_xoa
 /deployos/trienkhai	GET	tk_trienkhai
+/deployos/trienkhai/bat-winrm.ps1	GET	tk_script_winrm
 /deployos/trienkhai/chay	POST	tk_chay
 /deployos/trienkhai/dung	POST	tk_dung
 /deployos/trienkhai/khac	GET	tk_khac
@@ -145,6 +146,7 @@
 /deployos/trienkhai/nhom-tn/luu	POST	tk_nhom_tn_luu
 /deployos/trienkhai/nhom-tn/xoa	POST	tk_nhom_tn_xoa
 /deployos/trienkhai/tt/<kb_id>	GET	tk_tt
+/deployos/trienkhai/tt/<kb_id>/xoa	POST	tk_tt_xoa
 /deployos/ungdung	GET	deployos_ungdung
 /deployos/ungdung/<ung_id>	GET	deployos_ungdung_chitiet
 /deployos/ungdung/<ung_id>/len	POST	deployos_ungdung_len
@@ -239,6 +241,14 @@
 /remote/ts/tat	POST	remote_ts_off
 /remote/xoa-token	POST	remote_clear
 /rename	POST	rename
+/rustdesk	GET	rustdesk_trang
+/rustdesk/api/cai	POST	rustdesk_api_cai
+/rustdesk/api/cai-client	POST	rustdesk_api_cai_client
+/rustdesk/api/cau-hinh	POST	rustdesk_api_cfg
+/rustdesk/api/hanh-dong	POST	rustdesk_api_hd
+/rustdesk/api/thiet-bi	GET	rustdesk_api_dev
+/rustdesk/api/trang-thai	GET	rustdesk_api_tt
+/rustdesk/client-cai.ps1	GET	rustdesk_script
 /settings	GET	settings_page
 /settings/don-rac	POST	settings_don_rac
 /settings/khoi-phuc	POST	settings_khoi_phuc
@@ -280,6 +290,8 @@
 /uem/may/<mid>/agent/go	POST	uem_ag_go
 /uem/may/<mid>/agent/ma	POST	uem_ag_ma
 /uem/may/<mid>/bao-cao-ngay	POST	uem_bao_cao_ngay
+/uem/may/<mid>/cli/chay	POST	uem_cli_chay
+/uem/may/<mid>/dich-vu/api	POST	uem_dich_vu_api
 /uem/may/<mid>/duyet-file/tai	GET	uem_tai_file
 /uem/may/<mid>/duyet-file/tai-len	POST	uem_tai_len
 /uem/may/<mid>/duyet-file/tao-thu-muc	POST	uem_tao_tm
@@ -291,6 +303,8 @@
 /uem/may/<mid>/nguon	POST	uem_nguon
 /uem/may/<mid>/phan-mem.csv	GET	uem_pm_csv
 /uem/may/<mid>/quan-ly	POST	uem_quan_ly
+/uem/may/<mid>/sua-loi/chay	POST	uem_sua_loi_chay
+/uem/may/<mid>/tien-trinh/api	POST	uem_tien_trinh_api
 /uem/may/<mid>/tu-xa/rdp	GET	uem_rdp
 /uem/may/<mid>/tu-xa/vnc/<tok>	GET	uem_vnc_xem
 /uem/may/<mid>/tu-xa/vnc/<tok>/ket-thuc	POST	uem_vnc_ketthuc
