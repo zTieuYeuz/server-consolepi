@@ -91,6 +91,34 @@ def ip_lan():
         return ""
 
 
+MAU_MK = re.compile(r"[A-Za-z0-9!@#%^*._\-]{8,64}")
+
+
+def mk_chung():
+    return doc_cfg().get("mk_chung", "")
+
+
+def dat_mk_chung(mk):
+    """Dat mat khau co dinh CHUNG cho moi may. Danh dau moi may la chua dong bo (se day xuong qua agent)."""
+    mk = (mk or "").strip()
+    if not MAU_MK.fullmatch(mk):
+        return False, "Mật khẩu 8 đến 64 ký tự, chỉ gồm chữ, số và các ký hiệu ! @ # % ^ * . _ -"
+    d = doc_cfg()
+    d["mk_chung"] = mk
+    for v in d["may"].values():
+        v["dong_bo"] = v.get("mk") == mk
+    luu_cfg(d)
+    return True, "Đã lưu mật khẩu chung, đang áp dụng xuống các máy."
+
+
+def script_dat_mk(mk):
+    if not MAU_MK.fullmatch(mk or ""):
+        raise RuntimeError("Mật khẩu không hợp lệ.")
+    return ("$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\n"
+            "if (-not (Test-Path $rd)) { throw 'Máy chưa cài RustDesk.' }\n"
+            "& $rd --password '%s' | Out-Null\n'RUSTDESK_MK_OK'" % mk)
+
+
 def host_hieu_luc():
     """Dia chi ma client se dung: cau hinh tay, neu chua co thi IP LAN (chi dung duoc trong mang noi bo)."""
     return doc_cfg().get("host") or ip_lan()
@@ -275,7 +303,7 @@ def script_client(mat_khau, host=None, khoa=None):
     host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
     if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
         raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
-    if not re.fullmatch(r"[A-Za-z0-9]{8,64}", mat_khau):
+    if not (re.fullmatch(r"[A-Za-z0-9]{8,64}", mat_khau) or MAU_MK.fullmatch(mat_khau)):
         raise RuntimeError("Mật khẩu không hợp lệ.")
     return r"""$ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

@@ -20,6 +20,8 @@ TRANG = """<style>.rd-2{display:grid;grid-template-columns:repeat(auto-fit,minma
 <div>ID server / Relay: <span class="rd-k" id="rd-h"></span></div><div style="margin-top:6px;">Key:</div><div class="rd-k" id="rd-key">(chưa có, cài máy chủ trước)</div>
 <p class="tk-ghi" style="margin-top:10px;">Cài tay trên máy Windows bất kỳ (kể cả ngoài Internet): mở PowerShell quản trị và chạy file tải ở đây (đã nhúng máy chủ và khóa, tải bản chính thức có kiểm SHA-256):</p>
 <a class="tk-nut" href="/rustdesk/client-cai.ps1">Tải script cài client (.ps1)</a></div></div>
+<div class="card"><h3>Mật khẩu cố định chung cho mọi máy</h3><p class="tk-ghi">Đặt một mật khẩu, Console System đẩy xuống <b>tất cả máy đã cài RustDesk</b> qua agent. Đổi mật khẩu ở đây thì mọi máy đổi theo; máy đang tắt sẽ chờ, bấm <b>Đồng bộ lại</b> khi máy bật. Máy cài mới cũng dùng mật khẩu này.</p>
+<div class="tk-hang"><input type="text" id="rd-mk" autocomplete="off" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -" style="max-width:340px;margin:0;"><button class="tk-nut chinh" id="rd-mk-luu" type="button">Lưu và áp dụng cho tất cả</button><button class="tk-nut" id="rd-mk-bo" type="button">Đồng bộ lại</button></div><div class="tk-ghi" id="rd-mk-tb" style="margin-top:6px;"></div></div>
 <div class="card"><h3>Cài RustDesk lên máy Windows có agent</h3><p class="tk-ghi">Chọn máy rồi bấm Cài. Mỗi máy được đặt một mật khẩu cố định riêng, hiện ở bảng bên dưới.</p><div id="rd-may" class="tk-luoi"></div>
 <div style="margin-top:8px;"><button class="tk-nut chinh" id="rd-cai-client" type="button">Cài lên máy đã chọn</button> <span class="tk-ghi" id="rd-ct"></span></div>
 <table class="rd-tb" id="rd-bang-may" style="margin-top:10px;"></table></div>
@@ -45,11 +47,14 @@ $('rd-luu').onclick=function(){api('/rustdesk/api/cau-hinh',{host:$('rd-host').v
 function dev(){api('/rustdesk/api/thiet-bi').then(function(d){var h='<tr><th>ID</th><th>IP gần nhất</th><th>Đăng ký lúc</th><th>Ghi chú</th></tr>';
  (d.ds||[]).forEach(function(x){h+='<tr><td><b>'+e(x.id)+'</b></td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td><td>'+e(x.ghi_chu)+'</td></tr>';});
  if(!(d.ds||[]).length) h+='<tr><td colspan="4" class="tk-ghi">Chưa có thiết bị nào đăng ký.</td></tr>'; $('rd-dev').innerHTML=h;
- var m='<tr><th>Máy</th><th>ID RustDesk</th><th>Mật khẩu</th></tr>'; (d.may||[]).forEach(function(x){m+='<tr><td>'+e(x.ten)+'</td><td><b>'+e(x.id)+'</b></td><td><span class="rd-k">'+e(x.mk)+'</span></td></tr>';});
+ if(document.activeElement!==$('rd-mk')) $('rd-mk').value=d.mk_chung||''; $('rd-mk-tb').textContent=(d.dong_bo&&d.dong_bo.tb)||''; if(d.dong_bo&&d.dong_bo.dang) setTimeout(dev,2500);
+ var m='<tr><th>Máy</th><th>ID RustDesk</th><th>Mật khẩu</th><th>Đồng bộ</th></tr>'; (d.may||[]).forEach(function(x){m+='<tr><td>'+e(x.ten)+'</td><td><b>'+e(x.id)+'</b></td><td><span class="rd-k">'+e(x.mk)+'</span></td><td>'+(x.dong_bo?'<span class="rd-chip ok">đã đồng bộ</span>':'<span class="rd-chip loi" title="'+e(x.loi)+'">chờ cập nhật</span>')+'</td></tr>';});
  $('rd-bang-may').innerHTML=(d.may||[]).length?m:''; var o=''; (d.agent||[]).forEach(function(x){o+='<label class="tk-o"><input type="checkbox" name="rdm" value="'+e(x.id)+'"><span><b>'+e(x.ten)+'</b><small>'+e(x.ip)+(x.online?'':' (offline)')+'</small></span></label>';});
  $('rd-may').innerHTML=o||'<span class="tk-ghi">Chưa có máy nào cài agent.</span>';});}
 $('rd-cai-client').onclick=function(){var ids=[].slice.call(document.querySelectorAll('input[name=rdm]:checked')).map(function(i){return i.value;}); if(!ids.length){$('rd-ct').textContent='Chọn ít nhất một máy.';return;}
  $('rd-ct').textContent='Đang cài (có thể mất 1-2 phút mỗi máy)...'; api('/rustdesk/api/cai-client',{may:ids}).then(function(d){$('rd-ct').textContent=(d.kq||[]).map(function(x){return x.ten+': '+x.tb;}).join(' | ');dev();});};
+$('rd-mk-luu').onclick=function(){api('/rustdesk/api/mat-khau',{mk:$('rd-mk').value}).then(function(d){$('rd-mk-tb').textContent=d.tb;setTimeout(dev,1500);});};
+$('rd-mk-bo').onclick=function(){api('/rustdesk/api/dong-bo',{}).then(function(d){$('rd-mk-tb').textContent=d.tb;setTimeout(dev,1500);});};
 tai(); dev(); setInterval(function(){if(!document.hidden)tai();},8000);})();</script>"""
 
 

@@ -28,6 +28,8 @@ class Gia:
             return json.dumps([{"Name": "Spooler", "DisplayName": "Print Spooler", "State": "Running", "StartMode": "Auto", "Mota": "in"}]), Luong(), False
         if "Get-Process" in script:
             return json.dumps({"Id": 1234, "ProcessName": "notepad", "cpu": 1.5, "mem": 10.0, "tieude": "x"}), Luong(), False      # 1 phan tu -> dict
+        if "RUSTDESK_MK_OK" in script:
+            return "RUSTDESK_MK_OK\r\n", Luong(), False
         if "FromBase64String" in script:
             return "ket-qua-lenh\n", Luong(), False
         return "OK", Luong(), False
@@ -118,4 +120,19 @@ c.post("/uem/may/m-agent/rustdesk/luu", data={"id": "123456789", "mk": "abc123"}
 kq["rd_luu_tay"] = RD.doc_cfg()["may"].get("m-agent", {}).get("id") == "123456789"
 c.post("/uem/may/m-agent/rustdesk/luu", data={"id": "12x", "mk": "a"}, headers=H)
 kq["rd_luu_xau_bi_chan"] = RD.doc_cfg()["may"]["m-agent"]["id"] == "123456789"
+import time as _t  # noqa: E402
+kq["mk_chung_xau"] = post("/rustdesk/api/mat-khau", {"mk": "a'b;1234567"}).get_json()["ok"] is False
+kq["mk_chung_ngan"] = post("/rustdesk/api/mat-khau", {"mk": "abc"}).get_json()["ok"] is False
+_c = RD.doc_cfg()
+_c["may"]["m-agent"] = {"id": "123456789", "mk": "cu-cu-cu-cu", "dong_bo": True}
+RD.luu_cfg(_c)
+kq["mk_chung_luu"] = post("/rustdesk/api/mat-khau", {"mk": "MatKhau#Chung1"}).get_json()["ok"] is True
+for _ in range(30):
+    if RD.doc_cfg()["may"]["m-agent"].get("mk") == "MatKhau#Chung1":
+        break
+    _t.sleep(0.2)
+kq["mk_chung_day_xuong_may"] = RD.doc_cfg()["may"]["m-agent"].get("mk") == "MatKhau#Chung1" and RD.doc_cfg()["may"]["m-agent"].get("dong_bo") is True
+kq["mk_chung_gui_dung_lenh"] = "--password 'MatKhau#Chung1'" in kich[-1]
+d = c.get("/rustdesk/api/thiet-bi", headers=H).get_json()
+kq["mk_chung_hien_thi"] = d["mk_chung"] == "MatKhau#Chung1" and d["may"][0]["dong_bo"] is True
 print("KETQUA " + json.dumps(kq))

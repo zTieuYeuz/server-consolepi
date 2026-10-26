@@ -16,7 +16,7 @@ def cai_client_may(m):
     """Cai qua agent/WinRM. Tra (ok, thong_diep, id)."""
     cfg = RD.doc_cfg()
     ban = cfg["may"].get(m["id"]) or {}
-    mk = ban.get("mk") or secrets.token_hex(6)
+    mk = RD.mk_chung() or ban.get("mk") or secrets.token_hex(6)
     try:
         sc = RD.script_client(mk)
     except RuntimeError as e:
@@ -26,7 +26,7 @@ def cai_client_may(m):
     if not ok or not ma:
         return False, (out or "Không lấy được ID RustDesk.")[-400:], ""
     cfg = RD.doc_cfg()
-    cfg["may"][m["id"]] = {"id": ma.group(1), "mk": mk, "luc": int(time.time())}
+    cfg["may"][m["id"]] = {"id": ma.group(1), "mk": mk, "luc": int(time.time()), "dong_bo": True}
     RD.luu_cfg(cfg)
     return True, "Đã cài RustDesk, ID %s." % ma.group(1), ma.group(1)
 
@@ -43,8 +43,10 @@ def register_uem_rustdesk(app):
         if not re.fullmatch(r"\d{6,12}", i) or not re.fullmatch(r"[A-Za-z0-9!@#$%^&*._\-]{4,64}", mk):
             return chuyen(f"/uem/may/{mid}/tu-xa", "ID phải là 6 đến 12 chữ số; mật khẩu 4 đến 64 ký tự (chữ, số, ký hiệu thường).", False)
         cfg = RD.doc_cfg()
-        cfg["may"][m["id"]] = {"id": i, "mk": mk, "luc": int(time.time())}
+        cfg["may"][m["id"]] = {"id": i, "mk": mk, "luc": int(time.time()), "dong_bo": (not cfg.get("mk_chung")) or mk == cfg.get("mk_chung")}
         RD.luu_cfg(cfg)
+        if cfg.get("mk_chung") and mk != cfg["mk_chung"]:
+            dong_bo({m["id"]})
         return chuyen(f"/uem/may/{mid}/tu-xa", "Đã lưu ID và mật khẩu RustDesk của máy.")
 
     @app.route("/rustdesk/api/thiet-bi")
@@ -53,8 +55,22 @@ def register_uem_rustdesk(app):
         ds_may = DL.MAY.doc()
         ten = {m["id"]: (m.get("ten") or m["ip"]) for m in ds_may}
         agent = [{"id": m["id"], "ten": m.get("ten") or m["ip"], "ip": m["ip"], "online": UA.con_song(m)} for m in ds_may if UA.co_agent(m) and not m.get("an")]
-        may = [{"ten": ten.get(k, k), "id": v.get("id", ""), "mk": v.get("mk", "")} for k, v in cfg["may"].items()]
-        return jsonify({"ds": RD.thiet_bi(), "may": may, "agent": agent})
+        may = [{"ten": ten.get(k, k), "id": v.get("id", ""), "mk": v.get("mk", ""), "dong_bo": bool(v.get("dong_bo", True)) or not cfg.get("mk_chung"),
+                "loi": v.get("loi", "")} for k, v in cfg["may"].items()]
+        return jsonify({"ds": RD.thiet_bi(), "may": may, "agent": agent, "mk_chung": cfg.get("mk_chung", ""), "dong_bo": dict(_DONG_BO)})
+
+    @app.route("/rustdesk/api/mat-khau", methods=["POST"])
+    def rustdesk_api_mk():
+        ok, tb = RD.dat_mk_chung(str((request.get_json(silent=True) or {}).get("mk", "")))
+        if ok:
+            dong_bo()
+        return jsonify({"ok": ok, "tb": tb})
+
+    @app.route("/rustdesk/api/dong-bo", methods=["POST"])
+    def rustdesk_api_dong_bo():
+        if not RD.mk_chung():
+            return jsonify({"ok": False, "tb": "Chưa đặt mật khẩu chung."})
+        return jsonify({"ok": dong_bo(), "tb": "Đang đồng bộ..."})
 
     @app.route("/rustdesk/api/cai-client", methods=["POST"])
     def rustdesk_api_cai_client():
@@ -65,6 +81,44 @@ def register_uem_rustdesk(app):
                 ok, tb, _id = cai_client_may(m)
                 kq.append({"ten": m.get("ten") or m["ip"], "ok": ok, "tb": tb})
         return jsonify({"ok": True, "kq": kq})
+
+
+_DONG_BO = {"dang": False, "tb": ""}
+
+
+def _dong_bo_nen(chi=None):
+    """Day mat khau chung xuong cac may (qua agent/WinRM) chua dong bo. Chay nen, ghi ket qua tung may."""
+    try:
+        mk = RD.mk_chung()
+        if not mk:
+            return
+        ds = {m["id"]: m for m in DL.MAY.doc()}
+        ok_n = loi_n = 0
+        for mid, v in list(RD.doc_cfg()["may"].items()):
+            if (chi and mid not in chi) or (v.get("dong_bo") and v.get("mk") == mk) or mid not in ds:
+                continue
+            ok, out = DK._chay(ds[mid], RD.script_dat_mk(mk))
+            d = RD.doc_cfg()
+            if mid in d["may"]:
+                if ok and "RUSTDESK_MK_OK" in (out or ""):
+                    d["may"][mid].update(mk=mk, dong_bo=True, loi="")
+                    ok_n += 1
+                else:
+                    d["may"][mid].update(dong_bo=False, loi=(out or "")[-120:])
+                    loi_n += 1
+                RD.luu_cfg(d)
+        _DONG_BO["tb"] = "Đồng bộ xong: %d máy thành công, %d máy chưa được (máy tắt hoặc mất agent, bấm Đồng bộ lại sau)." % (ok_n, loi_n)
+    finally:
+        _DONG_BO["dang"] = False
+
+
+def dong_bo(chi=None):
+    if _DONG_BO["dang"]:
+        return False
+    _DONG_BO.update(dang=True, tb="Đang áp dụng mật khẩu xuống các máy...")
+    import threading
+    threading.Thread(target=_dong_bo_nen, args=(chi,), daemon=True, name="rustdesk-dong-bo").start()
+    return True
 
 
 def khoi_tu_xa(m):
