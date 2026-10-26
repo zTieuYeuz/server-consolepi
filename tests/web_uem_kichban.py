@@ -85,4 +85,10 @@ post("/deployos/trienkhai/tt/kb1/xoa", {"loai": "ca-hai"})
 kq["khong_dong_may_dang_chay"] = set(DL.TRANG_THAI.doc()["kb1"]["may"]) == {"1.1.1.3"}
 kq["loai_la_400"] = post("/deployos/trienkhai/tt/kb1/xoa", {"loai": "x"}).status_code == 400
 kq["script_winrm"] = c.get("/deployos/trienkhai/bat-winrm.ps1", headers=H).get_data(as_text=True).startswith("<#")
+kq["sl_chan_doan"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "in-chan-doan"}).get_json()["ok"] is True
+kq["sl_id_la"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "xx"}).get_json()["ok"] is False
+kq["sl_tham_xau"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-go-share", "tham": {"ten": "x';calc"}}).get_json()["ok"] is False
+kq["sl_duong_xau"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-tao-share", "tham": {"ten": "D", "duong": "D:\\a;calc", "nguoi": "Everyone"}}).get_json()["ok"] is False
+kq["sl_tao_share"] = post("/uem/may/m-agent/sua-loi/chay", {"id": "cs-tao-share", "tham": {"ten": "DuLieu", "duong": "D:\\DuLieu", "nguoi": "Everyone"}}).get_json()["ok"] is True and "New-SmbShare -Name 'DuLieu'" in kich[-1]
+kq["sl_tab"] = c.get("/uem/may/m-agent/sua-loi", headers=H).status_code == 200
 print("KETQUA " + json.dumps(kq))

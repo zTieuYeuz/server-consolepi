@@ -28,6 +28,7 @@ from ui import uem_trienkhai as UT
 from ui import uem_agent_trang as UAT
 from ui import uem_agent as UA
 from consolesystem.features.uem import uem_dieukhien as UDK
+from consolesystem.features.uem import uem_sualoi as USL
 from ui import uem_pki as PKI
 from ui import uem_vnc as UV
 from ui import uem_winget as UW
@@ -659,6 +660,7 @@ def register_uem(app):
     PKI.nap_lai_neu_doi()
     UAT.register_agent(app)
     UDK.register_dieukhien(app)
+    USL.register_sualoi(app)
 
     @app.route("/uem")
     def uem_tq():
@@ -770,8 +772,8 @@ def register_uem(app):
             return UAT.tab_agent(m)
         if tab in ("duyet-file", "tu-xa", "nguon", "trien-khai", "tac-vu"):
             return tab_may_b(m, tab)
-        if tab in ("cli", "dich-vu", "tien-trinh"):
-            return {"cli": UDK.tab_cli, "dich-vu": UDK.tab_dich_vu, "tien-trinh": UDK.tab_tien_trinh}[tab](m)
+        if tab in ("cli", "dich-vu", "tien-trinh", "sua-loi"):
+            return {"cli": UDK.tab_cli, "dich-vu": UDK.tab_dich_vu, "tien-trinh": UDK.tab_tien_trinh, "sua-loi": USL.tab_sua_loi}[tab](m)
         return T.tab_may(m, tab)
 
     @app.route("/uem/may/<mid>/bao-cao-ngay", methods=["POST"])
