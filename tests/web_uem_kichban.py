@@ -152,4 +152,7 @@ for _ in range(30):
         break
     _t.sleep(0.2)
 kq["rd_ap_cau_hinh_ket_qua"] = "1 máy thành công" in c.get("/rustdesk/api/thiet-bi", headers=H).get_json()["dong_bo"]["tb"]
+kq["rd_doi_may_chu_409"] = c.get("/rustdesk/doi-may-chu.ps1", headers=H).status_code in (200, 409)
+_s = RD.script_cau_hinh_nguoi_dung("rd.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+kq["rd_doi_may_chu_script"] = "--option custom-rendezvous-server 'rd.example.com'" in _s and "--option key" in _s
 print("KETQUA " + json.dumps(kq))

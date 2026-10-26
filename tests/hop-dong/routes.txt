@@ -242,13 +242,17 @@
 /remote/xoa-token	POST	remote_clear
 /rename	POST	rename
 /rustdesk	GET	rustdesk_trang
+/rustdesk/api/ap-cau-hinh	POST	rustdesk_api_ap_cau_hinh
 /rustdesk/api/cai	POST	rustdesk_api_cai
 /rustdesk/api/cai-client	POST	rustdesk_api_cai_client
 /rustdesk/api/cau-hinh	POST	rustdesk_api_cfg
+/rustdesk/api/dong-bo	POST	rustdesk_api_dong_bo
 /rustdesk/api/hanh-dong	POST	rustdesk_api_hd
+/rustdesk/api/mat-khau	POST	rustdesk_api_mk
 /rustdesk/api/thiet-bi	GET	rustdesk_api_dev
 /rustdesk/api/trang-thai	GET	rustdesk_api_tt
 /rustdesk/client-cai.ps1	GET	rustdesk_script
+/rustdesk/doi-may-chu.ps1	GET	rustdesk_script_doi
 /settings	GET	settings_page
 /settings/don-rac	POST	settings_don_rac
 /settings/khoi-phuc	POST	settings_khoi_phuc
@@ -303,6 +307,7 @@
 /uem/may/<mid>/nguon	POST	uem_nguon
 /uem/may/<mid>/phan-mem.csv	GET	uem_pm_csv
 /uem/may/<mid>/quan-ly	POST	uem_quan_ly
+/uem/may/<mid>/rustdesk/luu	POST	uem_rustdesk_luu
 /uem/may/<mid>/sua-loi/chay	POST	uem_sua_loi_chay
 /uem/may/<mid>/tien-trinh/api	POST	uem_tien_trinh_api
 /uem/may/<mid>/tu-xa/rdp	GET	uem_rdp

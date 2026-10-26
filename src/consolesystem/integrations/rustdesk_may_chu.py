@@ -344,6 +344,23 @@ def script_cau_hinh(host=None, khoa=None):
             + KHOI_CAU_HINH % _tham_so(host, khoa) + "\n'RUSTDESK_CFG_OK'")
 
 
+def script_cau_hinh_nguoi_dung(host=None, khoa=None):
+    """Script cho nguoi dung tu chay tren MAY MINH DANG NGOI (khong can agent): doi dia chi may chu/khoa/WebSocket cua RustDesk da cai.
+    Dung lenh --option cua RustDesk nen ghi dung cau hinh cua nguoi dang dang nhap va cua dich vu."""
+    host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()
+    if not MAU_HOST.fullmatch(host or "") or not re.fullmatch(r"[A-Za-z0-9+/=]{20,100}", khoa or ""):
+        raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
+    ws = "\n& $rd --option allow-websocket Y | Out-Null" if dung_ws() else ""
+    return ("$ErrorActionPreference = 'Stop'\n"
+            "$rd = Join-Path $env:ProgramFiles 'RustDesk\\rustdesk.exe'\n"
+            "if (-not (Test-Path $rd)) { throw 'Máy này chưa cài RustDesk (cần bản cài đặt, không phải bản chạy trực tiếp).' }\n"
+            "Get-Process rustdesk -ErrorAction SilentlyContinue | Stop-Process -Force\nStart-Sleep 2\n"
+            "& $rd --option custom-rendezvous-server '%(h)s' | Out-Null\n& $rd --option relay-server '%(h)s' | Out-Null\n"
+            "& $rd --option key '%(k)s' | Out-Null%(w)s\n"
+            "Start-Process $rd\nWrite-Host 'Đã đổi RustDesk sang máy chủ %(h)s. Đợi vài giây cho góc dưới RustDesk báo Ready.' -ForegroundColor Green\n"
+            "Read-Host 'Nhan Enter de dong'\n") % {"h": host, "k": khoa, "w": ws}
+
+
 def script_client(mat_khau, host=None, khoa=None):
     """PowerShell cai RustDesk client (ban chinh thuc, SHA-256 ghim), tro ve may chu nay, dat mat khau co dinh, in ra ID."""
     host, khoa = host or host_hieu_luc(), khoa or khoa_cong_khai()

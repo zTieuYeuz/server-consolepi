@@ -20,7 +20,9 @@ TRANG = """<style>.rd-2{display:grid;grid-template-columns:repeat(auto-fit,minma
 <div class="card"><h3>Khóa và cấu hình cho client</h3><p class="tk-ghi">Dán vào RustDesk, Cài đặt, Mạng, Máy chủ ID/Relay:</p>
 <div>ID server / Relay: <span class="rd-k" id="rd-h"></span></div><div style="margin-top:6px;">Key:</div><div class="rd-k" id="rd-key">(chưa có, cài máy chủ trước)</div>
 <p class="tk-ghi" style="margin-top:10px;">Cài tay trên máy Windows bất kỳ (kể cả ngoài Internet): mở PowerShell quản trị và chạy file tải ở đây (đã nhúng máy chủ và khóa, tải bản chính thức có kiểm SHA-256):</p>
-<a class="tk-nut" href="/rustdesk/client-cai.ps1">Tải script cài client (.ps1)</a></div></div>
+<a class="tk-nut" href="/rustdesk/client-cai.ps1">Tải script cài client (.ps1)</a>
+<p class="tk-ghi" style="margin-top:10px;">Máy đã cài RustDesk từ trước (kể cả máy anh đang ngồi, không có agent) mà vẫn báo kết nối tới địa chỉ cũ: tải file này, bấm chuột phải chạy bằng PowerShell Administrator để đổi sang máy chủ hiện tại.</p>
+<a class="tk-nut" href="/rustdesk/doi-may-chu.ps1">Tải script đổi máy chủ cho RustDesk đã cài (.ps1)</a></div></div>
 <div class="card"><h3>Mật khẩu cố định chung cho mọi máy</h3><p class="tk-ghi">Đặt một mật khẩu, Console System đẩy xuống <b>tất cả máy đã cài RustDesk</b> qua agent. Đổi mật khẩu ở đây thì mọi máy đổi theo; máy đang tắt sẽ chờ, bấm <b>Đồng bộ lại</b> khi máy bật. Máy cài mới cũng dùng mật khẩu này.</p>
 <div class="tk-hang"><input type="text" id="rd-mk" autocomplete="off" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -" style="max-width:340px;margin:0;"><button class="tk-nut chinh" id="rd-mk-luu" type="button">Lưu và áp dụng cho tất cả</button><button class="tk-nut" id="rd-mk-bo" type="button">Đồng bộ lại</button></div><div class="tk-ghi" id="rd-mk-tb" style="margin-top:6px;"></div></div>
 <div class="card"><h3>Cài RustDesk lên máy Windows có agent</h3><p class="tk-ghi">Chọn máy rồi bấm Cài. Mỗi máy được đặt một mật khẩu cố định riêng, hiện ở bảng bên dưới.</p><div id="rd-may" class="tk-luoi"></div>
@@ -88,6 +90,15 @@ def register_rustdesk(app):
         if ok and "ws" in j:
             RD.dat_ws(j["ws"])
         return jsonify({"ok": ok, "tb": tb})
+
+    @app.route("/rustdesk/doi-may-chu.ps1")
+    def rustdesk_script_doi():
+        try:
+            sc = RD.script_cau_hinh_nguoi_dung()
+        except RuntimeError as e:
+            return Response(str(e), status=409, mimetype="text/plain; charset=utf-8")
+        return Response("\ufeff" + sc.replace("\n", "\r\n"), mimetype="text/plain; charset=utf-8",
+                        headers={"Content-Disposition": "attachment; filename=doi-may-chu-rustdesk.ps1"})
 
     @app.route("/rustdesk/client-cai.ps1")
     def rustdesk_script():
