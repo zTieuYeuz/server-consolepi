@@ -460,9 +460,17 @@ def script_client(mat_khau, host=None, khoa=None, relay=None, url=None, sha=None
 $rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
 $ErrorActionPreference = 'Continue'
 $moi = $false
+$goi_dv = $false
 for ($i = 0; $i -lt 90 -and -not $moi; $i++) {
     Start-Sleep 2
     $s = Get-CimInstance Win32_Service -Filter "Name='RustDesk'" -ErrorAction SilentlyContinue
+    # Bo cai da chep rustdesk.exe ma khong tao dich vu (gap khi chay trong goi MSI / may con sot ban cu): tu tao bang lenh chinh thuc
+    if (-not $s -and -not $goi_dv -and $i -ge 15 -and (Test-Path $rd)) {
+        Write-Host 'Chua co dich vu RustDesk, chay rustdesk.exe --install-service'
+        $goi_dv = $true
+        $null = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = ('"' + $rd + '" --install-service') }
+    }
+    if ($s -and $s.State -ne 'Running' -and $i -ge 20) { Start-Service RustDesk -ErrorAction SilentlyContinue }
     if ($s -and $s.State -eq 'Running' -and (Test-Path $rd)) {
         $p = Get-Process -Id $s.ProcessId -ErrorAction SilentlyContinue
         $moi = [bool]($p -and $p.StartTime -gt $t0)
