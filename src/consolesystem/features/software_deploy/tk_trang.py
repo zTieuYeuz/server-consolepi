@@ -274,12 +274,32 @@ def _trang_nhom_may():
     return _trang(body, "may", "nhom")
 
 
+def _ip_may_chu():
+    """IP ma may Windows dung de toi Console System: IP trong URL dang mo neu la IPv4, khong thi IP LAN chinh cua may."""
+    import socket
+    h = (request.host or "").split(":")[0]
+    if re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", h) and not h.startswith("127."):
+        return h
+    try:
+        so = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        so.connect(("10.255.255.255", 1))
+        ip = so.getsockname()[0]
+        so.close()
+        return ip
+    except OSError:
+        return "IP-MAY-CHU"
+
+
+def _lenh_bat_winrm():
+    return f"powershell -ExecutionPolicy Bypass -File .\\bat-winrm.ps1 -ChiChoIP {_ip_may_chu()}"
+
+
 def _trang_quet():
     may = DL.MAY.doc()
     body = f"""
     <div class="tk-canhbao"><b>Quét mạng</b> tìm các máy đang mở cổng WinRM (5985), SMB (445) hoặc RDP (3389) trong mạng LAN,
       kèm tên và địa chỉ MAC. Chọn máy muốn quản lý, đặt tên dễ nhớ rồi thêm vào danh sách (có thể tạo luôn một nhóm máy).<br>
-      Máy cần cài phần mềm phải <b>bật WinRM</b> (cách dễ nhất: <a href="/deployos/trienkhai/bat-winrm.ps1">tải script bat-winrm.ps1</a> rồi trong PowerShell Administrator chạy <code>powershell -ExecutionPolicy Bypass -File .\\bat-winrm.ps1</code> (nếu chạy thẳng <code>.\\bat-winrm.ps1</code> Windows sẽ báo "running scripts is disabled"); hoặc thủ công <code>Enable-PSRemoting -Force</code>; máy không vào domain thêm
+      Máy cần cài phần mềm phải <b>bật WinRM</b> (cách dễ nhất: <a href="/deployos/trienkhai/bat-winrm.ps1">tải script bat-winrm.ps1</a> rồi trong PowerShell Administrator chạy <code>{_lenh_bat_winrm()}</code> (chỉ cho phép đúng máy Console System này kết nối; bỏ <code>-ChiChoIP ...</code> để mở cho cả mạng LAN; nếu chạy thẳng <code>.\\bat-winrm.ps1</code> Windows sẽ báo "running scripts is disabled"); hoặc thủ công <code>Enable-PSRemoting -Force</code>; máy không vào domain thêm
       <code>LocalAccountTokenFilterPolicy=1</code> - xem tab Kiểm tra bảo mật). Console System không tự bật hộ.</div>
     <div class="card">
       <form method="POST" action="/deployos/trienkhai/may/quet" class="tk-hang">
@@ -618,7 +638,9 @@ def _trang_khac():
       <div style="margin-top:14px;">{_nut("Chạy ngay", "go", "chinh")}</div>
     </form>
     <h2>Chuẩn bị máy đích</h2>
-    <div class="tk-canhbao">Trên <b>từng máy Windows</b> cần cài phần mềm (một lần, bằng PowerShell chạy <b>Run as Administrator</b>):<br>
+    <div class="tk-canhbao"><b>Cách nhanh:</b> <a href="/deployos/trienkhai/bat-winrm.ps1">tải bat-winrm.ps1</a> về máy Windows, mở PowerShell <b>Run as Administrator</b> tại thư mục chứa file rồi chạy: <code>{_lenh_bat_winrm()}</code><br>
+      (script làm đủ các bước 1 và 2 bên dưới, chỉ cho phép máy Console System này kết nối; thêm <code>-Tat</code> thay cho <code>-ChiChoIP</code> để tắt WinRM lại.)<br><br>
+      Hoặc làm tay trên <b>từng máy Windows</b> cần cài phần mềm (một lần, bằng PowerShell chạy <b>Run as Administrator</b>):<br>
       1. <code>Enable-PSRemoting -Force -SkipNetworkProfileCheck</code> (bật WinRM, mở tường lửa cổng 5985)<br>
       2. Nếu máy <b>không vào domain</b>: <code>New-ItemProperty -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System -Name LocalAccountTokenFilterPolicy -Value 1 -PropertyType DWord -Force</code><br>
       Có domain thì đẩy bằng Group Policy cho cả phòng máy. Console System không tự bật hộ vì đó là thay đổi cấu hình bảo mật của máy khác.</div>
