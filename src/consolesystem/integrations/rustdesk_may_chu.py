@@ -472,6 +472,44 @@ def _env_api():
     return env
 
 
+SHIM_WS = r"""/* Console System: web client RustDesk (v1) luon goi wss://<may>:21118 va :21119. Qua Cloudflare/HTTPS chi co cong 443 nen doi sang
+   duong dan /ws/id va /ws/relay cua chinh ten mien dang mo trang (Cloudflare Tunnel chuyen ve hbbs/hbbr). Mo trong LAN bang http thi giu nguyen. */
+(function () {
+  if (location.protocol !== "https:" || !window.WebSocket) return;
+  var W = window.WebSocket;
+  function doi(u) {
+    try {
+      var x = new URL(u);
+      if (x.port === "21118") return "wss://" + location.host + "/ws/id";
+      if (x.port === "21119") return "wss://" + location.host + "/ws/relay";
+    } catch (e) {}
+    return u;
+  }
+  function P(u, p) { return p === undefined ? new W(doi(u)) : new W(doi(u), p); }
+  P.prototype = W.prototype;
+  P.CONNECTING = 0; P.OPEN = 1; P.CLOSING = 2; P.CLOSED = 3;
+  window.WebSocket = P;
+})();
+"""
+
+
+def va_web_client(thu_muc=None):
+    """Chen SHIM_WS vao resources/web/index.html cua rustdesk-api (lam lai sau moi lan cai/cap nhat; khong chen 2 lan)."""
+    web = os.path.join(thu_muc or _api_dir(), "resources", "web")
+    idx = os.path.join(web, "index.html")
+    if not os.path.isfile(idx):
+        return False
+    with open(os.path.join(web, "cs-ws-shim.js"), "w", encoding="utf-8") as f:
+        f.write(SHIM_WS)
+    with open(idx, encoding="utf-8") as f:
+        h = f.read()
+    if "cs-ws-shim.js" not in h:
+        h = h.replace("<head>", '<head>\n  <script src="cs-ws-shim.js"></script>', 1)
+        with open(idx, "w", encoding="utf-8") as f:
+            f.write(h)
+    return True
+
+
 def ghi_dich_vu_api():
     env = "".join("Environment=%s=%s\n" % (k, v) for k, v in _env_api().items())
     nd = ("[Unit]\nDescription=Console System - RustDesk API (trang quan tri web + web client)\nAfter=network.target %s.service\n\n[Service]\nType=simple\n"
@@ -513,6 +551,7 @@ def _cai_api_nen():
         shutil.move(moi, cu)
         shutil.rmtree(giai, ignore_errors=True)
         os.chmod(os.path.join(cu, "apimain"), 0o755)
+        va_web_client(cu)
         _CAI_API["tb"] = "Đang tạo dịch vụ..."
         ghi_dich_vu_api()
         _lenh.chay(["systemctl", "enable", "--now", DV_API], timeout=30)
@@ -559,6 +598,7 @@ def hanh_dong_api(viec):
     if viec not in ("start", "stop", "restart"):
         return False, "Hành động không hợp lệ."
     if viec != "stop":
+        va_web_client()
         try:
             ghi_dich_vu_api()
         except RuntimeError as e:
