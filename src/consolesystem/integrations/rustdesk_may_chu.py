@@ -580,7 +580,24 @@ def script_tep_cai():
     dc = dia_chi()
     return ("# Console System - cai RustDesk kem May chu ID %s, chuyen tiep %s. Tao luc %s.\n" % (dc["id"], dc["relay"], time.strftime("%Y-%m-%d %H:%M"))
             + "Start-Transcript -Path (Join-Path $env:windir 'Temp\\cs-rustdesk-cai.log') -Force | Out-Null\ntry {\n"
-            + script_client(mk, ben_canh=True) + "\n} finally { Stop-Transcript | Out-Null }\n")
+            + _danh_dau(script_client(mk, ben_canh=True)) + "\n} catch {\n" + CHAN_DOAN + "\n  exit 1\n} finally { Stop-Transcript | Out-Null }\n")
+
+
+# Ghi tung buoc vao nhat ky (Write-Host di vao transcript) de biet goi MSI dung o dau
+CHAN_DOAN = r"""  Write-Host ('LOI: ' + $_.Exception.Message)
+  Write-Host ('Dich vu RustDesk: ' + ((Get-Service RustDesk -ErrorAction SilentlyContinue).Status))
+  Write-Host ('Co rustdesk.exe: ' + (Test-Path (Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe')))
+  Get-CimInstance Win32_Process -Filter "Name like 'rustdesk%'" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ('Tien trinh: ' + $_.ProcessId + ' ' + $_.CommandLine) }
+  foreach ($d in @("$env:windir\System32\config\systemprofile\AppData\Roaming\RustDesk\log", "$env:windir\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\log")) {
+    Get-ChildItem $d -Recurse -Filter *.log -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 2 | ForEach-Object {
+      Write-Host ('--- ' + $_.FullName); Get-Content $_.FullName -Tail 25 | ForEach-Object { Write-Host $_ } } }"""
+
+
+def _danh_dau(sc):
+    for moc, chu in (("$t0 = Get-Date", "[1] Chay bo cai RustDesk"), ("$moi = $false", "[2] Cho dich vu RustDesk chay"),
+                     ("$cfg = 'C:\\Windows\\ServiceProfiles", "[3] Ghi cau hinh may chu"), ("$id = ((& $rd --get-id", "[4] Lay ID")):
+        sc = sc.replace(moc, "Write-Host '%s'\n%s" % (chu, moc), 1)
+    return sc
 
 
 def tao_msi(dich):
