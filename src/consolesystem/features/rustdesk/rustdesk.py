@@ -65,7 +65,8 @@ function ve(d){D0=d;
  hd(); if(d.cai.dang) setTimeout(tai,1500);}
 function tai(){api('/rustdesk/api/trang-thai').then(ve);}
 ['rd-host','rd-relay','rd-mk'].forEach(function(i){$(i).addEventListener('input',function(){$(i).dataset.sua='1';hd();});});
-$('rd-nut').addEventListener('click',function(ev){var v=ev.target.dataset.v; if(!v)return; if(v==='go'&&!confirm('Gỡ dịch vụ RustDesk Server?'))return;
+$('rd-nut').addEventListener('click',function(ev){var v=ev.target.dataset.v; if(!v)return; var HOI={restart:'Khởi động lại máy chủ RustDesk? Các phiên điều khiển đang mở sẽ bị ngắt vài giây.',stop:'Dừng máy chủ RustDesk? Các máy sẽ không đăng ký ID và không điều khiển từ xa được cho tới khi chạy lại.',go:'Gỡ dịch vụ RustDesk Server? (Khóa và danh sách thiết bị vẫn được giữ.)'};
+ if(HOI[v]&&!confirm(HOI[v]))return;
  api(v==='cai'?'/rustdesk/api/cai':'/rustdesk/api/hanh-dong',{viec:v}).then(function(d){$('rd-tb').textContent=d.tb||'';tai();});});
 $('rd-luu').onclick=function(){var mk=$('rd-mk').value.trim();
  api('/rustdesk/api/cau-hinh',{host:$('rd-host').value,relay:$('rd-relay').value,ten_nat:'',ten_udp:''}).then(function(d){
