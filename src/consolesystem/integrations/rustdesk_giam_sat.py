@@ -199,7 +199,7 @@ def _hop_le(rid, uuid):
         if rid in _GHIM:
             return _GHIM[rid] == uuid
         _GHIM[rid] = uuid
-        ghi_nguyen_tu(_ghim_file(), json.dumps(_GHIM).encode("utf-8"), 0o600)
+        ghi_nguyen_tu(_ghim_file(), json.dumps({k: v for k, v in _GHIM.items() if k != "_"}).encode("utf-8"), 0o600)
         return True
 
 
