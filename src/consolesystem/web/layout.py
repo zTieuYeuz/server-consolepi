@@ -85,7 +85,7 @@ NAV_ITEMS = [
     ("nhom", "System Utilities", "🛠️", [
         ("/nettools", "Network Tools", "🛠️"),
         ("/deployos", "Deployment OS", "💿"),
-        ("/deployos/trienkhai", "Triển khai phần mềm", "🚀"),
+        ("/deployos/trienkhai", "Triển khai phần mềm LAN", "🚀"),
     ]),
 
     # Noi cat du lieu de dung lai
@@ -579,7 +579,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
             if _ss.get("nc") == "tk":
                 active = "/deployos/trienkhai"
                 if title == "Deployment OS":
-                    title = "Triển khai phần mềm"
+                    title = "Triển khai phần mềm LAN"
         except Exception as _loi:
             _bo_qua(_loi)
     """

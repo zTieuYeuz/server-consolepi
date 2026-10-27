@@ -38,7 +38,7 @@ def _chuyen(url, tb, ok=True):
     return redirect(url)
 
 
-def _trang(body, chinh, phu="", tieu_de="Triển khai phần mềm", phu_de=""):
+def _trang(body, chinh, phu="", tieu_de="Triển khai phần mềm LAN", phu_de=""):
     from ui import deployos as D
     tb = _tb()
     thong = ""
