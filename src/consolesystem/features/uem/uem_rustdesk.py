@@ -41,7 +41,10 @@ def register_uem_rustdesk(app):
         agent = [{"id": m["id"], "ten": m.get("ten") or m["ip"], "ip": m["ip"], "online": UA.con_song(m)} for m in ds_may if UA.co_agent(m) and not m.get("an")]
         may = [{"ten": ten.get(k, k), "id": v.get("id", ""), "mk": v.get("mk", ""), "dong_bo": bool(v.get("dong_bo", True)) or not cfg.get("mk_chung"),
                 "loi": v.get("loi", "")} for k, v in cfg["may"].items()]
-        return jsonify({"ds": RD.thiet_bi(), "may": may, "agent": agent, "mk_chung": cfg.get("mk_chung", ""), "dong_bo": dict(_DONG_BO)})
+        theo_id = {v.get("id"): ten.get(k, "") for k, v in cfg["may"].items() if v.get("id")}
+        theo_ip = {m["ip"]: (m.get("ten") or "") for m in ds_may}
+        ds = [dict(x, ten=theo_id.get(x["id"]) or theo_ip.get(x["ip"], "")) for x in RD.thiet_bi()]   # ten may: theo ID da ghi, khong thi theo IP
+        return jsonify({"ds": ds, "may": may, "agent": agent, "mk_chung": cfg.get("mk_chung", ""), "dong_bo": dict(_DONG_BO)})
 
     @app.route("/rustdesk/api/mat-khau", methods=["POST"])
     def rustdesk_api_mk():
