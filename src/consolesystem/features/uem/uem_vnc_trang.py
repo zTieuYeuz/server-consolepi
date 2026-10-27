@@ -18,15 +18,14 @@ _VIEC = {}                       # ma -> {viec, tong, xong, kq: {may_id: {ten, o
 _KHOA = threading.Lock()
 TEN_VIEC = {"cai": "Cài TightVNC", "kiem": "Kiểm tra", "go": "Gỡ TightVNC"}
 
-TRANG = """<style>.vn-viec{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.vn-viec button.on{outline:2px solid var(--nhan)}
-.vn-tb{width:100%;border-collapse:collapse;margin-top:10px}.vn-tb td,.vn-tb th{padding:6px 8px;border-bottom:1px solid var(--vien);text-align:left}
+TRANG = """<style>.vn-tb{width:100%;border-collapse:collapse;margin-top:10px}.vn-tb td,.vn-tb th{padding:6px 8px;border-bottom:1px solid var(--vien);text-align:left}
 .vn-ok{color:var(--xanh)}.vn-loi{color:var(--do)}</style>
 <div class="card"><h3>Tải phần mềm VNC</h3>
 <p class="tk-ghi">Bộ cài TightVNC 2.8.85 bản GPL chính thức (đã kiểm SHA-256), dùng khi cần cài tay trên máy không có agent hoặc máy không ra được Internet. Cài tay thì nhớ đặt mật khẩu VNC; cài tự động ở dưới thì Console System tự cấu hình (dịch vụ thủ công, chỉ bật khi có phiên, mã PIN mới mỗi phiên).</p>
 <div class="nut-hang"><button class="tk-nut chinh" type="button" onclick="location.href='/rustdesk/vnc/tai/64'">Tải TightVNC 64-bit (.msi)</button>
 <button class="tk-nut" type="button" onclick="location.href='/rustdesk/vnc/tai/32'">Tải TightVNC 32-bit (.msi)</button></div></div>
 <div class="card"><h3>Tự động trên các máy có agent</h3>
-<div class="vn-viec" id="vn-viec"><button class="tk-nut on" type="button" data-v="cai">Cài TightVNC</button><button class="tk-nut" type="button" data-v="kiem">Kiểm tra</button><button class="tk-nut" type="button" data-v="go">Gỡ</button></div>
+<div class="dep-tabs sub" id="vn-viec" style="margin-bottom:10px;"><a href="#" class="dep-tab on" data-v="cai">Cài TightVNC</a><a href="#" class="dep-tab" data-v="kiem">Kiểm tra</a><a href="#" class="dep-tab" data-v="go">Gỡ</a></div>
 <p class="tk-ghi" id="vn-ghi"></p>
 @KHUNG@
 <div class="nut-hang" style="margin-top:10px;"><button class="tk-nut chinh" type="button" id="vn-chay">Thực hiện</button><span class="tk-ghi" id="vn-tb"></span></div>
@@ -35,9 +34,9 @@ TRANG = """<style>.vn-viec{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10p
 var GHI={cai:'Cài TightVNC (bản GPL chính thức) dạng dịch vụ thủ công, luôn tắt khi không có phiên. Máy đã cài thì cấu hình lại. Mỗi máy khoảng 1 phút.',
  kiem:'Xem máy đã cài TightVNC chưa, bản nào, dịch vụ đang chạy hay tắt.',go:'Gỡ TightVNC và xóa cấu hình khỏi máy.'};
 function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-function chon(v){viec=v;[].slice.call(document.querySelectorAll('#vn-viec button')).forEach(function(b){b.classList.toggle('on',b.dataset.v===v);b.classList.toggle('chinh',b.dataset.v===v);});
+function chon(v){viec=v;[].slice.call(document.querySelectorAll('#vn-viec .dep-tab')).forEach(function(b){b.classList.toggle('on',b.dataset.v===v);});
  $('vn-ghi').textContent=GHI[v];$('vn-chay').textContent='Thực hiện: '+{cai:'Cài TightVNC',kiem:'Kiểm tra',go:'Gỡ TightVNC'}[v];}
-$('vn-viec').addEventListener('click',function(ev){if(ev.target.dataset.v)chon(ev.target.dataset.v);});
+$('vn-viec').addEventListener('click',function(ev){if(ev.target.dataset.v){ev.preventDefault();chon(ev.target.dataset.v);}});
 function tai(){fetch('/rustdesk/vnc/api/may').then(function(r){return r.json();}).then(function(d){ChonMay.ve('vn',d.may);});}
 function ve(d){var h='<tr><th>Máy</th><th>Kết quả</th></tr>';Object.keys(d.kq).forEach(function(k){var x=d.kq[k];
  h+='<tr><td>'+e(x.ten)+'</td><td class="'+(x.ok===null?'':(x.ok?'vn-ok':'vn-loi'))+'">'+e(x.ok===null?'Đang chạy...':x.tb)+'</td></tr>';});$('vn-kq').innerHTML=h;
