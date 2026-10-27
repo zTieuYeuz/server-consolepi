@@ -322,6 +322,7 @@ kq["gh_lay_ve"] = URD.thu_ghi_hinh_may(DL.tim(DL.MAY.doc(), "m-agent")) == 1 and
 Gia.execute_ps = Gia_ps0
 ls = c.get("/rustdesk/api/lich-su", headers=H).get_json()["ds"]
 kq["gh_khop_phien"] = any(x["conn"] == 8 and x["ghi_hinh"] and x["ghi_hinh"][0]["ten"] == _tenghi for x in ls)
+kq["gh_chi_1_phien"] = sum(1 for x in ls for g in x["ghi_hinh"] if g["ten"] == _tenghi) == 1
 kq["gh_xem"] = c.get("/rustdesk/ghi-hinh/m-agent/" + _tenghi, headers=H).status_code == 200
 kq["gh_duong_xau"] = c.get("/rustdesk/ghi-hinh/m-agent/..%2Frustdesk.json", headers=H).status_code == 404 and GS.duong_ghi_hinh("..", "a.webm") is None
 _cu = os.path.join(GS.thu_muc_ghi_hinh(), "m-agent", "incoming_1_20200101000000000_display0_vp9.webm")

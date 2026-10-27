@@ -393,7 +393,7 @@ def tt_cai_dat():
 
 
 def lich_su_day_du():
-    """Lich su ket noi + lien ket ban ghi hinh (ban ghi cua cung may, bat dau trong khoang phien)."""
+    """Lich su ket noi + lien ket ban ghi hinh (moi ban ghi vao 1 phien cung may bat dau gan nhat)."""
     cfg = RD.doc_cfg()
     ds_may = {m["id"]: (m.get("ten") or m["ip"]) for m in DL.MAY.doc()}
     ten = {v.get("id"): ds_may.get(k, "") for k, v in cfg["may"].items() if v.get("id")}
@@ -402,14 +402,14 @@ def lich_su_day_du():
     ra = GS.lich_su(ten)
     for p in ra:
         p["ghi_hinh"] = []
-        mid = mid_theo_rid.get(p["rid"])
-        if not mid or p["loai"] == "Yêu cầu từ Console":
+    phien = [p for p in ra if p["loai"] != "Yêu cầu từ Console" and mid_theo_rid.get(p["rid"])]
+    for x in ghi:                 # moi ban ghi chi gan vao DUNG 1 phien: cung may, bat dau gan nhat (ten file mang gio bat dau phien, lech vai giay)
+        bd = _luc_ten_ghi(x["ten"])
+        if not bd:
             continue
-        het = (p["ket_thuc"] or time.time()) + 120
-        for x in ghi:
-            bd = _luc_ten_ghi(x["ten"])
-            if x["mid"] == mid and bd and p["bat_dau"] - 120 <= bd <= het:
-                p["ghi_hinh"].append({"mid": mid, "ten": x["ten"], "kich_thuoc": x["kich_thuoc"]})
+        hop = [p for p in phien if mid_theo_rid[p["rid"]] == x["mid"] and p["bat_dau"] - 15 <= bd <= (p["ket_thuc"] or time.time()) + 15]
+        if hop:
+            min(hop, key=lambda p: abs(p["bat_dau"] - bd))["ghi_hinh"].append({"mid": x["mid"], "ten": x["ten"], "kich_thuoc": x["kich_thuoc"]})
     return ra
 
 
