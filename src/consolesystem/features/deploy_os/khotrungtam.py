@@ -225,6 +225,36 @@ def _bam_file(duong, dung=None):
     return h
 
 
+_LAN = {"url": None, "luc": 0.0, "goc": ""}
+
+
+def url_tai(cauhinh):
+    """
+    27/10/2026: kho tra dia chi LAN (/api/lan, can token). Console cung mang
+    LAN thi tai thang qua do (~110 MB/s) thay vi di vong Cloudflare (~8 KB/s
+    do tren .30). Khong toi duoc LAN (o ngoai mang) -> dung ten mien nhu cu.
+    Nho ket qua 10 phut.
+    """
+    goc = cauhinh["url"]
+    if _LAN["goc"] == goc and time.time() - _LAN["luc"] < 600:
+        return _LAN["url"] or goc
+    lan = None
+    try:
+        r = requests.get(f"{goc}/api/lan", headers=_headers(cauhinh), timeout=TIMEOUT_DANH_SACH)
+        for u in (r.json().get("lan") or []) if r.status_code == 200 else []:
+            try:
+                r2 = requests.get(f"{u}/api/lan", headers=_headers(cauhinh), timeout=2)
+                if r2.status_code == 200 and r2.json().get("ok"):
+                    lan = u
+                    break
+            except (requests.RequestException, ValueError):
+                continue
+    except (requests.RequestException, ValueError):
+        pass
+    _LAN.update(url=lan, luc=time.time(), goc=goc)
+    return lan or goc
+
+
 def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None,
            kich_thuoc=0):
     """
@@ -271,8 +301,9 @@ def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None,
         h = _headers(cauhinh)
         if da:
             h["Range"] = f"bytes={da}-"
+        goc_tai = url_tai(cauhinh)
         try:
-            with requests.get(f"{cauhinh['url']}/api/tai/{muc_id}", headers=h,
+            with requests.get(f"{goc_tai}/api/tai/{muc_id}", headers=h,
                               stream=True, timeout=TIMEOUT_TAI) as r:
                 if r.status_code in (401, 403):
                     return False, "Token không hợp lệ hoặc đã bị thu hồi trên kho."
@@ -306,6 +337,7 @@ def tai_ve(cauhinh, muc_id, duong_dich, sha256="", bao_tien_do=None, dung=None,
                 raise requests.ConnectionError("kết nối bị cắt giữa chừng")
             break
         except requests.RequestException as e:
+            _LAN["luc"] = 0           # lan thu sau do lai LAN/ten mien
             lan_loi += 1
             if lan_loi > SO_LAN_THU_LAI:
                 return False, f"Lỗi khi tải (đã thử lại {SO_LAN_THU_LAI} lần): {e}"
