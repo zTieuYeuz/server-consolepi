@@ -132,7 +132,7 @@ JS_TIEN_DO = """
 
 
 CSS_CHON = """<style>.cg-dau{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}.cg-dau input[type=search]{flex:1;min-width:220px;max-width:420px;margin:0;height:42px}
-.cg-ds{gap:8px;margin:0}.cg-ds label{margin:0}.cg-ds label[hidden]{display:none!important}
+.cg-ds{gap:8px;margin:0}.cg-ds[hidden]{display:none!important}.cg-ds label.tk-o{display:flex;flex-direction:row;align-items:flex-start;gap:10px;margin:0}.cg-ds label[hidden]{display:none!important}
 .cg-ds .tk-o input{width:auto;max-width:none;flex:none;margin:3px 0 0 0}.cg-ds .tk-o b{display:block}.cg-ds .tk-o small{display:block;color:var(--chu-mo)}.cg-trang{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .cg-trang button{min-height:34px;padding:4px 12px}.cg-trang button.on{border-color:var(--nhan);background:var(--nhan-mo);color:var(--nhan-dam)}</style>"""
 
