@@ -37,7 +37,14 @@ TRANG = """@CSS@<style>.rd-k{font-family:monospace;word-break:break-all;user-sel
 <div class="tk-ghi" id="rd-ct"></div><div class="tk-ghi" id="rd-mk-tb"></div>
 <table class="rd-tb" id="rd-bang-may" style="margin-top:10px;"></table></div>
 <div class="card" data-buoc="5" hidden><h3><span class="rd-buoc">5</span>Kết nối hỗ trợ từ xa</h3>
-<p class="tk-ghi">Vào <a href="/uem">Quản lý máy trạm</a>, mở máy cần hỗ trợ, tab <b>Hỗ trợ từ xa</b>, bấm <b>Mở RustDesk và kết nối</b>. Máy anh đang ngồi cũng cần RustDesk trỏ về máy chủ này: cài luôn file .msi ở bước 3 trên máy của anh là xong.</p></div>
+<p class="tk-ghi">Bấm <b>Kết nối</b> trên dòng máy cần hỗ trợ để mở ứng dụng RustDesk trên máy anh đang ngồi và vào thẳng máy đó. Máy anh đang ngồi cũng cần RustDesk trỏ về máy chủ này (cài file .msi ở bước 3).</p>
+<div class="rd-o" style="margin-bottom:8px;"><label class="tk-o"><input type="checkbox" id="rd-hoi" checked><span><b>Hỏi người đang ngồi trước máy trước khi kết nối</b><small>Hiện hộp Có/Không trên màn hình máy đó (máy có agent), 40 giây không trả lời hoặc từ chối thì không kết nối</small></span></label>
+<label class="tk-o"><input type="checkbox" id="rd-duyet"><span><b>Bắt buộc duyệt ngay trong RustDesk của máy</b><small>Mỗi lần có người kết nối, RustDesk trên máy đó hiện nút Chấp nhận; không chấp nhận thì không vào được, kể cả khi biết mật khẩu. Áp dụng cho máy cài MSI mới; máy đã cài thì bấm "Áp dụng địa chỉ xuống máy đã cài" ở bước 4. Lưu ý: máy không có ai ngồi thì không vào được.</small></span></label></div>
+<div class="nut-hang" style="margin-bottom:8px;"><input type="search" id="rd-tim" placeholder="Tìm theo tên máy, IP hoặc ID RustDesk" style="margin:0;max-width:380px;"><span class="tk-ghi" id="rd-kn-tb"></span></div>
+<div style="overflow:auto;"><table class="rd-tb" id="rd-bang-kn"></table></div>
+<div id="rd-kt" class="rd-hd" hidden></div>
+<h4 style="margin-top:16px;">ID đã đăng ký với máy chủ nhưng chưa gắn vào máy nào</h4>
+<div style="overflow:auto;"><table class="rd-tb" id="rd-chua"></table></div></div>
 <div class="card" data-buoc="1"><h3>Thiết bị đã đăng ký với máy chủ</h3><table class="rd-tb" id="rd-dev"></table></div>
 <script>(function(){var $=function(i){return document.getElementById(i);};var D0={},MK0='';
 function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -83,11 +90,36 @@ $('rd-cai-client').onclick=function(){var ids=ChonMay.chon('rd'); if(!ids.length
  $('rd-ct').textContent='Đang cài (có thể mất 1-2 phút mỗi máy)...'; api('/rustdesk/api/cai-client',{may:ids}).then(function(d){$('rd-ct').textContent=(d.kq||[]).map(function(x){return x.ten+': '+x.tb;}).join(' | ');dev();});};
 $('rd-ap').onclick=function(){api('/rustdesk/api/ap-cau-hinh',{}).then(function(d){$('rd-ct').textContent=d.ok?'Đang áp dụng, xem kết quả bên dưới...':'Đang có việc khác chạy.';setTimeout(dev,2500);});};
 $('rd-mk-bo').onclick=function(){api('/rustdesk/api/dong-bo',{}).then(function(d){$('rd-mk-tb').textContent=d.tb;setTimeout(dev,1500);});};
+var BANG={may:[],chua_gan:[],tat_ca:[]},KN_OK=false;
+function bo(x){return (x||'').replace(/đ/g,'d').replace(/Đ/g,'D').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function veKn(){var q=bo($('rd-tim').value),h='<tr><th>Máy</th><th>IP</th><th>Trạng thái</th><th>ID RustDesk</th><th>Mật khẩu</th><th></th></tr>',n=0;
+ BANG.may.forEach(function(x){if(q&&bo(x.ten+' '+x.ip+' '+x.id).indexOf(q)<0)return;n++;
+  var tt=x.agent?(x.online?'<span class="rd-chip ok">online</span>':'<span class="rd-chip loi">offline</span>'):'<span class="rd-chip">không có agent</span>';
+  h+='<tr><td><b>'+e(x.ten)+'</b></td><td>'+e(x.ip)+'</td><td>'+tt+'</td><td>'+(x.id?'<b>'+e(x.id)+'</b>':'<span class="tk-ghi">chưa có (cài ở bước 3-4)</span>')+'</td><td>'+(x.id?'<span class="rd-k">'+e(x.mk||'chưa đặt')+'</span>':'')+'</td><td style="white-space:nowrap;">'
+   +(x.id?'<button class="tk-nut chinh" data-kn="'+e(x.mid)+'" type="button">Kết nối</button> ':'')+(x.agent?'<button class="tk-nut" data-kt="'+e(x.mid)+'" type="button">Kiểm tra máy</button>':'')+'</td></tr>';});
+ $('rd-bang-kn').innerHTML=n?h:'<tr><td class="tk-ghi">'+(BANG.may.length?'Không có máy nào khớp.':'Chưa có máy nào có agent hoặc ID RustDesk.')+'</td></tr>';
+ var c='<tr><th>ID</th><th>IP gần nhất</th><th>Đăng ký lúc</th><th>Gắn vào máy</th></tr>';
+ BANG.chua_gan.forEach(function(x){var o='<option value="">-- chọn máy --</option>'+BANG.tat_ca.map(function(m){return '<option value="'+e(m.mid)+'"'+(m.ten===x.goi_y?' selected':'')+'>'+e(m.ten)+'</option>';}).join('');
+  c+='<tr><td><b>'+e(x.id)+'</b></td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td><td><select data-gan="'+e(x.id)+'" style="margin:0;max-width:220px;">'+o+'</select> <button class="tk-nut" data-gan-nut="'+e(x.id)+'" type="button">Gắn</button></td></tr>';});
+ $('rd-chua').innerHTML=BANG.chua_gan.length?c:'<tr><td class="tk-ghi">Mọi ID đã đăng ký đều đã gắn vào máy.</td></tr>';}
+function taiKn(){api('/rustdesk/api/bang').then(function(d){BANG=d;if(document.activeElement!==$('rd-tim')&&!document.querySelector('[data-gan]:focus'))veKn();$('rd-duyet').checked=!!d.duyet;});}
+$('rd-tim').addEventListener('input',veKn);
+$('rd-duyet').onchange=function(){var b=$('rd-duyet').checked;if(b&&!confirm('Bật bắt buộc duyệt? Máy không có ai ngồi sẽ không vào được cho tới khi tắt chế độ này.')){$('rd-duyet').checked=false;return;}
+ api('/rustdesk/api/duyet',{bat:b}).then(function(d){$('rd-kn-tb').textContent=d.tb;tai();});};
+$('rd-bang-kn').addEventListener('click',function(ev){var t=ev.target,mid=t.dataset.kn||t.dataset.kt;if(!mid)return;
+ if(t.dataset.kn){t.disabled=true;$('rd-kn-tb').textContent=$('rd-hoi').checked?'Đang hỏi người dùng trên máy (tối đa 40 giây)...':'Đang mở RustDesk...';
+  api('/rustdesk/api/ket-noi',{mid:mid,hoi:$('rd-hoi').checked}).then(function(d){t.disabled=false;$('rd-kn-tb').textContent=d.tb;if(d.ok&&d.url)location.href=d.url;});}
+ else{t.disabled=true;$('rd-kt').hidden=false;$('rd-kt').textContent='Đang kiểm tra...';
+  api('/rustdesk/api/kiem-tra',{mid:mid}).then(function(d){t.disabled=false;var k=d.kq;
+   if(!d.ok){$('rd-kt').textContent='Lỗi: '+d.tb;return;} if(!k.cai){$('rd-kt').textContent='RustDesk chưa được cài trên máy này.';return;}
+   $('rd-kt').innerHTML='<b>Kiểm tra máy</b><br>RustDesk '+e(k.ban)+', dịch vụ: <b>'+e(k.dich_vu)+'</b>, ID: <b>'+e(k.id)+'</b><br>Máy chủ ID: '+e(k.may_chu)+' · Chuyển tiếp: '+e(k.relay)+' · Chế độ duyệt: '+e(k.duyet)+'<br>'+(k.dung_may_chu?'<span class="rd-chip ok">Đang trỏ đúng máy chủ này</span>':'<span class="rd-chip loi">Đang trỏ SAI máy chủ</span> bấm "Áp dụng địa chỉ xuống máy đã cài" ở bước 4');});}});
+$('rd-chua').addEventListener('click',function(ev){var i=ev.target.dataset.ganNut;if(!i)return;var sel=document.querySelector('[data-gan="'+i+'"]');if(!sel.value){$('rd-kn-tb').textContent='Chọn máy cần gắn.';return;}
+ api('/rustdesk/api/gan',{id:i,mid:sel.value}).then(function(d){$('rd-kn-tb').textContent=d.tb;taiKn();dev();});});
 function buoc(){var b=(location.hash||'#1').slice(1); if(!/^[1-5]$/.test(b)) b='1';
  [].slice.call(document.querySelectorAll('[data-buoc]')).forEach(function(c){c.hidden=c.dataset.buoc!==b;});
  [].slice.call(document.querySelectorAll('#rd-tabs .dep-tab')).forEach(function(a){a.classList.toggle('on',a.dataset.b===b);});}
 window.addEventListener('hashchange',buoc); buoc();
-tai(); dev(); setInterval(function(){if(!document.hidden)tai();},8000);})();</script>"""
+tai(); dev(); taiKn(); setInterval(function(){if(!document.hidden){tai();taiKn();}},8000);})();</script>"""
 
 
 def register_rustdesk(app):

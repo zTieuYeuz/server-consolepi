@@ -222,4 +222,30 @@ for _ in range(50):
 kq["vnc_chay_xong"] = _t2["tong"] == 1 and _t2["xong"] == 1 and _t2["kq"]["m-agent"]["ok"] is not None
 kq["rd_5_tab"] = all(('data-buoc="%d"' % i) in c.get("/rustdesk", headers=H).get_data(as_text=True) for i in range(1, 6))
 kq["tab_trien_khai"] = "Triển khai từ WinGet" in c.get("/uem/trien-khai", headers=H).get_data(as_text=True) and "Triển khai từ WinGet" in c.get("/deployos/trienkhai", headers=H).get_data(as_text=True)
+_c = RD.doc_cfg(); _c["may"]["m-agent"] = {"id": "123456789", "mk": "MatKhau#Chung1", "dong_bo": True}; RD.luu_cfg(_c)
+_b = c.get("/rustdesk/api/bang", headers=H).get_json()
+kq["kn_bang"] = any(x["mid"] == "m-agent" and x["id"] == "123456789" and x["agent"] for x in _b["may"]) and "chua_gan" in _b
+_hp = []
+import ui.uem_agent as _UA  # noqa: E402
+_UA.hoi_phep = lambda mid, tb, giay=40: (_hp.append(mid) or "DONG_Y")
+r1 = post("/rustdesk/api/ket-noi", {"mid": "m-agent", "hoi": True}).get_json()
+kq["kn_hoi_dong_y"] = r1["ok"] and r1["url"] == "rustdesk://connection/new/123456789?password=MatKhau#Chung1" and _hp == ["m-agent"]
+_UA.hoi_phep = lambda mid, tb, giay=40: "TU_CHOI"
+r2 = post("/rustdesk/api/ket-noi", {"mid": "m-agent", "hoi": True}).get_json()
+kq["kn_hoi_tu_choi"] = r2["ok"] is False and "url" not in r2 and "từ chối" in r2["tb"]
+_UA.hoi_phep = lambda mid, tb, giay=40: "HET_GIO"
+kq["kn_het_gio"] = post("/rustdesk/api/ket-noi", {"mid": "m-agent", "hoi": True}).get_json()["ok"] is False
+kq["kn_khong_hoi"] = post("/rustdesk/api/ket-noi", {"mid": "m-agent", "hoi": False}).get_json()["ok"] is True
+kq["kn_may_la"] = post("/rustdesk/api/ket-noi", {"mid": "khong-co", "hoi": False}).get_json()["ok"] is False
+kq["kn_gan_sai"] = post("/rustdesk/api/gan", {"id": "999999999", "mid": "m-agent"}).get_json()["ok"] is False
+RD.khoa_cong_khai = lambda: K
+kq["duyet_bat"] = post("/rustdesk/api/duyet", {"bat": True}).get_json()["ok"] and RD.doc_cfg()["duyet"] is True
+_sc = RD.script_client("abcdef123456", khoa=K)
+kq["duyet_trong_script"] = "approve-mode = 'click'" in _sc and "--option approve-mode click" in _sc and "'approve-mode' = 'click'" in _sc
+post("/rustdesk/api/duyet", {"bat": False})
+kq["duyet_tat"] = "approve-mode = 'password'" in RD.script_client("abcdef123456", khoa=K)
+Gia.execute_ps = lambda self, script: (kich.append(script) or "RDK=OK|1.5.0+68|Running|id.example.com|relay.example.com|password|163846525\r\n", Luong(), False) if "RDK=" in script else Gia_execute(self, script)
+kt = post("/rustdesk/api/kiem-tra", {"mid": "m-agent"}).get_json()
+kq["kn_kiem_tra"] = kt["ok"] and kt["kq"]["id"] == "163846525" and kt["kq"]["dich_vu"] == "Running" and kt["kq"]["dung_may_chu"] is True
+kq["kn_trang_buoc5"] = "Hỏi người đang ngồi trước máy" in c.get("/rustdesk", headers=H).get_data(as_text=True)
 print("KETQUA " + json.dumps(kq))

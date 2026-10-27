@@ -8,12 +8,31 @@ from flask import jsonify, request
 from consolesystem.features.uem import uem_dieukhien as DK
 from consolesystem.integrations import rustdesk_may_chu as RD
 from ui import tk_dulieu as DL
+from ui import uem_dulieu as UD
 from ui import uem_agent as UA
 
 
 def cai_client_may(m):
     """Cai qua agent/WinRM, kem May chu ID / chuyen tiep / Key. Tra (ok, thong_diep, id)."""
     return RD.cai_va_ghi(lambda sc: DK._chay(m, sc), m["id"])
+
+
+def bang_dieu_khien():
+    """Du lieu cho buoc 5: moi may (co ID RustDesk hoac co agent), trang thai, + cac ID da dang ky voi may chu nhung chua gan vao may nao."""
+    cfg = RD.doc_cfg()
+    ds_may = DL.MAY.doc()
+    may = []
+    for m in ds_may:
+        ban = cfg["may"].get(m["id"]) or {}
+        co_ag = bool(UA.co_agent(m))
+        if m.get("an") or not (ban.get("id") or co_ag):
+            continue
+        may.append({"mid": m["id"], "ten": m.get("ten") or m["ip"], "ip": m["ip"], "id": ban.get("id", ""), "mk": ban.get("mk", ""), "agent": co_ag,
+                    "online": bool(UA.con_song(m)) if co_ag else None, "dong_bo": bool(ban.get("dong_bo", True)) or not cfg.get("mk_chung")})
+    da_gan = {v.get("id") for v in cfg["may"].values() if v.get("id")}
+    ip_ten = {m["ip"]: (m.get("ten") or m["ip"]) for m in ds_may}
+    chua = [{"id": x["id"], "ip": x["ip"], "tao": x["tao"], "goi_y": ip_ten.get(x["ip"], "")} for x in RD.thiet_bi() if x["id"] not in da_gan]
+    return {"may": may, "chua_gan": chua, "duyet": bool(cfg.get("duyet")), "tat_ca": [{"mid": m["id"], "ten": m.get("ten") or m["ip"]} for m in ds_may if not m.get("an")]}
 
 
 def register_uem_rustdesk(app):
@@ -46,6 +65,50 @@ def register_uem_rustdesk(app):
         ds = [dict(x, ten=theo_id.get(x["id"]) or theo_ip.get(x["ip"], "")) for x in RD.thiet_bi()]   # ten may: theo ID da ghi, khong thi theo IP
         return jsonify({"ds": ds, "may": may, "agent": agent, "mk_chung": cfg.get("mk_chung", ""), "dong_bo": dict(_DONG_BO)})
 
+    @app.route("/rustdesk/api/bang")
+    def rustdesk_api_bang():
+        return jsonify(bang_dieu_khien())
+
+    @app.route("/rustdesk/api/ket-noi", methods=["POST"])
+    def rustdesk_api_ket_noi():
+        j = request.get_json(silent=True) or {}
+        m = next((x for x in DL.MAY.doc() if x["id"] == str(j.get("mid", ""))), None)
+        ban = (RD.doc_cfg()["may"].get(m["id"]) if m else None) or {}
+        if not m or not ban.get("id"):
+            return jsonify({"ok": False, "tb": "Máy này chưa có ID RustDesk."})
+        if j.get("hoi") and UA.co_agent(m):
+            ok, tb = hoi_phep_ket_noi(m)
+            if not ok:
+                return jsonify({"ok": False, "tb": tb})
+        if RD.doc_cfg().get("duyet"):
+            tb = "Người dùng sẽ thấy hộp Chấp nhận trên RustDesk, cần bấm Chấp nhận mới vào được."
+        else:
+            tb = "Đang mở RustDesk..."
+        UD.ghi_tac_vu(m["id"], "tu_xa", "Mở điều khiển từ xa (RustDesk)", True, "ID " + ban["id"])
+        return jsonify({"ok": True, "tb": tb, "url": "rustdesk://connection/new/%s?password=%s" % (ban["id"], ban.get("mk", ""))})
+
+    @app.route("/rustdesk/api/gan", methods=["POST"])
+    def rustdesk_api_gan():
+        j = request.get_json(silent=True) or {}
+        i, mid = str(j.get("id", "")), str(j.get("mid", ""))
+        if not any(x["id"] == i for x in RD.thiet_bi()) or not any(x["id"] == mid for x in DL.MAY.doc()):
+            return jsonify({"ok": False, "tb": "ID hoặc máy không hợp lệ."})
+        RD.ghi_may(mid, i)
+        return jsonify({"ok": True, "tb": "Đã gắn ID %s vào máy." % i})
+
+    @app.route("/rustdesk/api/kiem-tra", methods=["POST"])
+    def rustdesk_api_kiem_tra():
+        m = next((x for x in DL.MAY.doc() if x["id"] == str((request.get_json(silent=True) or {}).get("mid", ""))), None)
+        if not m or not UA.co_agent(m):
+            return jsonify({"ok": False, "tb": "Chỉ kiểm tra được máy có agent."})
+        ok, kq = kiem_tra_may(m)
+        return jsonify({"ok": ok, "kq": kq if ok else None, "tb": "" if ok else kq})
+
+    @app.route("/rustdesk/api/duyet", methods=["POST"])
+    def rustdesk_api_duyet():
+        ok, tb = RD.dat_duyet(bool((request.get_json(silent=True) or {}).get("bat")))
+        return jsonify({"ok": ok, "tb": tb})
+
     @app.route("/rustdesk/api/mat-khau", methods=["POST"])
     def rustdesk_api_mk():
         ok, tb = RD.dat_mk_chung(str((request.get_json(silent=True) or {}).get("mk", "")))
@@ -72,6 +135,43 @@ def register_uem_rustdesk(app):
                 ok, tb, _id = cai_client_may(m)
                 kq.append({"ten": m.get("ten") or m["ip"], "ok": ok, "tb": tb})
         return jsonify({"ok": True, "kq": kq})
+
+
+PS_KIEM_TRA = r"""$rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
+if (-not (Test-Path $rd)) { 'RDK=CHUA_CAI'; return }
+$v = (Get-Item $rd).VersionInfo.ProductVersion
+$s = Get-Service RustDesk -ErrorAction SilentlyContinue
+$f = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk2.toml'
+$t = if (Test-Path $f) { Get-Content $f -Raw } else { '' }
+$ms = [regex]::Match($t, "(?m)^custom-rendezvous-server = '([^']*)'").Groups[1].Value
+$mr = [regex]::Match($t, "(?m)^relay-server = '([^']*)'").Groups[1].Value
+$md = [regex]::Match($t, "(?m)^approve-mode = '([^']*)'").Groups[1].Value
+'RDK=OK|' + $v + '|' + $(if ($s) { [string]$s.Status } else { 'KHONG_CO_DICH_VU' }) + '|' + $ms + '|' + $mr + '|' + $md + '|' + ((& $rd --get-id | Out-String).Trim())"""
+
+
+def kiem_tra_may(m):
+    """Doc trang thai RustDesk tren may qua agent/WinRM. (ok, {ban, dich_vu, may_chu, relay, duyet, id, dung_may_chu} hoac thong_diep loi)."""
+    ok, out = DK._chay(m, PS_KIEM_TRA)
+    if not ok:
+        return False, out[-200:]
+    mm = re.search(r"RDK=(CHUA_CAI|OK\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|(\d*))", out or "")
+    if not mm:
+        return False, "Không đọc được kết quả từ máy."
+    if mm.group(1) == "CHUA_CAI":
+        return True, {"cai": False}
+    dc = RD.dia_chi()
+    return True, {"cai": True, "ban": mm.group(2), "dich_vu": mm.group(3), "may_chu": mm.group(4), "relay": mm.group(5), "duyet": mm.group(6) or "mặc định", "id": mm.group(7),
+                  "dung_may_chu": mm.group(4) == dc["id"] and mm.group(5) == dc["relay"]}
+
+
+def hoi_phep_ket_noi(m):
+    """Hien hop Co/Khong tren man hinh may (agent), cho toi 40 giay. (ok, thong_diep)."""
+    kq = UA.hoi_phep(m["id"], "Quản trị viên muốn xem và điều khiển màn hình máy này bằng RustDesk (Console System). Cho phép?", 40)
+    if kq in ("TU_CHOI", "HET_GIO"):
+        UD.ghi_tac_vu(m["id"], "tu_xa", "Xin phép điều khiển từ xa (RustDesk)", False, "Người dùng từ chối" if kq == "TU_CHOI" else "Người dùng không trả lời")
+        return False, "Người đang dùng máy " + ("đã từ chối." if kq == "TU_CHOI" else "không trả lời trong 40 giây.")
+    UD.ghi_tac_vu(m["id"], "tu_xa", "Xin phép điều khiển từ xa (RustDesk)", True, "Người dùng đồng ý")
+    return True, "Người dùng đã đồng ý."
 
 
 _DONG_BO = {"dang": False, "tb": ""}

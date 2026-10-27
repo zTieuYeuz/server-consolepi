@@ -244,12 +244,17 @@
 /rustdesk	GET	rustdesk_trang
 /rustdesk/Cai-RustDesk-ConsoleSystem.msi	GET	rustdesk_msi
 /rustdesk/api/ap-cau-hinh	POST	rustdesk_api_ap_cau_hinh
+/rustdesk/api/bang	GET	rustdesk_api_bang
 /rustdesk/api/cai	POST	rustdesk_api_cai
 /rustdesk/api/cai-client	POST	rustdesk_api_cai_client
 /rustdesk/api/cau-hinh	POST	rustdesk_api_cfg
 /rustdesk/api/dong-bo	POST	rustdesk_api_dong_bo
+/rustdesk/api/duyet	POST	rustdesk_api_duyet
+/rustdesk/api/gan	POST	rustdesk_api_gan
 /rustdesk/api/hanh-dong	POST	rustdesk_api_hd
+/rustdesk/api/ket-noi	POST	rustdesk_api_ket_noi
 /rustdesk/api/kho	POST	rustdesk_api_kho
+/rustdesk/api/kiem-tra	POST	rustdesk_api_kiem_tra
 /rustdesk/api/mat-khau	POST	rustdesk_api_mk
 /rustdesk/api/thiet-bi	GET	rustdesk_api_dev
 /rustdesk/api/trang-thai	GET	rustdesk_api_tt
