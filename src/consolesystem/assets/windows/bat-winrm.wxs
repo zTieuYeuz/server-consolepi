@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Console System - goi MSI bat WinRM (dong goi: tools/dong-goi-winrm-msi.sh).
+     Cai:  msiexec /i Bat-WinRM-ConsoleSystem.msi /qn CHICHOIP=192.168.110.30
+           (bo CHICHOIP = mo cho ca mang LAN; nhieu IP cach nhau dau phay)
+     Go:   msiexec /x Bat-WinRM-ConsoleSystem.msi /qn   -> tat WinRM + go quy tac tuong lua -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="Console System - Bat WinRM" Language="1033" Codepage="1252" Version="@VER@" Manufacturer="Console System" UpgradeCode="3B8E5F20-6C1D-4A97-B2E4-9D0F7A3C5E18">
+    <Package Id="*" Description="Bat WinRM (cong 5985) cho Console System" Manufacturer="Console System" InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Media Id="1" Cabinet="wr.cab" EmbedCab="yes" />
+    <MajorUpgrade DowngradeErrorMessage="Da co ban moi hon." AllowSameVersionUpgrades="yes" />
+    <Property Id="CHICHOIP" Secure="yes" />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="CSDIR" Name="ConsoleSystem">
+          <Directory Id="INSTALLDIR" Name="WinRM">
+            <Component Id="WrScript" Guid="8A4C2E61-3F7B-4D90-A5C8-1E6B9D2F4A73" Win64="yes">
+              <File Id="WrScriptPs1" Name="bat-winrm.ps1" Source="bat-winrm.ps1" KeyPath="yes" />
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+    <Feature Id="Main" Title="WinRM" Level="1">
+      <ComponentRef Id="WrScript" />
+    </Feature>
+    <CustomAction Id="WrDatPs" Property="WRPSEXE" Value="[System64Folder]WindowsPowerShell\v1.0\powershell.exe" />
+    <CustomAction Id="WrBat" Property="WRPSEXE" Execute="deferred" Impersonate="no" Return="check"
+      ExeCommand="-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLDIR]bat-winrm.ps1&quot; -ChiChoIP &quot;[CHICHOIP]&quot;" />
+    <CustomAction Id="WrTat" Property="WRPSEXE" Execute="deferred" Impersonate="no" Return="ignore"
+      ExeCommand="-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLDIR]bat-winrm.ps1&quot; -Tat" />
+    <InstallExecuteSequence>
+      <Custom Action="WrDatPs" Sequence="1001" />
+      <Custom Action="WrTat" Sequence="3450">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="WrBat" Sequence="6590">NOT REMOVE</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>

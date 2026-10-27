@@ -17,11 +17,22 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     Write-Host "LOI: hay chay PowerShell bang 'Run as administrator'." -ForegroundColor Red; exit 1
 }
 
+# Nhieu IP: cach nhau dau phay/cham phay/khoang trang (vd "192.168.110.30,192.168.110.31")
+$nguon = @($ChiChoIP -split '[,; ]+' | Where-Object { $_ })
+foreach ($ip in $nguon) {
+    $o = $null
+    if (-not [Net.IPAddress]::TryParse(($ip -split '/')[0], [ref]$o)) {
+        Write-Host "LOI: '$ip' khong phai dia chi IP hop le." -ForegroundColor Red; exit 2
+    }
+}
+if (-not $nguon) { $nguon = @("LocalSubnet") }
+
 if ($Tat) {
     Get-NetFirewallRule -DisplayName $ten -ErrorAction SilentlyContinue | Remove-NetFirewallRule
-    Stop-Service WinRM -ErrorAction SilentlyContinue
+    Stop-Service WinRM -Force -ErrorAction SilentlyContinue
     Set-Service WinRM -StartupType Manual
     Disable-PSRemoting -Force -ErrorAction SilentlyContinue
+    Stop-Service WinRM -Force -ErrorAction SilentlyContinue      # Disable-PSRemoting co the bat lai dich vu
     Write-Host "Da tat WinRM va go quy tac tuong lua '$ten'." -ForegroundColor Yellow; exit 0
 }
 
@@ -40,10 +51,9 @@ New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies
 
 # Quy tac tuong lua rieng, gioi han dia chi nguon
 Get-NetFirewallRule -DisplayName $ten -ErrorAction SilentlyContinue | Remove-NetFirewallRule
-$nguon = if ($ChiChoIP) { $ChiChoIP } else { "LocalSubnet" }
 New-NetFirewallRule -DisplayName $ten -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow `
     -Profile Any -RemoteAddress $nguon | Out-Null
 
 Test-WSMan -ComputerName localhost | Out-Null
-Write-Host "XONG: WinRM da bat (cong 5985), cho phep tu: $nguon" -ForegroundColor Green
+Write-Host "XONG: WinRM da bat (cong 5985), cho phep tu: $($nguon -join ', ')" -ForegroundColor Green
 Write-Host "Luu y: day la kenh quan tri tu xa, chi dung trong mang noi bo, dat mat khau Administrator manh."
