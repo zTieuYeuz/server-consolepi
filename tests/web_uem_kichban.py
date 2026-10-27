@@ -227,25 +227,114 @@ _b = c.get("/rustdesk/api/bang", headers=H).get_json()
 kq["kn_bang"] = any(x["mid"] == "m-agent" and x["id"] == "123456789" and x["agent"] for x in _b["may"]) and "chua_gan" in _b
 _hp = []
 import ui.uem_agent as _UA  # noqa: E402
-_UA.hoi_phep = lambda mid, tb, giay=40: (_hp.append(mid) or "DONG_Y")
-r1 = post("/rustdesk/api/ket-noi", {"mid": "m-agent", "hoi": True}).get_json()
-kq["kn_hoi_dong_y"] = r1["ok"] and r1["url"] == "rustdesk://connection/new/123456789?password=MatKhau#Chung1" and _hp == ["m-agent"]
+from consolesystem.integrations import rustdesk_giam_sat as GS  # noqa: E402
+from consolesystem.features.uem import uem_rustdesk as URD  # noqa: E402
+
+
+def cho_kn(r):
+    for _ in range(100):
+        if r.get("xong"):
+            return r
+        _t.sleep(0.05)
+        r = c.get("/rustdesk/api/ket-noi/" + r["ma"], headers=H).get_json()
+    return r
+
+
+_URL = "rustdesk://connection/new/123456789?password=MatKhau#Chung1"
+kq["cd_mac_dinh"] = c.get("/rustdesk/api/cai-dat", headers=H).get_json()["che_do"] == "thong_bao"
+r0 = post("/rustdesk/api/ket-noi", {"mid": "m-agent"}).get_json()
+kq["kn_thong_bao"] = r0["ok"] and r0["xong"] and r0["url"] == _URL and bool(GS._CHO_TEN["123456789"][1])
+kq["kn_may_la"] = post("/rustdesk/api/ket-noi", {"mid": "khong-co"}).get_json()["ok"] is False
+kq["cd_sai"] = post("/rustdesk/api/cai-dat", {"che_do": "bay", "ghi_hinh_gb": 5}).get_json()["ok"] is False
+kq["cd_gb_sai"] = post("/rustdesk/api/cai-dat", {"che_do": "xin_phep", "ghi_hinh_gb": 0}).get_json()["ok"] is False
+kq["cd_luu"] = post("/rustdesk/api/cai-dat", {"che_do": "xin_phep", "ghi_hinh": False, "ghi_hinh_gb": 5}).get_json()["ok"] and GS.cai_dat()["che_do"] == "xin_phep"
+_UA.con_song = lambda m: False
+kq["xp_offline"] = post("/rustdesk/api/ket-noi", {"mid": "m-agent"}).get_json()["ok"] is False
+_UA.con_song = lambda m: True
+_UA.hoi_phep = lambda mid, tb, giay=40: (_hp.append((mid, tb, giay)) or "CHO_PHEP")
+r1 = cho_kn(post("/rustdesk/api/ket-noi", {"mid": "m-agent"}).get_json())
+kq["xp_dong_y"] = r1["ok"] and r1["url"] == _URL and _hp[0][2] == 300 and "xin quyền kết nối" in _hp[0][1] and "123456789" in GS._DUYET
+kq["xp_nhip_duoc_phep"] = GS.nhip({"id": "123456789", "uuid": "u1", "conns": [5]}) == {}
 _UA.hoi_phep = lambda mid, tb, giay=40: "TU_CHOI"
-r2 = post("/rustdesk/api/ket-noi", {"mid": "m-agent", "hoi": True}).get_json()
-kq["kn_hoi_tu_choi"] = r2["ok"] is False and "url" not in r2 and "từ chối" in r2["tb"]
+r2 = cho_kn(post("/rustdesk/api/ket-noi", {"mid": "m-agent"}).get_json())
+kq["xp_tu_choi"] = r2["ok"] is False and not r2.get("url") and "từ chối" in r2["tb"]
 _UA.hoi_phep = lambda mid, tb, giay=40: "HET_GIO"
-kq["kn_het_gio"] = post("/rustdesk/api/ket-noi", {"mid": "m-agent", "hoi": True}).get_json()["ok"] is False
-kq["kn_khong_hoi"] = post("/rustdesk/api/ket-noi", {"mid": "m-agent", "hoi": False}).get_json()["ok"] is True
-kq["kn_may_la"] = post("/rustdesk/api/ket-noi", {"mid": "khong-co", "hoi": False}).get_json()["ok"] is False
-kq["kn_gan_sai"] = post("/rustdesk/api/gan", {"id": "999999999", "mid": "m-agent"}).get_json()["ok"] is False
-RD.khoa_cong_khai = lambda: K
-kq["duyet_bat"] = post("/rustdesk/api/duyet", {"bat": True}).get_json()["ok"] and RD.doc_cfg()["duyet"] is True
+kq["xp_het_gio"] = "5 phút" in cho_kn(post("/rustdesk/api/ket-noi", {"mid": "m-agent"}).get_json())["tb"]
+GS._DUYET["123456789"]["luc"] -= 400                                   # het 5 phut, phien 5 van mo -> ket noi them van duoc (cung lan dong y)
+kq["xp_phien_con_mo"] = GS.nhip({"id": "123456789", "uuid": "u1", "conns": [5, 6]}) == {}
+kq["xp_ngat"] = GS.nhip({"id": "123456789", "uuid": "u1", "conns": [7]}) == {"disconnect": [7]}
+kq["xp_ngat_lap"] = GS.nhip({"id": "123456789", "uuid": "u1", "conns": [7]}) == {"disconnect": [7]}
+kq["xp_uuid_la"] = GS.nhip({"id": "123456789", "uuid": "KHAC", "conns": [9]}) == {}
+kq["xp_id_xau"] = GS.nhip({"id": "../x", "conns": [1]}) == {}
+_tb = []
+GS.dang_ky_thong_bao(lambda rid, nd: _tb.append((rid, nd)))
+GS.kiem_toan({"id": "123456789", "uuid": "u1", "conn_id": 8, "action": "new", "ip": "::ffff:1.2.3.4"})
+GS.kiem_toan({"id": "123456789", "uuid": "u1", "conn_id": 8, "peer": ["555666777", "kythuat"], "type": 0})
+GS.kiem_toan({"id": "123456789", "uuid": "u1", "conn_id": 8, "action": "close"})
+kq["xp_khong_thong_bao"] = _tb == []
+post("/rustdesk/api/cai-dat", {"che_do": "thong_bao", "ghi_hinh": False, "ghi_hinh_gb": 5})
+GS.dat_cho_ten("123456789", "admin")
+GS.kiem_toan({"id": "123456789", "uuid": "u1", "conn_id": 10, "peer": ["555666777", "kythuat"], "type": 1})
+for _ in range(40):
+    if _tb:
+        break
+    _t.sleep(0.05)
+kq["tb_thong_bao"] = bool(_tb) and _tb[0][0] == "123456789" and "admin (quản trị Console System)" in _tb[0][1] and "truyền file" in _tb[0][1]
+_ps = URD.ps_thong_bao("Ai đó's test")
+kq["tb_ps"] = "WTSSendMessage" in _ps and "'Ai đó''s test'" in _ps and "$false" in _ps
+ls = c.get("/rustdesk/api/lich-su", headers=H).get_json()["ds"]
+_p8 = [x for x in ls if x["conn"] == 8]
+kq["ls_phien"] = len(_p8) == 1 and _p8[0]["ip"] == "1.2.3.4" and _p8[0]["peer"] == "555666777" and _p8[0]["kq"] == "Đã vào" and _p8[0]["ket_thuc"] and _p8[0]["may"] == "MAY-AGENT-A"
+kq["ls_ngat"] = any(x["conn"] == 7 and x["kq"].startswith("Bị ngắt") for x in ls)
+kq["ls_cho_phep"] = any(x["conn"] == 5 and x["nguoi_console"] for x in ls)
+kq["ls_console"] = any(x["loai"] == "Yêu cầu từ Console" and "từ chối" in x["kq"] for x in ls)
+with open(GS._ls_file(), "a", encoding="utf-8") as _f:
+    _f.write(json.dumps({"t": _t.time() - 91 * 86400, "loai": "kn_moi", "rid": "123456789", "conn": 99}) + "\n")
+GS.don_lich_su()
+kq["ls_90_ngay"] = not any(x["conn"] == 99 for x in GS.lich_su()) and any(x["conn"] == 8 for x in GS.lich_su())
+# may chu HTTP (cong ngau nhien thay 21114)
+import urllib.request as _ur  # noqa: E402
+_srv = GS.ThreadingHTTPServer(("127.0.0.1", 0), GS._XuLy)
+import threading as _th  # noqa: E402
+_th.Thread(target=_srv.serve_forever, daemon=True).start()
+_url0 = "http://127.0.0.1:%d" % _srv.server_address[1]
+def _gui(duong, j):
+    return _ur.build_opener(_ur.ProxyHandler({})).open(_ur.Request(_url0 + duong, data=json.dumps(j).encode(), method="POST"), timeout=5).read().decode()
+post("/rustdesk/api/cai-dat", {"che_do": "xin_phep", "ghi_hinh": False, "ghi_hinh_gb": 5})
+GS._DUYET.clear()
+kq["http_nhip_ngat"] = json.loads(_gui("/api/heartbeat", {"id": "123456789", "uuid": "u1", "conns": [11]})) == {"disconnect": [11]}
+kq["http_audit"] = _gui("/api/audit/conn", {"id": "123456789", "uuid": "u1", "conn_id": 12, "action": "new", "ip": "9.9.9.9"}) == ""
+kq["http_sysinfo"] = _gui("/api/sysinfo", {"id": "123456789"}) == "SYSINFO_UPDATED"
+_srv.shutdown()
+# ghi hinh: lay ve tu may, khop phien, xoa cu khi vuot dung luong
+_tenghi = "incoming_123456789_%s123_display0_vp9.webm" % _t.strftime("%Y%m%d%H%M%S", _t.localtime(_p8[0]["bat_dau"] + 5))
+Gia_ps0 = Gia.execute_ps
+Gia.execute_ps = lambda self, script: (kich.append(script) or ("GHI=%s|10\r\nGHI=..\\bad.exe|3\r\nGHI_XONG\r\n" % _tenghi), Luong(), False) if "GHI_XONG" in script else Gia_ps0(self, script)
+_UA.Client.fetch = lambda self, src, dest: open(dest, "wb").write(b"0123456789")
+kq["gh_lay_ve"] = URD.thu_ghi_hinh_may(DL.tim(DL.MAY.doc(), "m-agent")) == 1 and any("Remove-Item -LiteralPath" in x and _tenghi in x for x in kich)
+Gia.execute_ps = Gia_ps0
+ls = c.get("/rustdesk/api/lich-su", headers=H).get_json()["ds"]
+kq["gh_khop_phien"] = any(x["conn"] == 8 and x["ghi_hinh"] and x["ghi_hinh"][0]["ten"] == _tenghi for x in ls)
+kq["gh_xem"] = c.get("/rustdesk/ghi-hinh/m-agent/" + _tenghi, headers=H).status_code == 200
+kq["gh_duong_xau"] = c.get("/rustdesk/ghi-hinh/m-agent/..%2Frustdesk.json", headers=H).status_code == 404 and GS.duong_ghi_hinh("..", "a.webm") is None
+_cu = os.path.join(GS.thu_muc_ghi_hinh(), "m-agent", "incoming_1_20200101000000000_display0_vp9.webm")
+open(_cu, "wb").write(b"x" * 10)
+os.utime(_cu, (1, 1))
+_cd0 = GS.cai_dat
+GS.cai_dat = lambda: dict(_cd0(), ghi_hinh_gb=15 / 1024 ** 3)
+kq["gh_xoa_cu"] = GS.don_ghi_hinh() == 1 and not os.path.exists(_cu) and bool(GS.duong_ghi_hinh("m-agent", _tenghi))
+GS.cai_dat = _cd0
+_cdtt = c.get("/rustdesk/api/cai-dat", headers=H).get_json()
+kq["cd_tt"] = _cdtt["ghi_hinh_so"] == 1 and _cdtt["cong_api_ngoai"] == 21114 and "may_chu_api" in _cdtt
+kq["gh_trong_script"] = "allow-auto-record-incoming = 'N'" in RD.script_client("abcdef123456", khoa=K)
+post("/rustdesk/api/cai-dat", {"che_do": "thong_bao", "ghi_hinh": True, "ghi_hinh_gb": 5})
 _sc = RD.script_client("abcdef123456", khoa=K)
-kq["duyet_trong_script"] = "approve-mode = 'click'" in _sc and "--option approve-mode click" in _sc and "'approve-mode' = 'click'" in _sc
-post("/rustdesk/api/duyet", {"bat": False})
-kq["duyet_tat"] = "approve-mode = 'password'" in RD.script_client("abcdef123456", khoa=K)
-Gia.execute_ps = lambda self, script: (kich.append(script) or "RDK=OK|1.5.0+68|Running|id.example.com|relay.example.com|password|163846525\r\n", Luong(), False) if "RDK=" in script else Gia_execute(self, script)
+kq["gh_bat_script"] = "allow-auto-record-incoming = 'Y'" in _sc and "--option allow-auto-record-incoming Y" in _sc and "'allow-auto-record-incoming' = 'Y'" in _sc
+kq["gh_duyet_bo"] = "approve-mode = 'password'" in _sc and "click" not in _sc
+kq["kn_gan_sai"] = post("/rustdesk/api/gan", {"id": "999999999", "mid": "m-agent"}).get_json()["ok"] is False
+Gia.execute_ps = lambda self, script: (kich.append(script) or "RDK=OK|1.5.0+68|Running|id.example.com|relay.example.com|Y|163846525\r\n", Luong(), False) if "RDK=" in script else Gia_execute(self, script)
 kt = post("/rustdesk/api/kiem-tra", {"mid": "m-agent"}).get_json()
-kq["kn_kiem_tra"] = kt["ok"] and kt["kq"]["id"] == "163846525" and kt["kq"]["dich_vu"] == "Running" and kt["kq"]["dung_may_chu"] is True
-kq["kn_trang_buoc5"] = "Hỏi người đang ngồi trước máy" in c.get("/rustdesk", headers=H).get_data(as_text=True)
+kq["kn_kiem_tra"] = kt["ok"] and kt["kq"]["id"] == "163846525" and kt["kq"]["dich_vu"] == "Running" and kt["kq"]["dung_may_chu"] is True and kt["kq"]["ghi_hinh"] is True
+_tr = c.get("/rustdesk", headers=H).get_data(as_text=True)
+kq["rd_7_tab"] = all(('data-buoc="%d"' % i) in _tr for i in range(1, 8)) and "Xin phép trước khi kết nối" in _tr and "rd-hoi" not in _tr
 print("KETQUA " + json.dumps(kq))

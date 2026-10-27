@@ -367,7 +367,8 @@ custom-rendezvous-server = '%(id)s'
 relay-server = '%(relay)s'
 key = '%(khoa)s'
 allow-websocket = 'N'
-approve-mode = '%(duyet)s'
+approve-mode = 'password'
+allow-auto-record-incoming = '%(ghi)s'
 "@ | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
 try { Restart-Service RustDesk -ErrorAction Stop } catch { Start-Sleep 5; Start-Service RustDesk -ErrorAction SilentlyContinue }
 Start-Sleep 5
@@ -375,7 +376,8 @@ Start-Sleep 5
 & $rd --option relay-server '%(relay)s' | Out-Null
 & $rd --option key '%(khoa)s' | Out-Null
 & $rd --option allow-websocket N | Out-Null
-& $rd --option approve-mode %(duyet)s | Out-Null
+& $rd --option approve-mode password | Out-Null
+& $rd --option allow-auto-record-incoming %(ghi)s | Out-Null
 """
 
 
@@ -387,7 +389,7 @@ def _may_chu(host=None, relay=None, khoa=None):
         raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
     dc = dia_chi()
     p, q = (dc["cong_id"], dc["cong_relay"]) if host == host_hieu_luc() else (CONG_ID, CONG_RELAY)
-    return {"host": host, "khoa": khoa, "duyet": "click" if doc_cfg().get("duyet") else "password", "rv": "%s:%d" % (host, p), "id": host if p == CONG_ID else "%s:%d" % (host, p),
+    return {"host": host, "khoa": khoa, "ghi": "Y" if doc_cfg().get("ghi_hinh") else "N", "rv": "%s:%d" % (host, p), "id": host if p == CONG_ID else "%s:%d" % (host, p),
             "relay": relay if q == CONG_RELAY else "%s:%d" % (relay, q)}
 
 
@@ -405,7 +407,7 @@ def _khoi_tung_nguoi(t):
     tung_nguoi = r"""
 Get-Process rustdesk -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -ne 0 } | Stop-Process -Force
 Start-Sleep 2
-$set = [ordered]@{ 'custom-rendezvous-server' = '@HOST@'; 'relay-server' = '@RELAY@'; 'key' = '@KEY@'; 'allow-websocket' = 'N'; 'approve-mode' = '@DUYET@' }
+$set = [ordered]@{ 'custom-rendezvous-server' = '@HOST@'; 'relay-server' = '@RELAY@'; 'key' = '@KEY@'; 'allow-websocket' = 'N'; 'approve-mode' = 'password'; 'allow-auto-record-incoming' = '@GHI@' }
 Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object {
   $f = Join-Path $_.FullName 'AppData\Roaming\RustDesk\config\RustDesk2.toml'
   if (Test-Path -LiteralPath $f) {
@@ -420,7 +422,7 @@ Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object
     [IO.File]::WriteAllText($f, $t, (New-Object Text.UTF8Encoding($false)))
   }
 }"""
-    return tung_nguoi.replace("@RV@", t["rv"]).replace("@HOST@", t["id"]).replace("@RELAY@", t["relay"]).replace("@KEY@", t["khoa"]).replace("@DUYET@", t["duyet"])
+    return tung_nguoi.replace("@RV@", t["rv"]).replace("@HOST@", t["id"]).replace("@RELAY@", t["relay"]).replace("@KEY@", t["khoa"]).replace("@GHI@", t["ghi"])
 
 
 def script_cau_hinh_nguoi_dung(host=None, khoa=None, relay=None):
@@ -432,7 +434,7 @@ def script_cau_hinh_nguoi_dung(host=None, khoa=None, relay=None):
             "if (-not (Test-Path $rd)) { throw 'Máy này chưa cài RustDesk (cần bản cài đặt, không phải bản chạy trực tiếp).' }\n"
             "Get-Process rustdesk -ErrorAction SilentlyContinue | Stop-Process -Force\nStart-Sleep 2\n"
             "& $rd --option custom-rendezvous-server '%(id)s' | Out-Null\n& $rd --option relay-server '%(relay)s' | Out-Null\n"
-            "& $rd --option key '%(khoa)s' | Out-Null\n& $rd --option allow-websocket N | Out-Null\n& $rd --option approve-mode %(duyet)s | Out-Null\n"
+            "& $rd --option key '%(khoa)s' | Out-Null\n& $rd --option allow-websocket N | Out-Null\n& $rd --option approve-mode password | Out-Null\n& $rd --option allow-auto-record-incoming %(ghi)s | Out-Null\n"
             "Start-Process $rd\nWrite-Host 'Đã đổi RustDesk sang máy chủ ID %(id)s, chuyển tiếp %(relay)s. Đợi vài giây cho góc dưới RustDesk báo Ready.' -ForegroundColor Green\n"
             "Read-Host 'Nhan Enter de dong'\n") % t
 
@@ -518,14 +520,6 @@ def cai_va_ghi(chay_ps, may_id, url=None, sha=None):
         cfg["may"][may_id] = {"id": ma.group(1), "mk": mk, "luc": int(time.time()), "dong_bo": True}
         luu_cfg(cfg)
     return True, "Đã cài RustDesk (máy chủ ID %s, chuyển tiếp %s), ID %s." % (dia_chi()["id"], dia_chi()["relay"], ma.group(1)), ma.group(1)
-
-
-def dat_duyet(bat):
-    """Bat buoc nguoi ngoi may bam 'Chap nhan' tren RustDesk moi lan co nguoi ket noi (approve-mode = click). Chi ap dung cho file cai / may cau hinh sau do."""
-    d = doc_cfg()
-    d["duyet"] = bool(bat)
-    luu_cfg(d)
-    return True, "Đã %s chế độ bắt buộc duyệt trên máy. " % ("bật" if bat else "tắt") + cap_nhat_kho()[1] + " Máy đã cài: bấm Áp dụng địa chỉ xuống máy đã cài (trang bước 4)."
 
 
 def ghi_may(may_id, id_, mk=None):

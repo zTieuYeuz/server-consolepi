@@ -1,11 +1,16 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """RustDesk phia quan ly may tram: cai client RustDesk len may qua agent/WinRM va liet ke may/ID/mat khau. Logic may chu: integrations/rustdesk_may_chu.py."""
+import os
 import re
+import threading
 import time
+import uuid
 
-from flask import jsonify, request
+from flask import Response, jsonify, request, send_file, session
 
 from consolesystem.features.uem import uem_dieukhien as DK
+from consolesystem.core.nhatky import bo_qua as _bo_qua
+from consolesystem.integrations import rustdesk_giam_sat as GS
 from consolesystem.integrations import rustdesk_may_chu as RD
 from ui import tk_dulieu as DL
 from ui import uem_dulieu as UD
@@ -32,7 +37,7 @@ def bang_dieu_khien():
     da_gan = {v.get("id") for v in cfg["may"].values() if v.get("id")}
     ip_ten = {m["ip"]: (m.get("ten") or m["ip"]) for m in ds_may}
     chua = [{"id": x["id"], "ip": x["ip"], "tao": x["tao"], "goi_y": ip_ten.get(x["ip"], "")} for x in RD.thiet_bi() if x["id"] not in da_gan]
-    return {"may": may, "chua_gan": chua, "duyet": bool(cfg.get("duyet")), "tat_ca": [{"mid": m["id"], "ten": m.get("ten") or m["ip"]} for m in ds_may if not m.get("an")]}
+    return {"may": may, "chua_gan": chua, "che_do": GS.cai_dat()["che_do"], "tat_ca": [{"mid": m["id"], "ten": m.get("ten") or m["ip"]} for m in ds_may if not m.get("an")]}
 
 
 def register_uem_rustdesk(app):
@@ -72,20 +77,48 @@ def register_uem_rustdesk(app):
     @app.route("/rustdesk/api/ket-noi", methods=["POST"])
     def rustdesk_api_ket_noi():
         j = request.get_json(silent=True) or {}
-        m = next((x for x in DL.MAY.doc() if x["id"] == str(j.get("mid", ""))), None)
-        ban = (RD.doc_cfg()["may"].get(m["id"]) if m else None) or {}
-        if not m or not ban.get("id"):
-            return jsonify({"ok": False, "tb": "Máy này chưa có ID RustDesk."})
-        if j.get("hoi") and UA.co_agent(m):
-            ok, tb = hoi_phep_ket_noi(m)
+        return jsonify(bat_dau_ket_noi(str(j.get("mid", "")), session.get("user") or "Quản trị viên tại màn hình Console"))
+
+    @app.route("/rustdesk/api/ket-noi/<ma>")
+    def rustdesk_api_ket_noi_tt(ma):
+        with _KHOA_KN:
+            v = _KET_NOI.get(ma)
+            return jsonify(dict(v) if v else {"xong": True, "ok": False, "tb": "Không tìm thấy yêu cầu (có thể Console vừa khởi động lại)."})
+
+    @app.route("/rustdesk/api/cai-dat", methods=["GET", "POST"])
+    def rustdesk_api_cai_dat():
+        if request.method == "POST":
+            j = request.get_json(silent=True) or {}
+            ok, kq = GS.luu_cai_dat(str(j.get("che_do", "")), bool(j.get("ghi_hinh")), j.get("ghi_hinh_gb"))
             if not ok:
-                return jsonify({"ok": False, "tb": tb})
-        if RD.doc_cfg().get("duyet"):
-            tb = "Người dùng sẽ thấy hộp Chấp nhận trên RustDesk, cần bấm Chấp nhận mới vào được."
-        else:
-            tb = "Đang mở RustDesk..."
-        UD.ghi_tac_vu(m["id"], "tu_xa", "Mở điều khiển từ xa (RustDesk)", True, "ID " + ban["id"])
-        return jsonify({"ok": True, "tb": tb, "url": "rustdesk://connection/new/%s?password=%s" % (ban["id"], ban.get("mk", ""))})
+                return jsonify({"ok": False, "tb": kq})
+            tb = "Đã lưu cài đặt."
+            if kq:                                               # bat/tat ghi hinh: file cai moi + day xuong may da cai
+                tb += " " + RD.cap_nhat_kho()[1]
+                tb += " Đang áp dụng ghi hình xuống các máy có agent..." if ap_cau_hinh() else " Đang có việc khác chạy, bấm Áp dụng ở bước 4 sau."
+            return jsonify({"ok": True, "tb": tb})
+        return jsonify(tt_cai_dat())
+
+    @app.route("/rustdesk/api/lich-su")
+    def rustdesk_api_lich_su():
+        return jsonify({"ds": lich_su_day_du()})
+
+    @app.route("/rustdesk/ghi-hinh/<mid>/<ten>")
+    def rustdesk_ghi_hinh_xem(mid, ten):
+        f = GS.duong_ghi_hinh(mid, ten)
+        if not f:
+            return Response("Không có bản ghi này (có thể đã bị xóa do vượt dung lượng).", status=404, mimetype="text/plain; charset=utf-8")
+        return send_file(f, mimetype="video/webm" if ten.endswith(".webm") else "video/mp4", conditional=True,
+                         as_attachment=request.args.get("tai") == "1", download_name=ten)
+
+    @app.route("/rustdesk/api/ghi-hinh/xoa", methods=["POST"])
+    def rustdesk_api_ghi_hinh_xoa():
+        j = request.get_json(silent=True) or {}
+        f = GS.duong_ghi_hinh(str(j.get("mid", "")), str(j.get("ten", "")))
+        if not f:
+            return jsonify({"ok": False, "tb": "Không có bản ghi này."})
+        os.remove(f)
+        return jsonify({"ok": True, "tb": "Đã xóa bản ghi."})
 
     @app.route("/rustdesk/api/gan", methods=["POST"])
     def rustdesk_api_gan():
@@ -103,11 +136,6 @@ def register_uem_rustdesk(app):
             return jsonify({"ok": False, "tb": "Chỉ kiểm tra được máy có agent."})
         ok, kq = kiem_tra_may(m)
         return jsonify({"ok": ok, "kq": kq if ok else None, "tb": "" if ok else kq})
-
-    @app.route("/rustdesk/api/duyet", methods=["POST"])
-    def rustdesk_api_duyet():
-        ok, tb = RD.dat_duyet(bool((request.get_json(silent=True) or {}).get("bat")))
-        return jsonify({"ok": ok, "tb": tb})
 
     @app.route("/rustdesk/api/mat-khau", methods=["POST"])
     def rustdesk_api_mk():
@@ -136,6 +164,9 @@ def register_uem_rustdesk(app):
                 kq.append({"ten": m.get("ten") or m["ip"], "ok": ok, "tb": tb})
         return jsonify({"ok": True, "kq": kq})
 
+    GS.dang_ky_thong_bao(thong_bao_may)
+    khoi_dong_bo_lap()
+
 
 PS_KIEM_TRA = r"""$rd = Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe'
 if (-not (Test-Path $rd)) { 'RDK=CHUA_CAI'; return }
@@ -145,12 +176,12 @@ $f = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\Ru
 $t = if (Test-Path $f) { Get-Content $f -Raw } else { '' }
 $ms = [regex]::Match($t, "(?m)^custom-rendezvous-server = '([^']*)'").Groups[1].Value
 $mr = [regex]::Match($t, "(?m)^relay-server = '([^']*)'").Groups[1].Value
-$md = [regex]::Match($t, "(?m)^approve-mode = '([^']*)'").Groups[1].Value
+$md = [regex]::Match($t, "(?m)^allow-auto-record-incoming = '([^']*)'").Groups[1].Value
 'RDK=OK|' + $v + '|' + $(if ($s) { [string]$s.Status } else { 'KHONG_CO_DICH_VU' }) + '|' + $ms + '|' + $mr + '|' + $md + '|' + ((& $rd --get-id | Out-String).Trim())"""
 
 
 def kiem_tra_may(m):
-    """Doc trang thai RustDesk tren may qua agent/WinRM. (ok, {ban, dich_vu, may_chu, relay, duyet, id, dung_may_chu} hoac thong_diep loi)."""
+    """Doc trang thai RustDesk tren may qua agent/WinRM. (ok, {ban, dich_vu, may_chu, relay, ghi_hinh, id, dung_may_chu} hoac thong_diep loi)."""
     ok, out = DK._chay(m, PS_KIEM_TRA)
     if not ok:
         return False, out[-200:]
@@ -160,18 +191,8 @@ def kiem_tra_may(m):
     if mm.group(1) == "CHUA_CAI":
         return True, {"cai": False}
     dc = RD.dia_chi()
-    return True, {"cai": True, "ban": mm.group(2), "dich_vu": mm.group(3), "may_chu": mm.group(4), "relay": mm.group(5), "duyet": mm.group(6) or "mặc định", "id": mm.group(7),
+    return True, {"cai": True, "ban": mm.group(2), "dich_vu": mm.group(3), "may_chu": mm.group(4), "relay": mm.group(5), "ghi_hinh": mm.group(6) == "Y", "id": mm.group(7),
                   "dung_may_chu": mm.group(4) == dc["id"] and mm.group(5) == dc["relay"]}
-
-
-def hoi_phep_ket_noi(m):
-    """Hien hop Co/Khong tren man hinh may (agent), cho toi 40 giay. (ok, thong_diep)."""
-    kq = UA.hoi_phep(m["id"], "Quản trị viên muốn xem và điều khiển màn hình máy này bằng RustDesk (Console System). Cho phép?", 40)
-    if kq in ("TU_CHOI", "HET_GIO"):
-        UD.ghi_tac_vu(m["id"], "tu_xa", "Xin phép điều khiển từ xa (RustDesk)", False, "Người dùng từ chối" if kq == "TU_CHOI" else "Người dùng không trả lời")
-        return False, "Người đang dùng máy " + ("đã từ chối." if kq == "TU_CHOI" else "không trả lời trong 40 giây.")
-    UD.ghi_tac_vu(m["id"], "tu_xa", "Xin phép điều khiển từ xa (RustDesk)", True, "Người dùng đồng ý")
-    return True, "Người dùng đã đồng ý."
 
 
 _DONG_BO = {"dang": False, "tb": ""}
@@ -272,3 +293,219 @@ def khoi_tu_xa(m):
             f'<div class="uem-2"><div>ID: <span class="rd-k" style="font-family:monospace;user-select:all;">{i}</span></div><div>Mật khẩu: <span style="font-family:monospace;user-select:all;">{mk}</span></div></div>'
             f'<div class="tk-hang" style="margin-top:10px;"><a class="tk-nut chinh" href="rustdesk://connection/new/{i}?password={mk}">Mở RustDesk và kết nối</a>'
             f'<a class="tk-nut" href="/rustdesk">Trang RustDesk (khóa, tải client)</a></div></div>')
+
+
+# ------------------------------------------------------------------ ket noi theo che do (thong bao / xin phep 5 phut)
+_KET_NOI = {}                     # ma -> {xong, ok, tb, url, luc}
+_KHOA_KN = threading.Lock()
+
+
+def _ps_chuoi(x):
+    return "'" + str(x).replace("'", "''") + "'"
+
+
+def ps_thong_bao(noi_dung, giay=60):
+    """Hien thong bao (nut OK, khong cho) giua man hinh phien dang dang nhap - chay bang SYSTEM qua agent/WinRM."""
+    return ("$sig = '[DllImport(\"wtsapi32.dll\", CharSet = CharSet.Unicode)] public static extern bool WTSSendMessage(IntPtr h, int sid, string t, int tl, string m, int ml, int s, int to, out int r, bool w); "
+            "[DllImport(\"kernel32.dll\")] public static extern uint WTSGetActiveConsoleSessionId();'\n"
+            "Add-Type -MemberDefinition $sig -Name W -Namespace CsRd -ErrorAction SilentlyContinue\n"
+            "$sid = [CsRd.W]::WTSGetActiveConsoleSessionId()\nif ($sid -eq 4294967295) { 'TB_KHONG_PHIEN'; return }\n"
+            "$t = 'Console System'\n$m = %s\n$r = 0\n"
+            "$ok = [CsRd.W]::WTSSendMessage([IntPtr]::Zero, [int]$sid, $t, $t.Length, $m, $m.Length, 0x40 -bor 0x40000, %d, [ref]$r, $false)\n"
+            "if ($ok) { 'TB_OK' } else { 'TB_LOI' }" % (_ps_chuoi(noi_dung), int(giay)))
+
+
+def _may_theo_rid(rid):
+    cfg = RD.doc_cfg()
+    mid = next((k for k, v in cfg["may"].items() if v.get("id") == str(rid)), None)
+    return next((m for m in DL.MAY.doc() if m["id"] == mid), None) if mid else None
+
+
+def thong_bao_may(rid, noi_dung):
+    """Goi tu giam sat (che do thong bao): co ket noi RustDesk da xac thuc vao may co ID rid."""
+    m = _may_theo_rid(rid)
+    if not m or not UA.co_agent(m) or not UA.con_song(m):
+        return False
+    ok, out = DK._chay(m, ps_thong_bao(noi_dung))
+    return ok and "TB_OK" in (out or "")
+
+
+def _ghi_console(m, rid, nguoi, kq):
+    GS.ghi_su_kien(loai="console", rid=rid, mid=m["id"], ten_may=m.get("ten") or m["ip"], nguoi=nguoi, kq=kq)
+
+
+def bat_dau_ket_noi(mid, nguoi):
+    """Nut Ket noi o buoc 5. Che do thong bao: tra ngay lien ket rustdesk://. Che do xin phep: hien hop Co/Khong tren may (cho toi 5 phut),
+    tra ma de trang hoi tien do; dong y thi may chu cho phep ket noi moi trong 5 phut, khong thi moi ket noi bi ngat."""
+    m = next((x for x in DL.MAY.doc() if x["id"] == mid), None)
+    ban = (RD.doc_cfg()["may"].get(m["id"]) if m else None) or {}
+    if not m or not ban.get("id"):
+        return {"ok": False, "xong": True, "tb": "Máy này chưa có ID RustDesk."}
+    rid, url = ban["id"], "rustdesk://connection/new/%s?password=%s" % (ban["id"], ban.get("mk", ""))
+    if GS.cai_dat()["che_do"] == "thong_bao":
+        GS.dat_cho_ten(rid, nguoi)
+        _ghi_console(m, rid, nguoi, "Mở kết nối (chế độ Thông báo)")
+        UD.ghi_tac_vu(m["id"], "tu_xa", "Mở điều khiển từ xa (RustDesk)", True, "ID %s, người: %s" % (rid, nguoi))
+        return {"ok": True, "xong": True, "url": url, "tb": "Đang mở RustDesk. Máy đó sẽ hiện thông báo có người đang kết nối."}
+    if not UA.co_agent(m) or not UA.con_song(m):
+        return {"ok": False, "xong": True, "tb": "Chế độ Xin phép cần máy có agent đang online để hiện hộp xin phép. Máy này đang offline hoặc không có agent."}
+    ma = uuid.uuid4().hex[:12]
+    with _KHOA_KN:
+        for k in [k for k, v in _KET_NOI.items() if time.time() - v["luc"] > 3600]:
+            _KET_NOI.pop(k, None)
+        _KET_NOI[ma] = {"xong": False, "ok": False, "tb": "Đang chờ người dùng trên máy %s xác nhận (tối đa 5 phút)..." % (m.get("ten") or m["ip"]), "url": "", "luc": time.time(), "ma": ma}
+    threading.Thread(target=_xin_phep_nen, args=(ma, m, rid, url, nguoi), daemon=True, name="rustdesk-xin-phep").start()
+    return {"ok": True, "xong": False, "ma": ma, "tb": _KET_NOI[ma]["tb"]}
+
+
+def _xin_phep_nen(ma, m, rid, url, nguoi):
+    loi = {"TU_CHOI": "Người dùng đã từ chối.", "HET_GIO": "Người dùng không xác nhận trong 5 phút, đã hủy.",
+           "KHONG_CO_PHIEN": "Máy không có ai đăng nhập (không hiện được hộp xin phép), đã hủy."}
+    try:
+        kq = UA.hoi_phep(m["id"], "%s (quản trị Console System) xin quyền kết nối vào máy tính của bạn bằng RustDesk để hỗ trợ.\n\n"
+                         "Bấm Yes (Có) để cho phép, No (Không) để từ chối. Sau 5 phút không trả lời sẽ tự từ chối." % nguoi, GS.CHO_DUYET_GIAY)
+    except Exception as e:                    # mat agent giua chung
+        kq, loi["LOI"] = "LOI", "Không hỏi được máy: %s" % e
+    if kq == "CHO_PHEP":
+        GS.dat_duyet(rid, nguoi)
+        tb, ok = "Người dùng đã đồng ý. Đang mở RustDesk (có 5 phút để bắt đầu kết nối).", True
+    else:
+        tb, ok = loi.get(kq, "Kết quả không rõ: %s" % kq), False
+    _ghi_console(m, rid, nguoi, "Đồng ý" if ok else tb)
+    UD.ghi_tac_vu(m["id"], "tu_xa", "Xin phép điều khiển từ xa (RustDesk)", ok, "%s: %s" % (nguoi, tb))
+    with _KHOA_KN:
+        _KET_NOI[ma].update(xong=True, ok=ok, tb=tb, url=url if ok else "")
+
+
+def tt_cai_dat():
+    cd = GS.cai_dat()
+    ds = GS.ds_ghi_hinh()
+    try:
+        st = os.statvfs(RD._goc() if os.path.isdir(RD._goc()) else "/")
+        trong = st.f_bavail * st.f_frsize
+    except OSError:
+        trong = 0
+    nhip = GS.trang_thai_nhip()
+    rids = {v.get("id") for v in RD.doc_cfg()["may"].values() if v.get("id")}
+    return dict(cd, may_chu_api=GS.tt_may_chu(), cong_api_ngoai=RD.dia_chi()["cong_id"] - 2, host=RD.dia_chi()["id"].split(":")[0],
+                nhip_gan=sum(1 for k, v in nhip.items() if v["cach"] < 120), tong_may=len(rids),
+                ghi_hinh_so=len(ds), ghi_hinh_dung=sum(x["kich_thuoc"] for x in ds), dia_trong=trong, thu_ghi={"luc": _THU.get("luc", 0), "tb": _THU.get("tb", "")})
+
+
+def lich_su_day_du():
+    """Lich su ket noi + lien ket ban ghi hinh (ban ghi cua cung may, bat dau trong khoang phien)."""
+    cfg = RD.doc_cfg()
+    ds_may = {m["id"]: (m.get("ten") or m["ip"]) for m in DL.MAY.doc()}
+    ten = {v.get("id"): ds_may.get(k, "") for k, v in cfg["may"].items() if v.get("id")}
+    mid_theo_rid = {v.get("id"): k for k, v in cfg["may"].items() if v.get("id")}
+    ghi = GS.ds_ghi_hinh()
+    ra = GS.lich_su(ten)
+    for p in ra:
+        p["ghi_hinh"] = []
+        mid = mid_theo_rid.get(p["rid"])
+        if not mid or p["loai"] == "Yêu cầu từ Console":
+            continue
+        het = (p["ket_thuc"] or time.time()) + 120
+        for x in ghi:
+            bd = _luc_ten_ghi(x["ten"])
+            if x["mid"] == mid and bd and p["bat_dau"] - 120 <= bd <= het:
+                p["ghi_hinh"].append({"mid": mid, "ten": x["ten"], "kich_thuoc": x["kich_thuoc"]})
+    return ra
+
+
+def _luc_ten_ghi(ten):
+    """incoming_<id>_YYYYmmddHHMMSSfff_display0_vp9.webm -> epoch (gio may khach, coi nhu cung mui gio voi Console)."""
+    mm = re.search(r"_(\d{14})\d{3}_", ten)
+    if not mm:
+        return None
+    try:
+        return time.mktime(time.strptime(mm.group(1), "%Y%m%d%H%M%S"))
+    except ValueError:
+        return None
+
+
+# ------------------------------------------------------------------ thu ban ghi hinh tu may ve Console (vong nen)
+THU_MUC_GHI_MAY = r"C:\ProgramData\RustDesk\recording"
+PS_DS_GHI = r"""$d = '%s'
+if (Test-Path $d) { Get-ChildItem $d -File | Where-Object { $_.LastWriteTime -lt (Get-Date).AddSeconds(-90) -and $_.Length -gt 0 } | ForEach-Object { 'GHI=' + $_.Name + '|' + $_.Length } }
+'GHI_XONG'""" % THU_MUC_GHI_MAY
+_THU = {"luc": 0, "tb": ""}
+_BAT_DAU = {"co": False}
+
+
+def thu_ghi_hinh_may(m):
+    """Lay cac ban ghi da xong tren 1 may (agent) ve Console, kiem kich thuoc roi xoa tren may. Tra so file da lay."""
+    ok, out = DK._chay(m, PS_DS_GHI)
+    if not ok or "GHI_XONG" not in (out or ""):
+        return 0
+    dich_dir = os.path.join(GS.thu_muc_ghi_hinh(), m["id"])
+    os.makedirs(dich_dir, mode=0o700, exist_ok=True)
+    n = 0
+    for ten, kt in re.findall(r"GHI=([^|\r\n]+)\|(\d+)", out):
+        kt = int(kt)
+        if not GS.MAU_TEP_GHI.fullmatch(ten):
+            continue
+        st = os.statvfs(dich_dir)
+        if st.f_bavail * st.f_frsize < kt + 2 * 1024 ** 3:
+            _THU["tb"] = "Ổ đĩa Console System sắp đầy, tạm dừng lấy bản ghi hình."
+            break
+        dich, tam = os.path.join(dich_dir, ten), os.path.join(dich_dir, "." + ten + ".tai")
+        try:
+            UA.Client(m["id"]).fetch(THU_MUC_GHI_MAY + "\\" + ten, tam)
+            if os.path.getsize(tam) != kt:
+                raise RuntimeError("kích thước không khớp")
+            os.replace(tam, dich)
+        except Exception as e:                        # loi mang / agent: giu file tren may, lan sau lay lai
+            _bo_qua(e)
+            try:
+                os.remove(tam)
+            except OSError:
+                pass
+            continue
+        DK._chay(m, "Remove-Item -LiteralPath %s -Force" % _ps_chuoi(THU_MUC_GHI_MAY + "\\" + ten))
+        n += 1
+    return n
+
+
+def _tick():
+    GS.khoi_dong()
+    now = time.time()
+    if now - _THU.get("don", 0) > 86400:
+        GS.don_lich_su()
+        _THU["don"] = now
+    if not GS.cai_dat()["ghi_hinh"]:
+        return
+    cfg = RD.doc_cfg()
+    tong, quet_het = 0, now - _THU.get("quet", 0) > 1800             # 30 phut hoi moi may 1 lan, con lai chi hoi may vua co ket noi
+    co_phien = GS.lay_may_co_phien() | _THU.pop("cho", set())
+    if quet_het:
+        _THU["quet"] = now
+    for m in DL.MAY.doc():
+        rid = (cfg["may"].get(m["id"]) or {}).get("id")
+        if m.get("an") or not rid or not UA.co_agent(m) or not (quet_het or rid in co_phien):
+            continue
+        if not UA.con_song(m):
+            _THU.setdefault("cho", set()).add(rid)                     # may vua tat: lan sau hoi lai
+            continue
+        try:
+            tong += thu_ghi_hinh_may(m)
+        except Exception as e:
+            _bo_qua(e)
+    xoa = GS.don_ghi_hinh()
+    _THU.update(luc=int(now), tb="Lần lấy gần nhất: %d bản ghi mới%s." % (tong, (", xóa %d bản cũ cho vừa dung lượng" % xoa) if xoa else ""))
+
+
+def khoi_dong_bo_lap():
+    if _BAT_DAU["co"]:
+        return
+    _BAT_DAU["co"] = True
+
+    def vong():
+        time.sleep(15)
+        while True:
+            try:
+                _tick()
+            except Exception as _loi:
+                _bo_qua(_loi)
+            time.sleep(120)
+    threading.Thread(target=vong, daemon=True, name="rustdesk-giam-sat").start()
