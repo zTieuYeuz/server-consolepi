@@ -31,6 +31,16 @@ TEN_LOAI_KHO = {"phanmem": "Phần mềm", "ungdung": "Ứng dụng nhiều file
                 "winpe": "WinPE", "font": "Font chữ"}
 
 
+# Tai ve nam o thu muc tai nguyen CHUNG (deploy/apps, scripts, ungdung, fonts, os): ca 2 tinh nang deu doc cung cho
+DUNG_CHO = {"os": "Deployment OS", "winpe": "Deployment OS", "phanmem": "Cả hai", "ungdung": "Cả hai", "font": "Cả hai", "script": "Cả hai"}
+
+
+def _dau_kho():
+    return ('<div class="card" style="padding:14px 18px;"><b>Kho dùng chung.</b> <span class="tk-ghi">Tải một lần, dùng ở cả hai nơi: '
+            'Hệ điều hành và WinPE hiện trong <a href="/deployos/os">Deployment OS</a>; Phần mềm, Ứng dụng, Font, Script hiện trong Tài nguyên của cả '
+            '<a href="/deployos/console/apps?nc=os">Deployment OS</a> lẫn <a href="/deployos/console/apps?nc=tk">Triển khai phần mềm</a>.</span></div>')
+
+
 def _bo_font_tu_kho(muc_id):
     """Bo font da tao tu muc kho nay (ghi kho_id trong _thongtin.json), hoac None."""
     for b in danh_sach_bo_font():
@@ -79,12 +89,12 @@ def _trang_kho(msg="", ok=True):
             msg, ok = "Máy đã tự kết nối kho trung tâm.", True
     if not cauhinh:
         tu_msg = _kt.LAN_THU_CUOI.get("msg") or "Đang chờ kết nối..."
-        body = _tabs("kho") + _msg(msg, ok) + f"""
+        body = _dau_kho() + _msg(msg, ok) + f"""
             <div class="card">
               <h3>Máy đang tự kết nối kho</h3>
               <p style="margin:0 0 10px;">Máy tự kết nối kho khi có Internet, không cần điền gì.
                 Lần thử gần nhất: <strong>{_esc(tu_msg)}</strong></p>
-              <a href="/deployos/kho"><button type="button">🔄 Thử lại ngay</button></a>
+              <a href="/kho-trung-tam"><button type="button">🔄 Thử lại ngay</button></a>
               <p style="color:#8b93a1;font-size:13px;margin:10px 0 0;">Máy tự thử lại mỗi 2 phút.
                 Cắm dây mạng hoặc kết nối WiFi rồi bấm Thử lại.</p>
             </div>""" + """
@@ -108,20 +118,18 @@ def _trang_kho(msg="", ok=True):
                         data-busy="Đang kết nối...">Kết nối</button></div>
               </form>
             </div>"""
-        return _trang(body, "Deployment OS", "Kho trung tâm - chưa kết nối")
+        return _trang(body, "Kho trung tâm", "Kho lưu trữ dùng chung - chưa kết nối", active="/kho-trung-tam")
 
     ok_ds, ket_qua = _kt.danh_sach(cauhinh)
     if not ok_ds:
-        body = _tabs("kho") + _msg(msg, ok) + f"""
+        body = _dau_kho() + _msg(msg, ok) + f"""
             <div class="msg err">Không lấy được danh sách từ kho: {_esc(ket_qua)}</div>
             <div class="card">
-              <a href="/deployos/kho"><button type="button">Thử lại</button></a>
+              <a href="/kho-trung-tam"><button type="button">Thử lại</button></a>
             </div>"""
-        return _trang(body, "Deployment OS", "Kho trung tâm - lỗi kết nối")
+        return _trang(body, "Kho trung tâm", "Kho lưu trữ dùng chung - lỗi kết nối", active="/kho-trung-tam")
 
     ds = ket_qua
-    if ngu_canh_trienkhai():     # Trien khai phan mem: khong co He dieu hanh / WinPE
-        ds = [m for m in ds if m.get("loai") not in ("os", "winpe")]
     cac_os = danh_sach_os()
     du_lieu_js = json.dumps([
         {"id": m.get("id", ""),
@@ -129,8 +137,7 @@ def _trang_kho(msg="", ok=True):
                                     ("ten", "mo_ta", "du_lieu", "ten_file")))}
         for m in ds], ensure_ascii=False)
 
-    ten_loai_hien = {k: v for k, v in TEN_LOAI_KHO.items()
-                     if not (ngu_canh_trienkhai() and k in ("os", "winpe"))}
+    ten_loai_hien = dict(TEN_LOAI_KHO)
     dem = {k: sum(1 for m in ds if m.get("loai") == k) for k in ten_loai_hien}
     hang = ""
     for m in ds:
@@ -173,7 +180,7 @@ def _trang_kho(msg="", ok=True):
         hang += f"""
             <tr data-id="{mid}" data-loai="{_esc(loai)}">
               <td class="cot-tich">{o_tich}</td>
-              <td>{nhan_loai}</td>
+              <td>{nhan_loai}<br><small style="color:var(--chu-mo2);">{DUNG_CHO.get(loai, "")}</small></td>
               <td><strong>{_esc(m.get('ten',''))}</strong><br>
                   <small style="color:#8b93a1;">{phu}</small></td>
               <td>{co_kich_thuoc(m.get('kich_thuoc') or 0)}</td>
@@ -191,7 +198,7 @@ def _trang_kho(msg="", ok=True):
         f'<button type="button" class="small gray loc-loai" data-loai="{k}">'
         f'{n} ({dem[k]})</button> ' for k, n in ten_loai_hien.items())
 
-    body = _tabs("kho") + _msg(msg, ok) + f"""
+    body = _dau_kho() + _msg(msg, ok) + f"""
         <div class="card" id="khung-tai" hidden>
           <h3>Đang tải</h3>
           <div id="canh-bao-tai" hidden style="background:#3a2f12;border:1px solid #6b5418;color:#ffd98a;
@@ -349,7 +356,7 @@ def _trang_kho(msg="", ok=True):
               + dong + '<button type="button" id="dong-bang-xong" style="margin-top:10px;">Đóng</button></div>';
             document.body.appendChild(bg);
             document.getElementById('dong-bang-xong').addEventListener('click', function() {{
-              location.replace('/deployos/kho');
+              location.replace('/kho-trung-tam');
             }});
           }}
           function ve(ds) {{
@@ -401,7 +408,7 @@ def _trang_kho(msg="", ok=True):
           hoi();
         }})();
         </script>"""
-    return _trang(body, "Deployment OS", "Kho trung tâm")
+    return _trang(body, "Kho trung tâm", "Kho lưu trữ dùng chung cho Deployment OS và Triển khai phần mềm", active="/kho-trung-tam")
 
 
 def _kho_chuyen(msg, ok=True):
@@ -419,7 +426,7 @@ def _kho_chuyen(msg, ok=True):
         gom.append((str(msg), bool(ok)))
         return None
     session["kho_tb"] = [str(msg)[:600], bool(ok)]
-    return redirect("/deployos/kho")
+    return redirect("/kho-trung-tam")
 
 
 def _con_trong(thu_muc):
@@ -686,6 +693,10 @@ def _fontinfo_duoi():
 
 def register_kho(app):
     @app.route("/deployos/kho")
+    def deployos_kho_cu():
+        return redirect("/kho-trung-tam")
+
+    @app.route("/kho-trung-tam")
     def deployos_kho():
         tb = session.pop("kho_tb", None)
         return _trang_kho(*tb) if tb else _trang_kho()
@@ -711,13 +722,13 @@ def register_kho(app):
     def deployos_kho_huy():
         from ui import khotrungtam as _kt
         _kt.huy_tai(request.form.get("id", ""))
-        return redirect("/deployos/kho")
+        return redirect("/kho-trung-tam")
 
     @app.route("/deployos/kho/xoa-xong", methods=["POST"])
     def deployos_kho_xoa_xong():
         from ui import khotrungtam as _kt
         _kt.xoa_viec_xong()
-        return redirect("/deployos/kho")
+        return redirect("/kho-trung-tam")
 
     @app.route("/deployos/kho/tai", methods=["POST"])
     def deployos_kho_tai():

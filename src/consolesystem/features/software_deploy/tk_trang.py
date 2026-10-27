@@ -102,7 +102,7 @@ def _trang_nhom_tn():
         khoi += "</div>"
     if not khoi:
         khoi = ('<p class="tk-ghi">Chưa có tài nguyên nào. Thêm ở các mục Phần mềm, Ứng dụng, Script phía trên, '
-                "hoặc tải từ tab <b>Kho trung tâm</b>.</p>")
+                "hoặc tải từ <a href=\"/kho-trung-tam\">Kho lưu trữ › Kho trung tâm</a>.</p>")
     body = f"""
     <h2>Nhóm tài nguyên</h2>
     <div class="card">{bang}</div>

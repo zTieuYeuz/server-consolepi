@@ -76,11 +76,10 @@ NAV_ITEMS = [
         ("/uem/phan-mem", "Phần mềm", "📦"),
         ("/uem/bao-mat", "Bảo mật", "🛡️"),
         ("/uem/trien-khai", "Triển khai phần mềm", "🚀"),
+        ("/rustdesk", "Phần mềm remote", "🛰️"),
         ("/uem/profiles", "Profiles", "📋"),
         ("/uem/bao-cao", "Báo cáo", "📄"),
         ("/uem/quan-tri", "Quản trị", "⚙️"),
-        ("/rustdesk", "Phần mềm remote", "🛰️"),
-        ("/uem/chua-ho-tro", "Chưa hỗ trợ", "ℹ️"),
     ]),
 
     ("nhom", "System Utilities", "🛠️", [
@@ -92,6 +91,7 @@ NAV_ITEMS = [
     # Noi cat du lieu de dung lai
     ("nhom", "Kho lưu trữ", "📦", [
         ("/storage", "Kho file", "💾"),
+        ("/kho-trung-tam", "Kho trung tâm", "☁️"),
         ("/commands", "Thư viện lệnh", "📚"),
     ]),
 
@@ -442,7 +442,7 @@ ICON_MUC = {
     "/": "home", "nhom:Kết nối Console System": "radar", "/wifi": "wifi", "/bluetooth": "bt",
     "/remote": "globe", "nhom:Quản lý và kết nối thiết bị": "plug", "nhom:System Utilities": "net", "/phien": "list",
     "/console": "term", "/terminal": "kbd", "/ssh": "key", "/direct": "link", "/deployos/trienkhai": "send", "nhom:Quản lý máy trạm": "pc", "/uem": "home", "/uem/may": "pc", "/uem/phan-mem": "box",
-    "/uem/bao-mat": "key", "/uem/trien-khai": "send", "/uem/profiles": "list", "/uem/bao-cao": "doc", "/uem/quan-tri": "set", "/uem/chua-ho-tro": "info",
+    "/uem/bao-mat": "key", "/uem/trien-khai": "send", "/uem/profiles": "list", "/uem/bao-cao": "doc", "/uem/quan-tri": "set", "/kho-trung-tam": "box",
     "/nettools": "net", "/deployos": "disk", "nhom:Kho lưu trữ": "box",
     "/storage": "save", "/commands": "book", "/logs": "log", "/power": "pow",
     "/giaitri": "tv", "/gopy": "chat", "nhom:Cài đặt": "set", "/settings": "set",
@@ -471,7 +471,7 @@ TIM_THEM = [
     ("Driver theo dòng máy", "/deployos/drivers", "Deployment OS", "driver model"),
     ("Script", "/deployos/console/scripts", "Deployment OS", "script cmd ps1"),
     ("WinPE / file boot", "/deployos/console", "Deployment OS", "winpe boot"),
-    ("Kho trung tâm", "/deployos/kho", "Deployment OS", "kho tai ve"),
+    ("Kho trung tâm", "/kho-trung-tam", "Kho lưu trữ", "kho tai ve phan mem os iso"),
     ("Máy đang cài", "/deployos/tiendo", "Deployment OS", "tien trinh tien do"),
     ("Lịch sử cài đặt", "/deployos/lichsu", "Deployment OS", "lich su csv"),
     ("Bật / Tắt PXE", "/deployos/caidat", "Deployment OS", "pxe dhcp tftp"),

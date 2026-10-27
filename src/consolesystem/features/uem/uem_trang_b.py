@@ -10,6 +10,7 @@ import io
 import os
 import json
 import re
+import unicodedata
 import tempfile
 import time
 
@@ -130,16 +131,59 @@ JS_TIEN_DO = """
 </script>"""
 
 
-def _chon_may_html(sel=None, ten_nhom="may"):
-    ds = DL.MAY.doc()
-    nhom = DL.NHOM_MAY.doc()
-    the_ds = UD.THE.doc()
-    o = "".join(f'<label class="tk-o"><input type="checkbox" name="{ten_nhom}" value="{m["id"]}"{" checked" if sel and m["id"] in sel else ""}><span><b>{_esc(ten_may(m))}</b>'
-                f'<small>{_esc(m["ip"])}{"" if m.get("tai_khoan_id") else " · chưa gán tài khoản"}</small></span></label>' for m in ds if m.get("giam_sat", True))
-    chip_nhom = "".join(
-        '<button type="button" class="tk-nut" onclick="' + _esc("var s=" + json.dumps(g.get("may", [])) + ";document.querySelectorAll('input[name=" + ten_nhom + "]').forEach(function(c){if(s.indexOf(c.value)>=0)c.checked=true;});")
-        + f'">Chọn nhóm {_esc(g["ten"])} ({len(g.get("may", []))})</button> ' for g in nhom if g.get("may"))
-    return (f'<div style="margin-bottom:8px;">{chip_nhom}</div>' if chip_nhom else "") + o or '<p class="tk-ghi">Chưa có máy nào, thêm ở <a href="/uem/may">Máy tính</a>.</p>'
+CSS_CHON = """<style>.cg-dau{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}.cg-dau input[type=search]{flex:1;min-width:220px;max-width:420px;margin:0;height:42px}
+.cg-ds{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px}.cg-ds label{margin:0}.cg-trang{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.cg-trang button{min-height:34px;padding:4px 12px}.cg-trang button.on{border-color:var(--nhan);background:var(--nhan-mo);color:var(--nhan-dam)}</style>"""
+
+JS_CHON = """<script>(function(){var MOI_TRANG=25,TRANG={may:0,nhom:0};
+function bo(x){return (x||'').replace(/đ/g,'d').replace(/Đ/g,'D').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();}
+function $(i){return document.getElementById(i);}
+function ve(loai){var k=$('cg-'+loai),q=bo($('cg-tim').value),o=[].slice.call(k.querySelectorAll('label[data-tim]')),khop=o.filter(function(l){return !q||l.dataset.tim.indexOf(q)>=0;});
+ var so=Math.max(1,Math.ceil(khop.length/MOI_TRANG));if(TRANG[loai]>=so)TRANG[loai]=so-1;var bd=TRANG[loai]*MOI_TRANG;
+ o.forEach(function(l){l.hidden=true;});khop.slice(bd,bd+MOI_TRANG).forEach(function(l){l.hidden=false;});
+ var h='';if(so>1){h+='<button type="button" class="tk-nut" data-t="'+(TRANG[loai]-1)+'"'+(TRANG[loai]?'':' disabled')+'>‹</button>';
+  for(var i=0;i<so;i++)h+='<button type="button" class="tk-nut'+(i===TRANG[loai]?' on':'')+'" data-t="'+i+'">'+(i+1)+'</button>';
+  h+='<button type="button" class="tk-nut" data-t="'+(TRANG[loai]+1)+'"'+(TRANG[loai]<so-1?'':' disabled')+'>›</button>';}
+ h+='<span class="tk-ghi">'+(khop.length?(bd+1)+'-'+Math.min(bd+MOI_TRANG,khop.length)+' / '+khop.length:'0')+(loai==='may'?' máy':' group')+'</span>';
+ $('cg-trang').innerHTML=h;var hien=khop.slice(bd,bd+MOI_TRANG).map(function(l){return l.querySelector('input');});
+ $('cg-tatca').checked=hien.length>0&&hien.every(function(i){return i.checked;});dem();}
+function loai(){return $('cg-loai').value;}
+function dem(){var m=document.querySelectorAll('#cg-may input:checked').length,n=[].slice.call(document.querySelectorAll('#cg-nhom input:checked')),them={};
+ n.forEach(function(i){JSON.parse(i.dataset.may||'[]').forEach(function(x){them[x]=1;});});
+ [].slice.call(document.querySelectorAll('#cg-may input:checked')).forEach(function(i){them[i.value]=1;});
+ $('cg-dem').textContent='Đã chọn '+m+' máy, '+n.length+' group, tổng '+Object.keys(them).length+' máy sẽ chạy';}
+$('cg-loai').addEventListener('change',function(){var v=loai();$('cg-may').hidden=v!=='may';$('cg-nhom').hidden=v!=='nhom';$('cg-tim').placeholder=v==='may'?'Tìm máy theo tên hoặc IP':'Tìm group theo tên';ve(v);});
+$('cg-tim').addEventListener('input',function(){TRANG[loai()]=0;ve(loai());});
+$('cg-trang').addEventListener('click',function(ev){var t=ev.target.dataset.t;if(t==null||ev.target.disabled)return;TRANG[loai()]=+t;ve(loai());});
+$('cg-tatca').addEventListener('change',function(ev){[].slice.call(document.querySelectorAll('#cg-'+loai()+' label:not([hidden]) input')).forEach(function(i){i.checked=ev.target.checked;});dem();});
+['cg-may','cg-nhom'].forEach(function(x){$(x).addEventListener('change',function(){ve(loai());});});
+ve('may');})();</script>"""
+
+
+def _chon_may_nhom_html():
+    """Chon may HOAC chon group (nhom may), tim kiem, 25 dong / trang. Gui len: may=<id> va nhom=<id>."""
+    ds = [m for m in DL.MAY.doc() if m.get("giam_sat", True) and not m.get("an") and UA.co_agent(m)]
+    nhom = [g for g in DL.NHOM_MAY.doc() if g.get("may")]
+    co = {m["id"] for m in ds}
+    tim = lambda x: _esc(re.sub(r"[\u0300-\u036f]", "", unicodedata.normalize("NFD", x.replace("đ", "d").replace("Đ", "D"))).lower())  # noqa: E731
+    o_may = "".join(f'<label class="tk-o" data-tim="{tim(ten_may(m) + " " + m["ip"])}"><input type="checkbox" name="may" value="{_esc(m["id"])}"><span><b>{_esc(ten_may(m))}</b>'
+                    f'<small>{_esc(m["ip"])}</small></span></label>' for m in ds)
+    o_nhom = "".join(f'<label class="tk-o" data-tim="{tim(g["ten"])}"><input type="checkbox" name="nhom" value="{_esc(g["id"])}" data-may="{_esc(json.dumps([i for i in g["may"] if i in co]))}"><span><b>{_esc(g["ten"])}</b>'
+                     f'<small>{sum(1 for i in g["may"] if i in co)} máy</small></span></label>' for g in nhom)
+    return (CSS_CHON + f"""<div class="cg-dau"><input type="search" id="cg-tim" placeholder="Tìm máy theo tên hoặc IP">
+      <label style="margin:0;display:flex;gap:6px;align-items:center;cursor:pointer;"><input type="checkbox" id="cg-tatca" style="width:auto;margin:0;"> Chọn tất cả trang này</label></div>
+      <div class="cg-ds" id="cg-may">{o_may or '<p class="tk-ghi">Chưa có máy nào. Máy hiện ở đây sau khi cài agent (xem Máy tính).</p>'}</div>
+      <div class="cg-ds" id="cg-nhom" hidden>{o_nhom or '<p class="tk-ghi">Chưa có group nào. Tạo ở Triển khai phần mềm, Máy - nhóm máy, Nhóm máy.</p>'}</div>
+      <div class="cg-trang" id="cg-trang"></div><p class="tk-ghi" id="cg-dem" style="margin-top:8px;"></p>""")
+
+
+def may_tu_form(form):
+    """Gop may tick truc tiep + may cua cac group da tick (bo trung, giu thu tu)."""
+    ids = list(form.getlist("may"))
+    nhom = {g["id"]: g for g in DL.NHOM_MAY.doc()}
+    for gid in form.getlist("nhom"):
+        ids += (nhom.get(gid) or {}).get("may", [])
+    return list(dict.fromkeys(ids))
 
 
 def trang_trien_khai():
@@ -180,10 +224,11 @@ def trang_goi():
     body = f"""<p><a class="tk-nut" href="/uem/trien-khai">Quay lại</a></p>
     <div class="card"><h3>{_esc(ten)}</h3><p class="tk-ghi">{_esc(gid)}{" · bản mới nhất " + _esc(g["ban"]) if g and g.get("ban") else ""}</p>
     <form method="POST" action="/uem/trien-khai/chay" class="tk-f"><input type="hidden" name="goi_id" value="{_esc(gid)}"><input type="hidden" name="ten_goi" value="{_esc(ten)}">
-      <label>Hành động</label><select name="hanh_dong" style="max-width:260px;">{hd}</select>
-      <label>Máy áp dụng</label><div class="tk-luoi">{_chon_may_html()}</div>
+      <div class="tk-hang" style="gap:14px;flex-wrap:wrap;align-items:flex-end;"><div><label>Hành động</label><select name="hanh_dong" style="max-width:260px;margin:0;">{hd}</select></div>
+      <div><label for="cg-loai">Áp dụng cho</label><select id="cg-loai" style="max-width:220px;margin:0;"><option value="may">Chọn máy</option><option value="nhom">Chọn group</option></select></div></div>
+      {_chon_may_nhom_html()}
       <p class="tk-ghi">Máy đã đúng trạng thái sẽ được bỏ qua, không cài lại. Tiến độ hiện ngay trong cửa sổ nổi.</p>
-      <div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Bắt đầu</button></div></form></div>"""
+      <div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Bắt đầu</button></div></form></div>{JS_CHON}"""
     return trang(body, "td")
 
 
@@ -407,25 +452,6 @@ def trang_quan_tri(muc):
     abort(404)
 
 
-CHUA_HO_TRO = [
-    ("Agent cài trên máy", "Đã làm, khác OpenUEM: agent là dịch vụ Windows viết bằng C# (biên dịch ngay trên máy lúc cài), nói chuyện HTTPS mTLS (CA riêng, chứng chỉ riêng từng máy, có thu hồi), không dùng NATS. Profile tự áp dụng khi Console System tắt. Chỉ chạy trong mạng tới được cổng 8443 của Console System (không qua đường hầm Cloudflare/Internet); Windows 10 / Server 2016 trở lên; chỉ mới thử trên Windows 11.", "Đã làm, khác OpenUEM"),
-    ("Điều khiển từ xa VNC / noVNC", "Đã làm: TightVNC dịch vụ thủ công + PIN ngẫu nhiên mỗi phiên + noVNC trong trình duyệt. Máy có agent: kết nối đi ngược qua mTLS (TightVNC chỉ nghe 127.0.0.1, không mở cổng ra mạng) và có thể xin phép người đang dùng máy.", "Đã làm"),
-    ("RustDesk, NetBird", "OpenUEM tích hợp để điều khiển qua Internet/NAT; Console System chưa có.", "Chưa hỗ trợ"),
-    ("Đăng nhập OIDC, 2FA, phân quyền người dùng", "Console System hiện dùng một tài khoản quản trị chung.", "Chưa hỗ trợ"),
-    ("Nhiều tổ chức (multi-tenancy)", "Chỉ một tổ chức, nhưng dùng Địa điểm và Thẻ để phân nhóm.", "Chưa hỗ trợ"),
-    ("Gửi email cảnh báo (SMTP)", "Hiện chỉ hiển thị cảnh báo trên trang Tổng quan.", "Chưa hỗ trợ"),
-    ("Máy Linux và macOS", "OpenUEM đang xây dựng; ở đây hiện chỉ làm máy Windows.", "Chưa hỗ trợ"),
-    ("Thông tin theo từng người dùng Windows", "Máy in riêng, màn hình, người đang đăng nhập: có qua \"trợ lý phiên\" của agent (cần agent). Chưa có: tự đặt máy in mặc định, thao tác HKCU (dùng HKEY_USERS\\<SID>).", "Giới hạn kỹ thuật"),
-    ("Cài ứng dụng Microsoft Store (MSIX theo người dùng)", "Không cài được từ dịch vụ hệ thống.", "Giới hạn kỹ thuật"),
-    ("Đặt cấu hình tự động cập nhật Windows từ xa", "Đọc được trạng thái, ghi từ xa có thể bị Windows từ chối.", "Giới hạn kỹ thuật"),
-]
-
-
-def trang_chua_ho_tro():
-    h = "".join(f'<tr><td><b>{_esc(a)}</b></td><td>{_esc(b)}</td><td>{chip(c, "xanh" if c.startswith("Đã làm") else ("vang" if c == "Đang triển khai" else ""))}</td></tr>' for a, b, c in CHUA_HO_TRO)
-    return trang(f'<div class="card"><p>Các chức năng của OpenUEM mà Console System chưa làm hoặc làm khác, để anh biết rõ giới hạn:</p><table class="tk-bang"><tr><th>Chức năng</th><th>Ghi chú</th><th>Tình trạng</th></tr>{h}</table></div>', "ch")
-
-
 # ----------------------------------------------------------------- tab con lai cua may
 def _ket_noi_may(m, bat_buoc_winrm=False):
     """(client, mat_khau) - qua agent neu dang song, khong thi WinRM. Loi -> UK.LoiMay (thong diep tieng Viet)."""
@@ -537,8 +563,7 @@ def tab_tu_xa(m):
       <form method="POST" action="/uem/may/{m["id"]}/lenh" class="tk-f"><label>Lệnh chạy trên máy</label>
         <textarea name="lenh" rows="4" style="width:100%;max-width:none;font-family:var(--mono);" required placeholder="Get-Service | Where-Object Status -eq Running | Select-Object -First 5"></textarea>
         <div style="margin-top:10px;"><button class="tk-nut chinh" type="submit">Chạy lệnh</button></div></form>
-      {('<pre style="white-space:pre-wrap;margin-top:14px;max-height:420px;overflow:auto;">' + _esc(KET_QUA_LENH.pop(m["id"], "")) + "</pre>") if m["id"] in KET_QUA_LENH else ""}</div>
-      <p class="tk-ghi">RustDesk, NetBird: xem mục <a href="/uem/chua-ho-tro">Chưa hỗ trợ</a>.</p>''')
+      {('<pre style="white-space:pre-wrap;margin-top:14px;max-height:420px;overflow:auto;">' + _esc(KET_QUA_LENH.pop(m["id"], "")) + "</pre>") if m["id"] in KET_QUA_LENH else ""}</div>''')
 
 
 KET_QUA_LENH = {}
@@ -672,30 +697,6 @@ def register_uem(app):
     @app.route("/uem/may")
     def uem_may():
         return T.trang_may()
-
-    @app.route("/uem/may/them", methods=["POST"])
-    def uem_may_them():
-        ips = _ips_tu_chuoi(request.form.get("ip", ""))
-        if not ips:
-            return chuyen("/uem/may", "Địa chỉ IP không hợp lệ (ví dụ 192.168.1.10, 192.168.1.20-30).", False)
-        ten = (request.form.get("ten") or "").strip()[:60]
-        tk = request.form.get("tk") or None
-        if tk and not DL.tim(DL.TAI_KHOAN.doc(), tk):
-            tk = None
-        them = []
-
-        def ghi(ds):
-            for ip in ips:
-                if any(x["ip"] == ip for x in ds):
-                    continue
-                mid = DL.moi_id()
-                ds.append({"id": mid, "ten": ten if len(ips) == 1 else "", "ip": ip, "mac": DC.mac_tu_arp(ip), "tai_khoan_id": tk, "giam_sat": True})
-                them.append(mid)
-        DL.MAY.sua(ghi)
-        if tk:
-            for mid in them:
-                UBC.chay_nen(mid)
-        return chuyen("/uem/may", f"Đã thêm {len(them)} máy" + (f", bỏ qua {len(ips) - len(them)} máy đã có." if len(them) < len(ips) else ".") + (" Đang lấy báo cáo." if tk and them else ""), bool(them))
 
     @app.route("/uem/may/hang-loat", methods=["POST"])
     def uem_may_hl():
@@ -1036,7 +1037,7 @@ def register_uem(app):
 
     @app.route("/uem/trien-khai/chay", methods=["POST"])
     def uem_td_chay():
-        dot, loi = UT.bat_dau(request.form.get("hanh_dong", ""), (request.form.get("goi_id") or "").strip(), (request.form.get("ten_goi") or "").strip()[:120], request.form.getlist("may"))
+        dot, loi = UT.bat_dau(request.form.get("hanh_dong", ""), (request.form.get("goi_id") or "").strip(), (request.form.get("ten_goi") or "").strip()[:120], may_tu_form(request.form))
         if loi:
             return chuyen("/uem/trien-khai", loi, False)
         return redirect_dot(dot)
@@ -1271,10 +1272,6 @@ def register_uem(app):
         if p and p["may_id"] == mid:
             UV.ket_thuc(tok)
         return jsonify({"ok": True})
-
-    @app.route("/uem/chua-ho-tro")
-    def uem_ch():
-        return trang_chua_ho_tro()
 
 
 def redirect_dot(dot):

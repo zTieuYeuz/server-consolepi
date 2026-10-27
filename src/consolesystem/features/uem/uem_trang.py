@@ -31,7 +31,7 @@ from consolesystem.web import chon_may as _CM
 
 TABS = [("tq", "Tổng quan", "/uem"), ("may", "Máy tính", "/uem/may"), ("pm", "Phần mềm", "/uem/phan-mem"), ("bm", "Bảo mật", "/uem/bao-mat"),
         ("td", "Triển khai phần mềm", "/uem/trien-khai"), ("pf", "Profiles", "/uem/profiles"), ("bc", "Báo cáo", "/uem/bao-cao"),
-        ("qt", "Quản trị", "/uem/quan-tri"), ("ch", "Chưa hỗ trợ", "/uem/chua-ho-tro")]
+        ("qt", "Quản trị", "/uem/quan-tri")]
 
 CSS = """
 <style>
@@ -306,13 +306,12 @@ def trang_tong_quan():
 
 # ----------------------------------------------------------------- danh sach may
 def trang_may():
-    ds = DL.MAY.doc()
+    ds = [m for m in DL.MAY.doc() if UA.co_agent(m)]                # Console chi quan ly may DA CAI agent (may chua cai: chi Trien khai phan mem dung qua WinRM)
     the_ds = UD.THE.doc()
     dd = UD.DIA_DIEM.doc()
     tk = DL.tai_khoan_cong_khai()
     nhom_ds = DL.NHOM_MAY.doc()
     hang = ""
-    dem_kieu = {}
     for m in ds:
         if m.get("an"):
             continue                                     # da xoa khoi quan ly (may co agent), tu hien lai khi agent bao nhip
@@ -323,19 +322,12 @@ def trang_may():
         loc_t = "|".join(m.get("the", []))
         tim = " ".join([ten_may(m), m["ip"], os_.get("description", ""), cs.get("model", ""), cs.get("manufacturer", ""), usr, m.get("ghi_chu", "")]).lower()
         dia = DL.tim(dd, m.get("dia_diem"))
-        if UA.co_agent(m):
-            kieu, kieu_chip = "Có agent", chip("Có agent", "xanh")
-        elif m.get("tai_khoan_id"):
-            kieu, kieu_chip = "Chưa cài agent", chip("Chưa cài agent · qua WinRM", "vang")
-        else:
-            kieu, kieu_chip = "Chưa cài agent", chip("Chưa cài agent", "")
-        dem_kieu[kieu] = dem_kieu.get(kieu, 0) + 1
         ng = [g for g in nhom_ds if m["id"] in g.get("may", [])]
         nhom_chip = "".join(f'<span class="uem-tag" style="background:#475569">{_esc(g["ten"])}</span>' for g in ng)
-        hang += (f'<tr data-nhom="{_esc("|".join(g["id"] for g in ng))}" data-kieu="{_esc(kieu)}" data-t="{_esc(tim)}" data-os="{_esc(os_.get("description", ""))}" data-hang="{_esc(cs.get("manufacturer", ""))}" data-the="{_esc(loc_t)}" '
+        hang += (f'<tr data-nhom="{_esc("|".join(g["id"] for g in ng))}" data-t="{_esc(tim)}" data-os="{_esc(os_.get("description", ""))}" data-hang="{_esc(cs.get("manufacturer", ""))}" data-the="{_esc(loc_t)}" '
                  f'data-tt="{_esc(nhan)}" data-dd="{_esc(m.get("dia_diem", ""))}">'
                  f'<td><input type="checkbox" name="may" value="{m["id"]}" form="f-hd"></td>'
-                 f'<td><a href="/uem/may/{m["id"]}"><b>{_esc(ten_may(m))}</b></a><div class="tk-ghi">{_esc(m["ip"])}{" · " + _esc(dia["ten"]) if dia else ""}</div>{kieu_chip}{nhom_chip}{the_html(m, the_ds)}</td>'
+                 f'<td><a href="/uem/may/{m["id"]}"><b>{_esc(ten_may(m))}</b></a><div class="tk-ghi">{_esc(m["ip"])}{" · " + _esc(dia["ten"]) if dia else ""}</div>{nhom_chip}{the_html(m, the_ds)}</td>'
                  f'<td>{_esc(os_.get("description", "").replace("Microsoft ", "")) or "—"}<div class="tk-ghi">{_esc(os_.get("version", ""))}</div></td>'
                  f'<td>{_esc(cs.get("manufacturer", "")) or "—"}<div class="tk-ghi">{_esc(cs.get("model", ""))}</div></td>'
                  f'<td>{_esc(usr) or "—"}</td>'
@@ -349,7 +341,6 @@ def trang_may():
     tt_opt = "".join(f'<option value="{x}">{x}</option>' for x in ("Đang giám sát", "Không kết nối", "Chờ gán tài khoản", "Chưa có báo cáo", "Quá hạn báo cáo", "Vô hiệu"))
     tk_opt = "".join(f'<option value="{t["id"]}">{_esc(t["ten"])} ({_esc(t["user"])})</option>' for t in tk)
     bang = (f'''<div class="uem-ds" data-trang="15"><div class="uem-loc"><input type="text" class="uem-tim" placeholder="Tìm tên, IP, người dùng, model...">
-      <select class="uem-chon" data-k="kieu"><option value="">Mọi máy ({len(ds)})</option><option value="Có agent">Có agent ({dem_kieu.get("Có agent", 0)})</option><option value="Chưa cài agent">Chưa cài agent ({dem_kieu.get("Chưa cài agent", 0)})</option></select>
       <select class="uem-chon" data-k="nhom"><option value="">Mọi nhóm máy</option>{nhom_opt}</select>
       <select class="uem-chon" data-k="os"><option value="">Mọi hệ điều hành</option>{os_opt}</select>
       <select class="uem-chon" data-k="hang"><option value="">Mọi hãng</option>{hang_opt}</select>
@@ -358,9 +349,9 @@ def trang_may():
       <select class="uem-chon" data-k="tt"><option value="">Mọi trạng thái</option>{tt_opt}</select>
       <span class="tk-ghi"><b class="uem-dem"></b> máy</span></div>
       <div class="uem-bang-cuon"><table class="tk-bang"><thead><tr><th></th><th>Máy</th><th>Hệ điều hành</th><th>Hãng / model</th><th>Người dùng</th><th>Diệt virus</th><th>Trạng thái</th></tr></thead>
-      <tbody>{hang}</tbody></table></div></div>''' if ds else '<p class="tk-ghi">Chưa có máy nào. Thêm ở <a href="/deployos/trienkhai/may">Triển khai phần mềm, Máy</a> hoặc quét mạng bên dưới.</p>')
+      <tbody>{hang}</tbody></table></div></div>''' if ds else '<p class="tk-ghi">Chưa có máy nào cài agent. Máy chỉ hiện ở đây sau khi cài agent: tạo gói cài ở <a href="/uem/quan-tri/agent">Quản trị, Agent</a> rồi chạy trên máy (hoặc triển khai bằng Triển khai phần mềm).</p>')
     body = f"""
-    <div class="tk-ghi" style="margin-bottom:8px;">Danh sách này dùng chung với <b>Triển khai phần mềm</b>: máy thêm ở đó cũng hiện ở đây. Máy ghi <b>Chưa cài agent</b> chỉ lấy được báo cáo qua WinRM (nếu đã gán tài khoản), chưa có tray, điều khiển nhanh hay truy cập qua Internet. Dùng bộ lọc <b>Có agent</b> để chỉ xem máy đã cài agent.</div>
+    <div class="tk-ghi" style="margin-bottom:8px;">Chỉ máy <b>đã cài agent</b> mới hiện ở đây; máy tự lên danh sách khi agent báo về lần đầu. Muốn thêm máy: cài agent (gói cài ở <a href="/uem/quan-tri/agent">Quản trị, Agent</a>).</div>
     <div class="card">{bang}
     <form method="POST" action="/uem/may/hang-loat" id="f-hd" class="tk-f" style="margin-top:14px;border-top:1px solid var(--vien);padding-top:12px;">
       <div class="tk-hang"><b>Với các máy đã chọn:</b>
@@ -373,14 +364,7 @@ def trang_may():
         <input type="text" name="nhom_moi" placeholder="Tên nhóm mới" style="margin:0;height:40px;max-width:180px;">
         <select name="the" style="margin:0;height:40px;"><option value="">(thẻ)</option>{the_opt}</select>
         <select name="dd" style="margin:0;height:40px;"><option value="">(địa điểm)</option>{dd_opt}</select>
-        <button type="submit" class="tk-nut chinh">Thực hiện</button></div></form></div>
-    <h2>Thêm máy mới</h2>
-    <div class="card"><form method="POST" action="/uem/may/them" class="tk-f tk-hang">
-      <input type="text" name="ip" placeholder="IP, dải 192.168.1.10-30 hoặc nhiều IP" required style="margin:0;height:42px;max-width:320px;">
-      <input type="text" name="ten" placeholder="Tên (tuỳ chọn)" style="margin:0;height:42px;max-width:220px;">
-      <select name="tk" style="margin:0;height:42px;"><option value="">(tài khoản quản trị)</option>{tk_opt}</select>
-      <button type="submit" class="tk-nut chinh">Thêm</button>
-      <a class="tk-nut" href="/deployos/trienkhai/may/quet">Quét mạng</a></form></div>"""
+        <button type="submit" class="tk-nut chinh">Thực hiện</button></div></form></div>"""
     return trang(body, "may")
 
 

@@ -67,7 +67,7 @@
 /deployos/font/<bo_id>/xoa-font	POST	deployos_font_xoa_font
 /deployos/font/tao	POST	deployos_font_tao
 /deployos/font/xoa	POST	deployos_font_xoa
-/deployos/kho	GET	deployos_kho
+/deployos/kho	GET	deployos_kho_cu
 /deployos/kho/ghep	POST	deployos_kho_ghep
 /deployos/kho/huy	POST	deployos_kho_huy
 /deployos/kho/tai	POST	deployos_kho_tai
@@ -171,6 +171,7 @@
 /gopy	GET	gopy_trang
 /gopy	POST	gopy_gui
 /healthz	GET	healthz
+/kho-trung-tam	GET	deployos_kho
 /khoa-may	GET,POST	khoa_may_trang
 /login	GET,POST	login
 /logout	GET	logout
@@ -300,7 +301,6 @@
 /uem/bao-cao/<ten>.csv	GET	uem_bc_csv
 /uem/bao-mat	GET	uem_bm
 /uem/bao-mat/cap-nhat	GET	uem_bm_cn
-/uem/chua-ho-tro	GET	uem_ch
 /uem/may	GET	uem_may
 /uem/may/<mid>	GET	uem_may_ct
 /uem/may/<mid>/	GET	uem_may_ct
@@ -335,7 +335,6 @@
 /uem/may/<mid>/tu-xa/vnc/mo	POST	uem_vnc_mo
 /uem/may/<mid>/xoa	POST	uem_may_xoa
 /uem/may/hang-loat	POST	uem_may_hl
-/uem/may/them	POST	uem_may_them
 /uem/novnc/<path:p>	GET	uem_novnc
 /uem/phan-mem	GET	uem_pm
 /uem/profiles	GET	uem_pf

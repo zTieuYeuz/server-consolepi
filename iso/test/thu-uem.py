@@ -21,6 +21,15 @@ c = app.test_client(); H = {"X-ConsolePi-Local": "1"}
 def post(p, d=None, **kw): return c.post(p, data=d or {}, headers=H, follow_redirects=True, **kw)
 def get(p): return c.get(p, headers=H, follow_redirects=True)
 def txt(r): return r.get_data(as_text=True)
+import ui.uem_agent as _UAg  # noqa: E402
+def trang_may_agent():
+    """Trang Máy tính chỉ hiện máy có agent: coi máy giả là đã cài agent khi kiểm danh sách."""
+    goc = _UAg.co_agent
+    _UAg.co_agent = lambda m: True
+    try:
+        return txt(get("/uem/may"))
+    finally:
+        _UAg.co_agent = goc
 
 def bao_cao(ten, os_ten, hang, usage=40, av=True, bit="Unencrypted", cho=1):
     return {"hostname": ten, "ip": "10.1.1.1", "mac": "AA:BB:CC:DD:EE:01",
@@ -48,13 +57,13 @@ DL.MAY.sua(nap)
 
 # ---- cac trang chinh
 for p in ("/uem", "/uem/may", "/uem/phan-mem", "/uem/bao-mat", "/uem/bao-mat/cap-nhat", "/uem/trien-khai", "/uem/trien-khai/lich-su", "/uem/profiles", "/uem/bao-cao",
-          "/uem/quan-tri", "/uem/quan-tri/may", "/uem/quan-tri/the", "/uem/quan-tri/dia-diem", "/uem/quan-tri/metadata", "/uem/quan-tri/cai-dat", "/uem/quan-tri/nhat-ky", "/uem/chua-ho-tro"):
+          "/uem/quan-tri", "/uem/quan-tri/may", "/uem/quan-tri/the", "/uem/quan-tri/dia-diem", "/uem/quan-tri/metadata", "/uem/quan-tri/cai-dat", "/uem/quan-tri/nhat-ky"):
     r = get(p); kt(f"trang {p} 200", r.status_code == 200 and "Quản lý máy trạm" in txt(r), str(r.status_code))
 h = txt(get("/uem"))
 kt("menu co muc Quan ly may tram dang sang", re.search(r'href="/uem" class="active"', h) is not None)
 kt("tong quan: dem dung 3 may, 1 AV tat, 1 o day", ">3<" in h and "Máy diệt virus đang tắt" in h and "Máy có ổ đĩa đầy từ 90%" in h)
 kt("tong quan: khong lo script", "<script>alert(1)" not in h)
-h = txt(get("/uem/may"))
+h = trang_may_agent()
 kt("danh sach may: bi danh bi escape", "&lt;script&gt;alert(1)" in h and "<script>alert(1)" not in h)
 kt("danh sach may: 3 hang", h.count('data-t="') >= 3)
 kt("trang thai: Khong ket noi / Chua co bao cao / Dang giam sat", "Không kết nối" in h and "Chờ gán tài khoản" in h)
@@ -90,7 +99,7 @@ post("/uem/may/m1/quan-ly", {"ip": "10.1.1.1", "the": [t1], "dia_diem": d1, "gia
 post("/uem/may/m1/ghi-chu", {"ghi_chu": "Ghi chú <i>1</i>"}); r = get("/uem/may/m1/ghi-chu"); kt("ghi chu luu + escape", "&lt;i&gt;1" in txt(r) and "<i>1</i>" not in txt(r))
 post("/uem/may/m1/metadata", {"md_" + md: "Anh An", "md_xxx": "bay"}); m1 = DL.tim(DL.MAY.doc(), "m1")
 kt("metadata: luu dung truong da dinh nghia, bo truong la", m1["metadata"] == {md: "Anh An"})
-h = txt(get("/uem/may")); kt("loc the/dia diem co trong danh sach", 'data-the="' + t1 + '"' in h and 'data-dd="' + d1 + '"' in h)
+h = trang_may_agent(); kt("loc the/dia diem co trong danh sach", 'data-the="' + t1 + '"' in h and 'data-dd="' + d1 + '"' in h)
 # ---- hang loat
 post("/uem/may/hang-loat", {"may": ["m2", "m3"], "viec": "them_the", "the": t2}); kt("hang loat: them the", all(t2 in DL.tim(DL.MAY.doc(), i)["the"] for i in ("m2", "m3")))
 post("/uem/may/hang-loat", {"may": ["m2"], "viec": "bo_the", "the": t2}); kt("hang loat: go the", t2 not in DL.tim(DL.MAY.doc(), "m2")["the"] and t2 in DL.tim(DL.MAY.doc(), "m3")["the"])
@@ -101,10 +110,10 @@ r = post("/uem/may/hang-loat", {"viec": "xoa"}); kt("hang loat: khong chon may -
 r = post("/uem/may/hang-loat", {"may": ["m3"], "viec": "gan_tk", "tk": "khong-co"}); kt("hang loat: gan tai khoan khong ton tai bi tu choi", "Chọn tài khoản" in txt(r))
 r = post("/uem/may/hang-loat", {"may": ["m3"], "viec": "bao_cao"}); kt("hang loat: bao cao may chua gan tai khoan -> 0 may", "0 máy" in txt(r))
 # ---- them may
-post("/uem/may/them", {"ip": "10.9.9.10-12", "ten": ""}); kt("them dai IP -> 3 may moi (tong 6)", len(DL.MAY.doc()) == 6)
-r = post("/uem/may/them", {"ip": "10.9.9.10"}); kt("them trung IP bi bo qua", len(DL.MAY.doc()) == 6 and "bỏ qua 1" in txt(r))
-r = post("/uem/may/them", {"ip": "10.9.9.300"}); kt("them IP sai bi tu choi", "không hợp lệ" in txt(r) and len(DL.MAY.doc()) == 6)
-r = post("/uem/may/them", {"ip": "10.9.9.9-3"}); kt("dai nguoc bi tu choi", "không hợp lệ" in txt(r))
+_n = len(DL.MAY.doc()); c.post("/uem/may/them", data={"ip": "10.9.9.10"}, headers=H)
+kt("bo them may tay: /uem/may/them khong con them duoc may", len(DL.MAY.doc()) == _n and 'action="/uem/may/them"' not in txt(get("/uem/may")))
+kt("Máy tính: may chua cai agent khong hien", "Chưa có máy nào cài agent" in txt(get("/uem/may")) or 'data-t="' not in txt(get("/uem/may")))
+DL.MAY.sua(lambda ds: ds.extend({"id": "x%d" % i, "ten": "", "ip": "10.9.9.%d" % i, "giam_sat": True} for i in (10, 11, 12)))
 post("/uem/may/hang-loat", {"may": [m["id"] for m in DL.MAY.doc() if m["ip"].startswith("10.9.9.")], "viec": "xoa"}); kt("hang loat: xoa", len(DL.MAY.doc()) == 3)
 # ---- bao cao / csv / rdp
 for ten in ("may", "phan-mem", "o-dia", "bao-mat", "cap-nhat", "may-in", "mang"):
@@ -353,7 +362,7 @@ r = post("/uem/may/hang-loat", {"may": ["g3"], "viec": "nhom_moi", "nhom_moi": "
 kt("nhom may: trung ten (khong phan biet hoa thuong) bi tu choi", len([g for g in DL.NHOM_MAY.doc() if g["ten"].lower() == "ke toan"]) == 1 and "Đã có nhóm" in txt(r))
 post("/uem/may/hang-loat", {"may": ["g3"], "viec": "them_nhom", "nhom": _ng[0]["id"]})
 kt("nhom may: them may vao nhom co san", "g3" in DL.tim(DL.NHOM_MAY.doc(), _ng[0]["id"])["may"])
-_t = txt(get("/uem/may"))
+_t = trang_may_agent()
 kt("Máy tính: hien chip nhom + bo loc nhom", 'data-k="nhom"' in _t and "Ke toan" in _t and 'data-nhom="' + _ng[0]["id"] in _t)
 post("/uem/profiles/tao", {"ten": "Chinh sach KT"}); _pf = [p for p in UD.PROFILES.doc() if p["ten"] == "Chinh sach KT"][0]
 post(f"/uem/profiles/{_pf['id']}/luu", {"ten": "Chinh sach KT", "nhom_may": [_ng[0]["id"], "khong-co"], "bat": "1"})
@@ -599,7 +608,7 @@ post(f"/uem/profiles/{px}/task/luu", {"loai_tac_vu": "powershell", "script": X, 
 DL.MAY.sua(lambda ds: ds[0].update(agent=dict(ds[0].get("agent") or {}, ban=X, may=X), phien_nd={"user": X, "printers": [{"name": X, "port": X}], "monitors": [{"model": X, "manufacturer": X}], "luc": time.time()}))
 bad = []
 for p in ["/uem", "/uem/may", "/uem/phan-mem", "/uem/bao-mat", "/uem/bao-mat/cap-nhat", "/uem/trien-khai", "/uem/trien-khai/goi?id=7zip.7zip", "/uem/profiles", f"/uem/profiles/{px}", "/uem/bao-cao",
-          "/uem/quan-tri/may", "/uem/quan-tri/agent", "/uem/quan-tri/the", "/uem/quan-tri/dia-diem", f"/uem/quan-tri/dia-diem?sua={dx}", f"/uem/quan-tri/the?sua={tx}", "/uem/quan-tri/metadata", "/uem/quan-tri/nhat-ky", "/uem/chua-ho-tro", "/uem/phan-mem?ten=7-Zip"] + \
+          "/uem/quan-tri/may", "/uem/quan-tri/agent", "/uem/quan-tri/the", "/uem/quan-tri/dia-diem", f"/uem/quan-tri/dia-diem?sua={dx}", f"/uem/quan-tri/the?sua={tx}", "/uem/quan-tri/metadata", "/uem/quan-tri/nhat-ky", "/uem/phan-mem?ten=7-Zip"] + \
          [f"/uem/may/m1/{t}" for t in ("", "phan-cung", "he-dieu-hanh", "o-dia", "man-hinh", "mang", "may-in", "chia-se", "phan-mem", "cap-nhat", "ghi-chu", "metadata", "quan-ly", "tu-xa", "agent", "nguon", "trien-khai", "tac-vu")]:
     h = txt(get(p))
     if "<script>alert(7)" in h or "</script>alert" in h: bad.append(p)

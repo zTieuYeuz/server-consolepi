@@ -229,6 +229,7 @@ _hp = []
 import ui.uem_agent as _UA  # noqa: E402
 from consolesystem.integrations import rustdesk_giam_sat as GS  # noqa: E402
 from consolesystem.features.uem import uem_rustdesk as URD  # noqa: E402
+from consolesystem.features.uem import uem_trang_b as URB  # noqa: E402
 
 
 def cho_kn(r):
@@ -351,4 +352,21 @@ _rgt = _rg.data.decode("utf-16")
 kq["reg_trinh_duyet"] = _rg.status_code == 200 and _rg.data[:2] == b"\xff\xfe" and _rgt.startswith("Windows Registry Editor") and '\\"allowed_origins\\": [\\"http://192.168.110.30\\"]' in _rgt and "Microsoft\\Edge" in _rgt
 kq["popup_xac_nhan"] = "Mở RustDesk để kết nối?" in _tr and "location.href=d.url" not in _tr
 kq["tb_do_dai_byte"] = "$m.Length * 2" in URD.ps_thong_bao("x")
+# 27/10: 5 viec anh yeu cau
+kq["bo_chua_ho_tro"] = c.get("/uem/chua-ho-tro", headers=H).status_code == 404 and "Chưa hỗ trợ" not in c.get("/uem", headers=H).get_data(as_text=True)
+_menu = c.get("/uem", headers=H).get_data(as_text=True)
+kq["remote_tren_profile"] = 0 < _menu.find('href="/rustdesk"') < _menu.find('href="/uem/profiles"')
+kq["kho_trung_tam_menu"] = 'href="/kho-trung-tam"' in _menu and c.get("/deployos/kho", headers=H).headers.get("Location", "").endswith("/kho-trung-tam")
+_kt = c.get("/kho-trung-tam", headers=H)
+kq["kho_trung_tam_trang"] = _kt.status_code == 200 and "Kho dùng chung" in _kt.get_data(as_text=True)
+kq["kho_khong_con_tab"] = "/deployos/kho" not in c.get("/deployos/os", headers=H).get_data(as_text=True) and "/deployos/kho\"" not in c.get("/deployos/trienkhai", headers=H).get_data(as_text=True)
+DL.MAY.sua(lambda ds: ds.append({"id": "m-khong-agent", "ip": "10.9.9.77", "ten": "MAY-WINRM", "giam_sat": True}))
+DL.NHOM_MAY.sua(lambda ds: ds.append({"id": "g-test", "ten": "Phong Ke toan", "may": ["m-agent", "m-khong-agent"]}))
+_g = c.get("/uem/trien-khai/goi?id=Google.Chrome", headers=H).get_data(as_text=True)
+kq["wg_chon_theo"] = 'id="cg-loai"' in _g and "Chọn máy" in _g and "Chọn group" in _g and 'id="cg-tim"' in _g and "MOI_TRANG=25" in _g
+kq["wg_chi_may_agent"] = 'value="m-agent"' in _g and "MAY-WINRM" not in _g and "Phong Ke toan" in _g
+from werkzeug.datastructures import MultiDict  # noqa: E402
+kq["wg_gop_group"] = URB.may_tu_form(MultiDict([("may", "m-agent"), ("nhom", "g-test")])) == ["m-agent", "m-khong-agent"]
+_mt = c.get("/uem/may", headers=H).get_data(as_text=True)
+kq["may_tinh_chi_agent"] = "MAY-AGENT-A" in _mt and "MAY-WINRM" not in _mt and 'action="/uem/may/them"' not in _mt
 print("KETQUA " + json.dumps(kq))

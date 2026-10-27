@@ -41,8 +41,8 @@ kt("khoa 0600", oct(os.stat(os.path.join(DL.DIR, ".khoa")).st_mode)[-3:] == "600
 # ---- trang
 for p in ("", "/kichban", "/lich", "/may", "/may/nhom", "/may/quet", "/may/taikhoan", "/nhom-tn", "/khac"):
     r = get("/deployos/trienkhai" + p); kt(f"trang {p or '/'} 200", r.status_code == 200 and "Triển khai" in r.get_data(as_text=True))
-r = get("/deployos/kho"); h = r.get_data(as_text=True); open("/tmp/kho-test.html","w").write(h)
-kt("Kho trung tam (ngu canh tk): khong co nut loc He dieu hanh / WinPE", 'data-loai="os"' not in h and 'data-loai="winpe"' not in h and 'data-loai="phanmem"' in h)
+r = get("/kho-trung-tam"); h = r.get_data(as_text=True); open("/tmp/kho-test.html","w").write(h)
+kt("Kho trung tam dung chung (Kho luu tru): hien du moi loai, khong con loc theo ngu canh", "Kho dùng chung" in h and ('data-loai="os"' in h or "chưa kết nối" in h.lower() or "Thử lại" in h))
 r = get("/deployos/console/apps"); kt("Tai nguyen Phan mem (tk): thanh tab Trien khai", "Máy - nhóm máy" in r.get_data(as_text=True))
 r = get("/deployos/kichban"); kt("Vao Deployment OS tro lai thanh tab OS", "Tiến trình" in r.get_data(as_text=True) and "Máy - nhóm máy" not in r.get_data(as_text=True))
 # ---- may / nhom / tai khoan
@@ -145,7 +145,7 @@ GOI = []
 KT.doc_cauhinh = lambda: {"url": "https://kho.test", "token": "t"}
 KT.danh_sach = lambda ch: (True, DS_KHO)
 KT.tai_nen = lambda ch, m, dich, sau=None, khi_huy=None, don_dep=None: (GOI.append((m["id"], os.path.basename(dich))) or (True, "ok"))
-trang = get("/deployos/kho").get_data(as_text=True)
+trang = get("/kho-trung-tam").get_data(as_text=True)
 kt("Kho trung tam: moi muc tai duoc co o tich, muc khong ho tro thi khong", trang.count('class="tich-kho"') == 4, str(trang.count('class="tich-kho"')))
 kt("Kho trung tam: o 'chon tat ca' + nut Tai cac muc da tich", 'id="tich-tat-ca"' in trang and 'action="/deployos/kho/tai-nhieu"' in trang and "Tải các mục đã tích" in trang)
 r = post("/deployos/kho/tai-nhieu", {"id": ["m1", "m3", "s1", "khong-co"]})

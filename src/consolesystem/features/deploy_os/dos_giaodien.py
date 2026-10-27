@@ -27,7 +27,6 @@ def ngu_canh_trienkhai():
 def _tabs_trienkhai(chinh, phu=""):
     tab_chinh = [
         ("tainguyen", "Tài nguyên", "/deployos/console/apps"),
-        ("kho", "Kho trung tâm", "/deployos/kho"),
         ("lich", "Lập lịch", "/deployos/trienkhai/lich"),
         ("may", "Máy - nhóm máy", "/deployos/trienkhai/may"),
         ("kichban", "Kịch bản", "/deployos/trienkhai/kichban"),
@@ -72,7 +71,6 @@ def tabs_deployos(chinh, phu=""):
     tab_chinh = [
         ("kichban", "Kịch bản", "/deployos/kichban"),
         ("tainguyen", "Tài nguyên", "/deployos/os"),
-        ("kho", "Kho trung tâm", "/deployos/kho"),
         ("tiendo", "Tiến trình", "/deployos/tiendo"),
         ("caidat", "Cài đặt", "/deployos/caidat"),
     ]
