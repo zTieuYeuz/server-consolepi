@@ -207,4 +207,19 @@ kq["rd_doi_may_chu_script"] = "--option custom-rendezvous-server 'rd.example.com
 t = c.get("/rustdesk/api/trang-thai", headers=H).get_json()
 kq["rd_tt_relay"] = t["relay_hieu_luc"] == "relay.example.com" and "api" not in t
 kq["rd_trang_khong_con_web"] = all(x not in c.get("/rustdesk", headers=H).get_data(as_text=True) for x in ("rustdesk-api", "WebSocket", "itserver"))
+r_vnc = c.get("/rustdesk/vnc", headers=H).get_data(as_text=True)
+kq["vnc_trang"] = all(x in r_vnc for x in ("Remote VNC", "Remote RustDesk", "Tải TightVNC 64-bit", "cm-vn", "Chọn tất cả"))
+_dsv = c.get("/rustdesk/vnc/api/may", headers=H).get_json()["may"]
+kq["vnc_chi_may_agent"] = [x["id"] for x in _dsv] == ["m-agent"]
+kq["vnc_viec_la"] = post("/rustdesk/vnc/api/chay", {"viec": "xoa-het", "may": ["m-agent"]}).get_json()["ok"] is False
+kq["vnc_may_la"] = post("/rustdesk/vnc/api/chay", {"viec": "kiem", "may": ["khong-co"]}).get_json()["ok"] is False
+_j = post("/rustdesk/vnc/api/chay", {"viec": "kiem", "may": ["m-agent"]}).get_json()
+for _ in range(50):
+    _t2 = c.get("/rustdesk/vnc/api/tt/" + _j["ma"], headers=H).get_json()
+    if _t2["xong"] == _t2["tong"]:
+        break
+    _t.sleep(0.1)
+kq["vnc_chay_xong"] = _t2["tong"] == 1 and _t2["xong"] == 1 and _t2["kq"]["m-agent"]["ok"] is not None
+kq["rd_5_tab"] = all(('data-buoc="%d"' % i) in c.get("/rustdesk", headers=H).get_data(as_text=True) for i in range(1, 6))
+kq["tab_trien_khai"] = "Triển khai từ WinGet" in c.get("/uem/trien-khai", headers=H).get_data(as_text=True) and "Triển khai từ WinGet" in c.get("/deployos/trienkhai", headers=H).get_data(as_text=True)
 print("KETQUA " + json.dumps(kq))

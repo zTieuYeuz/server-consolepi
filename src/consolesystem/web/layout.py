@@ -75,11 +75,11 @@ NAV_ITEMS = [
         ("/uem/may", "Máy tính", "💻"),
         ("/uem/phan-mem", "Phần mềm", "📦"),
         ("/uem/bao-mat", "Bảo mật", "🛡️"),
-        ("/uem/trien-khai", "Triển khai WinGet", "🚀"),
+        ("/uem/trien-khai", "Triển khai phần mềm", "🚀"),
         ("/uem/profiles", "Profiles", "📋"),
         ("/uem/bao-cao", "Báo cáo", "📄"),
         ("/uem/quan-tri", "Quản trị", "⚙️"),
-        ("/rustdesk", "RustDesk", "🛰️"),
+        ("/rustdesk", "Phần mềm remote", "🛰️"),
         ("/uem/chua-ho-tro", "Chưa hỗ trợ", "ℹ️"),
     ]),
 

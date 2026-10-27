@@ -254,6 +254,11 @@
 /rustdesk/api/thiet-bi	GET	rustdesk_api_dev
 /rustdesk/api/trang-thai	GET	rustdesk_api_tt
 /rustdesk/doi-may-chu.ps1	GET	rustdesk_script_doi
+/rustdesk/vnc	GET	remote_vnc
+/rustdesk/vnc/api/chay	POST	remote_vnc_chay
+/rustdesk/vnc/api/may	GET	remote_vnc_may
+/rustdesk/vnc/api/tt/<ma>	GET	remote_vnc_tt
+/rustdesk/vnc/tai/<bits>	GET	remote_vnc_tai
 /settings	GET	settings_page
 /settings/don-rac	POST	settings_don_rac
 /settings/khoi-phuc	POST	settings_khoi_phuc

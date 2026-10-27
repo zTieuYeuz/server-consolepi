@@ -5,6 +5,7 @@ Driver / WinPE) | Lap lich | May - nhom may | Kich ban | Trien khai | Chuc nang 
 Du lieu: tk_dulieu.py. Dong co chay (WinRM + lap lich): tk_dongco.py.
 """
 from consolesystem.core import taisan as _taisan
+from consolesystem.web import chon_may as _CM
 import sys as _sys
 _sys.modules["ui.tk_trang"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
@@ -47,7 +48,7 @@ def _trang(body, chinh, phu="", tieu_de="Triển khai phần mềm", phu_de=""):
     if not DC.co_san():
         kiem = ('<div class="msg warn">Chưa cài thư viện WinRM: chạy <code>sudo bash /opt/console-pi/tools/cai-winrm.sh</code> '
                 "trong Terminal của Console System rồi tải lại trang.</div>")
-    return render_page(CSS + D.tabs_deployos(chinh, phu) + thong + kiem + body, active="/deployos/trienkhai",
+    return render_page(CSS + _CM.thanh_tab(_CM.TAB_TRIEN_KHAI, "phanmem") + D.tabs_deployos(chinh, phu) + thong + kiem + body, active="/deployos/trienkhai",
                        title=tieu_de, subtitle=phu_de or "Cài phần mềm hàng loạt qua mạng (WinRM)")
 
 

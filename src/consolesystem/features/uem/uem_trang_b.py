@@ -30,6 +30,7 @@ from ui import uem_agent as UA
 from consolesystem.features.uem import uem_dieukhien as UDK
 from consolesystem.features.uem import uem_sualoi as USL
 from consolesystem.features.uem import uem_rustdesk as URD
+from consolesystem.features.uem import uem_vnc_trang as UVT
 from ui import uem_pki as PKI
 from ui import uem_vnc as UV
 from ui import uem_winget as UW
@@ -522,15 +523,12 @@ def tab_tu_xa(m):
     return T.khung_may(m, "tu-xa", URD.khoi_tu_xa(m) + f'''{canh}<div class="card"><h3>Điều khiển màn hình ngay trong trình duyệt (VNC)</h3>
       <p>Thấy và điều khiển đúng màn hình đang hiện trên máy, kể cả màn hình đăng nhập. Mỗi phiên dùng mã PIN ngẫu nhiên, đóng tab là tự tắt. <b>Máy có agent</b>: kết nối đi ngược qua mTLS, TightVNC chỉ nghe 127.0.0.1 (không mở cổng ra mạng). <b>Máy chỉ có WinRM</b>: Console System kết nối thẳng tới cổng 5900, chỉ cho đúng IP Console System.</p>
       <p>Trạng thái: {trang_thai}</p>
-      <div class="tk-hang">
-      <form method="POST" action="{ma}/vnc/cai" {nut_tat}><button class="tk-nut" type="submit">{"Cấu hình lại" if v.get("da_cai") else "Cài TightVNC lên máy"}</button></form>
-      <form method="POST" action="{ma}/vnc/kiem-tra"><button class="tk-nut" type="submit">Kiểm tra</button></form>
-      <form method="POST" action="{ma}/vnc/go" onsubmit="return confirm('Gỡ TightVNC khỏi máy này?');"><button class="tk-nut do" type="submit">Gỡ</button></form></div>
+      <p class="tk-ghi">Cài / kiểm tra / gỡ TightVNC: vào <a href="/rustdesk/vnc">Phần mềm remote, Remote VNC</a> (chọn được nhiều máy một lần).</p>
       <form method="POST" action="{ma}/vnc/mo" class="tk-f" style="margin-top:14px;" {nut_tat}>
         <label class="tk-o"><input type="checkbox" name="bao" value="1" checked><span><b>Hiện thông báo cho người đang dùng máy</b><small>Cửa sổ nhỏ trên màn hình máy đó trước khi kết nối</small></span></label>
         <label class="tk-o"><input type="checkbox" name="phep" value="1"><span><b>Xin phép người đang ngồi trước máy</b><small>Hiện hộp Có/Không trên màn hình máy đó (chỉ khi máy có agent); họ từ chối hoặc 40 giây không trả lời thì không kết nối</small></span></label>
         <div style="margin-top:10px;"><button class="tk-nut chinh" type="submit">Mở màn hình</button></div></form>
-      <p class="tk-ghi">Cần cài một lần: TightVNC (bản GPL chính thức, kiểm mã SHA-256) cài ở dạng dịch vụ thủ công, luôn tắt khi không có phiên. Console System cần tải được file này từ tightvnc.com một lần (hoặc chép tay vào thư mục dữ liệu).</p></div>
+      <p class="tk-ghi">Cần cài TightVNC một lần ở trang <a href="/rustdesk/vnc">Remote VNC</a>: dịch vụ thủ công, luôn tắt khi không có phiên.</p></div>
       <div class="card" style="margin-top:14px;"><h3>Remote Desktop (RDP)</h3>
       <p>Tải tệp .rdp rồi mở bằng Remote Desktop Connection. Tệp không chứa mật khẩu. Máy đích cần bật Remote Desktop.</p>
       <p class="tk-ghi">Địa chỉ: {_esc(m["ip"])}{" · tài khoản " + _esc(user) if user else ""}</p>
@@ -575,7 +573,7 @@ def tab_trien_khai_may(m):
 def tab_tac_vu(m):
     ls = list(reversed(UD.BAO_CAO_TAC_VU.doc().get(m["id"], [])))[:100]
     hang = [[gio(x["luc"]), {"profile": "Profile", "trien_khai": "Triển khai", "tu_xa": "Điều khiển"}.get(x["nguon"], x["nguon"]), x["ten"], chip("Thành công" if x["ok"] else "Lỗi", "xanh" if x["ok"] else "do"), x["tb"]] for x in ls]
-    return T.khung_may(m, "tac-vu", f'<p class="tk-ghi">Cài/gỡ phần mềm: dùng trang <a href="/uem/trien-khai">Triển khai WinGet</a> rồi tick máy này; lịch sử cài của máy nằm ở bảng dưới (nguồn "Triển khai").</p><div class="card">{bang(["Lúc", "Nguồn", "Tác vụ", "Kết quả", "Chi tiết"], hang, "Chưa có tác vụ nào chạy trên máy này.")}</div>')
+    return T.khung_may(m, "tac-vu", f'<p class="tk-ghi">Cài/gỡ phần mềm: dùng trang <a href="/uem/trien-khai">Triển khai phần mềm, Triển khai từ WinGet</a> rồi tick máy này; lịch sử cài của máy nằm ở bảng dưới (nguồn "Triển khai").</p><div class="card">{bang(["Lúc", "Nguồn", "Tác vụ", "Kết quả", "Chi tiết"], hang, "Chưa có tác vụ nào chạy trên máy này.")}</div>')
 
 
 def tab_may_b(m, tab):
@@ -665,6 +663,7 @@ def register_uem(app):
     UDK.register_dieukhien(app)
     USL.register_sualoi(app)
     URD.register_uem_rustdesk(app)
+    UVT.register_vnc_trang(app)
 
     @app.route("/uem")
     def uem_tq():
