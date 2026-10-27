@@ -445,6 +445,9 @@ def thu_ghi_hinh_may(m):
         kt = int(kt)
         if not GS.MAU_TEP_GHI.fullmatch(ten):
             continue
+        if kt > UA.TOI_DA_TEP:
+            _THU["tb"] = "Bản ghi %s trên máy %s lớn hơn 2 GB, không lấy về được (vẫn nằm trên máy, thư mục %s)." % (ten, m.get("ten") or m["ip"], THU_MUC_GHI_MAY)
+            continue
         st = os.statvfs(dich_dir)
         if st.f_bavail * st.f_frsize < kt + 2 * 1024 ** 3:
             _THU["tb"] = "Ổ đĩa Console System sắp đầy, tạm dừng lấy bản ghi hình."

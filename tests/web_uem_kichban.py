@@ -266,6 +266,13 @@ kq["xp_ngat"] = GS.nhip({"id": "123456789", "uuid": "u1", "conns": [7]}) == {"di
 kq["xp_ngat_lap"] = GS.nhip({"id": "123456789", "uuid": "u1", "conns": [7]}) == {"disconnect": [7]}
 kq["xp_uuid_la"] = GS.nhip({"id": "123456789", "uuid": "KHAC", "conns": [9]}) == {}
 kq["xp_id_xau"] = GS.nhip({"id": "../x", "conns": [1]}) == {}
+kq["an_toan_thieu_uuid"] = GS.nhip({"id": "123456789", "conns": [1]}) == {}
+kq["an_toan_id_la"] = GS.nhip({"id": "111222333", "uuid": "z", "conns": [1]}) == {} and "111222333" not in GS._TT
+GS.nhip({"id": "123456789", "uuid": "u1", "conns": [5, 6]}, ip="10.0.0.5")
+_n0 = sum(1 for _ in GS._doc_su_kien())
+GS.kiem_toan({"id": "123456789", "conn_id": 50, "peer": ["1", "gia mao"], "type": 0})
+GS.kiem_toan({"id": "123456789", "uuid": "u1", "conn_id": 51, "action": "new"}, ip="10.6.6.6")
+kq["an_toan_kiem_toan_gia"] = sum(1 for _ in GS._doc_su_kien()) == _n0
 _tb = []
 GS.dang_ky_thong_bao(lambda rid, nd: _tb.append((rid, nd)))
 GS.kiem_toan({"id": "123456789", "uuid": "u1", "conn_id": 8, "action": "new", "ip": "::ffff:1.2.3.4"})
@@ -330,6 +337,7 @@ kq["gh_trong_script"] = "allow-auto-record-incoming = 'N'" in RD.script_client("
 post("/rustdesk/api/cai-dat", {"che_do": "thong_bao", "ghi_hinh": True, "ghi_hinh_gb": 5})
 _sc = RD.script_client("abcdef123456", khoa=K)
 kq["gh_bat_script"] = "allow-auto-record-incoming = 'Y'" in _sc and "--option allow-auto-record-incoming Y" in _sc and "'allow-auto-record-incoming' = 'Y'" in _sc
+kq["giu_api_server"] = "(?m)^api-server = '([^']*)'" in _sc and "api-server = '\" + $api" in _sc
 kq["gh_duyet_bo"] = "approve-mode = 'password'" in _sc and "click" not in _sc
 kq["kn_gan_sai"] = post("/rustdesk/api/gan", {"id": "999999999", "mid": "m-agent"}).get_json()["ok"] is False
 Gia.execute_ps = lambda self, script: (kich.append(script) or "RDK=OK|1.5.0+68|Running|id.example.com|relay.example.com|Y|163846525\r\n", Luong(), False) if "RDK=" in script else Gia_execute(self, script)

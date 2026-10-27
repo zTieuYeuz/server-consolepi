@@ -357,6 +357,8 @@ MAU_KHOA = re.compile(r"[A-Za-z0-9+/=]{20,100}")
 # (may tung bat WebSocket o ban truoc se tu tat).
 KHOI_CAU_HINH = r"""$cfg = 'C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config'
 New-Item -ItemType Directory -Force -Path $cfg | Out-Null
+$api = ''
+if (Test-Path (Join-Path $cfg 'RustDesk2.toml')) { $api = [regex]::Match((Get-Content (Join-Path $cfg 'RustDesk2.toml') -Raw), "(?m)^api-server = '([^']*)'").Groups[1].Value }
 @"
 rendezvous_server = '%(rv)s'
 nat_type = 1
@@ -369,7 +371,7 @@ key = '%(khoa)s'
 allow-websocket = 'N'
 approve-mode = 'password'
 allow-auto-record-incoming = '%(ghi)s'
-"@ | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
+"@ + $(if ($api) { "`r`napi-server = '" + $api + "'" } else { '' }) | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
 try { Restart-Service RustDesk -ErrorAction Stop } catch { Start-Sleep 5; Start-Service RustDesk -ErrorAction SilentlyContinue }
 Start-Sleep 5
 & $rd --option custom-rendezvous-server '%(id)s' | Out-Null

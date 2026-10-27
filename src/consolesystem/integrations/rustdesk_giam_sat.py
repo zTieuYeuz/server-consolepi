@@ -37,6 +37,10 @@ _TT = {}             # rustdesk id -> {luc, conns:set, ngat:set, uuid, ip}
 _DUYET = {}          # rustdesk id -> {luc, nguoi, cho_phep:set(conn)}
 _CHO_TEN = {}        # rustdesk id -> (luc, nguoi Console) : ai vua bam Ket noi o che do thong bao
 _CO_PHIEN = set()    # rustdesk id da co ket noi tu lan lay ban ghi hinh truoc
+_GHIM = {}           # rustdesk id -> uuid ghim lan dau (luu file, giu qua khoi dong lai)
+_ID_BIET = {"luc": 0, "ds": set()}
+_TB_LUC = {}         # rustdesk id -> luc thong bao gan nhat (toi da 1 thong bao / 60 giay / may)
+LS_TOI_DA = 100 * 1024 * 1024        # lich su qua 100 MB thi ngung ghi (chong lam day dia)
 _MAY_CHU = {"srv": None, "loi": ""}
 _XU_LY = {"thong_bao": None}         # ham(rustdesk_id, noi_dung) do phan may tram (agent) dang ky
 
@@ -76,6 +80,8 @@ def ghi_su_kien(**kw):
     kw["t"] = round(time.time(), 1)
     with _KHOA:
         os.makedirs(RD._goc(), mode=0o700, exist_ok=True)
+        if os.path.isfile(_ls_file()) and os.path.getsize(_ls_file()) > LS_TOI_DA:
+            return
         with open(_ls_file(), "a", encoding="utf-8") as f:
             f.write(json.dumps(kw, ensure_ascii=False) + "\n")
 
@@ -167,19 +173,47 @@ def _duoc_phep(rid, conn, conns):
     return None
 
 
-def nhip(body):
+def _ghim_file():
+    return os.path.join(RD._goc(), "uuid-ghim.json")
+
+
+def _id_biet(rid):
+    """Chi nhan ID da co trong Console (gan vao may) hoac da dang ky voi hbbs (doc lai toi da 1 lan / 60 giay)."""
+    if time.time() - _ID_BIET["luc"] > 60:
+        ds = {v.get("id") for v in RD.doc_cfg()["may"].values() if v.get("id")} | {x["id"] for x in RD.thiet_bi()}
+        _ID_BIET.update(luc=time.time(), ds=ds)
+    return rid in _ID_BIET["ds"]
+
+
+def _hop_le(rid, uuid):
+    """ID da biet + uuid khop ban ghim (lan dau thay thi ghim). Thieu uuid -> khong tin."""
+    if not re.fullmatch(r"\d{6,12}", rid) or not uuid or not _id_biet(rid):
+        return False
+    with _KHOA:
+        if not _GHIM:
+            try:
+                with open(_ghim_file(), encoding="utf-8") as f:
+                    _GHIM.update(json.load(f))
+            except (OSError, ValueError):
+                _GHIM["_"] = ""
+        if rid in _GHIM:
+            return _GHIM[rid] == uuid
+        _GHIM[rid] = uuid
+        ghi_nguyen_tu(_ghim_file(), json.dumps(_GHIM).encode("utf-8"), 0o600)
+        return True
+
+
+def nhip(body, ip=""):
     """Xu ly POST /api/heartbeat. Tra dict tra loi cho client."""
     rid, uuid = str(body.get("id", ""))[:20], str(body.get("uuid", ""))[:200]
-    if not re.fullmatch(r"\d{6,12}", rid):
+    if not _hop_le(rid, uuid):
         return {}
     conns = {c for c in (body.get("conns") or []) if isinstance(c, int)}
     che_do = cai_dat()["che_do"]
     moi_phep = []
     with _KHOA:
-        st = _TT.setdefault(rid, {"conns": set(), "ngat": set(), "uuid": uuid})
-        if st["uuid"] and uuid and st["uuid"] != uuid:
-            return {}                                         # uuid khac may da biet: bo qua (khong tin)
-        st["luc"] = time.time()
+        st = _TT.setdefault(rid, {"conns": set(), "ngat": set()})
+        st["luc"], st["ip"] = time.time(), ip
         if conns:
             _CO_PHIEN.add(rid)
         moi = conns - st["conns"]
@@ -200,13 +234,13 @@ def nhip(body):
     return {"disconnect": ngat} if ngat else {}
 
 
-def kiem_toan(body):
-    """Xu ly POST /api/audit/conn."""
+def kiem_toan(body, ip=""):
+    """Xu ly POST /api/audit/conn. Chi nhan tu may da gui nhip (cung IP nguon voi nhip gan nhat)."""
     rid = str(body.get("id", ""))[:20]
-    if not re.fullmatch(r"\d{6,12}", rid):
+    if not _hop_le(rid, str(body.get("uuid", ""))[:200]):
         return
     st = _TT.get(rid)
-    if st and st.get("uuid") and body.get("uuid") and st["uuid"] != str(body.get("uuid"))[:200]:
+    if not st or (ip and st.get("ip") and st["ip"] != ip):
         return
     conn = body.get("conn_id") if isinstance(body.get("conn_id"), int) else None
     hd = body.get("action")
@@ -218,8 +252,9 @@ def kiem_toan(body):
         peer_id, ten = str(body["peer"][0])[:20], str(body["peer"][1])[:80]
         kieu = body.get("type") if isinstance(body.get("type"), int) else None
         ghi_su_kien(loai="kn_xac_thuc", rid=rid, conn=conn, peer=peer_id, ten=ten, kieu=kieu)
-        if cai_dat()["che_do"] == "thong_bao" and _XU_LY["thong_bao"]:
+        if cai_dat()["che_do"] == "thong_bao" and _XU_LY["thong_bao"] and time.time() - _TB_LUC.get(rid, 0) > 60:
             with _KHOA:
+                _TB_LUC[rid] = time.time()
                 luc, nguoi = _CHO_TEN.get(rid, (0, ""))
             ai = (nguoi + " (quản trị Console System)") if nguoi and time.time() - luc < CHO_DUYET_GIAY else (ten or ("máy " + peer_id))
             noi_dung = "%s đang kết nối vào máy tính của bạn bằng RustDesk (%s)." % (ai, LOAI_KET_NOI.get(kieu, "kết nối").lower())
@@ -276,9 +311,9 @@ class _XuLy(BaseHTTPRequestHandler):
         p = self.path.split("?")[0].rstrip("/")
         try:
             if p == "/api/heartbeat":
-                return self._tra(200, json.dumps(nhip(body)))
+                return self._tra(200, json.dumps(nhip(body, self.client_address[0])))
             if p == "/api/audit/conn":
-                kiem_toan(body)
+                kiem_toan(body, self.client_address[0])
                 return self._tra(200, "")
             if p.startswith("/api/audit/"):
                 return self._tra(200, "")

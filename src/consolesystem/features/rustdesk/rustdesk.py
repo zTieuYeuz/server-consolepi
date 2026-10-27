@@ -50,11 +50,11 @@ TRANG = """@CSS@<style>.rd-k{font-family:monospace;word-break:break-all;user-sel
 <div class="card" data-buoc="6" hidden><h3><span class="rd-buoc">6</span>Cài đặt kết nối</h3>
 <p class="tk-ghi">Chế độ áp dụng cho <b>mọi</b> kết nối RustDesk vào các máy trỏ về máy chủ này, kể cả người tự mở RustDesk và gõ ID, mật khẩu (không chỉ nút Kết nối ở bước 5).</p>
 <div class="rd-chon" id="rd-chon"><label data-cd="thong_bao"><input type="radio" name="rd-cd" value="thong_bao"><span><b>1. Thông báo</b><small>Kết nối vào được ngay. Màn hình máy được kết nối hiện thông báo đang có người kết nối vào (tên người dùng Console System nếu bấm từ Console, không thì tên máy kết nối tới).</small></span></label>
-<label data-cd="xin_phep"><input type="radio" name="rd-cd" value="xin_phep"><span><b>2. Xin phép trước khi kết nối</b><small>Bấm Kết nối ở bước 5: giữa màn hình máy hiện hộp "<i>tên người dùng Console</i> xin quyền kết nối vào máy tính của bạn", chờ tối đa 5 phút. Người dùng bấm Có mới kết nối được; từ chối hoặc 5 phút không trả lời thì hủy. Mọi kết nối không qua bước xin phép này bị ngắt ngay. Máy cần có agent và có người đang đăng nhập.</small></span></label></div>
+<label data-cd="xin_phep"><input type="radio" name="rd-cd" value="xin_phep"><span><b>2. Xin phép trước khi kết nối</b><small>Bấm Kết nối ở bước 5: giữa màn hình máy hiện hộp "<i>tên người dùng Console</i> xin quyền kết nối vào máy tính của bạn", chờ tối đa 5 phút. Người dùng bấm Có mới kết nối được; từ chối hoặc 5 phút không trả lời thì hủy. Mọi kết nối không qua bước xin phép này bị ngắt ngay. Máy cần có agent và có người đang đăng nhập. Console System khởi động lại (cập nhật, mất điện) thì phiên đang mở bị ngắt, cần xin phép lại.</small></span></label></div>
 <h4 style="margin-top:16px;">Ghi hình phiên kết nối</h4>
 <label class="tk-o" style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="rd-ghi" style="width:auto;margin:0;"> Tự động ghi hình mọi phiên điều khiển và lưu lên Console System</label>
 <div class="nut-hang" style="margin-top:8px;"><label for="rd-gb" style="margin:0;">Dung lượng tối đa dành cho bản ghi</label><input type="number" id="rd-gb" min="1" max="10000" step="1" style="width:110px;margin:0;"> GB <span class="tk-ghi">vượt quá thì tự xóa bản ghi cũ nhất</span></div>
-<p class="tk-ghi" style="margin-top:6px;">RustDesk trên máy được kết nối tự ghi màn hình (thư mục C:\\ProgramData\\RustDesk\\recording), Console lấy về qua agent sau khi phiên kết thúc (vài phút) rồi xóa trên máy. Xem lại ở tab Lịch sử kết nối.</p>
+<p class="tk-ghi" style="margin-top:6px;">RustDesk trên máy được kết nối tự ghi màn hình (thư mục C:\\ProgramData\\RustDesk\\recording), Console lấy về qua agent sau khi phiên kết thúc (vài phút) rồi xóa trên máy. Xem lại ở tab Lịch sử kết nối. Chỉ máy có agent mới được lấy bản ghi về; máy không có agent (cài file .msi bằng tay) vẫn tự ghi và giữ bản ghi trên máy. Bản ghi lớn hơn 2 GB không lấy về được.</p>
 <div class="nut-hang" style="margin-top:10px;"><button class="tk-nut chinh" id="rd-cd-luu" type="button">Lưu cài đặt</button><span class="tk-ghi" id="rd-cd-tb"></span></div>
 <div class="rd-hd" id="rd-cd-tt"></div></div>
 <div class="card" data-buoc="7" hidden><h3><span class="rd-buoc">7</span>Lịch sử kết nối</h3>
@@ -134,7 +134,7 @@ $('rd-bang-kn').addEventListener('click',function(ev){var t=ev.target,mid=t.data
 $('rd-chua').addEventListener('click',function(ev){var i=ev.target.dataset.ganNut;if(!i)return;var sel=document.querySelector('[data-gan="'+i+'"]');if(!sel.value){$('rd-kn-tb').textContent='Chọn máy cần gắn.';return;}
  api('/rustdesk/api/gan',{id:i,mid:sel.value}).then(function(d){$('rd-kn-tb').textContent=d.tb;taiKn();dev();});});
 function gb(x){return (x/1073741824).toFixed(x>=1073741824*10?0:2)+' GB';}
-function taiCd(){api('/rustdesk/api/cai-dat').then(function(d){if(!$('rd-chon').dataset.sua){[].slice.call(document.querySelectorAll('input[name=rd-cd]')).forEach(function(i){i.checked=i.value===d.che_do;});
+var CD0={};function taiCd(){api('/rustdesk/api/cai-dat').then(function(d){CD0=d;if(!$('rd-chon').dataset.sua){[].slice.call(document.querySelectorAll('input[name=rd-cd]')).forEach(function(i){i.checked=i.value===d.che_do;});
   $('rd-ghi').checked=!!d.ghi_hinh;$('rd-gb').value=d.ghi_hinh_gb;danhDau();}
  var a=d.may_chu_api,x='<b>Tình trạng</b><br>';
  x+=a.chay?chip('Đang nhận nhật ký kết nối ở cổng '+a.cong,true):chip('Chưa nhận được nhật ký: '+(a.loi||'chưa chạy'),false);
@@ -147,7 +147,8 @@ function danhDau(){[].slice.call(document.querySelectorAll('#rd-chon label')).fo
 $('rd-chon').addEventListener('change',function(){$('rd-chon').dataset.sua='1';danhDau();});
 ['rd-ghi','rd-gb'].forEach(function(i){$(i).addEventListener('input',function(){$('rd-chon').dataset.sua='1';});});
 $('rd-cd-luu').onclick=function(){var c=document.querySelector('input[name=rd-cd]:checked');if(!c){$('rd-cd-tb').textContent='Chọn một chế độ.';return;}
- if(c.value==='xin_phep'&&!confirm('Bật chế độ Xin phép? Mọi kết nối RustDesk không qua nút Kết nối của Console (và được người dùng bấm Có) sẽ bị ngắt. Máy không có ai đăng nhập sẽ không vào được.'))return;
+ if($('rd-ghi').checked!==!!CD0.ghi_hinh&&!confirm(($('rd-ghi').checked?'Bật':'Tắt')+' ghi hình? Console sẽ cập nhật RustDesk trên mọi máy có agent và khởi động lại dịch vụ RustDesk ở đó: các phiên đang mở bị ngắt vài giây.'))return;
+ if(c.value==='xin_phep'&&CD0.che_do!=='xin_phep'&&!confirm('Bật chế độ Xin phép? Mọi kết nối RustDesk không qua nút Kết nối của Console (và được người dùng bấm Có) sẽ bị ngắt. Máy không có ai đăng nhập sẽ không vào được.'))return;
  api('/rustdesk/api/cai-dat',{che_do:c.value,ghi_hinh:$('rd-ghi').checked,ghi_hinh_gb:$('rd-gb').value}).then(function(d){$('rd-cd-tb').textContent=d.tb;if(d.ok){delete $('rd-chon').dataset.sua;taiCd();taiKn();}});};
 var LS=[];function tg(t){return t?new Date(t*1000).toLocaleString():'';}
 function dai(p){if(!p.ket_thuc)return p.loai==='Yêu cầu từ Console'?'':'<span class="rd-chip ok">đang mở</span>';var s=Math.round(p.ket_thuc-p.bat_dau);return s<60?s+' giây':Math.floor(s/60)+' phút '+(s%60)+' giây';}
