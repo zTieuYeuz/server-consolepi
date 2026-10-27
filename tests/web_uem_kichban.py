@@ -345,4 +345,9 @@ kt = post("/rustdesk/api/kiem-tra", {"mid": "m-agent"}).get_json()
 kq["kn_kiem_tra"] = kt["ok"] and kt["kq"]["id"] == "163846525" and kt["kq"]["dich_vu"] == "Running" and kt["kq"]["dung_may_chu"] is True and kt["kq"]["ghi_hinh"] is True
 _tr = c.get("/rustdesk", headers=H).get_data(as_text=True)
 kq["rd_7_tab"] = all(('data-buoc="%d"' % i) in _tr for i in range(1, 8)) and "Xin phép trước khi kết nối" in _tr and "rd-hoi" not in _tr
+_rg = c.get("/rustdesk/cho-phep-trinh-duyet.reg", headers=H, base_url="http://192.168.110.30")
+_rgt = _rg.data.decode("utf-16")
+kq["reg_trinh_duyet"] = _rg.status_code == 200 and _rg.data[:2] == b"\xff\xfe" and _rgt.startswith("Windows Registry Editor") and '\\"allowed_origins\\": [\\"http://192.168.110.30\\"]' in _rgt and "Microsoft\\Edge" in _rgt
+kq["popup_xac_nhan"] = "Mở RustDesk để kết nối?" in _tr and "location.href=d.url" not in _tr
+kq["tb_do_dai_byte"] = "$m.Length * 2" in URD.ps_thong_bao("x")
 print("KETQUA " + json.dumps(kq))

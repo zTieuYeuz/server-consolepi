@@ -1,6 +1,9 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """Trang RustDesk (giao dien): cai/dieu khien may chu RustDesk tich hop. Logic o consolesystem/integrations/rustdesk_may_chu.py;
 phan can du lieu may tram (cai client qua agent, danh sach may) o features/uem/uem_rustdesk.py."""
+import json
+import re
+
 from flask import Response, jsonify, request
 
 from consolesystem.integrations import rustdesk_may_chu as RD
@@ -14,7 +17,12 @@ TRANG = """@CSS@<style>.rd-k{font-family:monospace;word-break:break-all;user-sel
 .rd-hd{margin-top:14px;padding:12px;border-left:3px solid #2d6cdf;background:rgba(45,108,223,.08);border-radius:6px}
 .rd-chon{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.rd-chon label{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #444;border-radius:10px;cursor:pointer;margin:0}
 .rd-chon label.on{border-color:#2d6cdf;background:rgba(45,108,223,.10)}.rd-chon input{margin:3px 0 0 0;flex:none;width:auto}.rd-chon b{display:block;margin-bottom:4px}.rd-chon small{display:block;color:var(--chu-mo);line-height:1.45}
-.rd-video{width:100%;max-height:70vh;background:#000;border-radius:8px;margin-top:8px}</style>
+.rd-nen{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.rd-hop{background:var(--the,#1b1f27);border:1px solid #444;border-radius:14px;max-width:460px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.rd-hop h3{margin:0 0 10px 0}.rd-hop .nut-hang{justify-content:flex-end;margin-top:16px}
+#rd-ls{font-size:13px}#rd-ls td,#rd-ls th{padding:6px 6px;vertical-align:middle}#rd-ls th{font-size:12px;white-space:nowrap}
+#rd-ls .rd-chip{font-size:12px;white-space:normal}.rd-nho{padding:4px 10px!important;font-size:12px!important;min-height:0!important;line-height:1.3!important;margin:0!important}
+.rd-gh{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;white-space:nowrap}.rd-video{width:100%;max-height:70vh;background:#000;border-radius:8px;margin-top:8px}</style>
 <div class="dep-tabs" id="rd-tabs" style="margin-bottom:14px;"><a href="#1" class="dep-tab" data-b="1">1. Máy chủ</a><a href="#2" class="dep-tab" data-b="2">2. Kết nối Internet</a><a href="#3" class="dep-tab" data-b="3">3. File cài đặt</a><a href="#4" class="dep-tab" data-b="4">4. Triển khai</a><a href="#5" class="dep-tab" data-b="5">5. Hỗ trợ từ xa</a><a href="#6" class="dep-tab" data-b="6">6. Cài đặt</a><a href="#7" class="dep-tab" data-b="7">7. Lịch sử kết nối</a></div>
 <div class="card" data-buoc="1"><h3><span class="rd-buoc">1</span>Cài máy chủ RustDesk</h3>
 <p class="tk-ghi">Máy chủ RustDesk (ID server hbbs + relay hbbr) chạy ngay trên Console System. Bấm cài một lần, Console tự tải bản chính thức (kiểm SHA-256) và tạo khóa.</p>
@@ -122,11 +130,18 @@ function veKn(){var q=bo($('rd-tim').value),h='<tr><th>Máy</th><th>IP</th><th>T
 var TEN_CD={thong_bao:'Thông báo (vào được ngay, máy hiện thông báo)',xin_phep:'Xin phép trước khi kết nối (chờ người dùng đồng ý tối đa 5 phút)'};
 function taiKn(){api('/rustdesk/api/bang').then(function(d){BANG=d;if(document.activeElement!==$('rd-tim')&&!document.querySelector('[data-gan]:focus'))veKn();$('rd-che-do').textContent=TEN_CD[d.che_do]||d.che_do;});}
 $('rd-tim').addEventListener('input',veKn);
+function moRd(mid,url){var m=BANG.may.filter(function(x){return x.mid===mid;})[0]||{},n=document.createElement('div');n.className='rd-nen';
+ n.innerHTML='<div class="rd-hop" role="dialog" aria-modal="true"><h3>Mở RustDesk để kết nối?</h3><div>Máy: <b>'+e(m.ten||'')+'</b> ('+e(m.ip||'')+')</div><div style="margin-top:4px;">ID RustDesk: <span class="rd-k">'+e(m.id||'')+'</span></div>'
+  +'<p class="tk-ghi" style="margin-top:10px;">Bấm Mở để chạy ứng dụng RustDesk trên máy anh đang ngồi. Trình duyệt có thể hỏi thêm một lần "mở ứng dụng RustDesk", muốn tắt hẳn câu hỏi đó: <a href="/rustdesk/cho-phep-trinh-duyet.reg">tải file cho phép (Chrome / Edge)</a>, chạy một lần trên máy này.</p>'
+  +'<div class="nut-hang"><button class="tk-nut" type="button" data-v="huy">Hủy</button><button class="tk-nut chinh" type="button" data-v="mo">Mở RustDesk</button></div></div>';
+ document.body.appendChild(n);var dong=function(){n.remove();document.removeEventListener('keydown',k);},k=function(ev){if(ev.key==='Escape')dong();};document.addEventListener('keydown',k);
+ n.addEventListener('click',function(ev){var v=ev.target.dataset.v;if(ev.target===n||v==='huy'){dong();$('rd-kn-tb').textContent='Đã hủy mở RustDesk.';}else if(v==='mo'){dong();location.href=url;}});
+ n.querySelector('[data-v=mo]').focus();}
 function theoKn(ma,t,bd){api('/rustdesk/api/ket-noi/'+ma).then(function(d){if(!d.xong){$('rd-kn-tb').textContent=d.tb+' ('+Math.round((Date.now()-bd)/1000)+' giây)';setTimeout(function(){theoKn(ma,t,bd);},2000);return;}
- t.disabled=false;$('rd-kn-tb').textContent=d.tb;if(d.ok&&d.url)location.href=d.url;});}
+ t.disabled=false;$('rd-kn-tb').textContent=d.tb;if(d.ok&&d.url)moRd(t.dataset.kn,d.url);});}
 $('rd-bang-kn').addEventListener('click',function(ev){var t=ev.target,mid=t.dataset.kn||t.dataset.kt;if(!mid)return;
   if(t.dataset.kn){t.disabled=true;$('rd-kn-tb').textContent='Đang gửi yêu cầu...';
-  api('/rustdesk/api/ket-noi',{mid:mid}).then(function(d){$('rd-kn-tb').textContent=d.tb;if(!d.xong&&d.ma){theoKn(d.ma,t,Date.now());return;}t.disabled=false;if(d.ok&&d.url)location.href=d.url;});}
+  api('/rustdesk/api/ket-noi',{mid:mid}).then(function(d){$('rd-kn-tb').textContent=d.tb;if(!d.xong&&d.ma){theoKn(d.ma,t,Date.now());return;}t.disabled=false;if(d.ok&&d.url)moRd(t.dataset.kn,d.url);});}
  else{t.disabled=true;$('rd-kt').hidden=false;$('rd-kt').textContent='Đang kiểm tra...';
   api('/rustdesk/api/kiem-tra',{mid:mid}).then(function(d){t.disabled=false;var k=d.kq;
    if(!d.ok){$('rd-kt').textContent='Lỗi: '+d.tb;return;} if(!k.cai){$('rd-kt').textContent='RustDesk chưa được cài trên máy này.';return;}
@@ -150,18 +165,19 @@ $('rd-cd-luu').onclick=function(){var c=document.querySelector('input[name=rd-cd
  if($('rd-ghi').checked!==!!CD0.ghi_hinh&&!confirm(($('rd-ghi').checked?'Bật':'Tắt')+' ghi hình? Console sẽ cập nhật RustDesk trên mọi máy có agent và khởi động lại dịch vụ RustDesk ở đó: các phiên đang mở bị ngắt vài giây.'))return;
  if(c.value==='xin_phep'&&CD0.che_do!=='xin_phep'&&!confirm('Bật chế độ Xin phép? Mọi kết nối RustDesk không qua nút Kết nối của Console (và được người dùng bấm Có) sẽ bị ngắt. Máy không có ai đăng nhập sẽ không vào được.'))return;
  api('/rustdesk/api/cai-dat',{che_do:c.value,ghi_hinh:$('rd-ghi').checked,ghi_hinh_gb:$('rd-gb').value}).then(function(d){$('rd-cd-tb').textContent=d.tb;if(d.ok){delete $('rd-chon').dataset.sua;taiCd();taiKn();}});};
+function kt(x){return x>=1073741824?(x/1073741824).toFixed(2)+' GB':x>=1048576?(x/1048576).toFixed(1)+' MB':Math.max(1,Math.round(x/1024))+' KB';}
 var LS=[];function tg(t){return t?new Date(t*1000).toLocaleString():'';}
 function dai(p){if(!p.ket_thuc)return p.loai==='Yêu cầu từ Console'?'':'<span class="rd-chip ok">đang mở</span>';var s=Math.round(p.ket_thuc-p.bat_dau);return s<60?s+' giây':Math.floor(s/60)+' phút '+(s%60)+' giây';}
-function veLs(){var q=bo($('rd-ls-tim').value),h='<tr><th>Bắt đầu</th><th>Máy</th><th>Người kết nối</th><th>Từ IP</th><th>Loại</th><th>Thời lượng</th><th>Kết quả</th><th>Ghi hình</th></tr>',n=0;
+function veLs(){var q=bo($('rd-ls-tim').value),h='<tr><th style="width:120px;">Bắt đầu</th><th>Máy</th><th>Người kết nối</th><th>Từ IP</th><th>Loại</th><th>Thời lượng</th><th style="width:150px;">Kết quả</th><th>Ghi hình</th></tr>',n=0;
  LS.forEach(function(p,i){var ai=(p.nguoi_console?p.nguoi_console+' (Console)':'')+(p.nguoi?(p.nguoi_console?' · ':'')+p.nguoi+(p.peer?' ['+p.peer+']':''):'');
   if(q&&bo([p.may,p.rid,ai,p.ip,p.kq].join(' ')).indexOf(q)<0)return;n++;
   var ok=/^Đã vào|^Đồng ý|^Mở kết nối/.test(p.kq),loi=/^Bị ngắt|từ chối|hủy|Không/.test(p.kq);
-  h+='<tr><td style="white-space:nowrap;">'+tg(p.bat_dau)+'</td><td><b>'+e(p.may||'?')+'</b><br><small class="tk-ghi">'+e(p.rid)+'</small></td><td>'+e(ai||'-')+'</td><td>'+e(p.ip)+'</td><td>'+e(p.loai)+'</td><td>'+dai(p)+'</td><td>'+(ok?chip(e(p.kq),true):loi?chip(e(p.kq),false):e(p.kq))+'</td><td>'
-   +(p.ghi_hinh||[]).map(function(g,j){return '<button class="tk-nut" type="button" data-xem="'+i+':'+j+'">Xem</button> <a class="tk-nut" href="/rustdesk/ghi-hinh/'+encodeURIComponent(g.mid)+'/'+encodeURIComponent(g.ten)+'?tai=1">Tải</a> <button class="tk-nut do" type="button" data-xoa="'+i+':'+j+'">Xóa</button> <small class="tk-ghi">'+gb(g.kich_thuoc)+'</small>';}).join('<br>')+'</td></tr>';});
+  h+='<tr><td>'+tg(p.bat_dau)+'</td><td><b>'+e(p.may||'?')+'</b><br><small class="tk-ghi">'+e(p.rid)+'</small></td><td>'+e(ai||'-')+'</td><td style="white-space:nowrap;">'+e(p.ip)+'</td><td style="white-space:nowrap;">'+e(p.loai)+'</td><td style="white-space:nowrap;">'+dai(p)+'</td><td>'+(ok?chip(e(p.kq),true):loi?chip(e(p.kq),false):e(p.kq))+'</td><td>'
+   +(p.ghi_hinh||[]).map(function(g,j){return '<div class="rd-gh"><button class="tk-nut chinh rd-nho" type="button" data-xem="'+i+':'+j+'">Xem</button><button class="tk-nut rd-nho" type="button" data-tai="/rustdesk/ghi-hinh/'+encodeURIComponent(g.mid)+'/'+encodeURIComponent(g.ten)+'?tai=1">Tải</button><button class="tk-nut do rd-nho" type="button" data-xoa="'+i+':'+j+'">Xóa</button><small class="tk-ghi">'+kt(g.kich_thuoc)+'</small></div>';}).join('')+'</td></tr>';});
  $('rd-ls').innerHTML=n?h:'<tr><td class="tk-ghi">'+(LS.length?'Không có dòng nào khớp.':'Chưa có kết nối nào được ghi lại.')+'</td></tr>';$('rd-ls-dem').textContent=n+' dòng';}
 function taiLs(){api('/rustdesk/api/lich-su').then(function(d){LS=d.ds||[];veLs();});}
 $('rd-ls-tim').addEventListener('input',veLs);$('rd-ls-tai').onclick=taiLs;
-$('rd-ls').addEventListener('click',function(ev){var z=ev.target.dataset.xoa;if(z){var b=z.split(':'),k=LS[+b[0]].ghi_hinh[+b[1]];
+$('rd-ls').addEventListener('click',function(ev){if(ev.target.dataset.tai){location.href=ev.target.dataset.tai;return;}var z=ev.target.dataset.xoa;if(z){var b=z.split(':'),k=LS[+b[0]].ghi_hinh[+b[1]];
   if(confirm('Xóa bản ghi hình '+k.ten+'? Không khôi phục được.'))api('/rustdesk/api/ghi-hinh/xoa',{mid:k.mid,ten:k.ten}).then(function(d){$('rd-ls-dem').textContent=d.tb;taiLs();});return;}
  var x=ev.target.dataset.xem;if(!x)return;var a=x.split(':'),g=LS[+a[0]].ghi_hinh[+a[1]];
  $('rd-xem').hidden=false;$('rd-xem').innerHTML='<div class="nut-hang"><b>'+e(g.ten)+'</b><button class="tk-nut" type="button" id="rd-xem-dong">Đóng</button></div><video class="rd-video" controls autoplay src="/rustdesk/ghi-hinh/'+encodeURIComponent(g.mid)+'/'+encodeURIComponent(g.ten)+'"></video>';
@@ -215,6 +231,19 @@ def register_rustdesk(app):
     def rustdesk_api_kho():
         ok, tb = RD.cap_nhat_kho()
         return jsonify({"ok": ok, "tb": tb})
+
+    @app.route("/rustdesk/cho-phep-trinh-duyet.reg")
+    def rustdesk_reg_trinh_duyet():
+        """Chinh sach Chrome / Edge AutoLaunchProtocolsFromOrigins: trang Console nay mo rustdesk:// khong hoi lai."""
+        goc = request.host_url.rstrip("/")
+        if not re.fullmatch(r"https?://[A-Za-z0-9.\-]+(:\d+)?", goc):
+            return Response("Địa chỉ không hợp lệ.", status=400, mimetype="text/plain; charset=utf-8")
+        gt = json.dumps([{"protocol": "rustdesk", "allowed_origins": [goc]}]).replace('"', '\\"')      # goc da kiem: khong co dau \
+        nd = "Windows Registry Editor Version 5.00\r\n"
+        for k in ("Google\\Chrome", "Microsoft\\Edge"):
+            nd += "\r\n[HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\%s]\r\n\"AutoLaunchProtocolsFromOrigins\"=\"%s\"\r\n" % (k, gt)
+        return Response(("\ufeff" + nd).encode("utf-16-le"), mimetype="application/octet-stream",
+                        headers={"Content-Disposition": "attachment; filename=cho-phep-mo-rustdesk.reg"})
 
     @app.route("/rustdesk/Cai-RustDesk-ConsoleSystem.msi")
     def rustdesk_msi():

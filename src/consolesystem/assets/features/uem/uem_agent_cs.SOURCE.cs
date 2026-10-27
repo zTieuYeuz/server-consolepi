@@ -370,7 +370,7 @@ public class CsAgent : ServiceBase
             if (sid == 0xFFFFFFFF) { Result(id, "KHONG_CO_PHIEN", "", 0); return; }
             int resp;
             string tieu = "Console System";
-            bool ok = WTSSendMessage(IntPtr.Zero, (int)sid, tieu, tieu.Length, tb, tb.Length, 0x4 | 0x20 | 0x40000, giay, out resp, true);
+            bool ok = WTSSendMessage(IntPtr.Zero, (int)sid, tieu, tieu.Length * 2, tb, tb.Length * 2, 0x4 | 0x20 | 0x40000, giay, out resp, true);   // do dai tinh bang BYTE (Unicode)
             Result(id, !ok ? "KHONG_CO_PHIEN" : (resp == 6 ? "CHO_PHEP" : (resp == 7 ? "TU_CHOI" : "HET_GIO")), "", 0);
         }
         catch (Exception e) { Result(id, "", e.Message, 1); }

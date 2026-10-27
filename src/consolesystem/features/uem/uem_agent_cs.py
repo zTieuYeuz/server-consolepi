@@ -16,7 +16,7 @@ Agent lam:
 
 from consolesystem.core import taisan as _taisan
 
-VER_FILE = "2.3.2"      # TANG so nay moi khi sua ma C# (test_agent_phien_ban ep buoc) -> moi agent cu tu cap nhat khi bao nhip; roi dung tools/dung-agent-exe.py bien dich lai cs-agent.exe
+VER_FILE = "2.3.3"      # TANG so nay moi khi sua ma C# (test_agent_phien_ban ep buoc) -> moi agent cu tu cap nhat khi bao nhip; roi dung tools/dung-agent-exe.py bien dich lai cs-agent.exe
 
 SOURCE = _taisan.doc("features/uem/uem_agent_cs.SOURCE.cs")
 

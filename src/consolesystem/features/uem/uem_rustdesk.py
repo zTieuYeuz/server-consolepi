@@ -311,7 +311,7 @@ def ps_thong_bao(noi_dung, giay=60):
             "Add-Type -MemberDefinition $sig -Name W -Namespace CsRd -ErrorAction SilentlyContinue\n"
             "$sid = [CsRd.W]::WTSGetActiveConsoleSessionId()\nif ($sid -eq 4294967295) { 'TB_KHONG_PHIEN'; return }\n"
             "$t = 'Console System'\n$m = %s\n$r = 0\n"
-            "$ok = [CsRd.W]::WTSSendMessage([IntPtr]::Zero, [int]$sid, $t, $t.Length, $m, $m.Length, 0x40 -bor 0x40000, %d, [ref]$r, $false)\n"
+            "$ok = [CsRd.W]::WTSSendMessage([IntPtr]::Zero, [int]$sid, $t, $t.Length * 2, $m, $m.Length * 2, 0x40 -bor 0x40000, %d, [ref]$r, $false)\n"
             "if ($ok) { 'TB_OK' } else { 'TB_LOI' }" % (_ps_chuoi(noi_dung), int(giay)))
 
 
