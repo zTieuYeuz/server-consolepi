@@ -200,7 +200,7 @@ var CD0={};function taiCd(){api('/rustdesk/api/cai-dat').then(function(d){CD0=d;
  x+=a.chay?chip('Đang nhận nhật ký kết nối ở cổng '+a.cong,true):chip('Chưa nhận được nhật ký: '+(a.loi||'chưa chạy'),false);
  x+=chip(d.nhip_gan+' / '+d.tong_may+' máy đang báo về (2 phút gần nhất)',d.nhip_gan>0)+'<br>';
  x+='<div class="tk-ghi" style="margin-top:6px;">Máy chỉ báo về được khi tới được <b>'+e(d.host)+':'+d.cong_api_ngoai+'</b> (TCP). Router cần NAT cổng này về Console System cổng '+a.cong+' (xem bảng ở bước 2). Máy chưa báo về thì Console không áp được chế độ và không có lịch sử cho máy đó.</div>';
- x+='<div style="margin-top:8px;">Bản ghi hình đang lưu: <b>'+d.ghi_hinh_so+'</b> file, '+gb(d.ghi_hinh_dung)+' / '+d.ghi_hinh_gb+' GB · Ổ đĩa còn trống '+gb(d.dia_trong)+'</div>';
+ x+='<div style="margin-top:8px;">Bản ghi hình đang lưu: <b>'+d.ghi_hinh_so+'</b> file, '+kt(d.ghi_hinh_dung)+' / '+d.ghi_hinh_gb+' GB · Ổ đĩa còn trống '+gb(d.dia_trong)+'</div>';
  if(d.thu_ghi&&d.thu_ghi.tb) x+='<div class="tk-ghi">'+e(d.thu_ghi.tb)+(d.thu_ghi.luc?' ('+new Date(d.thu_ghi.luc*1000).toLocaleString()+')':'')+'</div>';
  $('rd-cd-tt').innerHTML=x;});}
 function danhDau(){[].slice.call(document.querySelectorAll('#rd-chon label')).forEach(function(l){l.classList.toggle('on',l.querySelector('input').checked);});}
