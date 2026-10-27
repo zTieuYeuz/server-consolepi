@@ -139,7 +139,7 @@ CSS_CHON = """<style>.cg-dau{display:flex;gap:10px;align-items:center;flex-wrap:
 JS_CHON = """<script>(function(){var MOI_TRANG=25,TRANG={may:0,nhom:0};
 function bo(x){return (x||'').replace(/đ/g,'d').replace(/Đ/g,'D').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();}
 function $(i){return document.getElementById(i);}
-function ve(loai){var k=$('cg-'+loai),q=bo($('cg-tim').value),o=[].slice.call(k.querySelectorAll('label[data-tim]')),khop=o.filter(function(l){return !q||l.dataset.tim.indexOf(q)>=0;});
+function ve(loai){var k=$('cg-'+loai),q=bo($('cg-tim').value),o=[].slice.call(k.querySelectorAll('label[data-cg-tim]')),khop=o.filter(function(l){return !q||l.dataset.cgTim.indexOf(q)>=0;});
  var so=Math.max(1,Math.ceil(khop.length/MOI_TRANG));if(TRANG[loai]>=so)TRANG[loai]=so-1;var bd=TRANG[loai]*MOI_TRANG;
  o.forEach(function(l){l.hidden=true;});khop.slice(bd,bd+MOI_TRANG).forEach(function(l){l.hidden=false;});
  var h='';if(so>1){h+='<button type="button" class="tk-nut" data-t="'+(TRANG[loai]-1)+'"'+(TRANG[loai]?'':' disabled')+'>‹</button>';
@@ -167,9 +167,9 @@ def _chon_may_nhom_html():
     nhom = [g for g in DL.NHOM_MAY.doc() if g.get("may")]
     co = {m["id"] for m in ds}
     tim = lambda x: _esc(re.sub(r"[\u0300-\u036f]", "", unicodedata.normalize("NFD", x.replace("đ", "d").replace("Đ", "D"))).lower())  # noqa: E731
-    o_may = "".join(f'<label class="tk-o" data-tim="{tim(ten_may(m) + " " + m["ip"])}"><input type="checkbox" name="may" value="{_esc(m["id"])}"><span><b>{_esc(ten_may(m))}</b>'
+    o_may = "".join(f'<label class="tk-o" data-cg-tim="{tim(ten_may(m) + " " + m["ip"])}"><input type="checkbox" name="may" value="{_esc(m["id"])}"><span><b>{_esc(ten_may(m))}</b>'
                     f'<small>{_esc(m["ip"])}</small></span></label>' for m in ds)
-    o_nhom = "".join(f'<label class="tk-o" data-tim="{tim(g["ten"])}"><input type="checkbox" name="nhom" value="{_esc(g["id"])}" data-may="{_esc(json.dumps([i for i in g["may"] if i in co]))}"><span><b>{_esc(g["ten"])}</b>'
+    o_nhom = "".join(f'<label class="tk-o" data-cg-tim="{tim(g["ten"])}"><input type="checkbox" name="nhom" value="{_esc(g["id"])}" data-may="{_esc(json.dumps([i for i in g["may"] if i in co]))}"><span><b>{_esc(g["ten"])}</b>'
                      f'<small>{sum(1 for i in g["may"] if i in co)} máy</small></span></label>' for g in nhom)
     return (CSS_CHON + f"""<div class="cg-dau"><input type="search" id="cg-tim" placeholder="Tìm máy theo tên hoặc IP">
       <label style="margin:0;display:flex;gap:6px;align-items:center;cursor:pointer;"><input type="checkbox" id="cg-tatca" style="width:auto;margin:0;"> Chọn tất cả trang này</label></div>
