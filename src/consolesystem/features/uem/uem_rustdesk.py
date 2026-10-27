@@ -344,7 +344,7 @@ def bat_dau_ket_noi(mid, nguoi):
     rid, url = ban["id"], "rustdesk://connection/new/%s?password=%s" % (ban["id"], ban.get("mk", ""))
     if GS.cai_dat()["che_do"] == "thong_bao":
         GS.dat_cho_ten(rid, nguoi)
-        _ghi_console(m, rid, nguoi, "Mở kết nối (chế độ Thông báo)")
+        _ghi_console(m, rid, nguoi, "Mở kết nối")
         UD.ghi_tac_vu(m["id"], "tu_xa", "Mở điều khiển từ xa (RustDesk)", True, "ID %s, người: %s" % (rid, nguoi))
         return {"ok": True, "xong": True, "url": url, "tb": "Đang mở RustDesk. Máy đó sẽ hiện thông báo có người đang kết nối."}
     if not UA.co_agent(m) or not UA.con_song(m):

@@ -168,8 +168,8 @@ $('rd-cd-luu').onclick=function(){var c=document.querySelector('input[name=rd-cd
 function kt(x){return x>=1073741824?(x/1073741824).toFixed(2)+' GB':x>=1048576?(x/1048576).toFixed(1)+' MB':Math.max(1,Math.round(x/1024))+' KB';}
 var LS=[];function tg(t){return t?new Date(t*1000).toLocaleString():'';}
 function dai(p){if(!p.ket_thuc)return p.loai==='Yêu cầu từ Console'?'':'<span class="rd-chip ok">đang mở</span>';var s=Math.round(p.ket_thuc-p.bat_dau);return s<60?s+' giây':Math.floor(s/60)+' phút '+(s%60)+' giây';}
-function veLs(){var q=bo($('rd-ls-tim').value),h='<tr><th style="width:120px;">Bắt đầu</th><th>Máy</th><th>Người kết nối</th><th>Từ IP</th><th>Loại</th><th>Thời lượng</th><th style="width:150px;">Kết quả</th><th>Ghi hình</th></tr>',n=0;
- LS.forEach(function(p,i){var ai=(p.nguoi_console?p.nguoi_console+' (Console)':'')+(p.nguoi?(p.nguoi_console?' · ':'')+p.nguoi+(p.peer?' ['+p.peer+']':''):'');
+function veLs(){var q=bo($('rd-ls-tim').value),h='<tr><th style="min-width:95px;">Bắt đầu</th><th style="min-width:120px;">Máy</th><th style="min-width:130px;">Người kết nối</th><th>Từ IP</th><th>Loại</th><th>Thời lượng</th><th style="min-width:160px;">Kết quả</th><th style="min-width:250px;">Ghi hình</th></tr>',n=0;
+ LS.forEach(function(p,i){p.kq=String(p.kq||'').replace(' (chế độ Thông báo)','');var ai=(p.nguoi_console?p.nguoi_console+' (Console)':'')+(p.nguoi?(p.nguoi_console?' · ':'')+p.nguoi+(p.peer?' ['+p.peer+']':''):'');
   if(q&&bo([p.may,p.rid,ai,p.ip,p.kq].join(' ')).indexOf(q)<0)return;n++;
   var ok=/^Đã vào|^Đồng ý|^Mở kết nối/.test(p.kq),loi=/^Bị ngắt|từ chối|hủy|Không/.test(p.kq);
   h+='<tr><td>'+tg(p.bat_dau)+'</td><td><b>'+e(p.may||'?')+'</b><br><small class="tk-ghi">'+e(p.rid)+'</small></td><td>'+e(ai||'-')+'</td><td style="white-space:nowrap;">'+e(p.ip)+'</td><td style="white-space:nowrap;">'+e(p.loai)+'</td><td style="white-space:nowrap;">'+dai(p)+'</td><td>'+(ok?chip(e(p.kq),true):loi?chip(e(p.kq),false):e(p.kq))+'</td><td>'
