@@ -159,7 +159,7 @@ def _trang_kho(msg="", ok=True):
             da_co = _da_co_tu_kho(m, cac_os)
             nut = f"""
                 <form method="POST" action="/deployos/kho/tai" style="display:inline;"
-                      {'onsubmit="return confirm(&#39;Tải lại và ghi đè bản đang có?&#39;);"' if da_co else ''}>
+                      {'data-ghi-de="1"' if da_co else ''}>
                   <input type="hidden" name="id" value="{mid}">
                   <button type="submit" class="small{' gray' if da_co else ''}">{
                     'Tải lại' if da_co else 'Tải về'}</button>
@@ -229,6 +229,15 @@ def _trang_kho(msg="", ok=True):
           {bang}
         </div>
 
+        <style>
+          .xn-nen {{ position:fixed; inset:0; background:rgba(5,8,14,.62); backdrop-filter:blur(3px); display:flex;
+                    align-items:center; justify-content:center; z-index:1000; padding:16px; }}
+          .xn-hop {{ background:var(--the); border:1px solid var(--vien-ro); border-radius:16px; max-width:460px; width:100%;
+                    padding:22px; box-shadow:0 24px 64px rgba(5,8,14,.55); }}
+          .xn-hop h3 {{ margin:0 0 10px; font-weight:600; }}
+          .xn-hop p {{ margin:0; line-height:1.5; }}
+          .xn-nut {{ display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }}
+        </style>
         <script>
         (function() {{
           var DU_LIEU = {du_lieu_js};
@@ -277,6 +286,29 @@ def _trang_kho(msg="", ok=True):
 
           // ---- tich chon nhieu muc roi tai 1 lan
           var tatCa = document.getElementById('tich-tat-ca'), ft = document.getElementById('form-tai-nhieu');
+          // ---- popup xac nhan giua man hinh (thay confirm() cua trinh duyet)
+          function hoiXN(tieu, noi, nhanOk, nguy, lam) {{
+            var n = document.createElement('div'); n.className = 'xn-nen';
+            n.innerHTML = '<div class="xn-hop" role="dialog" aria-modal="true"><h3></h3><p></p>'
+              + '<div class="xn-nut"><button type="button" class="gray xn-huy">Thôi</button>'
+              + '<button type="button" class="xn-ok' + (nguy ? ' red' : '') + '"></button></div></div>';
+            n.querySelector('h3').textContent = tieu; n.querySelector('p').textContent = noi;
+            n.querySelector('.xn-ok').textContent = nhanOk;
+            function dong() {{ n.remove(); document.removeEventListener('keydown', phim); }}
+            function phim(e) {{ if (e.key === 'Escape') dong(); }}
+            n.addEventListener('click', function(e) {{ if (e.target === n) dong(); }});
+            n.querySelector('.xn-huy').onclick = dong;
+            n.querySelector('.xn-ok').onclick = function() {{ dong(); lam(); }};
+            document.addEventListener('keydown', phim);
+            document.body.appendChild(n); n.querySelector('.xn-ok').focus();
+          }}
+          function guiSauXN(f) {{ f.setAttribute('data-da-xn', '1'); if (f.requestSubmit) f.requestSubmit(); else f.submit(); }}
+          document.addEventListener('submit', function(e) {{
+            var f = e.target;
+            if (f.getAttribute('data-ghi-de') !== '1' || f.getAttribute('data-da-xn') === '1') return;
+            e.preventDefault();
+            hoiXN('Tải lại mục này?', 'Mục này đã có trên máy. Tải lại sẽ ghi đè bản đang có.', 'Tải lại', false, function() {{ guiSauXN(f); }});
+          }}, true);
           function oTich() {{ return Array.prototype.slice.call(document.querySelectorAll('.tich-kho')); }}
           function dangHien(o) {{ var tr = o.closest('tr'); return tr && !tr.hasAttribute('data-loc'); }}
           function capNhatTich() {{
@@ -301,8 +333,12 @@ def _trang_kho(msg="", ok=True):
             var chon = oTich().filter(function(o) {{ return o.checked; }});
             if (!chon.length) {{ e.preventDefault(); return; }}
             var co = chon.filter(function(o) {{ return o.getAttribute('data-co') === '1'; }}).length;
-            if (co && !confirm(co + ' mục đã có trên máy sẽ được tải lại và ghi đè. Tiếp tục?')) {{
-              e.preventDefault(); return; }}
+            if (co && ft.getAttribute('data-da-xn') !== '1') {{
+              e.preventDefault();
+              hoiXN('Tải ' + chon.length + ' mục đã chọn?', co + ' mục đã có trên máy sẽ được tải lại và ghi đè bản đang có.',
+                    'Tải về', false, function() {{ guiSauXN(ft); }});
+              return; }}
+            ft.removeAttribute('data-da-xn');
             Array.prototype.slice.call(ft.querySelectorAll('input[name=id]')).forEach(function(x) {{ x.remove(); }});
             chon.forEach(function(o) {{
               var h = document.createElement('input'); h.type = 'hidden'; h.name = 'id'; h.value = o.value; ft.appendChild(h);
@@ -324,8 +360,10 @@ def _trang_kho(msg="", ok=True):
             if (f.getAttribute('action') !== '/deployos/kho/huy') return;
             var id = f.elements['id'] ? f.elements['id'].value : '';
             var ten = tenTheoId[id] || 'mục này';
-            if (!confirm('HUỶ TẢI "' + ten + '"?\\n\\nMọi thứ đã tải về và đang xử lý cho mục này sẽ bị XOÁ SẠCH.\\nMuốn dùng lại phải tải lại từ đầu.'))
-              e.preventDefault();
+            if (f.getAttribute('data-da-xn') === '1') return;
+            e.preventDefault();
+            hoiXN('Huỷ tải "' + ten + '"?', 'Mọi thứ đã tải về và đang xử lý cho mục này sẽ bị xoá sạch. Muốn dùng lại phải tải lại từ đầu.',
+                  'Huỷ tải', true, function() {{ guiSauXN(f); }});
           }});
           // Dang tai ma bam F5 / dong tab -> trinh duyet hoi lai
           // Nut "Tai ve" cua muc khac / "Huy" la form nam NGAY TRONG trang nay: trang tra ve van tiep tuc
