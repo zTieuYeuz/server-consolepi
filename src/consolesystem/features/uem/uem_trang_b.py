@@ -132,7 +132,8 @@ JS_TIEN_DO = """
 
 
 CSS_CHON = """<style>.cg-dau{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}.cg-dau input[type=search]{flex:1;min-width:220px;max-width:420px;margin:0;height:42px}
-.cg-ds{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px}.cg-ds label{margin:0}.cg-trang{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.cg-ds{gap:8px;margin:0}.cg-ds label{margin:0}.cg-ds label[hidden]{display:none!important}
+.cg-ds .tk-o input{width:auto;max-width:none;flex:none;margin:3px 0 0 0}.cg-ds .tk-o b{display:block}.cg-ds .tk-o small{display:block;color:var(--chu-mo)}.cg-trang{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .cg-trang button{min-height:34px;padding:4px 12px}.cg-trang button.on{border-color:var(--nhan);background:var(--nhan-mo);color:var(--nhan-dam)}</style>"""
 
 JS_CHON = """<script>(function(){var MOI_TRANG=25,TRANG={may:0,nhom:0};
@@ -172,8 +173,8 @@ def _chon_may_nhom_html():
                      f'<small>{sum(1 for i in g["may"] if i in co)} máy</small></span></label>' for g in nhom)
     return (CSS_CHON + f"""<div class="cg-dau"><input type="search" id="cg-tim" placeholder="Tìm máy theo tên hoặc IP">
       <label style="margin:0;display:flex;gap:6px;align-items:center;cursor:pointer;"><input type="checkbox" id="cg-tatca" style="width:auto;margin:0;"> Chọn tất cả trang này</label></div>
-      <div class="cg-ds" id="cg-may">{o_may or '<p class="tk-ghi">Chưa có máy nào. Máy hiện ở đây sau khi cài agent (xem Máy tính).</p>'}</div>
-      <div class="cg-ds" id="cg-nhom" hidden>{o_nhom or '<p class="tk-ghi">Chưa có group nào. Tạo ở Triển khai phần mềm, Máy - nhóm máy, Nhóm máy.</p>'}</div>
+      <div class="tk-luoi cg-ds" id="cg-may">{o_may or '<p class="tk-ghi">Chưa có máy nào. Máy hiện ở đây sau khi cài agent (xem Máy tính).</p>'}</div>
+      <div class="tk-luoi cg-ds" id="cg-nhom" hidden>{o_nhom or '<p class="tk-ghi">Chưa có group nào. Tạo ở Triển khai phần mềm, Máy - nhóm máy, Nhóm máy.</p>'}</div>
       <div class="cg-trang" id="cg-trang"></div><p class="tk-ghi" id="cg-dem" style="margin-top:8px;"></p>""")
 
 
