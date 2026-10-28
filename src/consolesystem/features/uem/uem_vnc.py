@@ -12,6 +12,7 @@ Cach lam (khac OpenUEM o diem dich vu, giong o diem mat khau tam):
   * Dong tab / bam Ket thuc / het 2 gio: tat dich vu va doi PIN.
 """
 from consolesystem.core.nhatky import bo_qua as _bo_qua
+from consolesystem.core import ws_cau as _WS
 import sys as _sys
 _sys.modules["ui.uem_vnc"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import base64
@@ -383,7 +384,7 @@ def _bat_tay(cs):
             return None
         dau += d
     dong = dau.decode("latin-1").split("\r\n")
-    mm = re.match(r"GET (/uem-(?:vnc|agent)-ws/[A-Za-z0-9_-]{20,64}) HTTP/1\.[01]$", dong[0])
+    mm = re.match(r"GET (/uem-(?:vnc|agent)-ws/[A-Za-z0-9_-]{20,64})(?:\?[^ ]*)? HTTP/1\.[01]$", dong[0])   # ?... : guacamole-common-js tu them
     hdr = _Hdr({k.strip().lower(): v.strip() for k, v in (x.split(":", 1) for x in dong[1:] if ":" in x)})
     key = hdr.get("sec-websocket-key")
     if not mm or not key or "websocket" not in hdr.get("upgrade", "").lower():
@@ -430,7 +431,12 @@ def _xu_ly(cs):
         if not r:
             return
         duong, hdr, key = r
-        tok = duong.rsplit("/", 1)[1]
+        tok = duong.rsplit("/", 1)[1].split("?", 1)[0]
+        ngoai = _WS.lay(tok)
+        if ngoai:                                   # phien cua tinh nang khac (vd Remote Desktop) dung chung cau noi nay
+            tok = None
+            ngoai(cs, hdr, key, _doc_khung, _khung)
+            return
         p = thong_tin_phien(tok)
         if not p:
             cs.sendall(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n")
@@ -578,3 +584,6 @@ def khoi_dong_bridge():
     threading.Thread(target=_lang_nghe, daemon=True, name="uem-vnc-bridge").start()
     threading.Thread(target=_canh_gac, daemon=True, name="uem-vnc-gac").start()
     return True
+
+
+_WS.dat_khoi_dong(khoi_dong_bridge)

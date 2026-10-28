@@ -231,6 +231,11 @@
 /power/<what>	POST	power_route
 /release-ap	POST	release_ap
 /remote	GET	remote_page
+/remote-desktop	GET	rdp_trang
+/remote-desktop/cai	POST	rdp_cai
+/remote-desktop/ket-noi	POST	rdp_ket_noi
+/remote-desktop/trang-thai	GET	rdp_trang_thai
+/remote-desktop/xem	GET	rdp_xem
 /remote/bat	POST	remote_on
 /remote/cai	POST	remote_install
 /remote/tat	POST	remote_off

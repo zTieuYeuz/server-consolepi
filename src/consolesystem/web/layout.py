@@ -67,6 +67,7 @@ NAV_ITEMS = [
         ("/phien", "Phiên kết nối", "🗂️"),
         ("/console", "Console Serial", "🖥️"),
         ("/direct", "Kết nối trực tiếp", "🔗"),
+        ("/remote-desktop", "Remote Desktop", "🖥️"),
     ]),
 
     # Quan ly may tram (kieu OpenUEM): kiem ke, bao mat, trien khai WinGet, profiles
@@ -442,7 +443,7 @@ _SVG = {
 ICON_MUC = {
     "/": "home", "nhom:Kết nối vào Console": "radar", "/wifi": "wifi", "/bluetooth": "bt",
     "/remote": "globe", "nhom:Thiết bị mạng": "plug", "nhom:Công cụ hệ thống": "net", "/phien": "list",
-    "/console": "term", "/terminal": "kbd", "/ssh": "key", "/direct": "link", "/deployos/trienkhai": "send", "nhom:Quản lý máy trạm": "pc", "/uem": "home", "/uem/may": "pc", "/uem/phan-mem": "box",
+    "/console": "term", "/terminal": "kbd", "/ssh": "key", "/direct": "link", "/remote-desktop": "pc", "/deployos/trienkhai": "send", "nhom:Quản lý máy trạm": "pc", "/uem": "home", "/uem/may": "pc", "/uem/phan-mem": "box",
     "/uem/bao-mat": "key", "/uem/trien-khai": "send", "/uem/profiles": "list", "/uem/bao-cao": "doc", "/uem/quan-tri": "set", "/kho-trung-tam": "box",
     "/nettools": "net", "/deployos": "disk", "nhom:Kho lưu trữ": "box",
     "/storage": "save", "/tai-nguyen": "box", "/commands": "book", "/logs": "log", "/power": "pow",
