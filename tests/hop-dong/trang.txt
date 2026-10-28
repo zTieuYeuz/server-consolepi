@@ -73,6 +73,7 @@
 /nettools/tftp	200	text/html	1e0d0989b1
 /nettools/tls-check	200	text/html	863f5fd647
 /nettools/topology	200	text/html	4db795c923
+/ngon-ngu	302	text/html	dcf2f0b0e9
 /phien	200	text/html	ba565cfb28
 /phien/api/ds	200	application/json	d113d4765c
 /phien/api/thu-vien	200	application/json	d4441b1a0e

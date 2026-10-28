@@ -145,6 +145,19 @@ def register_settings(app):
     def settings_page():
         return _render_settings()
 
+    @app.route("/ngon-ngu")
+    def chon_ngon_ngu():
+        from flask import redirect
+        from consolesystem.web.ngonngu import NGON_NGU
+        l = request.args.get("l", "vi")
+        sau = request.args.get("next", "/settings")
+        if not sau.startswith("/") or sau.startswith("//"):
+            sau = "/settings"
+        r = redirect(sau)
+        if l in dict(NGON_NGU):
+            r.set_cookie("cs-lang", l, max_age=365 * 86400, samesite="Lax")
+        return r
+
     @app.route("/settings/rotate", methods=["POST"])
     def settings_rotate():
         val = request.form.get("rotation", "normal")
@@ -358,6 +371,7 @@ def _render_settings(msg="", ok=True):
       </table>
     </div>"""
 
+    body = _the_ngon_ngu() + body
     return render_page(body, active="/settings", title="Cài đặt",
                        subtitle="Giới thiệu, màn hình, mật khẩu terminal, thông tin hệ thống",
                        extra_css=CSS_GIOI_THIEU)
@@ -576,3 +590,13 @@ def _version():
         except Exception:
             continue
     return "không rõ"
+
+
+def _the_ngon_ngu():
+    """The chon ngon ngu (Tieng Viet / English) - luu cookie tren trinh duyet nay."""
+    from consolesystem.web.ngonngu import NGON_NGU, hien_tai
+    l = hien_tai()
+    nut = "".join(f'<a class="btn{"" if ma == l else " gray"}" href="/ngon-ngu?l={ma}">{ten}</a> ' for ma, ten in NGON_NGU)
+    return ('<div class="card"><h3>Ngôn ngữ / Language</h3>'
+            '<p style="color:#8A94A6;font-size:13.5px;margin:0 0 12px;">Chọn ngôn ngữ giao diện cho trình duyệt này. '
+            'Choose the interface language for this browser.</p>' + nut + '</div>')

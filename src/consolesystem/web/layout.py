@@ -682,7 +682,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
         f'<a href="#" class="btn gray" onclick="if(history.length>1&&location.hash==\'#cs-menu\'){{history.back();return false;}}">Đóng</a></div>'
         f'<div class="luoi">{o_to_html}</div></div>')
 
-    return f"""<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="utf-8">
@@ -883,6 +883,8 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 <script>window.__csGen=1;</script>
 </body>
 </html>"""
+    from consolesystem.web.ngonngu import dich_html as _dich
+    return _dich(html)
 
 
 # ---------------------------------------------------------------------------
