@@ -57,12 +57,18 @@ def _lenh_tu_phien(m):
 
 
 def khung_tls():
-    ok = PKI.san_sang()
-    if ok:
-        return (f'<div class="card"><h3>Kết nối an toàn (mTLS) của agent</h3><p>{chip("Đã bật cổng " + str(PKI.cong()), "xanh")} Agent xác thực Console System bằng CA riêng và '
-                f'Console System xác thực từng agent bằng chứng chỉ riêng.</p><div style="overflow-wrap:anywhere;word-break:break-all;">{T.kv(("Dấu vân tay CA (SHA-256, dùng để ghim khi cài)", PKI.ca_sha256()), ("Chứng chỉ máy chủ (SHA-256)", PKI.server_sha256()))}</div></div>')
+    if PKI.san_sang():
+        # Da bat thi chi la thong tin tra cuu: thu gon, dat cuoi trang (trang_admin). Chua bat thi giu tren dau vi co nut Bat.
+        return ""
     return ('<div class="card"><h3>Kết nối an toàn (mTLS) của agent</h3><p>' + chip("Chưa bật", "vang") + ' Cần bật một lần để agent có thể kết nối (Console System tạo CA riêng và mở cổng '
             f'{PKI.cong()} trong nginx; có kiểm tra và tự trả lại cấu hình cũ nếu lỗi).</p><form method="POST" action="/uem/quan-tri/agent/tls"><button class="tk-nut chinh" type="submit">Bật kết nối an toàn</button></form></div>')
+
+
+def khung_tls_thu_gon():
+    if not PKI.san_sang():
+        return ""
+    return (f'<details class="card" style="margin-top:14px;"><summary style="cursor:pointer;"><b>Kết nối an toàn (mTLS) của agent</b> {chip("Đã bật cổng " + str(PKI.cong()), "xanh")}</summary><p style="margin-top:10px;"> Agent xác thực Console System bằng CA riêng và '
+                f'Console System xác thực từng agent bằng chứng chỉ riêng.</p><div style="overflow-wrap:anywhere;word-break:break-all;">{T.kv(("Dấu vân tay CA (SHA-256, dùng để ghim khi cài)", PKI.ca_sha256()), ("Chứng chỉ máy chủ (SHA-256)", PKI.server_sha256()))}</div></details>')
 
 
 def tab_agent(m):
@@ -235,7 +241,7 @@ def trang_admin():
         hang += (f'<tr><td><a href="/uem/may/{m["id"]}/agent"><b>{_esc(ten_may(m))}</b></a><div class="tk-ghi">{_esc(m["ip"])}</div></td><td>{chip(mt, mau)}</td>'
                  f'<td>{_esc(a.get("ban") or "—")}</td><td>{_esc(gio(a.get("luc_cuoi")) if a.get("luc_cuoi") else "—")}</td></tr>')
     return (khung_tls() + khung_ket_noi() + khung_goi() + f'<div class="card" style="margin-top:14px;">{("<table class=tk-bang><tr><th>Máy</th><th>Agent</th><th>Phiên bản</th><th>Nhịp cuối</th></tr>" + hang + "</table>") if hang else "<p class=tk-ghi>Chưa có máy nào.</p>"}'
-            f'<p class="tk-ghi">Phiên bản agent hiện hành: {UA.PHIEN_BAN}. Agent cũ tự cập nhật khi báo nhịp.</p></div>' + khung_huong_dan())
+            f'<p class="tk-ghi">Phiên bản agent hiện hành: {UA.PHIEN_BAN}. Agent cũ tự cập nhật khi báo nhịp.</p></div>' + khung_tls_thu_gon() + khung_huong_dan())
 
 
 def khung_huong_dan():
@@ -243,7 +249,19 @@ def khung_huong_dan():
     bo = lambda h: h.replace('<div class="card" style="margin-top:14px;">', '<div style="margin-top:12px;">').replace("<h3>", "<h4>").replace("</h3>", "</h4>")
     return ('<details class="card" style="margin-top:14px;"><summary style="cursor:pointer;"><b>Hướng dẫn</b> '
             '<span class="tk-ghi">máy ngoài Internet kết nối thế nào · Smart App Control chặn agent</span></summary>'
-            + bo(khung_internet()) + bo(khung_sac()) + '</details>')
+            + khung_passkey() + bo(khung_internet()) + bo(khung_sac()) + '</details>')
+
+
+def khung_passkey():
+    pc = UG.MSI_PRODUCT_CODE
+    return (f'''<div style="margin-top:12px;"><h4>Điền tham số khi gói agent có passkey</h4>
+      <p>Gói MSI có passkey chỉ cài được khi có đúng passkey (sai hoặc thiếu thì msiexec báo lỗi <b>1603</b>). Điền theo cách cài:</p>
+      <ul><li><b>Triển khai phần mềm LAN và cài Windows (kịch bản):</b> bấm <b>Lưu passkey cho triển khai</b> ở gói đó (mục File cài đã tạo), rồi <b>Đưa vào kho phần mềm</b>.
+        Ô tham số cài để <code>/qn /norestart</code>; Console System tự thêm <code>PASSKEY="..."</code> lúc cài, không cần (và không nên) gõ passkey vào ô tham số.</li>
+      <li><b>Cài tay hoặc bằng công cụ khác (GPO, Intune, PDQ...):</b> <code>msiexec /i agent.msi /qn /norestart PASSKEY="passkey-của-gói"</code>.
+        Bấm đúp file MSI (không có <code>/qn</code>) thì bộ cài tự hỏi passkey.</li>
+      <li><b>Gỡ agent:</b> <code>msiexec /x {pc} /qn /norestart PASSKEY="passkey-của-gói"</code> (máy cài gói có passkey cũng cần passkey khi gỡ).</li></ul>
+      <p class="tk-ghi">Passkey không lấy lại được từ file MSI (file chỉ chứa dấu băm). Quên passkey thì tạo gói mới.</p></div>''')
 
 
 def register_agent(app):
