@@ -552,7 +552,7 @@ def register_remote(app):
 
         {log_html}"""
 
-        return render_page(body, active="/remote", title="Truy cập từ xa",
+        return render_page(body, active="/remote", title="Truy cập qua Internet",
                            subtitle="Cloudflare Tunnel - vào được Pi từ bất kỳ đâu")
 
     @app.route("/remote")

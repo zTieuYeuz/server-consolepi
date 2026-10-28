@@ -188,7 +188,7 @@ def khung_goi():
         ghi_msi = ""
         if g["loai"] == "msi":
             kho = (f'<form method="POST" action="/uem/quan-tri/agent/goi/{g["id"]}/kho" style="display:inline;"><button class="tk-nut" type="submit" '
-                   f'title="Đưa vào Tài nguyên, Phần mềm để dùng trong Triển khai phần mềm / hệ điều hành">Đưa vào kho phần mềm</button></form>')
+                   f'title="Đưa vào Tài nguyên máy, Phần mềm để dùng trong Cài phần mềm qua LAN / hệ điều hành">Đưa vào kho phần mềm</button></form>')
             if g.get("co_passkey"):
                 if g.get("pk_ma"):
                     ghi_msi += (f'<div class="tk-hang" style="gap:8px;margin-top:6px;align-items:center;">{chip("Triển khai phần mềm: đã lưu passkey", "xanh")}'
@@ -375,7 +375,7 @@ def register_agent(app):
         shutil.copyfile(p, os.path.join(_DD.APPS_DIR, ten))
         from consolesystem.integrations.tk_dongco import dien_tham_so_app_neu_trong
         dien_tham_so_app_neu_trong(ten, "/qn /norestart", f"msiexec /x {UG.MSI_PRODUCT_CODE} /qn /norestart")
-        return chuyen("/uem/quan-tri/agent", f"Đã đưa {ten} vào kho phần mềm (Tài nguyên, Phần mềm). Khi triển khai, Console System tự điền passkey nếu đã lưu cho gói này. Mã sản phẩm: {UG.MSI_PRODUCT_CODE}")
+        return chuyen("/uem/quan-tri/agent", f"Đã đưa {ten} vào kho phần mềm (Tài nguyên máy, Phần mềm). Khi triển khai, Console System tự điền passkey nếu đã lưu cho gói này. Mã sản phẩm: {UG.MSI_PRODUCT_CODE}")
 
     @app.route("/uem/quan-tri/agent/goi/<gid>/passkey", methods=["POST"])
     def uem_ag_goi_passkey(gid):

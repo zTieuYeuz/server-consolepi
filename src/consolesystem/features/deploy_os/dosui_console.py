@@ -141,7 +141,7 @@ def _trang_file_boot(msg="", ok=True):
             _khoi_winpe_rieng() +
             f"<h2>File WinPE đang có ({len(ds)})</h2>" +
             _bang_file(ds, "/deployos/console/file/xoa", "/deployos/console/file/tai"))
-    return _trang(body, "Deployment OS", "2.1 - WinPE")
+    return _trang(body, "Cài Windows qua mạng", "2.1 - WinPE")
 
 
 def _khoi_winpe_rieng():
@@ -372,7 +372,7 @@ def _trang_apps(msg="", ok=True):
                   loc();
                 })();
                 </script>""")
-    return _trang(body, "Deployment OS", "2.2 - Phần mềm")
+    return _trang(body, "Cài Windows qua mạng", "2.2 - Phần mềm")
 
 
 def _trang_scripts(msg="", ok=True):
@@ -388,7 +388,7 @@ def _trang_scripts(msg="", ok=True):
             f"<h2>Script đang có ({len(ds)})</h2>" +
             _bang_file(ds, "/deployos/console/scripts/xoa",
                        "/deployos/console/scripts/tai"))
-    return _trang(body, "Deployment OS", "2.3 - Script")
+    return _trang(body, "Cài Windows qua mạng", "2.3 - Script")
 
 
 def register_console(app):

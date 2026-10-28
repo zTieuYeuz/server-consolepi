@@ -38,7 +38,7 @@ def _chuyen(url, tb, ok=True):
     return redirect(url)
 
 
-def _trang(body, chinh, phu="", tieu_de="Triển khai phần mềm LAN", phu_de=""):
+def _trang(body, chinh, phu="", tieu_de="Cài phần mềm qua LAN", phu_de=""):
     from ui import deployos as D
     tb = _tb()
     thong = ""
@@ -48,7 +48,8 @@ def _trang(body, chinh, phu="", tieu_de="Triển khai phần mềm LAN", phu_de=
     if not DC.co_san():
         kiem = ('<div class="msg warn">Chưa cài thư viện WinRM: chạy <code>sudo bash /opt/console-pi/tools/cai-winrm.sh</code> '
                 "trong Terminal của Console System rồi tải lại trang.</div>")
-    return render_page(CSS + _CM.thanh_tab(_CM.TAB_TRIEN_KHAI, "phanmem") + D.tabs_deployos(chinh, phu) + thong + kiem + body, active="/deployos/trienkhai",
+    thanh = "" if D.la_tai_nguyen() else _CM.thanh_tab(_CM.TAB_TRIEN_KHAI, "phanmem")
+    return render_page(CSS + thanh + D.tabs_deployos(chinh, phu) + thong + kiem + body, active="/deployos/trienkhai",
                        title=tieu_de, subtitle=phu_de or "Cài phần mềm hàng loạt qua mạng (WinRM)")
 
 
@@ -665,6 +666,10 @@ def register_trienkhai(app):
             session["nc"] = "tk"
         elif p == "/deployos" or re.match(r"^/deployos/(kichban|tiendo|caidat|lichsu|os|drivers|o-dia|console$|console/file|pxe)", p):
             session["nc"] = "os"
+
+    @app.route("/tai-nguyen")
+    def tai_nguyen_may():
+        return redirect("/deployos/console/apps")
 
     @app.route("/tk/tai/<tok>/<ten>")
     def tk_tai(tok, ten):

@@ -56,41 +56,42 @@ NAV_ITEMS = [
     ("/", "Tổng quan", "🏠"),
 
     # Cac duong ket noi VAO chinh con Pi nay
-    ("nhom", "Kết nối Console System", "📡", [
+    ("nhom", "Kết nối vào Console", "📡", [
         ("/wifi", "WiFi / AP", "📶"),
         ("/bluetooth", "Bluetooth", "🔵"),
-        ("/remote", "Truy cập từ xa", "🌍"),
+        ("/remote", "Truy cập qua Internet", "🌍"),
     ]),
 
     # Cac duong tu Pi ket noi RA thiet bi mang can lam viec
-    ("nhom", "Quản lý và kết nối thiết bị", "🔌", [
+    ("nhom", "Thiết bị mạng", "🔌", [
         ("/phien", "Phiên kết nối", "🗂️"),
-        ("/console", "Console", "🖥️"),
-        ("/direct", "Cắm thẳng thiết bị", "🔗"),
+        ("/console", "Console Serial", "🖥️"),
+        ("/direct", "Kết nối trực tiếp", "🔗"),
     ]),
 
     # Quan ly may tram (kieu OpenUEM): kiem ke, bao mat, trien khai WinGet, profiles
     ("nhom", "Quản lý máy trạm", "🖥️", [
         ("/uem", "Tổng quan máy trạm", "📊"),
         ("/uem/may", "Máy tính", "💻"),
-        ("/uem/phan-mem", "Phần mềm", "📦"),
+        ("/uem/phan-mem", "Phần mềm đã cài", "📦"),
         ("/uem/bao-mat", "Bảo mật", "🛡️"),
-        ("/uem/trien-khai", "Triển khai phần mềm", "🚀"),
-        ("/rustdesk", "Phần mềm remote", "🛰️"),
-        ("/uem/profiles", "Profiles", "📋"),
+        ("/uem/trien-khai", "Cài phần mềm qua Agent", "🚀"),
+        ("/rustdesk", "Hỗ trợ từ xa (RustDesk)", "🛰️"),
+        ("/uem/profiles", "Cấu hình (Profiles)", "📋"),
         ("/uem/bao-cao", "Báo cáo", "📄"),
         ("/uem/quan-tri", "Quản trị", "⚙️"),
     ]),
 
-    ("nhom", "System Utilities", "🛠️", [
-        ("/nettools", "Network Tools", "🛠️"),
-        ("/deployos", "Deployment OS", "💿"),
-        ("/deployos/trienkhai", "Triển khai phần mềm LAN", "🚀"),
+    ("nhom", "Công cụ hệ thống", "🛠️", [
+        ("/nettools", "Công cụ mạng", "🛠️"),
+        ("/deployos", "Cài Windows qua mạng", "💿"),
+        ("/deployos/trienkhai", "Cài phần mềm qua LAN", "🚀"),
     ]),
 
     # Noi cat du lieu de dung lai
     ("nhom", "Kho lưu trữ", "📦", [
         ("/storage", "Kho file", "💾"),
+        ("/tai-nguyen", "Tài nguyên máy", "🗃️"),
         ("/kho-trung-tam", "Kho trung tâm", "☁️"),
         ("/commands", "Thư viện lệnh", "📚"),
     ]),
@@ -439,12 +440,12 @@ _SVG = {
 
 # Icon cho tung muc menu (theo duong dan). Muc nao khong co thi dung "doc".
 ICON_MUC = {
-    "/": "home", "nhom:Kết nối Console System": "radar", "/wifi": "wifi", "/bluetooth": "bt",
-    "/remote": "globe", "nhom:Quản lý và kết nối thiết bị": "plug", "nhom:System Utilities": "net", "/phien": "list",
+    "/": "home", "nhom:Kết nối vào Console": "radar", "/wifi": "wifi", "/bluetooth": "bt",
+    "/remote": "globe", "nhom:Thiết bị mạng": "plug", "nhom:Công cụ hệ thống": "net", "/phien": "list",
     "/console": "term", "/terminal": "kbd", "/ssh": "key", "/direct": "link", "/deployos/trienkhai": "send", "nhom:Quản lý máy trạm": "pc", "/uem": "home", "/uem/may": "pc", "/uem/phan-mem": "box",
     "/uem/bao-mat": "key", "/uem/trien-khai": "send", "/uem/profiles": "list", "/uem/bao-cao": "doc", "/uem/quan-tri": "set", "/kho-trung-tam": "box",
     "/nettools": "net", "/deployos": "disk", "nhom:Kho lưu trữ": "box",
-    "/storage": "save", "/commands": "book", "/logs": "log", "/power": "pow",
+    "/storage": "save", "/tai-nguyen": "box", "/commands": "book", "/logs": "log", "/power": "pow",
     "/giaitri": "tv", "/gopy": "chat", "nhom:Cài đặt": "set", "/settings": "set",
     "/docs": "doc",
 }
@@ -461,37 +462,37 @@ TIM_THEM = [
     ("SSH / Telnet (phiên mới)", "/phien#moi", "Phiên kết nối", "ssh telnet ket noi thiet bi"),
     ("Terminal máy này", "/phien?mo=local", "Phiên kết nối", "terminal shell dong lenh may nay"),
     ("Thư viện lệnh trong phiên", "/phien?thuvien=1", "Phiên kết nối", "lenh co san gui tap lenh"),
-    ("Kịch bản cài Windows", "/deployos/kichban", "Deployment OS", "pxe win cai dat"),
-    ("Tạo kịch bản mới", "/deployos/wizard/bat-dau?che_do=chay", "Deployment OS", "wizard cai windows"),
-    ("Ổ đĩa đã dò", "/deployos/o-dia", "Deployment OS", "disk o cung"),
-    ("Hệ điều hành (bộ cài)", "/deployos/os", "Deployment OS", "iso wim windows"),
-    ("Phần mềm cài kèm", "/deployos/console/apps", "Deployment OS", "app office"),
-    ("Ứng dụng nhiều file", "/deployos/ungdung", "Deployment OS", "app"),
-    ("Font chữ", "/deployos/font", "Deployment OS", "font"),
-    ("Driver theo dòng máy", "/deployos/drivers", "Deployment OS", "driver model"),
-    ("Script", "/deployos/console/scripts", "Deployment OS", "script cmd ps1"),
-    ("WinPE / file boot", "/deployos/console", "Deployment OS", "winpe boot"),
+    ("Kịch bản cài Windows", "/deployos/kichban", "Cài Windows qua mạng", "pxe win cai dat"),
+    ("Tạo kịch bản mới", "/deployos/wizard/bat-dau?che_do=chay", "Cài Windows qua mạng", "wizard cai windows"),
+    ("Ổ đĩa đã dò", "/deployos/o-dia", "Cài Windows qua mạng", "disk o cung"),
+    ("Hệ điều hành (bộ cài)", "/deployos/os", "Cài Windows qua mạng", "iso wim windows"),
+    ("Phần mềm cài kèm", "/deployos/console/apps", "Cài Windows qua mạng", "app office"),
+    ("Ứng dụng nhiều file", "/deployos/ungdung", "Cài Windows qua mạng", "app"),
+    ("Font chữ", "/deployos/font", "Cài Windows qua mạng", "font"),
+    ("Driver theo dòng máy", "/deployos/drivers", "Cài Windows qua mạng", "driver model"),
+    ("Script", "/deployos/console/scripts", "Cài Windows qua mạng", "script cmd ps1"),
+    ("WinPE / file boot", "/deployos/console", "Cài Windows qua mạng", "winpe boot"),
     ("Kho trung tâm", "/kho-trung-tam", "Kho lưu trữ", "kho tai ve phan mem os iso"),
-    ("Máy đang cài", "/deployos/tiendo", "Deployment OS", "tien trinh tien do"),
-    ("Lịch sử cài đặt", "/deployos/lichsu", "Deployment OS", "lich su csv"),
-    ("Bật / Tắt PXE", "/deployos/caidat", "Deployment OS", "pxe dhcp tftp"),
-    ("Kiểm tra sẵn sàng", "/deployos/caidat/hatang", "Deployment OS", "san sang ha tang kiem tra"),
-    ("Bật máy từ xa (Wake-on-LAN)", "/deployos/caidat/wol", "Deployment OS", "wol wake danh thuc"),
-    ("ARP Scan", "/nettools/arp-scan", "Network Tools", "quet thiet bi"),
-    ("Ping / Traceroute", "/nettools/ping", "Network Tools", "ping"),
-    ("PCAP Capture", "/nettools/pcap", "Network Tools", "bat goi tshark"),
-    ("LLDP / CDP Discovery", "/nettools/lldp", "Network Tools", "lldp cdp switch"),
-    ("Kiểm tra cổng mạng", "/nettools/dhcp-test", "Network Tools", "dhcp poe toc do"),
-    ("STP / LACP / VLAN Scan", "/nettools/l2-scan", "Network Tools", "stp vlan"),
-    ("MTU Discovery", "/nettools/mtu", "Network Tools", "mtu"),
-    ("Kiểm tra DNS", "/nettools/dns-check", "Network Tools", "dns"),
-    ("Kiểm tra chứng chỉ TLS", "/nettools/tls-check", "Network Tools", "tls ssl https"),
-    ("Sơ đồ mạng 1 đoạn", "/nettools/topology", "Network Tools", "topology so do"),
-    ("Máy chủ TFTP", "/nettools/tftp", "Network Tools", "tftp"),
-    ("Sao lưu qua cáp console", "/nettools/console-backup", "Network Tools", "backup"),
-    ("Netmiko Config", "/nettools/netmiko", "Network Tools", "netmiko ssh cau hinh"),
-    ("802.1X Testing", "/nettools/dot1x", "Network Tools", "dot1x radius"),
-    ("IF/THEN Automation", "/nettools/ifthen", "Network Tools", "ifthen rule"),
+    ("Máy đang cài", "/deployos/tiendo", "Cài Windows qua mạng", "tien trinh tien do"),
+    ("Lịch sử cài đặt", "/deployos/lichsu", "Cài Windows qua mạng", "lich su csv"),
+    ("Bật / Tắt PXE", "/deployos/caidat", "Cài Windows qua mạng", "pxe dhcp tftp"),
+    ("Kiểm tra sẵn sàng", "/deployos/caidat/hatang", "Cài Windows qua mạng", "san sang ha tang kiem tra"),
+    ("Bật máy từ xa (Wake-on-LAN)", "/deployos/caidat/wol", "Cài Windows qua mạng", "wol wake danh thuc"),
+    ("ARP Scan", "/nettools/arp-scan", "Công cụ mạng", "quet thiet bi"),
+    ("Ping / Traceroute", "/nettools/ping", "Công cụ mạng", "ping"),
+    ("PCAP Capture", "/nettools/pcap", "Công cụ mạng", "bat goi tshark"),
+    ("LLDP / CDP Discovery", "/nettools/lldp", "Công cụ mạng", "lldp cdp switch"),
+    ("Kiểm tra cổng mạng", "/nettools/dhcp-test", "Công cụ mạng", "dhcp poe toc do"),
+    ("STP / LACP / VLAN Scan", "/nettools/l2-scan", "Công cụ mạng", "stp vlan"),
+    ("MTU Discovery", "/nettools/mtu", "Công cụ mạng", "mtu"),
+    ("Kiểm tra DNS", "/nettools/dns-check", "Công cụ mạng", "dns"),
+    ("Kiểm tra chứng chỉ TLS", "/nettools/tls-check", "Công cụ mạng", "tls ssl https"),
+    ("Sơ đồ mạng 1 đoạn", "/nettools/topology", "Công cụ mạng", "topology so do"),
+    ("Máy chủ TFTP", "/nettools/tftp", "Công cụ mạng", "tftp"),
+    ("Sao lưu qua cáp console", "/nettools/console-backup", "Công cụ mạng", "backup"),
+    ("Netmiko Config", "/nettools/netmiko", "Công cụ mạng", "netmiko ssh cau hinh"),
+    ("802.1X Testing", "/nettools/dot1x", "Công cụ mạng", "dot1x radius"),
+    ("IF/THEN Automation", "/nettools/ifthen", "Công cụ mạng", "ifthen rule"),
     ("Sao lưu cấu hình", "/settings/sao-luu", "Cài đặt", "backup sao luu"),
     ("Cập nhật", "/cap-nhat", "Cài đặt", "cap nhat update phien ban nang cap ha cap"),
     ("Đăng xuất", "/logout", "Tài khoản", "logout thoat"),
@@ -573,13 +574,19 @@ def gan_phien_tmux(html, session):
 
 
 def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css="", an_tieu_de=False):
+    try:
+        from consolesystem.web.chon_may import la_tai_nguyen as _la_tn
+        if _la_tn():
+            active, title = "/tai-nguyen", "Tài nguyên máy"
+    except Exception as _loi:
+        _bo_qua(_loi)
     if active == "/deployos":        # o muc Trien khai phan mem (cac trang dung chung voi Deployment OS) thi sang muc do
         try:
             from flask import session as _ss
             if _ss.get("nc") == "tk":
                 active = "/deployos/trienkhai"
-                if title == "Deployment OS":
-                    title = "Triển khai phần mềm LAN"
+                if title == "Cài Windows qua mạng":
+                    title = "Cài phần mềm qua LAN"
         except Exception as _loi:
             _bo_qua(_loi)
     """
@@ -934,7 +941,7 @@ def _nut_quay_ve():
     LY DO THAT (anh Thoai 19/09/2026: "khi anh nhap vao 1 chuc nang nao do
     anh muon quay ve thi no thieu nut quay ve"): truoc day khung chung XOA
     dong quay lai cua tung trang di, voi ly do "da co thanh menu ben trai
-    nen thua". Nhung thanh menu trai chi co muc "Network Tools" chung -
+    nen thua". Nhung thanh menu trai chi co muc "Công cụ mạng" chung -
     dang o trong 1 cong cu (vd Kiem tra DNS) muon ve danh sach cong cu thi
     phai bam vao muc do roi no nap lai trang, hoac bam Back cua trinh
     duyet. Tren man hinh cam ung khong co phim Back, va thanh menu co the
@@ -986,7 +993,7 @@ def wrap_legacy_html(html, active="/nettools"):
 
     body = m.group(1)
 
-    title = "Network Tools"
+    title = "Công cụ mạng"
     tm = _TITLE_RE.search(html)
     if tm:
         title = tm.group(1).split(" - ")[0].strip()

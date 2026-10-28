@@ -124,7 +124,7 @@ function ve(d){D0=d;
  $('rd-tb').textContent=d.cai.tb||'';
  [['rd-host',d.host],['rd-relay',d.relay],['rd-mk',d.mk_chung]].forEach(function(a){if(document.activeElement!==$(a[0])&&!$(a[0]).dataset.sua) $(a[0]).value=a[1]||'';});
  if(d.relay) $('rd-relay').closest('details').open=true; MK0=d.mk_chung||''; $('rd-h').textContent=d.dia_chi.id; $('rd-r').textContent=d.dia_chi.relay; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
- $('rd-kho-tb').textContent=d.kho.dang?d.kho.tb:(d.kho.co?('Đã có trong kho Triển khai phần mềm (Tài nguyên, Phần mềm): '+d.kho.ten+', tạo lúc '+new Date(d.kho.luc*1000).toLocaleString()):(d.kho.tb||'Chưa có (cần cài máy chủ và đặt mật khẩu chung ở bước 2).'));
+ $('rd-kho-tb').textContent=d.kho.dang?d.kho.tb:(d.kho.co?('Đã có trong kho Triển khai phần mềm (Tài nguyên máy, Phần mềm): '+d.kho.ten+', tạo lúc '+new Date(d.kho.luc*1000).toLocaleString()):(d.kho.tb||'Chưa có (cần cài máy chủ và đặt mật khẩu chung ở bước 2).'));
  $('rd-tai-msi').disabled=!d.kho.co||d.kho.dang; if(d.kho.dang) setTimeout(tai,2000);
  hd(); if(d.cai.dang) setTimeout(tai,1500);
  var chay=d.da_cai&&d.hbbs&&d.hbbr;o('rd-t-mc',d.da_cai?(chay?'ok':'loi'):'vang',!d.da_cai?'Chưa cài':(chay?'Đang chạy':'Đã dừng'));

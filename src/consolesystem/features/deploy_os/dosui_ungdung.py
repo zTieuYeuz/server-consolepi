@@ -92,7 +92,7 @@ def _trang_ungdung(msg="", ok=True):
         </div>
         <h2>Ứng dụng đã có ({len(ds)})</h2>
         {bang}""")
-    return _trang(body, "Deployment OS", "Ứng dụng (nhiều file)")
+    return _trang(body, "Cài Windows qua mạng", "Ứng dụng (nhiều file)")
 
 
 def register_ungdung(app):
@@ -190,7 +190,7 @@ def register_ungdung(app):
 
         <h3>Nội dung hiện có</h3>
         {bang}""")
-        return _trang(body, "Deployment OS", f"Ứng dụng - {u['ten_hien_thi']}")
+        return _trang(body, "Cài Windows qua mạng", f"Ứng dụng - {u['ten_hien_thi']}")
 
     @app.route("/deployos/ungdung/<ung_id>/lenh", methods=["POST"])
     def deployos_ungdung_lenh(ung_id):

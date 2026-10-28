@@ -617,7 +617,7 @@ def register_home(app):
         else:
             gan_html = ('<div class="vazio"><h3>Chưa có lần cài Windows nào</h3>'
                         '<p>Kết quả các lần cài qua mạng sẽ được ghi lại tại đây.</p>'
-                        '<a class="btn gray" href="/deployos/kichban">Mở Deployment OS</a></div>')
+                        '<a class="btn gray" href="/deployos/kichban">Mở Cài Windows qua mạng</a></div>')
 
         # --- Phan mo dau: tra loi ngay "may co on khong" ---
         from ui.gioithieu import _phien_ban
@@ -748,7 +748,7 @@ def register_home(app):
                 (FTDI / Prolific / CH340) hoặc cáp console micro-USB của Cisco
                 vào máy này &mdash; trang này tự nhận, không cần khởi động lại.</div>
             </div>"""
-        return render_page(noi_dung, active="/console", title="Console",
+        return render_page(noi_dung, active="/console", title="Console Serial",
                            subtitle="Cổng serial nối tới switch / router")
 
     @app.route("/console/<devname>")

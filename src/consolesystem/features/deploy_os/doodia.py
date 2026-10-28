@@ -326,7 +326,7 @@ def canh_bao_may(kq):
     if not o_ds:
         ra.append(("do", "Không thấy ổ đĩa nào. Thường do máy dùng Intel RST/VMD hoặc RAID mà WinPE chưa có "
                          "driver: vào BIOS đổi chế độ SATA/NVMe sang AHCI, hoặc nạp driver Intel RST/VMD vào ảnh "
-                         "boot (Tài nguyên → Driver → bật \"Nạp vào ảnh boot\"), rồi dò lại."))
+                         "boot (Tài nguyên máy → Driver → bật \"Nạp vào ảnh boot\"), rồi dò lại."))
     elif not trong:
         ra.append(("do", "Chỉ thấy ổ USB/thẻ nhớ, KHÔNG thấy ổ cứng bên trong. Có thể máy dùng Intel RST/VMD hoặc RAID "
                          "chưa có driver (xem hướng dẫn ở trên: đổi AHCI hoặc nạp driver vào ảnh boot)."))

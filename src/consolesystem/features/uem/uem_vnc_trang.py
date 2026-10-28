@@ -95,7 +95,7 @@ def register_vnc_trang(app):
     @app.route("/rustdesk/vnc")
     def remote_vnc():
         body = CM.JS + CM.CSS + CM.thanh_tab(CM.TAB_REMOTE, "vnc") + TRANG.replace("@KHUNG@", CM.khung("vn"))
-        return render_page(body, active="/rustdesk", title="Phần mềm remote", subtitle="Remote VNC: tải TightVNC, cài / kiểm tra / gỡ trên nhiều máy")
+        return render_page(body, active="/rustdesk", title="Hỗ trợ từ xa (RustDesk)", subtitle="Remote VNC: tải TightVNC, cài / kiểm tra / gỡ trên nhiều máy")
 
     @app.route("/rustdesk/vnc/tai/<bits>")
     def remote_vnc_tai(bits):

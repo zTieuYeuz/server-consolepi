@@ -106,5 +106,5 @@ def register_chung(app):
                 f'khoảng {can_gb:.1f} GB trống, nhưng chỉ còn '
                 f'{_con_trong_gb()} GB. Đã dừng lại NGAY, chưa tốn thời gian '
                 f'tải lên của anh. Xóa bớt file cũ hoặc cắm USB rồi thử lại.</div>',
-                "Deployment OS", "Không đủ dung lượng"), 413
+                "Cài Windows qua mạng", "Không đủ dung lượng"), 413
         return None

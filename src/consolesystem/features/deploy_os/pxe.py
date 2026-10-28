@@ -158,7 +158,7 @@ def trich_bootmgr_tu_winpe():
     """
     boot_wim = _duong("boot.wim")
     if not os.path.isfile(boot_wim):
-        return False, "Chưa có boot.wim - tải lên ở tab Tài nguyên > Hệ điều hành trước."
+        return False, "Chưa có boot.wim - tải lên ở tab Tài nguyên máy > Hệ điều hành trước."
 
     ket_qua = []
     for duong_wim, ten_luu in (

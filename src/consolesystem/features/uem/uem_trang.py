@@ -29,8 +29,8 @@ from consolesystem.web import chon_may as _CM
 
 
 
-TABS = [("tq", "Tổng quan", "/uem"), ("may", "Máy tính", "/uem/may"), ("pm", "Phần mềm", "/uem/phan-mem"), ("bm", "Bảo mật", "/uem/bao-mat"),
-        ("td", "Triển khai phần mềm", "/uem/trien-khai"), ("pf", "Profiles", "/uem/profiles"), ("bc", "Báo cáo", "/uem/bao-cao"),
+TABS = [("tq", "Tổng quan", "/uem"), ("may", "Máy tính", "/uem/may"), ("pm", "Phần mềm đã cài", "/uem/phan-mem"), ("bm", "Bảo mật", "/uem/bao-mat"),
+        ("td", "Cài phần mềm qua Agent", "/uem/trien-khai"), ("pf", "Cấu hình (Profiles)", "/uem/profiles"), ("bc", "Báo cáo", "/uem/bao-cao"),
         ("qt", "Quản trị", "/uem/quan-tri")]
 
 CSS = """

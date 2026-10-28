@@ -185,7 +185,7 @@ def _b_phanmem(c, ip, b, may):
     ten = os.path.basename(b["ref"])
     duong = os.path.join(_DD.APPS_DIR, ten)
     if not os.path.isfile(duong):
-        return False, f"Không còn file phần mềm {ten} trong Tài nguyên."
+        return False, f"Không còn file phần mềm {ten} trong Tài nguyên máy."
     meta = D.doc_thongtin_app()
     if RD.la_bo_cai_rustdesk(ten) and not (meta.get(ten) or "").strip():
         # Bo cai RustDesk trong Tai nguyen: cai bang chinh file nay (kiem SHA-256) va dien san May chu ID / chuyen tiep / Key cua Console System
@@ -255,9 +255,9 @@ def _b_ungdung(c, ip, b, may):
     from ui import deployos as D
     u = D.lay_ungdung(b["ref"])
     if not u:
-        return False, f"Không còn ứng dụng '{b.get('ten') or b['ref']}' trong Tài nguyên."
+        return False, f"Không còn ứng dụng '{b.get('ten') or b['ref']}' trong Tài nguyên máy."
     if not (u.get("lenh_cai") or "").strip():
-        return False, "Ứng dụng chưa có dòng lệnh cài đặt (điền ở Tài nguyên, Ứng dụng nhiều file)."
+        return False, "Ứng dụng chưa có dòng lệnh cài đặt (điền  ở Tài nguyên máy, Ứng dụng nhiều file)."
     z = _zip_ungdung(u["id"], os.path.join(_DD.UNGDUNG_DIR, u["id"]))
     d = _dir_tep(u["id"])
     _tai_ve_may(c, ip, z, d + "\\ungdung.zip")
@@ -273,7 +273,7 @@ def _b_script(c, ip, b, may):
     ten = os.path.basename(b["ref"])
     duong = os.path.join(_DD.SCRIPTS_DIR, ten)
     if not os.path.isfile(duong):
-        return False, f"Không còn script {ten} trong Tài nguyên."
+        return False, f"Không còn script {ten} trong Tài nguyên máy."
     if ten.lower().endswith(".ps1"):
         with open(duong, encoding="utf-8-sig", errors="replace") as f:
             out, err = _chay_ps(c, f.read())

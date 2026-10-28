@@ -32,13 +32,12 @@ TEN_LOAI_KHO = {"phanmem": "Phần mềm", "ungdung": "Ứng dụng nhiều file
 
 
 # Tai ve nam o thu muc tai nguyen CHUNG (deploy/apps, scripts, ungdung, fonts, os): ca 2 tinh nang deu doc cung cho
-DUNG_CHO = {"os": "Deployment OS", "winpe": "Deployment OS", "phanmem": "Cả hai", "ungdung": "Cả hai", "font": "Cả hai", "script": "Cả hai"}
+DUNG_CHO = {"os": "Cài Windows qua mạng", "winpe": "Cài Windows qua mạng", "phanmem": "Cả hai", "ungdung": "Cả hai", "font": "Cả hai", "script": "Cả hai"}
 
 
 def _dau_kho():
     return ('<div class="card" style="padding:14px 18px;"><b>Kho dùng chung.</b> <span class="tk-ghi">Tải một lần, dùng ở cả hai nơi: '
-            'Hệ điều hành và WinPE hiện trong <a href="/deployos/os">Deployment OS</a>; Phần mềm, Ứng dụng, Font, Script hiện trong Tài nguyên của cả '
-            '<a href="/deployos/console/apps?nc=os">Deployment OS</a> lẫn <a href="/deployos/console/apps?nc=tk">Triển khai phần mềm</a>.</span></div>')
+            'Mọi thứ tải về nằm trong <a href="/tai-nguyen">Tài nguyên máy</a> (Kho lưu trữ), dùng chung cho Cài Windows qua mạng và Cài phần mềm qua LAN.</span></div>')
 
 
 def _bo_font_tu_kho(muc_id):
@@ -446,7 +445,7 @@ def _trang_kho(msg="", ok=True):
           hoi();
         }})();
         </script>"""
-    return _trang(body, "Kho trung tâm", "Kho lưu trữ dùng chung cho Deployment OS và Triển khai phần mềm", active="/kho-trung-tam")
+    return _trang(body, "Kho trung tâm", "Kho lưu trữ dùng chung cho Cài Windows qua mạng và Cài phần mềm qua LAN", active="/kho-trung-tam")
 
 
 def _kho_chuyen(msg, ok=True):
@@ -709,7 +708,7 @@ def _tai_mot(muc_id):
             ok_g, msg_g, so_them, _bo_qua = _giai_nen_font_zip(p_bo, duong, ten_an)  # tu xoa .zip
             if not ok_g:
                 return False, msg_g
-            return True, f'Đã tải "{ten_hien_thi}": {so_them} font trong Tài nguyên → Font chữ.'
+            return True, f'Đã tải "{ten_hien_thi}": {so_them} font trong Tài nguyên máy → Font chữ.'
 
         def don_dep_font():
             """Huy giua chung: bo font do CHINH lan tai nay tao ra ma chua co font -> xoa luon."""

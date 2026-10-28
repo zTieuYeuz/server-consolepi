@@ -46,7 +46,7 @@ def _trang_o_dia(msg="", ok=True):
             {xoa_het}</p>
         </div>
         {khoi}""")
-    return _trang(body, "Deployment OS", "Ổ đĩa đã dò")
+    return _trang(body, "Cài Windows qua mạng", "Ổ đĩa đã dò")
 
 
 def register_o_dia(app):

@@ -60,7 +60,7 @@ def _het_han():
         'khởi động lại nên không còn giữ được lựa chọn đang dở. '
         '<a href="/deployos/boot">Bắt đầu lại</a> - kịch bản đã lưu trên '
         'đĩa thì không mất.</div>',
-        "Deployment OS")
+        "Cài Windows qua mạng")
 
 
 def _nhan_du_lieu_buoc(d, buoc, form):
@@ -75,9 +75,9 @@ def _nhan_du_lieu_buoc(d, buoc, form):
         os_id = form.get("os_id", "")
         o = lay_os(os_id)
         if o is None:
-            return "Chưa chọn hệ điều hành (hoặc chưa tạo hệ điều hành nào - vào tab Tài nguyên > Hệ điều hành)."
+            return "Chưa chọn hệ điều hành (hoặc chưa tạo hệ điều hành nào - vào tab Tài nguyên máy > Hệ điều hành)."
         if not o["san_sang"]:
-            return f'"{o["ten_hien_thi"]}" còn thiếu boot.wim/install.wim - vào "Tài nguyên > Hệ điều hành" tải lên trước.'
+            return f'"{o["ten_hien_thi"]}" còn thiếu boot.wim/install.wim - vào "Tài nguyên máy > Hệ điều hành" tải lên trước.'
         # Doi OS ho khac thi bo phan vung chia tay cu di (bo phan vung
         # cua Windows va Linux khac han nhau - giu lai se sai)
         if d.get("os_ho") and d["os_ho"] != o["os_ho"]:
@@ -327,7 +327,7 @@ def _ve_buoc(ma, d, buoc, loi=""):
     than = (_tabs("kichban") + _thanh_buoc(buoc) + _msg(loi, False) +
             flash_html + _noi_dung_buoc(ma, d, buoc))
     tieu_de = ("Tạo kịch bản" if d.get("che_do") == "luu"
-               else "Deployment OS")
+               else "Cài Windows qua mạng")
     return _trang(than, tieu_de,
                   f"Bước {so_hien_thi(buoc)}/{len(TEN_BUOC)}: {dict(TEN_BUOC)[buoc]}",
                   active="/deployos")
@@ -369,7 +369,7 @@ def _noi_dung_buoc(ma, d, buoc):
                 </label>"""
         if not ds_os:
             khoi_os = ("""<div class="msg warn">Chưa có hệ điều hành nào.
-                Vào <a href="/deployos/os">Tài nguyên &gt; Hệ điều hành</a>
+                Vào <a href="/deployos/os">Tài nguyên máy &gt; Hệ điều hành</a>
                 để thêm trước.</div>""")
         else:
             # Windows 11 tren may khong du chuan (anh Thoai 14/10/2026, muc 1): deploy.cmd
@@ -422,7 +422,7 @@ def _noi_dung_buoc(ma, d, buoc):
             khoi_driver = """
                 <div class="msg info" style="font-size:13px;">
                   Chưa có gói driver nào (không bắt buộc) - thêm ở
-                  <a href="/deployos/drivers">Tài nguyên &gt; Driver</a> nếu
+                  <a href="/deployos/drivers">Tài nguyên máy &gt; Driver</a> nếu
                   máy cần cài có phần cứng ít gặp (mạng/WiFi đời mới/RAID...).
                 </div>"""
 
@@ -1402,7 +1402,7 @@ def register_kichban(app):
 
         <h2>Kịch bản đã lưu ({len(ds_kb)})</h2>
         {noi_dung}"""
-        return _trang(body, "Deployment OS",
+        return _trang(body, "Cài Windows qua mạng",
                       "Triển khai hệ điều hành qua mạng cho máy cần cài lại")
 
     @app.route("/deployos/kichban/xoa", methods=["POST"])
@@ -1502,7 +1502,7 @@ def register_kichban(app):
                 _bang_kichban(ds, _esc) +
                 '<div class="row" style="margin-top:8px;">'
                 '<a class="btn" href="/deployos/kichban">Về danh sách kịch bản</a></div>')
-        return _trang(body, "Deployment OS", "Kịch bản")
+        return _trang(body, "Cài Windows qua mạng", "Kịch bản")
 
     # 01/10/2026 (anh Thoai: "bo tham so cai dat tren Console Pi va ISO, chi giu tren
     # kho"): tab "Tham so cai dat" da bo. Bang tra tham so cai im lang gio chi quan ly

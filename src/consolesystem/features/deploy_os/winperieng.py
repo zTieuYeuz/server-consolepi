@@ -227,7 +227,7 @@ def _bao_dam_bootmgr(build_pe=0):
         loi_kho = f"{type(e).__name__}: {e}"
         shutil.rmtree(DIR_BOOTMGR + ".tam", ignore_errors=True)
     return False, ("File WinPE này không kèm bootmgr (kiểu WDS). Cần 1 bộ Windows có boot.wim "
-                   "ở \"Tài nguyên > Hệ điều hành\", hoặc kết nối kho trung tâm có ISO Windows "
+                   "ở \"Tài nguyên máy > Hệ điều hành\", hoặc kết nối kho trung tâm có ISO Windows "
                    f"(lần thử kho: {loi_kho}).")
 
 

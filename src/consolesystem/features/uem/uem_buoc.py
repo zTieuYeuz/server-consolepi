@@ -62,7 +62,7 @@ CAC_LOAI = {
         ("ten", "Tên nhóm", "text", True, "", ""), ("thanh_vien", "Người dùng cần gỡ (mỗi dòng một tên)", "textarea", True, "", "")]),
     "msi_cai": ("MSI: cài đặt", "msi", [
         ("product_id", "Mã sản phẩm (ProductCode, dạng {GUID})", "text", True, "", ""),
-        ("duong_dan", "Đường dẫn file .msi (URL, hoặc đường dẫn trên máy đích, hoặc tên file .msi trong Tài nguyên → Phần mềm)", "text", True, "", ""),
+        ("duong_dan", "Đường dẫn file .msi (URL, hoặc đường dẫn trên máy đích, hoặc tên file .msi trong Tài nguyên máy → Phần mềm)", "text", True, "", ""),
         ("tham_so", "Tham số thêm cho msiexec (mặc định /qn /norestart)", "text", False, "", ""),
         ("log", "File log (trên máy đích)", "text", False, "", ""),
         ("hash_alg", "Kiểm tra toàn vẹn: thuật toán", "select:|MD5|SHA1|SHA256|SHA384|SHA512", False, "", ""),

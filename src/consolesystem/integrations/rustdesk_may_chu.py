@@ -662,7 +662,7 @@ def _kho_nen():
             os.unlink(os.path.join(_DD.SCRIPTS_DIR, "Cai-RustDesk-ConsoleSystem.ps1"))
         except OSError:
             pass
-        _KHO["tb"] = "Đã tạo %s trong kho Triển khai phần mềm (Tài nguyên, Phần mềm)." % TEN_MSI
+        _KHO["tb"] = "Đã tạo %s trong kho Triển khai phần mềm (Tài nguyên máy, Phần mềm)." % TEN_MSI
     except Exception as e:                           # tai bo cai / wixl / quyen: bao cho nguoi dung
         _KHO["tb"] = "Lỗi tạo file MSI: %s" % e
     finally:

@@ -98,7 +98,7 @@ def kiem_tra_san_sang(cauhinh):
         bool(ds_boot),
         "File boot đã tải lên",
         (f"{len(ds_boot)} file trong {BOOT_DIR}" if ds_boot else
-         "Chưa có file nào - vào tab \"Tài nguyên\" > \"WinPE\" để tải lên"),
+         "Chưa có file nào - vào \"Tài nguyên máy\" > \"WinPE\" để tải lên"),
     ))
 
     # 2. Bootloader iPXE (giai doan 1 cua PXE: TFTP phat file nho nay truoc)
@@ -148,13 +148,13 @@ def kiem_tra_san_sang(cauhinh):
                 o["co_boot_wim"], "Ảnh WinPE (boot.wim)",
                 (f"Đã có trong os/{os_id}/" if o["co_boot_wim"] else
                  f'Chưa tải boot.wim cho "{o["ten_hien_thi"]}" - vào tab '
-                 '"Tài nguyên > Hệ điều hành" để tải lên.'),
+                 '"Tài nguyên máy > Hệ điều hành" để tải lên.'),
             ))
             ra.append((
                 o["co_install_wim"], "Ảnh cài đặt (install.wim)",
                 (f"Đã có trong os/{os_id}/" if o["co_install_wim"] else
                  f'Chưa tải install.wim cho "{o["ten_hien_thi"]}" - vào tab '
-                 '"Tài nguyên > Hệ điều hành" để tải lên.'),
+                 '"Tài nguyên máy > Hệ điều hành" để tải lên.'),
             ))
 
     return ra

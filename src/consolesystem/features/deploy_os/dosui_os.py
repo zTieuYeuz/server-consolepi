@@ -66,7 +66,7 @@ def _trang_os(msg="", ok=True):
         </div>
         <h2>Hệ điều hành đã có ({len(ds)})</h2>
         {bang}""")
-    return _trang(body, "Deployment OS", "Hệ điều hành")
+    return _trang(body, "Cài Windows qua mạng", "Hệ điều hành")
 
 
 def register_os(app):
@@ -203,7 +203,7 @@ def register_os(app):
           doi();
         }})();
         </script>""")
-        return _trang(body, "Deployment OS", f"Hệ điều hành - {o['ten_hien_thi']}")
+        return _trang(body, "Cài Windows qua mạng", f"Hệ điều hành - {o['ten_hien_thi']}")
 
     @app.route("/deployos/os/<os_id>/len-sxs", methods=["POST"])
     def deployos_os_len_sxs(os_id):
@@ -361,7 +361,7 @@ def register_os(app):
           hoi();
         }})();
         </script>"""
-        return _trang(body, "Deployment OS", f"Tách ISO - {o['ten_hien_thi']}")
+        return _trang(body, "Cài Windows qua mạng", f"Tách ISO - {o['ten_hien_thi']}")
 
     @app.route("/deployos/os/tach/tien-do")
     def deployos_os_tach_tien_do():

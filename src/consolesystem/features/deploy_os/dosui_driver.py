@@ -76,7 +76,7 @@ def _trang_drivers(msg="", ok=True):
         </div>
         <h2>Gói driver đã có ({len(ds)})</h2>
         {bang}{_datalist_model() if ds else ""}""")
-    return _trang(body, "Deployment OS", "Driver")
+    return _trang(body, "Cài Windows qua mạng", "Driver")
 
 
 def _khoi_goi_pho_bien():
@@ -263,7 +263,7 @@ def _trang_driver_chitiet(driver_id, msg="", ok=True):
             <button type="submit">Tải lên</button>
           </form>
         </div>""")
-    return _trang(body, "Deployment OS", f"Driver - {dr['ten_hien_thi']}")
+    return _trang(body, "Cài Windows qua mạng", f"Driver - {dr['ten_hien_thi']}")
 
 
 def register_driver(app):

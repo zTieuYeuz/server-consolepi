@@ -202,7 +202,7 @@ def _trang_caidat_pxe(msg="", ok=True):
             <pre style="{kieu_pre}">{_esc(man_con)}</pre>
           </details>
         </div>"""
-    return _trang(body, "Cài đặt Deployment OS",
+    return _trang(body, "Cài đặt - Cài Windows qua mạng",
                   "Bật/tắt PXE và kiểm tra hạ tầng", active="/deployos")
 
 

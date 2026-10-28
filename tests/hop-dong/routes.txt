@@ -288,6 +288,7 @@
 /storage/len	POST	storage_upload
 /storage/tai/<path:name>	GET	storage_download
 /storage/xoa	POST	storage_delete
+/tai-nguyen	GET	tai_nguyen_may
 /terminal	GET	terminal_page
 /terminal/paste	POST	terminal_paste
 /thuong-hieu/<ten>	GET	thuong_hieu

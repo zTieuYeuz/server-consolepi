@@ -60,7 +60,7 @@ def _trang_font(msg="", ok=True):
             <button type="submit">Tạo</button>
           </form>
         </div>""")
-    return _trang(body, "Deployment OS", "Font chữ")
+    return _trang(body, "Cài Windows qua mạng", "Font chữ")
 
 
 def register_font(app):
@@ -146,7 +146,7 @@ def register_font(app):
           .fo-tha.keo {{ border-color:#3dd3ff;background:rgba(61,211,255,.07); }}
         </style>
         {js}""")
-        return _trang(body, "Deployment OS", f"Font chữ - {b['ten_hien_thi']}")
+        return _trang(body, "Cài Windows qua mạng", f"Font chữ - {b['ten_hien_thi']}")
 
     @app.route("/deployos/font/<bo_id>/len", methods=["POST"])
     def deployos_font_len(bo_id):

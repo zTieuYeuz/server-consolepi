@@ -37,9 +37,24 @@ def khung(id_):
 
 # Thanh tab dung chung cho cac trang gop tu 2 tinh nang khac nhau (moi tab la 1 trang rieng)
 TAB_REMOTE = [("vnc", "Remote VNC", "/rustdesk/vnc"), ("rustdesk", "Remote RustDesk", "/rustdesk")]
-TAB_TRIEN_KHAI = [("winget", "Triển khai từ WinGet", "/uem/trien-khai"), ("phanmem", "Triển khai phần mềm", "/deployos/trienkhai")]
+TAB_TRIEN_KHAI = [("winget", "Cài qua Agent (WinGet)", "/uem/trien-khai"), ("phanmem", "Cài qua LAN (WinRM)", "/deployos/trienkhai")]
 
 
 def thanh_tab(ds, chinh):
     return ('<div class="dep-tabs" style="margin-bottom:14px;">' + "".join(
         f'<a href="{href}" class="dep-tab{" on" if ma == chinh else ""}">{nhan}</a>' for ma, nhan, href in ds) + "</div>")
+
+
+# Cac trang thuoc muc "Tai nguyen may" (Kho luu tru) - layout dung de sang dung muc menu, deploy_os dung de ve thanh tab.
+_TIEN_TO_TN = ("/deployos/os", "/deployos/drivers", "/deployos/ungdung", "/deployos/font", "/deployos/console", "/deployos/trienkhai/nhom-tn")
+
+
+def la_tai_nguyen(duong=None):
+    """True khi dang o 1 trang cua muc Tai nguyen may."""
+    try:
+        if duong is None:
+            from flask import request
+            duong = request.path
+    except Exception:
+        return False
+    return any(duong == t or duong.startswith(t + "/") for t in _TIEN_TO_TN)

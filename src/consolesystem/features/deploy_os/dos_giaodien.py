@@ -24,9 +24,28 @@ def ngu_canh_trienkhai():
     except Exception:
         return False
 
+# "Tai nguyen may" (Kho luu tru): HDH, phan mem, ung dung, font, driver, script, WinPE, nhom tai nguyen.
+# Truoc la tab "Tai nguyen" lap lai o Deployment OS va Trien khai phan mem LAN; anh Thoai gom ve 1 muc (28/10/2026).
+TAB_TAI_NGUYEN = [
+    ("os", "Hệ điều hành", "/deployos/os"),
+    ("apps", "Phần mềm", "/deployos/console/apps"),
+    ("ungdung", "Ứng dụng (nhiều file)", "/deployos/ungdung"),
+    ("font", "Font chữ", "/deployos/font"),
+    ("drivers", "Driver", "/deployos/drivers"),
+    ("scripts", "Script", "/deployos/console/scripts"),
+    ("file", "WinPE", "/deployos/console"),
+    ("nhom", "Nhóm tài nguyên", "/deployos/trienkhai/nhom-tn"),
+]
+from consolesystem.web.chon_may import la_tai_nguyen  # noqa: E402,F401  (dung chung voi web/layout)
+
+
+def _tabs_tai_nguyen(phu):
+    return '<div class="dep-tabs">' + "".join(
+        f'<a href="{href}" class="dep-tab{" on" if ma == phu else ""}">{nhan}</a>' for ma, nhan, href in TAB_TAI_NGUYEN) + "</div>"
+
+
 def _tabs_trienkhai(chinh, phu=""):
     tab_chinh = [
-        ("tainguyen", "Tài nguyên", "/deployos/console/apps"),
         ("lich", "Lập lịch", "/deployos/trienkhai/lich"),
         ("may", "Máy - nhóm máy", "/deployos/trienkhai/may"),
         ("kichban", "Kịch bản", "/deployos/trienkhai/kichban"),
@@ -66,11 +85,12 @@ def tabs_deployos(chinh, phu=""):
     nguyen" (He dieu hanh, Phan mem, Driver, Script, File boot) vao 1
     tab GOC khac.
     """
+    if la_tai_nguyen():
+        return _tabs_tai_nguyen(phu)
     if ngu_canh_trienkhai():
         return _tabs_trienkhai(chinh, phu)
     tab_chinh = [
         ("kichban", "Kịch bản", "/deployos/kichban"),
-        ("tainguyen", "Tài nguyên", "/deployos/os"),
         ("tiendo", "Tiến trình", "/deployos/tiendo"),
         ("caidat", "Cài đặt", "/deployos/caidat"),
     ]
