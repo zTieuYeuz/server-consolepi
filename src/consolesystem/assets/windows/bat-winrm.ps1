@@ -54,6 +54,11 @@ Get-NetFirewallRule -DisplayName $ten -ErrorAction SilentlyContinue | Remove-Net
 New-NetFirewallRule -DisplayName $ten -Direction Inbound -Protocol TCP -LocalPort 5985 -Action Allow `
     -Profile Any -RemoteAddress $nguon | Out-Null
 
+# Enable-PSRemoting bat quy tac co san cua Windows "Windows Remote Management (HTTP-In)" (Private/Domain: moi IP)
+# -> quy tac gioi han IP o tren khong con tac dung. Tat cac quy tac co san, chi giu quy tac cua Console System.
+# (lab 28/10/2026: cai CHICHOIP=192.168.110.30 ma may .37 van vao duoc cong 5985)
+Get-NetFirewallRule -Name "WINRM-HTTP-In-TCP*" -ErrorAction SilentlyContinue | Disable-NetFirewallRule
+
 Test-WSMan -ComputerName localhost | Out-Null
 Write-Host "XONG: WinRM da bat (cong 5985), cho phep tu: $($nguon -join ', ')" -ForegroundColor Green
 Write-Host "Luu y: day la kenh quan tri tu xa, chi dung trong mang noi bo, dat mat khau Administrator manh."
