@@ -354,17 +354,20 @@ def trang_may():
     <div class="tk-ghi" style="margin-bottom:8px;">Chỉ máy <b>đã cài agent</b> mới hiện ở đây; máy tự lên danh sách khi agent báo về lần đầu. Muốn thêm máy: cài agent (gói cài ở <a href="/uem/quan-tri/agent">Quản trị, Agent</a>).</div>
     <div class="card">{bang}
     <form method="POST" action="/uem/may/hang-loat" id="f-hd" class="tk-f" style="margin-top:14px;border-top:1px solid var(--vien);padding-top:12px;">
-      <div class="tk-hang"><b>Với các máy đã chọn:</b>
+      <div style="font-weight:700;margin-bottom:10px;">Với các máy đã chọn:</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;" class="hl-luoi">
         <select name="viec" style="margin:0;height:40px;"><option value="bao_cao">Lấy thông tin</option><option value="gan_tk">Gán tài khoản quản trị</option>
           <option value="them_nhom">Thêm vào nhóm máy</option><option value="bo_nhom">Gỡ khỏi nhóm máy</option><option value="nhom_moi">Tạo nhóm mới từ máy đã chọn</option>
           <option value="them_the">Thêm thẻ</option><option value="bo_the">Gỡ thẻ</option><option value="dia_diem">Đặt địa điểm</option>
           <option value="bat">Bật giám sát</option><option value="tat">Vô hiệu hóa giám sát</option><option value="xoa">Xóa khỏi danh sách</option></select>
         <select name="tk" style="margin:0;height:40px;"><option value="">(tài khoản)</option>{tk_opt}</select>
         <select name="nhom" style="margin:0;height:40px;"><option value="">(nhóm máy)</option>{nhom_opt}</select>
-        <input type="text" name="nhom_moi" placeholder="Tên nhóm mới" style="margin:0;height:40px;max-width:180px;">
+        <input type="text" name="nhom_moi" placeholder="Tên nhóm mới" style="margin:0;height:40px;">
         <select name="the" style="margin:0;height:40px;"><option value="">(thẻ)</option>{the_opt}</select>
         <select name="dd" style="margin:0;height:40px;"><option value="">(địa điểm)</option>{dd_opt}</select>
-        <button type="submit" class="tk-nut chinh">Thực hiện</button></div></form></div>"""
+      </div>
+      <style>@media(min-width:760px){{.hl-luoi{{grid-template-columns:repeat(3,1fr)!important;}}}}</style>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px;"><button type="submit" class="tk-nut chinh">Thực hiện</button></div></form></div>"""
     return trang(body, "may")
 
 
