@@ -84,7 +84,8 @@ TRANG = """@CSS@<style>
 <div class="nut-hang" style="margin-bottom:8px;"><input type="search" id="rd-tim" placeholder="Tìm theo tên máy, IP hoặc ID RustDesk" style="margin:0;max-width:380px;"><span class="tk-ghi" id="rd-kn-tb"></span></div>
 <div style="overflow:auto;"><table class="rd-tb" id="rd-bang-kn"></table></div>
 <div id="rd-kt" class="rd-hd" hidden></div>
-<h4 style="margin:22px 0 8px 0;font-weight:600;">ID đã đăng ký nhưng chưa gắn vào máy nào</h4>
+<h4 style="margin:22px 0 8px 0;font-weight:600;">ID đã đăng ký nhưng chưa cài agent</h4>
+<p class="tk-ghi" style="margin:-4px 0 8px;">Máy có RustDesk trỏ về máy chủ này nhưng Console chưa biết là máy nào (chưa có agent, hoặc chưa gắn). Tên máy, người dùng, hệ điều hành do chính RustDesk trên máy đó gửi về; chọn máy rồi bấm Gắn để dùng nút Kết nối.</p>
 <div style="overflow:auto;"><table class="rd-tb" id="rd-chua"></table></div></div>
 <div class="card" data-buoc="6" hidden><h3>Cài đặt kết nối</h3>
 <p class="tk-ghi">Chế độ áp dụng cho <b>mọi</b> kết nối RustDesk vào các máy trỏ về máy chủ này, kể cả người tự mở RustDesk và gõ ID, mật khẩu (không chỉ nút Kết nối ở bước 5).</p>
@@ -168,9 +169,12 @@ function veKn(){var q=bo($('rd-tim').value),h='<tr><th>Máy</th><th>IP</th><th>T
   h+='<tr><td><b>'+e(x.ten)+'</b></td><td>'+e(x.ip)+'</td><td>'+tt+'</td><td>'+(x.id?'<b>'+e(x.id)+'</b>':'<span class="tk-ghi">chưa có (cài ở bước 3-4)</span>')+'</td><td>'+(x.id?'<span class="rd-k">'+e(x.mk||'chưa đặt')+'</span>':'')+'</td><td style="white-space:nowrap;">'
    +(x.id?'<button class="tk-nut chinh" data-kn="'+e(x.mid)+'" type="button">Kết nối</button> ':'')+(x.agent?'<button class="tk-nut" data-kt="'+e(x.mid)+'" type="button">Kiểm tra máy</button>':'')+'</td></tr>';});
  $('rd-bang-kn').innerHTML=n?h:'<tr><td class="tk-ghi">'+(BANG.may.length?'Không có máy nào khớp.':'Chưa có máy nào có agent hoặc ID RustDesk.')+'</td></tr>';
- var c='<tr><th>ID</th><th>IP gần nhất</th><th>Đăng ký lúc</th><th>Gắn vào máy</th></tr>';
+ var c='<tr><th>ID</th><th>Tên máy / người dùng</th><th>Hệ điều hành</th><th>Trạng thái</th><th>Đăng ký lúc</th><th>Gắn vào máy</th></tr>';
  BANG.chua_gan.forEach(function(x){var o='<option value="">-- chọn máy --</option>'+BANG.tat_ca.map(function(m){return '<option value="'+e(m.mid)+'"'+(m.ten===x.goi_y?' selected':'')+'>'+e(m.ten)+'</option>';}).join('');
-  c+='<tr><td><b>'+e(x.id)+'</b></td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td><td><select data-gan="'+e(x.id)+'" style="margin:0;max-width:220px;">'+o+'</select> <button class="tk-nut" data-gan-nut="'+e(x.id)+'" type="button">Gắn</button></td></tr>';});
+  c+='<tr><td><b>'+e(x.id)+'</b></td><td>'+(x.ten_may?'<b>'+e(x.ten_may)+'</b>'+(x.nguoi?'<div class="tk-ghi">'+e(x.nguoi)+'</div>':''):'<span class="tk-ghi">chưa gửi (RustDesk gửi khi mở lại)</span>')+'</td>'
+   +'<td>'+e(x.hdh||'—')+(x.ban?'<div class="tk-ghi">RustDesk '+e(x.ban)+'</div>':'')+'</td>'
+   +'<td><span class="rd-on"><span class="rd-cham '+(x.online?'ok':'')+'"></span>'+(x.online?'Online':'Offline')+'</span>'+(x.nhip&&!x.online?'<div class="tk-ghi">thấy lần cuối '+e(x.nhip)+'</div>':'')+'<div class="tk-ghi">IP '+e(x.ip)+'</div></td>'
+   +'<td>'+e(x.tao)+'</td><td><select data-gan="'+e(x.id)+'" style="margin:0;max-width:220px;">'+o+'</select> <button class="tk-nut" data-gan-nut="'+e(x.id)+'" type="button">Gắn</button></td></tr>';});
  $('rd-chua').innerHTML=BANG.chua_gan.length?c:'<tr><td class="tk-ghi">Mọi ID đã đăng ký đều đã gắn vào máy.</td></tr>';}
 var TEN_CD={thong_bao:'Thông báo (vào được ngay, máy hiện thông báo)',xin_phep:'Xin phép trước khi kết nối (chờ người dùng đồng ý tối đa 5 phút)'};
 function taiKn(){api('/rustdesk/api/bang').then(function(d){BANG=d;XONG[4]=d.may.some(function(x){return !!x.id;});danhBuoc();if(document.activeElement!==$('rd-tim')&&!document.querySelector('[data-gan]:focus'))veKn();$('rd-che-do').textContent=TEN_CD[d.che_do]||d.che_do;});}

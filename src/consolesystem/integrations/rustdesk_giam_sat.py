@@ -203,6 +203,49 @@ def _hop_le(rid, uuid):
         return True
 
 
+_SI = {}             # rustdesk id -> {ten, nguoi, hdh, ban, luc} tu /api/sysinfo (luu file)
+
+
+def _si_file():
+    return os.path.join(RD._goc(), "sysinfo.json")
+
+
+def _doc_si():
+    if not _SI:
+        try:
+            with open(_si_file(), encoding="utf-8") as f:
+                _SI.update(json.load(f))
+        except (OSError, ValueError):
+            _SI["_"] = {}
+    return _SI
+
+
+def luu_sysinfo(body):
+    """POST /api/sysinfo: ten may, nguoi dung, he dieu hanh, ban RustDesk - de nhan ra ID nao la may nao."""
+    rid = str(body.get("id", ""))[:20]
+    if not _hop_le(rid, str(body.get("uuid", ""))[:200]):
+        return
+    c = lambda k, n=80: re.sub(r"[\x00-\x1f]", "", str(body.get(k) or ""))[:n]
+    moi = {"ten": c("hostname"), "nguoi": c("username"), "hdh": c("os", 120), "ban": c("version", 30)}
+    with _KHOA:
+        si = _doc_si()
+        cu = si.get(rid) or {}
+        if {k: cu.get(k) for k in moi} == moi:
+            return
+        si[rid] = dict(moi, luc=int(time.time()))
+        ghi_nguyen_tu(_si_file(), json.dumps({k: v for k, v in si.items() if k != "_"}, ensure_ascii=False).encode("utf-8"), 0o600)
+
+
+def thong_tin_id(rid):
+    """Thong tin may tu RustDesk cho 1 ID: {ten, nguoi, hdh, ban, luc_nhip, online}."""
+    with _KHOA:
+        d = dict(_doc_si().get(rid) or {})
+        st = _TT.get(rid) or {}
+    d["luc_nhip"] = int(st.get("luc", 0))
+    d["online"] = bool(st.get("luc")) and time.time() - st["luc"] < 60
+    return d
+
+
 def nhip(body, ip=""):
     """Xu ly POST /api/heartbeat. Tra dict tra loi cho client."""
     rid, uuid = str(body.get("id", ""))[:20], str(body.get("uuid", ""))[:200]
@@ -318,6 +361,7 @@ class _XuLy(BaseHTTPRequestHandler):
             if p.startswith("/api/audit/"):
                 return self._tra(200, "")
             if p == "/api/sysinfo":
+                luu_sysinfo(body)
                 return self._tra(200, "SYSINFO_UPDATED", "text/plain")
             if p == "/api/sysinfo_ver":
                 return self._tra(200, "", "text/plain")

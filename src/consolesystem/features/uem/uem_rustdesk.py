@@ -36,7 +36,16 @@ def bang_dieu_khien():
                     "online": bool(UA.con_song(m)) if co_ag else None, "dong_bo": bool(ban.get("dong_bo", True)) or not cfg.get("mk_chung")})
     da_gan = {v.get("id") for v in cfg["may"].values() if v.get("id")}
     ip_ten = {m["ip"]: (m.get("ten") or m["ip"]) for m in ds_may}
-    chua = [{"id": x["id"], "ip": x["ip"], "tao": x["tao"], "goi_y": ip_ten.get(x["ip"], "")} for x in RD.thiet_bi() if x["id"] not in da_gan]
+    ten_hoa = {(m.get("ten") or "").upper(): (m.get("ten") or m["ip"]) for m in ds_may if m.get("ten")}
+    chua = []
+    for x in RD.thiet_bi():
+        if x["id"] in da_gan:
+            continue
+        t = GS.thong_tin_id(x["id"])
+        goi_y = ten_hoa.get((t.get("ten") or "").upper()) or ip_ten.get(x["ip"], "")   # cung ten may Windows -> goi y gan
+        chua.append({"id": x["id"], "ip": x["ip"], "tao": x["tao"], "goi_y": goi_y, "ten_may": t.get("ten", ""), "nguoi": t.get("nguoi", ""),
+                     "hdh": t.get("hdh", ""), "ban": t.get("ban", ""), "online": t["online"],
+                     "nhip": time.strftime("%d/%m %H:%M", time.localtime(t["luc_nhip"])) if t["luc_nhip"] else ""})
     return {"may": may, "chua_gan": chua, "che_do": GS.cai_dat()["che_do"], "tat_ca": [{"mid": m["id"], "ten": m.get("ten") or m["ip"]} for m in ds_may if not m.get("an")]}
 
 
