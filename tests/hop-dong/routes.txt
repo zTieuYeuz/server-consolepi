@@ -262,6 +262,7 @@
 /rustdesk/api/mat-khau	POST	rustdesk_api_mk
 /rustdesk/api/thiet-bi	GET	rustdesk_api_dev
 /rustdesk/api/trang-thai	GET	rustdesk_api_tt
+/rustdesk/api/xoa-id	POST	rustdesk_api_xoa_id
 /rustdesk/cho-phep-trinh-duyet.reg	GET	rustdesk_reg_trinh_duyet
 /rustdesk/doi-may-chu.ps1	GET	rustdesk_script_doi
 /rustdesk/ghi-hinh/<mid>/<ten>	GET	rustdesk_ghi_hinh_xem
