@@ -867,6 +867,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
   }});
 }})();
 </script>
+{_XN_JS}
 <script src="/dashboard.js"></script>
 </body>
 </html>"""
@@ -881,6 +882,42 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 # va cong cu moi them sau nay cung tu dong duoc boc.
 # ---------------------------------------------------------------------------
 import re as _re
+
+
+# Moi hop xac nhan confirm() trong Console hien thanh POPUP GIUA MAN HINH (anh Thoai dan 28/10/2026:
+# "cac bang xac nhan deu phai popup ra giua"). Khong sua tung trang: thay window.confirm - lan dau tra
+# false (chan hanh dong) va hien popup; bam dong y thi lap lai dung su kien goc (submit / click / change)
+# voi confirm tra true. Trang moi cu viet confirm('...') nhu thuong la tu duoc popup.
+_XN_JS = """<div id="xn-nen" hidden style="position:fixed;inset:0;z-index:9000;background:rgba(5,8,12,.62);display:flex;align-items:center;justify-content:center;padding:16px;">
+<div role="dialog" aria-modal="true" style="background:var(--the,#141A23);border:1px solid var(--vien-ro,#2B3746);border-radius:14px;max-width:460px;width:100%;padding:20px 22px;box-shadow:0 18px 50px rgba(0,0,0,.5);">
+<div style="font-weight:600;font-size:16px;margin-bottom:8px;">Xác nhận</div>
+<div id="xn-noi" style="white-space:pre-wrap;line-height:1.5;color:var(--chu,#E3E8EF);"></div>
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+<button type="button" class="gray" id="xn-huy">Huỷ</button><button type="button" id="xn-ok">Đồng ý</button></div></div></div>
+<script>
+(function(){
+  var nen=document.getElementById('xn-nen'), noi=document.getElementById('xn-noi'), ok=document.getElementById('xn-ok'), huy=document.getElementById('xn-huy');
+  var goc=window.confirm, qua=false, lam=null;
+  nen.hidden=true; nen.style.display='none';
+  function dong(){nen.style.display='none'; nen.hidden=true; lam=null;}
+  function mo(msg, fn){noi.textContent=msg; lam=fn; ok.className=/xo[aá]|x[oó]a|g[ỡo]|reset|kh[oô]i ph|c[aả]nh b[aá]o|ghi [dđ][eè]|hu[ỷy]/i.test(msg)?'red':'';
+    nen.hidden=false; nen.style.display='flex'; ok.focus();}
+  ok.onclick=function(){var f=lam; dong(); if(f){qua=true; try{f();}finally{qua=false;}}};
+  huy.onclick=dong;
+  nen.addEventListener('click',function(e){if(e.target===nen)dong();});
+  document.addEventListener('keydown',function(e){if(!nen.hidden&&e.key==='Escape')dong();});
+  window.confirm=function(msg){
+    if(qua) return true;
+    var ev=window.event, t=ev&&ev.target, fn=null;
+    if(ev&&ev.type==='submit'&&t&&t.requestSubmit){var sb=ev.submitter; fn=function(){t.requestSubmit(sb||undefined);};}
+    else if(ev&&ev.type==='click'&&t&&t.click){fn=function(){t.click();};}
+    else if(ev&&ev.type==='change'&&t){var v=t.type==='checkbox'||t.type==='radio'?t.checked:t.value;
+      fn=function(){if('checked' in t&&(t.type==='checkbox'||t.type==='radio'))t.checked=v; else t.value=v; t.dispatchEvent(new Event('change',{bubbles:true}));};}
+    if(!fn) return goc.call(window,msg);
+    mo(String(msg), fn); return false;
+  };
+})();
+</script>"""
 
 _BODY_RE = _re.compile(r"<body[^>]*>(.*?)</body>", _re.S | _re.I)
 _STYLE_RE = _re.compile(r"<style[^>]*>(.*?)</style>", _re.S | _re.I)
