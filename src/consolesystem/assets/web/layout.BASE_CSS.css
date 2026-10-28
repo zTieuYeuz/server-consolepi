@@ -591,3 +591,6 @@ body.cd-pc.thu-gon .side { width:72px; flex:0 0 72px; }
   .o-to:hover { transform:translateY(-2px); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+
+/* chuyen trang khong tai lai ca trang (layout _NAV_JS) */
+.wrap .content.dang-tai { opacity:.55; pointer-events:none; transition:opacity .15s; }

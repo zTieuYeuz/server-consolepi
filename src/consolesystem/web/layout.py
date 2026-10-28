@@ -688,8 +688,9 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title} - {TEN_NGAN}</title>
 <link rel="icon" href="/favicon.ico">
-<style>{BASE_CSS}
-{extra_css}</style>
+<style>{BASE_CSS}</style>
+<style id="css-trang">{extra_css}</style>
+<script>{_NAV_DAU_JS}</script>
 </head>
 <body class="cd-{che_do} nen-{nen}">
 <div class="wrap">
@@ -728,6 +729,7 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 {nut_home}
 {dock_html}
 {menu_cu}
+<script>window.__csGen=0;</script>
 <div class="tim-nhanh" id="tim-nhanh" role="dialog" aria-label="Tìm nhanh"><div class="h">
   <form id="tim-form" action="/" method="get" role="search">
   <input type="search" id="tim-o" placeholder="Gõ để tìm… ví dụ: pxe, wol, console, wifi" autocomplete="off">
@@ -875,7 +877,9 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
 }})();
 </script>
 {_XN_JS}
+<script>{_NAV_JS}</script>
 <script src="/dashboard.js"></script>
+<script>window.__csGen=1;</script>
 </body>
 </html>"""
 
@@ -925,6 +929,96 @@ _XN_JS = """<div id="xn-nen" hidden style="position:fixed;inset:0;z-index:9000;b
   };
 })();
 </script>"""
+
+
+# ------------------------------------------------------------------ chuyen trang khong tai lai ca trang
+# Anh Thoai (28/10/2026): bam menu trai thi chi tai lai phan noi dung ben phai, khong nhay ca trang.
+# Cach lam: chan click o menu trai -> fetch trang moi -> thay .content + CSS rieng cua trang + tieu de + muc sang,
+# chay lai script cua trang. Moi bo dem gio (setInterval/setTimeout) gan "the he" (__csGen): script trang tao luc
+# the he N; doi trang thi the he tang -> bo dem cu tu dung, khong de trang cu tiep tuc goi API ngam.
+# Trang can ket noi lien tuc (terminal, console, ...) hoac loi bat ky -> quay ve tai ca trang nhu cu.
+_NAV_DAU_JS = r"""(function(){
+  window.__csGen = 1;
+  var sI = window.setInterval, sT = window.setTimeout, cI = window.clearInterval;
+  function boc(goc, laLap) {
+    return function(fn, ms) {
+      if (typeof fn !== 'function') return goc.apply(window, arguments);
+      var gen = window.__csGen, id, rest = [].slice.call(arguments, 2);
+      id = goc.call(window, function() {
+        if (gen && gen !== window.__csGen) { if (laLap) cI(id); return; }
+        var cu = window.__csGen; window.__csGen = gen;
+        try { fn.apply(window, rest); } finally { window.__csGen = cu; }
+      }, ms);
+      return id;
+    };
+  }
+  window.setInterval = boc(sI, true);
+  window.setTimeout = boc(sT, false);
+})();"""
+
+_NAV_JS = r"""(function(){
+  if (!window.fetch || !window.DOMParser || !history.pushState) return;
+  var TAI_CA = /^\/(console|terminal|ssh|phien|direct|logout|login|giaodien|cap-nhat)(\/|$)/;
+  var the = 1, dang = null;
+  function noiBo(a) { return a && a.origin === location.origin && !a.target && !a.hasAttribute('download'); }
+  function sangMuc(doc) {
+    var moi = {}; doc.querySelectorAll('.side .nav a[href]').forEach(function(a) { moi[a.getAttribute('href')] = a.classList.contains('active'); });
+    document.querySelectorAll('.side .nav a[href]').forEach(function(a) { a.classList.toggle('active', !!moi[a.getAttribute('href')]); });
+    if (window.csNavInd) window.csNavInd();
+  }
+  function chayScript(khung, xong) {
+    var ds = [].slice.call(khung.querySelectorAll('script'));
+    (function tiep(i) {
+      if (i >= ds.length) return xong && xong();
+      var c = ds[i], s = document.createElement('script');
+      [].forEach.call(c.attributes, function(t) { s.setAttribute(t.name, t.value); });
+      if (c.src) { s.onload = s.onerror = function() { tiep(i + 1); }; c.parentNode.replaceChild(s, c); }
+      else { s.text = c.text; c.parentNode.replaceChild(s, c); tiep(i + 1); }
+    })(0);
+  }
+  function tai(url, day) {
+    var nd = document.querySelector('.wrap .content');
+    if (!nd) { location.href = url; return; }
+    if (dang) dang.abort();
+    var ctl = window.AbortController ? new AbortController() : null; dang = ctl;
+    nd.classList.add('dang-tai');
+    fetch(url, {credentials: 'same-origin', signal: ctl && ctl.signal, headers: {'X-CS-Nav': '1'}}).then(function(r) {
+      if (!r.ok || (r.redirected && TAI_CA.test(new URL(r.url).pathname))) throw 0;
+      var cuoi = r.url; return r.text().then(function(t) { return [t, cuoi]; });
+    }).then(function(kq) {
+      var doc = new DOMParser().parseFromString(kq[0], 'text/html');
+      var moi = doc.querySelector('.wrap .content');
+      if (!moi || doc.body.hasAttribute('data-tmux-session')) throw 0;
+      the++; window.__csGen = the;
+      var css = doc.getElementById('css-trang'); document.getElementById('css-trang').textContent = css ? css.textContent : '';
+      document.title = doc.title;
+      nd.innerHTML = moi.innerHTML;
+      sangMuc(doc);
+      var lm = document.querySelector('.top .act a.btn.gray'), lmMoi = doc.querySelector('.top .act a.btn.gray');
+      if (lm && lmMoi) lm.setAttribute('href', lmMoi.getAttribute('href'));
+      if (day) history.pushState({cs: 1}, '', kq[1]);
+      dangHien = location.pathname + location.search;
+      nd.classList.remove('dang-tai');
+      (document.querySelector('.main') || document.documentElement).scrollTop = 0; window.scrollTo(0, 0);
+      chayScript(nd, function() { window.__csGen = the; });
+    }).catch(function(e) {
+      if (e && e.name === 'AbortError') return;
+      location.href = url;
+    });
+  }
+  document.addEventListener('click', function(e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest('.side .nav a[href]');
+    if (!noiBo(a) || TAI_CA.test(a.pathname) || TAI_CA.test(location.pathname)) return;
+    e.preventDefault(); tai(a.href, true);
+  });
+  var dangHien = location.pathname + location.search;   // trang dang hien (doi #hash trong trang khong tinh)
+  history.replaceState({cs: 1}, '', location.href);
+  window.addEventListener('popstate', function() {
+    var p = location.pathname + location.search;
+    if (p !== dangHien) tai(location.href, false);
+  });
+})();"""
 
 _BODY_RE = _re.compile(r"<body[^>]*>(.*?)</body>", _re.S | _re.I)
 _STYLE_RE = _re.compile(r"<style[^>]*>(.*?)</style>", _re.S | _re.I)

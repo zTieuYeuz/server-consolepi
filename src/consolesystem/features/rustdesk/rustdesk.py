@@ -247,7 +247,7 @@ def register_rustdesk(app):
     @app.route("/rustdesk")
     def rustdesk_trang():
         body = TRANG.replace("@CSS@", CM.JS + CM.CSS + CM.thanh_tab(CM.TAB_REMOTE, "rustdesk")).replace("@KHUNG@", CM.khung("rd"))
-        return render_page(body, active="/rustdesk", title="Phần mềm remote", subtitle="Remote RustDesk: máy chủ RustDesk tích hợp, file cài và triển khai")
+        return render_page(body, active="/rustdesk", title="Hỗ trợ từ xa (RustDesk)", subtitle="Remote RustDesk: máy chủ RustDesk tích hợp, file cài và triển khai")
 
     @app.route("/rustdesk/api/trang-thai")
     def rustdesk_api_tt():
