@@ -53,6 +53,8 @@ a.uem-the:hover { border-color:var(--nhan); color:var(--chu); transform:translat
 .uem-con { display:flex; gap:4px; flex-wrap:wrap; margin:10px 0 16px; padding:4px; border:1px solid var(--vien); background:var(--the); border-radius:12px; }
 .uem-con a { padding:0 12px; height:36px; line-height:36px; border-radius:8px; color:var(--chu-mo); font-weight:550; font-size:13.5px; white-space:nowrap; }
 .uem-con a:hover { background:var(--hang-nen); color:var(--chu); } .uem-con a.on { background:var(--nhan-mo); color:var(--nhan); }
+.uem-con.con2 { margin-top:-8px; border-top-left-radius:4px; border-top-right-radius:4px; background:transparent; }
+.uem-con.con2 a { height:32px; line-height:32px; font-size:13px; }
 .uem-kv { width:100%; border-collapse:collapse; } .uem-kv th { text-align:left; width:170px; color:var(--chu-mo2); font-weight:500; font-size:13.5px; padding:9px 12px 9px 0; vertical-align:top; }
 .uem-kv td { padding:9px 0; font-size:14.5px; border-bottom:1px solid var(--vien); } .uem-kv tr:last-child td { border-bottom:0; }
 .uem-loc { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0 0 12px; }
@@ -380,9 +382,29 @@ TAB_MAY = [("tq", "Tổng quan"), ("phan-cung", "Phần cứng"), ("he-dieu-hanh
            ("ghi-chu", "Ghi chú"), ("metadata", "Thông tin thêm"), ("quan-ly", "Quản lý")]
 
 
+# Tab chi tiet may gom theo chuc nang (anh Thoai 28/10/2026: 22 tab tren 1 hang qua roi).
+# Hang tren la nhom, bam nhom thi hien hang tab con cua nhom do.
+NHOM_TAB_MAY = [
+    ("Tổng quan", ["tq", "ghi-chu", "metadata"]),
+    ("Phần cứng", ["phan-cung", "o-dia", "man-hinh", "mang", "may-in"]),
+    ("Hệ điều hành & phần mềm", ["he-dieu-hanh", "phan-mem", "cap-nhat", "dich-vu", "tien-trinh"]),
+    ("Điều khiển từ xa", ["cli", "duyet-file", "tu-xa", "nguon", "tac-vu"]),
+    ("Chia sẻ & sửa lỗi", ["chia-se", "sua-loi"]),
+    ("Quản lý", ["quan-ly", "agent"]),
+]
+
+
+def _tab_may_html(mid, tab):
+    ten = dict(TAB_MAY)
+    url = lambda k: f'/uem/may/{mid}/{k if k != "tq" else ""}'
+    nhom_dang = next((ds for _n, ds in NHOM_TAB_MAY if tab in ds), NHOM_TAB_MAY[0][1])
+    tren = "".join(f'<a href="{url(ds[0])}" class="{"on" if ds is nhom_dang else ""}">{n}</a>' for n, ds in NHOM_TAB_MAY)
+    duoi = "".join(f'<a href="{url(k)}" class="{"on" if k == tab else ""}">{ten[k]}</a>' for k in nhom_dang)
+    return f'<div class="uem-con">{tren}</div><div class="uem-con con2">{duoi}</div>'
+
+
 def khung_may(m, tab, noi_dung):
     nhan, mau = trang_thai_may(m)
-    con = "".join(f'<a href="/uem/may/{m["id"]}/{k if k != "tq" else ""}" class="{"on" if k == tab else ""}">{n}</a>' for k, n in TAB_MAY)
     os_ = bc(m).get("operatingsystem") or {}
     dau = (f'<div class="uem-dau"><h2>{_esc(ten_may(m))}</h2><span class="uem-dot {mau}"></span><span>{_esc(nhan)}</span>'
            f'<span class="tk-ghi">{_esc(m["ip"])} · {_esc((os_.get("description") or "").replace("Microsoft ", "")) or "chưa có báo cáo"} · báo cáo lúc {_esc(gio(m.get("bao_cao_luc")))}</span>'
@@ -391,7 +413,7 @@ def khung_may(m, tab, noi_dung):
     kn = m.get("ket_noi") or {}
     loi = f'<div class="msg err">Lần kết nối cuối thất bại: {_esc(kn.get("loi"))}</div>' if kn and not kn.get("ok") else ""
     cho = '<div class="msg info">Báo cáo đang được lấy ở nền, tải lại trang sau ít giây.</div>' if UBC.dang_chay(m["id"]) else ""
-    return trang(f'{dau}<div class="uem-con">{con}</div>{cho}{loi}{noi_dung}', "may", tieu_de=_esc(f"Máy: {ten_may(m)}"), phu_de="Chi tiết máy trạm")
+    return trang(f'{dau}{_tab_may_html(m["id"], tab)}{cho}{loi}{noi_dung}', "may", tieu_de=_esc(f"Máy: {ten_may(m)}"), phu_de="Chi tiết máy trạm")
 
 
 def _chua_bao_cao(m):
