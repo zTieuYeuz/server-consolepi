@@ -38,10 +38,13 @@ def bang_dieu_khien():
     ip_ten = {m["ip"]: (m.get("ten") or m["ip"]) for m in ds_may}
     ten_hoa = {(m.get("ten") or "").upper(): (m.get("ten") or m["ip"]) for m in ds_may if m.get("ten")}
     chua = []
+    an = cfg.get("an_id") or {}
     for x in RD.thiet_bi():
         if x["id"] in da_gan:
             continue
         t = GS.thong_tin_id(x["id"])
+        if x["id"] in an and an[x["id"]] >= max(t["luc_nhip"], t.get("luc", 0)):
+            continue                                 # da xoa; RustDesk tren may do bao ve lai sau luc xoa thi hien lai
         goi_y = ten_hoa.get((t.get("ten") or "").upper()) or ip_ten.get(x["ip"], "")   # cung ten may Windows -> goi y gan
         chua.append({"id": x["id"], "ip": x["ip"], "tao": x["tao"], "goi_y": goi_y, "ten_may": t.get("ten", ""), "nguoi": t.get("nguoi", ""),
                      "hdh": t.get("hdh", ""), "ban": t.get("ban", ""), "online": t["online"],
@@ -137,6 +140,22 @@ def register_uem_rustdesk(app):
             return jsonify({"ok": False, "tb": "ID hoặc máy không hợp lệ."})
         RD.ghi_may(mid, i)
         return jsonify({"ok": True, "tb": "Đã gắn ID %s vào máy." % i})
+
+    @app.route("/rustdesk/api/xoa-id", methods=["POST"])
+    def rustdesk_api_xoa_id():
+        """Xoa 1 ID khoi bang (may cai lai Windows / thanh ly). Chi an: neu RustDesk tren may do bat len va bao ve may chu, ID hien lai."""
+        j = request.get_json(silent=True) or {}
+        i, mid = str(j.get("id", "")), str(j.get("mid", ""))
+        cfg = RD.doc_cfg()
+        if mid:                                      # bo ID dang gan o 1 may (may van con trong danh sach neu co agent)
+            ban = cfg["may"].get(mid) or {}
+            i = ban.get("id", "")
+            cfg["may"].pop(mid, None)
+        if not re.fullmatch(r"\d{6,12}", i or ""):
+            return jsonify({"ok": False, "tb": "ID không hợp lệ."})
+        cfg.setdefault("an_id", {})[i] = int(time.time())
+        RD.luu_cfg(cfg)
+        return jsonify({"ok": True, "tb": "Đã xóa ID %s. Nếu RustDesk trên máy đó bật lại và báo về máy chủ, ID sẽ tự hiện lại ở bảng chưa cài agent." % i})
 
     @app.route("/rustdesk/api/kiem-tra", methods=["POST"])
     def rustdesk_api_kiem_tra():

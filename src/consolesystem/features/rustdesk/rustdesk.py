@@ -167,14 +167,14 @@ function veKn(){var q=bo($('rd-tim').value),h='<tr><th>Máy</th><th>IP</th><th>T
  BANG.may.forEach(function(x){if(q&&bo(x.ten+' '+x.ip+' '+x.id).indexOf(q)<0)return;n++;
   var tt=x.agent?'<span class="rd-on"><span class="rd-cham '+(x.online?'ok':'')+'"></span>'+(x.online?'Online':'Offline')+'</span>':'<span class="rd-on"><span class="rd-cham"></span>Không có agent</span>';
   h+='<tr><td><b>'+e(x.ten)+'</b></td><td>'+e(x.ip)+'</td><td>'+tt+'</td><td>'+(x.id?'<b>'+e(x.id)+'</b>':'<span class="tk-ghi">chưa có (cài ở bước 3-4)</span>')+'</td><td>'+(x.id?'<span class="rd-k">'+e(x.mk||'chưa đặt')+'</span>':'')+'</td><td style="white-space:nowrap;">'
-   +(x.id?'<button class="tk-nut chinh" data-kn="'+e(x.mid)+'" type="button">Kết nối</button> ':'')+(x.agent?'<button class="tk-nut" data-kt="'+e(x.mid)+'" type="button">Kiểm tra máy</button>':'')+'</td></tr>';});
+   +(x.id?'<button class="tk-nut chinh" data-kn="'+e(x.mid)+'" type="button">Kết nối</button> ':'')+(x.agent?'<button class="tk-nut" data-kt="'+e(x.mid)+'" type="button">Kiểm tra máy</button> ':'')+(x.id?'<button class="tk-nut do" data-xoa-may="'+e(x.mid)+'" data-xoa-id="'+e(x.id)+'" type="button">Xóa ID</button>':'')+'</td></tr>';});
  $('rd-bang-kn').innerHTML=n?h:'<tr><td class="tk-ghi">'+(BANG.may.length?'Không có máy nào khớp.':'Chưa có máy nào có agent hoặc ID RustDesk.')+'</td></tr>';
  var c='<tr><th>ID</th><th>Tên máy / người dùng</th><th>Hệ điều hành</th><th>Trạng thái</th><th>Đăng ký lúc</th><th>Gắn vào máy</th></tr>';
  BANG.chua_gan.forEach(function(x){var o='<option value="">-- chọn máy --</option>'+BANG.tat_ca.map(function(m){return '<option value="'+e(m.mid)+'"'+(m.ten===x.goi_y?' selected':'')+'>'+e(m.ten)+'</option>';}).join('');
   c+='<tr><td><b>'+e(x.id)+'</b></td><td>'+(x.ten_may?'<b>'+e(x.ten_may)+'</b>'+(x.nguoi?'<div class="tk-ghi">'+e(x.nguoi)+'</div>':''):'<span class="tk-ghi">chưa gửi (RustDesk gửi khi mở lại)</span>')+'</td>'
    +'<td>'+e(x.hdh||'—')+(x.ban?'<div class="tk-ghi">RustDesk '+e(x.ban)+'</div>':'')+'</td>'
    +'<td><span class="rd-on"><span class="rd-cham '+(x.online?'ok':'')+'"></span>'+(x.online?'Online':'Offline')+'</span>'+(x.nhip&&!x.online?'<div class="tk-ghi">thấy lần cuối '+e(x.nhip)+'</div>':'')+'<div class="tk-ghi">IP '+e(x.ip)+'</div></td>'
-   +'<td>'+e(x.tao)+'</td><td><select data-gan="'+e(x.id)+'" style="margin:0;max-width:220px;">'+o+'</select> <button class="tk-nut" data-gan-nut="'+e(x.id)+'" type="button">Gắn</button></td></tr>';});
+   +'<td>'+e(x.tao)+'</td><td><select data-gan="'+e(x.id)+'" style="margin:0;max-width:220px;">'+o+'</select> <button class="tk-nut" data-gan-nut="'+e(x.id)+'" type="button">Gắn</button> <button class="tk-nut do" data-xoa-id="'+e(x.id)+'" type="button">Xóa</button></td></tr>';});
  $('rd-chua').innerHTML=BANG.chua_gan.length?c:'<tr><td class="tk-ghi">Mọi ID đã đăng ký đều đã gắn vào máy.</td></tr>';}
 var TEN_CD={thong_bao:'Thông báo (vào được ngay, máy hiện thông báo)',xin_phep:'Xin phép trước khi kết nối (chờ người dùng đồng ý tối đa 5 phút)'};
 function taiKn(){api('/rustdesk/api/bang').then(function(d){BANG=d;XONG[4]=d.may.some(function(x){return !!x.id;});danhBuoc();if(document.activeElement!==$('rd-tim')&&!document.querySelector('[data-gan]:focus'))veKn();$('rd-che-do').textContent=TEN_CD[d.che_do]||d.che_do;});}
@@ -197,6 +197,9 @@ $('rd-bang-kn').addEventListener('click',function(ev){var t=ev.target,mid=t.data
    $('rd-kt').innerHTML='<b>Kiểm tra máy</b><br>RustDesk '+e(k.ban)+', dịch vụ: <b>'+e(k.dich_vu)+'</b>, ID: <b>'+e(k.id)+'</b><br>Máy chủ ID: '+e(k.may_chu)+' · Chuyển tiếp: '+e(k.relay)+' · Tự ghi hình: '+(k.ghi_hinh?'bật':'tắt')+'<br>'+(k.dung_may_chu?'<span class="rd-chip ok">Đang trỏ đúng máy chủ này</span>':'<span class="rd-chip loi">Đang trỏ SAI máy chủ</span> bấm "Áp dụng địa chỉ xuống máy đã cài" ở bước 4');});}});
 $('rd-chua').addEventListener('click',function(ev){var i=ev.target.dataset.ganNut;if(!i)return;var sel=document.querySelector('[data-gan="'+i+'"]');if(!sel.value){$('rd-kn-tb').textContent='Chọn máy cần gắn.';return;}
  api('/rustdesk/api/gan',{id:i,mid:sel.value}).then(function(d){$('rd-kn-tb').textContent=d.tb;taiKn();dev();});});
+document.addEventListener('click',function(ev){var t=ev.target;if(!t.dataset||!t.dataset.xoaId)return;
+ if(!confirm('Xóa ID '+t.dataset.xoaId+'?\\nDùng khi máy đã cài lại Windows hoặc thanh lý. Nếu máy chỉ lâu ngày chưa bật: khi RustDesk trên máy đó bật lại, ID tự hiện lại ở bảng "chưa cài agent", chỉ cần Gắn lại.'))return;
+ api('/rustdesk/api/xoa-id',t.dataset.xoaMay?{mid:t.dataset.xoaMay}:{id:t.dataset.xoaId}).then(function(d){$('rd-kn-tb').textContent=d.tb;taiKn();});});
 function gb(x){return (x/1073741824).toFixed(x>=1073741824*10?0:2)+' GB';}
 var CD0={};function taiCd(){api('/rustdesk/api/cai-dat').then(function(d){CD0=d;if(!$('rd-chon').dataset.sua){[].slice.call(document.querySelectorAll('input[name=rd-cd]')).forEach(function(i){i.checked=i.value===d.che_do;});
   $('rd-ghi').checked=!!d.ghi_hinh;$('rd-gb').value=d.ghi_hinh_gb;danhDau();}
