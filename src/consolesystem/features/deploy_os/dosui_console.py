@@ -206,21 +206,21 @@ def _trang_apps(msg="", ok=True):
           dùng <code>/qn /norestart</code>.</p>
 
         <!-- Goi y tham so: bang toi tu ve (datalist cua trinh duyet hien hop trang, khong doi mau duoc - anh Thoai che 28/10/2026) -->
-        <div id="goiy-thamso" hidden style="position:absolute;z-index:50;width:420px;max-width:92vw;max-height:300px;overflow:auto;
+        <div id="goiy-thamso" hidden style="position:absolute;z-index:50;width:520px;max-width:92vw;max-height:320px;overflow-y:auto;overflow-x:hidden;
              background:#141A23;border:1px solid #2B3746;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.45);">
-          <table style="margin:0;">""" + "".join(
-        f'<tr class="goiy-o" data-gt="{_esc(gt)}" style="cursor:pointer;"><td style="white-space:nowrap;"><code>{_esc(gt)}</code></td>'
-        f'<td style="color:#8b93a1;font-size:12.5px;">{_esc(mo_ta)}</td></tr>'
+          <table style="margin:0;width:100%;min-width:0;table-layout:fixed;">""" + "".join(
+        f'<tr class="goiy-o" data-gt="{_esc(gt)}" style="cursor:pointer;"><td style="width:55%;word-break:break-all;padding:8px 10px;"><code>{_esc(gt)}</code></td>'
+        f'<td style="color:#8b93a1;font-size:12.5px;padding:8px 10px;white-space:normal;">{_esc(mo_ta)}</td></tr>'
         for gt, mo_ta in GOI_Y_THAM_SO) + """</table></div>
         <style>#goiy-thamso tr.goiy-o:hover td,#goiy-thamso tr.goiy-o.chon td{background:#1C2533;}</style>
         <script>
         (function(){
           var hop=document.getElementById('goiy-thamso'), o=null, vt=-1;
           function hang(){return [].slice.call(hop.querySelectorAll('tr.goiy-o')).filter(function(r){return !r.hidden;});}
-          function loc(){var q=(o.value||'').toLowerCase(), cmt=false;
+          function loc(){var q=o.value===o.dataset.goc?'':(o.value||'').toLowerCase();
             hop.querySelectorAll('tr.goiy-o').forEach(function(r){r.hidden=!!q&&r.textContent.toLowerCase().indexOf(q)<0;});
             vt=-1; hop.querySelectorAll('tr.chon').forEach(function(r){r.classList.remove('chon');});}
-          function mo(i){o=i; var b=i.getBoundingClientRect(); hop.style.left=(b.left+scrollX)+'px'; hop.style.top=(b.bottom+scrollY+4)+'px'; hop.hidden=false; loc();}
+          function mo(i){o=i; var b=i.getBoundingClientRect(); hop.style.left=(b.left+scrollX)+'px'; hop.style.top=(b.bottom+scrollY+4)+'px'; hop.hidden=false; o.dataset.goc=i.value; loc();}
           function dong(){hop.hidden=true; o=null;}
           function chon(r){if(!o)return; o.value=r.dataset.gt; o.focus(); dong();}
           document.addEventListener('focusin',function(e){if(e.target.matches&&e.target.matches('input[data-goiy]'))mo(e.target);});
