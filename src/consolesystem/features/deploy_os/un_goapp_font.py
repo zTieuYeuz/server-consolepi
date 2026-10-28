@@ -220,8 +220,26 @@ def _lenh_cai_app(a):
     tham_so = (_d.doc_thongtin_app().get(ten)
                or _d.tham_so_mac_dinh_app(ten)).strip()
     if ten.lower().endswith(".msi"):
+        tham_so += _passkey_agent(ten, tham_so)
         return f'msiexec /i "{duong}" {tham_so}'.strip()
     return f'"{duong}" {tham_so}'.strip()
+
+def _passkey_agent(ten, tham_so):
+    """
+    MSI agent tao o Quan ly may tram co passkey: tu them PASSKEY="..." neu
+    Console da luu passkey cho goi do (giong Trien khai phan mem LAN). Thieu
+    thi msiexec dung ngay voi ma 1603 (lab 27/10/2026, kich ban LaptopHome).
+    """
+    if "passkey=" in tham_so.lower():
+        return ""
+    try:
+        import os
+        from consolesystem.core import duongdan as _dd
+        from consolesystem.integrations.tk_dongco import passkey_agent_msi
+        pk = passkey_agent_msi(os.path.join(_dd.APPS_DIR, ten))
+    except Exception:
+        return ""
+    return f' PASSKEY="{pk}"' if pk else ""
 
 THU_MUC_UNGDUNG_TREN_MAY = f"{THU_MUC_TREN_MAY}\\ungdung"
 

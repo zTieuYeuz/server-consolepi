@@ -846,3 +846,11 @@ def bat_dau_quet(cidr_them=""):
 def trang_thai_quet():
     with _KHOA:
         return json.loads(json.dumps(_QUET))
+
+
+def passkey_agent_msi(duong):
+    """Passkey da luu cua goi agent MSI (co passkey) trung voi file nay, hoac '' (khong phai goi agent / chua luu).
+    Dung cho cai Windows (un_goapp_font) - cung kho goi voi Trien khai phan mem LAN o tren."""
+    from ui import uem_agent_goi as UG
+    g = UG.tim_theo_file(duong)
+    return UG.passkey_trien_khai(g) if g and g.get("co_passkey") else ""
