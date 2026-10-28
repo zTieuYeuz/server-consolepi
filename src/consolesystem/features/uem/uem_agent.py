@@ -14,6 +14,7 @@ hoac dan 1 dong vao PowerShell quan tri tren may). Noi voi Console System qua ht
 Gioi han that: chi chay trong mang noi bo toi duoc cong 8443 cua Console System (khong qua duong ham Cloudflare/Internet); Windows 10/Server 2016 tro len
 (.NET Framework 4.x co san); viec mang mat khau (tao nguoi dung co mat khau) van chi di qua WinRM (khong luu mat khau xuong may qua bundle).
 """
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.uem_agent"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import base64
@@ -394,6 +395,12 @@ def xu_ly_nhip(m, body, ip_nguon):
     cu = _NHIP.get(mid)
     doi = m.get("an") or cu is None or cu["ban"] != ban or cu["ip"] != ip_nguon or cu["may"] != host or now - cu["luu_luc"] > 600
     _NHIP[mid] = {"luc": now, "ban": ban, "may": host, "ip": ip_nguon, "luu_luc": now if doi else cu["luu_luc"]}
+    if (cu is None or now - cu["luc"] > 120) and not (m.get("ket_noi") or {"ok": True}).get("ok", True):
+        try:                                         # may vua noi lai sau khi mat lien lac: lay bao cao ngay, khong cho chu ky 5 phut
+            from ui import uem_baocao as UBC
+            UBC.chay_nen(mid)
+        except Exception as _loi:
+            _bo_qua(_loi)
     if doi:                                          # chi ghi dia khi doi thong tin hoac moi 10 phut (may.json lon, khong ghi moi nhip)
         def ghi(ds):
             x = DL.tim(ds, mid)

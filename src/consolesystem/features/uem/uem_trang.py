@@ -168,7 +168,9 @@ def trang_thai_may(m):
     if not m.get("tai_khoan_id") and not (m.get("agent") or {}).get("khoa"):
         return "Chờ gán tài khoản", "vang"
     kn = m.get("ket_noi") or {}
-    if kn and not kn.get("ok"):
+    # Lan lay bao cao cuoi loi (vd may tat) nhung agent dang bao nhip -> may dang noi, khong bao "Khong ket noi"
+    # (lab 28/10/2026: LaptopHome mo lai, remote binh thuong ma trang van do vai phut cho toi lan lay bao cao ke).
+    if kn and not kn.get("ok") and not UA.con_song(m):
         return "Không kết nối", "do"
     if not m.get("bao_cao_luc"):
         return "Chưa có báo cáo", "vang"
