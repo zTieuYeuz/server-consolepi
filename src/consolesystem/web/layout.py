@@ -957,6 +957,14 @@ _NAV_DAU_JS = r"""(function(){
   }
   window.setInterval = boc(sI, true);
   window.setTimeout = boc(sT, false);
+  // WebSocket cua trang (terminal, VNC...) cung gan the he: doi trang bang menu trai thi dong lai, khong de phien treo ngam
+  var WSg = window.WebSocket;
+  if (WSg) {
+    window.__csWs = [];
+    var WSm = function(u, p) { var w = p === undefined ? new WSg(u) : new WSg(u, p); w.__csGen = window.__csGen; window.__csWs.push(w); return w; };
+    WSm.prototype = WSg.prototype; ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'].forEach(function(k) { WSm[k] = WSg[k]; });
+    window.WebSocket = WSm;
+  }
 })();"""
 
 _NAV_JS = r"""(function(){
@@ -992,6 +1000,8 @@ _NAV_JS = r"""(function(){
       var doc = new DOMParser().parseFromString(kq[0], 'text/html');
       var moi = doc.querySelector('.wrap .content');
       if (!moi || doc.body.hasAttribute('data-tmux-session')) throw 0;
+      (window.__csWs || []).forEach(function(w) { if (w.__csGen && w.__csGen !== 0) { try { w.close(); } catch (e) {} } });
+      window.__csWs = (window.__csWs || []).filter(function(w) { return w.readyState < 2 && !w.__csGen; });
       the++; window.__csGen = the;
       var css = doc.getElementById('css-trang'); document.getElementById('css-trang').textContent = css ? css.textContent : '';
       document.title = doc.title;

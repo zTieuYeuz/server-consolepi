@@ -434,6 +434,7 @@ def _xu_ly(cs):
         tok = duong.rsplit("/", 1)[1].split("?", 1)[0]
         ngoai = _WS.lay(tok)
         if ngoai:                                   # phien cua tinh nang khac (vd Remote Desktop) dung chung cau noi nay
+            _WS.bo(tok)                             # ma phien chi dung 1 lan
             tok = None
             ngoai(cs, hdr, key, _doc_khung, _khung)
             return
