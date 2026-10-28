@@ -44,7 +44,7 @@ _HANG = {}                      # may_id -> deque([job])
 _VIEC = {}                      # job_id -> job
 _MA_CAI = {}                    # ma cai (dung 1 lan) -> {may_id, het_han}
 _NHIP = {}                      # may_id -> {luc, ban, may, ip, luu_luc} - nhip chi giu trong bo nho (ghi dia moi 10 phut hoac khi doi thong tin)
-_GUI = ("id", "kieu", "script", "timeout", "duong", "tok", "cong", "thong_bao", "giay", "pid", "ver", "chu_ky", "tasks", "pfx", "pfx_pass")
+_GUI = ("id", "kieu", "script", "timeout", "duong", "tok", "cong", "thong_bao", "giay", "pid", "ver", "chu_ky", "tasks", "pfx", "pfx_pass", "loai")
 GIA_HAN_TRUOC_GIAY = 60 * 86400   # con it hon 60 ngay thi tu cap chung chi moi
 
 PIN_CS = r'''using System;using System.Net;using System.Net.Security;using System.Security.Cryptography;using System.Security.Cryptography.X509Certificates;public static class CsPin{static string H(byte[] b){return BitConverter.ToString(SHA256.Create().ComputeHash(b)).Replace("-","");}public static void On(string h){ServicePointManager.ServerCertificateValidationCallback=delegate(object s,X509Certificate c,X509Chain ch,SslPolicyErrors e){try{if(H(c.GetRawCertData())==h)return true;if(ch==null)return false;bool co=false;foreach(X509ChainElement el in ch.ChainElements)if(H(el.Certificate.RawData)==h)co=true;if(!co)return false;foreach(X509ChainStatus st in ch.ChainStatus)if(st.Status!=X509ChainStatusFlags.NoError&&st.Status!=X509ChainStatusFlags.UntrustedRoot&&st.Status!=X509ChainStatusFlags.PartialChain&&st.Status!=X509ChainStatusFlags.RevocationStatusUnknown&&st.Status!=X509ChainStatusFlags.OfflineRevocation)return false;return true;}catch{return false;}};}}'''
@@ -374,6 +374,13 @@ def hoi_phep(may_id, thong_bao, giay=40):
     if err:
         raise RuntimeError(err)
     return out.strip()
+
+
+def mo_shell(may_id, tok, loai):
+    """Agent mo cmd/PowerShell va noi WebSocket nguoc ve /uem-agent-ws/<tok> (cua so dong lenh truc tiep)."""
+    out, err = cho_viec(them_viec(may_id, "shell", tok=tok, loai=loai), 60)
+    if err or not out.startswith("OK"):
+        raise RuntimeError(err or "Agent không mở được cửa sổ dòng lệnh.")
 
 
 def mo_tunnel(may_id, tok, cong):

@@ -313,6 +313,7 @@
 /uem/may/<mid>/agent/ma	POST	uem_ag_ma
 /uem/may/<mid>/bao-cao-ngay	POST	uem_bao_cao_ngay
 /uem/may/<mid>/cli/chay	POST	uem_cli_chay
+/uem/may/<mid>/cli/mo	POST	uem_cli_mo
 /uem/may/<mid>/dich-vu/api	POST	uem_dich_vu_api
 /uem/may/<mid>/duyet-file/tai	GET	uem_tai_file
 /uem/may/<mid>/duyet-file/tai-len	POST	uem_tai_len

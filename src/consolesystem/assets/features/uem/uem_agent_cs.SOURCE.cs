@@ -228,6 +228,7 @@ public class CsAgent : ServiceBase
                 case "tep_len": lock (Running) Running[id] = kieu; Bg("tep", delegate() { JobTepLen(id, S(job, "duong")); }); break;
                 case "tep_xuong": lock (Running) Running[id] = kieu; Bg("tep", delegate() { JobTepXuong(id, S(job, "duong")); }); break;
                 case "tunnel": JobTunnel(id, S(job, "tok"), I(job, "cong", 5900)); break;
+                case "shell": JobShell(id, S(job, "tok"), S(job, "loai")); break;
                 case "hoi_phep": lock (Running) Running[id] = kieu; Bg("phep", delegate() { JobPhep(id, S(job, "thong_bao"), I(job, "giay", 40)); }); break;
                 case "doi_chung_chi": DoiChungChi(id, job); break;
                 case "profile": SaveBundle(job); Result(id, "OK", "", 0); break;
@@ -353,6 +354,88 @@ public class CsAgent : ServiceBase
                 }
             }
             catch (Exception e) { Log("tunnel dong: " + e.GetBaseException().GetType().Name + ": " + e.GetBaseException().Message); }
+        });
+        Result(id, "OK", "", 0);
+    }
+
+    // ------------------------------------------------------------ cua so dong lenh truc tiep (cmd / PowerShell)
+    // Mo 1 tien trinh cmd.exe hoac powershell.exe (quyen SYSTEM), noi stdin/stdout qua WebSocket nguoc (mTLS) ve Console System:
+    // trinh duyet go dong nao thi gui vao stdin, ket qua chay ra tung khuc ngay (khong doi lenh xong). Dong WebSocket -> diet tien trinh.
+    static void JobShell(string id, string tok, string loai)
+    {
+        string ws = Url.Replace("https://", "wss://") + "/uem-agent-ws/" + Safe(tok);
+        bool ps = loai == "powershell";
+        Bg("shell", delegate()
+        {
+            Process p = null;
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo();
+                // Ca hai chay trong cmd da "chcp 65001": PowerShell ke thua bang ma UTF-8 cua console an -> tieng Viet vao/ra dung.
+                psi.FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+                psi.Arguments = ps ? "/Q /C chcp 65001>nul & \"" + Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe") + "\" -NoLogo -NoProfile -ExecutionPolicy Bypass -Command -"
+                                   : "/Q /K chcp 65001>nul";
+                psi.UseShellExecute = false; psi.CreateNoWindow = true;
+                psi.RedirectStandardInput = true; psi.RedirectStandardOutput = true; psi.RedirectStandardError = true;
+                psi.WorkingDirectory = Environment.GetEnvironmentVariable("SystemDrive") + "\\";
+                using (ClientWebSocket w = new ClientWebSocket())
+                {
+                    w.Options.ClientCertificates.Add(Client);
+                    w.Options.AddSubProtocol("binary");
+                    w.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    w.ConnectAsync(new Uri(ws), cts.Token).Wait(20000);
+                    if (w.State != WebSocketState.Open) throw new Exception("khong mo duoc WebSocket (" + w.State + ")");
+                    p = Process.Start(psi);
+                    Log("shell: " + (ps ? "powershell" : "cmd") + " pid " + p.Id);
+                    object khoaGui = new object();
+                    Action<byte[], int> gui = delegate(byte[] b, int n)
+                    {
+                        lock (khoaGui) { try { w.SendAsync(new ArraySegment<byte>(b, 0, n), WebSocketMessageType.Binary, true, cts.Token).Wait(); } catch { cts.Cancel(); } }
+                    };
+                    Stream[] ra = new Stream[] { p.StandardOutput.BaseStream, p.StandardError.BaseStream };
+                    foreach (Stream st in ra)
+                    {
+                        Stream s1 = st;
+                        Thread t = new Thread(delegate()
+                        {
+                            try { byte[] b = new byte[8192]; int n; while ((n = s1.Read(b, 0, b.Length)) > 0) gui(b, n); } catch { }
+                        });
+                        t.IsBackground = true; t.Start();
+                    }
+                    Process pp = p;
+                    Thread cho = new Thread(delegate() { try { pp.WaitForExit(); Thread.Sleep(300); } catch { } try { cts.Cancel(); } catch { } });
+                    cho.IsBackground = true; cho.Start();
+                    Stream vao = p.StandardInput.BaseStream;
+                    if (ps)
+                    {
+                        byte[] dau = Encoding.UTF8.GetBytes("$OutputEncoding=[Text.Encoding]::UTF8; Write-Host -NoNewline ('PS ' + (Get-Location).Path + '> ')\n");
+                        vao.Write(dau, 0, dau.Length); vao.Flush();
+                    }
+                    byte[] rb = new byte[65536];
+                    while (w.State == WebSocketState.Open && !cts.IsCancellationRequested)
+                    {
+                        WebSocketReceiveResult rr = w.ReceiveAsync(new ArraySegment<byte>(rb), cts.Token).Result;
+                        if (rr.MessageType == WebSocketMessageType.Close) break;
+                        if (rr.Count <= 0) continue;
+                        vao.Write(rb, 0, rr.Count);
+                        if (ps && rb[rr.Count - 1] == 10)          // PowerShell khong tu in dau nhac khi doc stdin -> tu in sau moi dong
+                        {
+                            byte[] nh = Encoding.UTF8.GetBytes("Write-Host -NoNewline ('PS ' + (Get-Location).Path + '> ')\n");
+                            vao.Write(nh, 0, nh.Length);
+                        }
+                        vao.Flush();
+                    }
+                }
+            }
+            catch (Exception e) { Log("shell dong: " + e.GetBaseException().GetType().Name + ": " + e.GetBaseException().Message); }
+            finally
+            {
+                if (p != null)
+                {
+                    try { if (!p.HasExited) Process.Start(new ProcessStartInfo("taskkill.exe", "/T /F /PID " + p.Id) { UseShellExecute = false, CreateNoWindow = true }).WaitForExit(5000); } catch { }
+                }
+            }
         });
         Result(id, "OK", "", 0);
     }

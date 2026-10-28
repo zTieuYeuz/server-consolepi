@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
 
 # phien ban -> SHA-256 cua ma nguon C# o phien ban do. Sua ma C#: tang VER_FILE roi them dong moi o day.
-BAM = {"2.3.2": "1714c215e279bab32fb88852c394c263584f511f483a9374efb7059da3998a65", "2.3.3": "8509efd62df3c3248414c803eda019661aa3a47784c614c7333919fd780bfa35"}
+BAM = {"2.3.2": "1714c215e279bab32fb88852c394c263584f511f483a9374efb7059da3998a65", "2.3.3": "8509efd62df3c3248414c803eda019661aa3a47784c614c7333919fd780bfa35", "2.3.5": "fa770e85c65044a0e32e445631c8333cf5140d053cbe152f93b08686984c6d89"}
 
 
 def test_ma_agent_doi_phai_tang_phien_ban():

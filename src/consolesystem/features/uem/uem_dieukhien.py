@@ -60,7 +60,40 @@ def _khung(m, tab, noi_dung):
     return T.khung_may(m, tab, noi_dung)
 
 
-TRANG_CLI = """<div class="card"><h3>Dòng lệnh từ xa</h3>
+TRANG_TERM = r"""<div class="card"><h3>Cửa sổ dòng lệnh trực tiếp</h3>
+<p class="tk-ghi">Mở CMD hoặc PowerShell chạy liên tục trên máy (quyền SYSTEM, qua agent), gõ lệnh và thấy kết quả ngay như đang ngồi trước máy. Cần máy có agent đang chạy. Đóng cửa sổ hoặc rời trang là tiến trình trên máy tự tắt.</p>
+<div class="tk-hang"><button class="tk-nut chinh" type="button" data-tm="cmd">Mở CMD</button><button class="tk-nut chinh" type="button" data-tm="powershell">Mở PowerShell</button>
+<button class="tk-nut do" type="button" id="tm-dong" disabled>Đóng</button><button class="tk-nut" type="button" id="tm-xoa">Xóa màn hình</button><span class="tk-ghi" id="tm-tt"></span></div>
+<div id="tm-khung" style="margin-top:12px;background:#0c0c0c;border-radius:8px;border:1px solid var(--vien);overflow:hidden;">
+<pre id="tm-ra" tabindex="0" style="margin:0;padding:12px 14px 4px;height:52vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:#cccccc;font:13.5px/1.45 Consolas,'Cascadia Mono',ui-monospace,monospace;background:transparent;"></pre>
+<div style="display:flex;align-items:center;gap:6px;padding:4px 14px 10px;"><span style="color:#16c60c;font:13.5px Consolas,ui-monospace,monospace;">&gt;</span>
+<input id="tm-vao" autocomplete="off" spellcheck="false" disabled placeholder="Bấm Mở CMD hoặc Mở PowerShell" style="flex:1;margin:0;height:30px;background:transparent;border:0;outline:0;color:#f2f2f2;font:13.5px Consolas,ui-monospace,monospace;box-shadow:none;"></div></div>
+<p class="tk-ghi" style="margin-top:6px;">Enter: chạy · ↑/↓: lệnh trước/sau · lệnh cần trả lời (Y/N...) thì gõ câu trả lời rồi Enter. Lệnh chạy mãi (ping -t) thì bấm Đóng rồi mở lại.</p></div>
+<script>(function(){var $=function(i){return document.getElementById(i);}, U='__URL__', ws=null, ls=[], vt=0, dec=null, ra=$('tm-ra'), vao=$('tm-vao');
+function viet(t){ra.textContent+=t; if(ra.textContent.length>400000)ra.textContent=ra.textContent.slice(-300000); ra.scrollTop=ra.scrollHeight;}
+function trangThai(mo,t){vao.disabled=!mo; $('tm-dong').disabled=!mo; document.querySelectorAll('[data-tm]').forEach(function(b){b.disabled=mo;}); $('tm-tt').textContent=t||''; if(mo)vao.focus();}
+function mo(loai){if(ws)return; trangThai(false,'Đang mở '+(loai==='cmd'?'CMD':'PowerShell')+' trên máy...'); document.querySelectorAll('[data-tm]').forEach(function(b){b.disabled=true;});
+ fetch(U,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loai:loai})}).then(function(r){return r.json();}).then(function(d){
+  if(!d.tok){trangThai(false,d.tb||'Không mở được.');return;}
+  dec=new TextDecoder('utf-8'); ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/uem-vnc-ws/'+d.tok,['binary']); ws.binaryType='arraybuffer';
+  var daNoi=false, cho=setTimeout(function(){if(!daNoi)viet('\n[Đang chờ agent kết nối...]\n');},4000);
+  ws.onmessage=function(e){if(!daNoi){daNoi=true;trangThai(true,'Đã kết nối - '+(loai==='cmd'?'CMD':'PowerShell'));} viet(typeof e.data==='string'?e.data:dec.decode(e.data,{stream:true}));};
+  ws.onopen=function(){viet('[Đang mở '+(loai==='cmd'?'CMD':'PowerShell')+'...]\n');};
+  ws.onclose=function(){clearTimeout(cho); ws=null; viet('\n[Đã đóng phiên]\n'); trangThai(false,'');};
+ }).catch(function(){trangThai(false,'Không gọi được máy chủ.');});}
+document.querySelectorAll('[data-tm]').forEach(function(b){b.onclick=function(){mo(b.dataset.tm);};});
+$('tm-dong').onclick=function(){if(ws)ws.close();};
+$('tm-xoa').onclick=function(){ra.textContent=''; if(!vao.disabled)vao.focus();};
+$('tm-khung').onclick=function(){if(!vao.disabled && !getSelection().toString())vao.focus();};
+vao.addEventListener('keydown',function(e){
+ if(e.key==='Enter'){var l=vao.value; if(ws&&ws.readyState===1){ws.send(l+'\r\n'); if(l.trim()){ls.push(l);} vt=ls.length; viet(l+'\n');} vao.value=''; e.preventDefault();}
+ else if(e.key==='ArrowUp'){if(vt>0){vt--;vao.value=ls[vt];} e.preventDefault();}
+ else if(e.key==='ArrowDown'){if(vt<ls.length-1){vt++;vao.value=ls[vt];}else{vt=ls.length;vao.value='';} e.preventDefault();}});
+window.addEventListener('pagehide',function(){if(ws)ws.close();});
+var giu=setInterval(function(){if(ws&&!document.body.contains(ra)){ws.close();clearInterval(giu);}},2000);
+})();</script>"""
+
+TRANG_CLI = """<div class="card"><h3>Chạy một lệnh</h3>
 <p class="tk-ghi">Chạy lệnh CMD hoặc PowerShell trên máy với quyền hệ thống (SYSTEM qua agent). Kết quả trả về sau khi lệnh chạy xong (tối đa 60 giây). Lệnh nào cũng được ghi vào tab Tác vụ.</p>
 <div class="tk-f"><label>Kiểu</label><select id="cli-loai" style="max-width:200px;"><option value="ps">PowerShell</option><option value="cmd">CMD</option></select>
 <label>Lệnh</label><textarea id="cli-lenh" rows="4" style="width:100%;font-family:monospace;" placeholder="ví dụ: Get-Service | Where Status -eq Running   hoặc   ipconfig /all"></textarea>
@@ -99,7 +132,7 @@ tai();})();</script>"""
 
 
 def tab_cli(m):
-    return _khung(m, "cli", TRANG_CLI.replace("__URL__", f"/uem/may/{m['id']}/cli/chay"))
+    return _khung(m, "cli", TRANG_TERM.replace("__URL__", f"/uem/may/{m['id']}/cli/mo") + TRANG_CLI.replace("__URL__", f"/uem/may/{m['id']}/cli/chay"))
 
 
 def tab_dich_vu(m):
@@ -176,6 +209,13 @@ def register_dieukhien(app):
         j = request.get_json(silent=True) or {}
         ok, out = chay_dong_lenh(m, str(j.get("loai", "ps")), str(j.get("lenh", "")))
         return jsonify({"ok": ok, "out": out if ok else "", "loi": "" if ok else out})
+
+    @app.route("/uem/may/<mid>/cli/mo", methods=["POST"])
+    def uem_cli_mo(mid):
+        from ui import uem_vnc as UV
+        m = may_theo_id(mid)
+        tok, tb = UV.mo_phien_shell(m["id"], str((request.get_json(silent=True) or {}).get("loai", "cmd")))
+        return jsonify({"tok": tok, "tb": tb})
 
     @app.route("/uem/may/<mid>/dich-vu/api", methods=["POST"])
     def uem_dich_vu_api(mid):

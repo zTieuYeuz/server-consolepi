@@ -245,7 +245,7 @@ def mo_phien(mid, thong_bao=True, hoi_phep=False):
     May chi co WinRM: che do TRUC TIEP (Console System ket noi toi cong 5900, chi cho dung IP Console System)."""
     with _KHOA:
         for t, p in PHIEN.items():
-            if p["may_id"] == mid and time.time() - p["luc"] < HET_HAN_GIAY:
+            if p["may_id"] == mid and not p.get("shell") and time.time() - p["luc"] < HET_HAN_GIAY:
                 return t, "Phiên đang mở, dùng lại."
     try:
         m = _may(mid)
@@ -277,6 +277,21 @@ def mo_phien(mid, thong_bao=True, hoi_phep=False):
     return tok, "Đã sẵn sàng."
 
 
+def mo_phien_shell(mid, loai):
+    """Phien cua so dong lenh truc tiep (chi may co agent): dung chung cau WebSocket voi VNC tunnel, agent chay cmd/PowerShell."""
+    from ui import uem_agent as UA
+    m = _may(mid)
+    if not UA.con_song(m):
+        return None, "Cửa sổ dòng lệnh trực tiếp cần agent đang chạy trên máy."
+    tok = secrets.token_urlsafe(24)
+    with _KHOA:
+        PHIEN[tok] = {"may_id": mid, "ip": m["ip"], "pin": "", "luc": time.time(), "kenh": 0, "tunnel": True, "shell": "powershell" if loai == "powershell" else "cmd",
+                      "agent_sock": None, "agent_xong": threading.Event()}
+    khoi_dong_bridge()
+    UD.ghi_tac_vu(mid, "cli", "Mở cửa sổ " + ("PowerShell" if loai == "powershell" else "CMD") + " trực tiếp", True, "")
+    return tok, "Đã sẵn sàng."
+
+
 def thong_tin_phien(tok):
     with _KHOA:
         p = PHIEN.get(tok)
@@ -289,6 +304,8 @@ def ket_thuc(tok):
         p = PHIEN.pop(tok, None)
     if not p:
         return False
+    if p.get("shell"):
+        return True                                  # agent tu diet cmd/PowerShell khi WebSocket dong
 
     def viec():
         try:
@@ -441,7 +458,10 @@ def _xu_ly(cs):
             from ui import uem_agent as UA
             with _KHOA:
                 PHIEN[tok]["agent_sock"] = None
-            threading.Thread(target=lambda: UA.mo_tunnel(p["may_id"], tok, CONG_VNC), daemon=True).start()
+            if p.get("shell"):
+                threading.Thread(target=lambda: UA.mo_shell(p["may_id"], tok, p["shell"]), daemon=True).start()
+            else:
+                threading.Thread(target=lambda: UA.mo_tunnel(p["may_id"], tok, CONG_VNC), daemon=True).start()
             for _ in range(300):                     # cho agent mo tunnel (toi da 30 giay)
                 time.sleep(0.1)
                 with _KHOA:
