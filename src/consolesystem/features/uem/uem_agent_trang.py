@@ -234,8 +234,16 @@ def trang_admin():
         mau = {"online": "xanh", "offline": "vang", "chua_cai": ""}[tt]
         hang += (f'<tr><td><a href="/uem/may/{m["id"]}/agent"><b>{_esc(ten_may(m))}</b></a><div class="tk-ghi">{_esc(m["ip"])}</div></td><td>{chip(mt, mau)}</td>'
                  f'<td>{_esc(a.get("ban") or "—")}</td><td>{_esc(gio(a.get("luc_cuoi")) if a.get("luc_cuoi") else "—")}</td></tr>')
-    return (khung_tls() + khung_ket_noi() + khung_goi() + khung_internet() + khung_sac() + f'<div class="card" style="margin-top:14px;">{("<table class=tk-bang><tr><th>Máy</th><th>Agent</th><th>Phiên bản</th><th>Nhịp cuối</th></tr>" + hang + "</table>") if hang else "<p class=tk-ghi>Chưa có máy nào.</p>"}'
-            f'<p class="tk-ghi">Phiên bản agent hiện hành: {UA.PHIEN_BAN}. Agent cũ tự cập nhật khi báo nhịp.</p></div>')
+    return (khung_tls() + khung_ket_noi() + khung_goi() + f'<div class="card" style="margin-top:14px;">{("<table class=tk-bang><tr><th>Máy</th><th>Agent</th><th>Phiên bản</th><th>Nhịp cuối</th></tr>" + hang + "</table>") if hang else "<p class=tk-ghi>Chưa có máy nào.</p>"}'
+            f'<p class="tk-ghi">Phiên bản agent hiện hành: {UA.PHIEN_BAN}. Agent cũ tự cập nhật khi báo nhịp.</p></div>' + khung_huong_dan())
+
+
+def khung_huong_dan():
+    """Gom cac huong dan (ket noi qua Internet, Smart App Control) vao 1 khung thu gon o cuoi trang."""
+    bo = lambda h: h.replace('<div class="card" style="margin-top:14px;">', '<div style="margin-top:12px;">').replace("<h3>", "<h4>").replace("</h3>", "</h4>")
+    return ('<details class="card" style="margin-top:14px;"><summary style="cursor:pointer;"><b>Hướng dẫn</b> '
+            '<span class="tk-ghi">máy ngoài Internet kết nối thế nào · Smart App Control chặn agent</span></summary>'
+            + bo(khung_internet()) + bo(khung_sac()) + '</details>')
 
 
 def register_agent(app):
@@ -347,6 +355,8 @@ def register_agent(app):
             return chuyen("/uem/quan-tri/agent", "Không tìm thấy file MSI.", False)
         os.makedirs(_DD.APPS_DIR, exist_ok=True)
         shutil.copyfile(p, os.path.join(_DD.APPS_DIR, ten))
+        from consolesystem.integrations.tk_dongco import dien_tham_so_app_neu_trong
+        dien_tham_so_app_neu_trong(ten, "/qn /norestart", f"msiexec /x {UG.MSI_PRODUCT_CODE} /qn /norestart")
         return chuyen("/uem/quan-tri/agent", f"Đã đưa {ten} vào kho phần mềm (Tài nguyên, Phần mềm). Khi triển khai, Console System tự điền passkey nếu đã lưu cho gói này. Mã sản phẩm: {UG.MSI_PRODUCT_CODE}")
 
     @app.route("/uem/quan-tri/agent/goi/<gid>/passkey", methods=["POST"])

@@ -854,3 +854,15 @@ def passkey_agent_msi(duong):
     from ui import uem_agent_goi as UG
     g = UG.tim_theo_file(duong)
     return UG.passkey_trien_khai(g) if g and g.get("co_passkey") else ""
+
+
+def dien_tham_so_app_neu_trong(ten, cai, go):
+    """Dien san tham so cai / lenh go cho 1 file trong Tai nguyen, Phan mem neu dang trong (khong de len gia tri nguoi dung da sua).
+    Dung khi Quan ly may tram dua goi agent MSI vao kho."""
+    from ui import deployos as D
+    meta = D.doc_thongtin_app()
+    if not (meta.get(ten) or "").strip():
+        meta[ten] = cai
+    if not (meta.get(ten + D.HAU_TO_GO) or "").strip():
+        meta[ten + D.HAU_TO_GO] = go
+    D.ghi_thongtin_app(meta)

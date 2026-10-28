@@ -205,9 +205,36 @@ def _trang_apps(msg="", ok=True):
           <code>/quiet</code>...). File .msi thì không bắt buộc - mặc định
           dùng <code>/qn /norestart</code>.</p>
 
-        <datalist id="goiy-thamso">""" + "".join(
-        f'<option value="{_esc(gt)}">{_esc(mo_ta)}</option>'
-        for gt, mo_ta in GOI_Y_THAM_SO) + """</datalist>
+        <!-- Goi y tham so: bang toi tu ve (datalist cua trinh duyet hien hop trang, khong doi mau duoc - anh Thoai che 28/10/2026) -->
+        <div id="goiy-thamso" hidden style="position:absolute;z-index:50;width:420px;max-width:92vw;max-height:300px;overflow:auto;
+             background:#141A23;border:1px solid #2B3746;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.45);">
+          <table style="margin:0;">""" + "".join(
+        f'<tr class="goiy-o" data-gt="{_esc(gt)}" style="cursor:pointer;"><td style="white-space:nowrap;"><code>{_esc(gt)}</code></td>'
+        f'<td style="color:#8b93a1;font-size:12.5px;">{_esc(mo_ta)}</td></tr>'
+        for gt, mo_ta in GOI_Y_THAM_SO) + """</table></div>
+        <style>#goiy-thamso tr.goiy-o:hover td,#goiy-thamso tr.goiy-o.chon td{background:#1C2533;}</style>
+        <script>
+        (function(){
+          var hop=document.getElementById('goiy-thamso'), o=null, vt=-1;
+          function hang(){return [].slice.call(hop.querySelectorAll('tr.goiy-o')).filter(function(r){return !r.hidden;});}
+          function loc(){var q=(o.value||'').toLowerCase(), cmt=false;
+            hop.querySelectorAll('tr.goiy-o').forEach(function(r){r.hidden=!!q&&r.textContent.toLowerCase().indexOf(q)<0;});
+            vt=-1; hop.querySelectorAll('tr.chon').forEach(function(r){r.classList.remove('chon');});}
+          function mo(i){o=i; var b=i.getBoundingClientRect(); hop.style.left=(b.left+scrollX)+'px'; hop.style.top=(b.bottom+scrollY+4)+'px'; hop.hidden=false; loc();}
+          function dong(){hop.hidden=true; o=null;}
+          function chon(r){if(!o)return; o.value=r.dataset.gt; o.focus(); dong();}
+          document.addEventListener('focusin',function(e){if(e.target.matches&&e.target.matches('input[data-goiy]'))mo(e.target);});
+          document.addEventListener('input',function(e){if(e.target===o)loc();});
+          document.addEventListener('mousedown',function(e){var r=e.target.closest&&e.target.closest('#goiy-thamso tr.goiy-o');
+            if(r){e.preventDefault();chon(r);} else if(o&&e.target!==o&&!hop.contains(e.target))dong();});
+          document.addEventListener('keydown',function(e){if(!o||hop.hidden)return; var h=hang();
+            if(e.key==='Escape'){dong();return;}
+            if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault(); if(!h.length)return; if(h[vt])h[vt].classList.remove('chon');
+              vt=(vt+(e.key==='ArrowDown'?1:-1)+h.length)%h.length; h[vt].classList.add('chon'); h[vt].scrollIntoView({block:'nearest'});}
+            else if(e.key==='Enter'&&h[vt]){e.preventDefault(); chon(h[vt]);}});
+          window.addEventListener('resize',dong);
+        })();
+        </script>
 
         <!-- Bang tra cuu nam trong HOP THOAI (the <dialog> chinh chu cua
              trinh duyet: tu co lop phu mo, bam Esc la dong, khong can thu
@@ -256,7 +283,7 @@ def _trang_apps(msg="", ok=True):
                       <input type="hidden" name="ten" value="{_esc(a['ten'])}">
                       <input type="text" name="tham_so" value="{_esc(a['tham_so'])}"
                              placeholder="{goi_y}" style="max-width:250px;"
-                             list="goiy-thamso" autocapitalize="off">
+                             data-goiy autocomplete="off" autocapitalize="off">
                       <button type="submit" class="small gray">Lưu</button>
                     </form>
                   </td>
