@@ -206,7 +206,9 @@ _s = RD.script_cau_hinh_nguoi_dung("rd.example.com", "AAAAAAAAAAAAAAAAAAAAAAAAAA
 kq["rd_doi_may_chu_script"] = "--option custom-rendezvous-server 'rd.example.com'" in _s and "--option relay-server 'rd.example.com'" in _s and "--option key" in _s
 t = c.get("/rustdesk/api/trang-thai", headers=H).get_json()
 kq["rd_tt_relay"] = t["relay_hieu_luc"] == "relay.example.com" and "api" not in t
-kq["rd_trang_khong_con_web"] = all(x not in c.get("/rustdesk", headers=H).get_data(as_text=True) for x in ("rustdesk-api", "WebSocket", "itserver"))
+_rd = c.get("/rustdesk", headers=H).get_data(as_text=True)
+_rd = _rd[_rd.find('<div class="content">'):_rd.find("<script>window.__csGen=0;")]   # chi noi dung trang (khung chung co JS WebSocket dung chung)
+kq["rd_trang_khong_con_web"] = all(x not in _rd for x in ("rustdesk-api", "WebSocket", "itserver"))
 r_vnc = c.get("/rustdesk/vnc", headers=H).get_data(as_text=True)
 kq["vnc_trang"] = all(x in r_vnc for x in ("Remote VNC", "Remote RustDesk", "Tải TightVNC 64-bit", "cm-vn", "Chọn tất cả"))
 _dsv = c.get("/rustdesk/vnc/api/may", headers=H).get_json()["may"]
