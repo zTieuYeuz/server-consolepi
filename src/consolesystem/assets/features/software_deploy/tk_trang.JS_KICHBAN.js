@@ -3,7 +3,7 @@
   var D = JSON.parse(document.getElementById('kb-du-lieu').textContent), buoc = D.buoc.slice();
   var $ = function(i){ return document.getElementById(i); };
   var LOAI = [['phanmem','Phần mềm'],['ungdung','Ứng dụng nhiều file'],['script','Script'],['winget','WinGet (kho Microsoft)'],['rustdesk','RustDesk (kèm máy chủ ID / chuyển tiếp)'],
-              ['nhom','Nhóm tài nguyên'],['nguon','Bật / tắt / khởi động lại máy'],['baomat','Kiểm tra bảo mật'],['kiemke','Kiểm kê phần cứng và phần mềm']];
+              ['nhom','Nhóm phần mềm'],['nguon','Bật / tắt / khởi động lại máy'],['baomat','Kiểm tra bảo mật'],['kiemke','Kiểm kê phần cứng và phần mềm']];
   LOAI.forEach(function(l){ var o=document.createElement('option'); o.value=l[0]; o.textContent=l[1]; $('b-loai').appendChild(o); });
   var DS_HIEN = [];
   function bo_dau(x){ return (x||'').replace(/đ/g,'d').replace(/Đ/g,'D').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
@@ -11,7 +11,7 @@
     var r=$('b-ref'), q=bo_dau($('b-tim').value).split(/\s+/).filter(Boolean), l=$('b-loai').value, g=$('b-ghi'); r.textContent='';
     var kq = DS_HIEN.filter(function(x){ var h=bo_dau(x.ten+' '+(x.mo_ta||'')); return q.every(function(t){ return h.indexOf(t)>=0; }); });
     if (!kq.length){ var o=document.createElement('option'); o.value='';
-      o.textContent = !DS_HIEN.length ? (l==='nhom' ? '(chưa có nhóm tài nguyên)' : '(chưa có tài nguyên loại này)') : '(không có kết quả khớp)'; r.appendChild(o); }
+      o.textContent = !DS_HIEN.length ? (l==='nhom' ? '(chưa có nhóm phần mềm)' : '(chưa có tài nguyên loại này)') : '(không có kết quả khớp)'; r.appendChild(o); }
     kq.forEach(function(x){ var o=document.createElement('option'); o.value=x.ref; o.textContent=x.ten + (x.mo_ta ? '  -  ' + x.mo_ta : ''); o.setAttribute('data-ten', x.ten); r.appendChild(o); });
     if (q.length && kq.length) r.selectedIndex = 0;
     $('b-so').textContent = DS_HIEN.length ? kq.length + ' / ' + DS_HIEN.length : '';

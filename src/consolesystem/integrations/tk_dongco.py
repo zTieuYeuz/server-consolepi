@@ -485,7 +485,7 @@ def _b_kiemke(c, ip, b, may):
 _BUOC = {"kiemke": _b_kiemke, "phanmem": _b_phanmem, "ungdung": _b_ungdung, "script": _b_script, "winget": _b_winget,
          "nguon": _b_nguon, "baomat": _b_baomat, "rustdesk": _b_rustdesk}
 TEN_LOAI_BUOC = {"phanmem": "Phần mềm", "ungdung": "Ứng dụng nhiều file", "script": "Script", "winget": "WinGet", "rustdesk": "RustDesk",
-                 "nguon": "Nguồn điện", "baomat": "Kiểm tra bảo mật", "kiemke": "Kiểm kê máy", "nhom": "Nhóm tài nguyên"}
+                 "nguon": "Nguồn điện", "baomat": "Kiểm tra bảo mật", "kiemke": "Kiểm kê máy", "nhom": "Nhóm phần mềm"}
 TEN_NGUON = {"bat": "Bật máy (Wake-on-LAN)", "tat": "Tắt máy", "khoi_dong_lai": "Khởi động lại"}
 
 

@@ -6,6 +6,8 @@
 .tk-o:hover { background:var(--hang-nen,rgba(255,255,255,.03)); }
 .tk-o:has(input:checked) { border-color:var(--nhan,#6c9cff); background:var(--nhan-mo,rgba(108,156,255,.14)); }
 .tk-o input { margin-top:3px; }
+.tk-o span { min-width:0; }   /* ten file dai khong ngat dong se tran sang o ben canh (flex mac dinh min-width:auto) */
+.tk-o b, .tk-o small { overflow-wrap:anywhere; }
 .tk-o b { display:block; font-size:14px; } .tk-o small { color:var(--chu-mo2,#7a8496); display:block; }
 .tk-chip { display:inline-block; padding:2px 10px; border-radius:99px; font-size:12px; font-weight:600; background:var(--hang-nen); color:var(--chu-mo); }
 .tk-chip.xanh { background:var(--xanh-mo); color:var(--xanh); } .tk-chip.do { background:var(--do-mo); color:var(--do); }

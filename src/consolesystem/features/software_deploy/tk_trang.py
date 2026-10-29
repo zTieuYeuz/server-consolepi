@@ -103,7 +103,7 @@ def _trang_nhom_tn():
         khoi = ('<p class="tk-ghi">Chưa có tài nguyên nào. Thêm ở các mục Phần mềm, Ứng dụng, Script phía trên, '
                 "hoặc tải từ <a href=\"/kho-trung-tam\">Kho lưu trữ › Kho trung tâm</a>.</p>")
     body = f"""
-    <h2>Nhóm tài nguyên</h2>
+    <h2>Nhóm phần mềm</h2>
     <div class="card">{bang}</div>
     <h2>{"Sửa nhóm" if sua else "Tạo nhóm mới"}</h2>
     <div class="card"><form method="POST" action="/deployos/trienkhai/nhom-tn/luu" class="tk-f">

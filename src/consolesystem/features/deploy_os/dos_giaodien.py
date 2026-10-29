@@ -34,7 +34,7 @@ TAB_TAI_NGUYEN = [
     ("drivers", "Driver", "/deployos/drivers"),
     ("scripts", "Script", "/deployos/console/scripts"),
     ("file", "WinPE", "/deployos/console"),
-    ("nhom", "Nhóm tài nguyên", "/deployos/trienkhai/nhom-tn"),
+    ("nhom", "Nhóm phần mềm", "/deployos/trienkhai/nhom-tn"),
 ]
 from consolesystem.web.chon_may import la_tai_nguyen  # noqa: E402,F401  (dung chung voi web/layout)
 
@@ -57,7 +57,7 @@ def _tabs_trienkhai(chinh, phu=""):
         ("ungdung", "Ứng dụng (nhiều file)", "/deployos/ungdung"),
         ("font", "Font chữ", "/deployos/font"),
         ("scripts", "Script", "/deployos/console/scripts"),
-        ("nhom", "Nhóm tài nguyên", "/deployos/trienkhai/nhom-tn"),
+        ("nhom", "Nhóm phần mềm", "/deployos/trienkhai/nhom-tn"),
     ], "may": [
         ("ds", "Danh sách máy", "/deployos/trienkhai/may"),
         ("nhom", "Nhóm máy", "/deployos/trienkhai/may/nhom"),
