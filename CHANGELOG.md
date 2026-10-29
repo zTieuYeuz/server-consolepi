@@ -9,6 +9,14 @@
 - **Sao lưu/Khôi phục** (Cài đặt): gói có mã băm, hai chế độ (cấu hình / toàn bộ).
 - **Dữ liệu lớn** (máy, báo cáo, lịch sử) chuyển sang SQLite; JSON nhỏ ghi nguyên tử, không bao giờ im lặng trả rỗng khi file hỏng.
 - **Mã nguồn:** tách `consolesystem/{core,web,features,integrations}`; `deployos.py` 6.8k dòng và `unattend.py` 4k dòng tách thành các module nhỏ; 37 khối HTML/CSS/JS/PowerShell/C# lớn đưa ra `assets/`; lưới kiểm thử (hợp đồng route, 96 trang, golden 48 file, 75 hành vi, ~280 test) và `tools/ci.sh`.
+- **Bổ sung 26–29/10/2026 (trước khi phát hành):**
+    - Menu đặt lại tên; **Tài nguyên máy** gom về Kho lưu trữ; bấm menu trái chỉ tải lại cột phải; trang máy gom 22 tab thành 6 nhóm; xác nhận luôn là popup giữa màn hình; **tiếng Anh** (Cài đặt → Language, câu ngắn).
+    - **Remote Desktop** trong trình duyệt (guacd Docker); **cửa sổ CMD/PowerShell trực tiếp** qua agent (có cửa sổ lớn ở tab riêng).
+    - **Cài phần mềm qua Agent** tách riêng khỏi LAN: WinGet, **cài từ kho phần mềm**, **đợt cài kiểu Endpoint Central** (máy tắt thì chờ, bật lên tự cài, thử lại, hết hạn, Wake-on-LAN, trạng thái triển khai), **kịch bản Agent** (phần mềm kho → máy/group → SYSTEM hoặc Run As → giờ/lịch; Dừng/Tiếp tục/Xóa).
+    - **Profile**: giao diện tab + thẻ loại tác vụ + 8 mẫu; thêm **Tường lửa** (4 loại) và **Dịch vụ Windows**.
+    - Agent 2.3.6: trợ lý phiên người dùng chạy ẩn (Windows 11 không còn bật cửa sổ PowerShell khi đăng nhập).
+    - **Cập nhật** chỉ cho quản trị, nhập lại mật khẩu, nút tải sao lưu, nhắc khởi động lại máy; thông báo có dấu. **Sao lưu một thư mục**: deploy/storage, WiFi đã lưu, token Cloudflare/Tailscale gom về `/var/lib/console-system`.
+    - Bảo mật: TFTP không 0777, lọc giải nén tar trên Python cũ, đợt cài và kịch bản không chạy chồng trên một máy.
 - **Lưu ý khi lên 2.0 từ 1.9.x:** cài lại bằng ISO 2.0 hoặc chạy cập nhật một lần; sau đó mọi bản sau tự cập nhật qua tab Cập nhật. Dịch vụ đổi tên `console-system-*` (tên cũ vẫn chạy được khi lên từ bản cũ).
 
 ## 1.9.5 - 22/10/2026 (gộp vào 2.0.0, không phát hành riêng)
