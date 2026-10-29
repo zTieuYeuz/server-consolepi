@@ -117,11 +117,11 @@ def _trang_nhom_tn():
 
 # ================================================================== lich
 def _trang_lich():
-    lich = DL.LICH.doc()
+    lich = [l for l in DL.LICH.doc() if not l.get("rieng")]   # lich rieng cua kich ban Agent: sua o kich ban do
     kb = DL.KICH_BAN.doc()
     hang = ""
     for l in lich:
-        dung = [k["ten"] for k in kb if k.get("lich_id") == l["id"] and not k.get("tam")]
+        dung = [k["ten"] for k in kb if k.get("lich_id") == l["id"] and not k.get("tam") and not DC.la_agent(k)]
         tiep = DL.lan_hen_ke_tiep(l)
         hang += (f'<tr><td><b>{_esc(l["ten"])}</b></td><td>{_esc(DL.mo_ta_lich(l))}</td>'
                  f'<td>{_esc(tiep.strftime("%d/%m/%Y %H:%M")) if tiep else "—"}</td>'
@@ -374,7 +374,7 @@ def _ds_buoc_html(k):
 
 
 def _trang_kichban():
-    kb = [k for k in DL.KICH_BAN.doc() if not k.get("tam")]
+    kb = [k for k in DL.KICH_BAN.doc() if not k.get("tam") and not DC.la_agent(k)]  # kich ban Agent nam o Cai phan mem qua Agent
     lich = DL.LICH.doc()
     hang = ""
     for k in kb:
@@ -400,7 +400,7 @@ def _trang_kichban():
     luoi_m = "".join(f'<label class="tk-o"><input type="checkbox" name="may" value="{m["id"]}"{" checked" if m["id"] in da_m else ""}>'
                      f'<span><b>{_esc(m.get("ten") or m["ip"])}</b><small>{_esc(m["ip"])}</small></span></label>' for m in may)
     opt_lich = '<option value="">Chạy ngay khi bấm Chạy (không hẹn giờ)</option>' + "".join(
-        f'<option value="{l["id"]}"{" selected" if sua.get("lich_id") == l["id"] else ""}>{_esc(l["ten"])} - {_esc(DL.mo_ta_lich(l))}</option>' for l in lich)
+        f'<option value="{l["id"]}"{" selected" if sua.get("lich_id") == l["id"] else ""}>{_esc(l["ten"])} - {_esc(DL.mo_ta_lich(l))}</option>' for l in lich if not l.get("rieng"))
     opt_tk = '<option value="">-- chọn tài khoản quản trị --</option>' + "".join(
         f'<option value="{t["id"]}"{" selected" if sua.get("tai_khoan_id") == t["id"] else ""}>{_esc(t["ten"])} ({_esc(t["user"])})</option>' for t in tk)
     du_lieu = json.dumps({"tn": tn, "nhom": [{"ref": g["id"], "ten": g["ten"], "mo_ta": f'{len(g.get("muc", []))} mục'} for g in nhom_tn],
@@ -487,7 +487,7 @@ def _tom_tat_kb(kb, st):
 
 
 def _trang_trienkhai():
-    kb = [k for k in DL.KICH_BAN.doc() if not k.get("tam")]
+    kb = [k for k in DL.KICH_BAN.doc() if not k.get("tam") and not DC.la_agent(k)]  # kich ban Agent nam o Cai phan mem qua Agent
     tt = DL.TRANG_THAI.doc()
     lich = DL.LICH.doc()
     hang = ""

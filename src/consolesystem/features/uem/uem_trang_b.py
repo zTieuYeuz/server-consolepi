@@ -26,6 +26,7 @@ from ui import uem_profiles as UP
 from ui import uem_trang as T
 from ui import uem_ketnoi as UK
 from ui import uem_trienkhai as UT
+from consolesystem.features.uem import uem_kichban as UKB
 from ui import uem_agent_trang as UAT
 from ui import uem_agent as UA
 from consolesystem.features.uem import uem_dieukhien as UDK
@@ -161,15 +162,15 @@ $('cg-tatca').addEventListener('change',function(ev){[].slice.call(document.quer
 ve('may');})();</script>"""
 
 
-def _chon_may_nhom_html():
-    """Chon may HOAC chon group (nhom may), tim kiem, 25 dong / trang. Gui len: may=<id> va nhom=<id>."""
+def _chon_may_nhom_html(chon_may=(), chon_nhom=()):
+    """Chon may HOAC chon group (nhom may), tim kiem, 25 dong / trang. Gui len: may=<id> va nhom=<id>. chon_*: danh dau san (sua kich ban)."""
     ds = [m for m in DL.MAY.doc() if m.get("giam_sat", True) and not m.get("an") and UA.co_agent(m)]
     nhom = [g for g in DL.NHOM_MAY.doc() if g.get("may")]
     co = {m["id"] for m in ds}
     tim = lambda x: _esc(re.sub(r"[\u0300-\u036f]", "", unicodedata.normalize("NFD", x.replace("đ", "d").replace("Đ", "D"))).lower())  # noqa: E731
-    o_may = "".join(f'<label class="tk-o" data-cg-tim="{tim(ten_may(m) + " " + m["ip"])}"><input type="checkbox" name="may" value="{_esc(m["id"])}"><span><b>{_esc(ten_may(m))}</b>'
+    o_may = "".join(f'<label class="tk-o" data-cg-tim="{tim(ten_may(m) + " " + m["ip"])}"><input type="checkbox" name="may" value="{_esc(m["id"])}"{" checked" if m["id"] in chon_may else ""}><span><b>{_esc(ten_may(m))}</b>'
                     f'<small>{_esc(m["ip"])}</small></span></label>' for m in ds)
-    o_nhom = "".join(f'<label class="tk-o" data-cg-tim="{tim(g["ten"])}"><input type="checkbox" name="nhom" value="{_esc(g["id"])}" data-may="{_esc(json.dumps([i for i in g["may"] if i in co]))}"><span><b>{_esc(g["ten"])}</b>'
+    o_nhom = "".join(f'<label class="tk-o" data-cg-tim="{tim(g["ten"])}"><input type="checkbox" name="nhom" value="{_esc(g["id"])}"{" checked" if g["id"] in chon_nhom else ""} data-may="{_esc(json.dumps([i for i in g["may"] if i in co]))}"><span><b>{_esc(g["ten"])}</b>'
                      f'<small>{sum(1 for i in g["may"] if i in co)} máy</small></span></label>' for g in nhom)
     return (CSS_CHON + f"""<div class="cg-dau"><input type="search" id="cg-tim" placeholder="Tìm máy theo tên hoặc IP">
       <label style="margin:0;display:flex;gap:6px;align-items:center;cursor:pointer;"><input type="checkbox" id="cg-tatca" style="width:auto;margin:0;"> Chọn tất cả trang này</label></div>
@@ -188,6 +189,7 @@ def may_tu_form(form):
 
 
 _TAB_CAI = [("winget", "Cài bằng WinGet", "/uem/trien-khai"), ("kho", "Cài từ kho phần mềm", "/uem/trien-khai/kho"),
+            ("kb", "Kịch bản", "/uem/trien-khai/kich-ban"),
             ("dot", "Trạng thái triển khai", "/uem/trien-khai/dot"), ("ls", "Lịch sử", "/uem/trien-khai/lich-su")]
 
 
@@ -773,6 +775,8 @@ def register_uem(app):
     UP.khoi_dong_bo_lap()
     UW.khoi_dong_bo_lap()
     UT.khoi_dong_bo_lap()
+    DC.dat_kenh_agent(UA)                 # kich ban Agent (tk_dongco) vao may qua agent
+    UKB.dang_ky(app)
     UV.khoi_dong_bridge()
     PKI.nap_lai_neu_doi()
     UAT.register_agent(app)

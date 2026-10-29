@@ -161,8 +161,55 @@ def _tai_ve_may(c, ip, duong_local, dich):
     raise RuntimeError("Máy đích không tải được file từ Console System (tường lửa chặn?) và file quá lớn để đẩy qua WinRM.")
 
 
+_CAI_BANG = threading.local()       # .tk = (user, mk) khi kich ban Agent chon "cai bang tai khoan" (Run As User kieu Endpoint Central)
+
+
+def _chay_bang_tai_khoan(c, tep, doi_so, don, user, mk):
+    """Chay file bang tai khoan rieng qua Scheduled Task (agent chay SYSTEM). Mat khau day thanh file tam, doc xong xoa ngay
+    (khong nam trong noi dung script de khong lot vao nhat ky PowerShell / dong lenh tien trinh)."""
+    d = don or _dir_tep("runas")
+    tam = os.path.join(DL.DIR, "cache", "rp-" + uuid.uuid4().hex)
+    os.makedirs(os.path.dirname(tam), exist_ok=True)
+    try:
+        with os.fdopen(os.open(tam, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w", encoding="utf-8") as f:
+            f.write(mk)
+        _chay_ps(c, f"New-Item -ItemType Directory -Force {_q(d)} | Out-Null")
+        c.copy(tam, d + "\\p.txt")
+    finally:
+        try:
+            os.remove(tam)
+        except OSError:
+            pass
+    tham = f" -Argument {_q(doi_so)}" if (doi_so or "").strip() else ""
+    out, err = _chay_ps(c, f"""$d = {_q(d)}; $pf = Join-Path $d 'p.txt'
+$p = (Get-Content -Raw -LiteralPath $pf).TrimEnd("`r", "`n"); Remove-Item -Force -LiteralPath $pf
+$u = {_q(user)}; if ($u -notmatch '[\\\\@]') {{ $u = "$env:COMPUTERNAME\\$u" }}
+$n = 'cs-tk-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
+try {{
+  $a = New-ScheduledTaskAction -Execute {_q(tep)}{tham}
+  Register-ScheduledTask -TaskName $n -Action $a -User $u -Password $p -RunLevel Highest -Force | Out-Null
+  $p = $null; $t0 = Get-Date; Start-ScheduledTask -TaskName $n; $het = $t0.AddHours(1)
+  do {{ Start-Sleep 2; $i = Get-ScheduledTaskInfo -TaskName $n; $s = (Get-ScheduledTask -TaskName $n).State }}
+  while ((Get-Date) -lt $het -and ($s -eq 'Running' -or $i.LastRunTime -lt $t0.AddSeconds(-5)))
+  "MA_THOAT=$($i.LastTaskResult)"
+}} catch {{ 'LOI_RUNAS=' + $_.Exception.Message }}
+finally {{ Unregister-ScheduledTask -TaskName $n -Confirm:$false -ErrorAction SilentlyContinue; $p = $null
+  {"Remove-Item -Recurse -Force $d -ErrorAction SilentlyContinue" if don else ""} }}""")
+    m = re.search(r"LOI_RUNAS=(.*)", out or "")
+    if m:
+        tb = m.group(1).strip()
+        if re.search(r"password|mật khẩu|2147943726|0x8007052E", tb, re.I):
+            tb = "Sai tên hoặc mật khẩu của tài khoản cài (" + user + ")."
+        return None, tb
+    m = re.search(r"MA_THOAT=(-?\d+)", out or "")
+    return (int(m.group(1)) if m else None), err
+
+
 def _chay_tien_trinh(c, tep, doi_so, don=""):
     """Chay 1 file/lenh va cho xong, tra ve (ma_thoat, loi_ps)."""
+    tk = getattr(_CAI_BANG, "tk", None)
+    if tk:
+        return _chay_bang_tai_khoan(c, tep, doi_so, don, tk[0], tk[1])
     tham = f" -ArgumentList {_q(doi_so)}" if (doi_so or "").strip() else ""
     out, err = _chay_ps(c, f"$p = Start-Process -FilePath {_q(tep)}{tham} -Wait -PassThru -WindowStyle Hidden; "
                            + (f"Remove-Item -Recurse -Force {_q(don)} -ErrorAction SilentlyContinue; " if don else "")
@@ -516,10 +563,27 @@ def may_cua_kich_ban(kb):
     ra, thay = [], set()
     for i in ids:
         m = DL.tim(ds_may, i)
-        if m and m["ip"] not in thay:
-            thay.add(m["ip"])
+        k = khoa_may(kb, m) if m else None
+        if m and k not in thay:
+            thay.add(k)
             ra.append(m)
     return ra
+
+
+_KENH_AGENT = [None]       # module agent (con_song, Client) - Quan ly may tram dang ky luc khoi dong (integrations khong import features)
+
+
+def dat_kenh_agent(mod):
+    _KENH_AGENT[0] = mod
+
+
+def la_agent(kb):
+    return (kb or {}).get("kenh") == "agent"
+
+
+def khoa_may(kb, m):
+    """Khoa cua may trong TRANG_THAI: kich ban Agent theo id may (IP co the doi do DHCP), kich ban LAN theo IP."""
+    return m["id"] if la_agent(kb) else m["ip"]
 
 
 def _khoi_tao_lan_chay(kb, slot):
@@ -529,7 +593,7 @@ def _khoi_tao_lan_chay(kb, slot):
     def ghi(tt):
         st = tt.setdefault(kb["id"], {})
         st.update(slot=slot, bat_dau=time.time(), xong_luc=0, buoc_ten=[nhan_buoc(b) for b in buoc])
-        st["may"] = {m["ip"]: {"ten": m.get("ten") or m["ip"], "tt": "cho", "thu": 0, "tiep": 0, "cap_nhat": 0,
+        st["may"] = {khoa_may(kb, m): {"id": m["id"], "ten": m.get("bi_danh") or m.get("ten") or m["ip"], "tt": "cho", "thu": 0, "tiep": 0, "cap_nhat": 0,
                                "buoc": [{"ten": nhan_buoc(b), "loai": b["loai"], "tt": "cho", "tb": "", "luc": 0} for b in buoc]}
                      for m in may}
         _nhat_ky(st, "-", f"Bắt đầu lượt chạy mới ({len(may)} máy, {len(buoc)} bước).")
@@ -544,7 +608,10 @@ def kich_hoat(kb_id):
         return False, "Kịch bản chưa có máy nào (chọn nhóm máy hoặc máy ở bước sửa kịch bản)."
     if not giai_buoc(kb):
         return False, "Kịch bản chưa có bước nào."
-    if not kb.get("tai_khoan_id") or DL.lay_tai_khoan(kb["tai_khoan_id"])[0] is None:
+    if la_agent(kb):
+        if kb.get("tai_khoan_id") and DL.lay_tai_khoan(kb["tai_khoan_id"])[0] is None:
+            return False, "Tài khoản cài của kịch bản đã bị xóa, sửa kịch bản để chọn lại."
+    elif not kb.get("tai_khoan_id") or DL.lay_tai_khoan(kb["tai_khoan_id"])[0] is None:
         return False, "Kịch bản chưa chọn tài khoản quản trị (tạo ở Máy - nhóm máy, Tài khoản quản trị)."
 
     def ghi(tt):
@@ -563,6 +630,28 @@ def dung(kb_id):
         _nhat_ky(st, "-", "Đã bấm DỪNG.")
     _luu(ghi)
     return True, "Đã dừng kịch bản."
+
+
+def tiep_tuc(kb_id):
+    """Tiep tuc sau khi Dung (Resume kieu Endpoint Central): giu nguyen tien do, may nao xong buoc nao thi bo qua buoc do.
+    Chua chay lan nao / da xong luot -> kich hoat nhu bam Chay."""
+    st = DL.TRANG_THAI.doc().get(kb_id) or {}
+    if not st.get("slot") or st.get("xong_luc"):
+        return kich_hoat(kb_id)
+
+    def ghi(tt):
+        s = tt.setdefault(kb_id, {})
+        s["bat"] = True
+        _nhat_ky(s, "-", "Đã bấm TIẾP TỤC: chạy tiếp từ chỗ đã dừng.")
+    _luu(ghi)
+    khoi_dong_bo_lap_lich()
+    return True, "Đã tiếp tục kịch bản."
+
+
+def xoa_kich_ban(kb_id):
+    dung(kb_id)
+    DL.KICH_BAN.sua(lambda ds: ds.__setitem__(slice(None), [x for x in ds if x["id"] != kb_id]))
+    DL.TRANG_THAI.sua(lambda t: t.pop(kb_id, None))
 
 
 def _buoc_cap_nhat(kb_id, ip, i, **kw):
@@ -589,11 +678,18 @@ def _chay_mot_may(kb_id, ip):
         if not kb:
             return
         buoc = giai_buoc(kb)
-        may = next((m for m in may_cua_kich_ban(kb) if m["ip"] == ip), {"ip": ip, "mac": ""})
+        agent = la_agent(kb)
+        if agent:                                  # khoa = id may
+            may = DL.tim(DL.MAY.doc(), ip) or {"id": ip, "ip": "", "mac": ""}
+        else:
+            may = next((m for m in may_cua_kich_ban(kb) if m["ip"] == ip), {"ip": ip, "mac": ""})
+        ip_may = may.get("ip", "")
         user, mk = DL.lay_tai_khoan(kb.get("tai_khoan_id"))
+        tt_truoc = DL.TRANG_THAI.doc().get(kb_id, {}).get("may", {}).get(ip, {}).get("tt")
         _may_cap_nhat(kb_id, ip, tt="dang")
         st0 = DL.TRANG_THAI.doc().get(kb_id, {}).get("may", {}).get(ip, {})
         c = None
+        _CAI_BANG.tk = (user, mk) if (agent and kb.get("tai_khoan_id") and user is not None) else None
         for i, b in enumerate(buoc):
             if not DL.TRANG_THAI.doc().get(kb_id, {}).get("bat"):
                 _may_cap_nhat(kb_id, ip, tt="dung")
@@ -606,7 +702,19 @@ def _chay_mot_may(kb_id, ip):
                 continue
             _buoc_cap_nhat(kb_id, ip, i, tt="dang", tb="Đang chạy...", luc=time.time())
             try:
-                if b["loai"] == "nguon" and b["ref"] == "bat":
+                if agent:
+                    if kb.get("tai_khoan_id") and user is None:
+                        raise RuntimeError("Tài khoản cài của kịch bản đã bị xóa, sửa kịch bản để chọn lại.")
+                    if c is None:
+                        UA = _KENH_AGENT[0]
+                        if UA is None:
+                            raise RuntimeError("Chưa nạp chức năng Quản lý máy trạm (agent).")
+                        if not UA.con_song(may):
+                            _cho_may_bat(kb_id, ip, i, tt_truoc)
+                            return
+                        c = UA.Client(may["id"])
+                    ok, tb = _BUOC[b["loai"]](c, ip_may, b, may)
+                elif b["loai"] == "nguon" and b["ref"] == "bat":
                     ok, tb = _cho_wol(ip, may.get("mac", ""))
                 else:
                     if user is None:
@@ -621,7 +729,10 @@ def _chay_mot_may(kb_id, ip):
                 return
             except Exception as e:                  # loi khi chay buoc (ke ca mat ket noi giua chung)
                 tb_loi = _loi_dep(e, mk)
-                if "WinRM" in tb_loi or "tài khoản" in tb_loi:
+                if agent and "mất liên lạc" in tb_loi:
+                    _cho_may_bat(kb_id, ip, i, tt_truoc)
+                    return
+                if not agent and "WinRM" in tb_loi or "tài khoản" in tb_loi:
                     _thu_ket_noi(kb_id, ip, i, st0, tb_loi, "Mất kết nối")
                     return
                 ok, tb = False, tb_loi
@@ -649,8 +760,17 @@ def _chay_mot_may(kb_id, ip):
         _may_cap_nhat(kb_id, ip, tt="loi", tiep=0)
         _ghi_nk(kb_id, ip, f"Lỗi bất ngờ: {str(e)[:200]}")
     finally:
+        _CAI_BANG.tk = None
         with _KHOA:
             _DANG.discard((kb_id, ip))
+
+
+def _cho_may_bat(kb_id, khoa, i, tt_truoc):
+    """Kich ban Agent: may tat / agent mat lien lac -> cho (khong tinh la 1 lan thu), 20 giay sau xem lai (Yet to Apply)."""
+    _buoc_cap_nhat(kb_id, khoa, i, tt="cho", tb="Chờ máy bật")
+    _may_cap_nhat(kb_id, khoa, tt="offline", tiep=time.time() + 20)
+    if tt_truoc != "offline":
+        _ghi_nk(kb_id, khoa, "Máy đang tắt hoặc mất mạng: chờ máy bật rồi tự chạy tiếp.")
 
 
 def _thu_ket_noi(kb_id, ip, i, st0, tb, tien_to):

@@ -377,6 +377,15 @@
 /uem/trien-khai/dot/<dot>/huy	POST	uem_td_dot_huy
 /uem/trien-khai/goi	GET	uem_td_goi
 /uem/trien-khai/kho	GET	uem_td_kho
+/uem/trien-khai/kich-ban	GET	uem_kb_ds
+/uem/trien-khai/kich-ban/<kb_id>	GET	uem_kb_td
+/uem/trien-khai/kich-ban/<kb_id>/chay	POST	uem_kb_chay
+/uem/trien-khai/kich-ban/<kb_id>/dung	POST	uem_kb_dung
+/uem/trien-khai/kich-ban/<kb_id>/tiep-tuc	POST	uem_kb_tiep
+/uem/trien-khai/kich-ban/<kb_id>/tt	GET	uem_kb_tt
+/uem/trien-khai/kich-ban/<kb_id>/xoa	POST	uem_kb_xoa
+/uem/trien-khai/kich-ban/luu	POST	uem_kb_luu
+/uem/trien-khai/kich-ban/sua	GET	uem_kb_sua
 /uem/trien-khai/lich-su	GET	uem_td_ls
 /uem/trien-khai/tt/<dot>	GET	uem_td_tt
 /vkeyboard.js	GET	nettools.vkeyboard_js
