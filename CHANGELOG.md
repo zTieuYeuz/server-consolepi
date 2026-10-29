@@ -1,8 +1,8 @@
 # Changelog
 
-## 2.0.1 - 29/10/2026
+## 2.0.2 - 29/10/2026
 
-**Sửa lỗi sau phát hành 2.0.0.**
+**Sửa lỗi và hoàn thiện sau phát hành 2.0.0** (gồm các sửa đã đưa thử lên kho ở 2.0.1).
 
 - **Gỡ agent từ console:** nay gỡ luôn đăng ký MSI trong Windows (trước đây chỉ xóa file, Windows vẫn coi agent là đã cài nên cài lại gói mới bị từ chối và gỡ bằng MSI báo lỗi 1722).
 - **Kho trung tâm qua Internet:** danh sách kho chờ tối đa 30 giây và tự thử lại một lần (đường truyền Cloudflare thỉnh thoảng đứng khoảng 20-30 giây, trước đây 10 giây là báo lỗi oan).
