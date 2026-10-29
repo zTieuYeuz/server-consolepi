@@ -332,6 +332,22 @@ def trang_lich_su():
 
 
 # ----------------------------------------------------------------- profiles
+_CSS_PF = """<style>
+.pf-dau{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}.pf-dau h2{margin:0 0 4px}
+.pf-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.pf-act{display:flex;gap:8px;flex-wrap:wrap}
+.pf-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 12px}.pf-tabs button{min-height:40px}.pf-tabs button.on{border-color:var(--nhan);background:var(--nhan-mo);color:var(--nhan-dam)}
+.pf-luoi{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.pf-nhom{border:1px solid var(--vien);border-radius:12px;padding:12px 14px;background:var(--nen-phu,transparent)}
+.pf-nhom h4{margin:0 0 2px;font-size:15px}.pf-nhom p{margin:0 0 8px;color:var(--chu-mo);font-size:12.5px}
+.pf-nhom a{display:block;padding:7px 10px;margin:4px 0;border-radius:8px;border:1px solid var(--vien);text-decoration:none;color:inherit;font-size:13.5px}
+.pf-nhom a:hover{border-color:var(--nhan);background:var(--nhan-mo)}
+.pf-mau{display:flex;gap:8px;flex-wrap:wrap}.pf-mau a{font-size:13px}
+.pf-task{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--vien)}.pf-task:last-child{border-bottom:0}
+.pf-task .ic{font-size:20px;width:30px;text-align:center}.pf-task .nd{flex:1;min-width:0}.pf-task .nd b{display:block}
+.pf-task.tat{opacity:.55}.pf-task form{display:flex;gap:4px;flex-wrap:wrap}
+</style>"""
+
+
 def _o_nhap(f, gt=None):
     ten, nhan, kieu, bb, mac_dinh, ghi = f
     gt = mac_dinh if gt is None else gt
@@ -341,7 +357,7 @@ def _o_nhap(f, gt=None):
     if kieu == "textarea":
         h += f'<textarea name="{ten}" rows="7" style="width:100%;max-width:none;font-family:var(--mono);">{_esc(gt)}</textarea>'
     elif kieu.startswith("select:"):
-        h += f'<select name="{ten}" style="max-width:320px;">' + "".join(f'<option value="{_esc(o)}"{" selected" if o == gt else ""}>{_esc(o) or "(không)"}</option>' for o in kieu[7:].split("|")) + "</select>"
+        h += f'<select name="{ten}" style="max-width:420px;">' + "".join(f'<option value="{_esc(v)}"{" selected" if v == gt else ""}>{_esc(n) or "(không)"}</option>' for v, n in UB.gia_tri_chon(kieu)) + "</select>"
     else:
         h += f'<input type="{"password" if kieu == "password" else "text"}" name="{ten}" value="{"" if kieu == "password" else _esc(gt)}"{" autocomplete=new-password" if kieu == "password" else ""}>'
     if ghi:
@@ -350,9 +366,10 @@ def _o_nhap(f, gt=None):
 
 
 GIAI_THICH_PROFILE = """<div class="card"><h3>Profile là gì?</h3>
-<p><b>Profile là một "bộ cài đặt chuẩn" áp dụng cho nhiều máy cùng lúc.</b> Bạn khai báo <i>máy phải như thế nào</i> (ví dụ: có Chrome và 7-Zip, có tài khoản "ketoan", tắt Remote Desktop), Console System tự kiểm tra từng máy và chỉ làm phần chưa đúng. Cứ vài phút kiểm tra lại, máy nào bị đổi/hỏng sẽ được đưa về đúng, máy mới thêm vào cũng được cấu hình theo.</p>
-<ol class="tk-ghi" style="margin:8px 0 0 18px;line-height:1.7;"><li><b>Tạo profile</b> và đặt tên, ví dụ "Máy văn phòng chuẩn".</li><li><b>Chọn áp dụng cho máy nào</b>: tất cả, một nhóm máy, hoặc máy có một thẻ.</li><li><b>Thêm các việc cần làm</b> (tác vụ): cài phần mềm, sửa registry, tạo người dùng, chạy PowerShell...</li><li><b>Bật profile</b>. Xem kết quả từng máy ở cuối trang, máy lỗi sẽ hiện trong mục Vấn đề.</li></ol>
-<p class="tk-ghi">Khác với <b>Triển khai</b>: Triển khai chạy một lần cho các máy bạn chọn; Profile là cấu hình <b>duy trì liên tục</b>. Bấm "Áp dụng ngay" nếu không muốn chờ chu kỳ kiểm tra.</p></div>"""
+<p><b>Profile là một "bộ cấu hình chuẩn" giữ cho nhiều máy luôn đúng.</b> Bạn khai báo máy phải như thế nào (có Chrome, bật tường lửa, mở Remote Desktop, tắt dịch vụ in...),
+Console System kiểm tra từng máy và chỉ sửa phần chưa đúng. Cứ vài phút kiểm tra lại: máy bị đổi sẽ được đưa về đúng, máy mới cũng được cấu hình theo.</p>
+<ol class="tk-ghi" style="margin:8px 0 0 18px;line-height:1.7;"><li><b>Tạo profile</b>, đặt tên.</li><li>Tab <b>Tác vụ</b>: bấm loại việc cần làm (hoặc một mẫu có sẵn), điền rồi lưu.</li>
+<li>Tab <b>Áp dụng cho</b>: chọn tất cả máy, nhóm máy hoặc thẻ.</li><li>Bấm <b>Bật profile</b>. Kết quả từng máy ở tab <b>Kết quả</b>.</li></ol></div>"""
 
 
 def trang_profiles():
@@ -363,15 +380,31 @@ def trang_profiles():
         may = UP.may_ap_dung(p)
         loi = len({m["id"] for m, _t, _tb in UP.van_de(p["id"])})
         ds_nhom = [g["ten"] + " (nhóm)" for g in DL.NHOM_MAY.doc() if g["id"] in p.get("nhom_may", [])]
-        pham_vi = "Tất cả máy" if p.get("ap_dung_tat_ca") else (", ".join(ds_nhom + [t["ten"] for t in the_ds if t["id"] in p.get("the", [])]) or "Chưa chọn nhóm máy hoặc thẻ")
-        hang += (f'<tr><td><a href="/uem/profiles/{p["id"]}"><b>{_esc(p["ten"])}</b></a><div class="tk-ghi">{_esc(p.get("mo_ta", ""))}</div></td><td>{_esc(pham_vi)}</td><td>{len(may)}</td>'
-                 f'<td>{len(p.get("tasks", []))}</td><td>{chip("Bật", "xanh") if p.get("bat") else chip("Tắt")}</td><td>{chip(str(loi) + " máy lỗi", "do") if loi else chip("Không lỗi", "xanh")}</td></tr>')
-    body = GIAI_THICH_PROFILE + f"""<h2>Các profile hiện có</h2><div class="card">{('<table class="tk-bang"><tr><th>Profile</th><th>Áp dụng cho</th><th>Số máy</th><th>Tác vụ</th><th>Trạng thái</th><th>Vấn đề</th></tr>' + hang + '</table>') if ds else '<p class="tk-ghi">Chưa có profile nào.</p>'}</div>
-    <h2>Tạo profile mới</h2><div class="card"><form method="POST" action="/uem/profiles/tao" class="tk-f"><label>Tên profile</label><input type="text" name="ten" required placeholder="Ví dụ: Máy văn phòng chuẩn">
-      <label>Mô tả</label><input type="text" name="mo_ta"><div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Tạo</button></div></form></div>
-    <p class="tk-ghi">Profile là danh sách tác vụ khai báo trạng thái mong muốn (cài/gỡ phần mềm WinGet, registry, người dùng và nhóm cục bộ, MSI, PowerShell). Console System tự kiểm tra từng máy
-      và chỉ làm những gì chưa đúng, lặp lại mỗi {int(UD.cai_dat().get("tan_suat_profile", 30))} phút.</p>"""
+        pham_vi = "Tất cả máy" if p.get("ap_dung_tat_ca") else (", ".join(ds_nhom + [t["ten"] for t in the_ds if t["id"] in p.get("the", [])]) or "Chưa chọn máy")
+        icon = "".join(dict.fromkeys(UB.NHOM_ICON.get(UB.CAC_LOAI.get(t["loai"], ("", ""))[1], "") for t in p.get("tasks", [])))
+        hang += (f'<tr><td><a href="/uem/profiles/{p["id"]}"><b>{_esc(p["ten"])}</b></a><div class="tk-ghi">{_esc(p.get("mo_ta", ""))}</div></td><td>{_esc(pham_vi)}<div class="tk-ghi">{len(may)} máy</div></td>'
+                 f'<td>{len(p.get("tasks", []))} <span title="Loại tác vụ">{icon}</span></td><td>{chip("Đang bật", "xanh") if p.get("bat") else chip("Tắt")}</td>'
+                 f'<td>{chip(str(loi) + " máy lỗi", "do") if loi else chip("Không lỗi", "xanh")}</td><td><a class="tk-nut" href="/uem/profiles/{p["id"]}">Mở</a></td></tr>')
+    body = GIAI_THICH_PROFILE + f"""<div class="card"><form method="POST" action="/uem/profiles/tao" class="tk-f tk-hang" style="gap:10px;align-items:flex-end;">
+      <div style="flex:1;min-width:220px;"><label>Tạo profile mới</label><input type="text" name="ten" required placeholder="Ví dụ: Máy văn phòng chuẩn" style="margin:0;"></div>
+      <div style="flex:1;min-width:220px;"><label>Mô tả (tuỳ chọn)</label><input type="text" name="mo_ta" style="margin:0;"></div>
+      <button class="tk-nut chinh" type="submit" style="height:42px;">Tạo</button></form></div>
+    <h2>Các profile ({len(ds)})</h2><div class="card">{('<table class="tk-bang"><tr><th>Profile</th><th>Áp dụng cho</th><th>Tác vụ</th><th>Trạng thái</th><th>Vấn đề</th><th></th></tr>' + hang + '</table>') if ds else '<p class="tk-ghi">Chưa có profile nào. Tạo ở ô phía trên.</p>'}</div>
+    <p class="tk-ghi">Kiểm tra lại mỗi {int(UD.cai_dat().get("tan_suat_profile", 30))} phút (đổi ở Quản trị, Cài đặt).</p>"""
     return trang(body, "pf")
+
+
+def _the_nhom_loai(pid):
+    """Luoi the: moi nhom loai tac vu 1 the, bam ten tac vu de mo form."""
+    nhom = {}
+    for k, (ten, ng, _f) in UB.CAC_LOAI.items():
+        nhom.setdefault(ng, []).append((k, ten.split(": ", 1)[-1]))
+    o = "".join(f'<div class="pf-nhom"><h4>{UB.NHOM_ICON.get(ng, "")} {_esc(UB.NHOM_LOAI[ng])}</h4><p>{_esc(UB.NHOM_MO_TA.get(ng, ""))}</p>'
+                + "".join(f'<a href="/uem/profiles/{pid}?loai={k}#tac-vu">{_esc(t[0].upper() + t[1:])}</a>' for k, t in nhom[ng]) + "</div>"
+                for ng in UB.NHOM_LOAI if ng in nhom)
+    mau = "".join(f'<a class="tk-nut" href="/uem/profiles/{pid}?loai={l}&mau={k}#tac-vu">{UB.NHOM_ICON.get(UB.CAC_LOAI[l][1], "")} {_esc(n)}</a>' for k, (n, l, _t) in UB.MAU.items())
+    return (f'<h3 style="margin:18px 0 6px;">Thêm tác vụ</h3><p class="tk-ghi" style="margin-top:0;">Bấm một mẫu có sẵn, hoặc chọn loại việc cần làm bên dưới.</p>'
+            f'<div class="pf-mau" style="margin-bottom:14px;">{mau}</div><div class="pf-luoi">{o}</div>')
 
 
 def trang_profile(pid):
@@ -381,67 +414,76 @@ def trang_profile(pid):
     the_ds = UD.THE.doc()
     tt = UD.TRANG_THAI_PROFILE.doc().get(pid, {})
     may = UP.may_ap_dung(p)
+    van = UP.van_de(pid)
+    n_loi = len({m["id"] for m, _t, _tb in van})
     o_nhom = "".join(f'<label class="tk-o"><input type="checkbox" name="nhom_may" value="{g["id"]}"{" checked" if g["id"] in p.get("nhom_may", []) else ""}><span><b>{_esc(g["ten"])}</b><small>{len(g.get("may", []))} máy</small></span></label>' for g in DL.NHOM_MAY.doc())
     o_the = "".join(f'<label class="tk-o"><input type="checkbox" name="the" value="{t["id"]}"{" checked" if t["id"] in p.get("the", []) else ""}><span><b>{_esc(t["ten"])}</b></span></label>' for t in the_ds)
-    # tac vu
+    # danh sach tac vu
     ht = ""
-    n = len(p.get("tasks", []))
-    for i, t in enumerate(p.get("tasks", [])):
+    tasks = p.get("tasks", [])
+    for i, t in enumerate(tasks):
         n_ok = sum(1 for m in may if tt.get(m["id"], {}).get("tasks", {}).get(t["id"], {}).get("tt") in ("da_dat", "da_lam", "da_chay_truoc"))
-        n_loi = sum(1 for m in may if tt.get(m["id"], {}).get("tasks", {}).get(t["id"], {}).get("tt") == "loi")
-        ht += (f'<tr><td>{i + 1}</td><td>{_esc(UB.mo_ta(t["loai"], t["tham_so"]))}<div class="tk-ghi">{"Agent tự áp dụng · " if UP.tu_tri(t) else "Cần Console System (WinRM hoặc agent đang kết nối) · "}{"Bỏ qua lỗi, chạy tiếp · " if t.get("bo_qua_loi") else ""}{"" if t.get("bat", True) else "Đang tắt · "}đúng {n_ok}/{len(may)} máy{" · lỗi " + str(n_loi) if n_loi else ""}</div></td>'
-               f'<td style="white-space:nowrap;"><form method="POST" action="/uem/profiles/{pid}/task/{t["id"]}/hanh-dong" style="display:inline;">'
-               f'<button class="tk-nut" name="viec" value="len"{" disabled" if i == 0 else ""}>↑</button> <button class="tk-nut" name="viec" value="xuong"{" disabled" if i == n - 1 else ""}>↓</button> '
-               f'<button class="tk-nut" name="viec" value="bat_tat">{"Tắt" if t.get("bat", True) else "Bật"}</button> <a class="tk-nut" href="/uem/profiles/{pid}?sua={t["id"]}#form-task">Sửa</a> '
-               f'<button class="tk-nut do" name="viec" value="xoa" onclick="return confirm(\'Xóa tác vụ này?\');">Xóa</button></form></td></tr>')
-    # form them/sua task
-    sua = next((t for t in p.get("tasks", []) if t["id"] == request.args.get("sua")), None)
+        n_l = sum(1 for m in may if tt.get(m["id"], {}).get("tasks", {}).get(t["id"], {}).get("tt") == "loi")
+        ng = UB.CAC_LOAI.get(t["loai"], ("", "powershell"))[1]
+        ht += (f'<div class="pf-task{"" if t.get("bat", True) else " tat"}"><div class="ic">{UB.NHOM_ICON.get(ng, "")}</div><div class="nd"><b>{i + 1}. {_esc(UB.mo_ta(t["loai"], t["tham_so"]))}</b>'
+               f'<span class="tk-ghi">{_esc(UB.NHOM_LOAI.get(ng, ""))} · {"agent tự áp dụng cả khi mất kết nối" if UP.tu_tri(t) else "cần Console System"}{" · lỗi thì vẫn chạy tiếp" if t.get("bo_qua_loi") else ""}'
+               f'{"" if t.get("bat", True) else " · ĐANG TẮT"}</span><div style="margin-top:4px;">{chip(f"Đúng {n_ok}/{len(may)} máy", "xanh" if may and n_ok == len(may) else "")}{" " + str(chip(f"Lỗi {n_l} máy", "do")) if n_l else ""}</div></div>'
+               f'<form method="POST" action="/uem/profiles/{pid}/task/{t["id"]}/hanh-dong">'
+               f'<button class="tk-nut" name="viec" value="len" title="Lên"{" disabled" if i == 0 else ""}>↑</button><button class="tk-nut" name="viec" value="xuong" title="Xuống"{" disabled" if i == len(tasks) - 1 else ""}>↓</button>'
+               f'<a class="tk-nut" href="/uem/profiles/{pid}?sua={t["id"]}#tac-vu">Sửa</a><button class="tk-nut" name="viec" value="bat_tat">{"Tắt" if t.get("bat", True) else "Bật"}</button>'
+               f'<button class="tk-nut do" name="viec" value="xoa" onclick="return confirm(\'Xóa tác vụ này?\');">Xóa</button></form></div>')
+    # form them / sua
+    sua = next((t for t in tasks if t["id"] == request.args.get("sua")), None)
     loai = (sua or {}).get("loai") or request.args.get("loai", "")
-    chon = '<option value="">(chọn loại tác vụ)</option>'
-    nhom_cu = None
-    for k, (ten, nhom, _f) in CAC_LOAI_SX().items():
-        if nhom != nhom_cu:
-            chon += ("</optgroup>" if nhom_cu else "") + f'<optgroup label="{_esc(UB.NHOM_LOAI[nhom])}">'
-            nhom_cu = nhom
-        chon += f'<option value="{k}"{" selected" if k == loai else ""}>{_esc(ten)}</option>'
-    chon += "</optgroup>"
-    form_task = ""
+    mau = UB.MAU.get(request.args.get("mau", ""))
     if loai in UB.CAC_LOAI:
-        gt = (sua or {}).get("tham_so", {})
-        cac_o = "".join(_o_nhap(f, gt.get(f[0]) if sua else None) for f in UB.CAC_LOAI[loai][2])
-        form_task = (f'<form method="POST" action="/uem/profiles/{pid}/task/luu" class="tk-f" style="margin-top:14px;"><input type="hidden" name="loai_tac_vu" value="{loai}"><input type="hidden" name="task_id" value="{(sua or {}).get("id", "")}">'
-                     f'{cac_o}<label class="tk-o"><input type="checkbox" name="bo_qua_loi" value="1"{" checked" if (sua or {}).get("bo_qua_loi") else ""}><span>Nếu tác vụ lỗi, vẫn chạy các tác vụ sau</span></label>'
+        gt = (sua or {}).get("tham_so") or (mau[2] if mau and mau[1] == loai else {})
+        cac_o = "".join(_o_nhap(f, gt.get(f[0]) if gt else None) for f in UB.CAC_LOAI[loai][2])
+        ng = UB.CAC_LOAI[loai][1]
+        phan_them = (f'<div class="card" id="form-task" style="margin-top:16px;border-color:var(--nhan);"><div class="tk-hang" style="justify-content:space-between;">'
+                     f'<h3 style="margin:0;">{UB.NHOM_ICON.get(ng, "")} {"Sửa" if sua else "Thêm"}: {_esc(UB.CAC_LOAI[loai][0])}</h3>'
+                     f'<a class="tk-nut" href="/uem/profiles/{pid}#tac-vu">← Chọn loại khác</a></div>'
+                     f'<form method="POST" action="/uem/profiles/{pid}/task/luu" class="tk-f"><input type="hidden" name="loai_tac_vu" value="{loai}"><input type="hidden" name="task_id" value="{(sua or {}).get("id", "")}">'
+                     f'{cac_o}<label class="tk-o"><input type="checkbox" name="bo_qua_loi" value="1"{" checked" if (sua or {}).get("bo_qua_loi") else ""}><span>Nếu tác vụ này lỗi, vẫn chạy các tác vụ sau</span></label>'
                      f'{"<p class=tk-ghi>Để trống ô mật khẩu = giữ mật khẩu cũ.</p>" if sua and loai == "user_them" else ""}'
-                     f'<div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">{"Lưu thay đổi" if sua else "Thêm tác vụ"}</button></div></form>')
-    # bang may
+                     f'<div class="tk-hang" style="margin-top:12px;gap:8px;"><button class="tk-nut chinh" type="submit">{"Lưu thay đổi" if sua else "Thêm vào profile"}</button>'
+                     f'<a class="tk-nut" href="/uem/profiles/{pid}#tac-vu">Hủy</a></div></form></div>')
+    else:
+        phan_them = _the_nhom_loai(pid)
+    # ket qua tung may
     hm = ""
     for m in may:
         st = tt.get(m["id"], {})
         hm += (f'<tr><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td><td>{chip({"ok": "Đúng cấu hình", "loi": "Có lỗi", "offline": "Không kết nối", "dang": "Đang chạy"}.get(st.get("trang_thai"), "Chưa chạy"), {"ok": "xanh", "loi": "do", "offline": "vang"}.get(st.get("trang_thai"), ""))}</td>'
                f'<td>{_esc(gio(st.get("luc")) if st.get("luc") else "—")}</td><td>{_esc(st.get("tom_tat", ""))}</td></tr>')
-    van = UP.van_de(pid)
     hv = "".join(f'<tr><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td><td>{_esc(tk)}</td><td>{_esc(tb)}</td></tr>' for m, tk, tb in van)
-    body = f"""<p><a class="tk-nut" href="/uem/profiles">Danh sách profile</a></p>
-    <p class="tk-ghi">Làm lần lượt 3 bước: <b>1</b> đặt tên và bật, <b>2</b> chọn áp dụng cho máy nào, <b>3</b> thêm các việc cần làm. Kết quả từng máy ở cuối trang.</p>
-    <div class="card"><h3>Bước 1 và 2: Tên, trạng thái và phạm vi áp dụng</h3><form method="POST" action="/uem/profiles/{pid}/luu" class="tk-f"><label>Tên</label><input type="text" name="ten" value="{_esc(p["ten"])}" required>
-      <label>Mô tả</label><input type="text" name="mo_ta" value="{_esc(p.get("mo_ta", ""))}">
-      <label class="tk-o"><input type="checkbox" name="ap_dung_tat_ca" value="1"{" checked" if p.get("ap_dung_tat_ca") else ""}><span><b>Áp dụng cho tất cả máy</b><small>Bỏ chọn để chỉ áp dụng cho nhóm máy hoặc máy có thẻ bên dưới</small></span></label>
-      <label>Bước 2: áp dụng cho nhóm máy nào</label><div class="tk-luoi">{o_nhom or '<span class="tk-ghi">Chưa có nhóm máy, tạo ở Máy tính (chọn máy, Thêm vào nhóm).</span>'}</div>
-      <label>Hoặc áp dụng cho máy có thẻ</label><div class="tk-luoi">{o_the or '<span class="tk-ghi">Chưa có thẻ, tạo ở Quản trị, Thẻ.</span>'}</div>
+    ds_nhom = [g["ten"] for g in DL.NHOM_MAY.doc() if g["id"] in p.get("nhom_may", [])] + [t["ten"] for t in the_ds if t["id"] in p.get("the", [])]
+    pham_vi = "tất cả máy" if p.get("ap_dung_tat_ca") else (", ".join(ds_nhom) or "chưa chọn máy")
+    body = _CSS_PF + f"""<p><a class="tk-nut" href="/uem/profiles">← Danh sách profile</a></p>
+    <div class="card"><div class="pf-dau"><div><h2>{_esc(p["ten"])}</h2><div class="tk-ghi">{_esc(p.get("mo_ta", ""))}</div>
+      <div class="pf-chips">{chip("Đang bật", "xanh") if p.get("bat") else chip("Đang tắt", "vang")}{chip(f"{len(tasks)} tác vụ")}{chip(f"Áp dụng cho {pham_vi} ({len(may)} máy)")}{chip(f"{n_loi} máy lỗi", "do") if n_loi else chip("Không lỗi", "xanh")}</div></div>
+      <div class="pf-act"><form method="POST" action="/uem/profiles/{pid}/bat-tat"><button class="tk-nut {"do" if p.get("bat") else "chinh"}" type="submit">{"Tắt profile" if p.get("bat") else "Bật profile"}</button></form>
+        <form method="POST" action="/uem/profiles/{pid}/ap-dung"><button class="tk-nut xanh" type="submit"{" disabled" if not tasks or not may else ""}>Áp dụng ngay ({len(may)} máy)</button></form>
+        <form method="POST" action="/uem/profiles/{pid}/xoa" onsubmit="return confirm('Xóa profile này? Máy giữ nguyên cấu hình đã áp dụng.');"><button class="tk-nut do" type="submit">Xóa</button></form></div></div></div>
+    <div class="pf-tabs"><button type="button" class="tk-nut" data-t="tac-vu">Tác vụ ({len(tasks)})</button><button type="button" class="tk-nut" data-t="ap-dung">Áp dụng cho ({len(may)} máy)</button>
+      <button type="button" class="tk-nut" data-t="ket-qua">Kết quả từng máy</button><button type="button" class="tk-nut" data-t="van-de">Vấn đề ({len(van)})</button></div>
+    <section data-pt="tac-vu"><div class="card"><p class="tk-ghi" style="margin-top:0;">Tác vụ chạy lần lượt từ trên xuống. Máy đã đúng thì tự bỏ qua.</p>
+      {ht or '<p class="tk-ghi">Chưa có tác vụ nào.</p>'}{phan_them}</div></section>
+    <section data-pt="ap-dung" hidden><div class="card"><form method="POST" action="/uem/profiles/{pid}/luu" class="tk-f">
+      <label>Tên</label><input type="text" name="ten" value="{_esc(p["ten"])}" required><label>Mô tả</label><input type="text" name="mo_ta" value="{_esc(p.get("mo_ta", ""))}">
+      <label class="tk-o"><input type="checkbox" name="ap_dung_tat_ca" value="1" id="pf-tatca"{" checked" if p.get("ap_dung_tat_ca") else ""}><span><b>Áp dụng cho tất cả máy</b><small>Bỏ chọn để chỉ áp dụng cho nhóm máy hoặc máy có thẻ bên dưới</small></span></label>
+      <div id="pf-chon"><label>Nhóm máy</label><div class="tk-luoi">{o_nhom or '<span class="tk-ghi">Chưa có nhóm máy, tạo ở Máy tính (chọn máy, Tạo nhóm).</span>'}</div>
+      <label>Hoặc máy có thẻ</label><div class="tk-luoi">{o_the or '<span class="tk-ghi">Chưa có thẻ, tạo ở Quản trị, Thẻ.</span>'}</div></div>
       <label class="tk-o"><input type="checkbox" name="bat" value="1"{" checked" if p.get("bat") else ""}><span><b>Bật profile</b><small>Tắt = tạm dừng, không áp dụng nữa</small></span></label>
-      <div class="tk-hang" style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Lưu</button></div></form>
-      <div class="tk-hang" style="margin-top:10px;"><form method="POST" action="/uem/profiles/{pid}/ap-dung"><button class="tk-nut xanh" type="submit">Áp dụng ngay lên {len(may)} máy</button></form>
-      <form method="POST" action="/uem/profiles/{pid}/xoa" onsubmit="return confirm('Xóa profile này? Máy giữ nguyên cấu hình đã áp dụng.');"><button class="tk-nut do" type="submit">Xóa profile</button></form></div></div>
-    <h2>Bước 3: Việc cần làm trên máy - tác vụ ({n})</h2><p class="tk-ghi">Các tác vụ chạy lần lượt từ trên xuống. Mỗi tác vụ khai báo trạng thái mong muốn; máy đã đúng thì tự bỏ qua.</p><div class="card">{('<table class="tk-bang"><tr><th>#</th><th>Tác vụ</th><th></th></tr>' + ht + '</table>') if ht else '<p class="tk-ghi">Chưa có tác vụ nào.</p>'}
-      <h3 id="form-task" style="margin-top:18px;">{"Sửa tác vụ" if sua else "Thêm tác vụ"}</h3>
-      <form method="GET" class="tk-f tk-hang"><select name="loai" style="margin:0;height:42px;max-width:420px;" onchange="this.form.submit()">{chon}</select>{f'<input type="hidden" name="sua" value="{_esc(sua["id"])}">' if sua else ""}<noscript><button class="tk-nut">Chọn</button></noscript></form>{form_task}</div>
-    <h2>Kết quả trên từng máy ({len(may)})</h2><div class="card">{('<table class="tk-bang"><tr><th>Máy</th><th>Trạng thái</th><th>Lần cuối</th><th>Tóm tắt</th></tr>' + hm + '</table>') if hm else '<p class="tk-ghi">Chưa có máy nào thuộc phạm vi áp dụng (chọn nhóm máy hoặc gán thẻ cho máy).</p>'}</div>
-    <h2>Vấn đề ({len(van)})</h2><div class="card">{('<table class="tk-bang"><tr><th>Máy</th><th>Tác vụ</th><th>Lỗi</th></tr>' + hv + '</table>') if hv else '<p class="tk-ghi">Không có vấn đề nào.</p>'}</div>"""
+      <div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Lưu</button></div></form></div></section>
+    <section data-pt="ket-qua" hidden><div class="card">{('<table class="tk-bang"><tr><th>Máy</th><th>Trạng thái</th><th>Lần cuối</th><th>Tóm tắt</th></tr>' + hm + '</table>') if hm else '<p class="tk-ghi">Chưa có máy nào thuộc phạm vi áp dụng (tab Áp dụng cho).</p>'}</div></section>
+    <section data-pt="van-de" hidden><div class="card">{('<table class="tk-bang"><tr><th>Máy</th><th>Tác vụ</th><th>Lỗi</th></tr>' + hv + '</table>') if hv else '<p class="tk-ghi">Không có vấn đề nào.</p>'}</div></section>
+    <script>(function(){{var bs=document.querySelectorAll('.pf-tabs [data-t]'),ss=document.querySelectorAll('[data-pt]');
+    function hien(t){{if(!document.querySelector('[data-pt="'+t+'"]'))t='tac-vu';ss.forEach(function(s){{s.hidden=s.dataset.pt!==t;}});bs.forEach(function(b){{b.classList.toggle('on',b.dataset.t===t);}});}}
+    bs.forEach(function(b){{b.onclick=function(){{hien(b.dataset.t);history.replaceState(null,'','#'+b.dataset.t);}};}});
+    hien((location.hash||'#tac-vu').slice(1)); var f=document.getElementById('form-task'); if(f)f.scrollIntoView({{block:'start'}});
+    var c=document.getElementById('pf-tatca'),k=document.getElementById('pf-chon');function d(){{k.style.opacity=c.checked?.45:1;}}c.onchange=d;d();}})();</script>"""
     return trang(body, "pf")
-
-
-def CAC_LOAI_SX():
-    return dict(sorted(UB.CAC_LOAI.items(), key=lambda kv: list(UB.NHOM_LOAI).index(kv[1][1])))
 
 
 # ----------------------------------------------------------------- bao cao
@@ -1208,6 +1250,13 @@ def register_uem(app):
             abort(404)
         return chuyen(f"/uem/profiles/{pid}", "Đã lưu profile.")
 
+    @app.route("/uem/profiles/<pid>/bat-tat", methods=["POST"])
+    def uem_pf_bat_tat(pid):
+        kq = {}
+        if not _sua_pf(pid, lambda p: (p.__setitem__("bat", not p.get("bat")), kq.__setitem__("bat", p["bat"]))):
+            abort(404)
+        return chuyen(f"/uem/profiles/{pid}", "Đã bật profile." if kq.get("bat") else "Đã tắt profile (tạm dừng áp dụng).")
+
     @app.route("/uem/profiles/<pid>/xoa", methods=["POST"])
     def uem_pf_xoa(pid):
         UD.PROFILES.sua(lambda ds: ds.__setitem__(slice(None), [p for p in ds if p["id"] != pid]))
@@ -1232,7 +1281,7 @@ def register_uem(app):
         loai, tid = request.form.get("loai_tac_vu", ""), request.form.get("task_id", "")
         ts, loi = UB.kiem_tra(loai, request.form)
         if loi:
-            return chuyen(f"/uem/profiles/{pid}?loai={loai}" + (f"&sua={tid}" if tid else "") + "#form-task", loi, False)
+            return chuyen(f"/uem/profiles/{pid}?loai={loai}" + (f"&sua={tid}" if tid else "") + "#tac-vu", loi, False)
         bo_qua = bool(request.form.get("bo_qua_loi"))
 
         def ghi(pp):
@@ -1245,7 +1294,7 @@ def register_uem(app):
                     return
             pp["tasks"].append({"id": DL.moi_id(), "loai": loai, "tham_so": ts, "bat": True, "bo_qua_loi": bo_qua, "ver": DL.moi_id()})
         _sua_pf(pid, ghi)
-        return chuyen(f"/uem/profiles/{pid}", "Đã lưu tác vụ.")
+        return chuyen(f"/uem/profiles/{pid}#tac-vu", "Đã lưu tác vụ.")
 
     @app.route("/uem/profiles/<pid>/task/<tid>/hanh-dong", methods=["POST"])
     def uem_pf_task_hd(pid, tid):

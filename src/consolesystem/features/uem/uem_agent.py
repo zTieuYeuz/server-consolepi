@@ -161,10 +161,8 @@ $t = @'
 '@
 [IO.File]::WriteAllText((Join-Path $data 'agent-user.ps1'), $t, $u8)
 & icacls (Join-Path $data 'agent-user.ps1') /grant 'Users:(R)' | Out-Null
-$ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$ac = New-ScheduledTaskAction -Execute $ps -Argument ('-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + (Join-Path $data 'agent-user.ps1') + '"')
 $st = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-Register-ScheduledTask -TaskName 'ConsoleSystemUserHelper' -Action $ac -Trigger (New-ScheduledTaskTrigger -AtLogOn) -Principal (New-ScheduledTaskPrincipal -GroupId 'S-1-5-32-545' -RunLevel Limited) -Settings $st -Force | Out-Null
+Unregister-ScheduledTask -TaskName 'ConsoleSystemUserHelper' -Confirm:$false -ErrorAction SilentlyContinue   # tro ly nay gio do cs-agent.exe --tray chay an
 $act = New-ScheduledTaskAction -Execute $exe -Argument '--tray'
 Register-ScheduledTask -TaskName 'ConsoleSystemTray' -Action $act -Trigger (New-ScheduledTaskTrigger -AtLogOn) -Principal (New-ScheduledTaskPrincipal -GroupId 'S-1-5-32-545' -RunLevel Limited) -Settings $st -Force | Out-Null
 Start-Service ConsoleSystemAgent

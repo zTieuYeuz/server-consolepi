@@ -63,9 +63,10 @@ def _khung(m, tab, noi_dung):
 TRANG_TERM = r"""<div class="card"><h3>Cửa sổ dòng lệnh trực tiếp</h3>
 <p class="tk-ghi">Mở CMD hoặc PowerShell chạy liên tục trên máy (quyền SYSTEM, qua agent), gõ lệnh và thấy kết quả ngay như đang ngồi trước máy. Cần máy có agent đang chạy. Đóng cửa sổ hoặc rời trang là tiến trình trên máy tự tắt.</p>
 <div class="tk-hang"><button class="tk-nut chinh" type="button" data-tm="cmd">Mở CMD</button><button class="tk-nut chinh" type="button" data-tm="powershell">Mở PowerShell</button>
-<button class="tk-nut do" type="button" id="tm-dong" disabled>Đóng</button><button class="tk-nut" type="button" id="tm-xoa">Xóa màn hình</button><span class="tk-ghi" id="tm-tt"></span></div>
+<button class="tk-nut do" type="button" id="tm-dong" disabled>Đóng</button><button class="tk-nut" type="button" id="tm-xoa">Xóa màn hình</button>
+<a class="tk-nut" id="tm-lon" href="__LON__" target="_blank" rel="noopener" title="Mở cửa sổ dòng lệnh toàn màn hình ở tab mới">⛶ Mở cửa sổ lớn</a><span class="tk-ghi" id="tm-tt"></span></div>
 <div id="tm-khung" style="margin-top:12px;background:#0c0c0c;border-radius:8px;border:1px solid var(--vien);overflow:hidden;">
-<pre id="tm-ra" tabindex="0" style="margin:0;padding:12px 14px 4px;height:52vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:#cccccc;font:13.5px/1.45 Consolas,'Cascadia Mono',ui-monospace,monospace;background:transparent;"></pre>
+<pre id="tm-ra" tabindex="0" style="margin:0;padding:12px 14px 4px;height:__CAO__;overflow:auto;white-space:pre-wrap;word-break:break-all;color:#cccccc;font:13.5px/1.45 Consolas,'Cascadia Mono',ui-monospace,monospace;background:transparent;"></pre>
 <div style="display:flex;align-items:center;gap:6px;padding:4px 14px 10px;"><span style="color:#16c60c;font:13.5px Consolas,ui-monospace,monospace;">&gt;</span>
 <input id="tm-vao" autocomplete="off" spellcheck="false" disabled placeholder="Bấm Mở CMD hoặc Mở PowerShell" style="flex:1;margin:0;height:30px;background:transparent;border:0;outline:0;color:#f2f2f2;font:13.5px Consolas,ui-monospace,monospace;box-shadow:none;"></div></div>
 <p class="tk-ghi" style="margin-top:6px;">Enter: chạy · ↑/↓: lệnh trước/sau · lệnh cần trả lời (Y/N...) thì gõ câu trả lời rồi Enter. Lệnh chạy mãi (ping -t) thì bấm Đóng rồi mở lại.</p></div>
@@ -90,21 +91,9 @@ vao.addEventListener('keydown',function(e){
  else if(e.key==='ArrowUp'){if(vt>0){vt--;vao.value=ls[vt];} e.preventDefault();}
  else if(e.key==='ArrowDown'){if(vt<ls.length-1){vt++;vao.value=ls[vt];}else{vt=ls.length;vao.value='';} e.preventDefault();}});
 window.addEventListener('pagehide',function(){if(ws)ws.close();});
+var tu=new URLSearchParams(location.search).get('mo'); if(tu==='cmd'||tu==='powershell')mo(tu);
 var giu=setInterval(function(){if(ws&&!document.body.contains(ra)){ws.close();clearInterval(giu);}},2000);
 })();</script>"""
-
-TRANG_CLI = """<div class="card"><h3>Chạy một lệnh</h3>
-<p class="tk-ghi">Chạy lệnh CMD hoặc PowerShell trên máy với quyền hệ thống (SYSTEM qua agent). Kết quả trả về sau khi lệnh chạy xong (tối đa 60 giây). Lệnh nào cũng được ghi vào tab Tác vụ.</p>
-<div class="tk-f"><label>Kiểu</label><select id="cli-loai" style="max-width:200px;"><option value="ps">PowerShell</option><option value="cmd">CMD</option></select>
-<label>Lệnh</label><textarea id="cli-lenh" rows="4" style="width:100%;font-family:monospace;" placeholder="ví dụ: Get-Service | Where Status -eq Running   hoặc   ipconfig /all"></textarea>
-<div class="tk-hang" style="margin-top:10px;"><button class="tk-nut chinh" id="cli-chay" type="button">Chạy lệnh</button><button class="tk-nut" id="cli-xoa" type="button">Xóa kết quả</button><span class="tk-ghi" id="cli-tt"></span></div></div>
-<pre id="cli-kq" style="background:#0f1114;color:#d5dae2;padding:12px;border-radius:6px;min-height:120px;max-height:60vh;overflow:auto;white-space:pre-wrap;word-break:break-all;margin-top:12px;"></pre></div>
-<script>(function(){var $=function(i){return document.getElementById(i);}, U='__URL__';
-$('cli-xoa').onclick=function(){$('cli-kq').textContent='';};
-$('cli-lenh').addEventListener('keydown',function(e){if(e.ctrlKey&&e.key==='Enter'){$('cli-chay').click();}});
-$('cli-chay').onclick=function(){var l=$('cli-lenh').value; if(!l.trim())return; var b=$('cli-chay'); b.disabled=true; $('cli-tt').textContent='Đang chạy...';
- fetch(U,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loai:$('cli-loai').value,lenh:l})}).then(function(r){return r.json();}).then(function(d){
-  $('cli-kq').textContent+=(d.ok?'':'[LỖI] ')+(d.out||d.loi||'(không có kết quả)')+'\\n'; $('cli-tt').textContent=''; $('cli-kq').scrollTop=1e9;}).catch(function(){$('cli-tt').textContent='Không gọi được máy chủ.';}).then(function(){b.disabled=false;});};})();</script>"""
 
 TRANG_DS = """<div class="card"><h3>__TIEUDE__</h3><div class="tk-hang"><input type="search" id="ds-loc" placeholder="Lọc theo tên..." style="margin:0;height:42px;max-width:300px;"><button class="tk-nut" id="ds-tai" type="button">Tải lại</button><span class="tk-ghi" id="ds-tt"></span></div>
 <div class="uem-bang-cuon"><table class="tk-bang" id="ds-bang"></table></div></div>
@@ -131,8 +120,31 @@ $('ds-bang').addEventListener('change',function(ev){var t=ev.target; if(t.datase
 tai();})();</script>"""
 
 
+def _term(m, cao):
+    return TRANG_TERM.replace("__URL__", f"/uem/may/{m['id']}/cli/mo").replace("__LON__", f"/uem/may/{m['id']}/cli/lon").replace("__CAO__", cao)
+
+
 def tab_cli(m):
-    return _khung(m, "cli", TRANG_TERM.replace("__URL__", f"/uem/may/{m['id']}/cli/mo") + TRANG_CLI.replace("__URL__", f"/uem/may/{m['id']}/cli/chay"))
+    return _khung(m, "cli", _term(m, "68vh"))
+
+
+# Cua so dong lenh rieng (tab moi, toan man hinh, khong co menu)
+TRANG_LON = """<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__TEN__ - Dòng lệnh</title><style>
+:root{--vien:#2b3240;--chu-mo:#9aa4b2}html,body{margin:0;background:#0b0d10;color:#e6e9ee;font:14px system-ui,sans-serif;height:100%}
+.card{padding:10px 14px;height:100%;box-sizing:border-box;display:flex;flex-direction:column}.card h3{margin:0 0 6px;font-size:16px}
+.card>p.tk-ghi:first-of-type{display:none}.tk-ghi{color:var(--chu-mo);font-size:12.5px;margin:4px 0}
+.tk-hang{display:flex;gap:8px;align-items:center;flex-wrap:wrap}#tm-lon{display:none}
+.tk-nut{background:#1c222c;color:#e6e9ee;border:1px solid #333c4a;border-radius:8px;padding:7px 14px;cursor:pointer;font:inherit;text-decoration:none}
+.tk-nut:hover{background:#252d39}.tk-nut.chinh{background:#2f6fdb;border-color:#2f6fdb}.tk-nut.do{color:#ff8a8a}.tk-nut:disabled{opacity:.45;cursor:default}
+#tm-khung{flex:1;display:flex;flex-direction:column}#tm-ra{flex:1}
+</style></head><body>__TERM__</body></html>"""
+
+
+def trang_lon(m):
+    ten = m.get("bi_danh") or m.get("ten") or m.get("ip", "")
+    return TRANG_LON.replace("__TEN__", _esc(ten)).replace("__TERM__", _term(m, "auto").replace(
+        "<h3>Cửa sổ dòng lệnh trực tiếp</h3>", "<h3>Dòng lệnh: " + _esc(ten) + "</h3>"))
 
 
 def tab_dich_vu(m):
@@ -209,6 +221,10 @@ def register_dieukhien(app):
         j = request.get_json(silent=True) or {}
         ok, out = chay_dong_lenh(m, str(j.get("loai", "ps")), str(j.get("lenh", "")))
         return jsonify({"ok": ok, "out": out if ok else "", "loi": "" if ok else out})
+
+    @app.route("/uem/may/<mid>/cli/lon")
+    def uem_cli_lon(mid):
+        return trang_lon(may_theo_id(mid))
 
     @app.route("/uem/may/<mid>/cli/mo", methods=["POST"])
     def uem_cli_mo(mid):

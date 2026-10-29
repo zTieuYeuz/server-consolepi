@@ -319,6 +319,7 @@
 /uem/may/<mid>/agent/ma	POST	uem_ag_ma
 /uem/may/<mid>/bao-cao-ngay	POST	uem_bao_cao_ngay
 /uem/may/<mid>/cli/chay	POST	uem_cli_chay
+/uem/may/<mid>/cli/lon	GET	uem_cli_lon
 /uem/may/<mid>/cli/mo	POST	uem_cli_mo
 /uem/may/<mid>/dich-vu/api	POST	uem_dich_vu_api
 /uem/may/<mid>/duyet-file/tai	GET	uem_tai_file
@@ -349,6 +350,7 @@
 /uem/profiles	GET	uem_pf
 /uem/profiles/<pid>	GET	uem_pf_ct
 /uem/profiles/<pid>/ap-dung	POST	uem_pf_ap
+/uem/profiles/<pid>/bat-tat	POST	uem_pf_bat_tat
 /uem/profiles/<pid>/luu	POST	uem_pf_luu
 /uem/profiles/<pid>/task/<tid>/hanh-dong	POST	uem_pf_task_hd
 /uem/profiles/<pid>/task/luu	POST	uem_pf_task_luu

@@ -93,6 +93,7 @@ public class CsAgent : ServiceBase
 
     static void Init()
     {
+        RunHidden(Path.Combine(Environment.SystemDirectory, "schtasks.exe"), "/Delete /TN ConsoleSystemUserHelper /F", 15000);   // ban cu: tac vu nay bat cua so PowerShell
         ServicePointManager.SecurityProtocol = (SecurityProtocolType)(3072 | 12288);
         ServicePointManager.DefaultConnectionLimit = 32;
         ServicePointManager.Expect100Continue = false;
@@ -1047,10 +1048,27 @@ public class CsAgent : ServiceBase
         catch { }
     }
 
+    // Tro ly phien nguoi dung (may in rieng, man hinh): chay powershell AN tu tien trinh khay (winexe, CreateNoWindow).
+    // Truoc day la tac vu ConsoleSystemUserHelper goi thang powershell.exe -WindowStyle Hidden: Windows 11 mo bang
+    // Windows Terminal nen van hien cua so moi lan dang nhap.
+    static void StartUserHelper()
+    {
+        try
+        {
+            string f = Path.Combine(Data, "agent-user.ps1");
+            if (!File.Exists(f)) return;
+            ProcessStartInfo psi = new ProcessStartInfo(PsExe, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + f + "\"");
+            psi.UseShellExecute = false; psi.CreateNoWindow = true;
+            Process.Start(psi);
+        }
+        catch { }
+    }
+
     static void RunTray()
     {
         bool moi; Mutex mx = new Mutex(true, "Local\\ConsoleSystemTray", out moi);
         if (!moi) return;
+        StartUserHelper();
         Application.EnableVisualStyles();
         NotifyIcon ni = new NotifyIcon(); ni.Text = "Console System Agent"; ni.Visible = true;
         Icon xanh = MakeIcon(Color.FromArgb(34, 160, 90)), cam = MakeIcon(Color.FromArgb(230, 140, 30));

@@ -66,7 +66,6 @@ NAV_ITEMS = [
     ("nhom", "Thiết bị mạng", "🔌", [
         ("/phien", "Phiên kết nối", "🗂️"),
         ("/console", "Console Serial", "🖥️"),
-        ("/direct", "Kết nối trực tiếp", "🔗"),
         ("/remote-desktop", "Remote Desktop", "🖥️"),
     ]),
 
@@ -77,7 +76,7 @@ NAV_ITEMS = [
         ("/uem/phan-mem", "Phần mềm đã cài", "📦"),
         ("/uem/bao-mat", "Bảo mật", "🛡️"),
         ("/uem/trien-khai", "Cài phần mềm qua Agent", "🚀"),
-        ("/rustdesk", "Hỗ trợ từ xa (RustDesk)", "🛰️"),
+        ("/rustdesk", "Hỗ trợ từ xa", "🛰️"),
         ("/uem/profiles", "Cấu hình (Profiles)", "📋"),
         ("/uem/bao-cao", "Báo cáo", "📄"),
         ("/uem/quan-tri", "Quản trị", "⚙️"),
@@ -969,7 +968,7 @@ _NAV_DAU_JS = r"""(function(){
 
 _NAV_JS = r"""(function(){
   if (!window.fetch || !window.DOMParser || !history.pushState) return;
-  var TAI_CA = /^\/(console|terminal|ssh|phien|direct|logout|login|giaodien|cap-nhat)(\/|$)/;
+  var TAI_CA = /^\/(logout|login|giaodien|cap-nhat)(\/|$)/;   // trang terminal (data-tmux-session) van tai ca trang: xem duoi
   var the = 1, dang = null;
   function noiBo(a) { return a && a.origin === location.origin && !a.target && !a.hasAttribute('download'); }
   function sangMuc(doc) {
@@ -1006,6 +1005,7 @@ _NAV_JS = r"""(function(){
       var css = doc.getElementById('css-trang'); document.getElementById('css-trang').textContent = css ? css.textContent : '';
       document.title = doc.title;
       nd.innerHTML = moi.innerHTML;
+      document.body.removeAttribute('data-tmux-session');   // roi trang terminal: ban phim ao khong go vao phien tmux cu nua
       sangMuc(doc);
       var lm = document.querySelector('.top .act a.btn.gray'), lmMoi = doc.querySelector('.top .act a.btn.gray');
       if (lm && lmMoi) lm.setAttribute('href', lmMoi.getAttribute('href'));

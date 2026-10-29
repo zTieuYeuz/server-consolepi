@@ -70,11 +70,58 @@ CAC_LOAI = {
     "msi_go": ("MSI: gỡ cài đặt", "msi", [
         ("product_id", "Mã sản phẩm (ProductCode, dạng {GUID})", "text", True, "", ""),
         ("tham_so", "Tham số thêm cho msiexec", "text", False, "", "")]),
+    "fw_trang_thai": ("Tường lửa: bật / tắt", "tuonglua", [
+        ("ho_so", "Áp dụng cho hồ sơ mạng", "select:tat_ca=Tất cả (Domain, Private, Public)|Domain=Domain (mạng công ty có domain)|Private=Private (mạng riêng)|Public=Public (mạng công cộng)", True, "tat_ca", ""),
+        ("bat", "Tường lửa", "select:bat=Bật tường lửa|tat=Tắt tường lửa", True, "bat", ""),
+        ("vao", "Kết nối VÀO máy không khớp quy tắc nào", "select:giu=Giữ nguyên|Block=Chặn (khuyên dùng)|Allow=Cho phép", True, "giu", "")]),
+    "fw_quy_tac": ("Tường lửa: tạo / sửa quy tắc", "tuonglua", [
+        ("ten", "Tên quy tắc (dùng để nhận ra quy tắc, đổi tên = quy tắc mới)", "text", True, "", ""),
+        ("chieu", "Chiều", "select:Inbound=Vào máy (Inbound)|Outbound=Ra ngoài (Outbound)", True, "Inbound", ""),
+        ("hanh_dong", "Hành động", "select:Allow=Cho phép|Block=Chặn", True, "Allow", ""),
+        ("giao_thuc", "Giao thức", "select:TCP=TCP|UDP=UDP|Any=Mọi giao thức|ICMPv4=ICMPv4 (ping)", True, "TCP", ""),
+        ("cong", "Cổng (ví dụ 3389 hoặc 80,443 hoặc 8000-8100; trống = mọi cổng)", "text", False, "", "Vào máy: cổng trên máy này. Ra ngoài: cổng của máy đích."),
+        ("dia_chi", "Chỉ áp dụng cho địa chỉ (ví dụ 192.168.1.10, 10.0.0.0/24, LocalSubnet; trống = mọi địa chỉ)", "text", False, "", ""),
+        ("chuong_trinh", "Chỉ áp dụng cho chương trình (đường dẫn .exe trên máy; trống = mọi chương trình)", "text", False, "", ""),
+        ("ho_so", "Hồ sơ mạng", "select:Any=Tất cả|Domain=Domain|Private=Private|Public=Public", True, "Any", ""),
+        ("tat", "Tạo nhưng để tắt (chưa có hiệu lực)", "checkbox", False, "", "")]),
+    "fw_xoa_quy_tac": ("Tường lửa: xóa quy tắc", "tuonglua", [
+        ("ten", "Tên quy tắc cần xóa", "text", True, "", "")]),
+    "fw_nhom": ("Tường lửa: bật / tắt nhóm quy tắc có sẵn của Windows", "tuonglua", [
+        ("nhom", "Nhóm quy tắc", "select:rdp=Remote Desktop (cổng 3389)|chia_se=Chia sẻ file và máy in (kèm ping)|kham_pha=Network Discovery (thấy máy trong mạng)|winrm=Windows Remote Management (WinRM)|ho_tro=Remote Assistance", True, "rdp", ""),
+        ("trang_thai", "Trạng thái", "select:bat=Bật (cho phép)|tat=Tắt (chặn)", True, "bat", "")]),
+    "dv_cau_hinh": ("Dịch vụ Windows: kiểu khởi động / chạy / dừng", "dichvu", [
+        ("ten", "Tên dịch vụ (Name, ví dụ Spooler, wuauserv, RemoteRegistry)", "text", True, "", "Xem tên ở tab Dịch vụ của từng máy."),
+        ("khoi_dong", "Kiểu khởi động", "select:giu=Giữ nguyên|Automatic=Tự động|Manual=Thủ công|Disabled=Vô hiệu hóa", True, "giu", ""),
+        ("trang_thai", "Trạng thái", "select:giu=Giữ nguyên|Running=Đang chạy|Stopped=Dừng", True, "giu", "")]),
     "powershell": ("Script PowerShell", "powershell", [
         ("script", "Nội dung script", "textarea", True, "", ""),
         ("chay", "Chạy", "select:mot_lan|luon", True, "mot_lan", "mot_lan = chạy một lần thành công rồi thôi; luon = chạy lại mỗi chu kỳ")]),
 }
-NHOM_LOAI = {"winget": "WinGet", "registry": "Registry", "nguoidung": "Người dùng cục bộ", "nhom": "Nhóm cục bộ", "msi": "MSI", "powershell": "PowerShell"}
+NHOM_LOAI = {"winget": "WinGet", "tuonglua": "Tường lửa", "dichvu": "Dịch vụ Windows", "registry": "Registry", "nguoidung": "Người dùng cục bộ",
+             "nhom": "Nhóm cục bộ", "msi": "MSI", "powershell": "PowerShell"}
+NHOM_MO_TA = {"winget": "Cài, gỡ, giữ phần mềm luôn mới", "tuonglua": "Bật tường lửa, mở / chặn cổng, quy tắc theo chương trình",
+              "dichvu": "Bật, tắt, đổi kiểu khởi động dịch vụ", "registry": "Tạo, sửa, xóa khóa và giá trị",
+              "nguoidung": "Tạo, sửa, xóa tài khoản trên máy", "nhom": "Nhóm Administrators, Remote Desktop Users...",
+              "msi": "Cài / gỡ gói .msi theo mã sản phẩm", "powershell": "Việc khác: tự viết script"}
+NHOM_ICON = {"winget": "📦", "tuonglua": "🛡️", "dichvu": "⚙️", "registry": "🗝️", "nguoidung": "👤", "nhom": "👥", "msi": "💿", "powershell": "⌨️"}
+# Mau nhanh (dien san form): (nhan, loai, tham_so)
+MAU = {
+    "fw_bat": ("Bật tường lửa mọi hồ sơ, chặn kết nối vào lạ", "fw_trang_thai", {"ho_so": "tat_ca", "bat": "bat", "vao": "Block"}),
+    "fw_rdp": ("Mở Remote Desktop", "fw_nhom", {"nhom": "rdp", "trang_thai": "bat"}),
+    "fw_ping": ("Cho phép ping vào máy", "fw_quy_tac", {"ten": "Cho phép ping (ICMPv4)", "chieu": "Inbound", "hanh_dong": "Allow", "giao_thuc": "ICMPv4", "ho_so": "Any"}),
+    "fw_chia_se": ("Bật chia sẻ file và máy in", "fw_nhom", {"nhom": "chia_se", "trang_thai": "bat"}),
+    "fw_web": ("Mở cổng web 80, 443 vào máy", "fw_quy_tac", {"ten": "Web 80-443", "chieu": "Inbound", "hanh_dong": "Allow", "giao_thuc": "TCP", "cong": "80,443", "ho_so": "Any"}),
+    "fw_chan_smb": ("Chặn SMB (445) từ ngoài mạng nội bộ", "fw_quy_tac", {"ten": "Chặn SMB ngoài LAN", "chieu": "Inbound", "hanh_dong": "Block", "giao_thuc": "TCP", "cong": "445", "dia_chi": "Internet", "ho_so": "Any"}),
+    "dv_spooler": ("Tắt dịch vụ in (máy không dùng máy in)", "dv_cau_hinh", {"ten": "Spooler", "khoi_dong": "Disabled", "trang_thai": "Stopped"}),
+    "dv_remreg": ("Tắt Remote Registry", "dv_cau_hinh", {"ten": "RemoteRegistry", "khoi_dong": "Disabled", "trang_thai": "Stopped"}),
+}
+_FW_NHOM = {"rdp": "@FirewallAPI.dll,-28752", "chia_se": "@FirewallAPI.dll,-28502", "kham_pha": "@FirewallAPI.dll,-32752",
+            "winrm": "@FirewallAPI.dll,-30267", "ho_tro": "@FirewallAPI.dll,-33002"}
+
+
+def gia_tri_chon(kieu):
+    """'select:a=Nhan A|b' -> [('a', 'Nhan A'), ('b', 'b')]"""
+    return [tuple(x.split("=", 1)) if "=" in x else (x, x) for x in kieu[7:].split("|")]
 
 _RE_GUID = re.compile(r"^\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}$")
 _RE_GOI = re.compile(r"^[A-Za-z0-9._+-]{2,100}$")
@@ -114,7 +161,7 @@ def kiem_tra(loai, f):
             ts[ten] = str(v).lower() in ("1", "on", "true", "co")
             continue
         if kieu.startswith("select:"):
-            ok = kieu[7:].split("|")
+            ok = [g for g, _n in gia_tri_chon(kieu)]
             if v not in ok:
                 v = mac_dinh if mac_dinh in ok else ok[0]
         if bat_buoc and not v:
@@ -148,6 +195,31 @@ def kiem_tra(loai, f):
             if ts.get("mat_khau"):
                 ts["mat_khau"] = DL.ma_hoa(ts["mat_khau"])
             ts["phai_doi_mk"] = ts.get("phai_doi_mk") and not ts.get("khong_doi_mk")
+    elif loai in ("fw_quy_tac", "fw_xoa_quy_tac"):
+        if not re.fullmatch(r"[^\x00-\x1f\"'`$|<>]{1,100}", ts["ten"]):
+            return None, "Tên quy tắc không hợp lệ (không chứa dấu nháy, $, |, < >)."
+        if loai == "fw_quy_tac":
+            if ts.get("cong"):
+                ts["cong"] = re.sub(r"\s+", "", ts["cong"])
+                if ts["giao_thuc"] not in ("TCP", "UDP"):
+                    return None, "Chỉ điền cổng khi giao thức là TCP hoặc UDP."
+                if not re.fullmatch(r"\d{1,5}(-\d{1,5})?(,\d{1,5}(-\d{1,5})?)*", ts["cong"]) or any(int(x) > 65535 for x in re.findall(r"\d+", ts["cong"])):
+                    return None, "Cổng không hợp lệ (ví dụ 3389, 80,443 hoặc 8000-8100)."
+            if ts.get("dia_chi"):
+                ts["dia_chi"] = re.sub(r"\s+", "", ts["dia_chi"])
+                for d in ts["dia_chi"].split(","):
+                    if not (d in ("LocalSubnet", "Internet", "Intranet", "DNS", "DHCP", "DefaultGateway")
+                            or re.fullmatch(r"[0-9A-Fa-f:.]+(/\d{1,3})?(-[0-9A-Fa-f:.]+)?", d)):
+                        return None, f'Địa chỉ "{d[:40]}" không hợp lệ (IP, IP/mặt nạ, dải IP-IP hoặc LocalSubnet, Internet).'
+            if ts.get("chuong_trinh") and not re.fullmatch(r"[A-Za-z]:\\[^\x00-\x1f\"'`$|<>*?]+|%[A-Za-z]+%\\[^\x00-\x1f\"'`$|<>*?]+", ts["chuong_trinh"]):
+                return None, "Đường dẫn chương trình phải dạng C:\\...\\ten.exe hoặc %ProgramFiles%\\...\\ten.exe."
+    elif loai == "dv_cau_hinh":
+        if not re.fullmatch(r"[A-Za-z0-9_.$@ -]{1,80}", ts["ten"]):
+            return None, "Tên dịch vụ không hợp lệ (dùng tên Name, ví dụ Spooler)."
+        if ts["khoi_dong"] == "giu" and ts["trang_thai"] == "giu":
+            return None, "Chọn ít nhất kiểu khởi động hoặc trạng thái cần đặt."
+        if ts["khoi_dong"] == "Disabled" and ts["trang_thai"] == "Running":
+            return None, "Dịch vụ bị vô hiệu hóa thì không thể để ở trạng thái Đang chạy."
     elif loai in ("msi_cai", "msi_go"):
         if not _RE_GUID.match(ts["product_id"]):
             return None, "Mã sản phẩm MSI phải dạng {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}."
@@ -169,6 +241,24 @@ def mo_ta(loai, ts):
         return f'{ten}: {ts.get("ten")}'
     if loai.startswith("msi_"):
         return f'{ten}: {ts.get("product_id")}'
+    if loai == "fw_trang_thai":
+        nhan = dict(gia_tri_chon(CAC_LOAI[loai][2][0][2]))
+        return (f'{"Bật" if ts.get("bat") == "bat" else "Tắt"} tường lửa: {nhan.get(ts.get("ho_so"), ts.get("ho_so"))}'
+                + {"Block": ", chặn kết nối vào lạ", "Allow": ", cho phép kết nối vào lạ"}.get(ts.get("vao"), ""))
+    if loai == "fw_quy_tac":
+        return (f'Quy tắc tường lửa "{ts.get("ten")}": {"Cho phép" if ts.get("hanh_dong") == "Allow" else "Chặn"} '
+                f'{"vào" if ts.get("chieu") == "Inbound" else "ra"} {ts.get("giao_thuc")}' + (f' cổng {ts["cong"]}' if ts.get("cong") else "")
+                + (f' từ/tới {ts["dia_chi"]}' if ts.get("dia_chi") else "") + (f' chương trình {ts["chuong_trinh"]}' if ts.get("chuong_trinh") else "")
+                + (" (đang tắt)" if ts.get("tat") else ""))
+    if loai == "fw_xoa_quy_tac":
+        return f'Xóa quy tắc tường lửa "{ts.get("ten")}"'
+    if loai == "fw_nhom":
+        nhan = dict(gia_tri_chon(CAC_LOAI[loai][2][0][2]))
+        return f'{"Bật" if ts.get("trang_thai") == "bat" else "Tắt"} nhóm tường lửa: {nhan.get(ts.get("nhom"), ts.get("nhom"))}'
+    if loai == "dv_cau_hinh":
+        kd = {"Automatic": "tự động", "Manual": "thủ công", "Disabled": "vô hiệu hóa"}.get(ts.get("khoi_dong"))
+        tt = {"Running": "đang chạy", "Stopped": "dừng"}.get(ts.get("trang_thai"))
+        return f'Dịch vụ {ts.get("ten")}: ' + ", ".join(x for x in (f"khởi động {kd}" if kd else "", tt or "") if x)
     if loai == "powershell":
         return f'{ten} ({"chạy một lần" if ts.get("chay") != "luon" else "chạy mỗi chu kỳ"}): ' + (ts.get("script", "").strip().splitlines() or [""])[0][:60]
     return ten
@@ -322,8 +412,67 @@ def _ps_msi(loai, ts, url_tai=""):
             "if ($p.ExitCode -in 0,3010,1641) { 'ST=DA_LAM Da cai (ma ' + $p.ExitCode + ')' } else { 'ST=LOI msiexec ma ' + $p.ExitCode }")
 
 
+def _ps_tuong_lua(loai, ts):
+    if loai == "fw_trang_thai":
+        ho = "'Domain','Private','Public'" if ts["ho_so"] == "tat_ca" else _q(ts["ho_so"])
+        bat = "True" if ts["bat"] == "bat" else "False"
+        vao = "" if ts.get("vao", "giu") == "giu" else (
+            f"if ([string]$p.DefaultInboundAction -ne {_q(ts['vao'])}) {{ Set-NetFirewallProfile -Name $n -DefaultInboundAction {ts['vao']}; $doi += ($n + ' (ket noi vao: {ts['vao']})') }}; ")
+        return ("$doi = @(); foreach ($n in @(" + ho + ")) { $p = Get-NetFirewallProfile -Name $n; "
+                f"if ([string]$p.Enabled -ne '{bat}') {{ Set-NetFirewallProfile -Name $n -Enabled {bat}; $doi += $n }}; " + vao + "}; "
+                "if ($doi) { 'ST=DA_LAM Da doi: ' + ($doi -join ', ') } else { 'ST=DA_DAT Da dung san' }")
+    if loai == "fw_xoa_quy_tac":
+        return (f"$r = @(Get-NetFirewallRule -DisplayName {_q(ts['ten'])} -ErrorAction SilentlyContinue); "
+                "if (-not $r) { 'ST=DA_DAT Khong co quy tac nay'; return }; $r | Remove-NetFirewallRule; 'ST=DA_LAM Da xoa ' + $r.Count + ' quy tac'")
+    if loai == "fw_nhom":
+        bat = ts["trang_thai"] == "bat"
+        return (f"$rs = @(Get-NetFirewallRule -Group {_q(_FW_NHOM[ts['nhom']])} -ErrorAction SilentlyContinue); "
+                "if (-not $rs) { 'ST=LOI Windows khong co nhom quy tac nay'; return }; "
+                f"$can = @($rs | Where-Object {{ [string]$_.Enabled -ne '{'True' if bat else 'False'}' }}); "
+                "if (-not $can) { 'ST=DA_DAT Da dung san (' + $rs.Count + ' quy tac)'; return }; "
+                f"$can | {'Enable' if bat else 'Disable'}-NetFirewallRule; 'ST=DA_LAM Da {'bat' if bat else 'tat'} ' + $can.Count + ' quy tac'")
+    # fw_quy_tac: tao moi neu chua co; co roi ma khac cau hinh thi tao lai (so sanh chu ky)
+    cong = [x for x in (ts.get("cong") or "").split(",") if x]
+    dc = [x for x in (ts.get("dia_chi") or "").split(",") if x]
+    vao = ts["chieu"] == "Inbound"
+    th = [f"DisplayName = {_q(ts['ten'])}", f"Direction = '{ts['chieu']}'", f"Action = '{ts['hanh_dong']}'", f"Protocol = '{ts['giao_thuc']}'",
+          f"Profile = '{ts['ho_so']}'", f"Enabled = '{'False' if ts.get('tat') else 'True'}'", "Group = 'Console System'"]
+    if cong:
+        th.append(f"{'LocalPort' if vao else 'RemotePort'} = @({','.join(_q(x) for x in cong)})")
+    if dc:
+        th.append(f"RemoteAddress = @({','.join(_q(x) for x in dc)})")
+    if ts.get("chuong_trinh"):
+        th.append(f"Program = {_q(ts['chuong_trinh'])}")
+    ky = "|".join([ts["chieu"], ts["hanh_dong"], ts["giao_thuc"], ts["ho_so"], "False" if ts.get("tat") else "True", ",".join(cong) or "Any",
+                   ",".join(dc) or "Any", ts.get("chuong_trinh") or "Any"])
+    return ("$a = @{ " + "; ".join(th) + " }; "
+            f"$r = @(Get-NetFirewallRule -DisplayName {_q(ts['ten'])} -ErrorAction SilentlyContinue); "
+            "if ($r.Count -eq 1) { $x = $r[0]; $pf = $x | Get-NetFirewallPortFilter; $af = $x | Get-NetFirewallAddressFilter; $ap = $x | Get-NetFirewallApplicationFilter; "
+            f"$c = @(if ({'$true' if vao else '$false'}) {{ $pf.LocalPort }} else {{ $pf.RemotePort }}) -join ','; "
+            r"$ky = @([string]$x.Direction, [string]$x.Action, [string]$pf.Protocol, [string]$x.Profile, [string]$x.Enabled, $c, ((@($af.RemoteAddress) | ForEach-Object { if ($_ -match '^(.+)/(\d+\.\d+\.\d+\.\d+)$') { $n = 0; foreach ($y in ([Net.IPAddress]$matches[2]).GetAddressBytes()) { $n += ([Convert]::ToString($y, 2) -replace '0', '').Length }; $matches[1] + '/' + $n } else { $_ } }) -join ','), [string]$ap.Program) -join '|'; "
+            f"if ($ky -eq {_q(ky)}) {{ 'ST=DA_DAT Quy tac da dung'; return }} }}; "
+            "$moi = -not $r; if ($r) { $r | Remove-NetFirewallRule }; New-NetFirewallRule @a | Out-Null; "
+            "if ($moi) { 'ST=DA_LAM Da tao quy tac' } else { 'ST=DA_LAM Da cap nhat quy tac' }")
+
+
+def _ps_dich_vu(ts):
+    kd = "" if ts["khoi_dong"] == "giu" else (
+        f"if ([string]$s.StartType -ne '{ts['khoi_dong']}') {{ Set-Service -Name $s.Name -StartupType {ts['khoi_dong']}; $doi += 'khoi dong {ts['khoi_dong']}' }}; ")
+    tt = "" if ts["trang_thai"] == "giu" else (
+        f"$s.Refresh(); if ([string]$s.Status -ne '{ts['trang_thai']}') {{ "
+        + ("Start-Service -Name $s.Name -ErrorAction Stop" if ts["trang_thai"] == "Running" else "Stop-Service -Name $s.Name -Force -ErrorAction Stop")
+        + f"; $doi += '{'chay' if ts['trang_thai'] == 'Running' else 'dung'}' }}; ")
+    return (f"$s = Get-Service -Name {_q(ts['ten'])} -ErrorAction SilentlyContinue; if (-not $s) {{ 'ST=LOI May khong co dich vu nay'; return }}; $doi = @(); "
+            "try { " + kd + tt + "} catch { 'ST=LOI ' + $_.Exception.Message; return }; "
+            "if ($doi) { 'ST=DA_LAM Da doi: ' + ($doi -join ', ') } else { 'ST=DA_DAT Da dung san' }")
+
+
 def tao_kich_ban(loai, ts, ip=""):
     """Chuoi PowerShell thuc hien tac vu (da kiem tra dau vao o kiem_tra())."""
+    if loai.startswith("fw_"):
+        return _ps_tuong_lua(loai, ts)
+    if loai == "dv_cau_hinh":
+        return _ps_dich_vu(ts)
     if loai.startswith("winget_"):
         return _ps_winget(loai, ts)
     if loai.startswith("reg_"):
