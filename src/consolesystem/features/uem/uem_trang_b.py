@@ -819,7 +819,7 @@ def register_uem(app):
         mac_c = _MP.chuan_mac(mac) if mac else ""
         if mac and not mac_c:
             return chuyen(f"/uem/may/{mid}/quan-ly", "Địa chỉ MAC không hợp lệ.", False)
-        tk = f.get("tai_khoan_id") or None
+        tk = (f.get("tai_khoan_id") or None) if "tai_khoan_id" in f else m.get("tai_khoan_id")
         if tk and not DL.tim(DL.TAI_KHOAN.doc(), tk):
             tk = None
         the = [t for t in f.getlist("the") if DL.tim(UD.THE.doc(), t)]

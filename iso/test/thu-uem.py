@@ -76,7 +76,7 @@ kt("tab khong ton tai 404", get("/uem/may/m1/xyz").status_code == 404 and get("/
 h = txt(get("/uem/may/m1/cap-nhat"))
 kt("cap nhat: link javascript: khong thanh link", 'href="javascript' not in h and "support.microsoft.com" in h and "&lt;b&gt;x" in h)
 h = txt(get("/uem/may/m3"))
-kt("may chua bao cao: huong dan gan tai khoan", "Chưa có báo cáo" in h or "chưa gán tài khoản" in h)
+kt("may chua bao cao: huong dan cai agent", "Chưa có báo cáo" in h or "chưa cài agent" in h)
 h = txt(get("/uem/may/m1/duyet-file"))
 kt("duyet file may chua gan tai khoan: bao ro, khong sap", "Quản lý" in h)
 kt("duyet file: duong dan xau bi tu choi", "không hợp lệ" in txt(get("/uem/may/m1/duyet-file?p=C:%5Ca%3Cb")))

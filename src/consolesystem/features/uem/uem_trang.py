@@ -360,7 +360,7 @@ def trang_may():
     <form method="POST" action="/uem/may/hang-loat" id="f-hd" class="tk-f" style="margin-top:14px;border-top:1px solid var(--vien);padding-top:12px;">
       <div style="font-weight:700;margin-bottom:10px;">Với các máy đã chọn:</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;" class="hl-luoi">
-        <select name="viec" style="margin:0;height:40px;"><option value="bao_cao">Lấy thông tin</option><option value="gan_tk">Gán tài khoản quản trị</option>
+        <select name="viec" style="margin:0;height:40px;"><option value="bao_cao">Lấy thông tin</option>
           <option value="them_nhom">Thêm vào nhóm máy</option><option value="bo_nhom">Gỡ khỏi nhóm máy</option><option value="nhom_moi">Tạo nhóm mới từ máy đã chọn</option>
           <option value="them_the">Thêm thẻ</option><option value="bo_the">Gỡ thẻ</option><option value="dia_diem">Đặt địa điểm</option>
           <option value="bat">Bật giám sát</option><option value="tat">Vô hiệu hóa giám sát</option><option value="xoa">Xóa khỏi danh sách</option></select>
@@ -418,7 +418,7 @@ def khung_may(m, tab, noi_dung):
 
 def _chua_bao_cao(m):
     if not m.get("tai_khoan_id") and not (m.get("agent") or {}).get("khoa"):
-        return '<div class="card"><p>Máy chưa gán tài khoản quản trị và chưa cài agent nên chưa lấy được báo cáo. Gán tài khoản ở tab <a href="/uem/may/' + m["id"] + '/quan-ly">Quản lý</a> hoặc cài agent ở tab <a href="/uem/may/' + m["id"] + '/agent">Agent</a>.</p></div>'
+        return '<div class="card"><p>Máy chưa cài agent nên chưa lấy được báo cáo. Hãy cài agent ở tab <a href="/uem/may/' + m["id"] + '/agent">Agent</a>.</p></div>'
     return '<div class="card"><p>Chưa có báo cáo của máy này. Bấm <b>Lấy thông tin</b> ở phía trên (mất khoảng 25 giây).</p></div>'
 
 
@@ -510,7 +510,6 @@ def tab_may(m, tab):
           <label>Địa chỉ IP (Console System dùng để kết nối)</label><input type="text" name="ip" value="{_esc(m["ip"])}">
           <label>Địa chỉ MAC (để bật máy bằng Wake-on-LAN)</label><input type="text" name="mac" value="{_esc(m.get("mac", ""))}">
           <label>Loại thiết bị</label><input type="text" name="loai" value="{_esc(m.get("loai", ""))}" placeholder="Máy bàn, Laptop, Máy chủ...">
-          <label>Tài khoản quản trị dùng cho máy này</label><select name="tai_khoan_id">{opt_tk}</select>
           <label>Địa điểm</label><select name="dia_diem">{opt_dd}</select>
           <label>Thẻ</label><div class="tk-luoi">{o_the or '<span class="tk-ghi">Chưa có thẻ, tạo ở Quản trị, Thẻ.</span>'}</div>
           <label><input type="checkbox" name="giam_sat" value="1"{" checked" if m.get("giam_sat", True) else ""} style="margin-right:8px;">Đang giám sát (tắt = vô hiệu, không lấy báo cáo, không áp profile)</label>

@@ -274,11 +274,10 @@ CSS = """<style>
 #rdp-log{background:#0f1114;color:#cfd6df;padding:10px;border-radius:8px;max-height:220px;overflow:auto;white-space:pre-wrap;font-size:12.5px;margin-top:10px;}
 </style>"""
 
-TRANG = """<div class="card"><h3>guacd (máy chủ Remote Desktop)</h3>
-<div class="tk-hang" style="gap:12px;align-items:center;"><span class="rdp-tt" id="rdp-tt"><i></i><span>Đang kiểm tra...</span></span>
-<button class="tk-nut" type="button" id="rdp-cai">Cài / bật guacd</button><span class="tk-ghi" id="rdp-tt2"></span></div>
-<p class="tk-ghi" style="margin:8px 0 0;">guacd chạy bằng Docker trên chính Console System, chỉ nghe 127.0.0.1. Lần cài đầu cần Internet để tải Docker và image (vài phút).</p>
-<pre id="rdp-log" hidden></pre></div>
+TRANG = """<div class="card" style="padding:12px 16px;"><div class="tk-hang" style="gap:12px;align-items:center;"><span class="rdp-tt" id="rdp-tt"><i></i><span>Đang kiểm tra...</span></span>
+<span id="rdp-hop" hidden><button class="tk-nut" type="button" id="rdp-cai">Cài / bật guacd</button></span></div>
+<div id="rdp-cho" hidden><p class="tk-ghi" style="margin:8px 0 0;">guacd chạy bằng Docker trên chính Console System, chỉ nghe 127.0.0.1. Lần cài đầu cần Internet để tải Docker và image (vài phút).</p>
+<pre id="rdp-log" hidden></pre></div></div>
 <div class="card"><h3>Kết nối Remote Desktop</h3>
 <form id="rdp-f" autocomplete="off"><div class="rdp-luoi">
 <div><label>Máy (IP hoặc tên)</label><input name="host" required placeholder="192.168.110.33"></div>
@@ -297,9 +296,9 @@ var GAN='cs-rdp-gan'; function ganDoc(){try{return JSON.parse(localStorage.getIt
 function veGan(){var ds=ganDoc(); $('rdp-gan').innerHTML=ds.length?'<p class="tk-ghi" style="margin:10px 0 4px;">Gần đây:</p>'+ds.map(function(x,i){return '<button type="button" class="tk-nut" data-g="'+i+'" style="margin:0 6px 6px 0;">'+(x.user?x.user+'@':'')+x.host+'</button>';}).join(''):'';}
 $('rdp-gan').onclick=function(e){var i=e.target.dataset.g; if(i==null)return; var x=ganDoc()[i], f=$('rdp-f'); ['host','port','user','domain','security'].forEach(function(k){if(x[k]!=null)f[k].value=x[k];}); f.mk.focus();};
 function tt(){fetch('/remote-desktop/trang-thai').then(function(r){return r.json();}).then(function(d){
- var e=$('rdp-tt'); e.className='rdp-tt'+(d.guacd?' ok':''); e.querySelector('span').textContent=d.guacd?'guacd đang chạy':(d.dang_cai?'Đang cài guacd...':'guacd chưa chạy');
- $('rdp-cai').disabled=d.dang_cai||d.guacd; $('rdp-cai').textContent=d.guacd?'guacd đã sẵn sàng':'Cài / bật guacd';
- if(d.log){$('rdp-log').hidden=false;$('rdp-log').textContent=d.log;$('rdp-log').scrollTop=1e9;}
+ var e=$('rdp-tt'); e.className='rdp-tt'+(d.guacd?' ok':''); e.querySelector('span').textContent=d.guacd?'guacd đang kết nối được':(d.dang_cai?'Đang cài guacd...':'guacd chưa chạy');
+ $('rdp-hop').hidden=!!d.guacd; $('rdp-cho').hidden=!!d.guacd; $('rdp-cai').disabled=!!d.dang_cai;
+ if(!d.guacd&&d.log){$('rdp-log').hidden=false;$('rdp-log').textContent=d.log;$('rdp-log').scrollTop=1e9;}
  if(d.dang_cai)setTimeout(tt,3000);});}
 $('rdp-cai').onclick=function(){if(!confirm('Cài Docker (nếu chưa có) và chạy guacd trên Console System? Cần Internet, mất vài phút.'))return;
  fetch('/remote-desktop/cai',{method:'POST'}).then(function(){setTimeout(tt,800);});};
