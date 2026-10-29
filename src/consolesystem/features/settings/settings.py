@@ -296,6 +296,24 @@ def _kiem_goi_tai_len(f):
         f'<button type="submit" class="blue" data-busy="Đang khôi phục...">Xác nhận khôi phục</button></form>'), ok=True)
 
 
+def _khoi_cap_nhat():
+    """Nut vao trang Cap nhat (chi quan tri moi vao duoc trang do) + bao neu da biet co ban moi."""
+    from consolesystem.web import auth as _auth
+    if not _auth.la_quan_tri():
+        return ""
+    try:
+        from consolesystem.core.capnhat.may import co_ban_moi_nhanh
+        moi = co_ban_moi_nhanh()
+    except Exception:
+        moi = False
+    ghi = ('<span style="color:#34d399;font-weight:600;">Có bản mới.</span> ' if moi else "") + "Kiểm tra, nâng cấp hoặc hạ cấp Console System."
+    return f'''<div class="card">
+      <h3>Cập nhật phần mềm</h3>
+      <p style="color:#8b93a1;font-size:13px;margin:0 0 12px;">{ghi}</p>
+      <a class="btn blue" href="/cap-nhat">🔄 Mở trang Cập nhật</a>
+    </div>'''
+
+
 def _render_settings(msg="", ok=True):
     has_screen, name, transform, raw = get_display_info()
     cfg = load_config()
@@ -369,7 +387,8 @@ def _render_settings(msg="", ok=True):
         <tr><th style="width:180px;">Phiên bản</th><td><code>{_version()}</code></td></tr>
         <tr><th>Tên máy</th><td><code>{__import__("socket").gethostname()}</code></td></tr>
       </table>
-    </div>"""
+    </div>
+    {_khoi_cap_nhat()}"""
 
     body = _the_ngon_ngu() + body
     return render_page(body, active="/settings", title="Cài đặt",

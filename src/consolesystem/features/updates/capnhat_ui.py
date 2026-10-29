@@ -97,7 +97,7 @@ def _khoi_tien_do(job):
 
 def _khoi_trang_thai(moi, ts, cur, cfg):
     dong = ["<tr><td>Phiên bản đang chạy</td><td><b>%s</b> (số phát hành %s, %s)</td></tr>" % (esc(cur["phien_ban"]), cur["so_phat_hanh"], esc(cur["kien_truc"])),
-            "<tr><td>Kênh</td><td>%s</td></tr>" % ("Ổn định" if cfg["kenh"] == "on-dinh" else "<b>Thử nghiệm</b> (chỉ qua mạng LAN)"),
+            "<tr><td>Kênh</td><td>%s</td></tr>" % ("Ổn định" if cfg["kenh"] == "on-dinh" else "<b>Thử nghiệm</b> (cấu hình cũ; bấm Lưu ở Cài đặt cập nhật để về Ổn định)"),
             "<tr><td>Kiểm tra lần cuối</td><td>%s</td></tr>" % _gio(ts.get("hoi_luc")),
             "<tr><td>Danh mục hết hạn</td><td>%s</td></tr>" % _gio(ts.get("danh_muc_het_han"))]
     loi = ""
@@ -180,10 +180,9 @@ def _khoi_khoi_dong_lai(moi, job):
 
 def _khoi_cai_dat(cfg):
     return _the("Cài đặt cập nhật",
-                ('<form method="POST" action="/cap-nhat/cai-dat"><label>Kênh: <select name="kenh"><option value="on-dinh"%s>Ổn định</option>'
-                 '<option value="thu-nghiem"%s>Thử nghiệm (chỉ qua mạng LAN, có thể chưa ổn định)</option></select></label><br>'
+                ('<form method="POST" action="/cap-nhat/cai-dat"><p style="margin:0 0 10px;">Kênh: <b>Ổn định</b></p>'
                  '<label><input type="checkbox" name="hoi_dinh_ky" value="1"%s> Tự kiểm tra bản mới mỗi 24 giờ</label><br><button class="gray">Lưu</button></form>')
-                % (" selected" if cfg["kenh"] == "on-dinh" else "", " selected" if cfg["kenh"] == "thu-nghiem" else "", " checked" if cfg["hoi_dinh_ky"] else ""))
+                % (" checked" if cfg["hoi_dinh_ky"] else ""))
 
 
 def _khoi_lich_su(moi):
@@ -255,7 +254,7 @@ def register_capnhat(app):
     @app.route("/cap-nhat/cai-dat", methods=["POST"])
     def cap_nhat_cai_dat():
         try:
-            M.luu_cau_hinh(_moi(), kenh=request.form.get("kenh", "on-dinh"), hoi_dinh_ky=request.form.get("hoi_dinh_ky") == "1")
+            M.luu_cau_hinh(_moi(), kenh="on-dinh", hoi_dinh_ky=request.form.get("hoi_dinh_ky") == "1")   # giao dien chi con kenh On dinh
         except M.LoiCapNhat:
             pass
         return redirect("/cap-nhat")

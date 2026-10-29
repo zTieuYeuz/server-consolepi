@@ -12,48 +12,48 @@
 "p": "/deployos/kichban",
 "s": 200,
 "loc": "",
-"n": 85866,
-"h": "5113b18b49aa"
+"n": 86239,
+"h": "9ce55c7ffb6e"
 },
 {
 "m": "GET",
 "p": "/deployos/os",
 "s": 200,
 "loc": "",
-"n": 92948,
-"h": "486b042bade3"
+"n": 93321,
+"h": "040bb7fd51c8"
 },
 {
 "m": "GET",
 "p": "/deployos/drivers",
 "s": 200,
 "loc": "",
-"n": 99770,
-"h": "0b52b1260d87"
+"n": 100143,
+"h": "cc44308e5752"
 },
 {
 "m": "GET",
 "p": "/deployos/ungdung",
 "s": 200,
 "loc": "",
-"n": 88756,
-"h": "d968e8805edb"
+"n": 89129,
+"h": "5378b5dd0871"
 },
 {
 "m": "GET",
 "p": "/deployos/font",
 "s": 200,
 "loc": "",
-"n": 86241,
-"h": "a8fa8b8f77f7"
+"n": 86614,
+"h": "f26c3c232ee9"
 },
 {
 "m": "GET",
 "p": "/deployos/o-dia",
 "s": 200,
 "loc": "",
-"n": 86081,
-"h": "9de36b0b844e"
+"n": 86454,
+"h": "daace60a1b40"
 },
 {
 "m": "GET",
@@ -68,40 +68,40 @@
 "p": "/deployos/caidat",
 "s": 200,
 "loc": "",
-"n": 89659,
-"h": "86bf4d525d0b"
+"n": 90032,
+"h": "6ddeae93f90f"
 },
 {
 "m": "GET",
 "p": "/deployos/caidat/hatang",
 "s": 200,
 "loc": "",
-"n": 86655,
-"h": "141a4e04e5d0"
+"n": 87028,
+"h": "7681377af501"
 },
 {
 "m": "GET",
 "p": "/deployos/console",
 "s": 200,
 "loc": "",
-"n": 91919,
-"h": "4469675a9027"
+"n": 92292,
+"h": "2d3935384d6c"
 },
 {
 "m": "GET",
 "p": "/deployos/console/apps",
 "s": 200,
 "loc": "",
-"n": 110649,
-"h": "46ab47949c3c"
+"n": 111022,
+"h": "de3b9980efe7"
 },
 {
 "m": "GET",
 "p": "/deployos/console/scripts",
 "s": 200,
 "loc": "",
-"n": 97760,
-"h": "f145aa313e6b"
+"n": 98133,
+"h": "24dfd6575ffb"
 },
 {
 "m": "GET",
@@ -180,16 +180,16 @@
 "p": "/deployos/wizard/<W>/7",
 "s": 200,
 "loc": "",
-"n": 91173,
-"h": "261ddc894359"
+"n": 91546,
+"h": "c6ec3192300f"
 },
 {
 "m": "POST",
 "p": "/deployos/kichban/luu/<W>",
 "s": 200,
 "loc": "",
-"n": 87347,
-"h": "71044672ba5c"
+"n": 87720,
+"h": "c962d0935f1d"
 },
 {
 "m": "GET",
@@ -244,16 +244,16 @@
 "p": "/deployos/wizard/<W>/7",
 "s": 200,
 "loc": "",
-"n": 91363,
-"h": "b7b6048ddc04"
+"n": 91736,
+"h": "d247485676e3"
 },
 {
 "m": "POST",
 "p": "/deployos/kichban/luu/<W>",
 "s": 200,
 "loc": "",
-"n": 90455,
-"h": "ddb1a46237f8"
+"n": 90828,
+"h": "ceacf94c218b"
 },
 {
 "m": "GET",
@@ -308,24 +308,24 @@
 "p": "/deployos/wizard/<W>/7",
 "s": 200,
 "loc": "",
-"n": 91098,
-"h": "d9a9002f24af"
+"n": 91471,
+"h": "cb98b0ac02f0"
 },
 {
 "m": "POST",
 "p": "/deployos/kichban/luu/<W>",
 "s": 200,
 "loc": "",
-"n": 92863,
-"h": "9f42b2904a25"
+"n": 93236,
+"h": "7cfc7f6fa698"
 },
 {
 "m": "GET",
 "p": "/deployos/kichban",
 "s": 200,
 "loc": "",
-"n": 94162,
-"h": "7ea2146885ec"
+"n": 94535,
+"h": "e0d87c6dc3ec"
 },
 {
 "m": "GET",
@@ -356,168 +356,168 @@
 "p": "/deployos/kichban",
 "s": 200,
 "loc": "",
-"n": 94213,
-"h": "14078997dd50"
+"n": 94586,
+"h": "7f2f9882a1e3"
 },
 {
 "m": "POST",
 "p": "/deployos/os/tao",
 "s": 200,
 "loc": "",
-"n": 93017,
-"h": "9d0dbb99bdbe"
+"n": 93390,
+"h": "ba4948ca93ab"
 },
 {
 "m": "GET",
 "p": "/deployos/os",
 "s": 200,
 "loc": "",
-"n": 92948,
-"h": "486b042bade3"
+"n": 93321,
+"h": "040bb7fd51c8"
 },
 {
 "m": "POST",
 "p": "/deployos/drivers/tao",
 "s": 200,
 "loc": "",
-"n": 99837,
-"h": "9da03a940de9"
+"n": 100210,
+"h": "101954c6875c"
 },
 {
 "m": "GET",
 "p": "/deployos/drivers",
 "s": 200,
 "loc": "",
-"n": 99770,
-"h": "0b52b1260d87"
+"n": 100143,
+"h": "cc44308e5752"
 },
 {
 "m": "POST",
 "p": "/deployos/ungdung/tao",
 "s": 200,
 "loc": "",
-"n": 88821,
-"h": "c2523a489af8"
+"n": 89194,
+"h": "6ae526ec9986"
 },
 {
 "m": "GET",
 "p": "/deployos/ungdung",
 "s": 200,
 "loc": "",
-"n": 88756,
-"h": "d968e8805edb"
+"n": 89129,
+"h": "5378b5dd0871"
 },
 {
 "m": "POST",
 "p": "/deployos/font/tao",
 "s": 200,
 "loc": "",
-"n": 86305,
-"h": "5a144c593511"
+"n": 86678,
+"h": "5ad982eac990"
 },
 {
 "m": "GET",
 "p": "/deployos/font",
 "s": 200,
 "loc": "",
-"n": 86241,
-"h": "a8fa8b8f77f7"
+"n": 86614,
+"h": "f26c3c232ee9"
 },
 {
 "m": "POST",
 "p": "/deployos/console/apps/len",
 "s": 200,
 "loc": "",
-"n": 112582,
-"h": "6df50f56a9b4"
+"n": 112955,
+"h": "d8ebb6df2af0"
 },
 {
 "m": "POST",
 "p": "/deployos/console/apps/thamso",
 "s": 200,
 "loc": "",
-"n": 112585,
-"h": "f1e89687933f"
+"n": 112958,
+"h": "ad5011dc59bb"
 },
 {
 "m": "GET",
 "p": "/deployos/console/apps",
 "s": 200,
 "loc": "",
-"n": 112519,
-"h": "3db072d1f857"
+"n": 112892,
+"h": "f196fb27e138"
 },
 {
 "m": "POST",
 "p": "/deployos/console/scripts/len",
 "s": 200,
 "loc": "",
-"n": 98455,
-"h": "744c88272f61"
+"n": 98828,
+"h": "c8cea21eb864"
 },
 {
 "m": "GET",
 "p": "/deployos/console/scripts",
 "s": 200,
 "loc": "",
-"n": 98391,
-"h": "88fa9f5845ea"
+"n": 98764,
+"h": "379fbca14f7e"
 },
 {
 "m": "POST",
 "p": "/deployos/console/file/len",
 "s": 200,
 "loc": "",
-"n": 98562,
-"h": "ecf2bb8525c5"
+"n": 98935,
+"h": "432461c98be8"
 },
 {
 "m": "GET",
 "p": "/deployos/console",
 "s": 200,
 "loc": "",
-"n": 98477,
-"h": "2bf16984081d"
+"n": 98850,
+"h": "73ef0c1a745d"
 },
 {
 "m": "POST",
 "p": "/deployos/console/apps/xoa",
 "s": 200,
 "loc": "",
-"n": 110706,
-"h": "07a4d19aef92"
+"n": 111079,
+"h": "196dc58d51ec"
 },
 {
 "m": "POST",
 "p": "/deployos/console/scripts/xoa",
 "s": 200,
 "loc": "",
-"n": 97817,
-"h": "f4324205b6b1"
+"n": 98190,
+"h": "16eced518a10"
 },
 {
 "m": "GET",
 "p": "/deployos/console/apps",
 "s": 200,
 "loc": "",
-"n": 110649,
-"h": "46ab47949c3c"
+"n": 111022,
+"h": "de3b9980efe7"
 },
 {
 "m": "GET",
 "p": "/deployos/o-dia",
 "s": 200,
 "loc": "",
-"n": 86081,
-"h": "9de36b0b844e"
+"n": 86454,
+"h": "daace60a1b40"
 },
 {
 "m": "POST",
 "p": "/deployos/o-dia/xoa-het",
 "s": 200,
 "loc": "",
-"n": 86152,
-"h": "368e64fddc20"
+"n": 86525,
+"h": "d45ba2ee17f6"
 },
 {
 "m": "GET",
@@ -548,55 +548,55 @@
 "p": "/deployos/os",
 "s": 200,
 "loc": "",
-"n": 92948,
-"h": "486b042bade3"
+"n": 93321,
+"h": "040bb7fd51c8"
 },
 {
 "m": "GET",
 "p": "/deployos/os/windows_10_pro",
 "s": 200,
 "loc": "",
-"n": 94975,
-"h": "079e9b21dfbb"
+"n": 95348,
+"h": "ab655e2282fa"
 },
 {
 "m": "GET",
 "p": "/deployos/os/windows_11_pro",
 "s": 200,
 "loc": "",
-"n": 94975,
-"h": "5182e2d9a7a4"
+"n": 95348,
+"h": "a355b5ceb9aa"
 },
 {
 "m": "GET",
 "p": "/deployos/drivers",
 "s": 200,
 "loc": "",
-"n": 99770,
-"h": "0b52b1260d87"
+"n": 100143,
+"h": "cc44308e5752"
 },
 {
 "m": "GET",
 "p": "/deployos/ungdung",
 "s": 200,
 "loc": "",
-"n": 88756,
-"h": "d968e8805edb"
+"n": 89129,
+"h": "5378b5dd0871"
 },
 {
 "m": "GET",
 "p": "/deployos/ungdung/kiemtra",
 "s": 200,
 "loc": "",
-"n": 88189,
-"h": "d3302e0a0a01"
+"n": 88562,
+"h": "21221734c749"
 },
 {
 "m": "GET",
 "p": "/deployos/font",
 "s": 200,
 "loc": "",
-"n": 86241,
-"h": "a8fa8b8f77f7"
+"n": 86614,
+"h": "f26c3c232ee9"
 }
 ]

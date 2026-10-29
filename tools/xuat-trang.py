@@ -18,6 +18,19 @@ sys.path.insert(0, SRC)
 os.chdir(SRC)
 _goc = threading.Thread.start
 threading.Thread.start = lambda self: None if getattr(getattr(self, "_target", None), "__name__", "") in ("tu_dang_ky_nen", "_driver_nen", "vong") else _goc(self)
+# Ngoai tuyen: trang Kho trung tam goi that ra kho qua Internet (cham 0,5-21 giay do 29/10/2026 -> vuot gioi han 8 giay -> 500 ngau nhien).
+# Bo kiem phai cho ket qua nhu nhau moi lan: moi lan goi mang ra ngoai bi tu choi ngay (127.0.0.1 van duoc).
+import requests  # noqa: E402
+_goc_gui = requests.Session.request
+
+
+def _chan_mang(self, method, url, *a, **kw):
+    if not re.match(r"https?://(127\.0\.0\.1|localhost|\[::1\])[:/]", str(url)):
+        raise requests.ConnectionError("ngoai tuyen (bo kiem)")
+    return _goc_gui(self, method, url, *a, **kw)
+
+
+requests.Session.request = _chan_mang
 app = runpy.run_path(os.path.join(SRC, "app.py"), run_name="dev")["app"]
 # GET co tac dung phu hoac chay mai khong dung -> khong goi
 BO_QUA = re.compile(r"power|reboot|shutdown|restart|stream|/ws|events|download|tai-xuong|xoa|stop|dung|huy|capture|logs/live|vnc|terminal/|tail|poll")

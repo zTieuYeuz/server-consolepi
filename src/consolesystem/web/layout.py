@@ -98,6 +98,7 @@ NAV_ITEMS = [
 
     ("nhom", "Cài đặt", "⚙️", [
         ("/settings", "Cài đặt chung", "⚙️"),
+        ("/cap-nhat", "Cập nhật", "🔄"),
         ("/logs", "Nhật ký", "📋"),
         ("/power", "Nguồn điện", "⚡"),
         ("/gopy", "Góp ý", "💬"),
@@ -446,7 +447,7 @@ ICON_MUC = {
     "/uem/bao-mat": "key", "/uem/trien-khai": "send", "/uem/profiles": "list", "/uem/bao-cao": "doc", "/uem/quan-tri": "set", "/kho-trung-tam": "box",
     "/nettools": "net", "/deployos": "disk", "nhom:Kho lưu trữ": "box",
     "/storage": "save", "/tai-nguyen": "box", "/commands": "book", "/logs": "log", "/power": "pow",
-    "/giaitri": "tv", "/gopy": "chat", "nhom:Cài đặt": "set", "/settings": "set",
+    "/giaitri": "tv", "/gopy": "chat", "nhom:Cài đặt": "set", "/settings": "set", "/cap-nhat": "refresh",
     "/docs": "doc",
 }
 
@@ -494,7 +495,6 @@ TIM_THEM = [
     ("802.1X Testing", "/nettools/dot1x", "Công cụ mạng", "dot1x radius"),
     ("IF/THEN Automation", "/nettools/ifthen", "Công cụ mạng", "ifthen rule"),
     ("Sao lưu cấu hình", "/settings/sao-luu", "Cài đặt", "backup sao luu"),
-    ("Cập nhật", "/cap-nhat", "Cài đặt", "cap nhat update phien ban nang cap ha cap"),
     ("Đăng xuất", "/logout", "Tài khoản", "logout thoat"),
 ]
 
