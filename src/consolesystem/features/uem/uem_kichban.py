@@ -125,7 +125,7 @@ def trang_sua():
     o_pm = "".join(f'<label class="tk-o"><input type="checkbox" name="pm" value="{_esc(a["ten"])}"{" checked" if a["ten"] in da else ""}>'
                    f'<span><b>{_esc(a["ten"])}</b><small>{_esc(a["tham_so"] or "chưa điền tham số cài im lặng")}</small></span></label>' for a in kho)
     tk = DL.tai_khoan_cong_khai()
-    o_tk = (f'<option value="">Tài khoản hệ thống SYSTEM của agent (mặc định, quyền cao nhất)</option>'
+    o_tk = ('<option value="">Tài khoản hệ thống SYSTEM của agent (mặc định, quyền cao nhất)</option>'
             + "".join(f'<option value="{t["id"]}"{" selected" if kb.get("tai_khoan_id") == t["id"] else ""}>Chạy bằng tài khoản: {_esc(t["ten"])} ({_esc(t["user"])})</option>' for t in tk))
     rieng = _lich_rieng(kb) or {}
     chung = [l for l in DL.LICH.doc() if not l.get("rieng")]
