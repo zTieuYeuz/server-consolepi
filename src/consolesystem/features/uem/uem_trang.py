@@ -24,7 +24,6 @@ from ui import uem_winget as UW
 from ui.layout import render_page, svg_icon
 from consolesystem.core.esc import esc_html as _esc
 from consolesystem.web.css_tk import CSS as _CSS_TK
-from consolesystem.web import chon_may as _CM
 
 
 
@@ -122,8 +121,6 @@ def trang(body, chinh, tieu_de="Quản lý máy trạm", phu_de="Kiểm kê, b�
     if not DC.co_san():
         canh = ('<div class="msg warn">Chưa cài thư viện WinRM: chạy <code>sudo bash /opt/console-pi/tools/cai-winrm.sh</code> trong Terminal '
                 "của Console System rồi tải lại trang.</div>")
-    if chinh == "td":                       # menu "Trien khai phan mem": tab WinGet (trang nay) + tab Trien khai phan mem (WinRM)
-        body = _CM.thanh_tab(_CM.TAB_TRIEN_KHAI, "winget") + body
     return render_page(_CSS_TK + CSS + thong + canh + body + JS_BANG, active=next((h for m_, _n, h in TABS if m_ == chinh), "/uem"), title=tieu_de, subtitle=phu_de)
 
 
