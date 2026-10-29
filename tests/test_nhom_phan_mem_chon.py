@@ -41,3 +41,10 @@ def test_khoi_nhom_trong_chi_cach_tao(monkeypatch):
     from consolesystem.web.chon_nhom_pm import khoi_nhom
     h = khoi_nhom("app")
     assert "Chưa có nhóm" in h and "/deployos/trienkhai/nhom-tn" in h and "cs-nhom-pm" not in h
+
+
+def test_agent_luu_buoc_ung_dung_nhieu_file():
+    """Form kich ban Agent co luoi 'Ung dung nhieu file' (name=ud) va buoc luu loai 'ungdung' (Bitwarden ban offline, 29/10/2026)."""
+    src = open(os.path.join(GOC, "src", "consolesystem", "features", "uem", "uem_kichban.py"), encoding="utf-8").read()
+    assert 'name="ud"' in src and 'getlist("ud")' in src and '"loai": "ungdung"' in src
+    assert 'khoi_nhom_pm("pm", "ud", the=False)' in src

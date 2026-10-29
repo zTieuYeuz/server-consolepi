@@ -123,6 +123,11 @@ def trang_sua():
     kho = DC.danh_sach_kho()
     da = [b["ref"] for b in kb.get("buoc", [])]
     mot_lan = any(b.get("mot_lan") for b in kb.get("buoc", []))
+    ds_ud = DC.danh_sach_ungdung()
+    da_ud = [b["ref"] for b in kb.get("buoc", []) if b.get("loai") == "ungdung"]
+    o_ud = "".join(f'<label class="tk-o"><input type="checkbox" name="ud" value="{_esc(u["id"])}"{" checked" if u["id"] in da_ud else ""}>'
+                   f'<span><b>{_esc(u["ten_hien_thi"])}</b><small>{u["so_file"]} file · {_esc(u["kich_thuoc"])} · lệnh: {_esc(u["lenh_cai"] or "chưa đặt lệnh cài")}</small></span></label>' for u in ds_ud)
+    khoi_ud = (f'<h4 class="tk-tieude">Ứng dụng nhiều file (bộ cài kèm gói, cài offline)</h4><div class="tk-luoi">{o_ud}</div>' if ds_ud else "")
     o_pm = "".join(f'<label class="tk-o"><input type="checkbox" name="pm" value="{_esc(a["ten"])}"{" checked" if a["ten"] in da else ""}>'
                    f'<span><b>{_esc(a["ten"])}</b><small>{_esc(a["tham_so"] or "chưa điền tham số cài im lặng")}</small></span></label>' for a in kho)
     tk = DL.tai_khoan_cong_khai()
@@ -144,8 +149,9 @@ def trang_sua():
       <h3 style="margin-top:0;">{"Sửa kịch bản" if kb else "Tạo kịch bản mới"}</h3>
       <label>Tên kịch bản</label><input type="text" name="ten" required value="{_esc(kb.get("ten", ""))}" placeholder="Ví dụ: Cài phần mềm văn phòng cho phòng kế toán">
       <h4 class="tk-tieude">1. Chọn phần mềm cài (theo thứ tự trong danh sách)</h4>
-      {khoi_nhom_pm("pm", the=False)}
+      {khoi_nhom_pm("pm", "ud", the=False)}
       <div class="tk-luoi">{o_pm or '<p class="tk-ghi">Kho chưa có phần mềm. Thêm file .exe / .msi ở Tài nguyên máy.</p>'}</div>
+      {khoi_ud}
       <label style="display:flex;gap:8px;align-items:center;margin-top:8px;"><input type="checkbox" name="mot_lan" value="1" style="width:auto;margin:0;"{" checked" if mot_lan else ""}>
         Máy đã cài thành công ở lượt trước thì bỏ qua (dùng cho kịch bản lặp lại theo lịch)</label>
       <h4 class="tk-tieude">2. Chọn máy hoặc group</h4>
@@ -186,6 +192,8 @@ def luu():
     chon = set(f.getlist("pm"))
     mot_lan = bool(f.get("mot_lan"))
     buoc = [dict({"loai": "phanmem", "ref": t, "ten": t}, **({"mot_lan": True} if mot_lan else {})) for t in kho if t in chon]
+    chon_ud = set(f.getlist("ud"))
+    buoc += [dict({"loai": "ungdung", "ref": u["id"], "ten": u["ten_hien_thi"]}, **({"mot_lan": True} if mot_lan else {})) for u in DC.danh_sach_ungdung() if u["id"] in chon_ud]
     may = [i for i in dict.fromkeys(f.getlist("may")) if DL.tim(DL.MAY.doc(), i)]
     nhom = [i for i in dict.fromkeys(f.getlist("nhom")) if DL.tim(DL.NHOM_MAY.doc(), i)]
     tk = f.get("tai_khoan_id", "")
