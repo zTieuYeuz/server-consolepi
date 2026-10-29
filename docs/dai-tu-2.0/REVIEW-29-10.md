@@ -41,3 +41,10 @@ Kho: 12 test đạt. Mã kho trên .34 khớp từng file với repo (chỉ thi�
 15. Tài liệu tin cậy hết hạn **23/04/2027** — phải ký lại bằng khóa gốc trước ngày đó.
 16. Kênh Ổn định qua tên miền Cloudflare chưa thử đầu-cuối (25/10 mới thử kênh Thử nghiệm qua LAN).
 17. Pi .14 đang 2.0.0 (25/10), chưa có các thay đổi từ 26/10.
+
+## Bước 4 — đã tối ưu (29/10)
+- **Ổn định**: đợt cài và kịch bản Agent nhường nhau theo từng máy (không còn hai bộ cài chạy cùng lúc → msiexec 1618); máy bị nhường chuyển "Chờ thử lại" và tự chạy khi rảnh (có test).
+- **Bảo mật**: kho chặn chuyển hướng `/\evil` (có test); giải nén bản sao lưu migrate tự lọc từng mục khi Python thiếu bộ lọc; TFTP giao thư mục cho user `tftp` (0775) thay vì 0777; SHA1 khai `usedforsecurity=False`. Bandit mức cao: 0. Phân quyền Cập nhật chỉ cho quản trị + nhập lại mật khẩu (đã làm trước đó).
+- **Mượt**: đo 22 trang chính trên .30: tất cả < 0,07 giây.
+- **Bảo trì**: tách `uem_trang_b.py` (1.448 → 1.072 dòng) thành `uem_trienkhai_trang.py` + `uem_profiles_trang.py`; trang sinh ra giống hệt từng byte. CI xanh.
+- **Để lại có chủ đích** (rủi ro cao, cần đợt riêng): tách tiếp `network.py`, `dosui_kichban.py`, `layout.py`, `tk_trang.py`, `pxe.py`, `tk_dongco.py`; chuyển HTML còn lẫn trong Python ra `assets/`.
