@@ -95,7 +95,7 @@ kt "PKI rieng da tao (CA + chung chi may chu)" sh -c "test -s /var/lib/console-s
 kt "cong mTLS agent 8443 dang nghe"        sh -c "ss -ltn | grep -q ':8443 '"
 kt "cong 8443 khong co chung chi khach -> 403/404 (khong mo)" sh -c "c=\$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 https://127.0.0.1:8443/uem/agent/ping); [ \"\$c\" = 403 ] || [ \"\$c\" = 404 ]"
 kt "khong co CA/khoa nao trong ISO goc (tao luc khoi dong dau)" sh -c "test \$(stat -c %Y /var/lib/console-system/pki/ca.pem) -gt \$(stat -c %Y /opt/console-pi/VERSION)"
-for p in /uem /uem/may /uem/phan-mem /uem/bao-mat /uem/trien-khai /uem/profiles /uem/bao-cao /uem/quan-tri /uem/quan-tri/agent /uem/chua-ho-tro /deployos/trienkhai; do
+for p in /uem /uem/may /uem/phan-mem /uem/bao-mat /uem/trien-khai /uem/profiles /uem/bao-cao /uem/quan-tri /uem/quan-tri/agent /uem/trien-khai/kho /uem/trien-khai/kich-ban /uem/trien-khai/dot /remote-desktop /tai-nguyen /deployos/trienkhai; do
     kt "trang $p mo duoc" sh -c "c=\$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -H 'X-ConsolePi-Local: 1' http://127.0.0.1:8880$p); [ \"\$c\" = 200 ] || [ \"\$c\" = 302 ]"
 done
 kt "tao duoc file script agent (khong can wixl)" sh -c "cd /opt/console-pi && PYTHONPATH=/opt/console-pi python3 -c \"
