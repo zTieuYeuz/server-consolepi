@@ -34,7 +34,7 @@ kq["bi_chan_423"] = r.status_code == 423 and "Máy bị khóa" in r.get_data(as_
 kq["secret_da_mat"] = not os.path.exists(secret)
 kq["healthz_van_chay"] = c.get("/healthz").status_code == 200
 r = c.post("/khoa-may", headers=H, data={"ma": "AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA"})
-kq["ma_sai_van_khoa"] = r.status_code == 423 and "KHONG DUNG" in r.get_data(as_text=True)
+kq["ma_sai_van_khoa"] = r.status_code == 423 and "KHÔNG ĐÚNG" in r.get_data(as_text=True)
 r = c.post("/khoa-may", headers=H, data={"ma": ma})
 kq["ma_dung_chuyen_huong"] = r.status_code == 302 and "/cap-nhat" in r.headers.get("Location", "")
 kq["secret_tra_lai"] = os.path.exists(secret)

@@ -32,7 +32,7 @@ Type=notify
 # --edge-ip-version 4: giu them de phong further - mang di dong hay cap
 # IPv6 nhung duong di IPv6 thuc te khong hoat dong, du dang dung HTTP2 hay
 # QUIC thi van nen uu tien IPv4 truoc cho chac.
-ExecStart=/bin/sh -c 'exec /usr/bin/cloudflared --no-autoupdate --protocol http2 --edge-ip-version 4 tunnel run --token "$(cat /etc/cloudflared/console-pi-token)"'
+ExecStart=/bin/sh -c 'exec /usr/bin/cloudflared --no-autoupdate --protocol http2 --edge-ip-version 4 tunnel run --token "$(cat /var/lib/console-system/secrets/cloudflared-token 2>/dev/null || cat /etc/cloudflared/console-pi-token)"'
 Restart=always
 RestartSec=5
 

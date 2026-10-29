@@ -17,7 +17,7 @@ CAC_TRUONG_BAN = ("phien_ban", "so_phat_hanh", "kien_truc", "kich_thuoc", "sha25
 
 def tao_danh_muc(kenh, so_hieu, cac_ban, priv_phat_hanh, id_khoa, han=HAN_MAC_DINH, bay_gio=None):
     if kenh not in KENH_HOP_LE:
-        raise LoiGoi("kenh khong hop le")
+        raise LoiGoi("kênh không hợp lệ")
     bay_gio = int(bay_gio or time.time())
     for b in cac_ban:
         for t in CAC_TRUONG_BAN:
@@ -34,19 +34,19 @@ def mo_danh_muc(phong_bi, khoa_hop_le, kenh, bay_gio=None, so_hieu_da_thay=0):
     id_ky = phong_bi.get("khoa")
     pub = dict(khoa_hop_le).get(id_ky)
     if pub is None:
-        raise LoiGoi("danh muc ky boi khoa %r khong nam trong khoa tin cay" % id_ky)
+        raise LoiGoi("danh mục ký bởi khóa %r không nằm trong khóa tin cậy" % id_ky)
     try:
         d = K.mo_tai_lieu(phong_bi, pub)
     except K.LoiKhoa as e:
-        raise LoiGoi("danh muc: %s" % e)
+        raise LoiGoi("danh mục: %s" % e)
     if d.get("loai") != "danh-muc" or d.get("kenh") != kenh:
-        raise LoiGoi("danh muc sai loai/kenh (can %s)" % kenh)
+        raise LoiGoi("danh mục sai loại/kênh (cần %s)" % kenh)
     if d["het_han"] < bay_gio:
-        raise LoiGoi("danh muc DA HET HAN (nghi bi giu lai ban cu hoac kho khong phat hanh nua) - khong dung")
+        raise LoiGoi("danh mục ĐÃ HẾT HẠN (nghi bị giữ lại bản cũ hoặc kho không phát hành nữa) - không dùng")
     if d["tao_luc"] > bay_gio + 300:
-        raise LoiGoi("danh muc tao o TUONG LAI (dong ho may lech?) - khong dung")
+        raise LoiGoi("danh mục tạo ở TƯƠNG LAI (đồng hồ máy lệch?) - không dùng")
     if d["so_hieu"] < so_hieu_da_thay:
-        raise LoiGoi("danh muc CU hon ban da thay (%s < %s) - tu choi (chong phat lai)" % (d["so_hieu"], so_hieu_da_thay))
+        raise LoiGoi("danh mục CŨ hơn bản đã thấy (%s < %s) - từ chối (chống phát lại)" % (d["so_hieu"], so_hieu_da_thay))
     return d
 
 

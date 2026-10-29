@@ -24,6 +24,10 @@ def main(argv=None):
     if not ten:
         print("LOI: chua co ban nao dang dung (current)", file=sys.stderr)
         return 1
+    if DD.BO_CUC_MOI and not a.thu:                  # gom du lieu nam ngoai ve thu muc du lieu (sao luu 1 thu muc la du)
+        from consolesystem.core import gomdulieu as GOM
+        for x in GOM.gom(DD.GOC):
+            print("  gom:", x)
     bc = P.ap_dung(os.path.join(a.opt, "releases", ten), os.path.join(DD.GOC, "backups"), thu=a.thu)
     print("ban %s: doi %d, khong doi %d, bo qua (may khong cai) %d%s" % (ten, len(bc["doi"]), bc["khong_doi"], len(bc["bo_qua"]), " [CHI THU]" if a.thu else ""))
     for x in bc["doi"]:

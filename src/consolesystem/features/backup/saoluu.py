@@ -414,6 +414,11 @@ def hau_khoi_phuc(goc=None):
     import subprocess
     goc = goc or DD.GOC
     tb = []
+    try:                                                      # may moi: dat lai lien ket WiFi da luu... tu ban sao luu
+        from consolesystem.core import gomdulieu as GOM
+        tb += ["Gom dữ liệu: " + x for x in GOM.gom(goc)]
+    except OSError as e:
+        tb.append(f"Gom dữ liệu: lỗi {e}")
     khoa = os.path.join(goc, "secrets", "samba-deploy.key")
     if os.path.isfile(khoa) and shutil.which("smbpasswd"):
         try:

@@ -78,7 +78,7 @@ class Moi:
                 return K.unb64(d["khoa_cong_khai"])
         except (OSError, ValueError, K.LoiKhoa):
             pass
-        raise LoiCapNhat("Chua cau hinh KHOA GOC cua nha phat hanh trong ban nay - cap nhat tu dong bi tat de an toan.")
+        raise LoiCapNhat("Chưa cấu hình KHÓA GỐC của nhà phát hành trong bản này - cập nhật tự động bị tắt để an toàn.")
 
 
 # ----------------------------------------------------------------------------------------------- cau hinh / hien tai
@@ -92,7 +92,7 @@ def cau_hinh(moi):
 
 def luu_cau_hinh(moi, **kw):
     if "kenh" in kw and kw["kenh"] not in KENH:
-        raise LoiCapNhat("kenh khong hop le")
+        raise LoiCapNhat("kênh không hợp lệ")
     moi.kho_json("cau-hinh.json", {}).sua(lambda d: d.update(kw))
 
 
@@ -113,7 +113,7 @@ def hien_tai(moi):
         except OSError:
             continue
     if not pb:
-        raise LoiCapNhat("khong doc duoc phien ban dang chay")
+        raise LoiCapNhat("không đọc được phiên bản đang chạy")
     so, rl = 1, {}
     try:
         rl = json.load(open(os.path.join(moi.opt, "releases", cur or pb, PH.TEN_RELEASE), encoding="utf-8")) if cur else {}
@@ -155,14 +155,14 @@ def kiem_tra(moi, bat_buoc=False):
         cur = hien_tai(moi)
         pub_goc = moi.khoa_goc()
         if moi.kho is None:
-            raise LoiCapNhat("Chua ket noi kho trung tam (can token kho) - vao Kho trung tam de ghep.")
+            raise LoiCapNhat("Chưa kết nối kho trung tâm (cần token kho) - vào Kho trung tâm để ghép.")
         tra = moi.kho.danh_muc(cfg["kenh"])
         try:
             khoa_hl, so_tin_cay = K.khoa_hop_le(tra["tin_cay"], pub_goc, "phat-hanh", bay_gio=now, so_hieu_da_thay=ts.get("tin_cay_so_hieu", 0))
             dm = DM.mo_danh_muc(tra["danh_muc"], khoa_hl, cfg["kenh"], bay_gio=now, so_hieu_da_thay=ts.get("danh_muc_so_hieu", 0))
         except (K.LoiKhoa, G.LoiGoi) as e:
             lech = (tra.get("gio_kho") or now) - now
-            goi_y = " (Dong ho may lech %+.1f gio so voi kho - hay chinh gio roi thu lai.)" % (lech / 3600) if abs(lech) > 3600 else ""
+            goi_y = " (Đồng hồ máy lệch %+.1f giờ so với kho - hãy chỉnh giờ rồi thử lại.)" % (lech / 3600) if abs(lech) > 3600 else ""
             raise LoiCapNhat("AN NINH: %s%s" % (e, goi_y))
         moi.kho_json("tin-cay.json", {}).ghi(tra["tin_cay"])
         fn_lenh = getattr(moi, "xu_ly_lenh_fn", None)
@@ -177,11 +177,11 @@ def kiem_tra(moi, bat_buoc=False):
                    "ban_moi_nhat": max([b for b in dm["ban"] if b["kien_truc"] == cur["kien_truc"]], key=lambda b: b["so_phat_hanh"], default=None),
                    "co_khoa_may": bool(tra.get("co_khoa_may")), "danh_muc": dm["ban"]})
     except LoiKho as e:
-        kq.update({"loi": "Khong hoi duoc kho: %s" % e, "loai_loi": "kho", "hoi_lan_sau": now + 3600})        # loi mang: thu lai sau 1 gio
+        kq.update({"loi": "Không hỏi được kho: %s" % e, "loai_loi": "kho", "hoi_lan_sau": now + 3600})        # loi mang: thu lai sau 1 gio
     except LoiCapNhat as e:
         kq.update({"loi": str(e), "loai_loi": "an-ninh" if str(e).startswith("AN NINH") else "cau-hinh"})
     except LoiDuLieu as e:
-        kq.update({"loi": "Loi du lieu: %s" % e, "loai_loi": "kho"})
+        kq.update({"loi": "Lỗi dữ liệu: %s" % e, "loai_loi": "kho"})
     moi.kho_json("trang-thai.json", {}).sua(lambda d: (d.update(kq), [d.pop(k) for k in ("ban_ke_tiep", "ban_moi_nhat") if kq.get(k) is None and k in d]))
     return trang_thai(moi)
 
@@ -235,4 +235,4 @@ def mo_khoa_goi(khoa_may, token, pb, kt, kenh, boc):
     try:
         return AESGCM(khoa_may).decrypt(K.unb64(boc["nonce"]), K.unb64(boc["ct"]), aad)
     except (InvalidTag, KeyError, K.LoiKhoa):
-        raise LoiCapNhat("khong giai duoc khoa goi (sai khoa may / kho tra sai)")
+        raise LoiCapNhat("không giải được khóa gói (sai khóa máy / kho trả sai)")

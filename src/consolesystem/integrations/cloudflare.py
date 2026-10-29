@@ -5,10 +5,10 @@ import shutil
 import subprocess
 
 
-CONF_DIR = "/etc/cloudflared"
+from consolesystem.core import duongdan as _DD
 
-
-TOKEN_FILE = os.path.join(CONF_DIR, "console-pi-token")
+TOKEN_FILE = _DD.FILE_CF_TOKEN                 # 2.0: trong secrets/ (sao luu cung thu muc du lieu); unit tunnel doc file nay
+CONF_DIR = os.path.dirname(TOKEN_FILE)
 
 
 SERVICE = "console-system-tunnel"

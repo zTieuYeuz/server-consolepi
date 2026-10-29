@@ -147,6 +147,8 @@ FILE_KHO_TRUNGTAM = _vt(_duong("kho-trungtam.json"), "secrets/kho-trungtam.json"
 FILE_CF_ACCESS = _vt(_duong("cf-access.json"), "secrets/cf-access.json")
 
 # Khoa RIENG CUA MAY de boc khoa giai ma goi cap nhat (kho cap luc dang ky, qua kenh ma hoa X25519) - xem capnhat/may.py
+FILE_CF_TOKEN = _vt("/etc/cloudflared/console-pi-token", "secrets/cloudflared-token")          # token Cloudflare Tunnel
+FILE_TS_AUTHKEY = _vt("/etc/tailscale-console-pi-authkey", "secrets/tailscale-authkey")       # khoa dang nhap Tailscale
 FILE_KHOA_MAY = _vt(_duong("khoa-may.key"), "secrets/khoa-may.key")
 # Thu muc cap nhat: trang thai kiem tra, cong viec nang cap, goi da tai, ban sao luu truoc khi nang cap (bo cuc moi: <goc>/updates)
 DIR_CAP_NHAT = os.path.join(GOC, "updates")

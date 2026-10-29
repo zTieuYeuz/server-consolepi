@@ -150,25 +150,25 @@ def _aad(h_dau, i, cuoi):
 def doc_dau(f):
     """(dau dict, dau bytes, chu ky) tu file mo; kiem MAGIC/do dai. CHUA tin gi."""
     if f.read(len(MAGIC)) != MAGIC:
-        raise LoiGoi("khong phai goi .cspkg (sai MAGIC)")
+        raise LoiGoi("không phải gói .cspkg (sai MAGIC)")
     raw = f.read(4)
     if len(raw) != 4:
-        raise LoiGoi("goi bi cat cut (dau)")
+        raise LoiGoi("gói bị cắt cụt (đầu)")
     (n,) = struct.unpack(">I", raw)
     if not 2 <= n <= TOI_DA_DAU:
-        raise LoiGoi("do dai dau khong hop le")
+        raise LoiGoi("độ dài đầu không hợp lệ")
     dau_b = f.read(n)
     cs = f.read(64)
     if len(dau_b) != n or len(cs) != 64:
-        raise LoiGoi("goi bi cat cut (dau/chu ky)")
+        raise LoiGoi("gói bị cắt cụt (đầu/chữ ký)")
     try:
         dau = json.loads(dau_b.decode("utf-8"))
     except (ValueError, UnicodeDecodeError):
-        raise LoiGoi("dau goi khong phai JSON")
+        raise LoiGoi("đầu gói không phải JSON")
     if dau.get("dinh_dang") != 1 or not isinstance(dau.get("manifest"), dict):
-        raise LoiGoi("dau goi sai dinh dang")
+        raise LoiGoi("đầu gói sai định dạng")
     if K.chuan_json(dau) != dau_b:
-        raise LoiGoi("dau goi khong o dang chuan (nghi bi sua/ghep)")
+        raise LoiGoi("đầu gói không ở dạng chuẩn (nghi bị sửa/ghép)")
     return dau, dau_b, cs
 
 
@@ -178,41 +178,41 @@ def kiem_chu_ky(dau, dau_b, cs, khoa_hop_le):
         if id_ == dau.get("khoa_ky"):
             if K.xac_minh(pub, b"CSPKG-HEADER\0" + dau_b, cs):
                 return id_
-            raise LoiGoi("CHU KY KHONG HOP LE (goi bi sua hoac gia mao)")
-    raise LoiGoi("khoa ky %r khong nam trong danh sach khoa tin cay hien hanh" % dau.get("khoa_ky"))
+            raise LoiGoi("CHỮ KÝ KHÔNG HỢP LỆ (gói bị sửa hoặc giả mạo)")
+    raise LoiGoi("khóa ký %r không nằm trong danh sách khóa tin cậy hiện hành" % dau.get("khoa_ky"))
 
 
 def giai_ma_ra_tar(f, dau, dau_b, dek, dich_tar):
     """Doc cac khoi tu `f` (dang o sau chu ky), giai ma + kiem tag tung khoi, ghi `dich_tar`; kiem tong kich thuoc va sha256."""
     mm = dau["mat_ma"]
     if mm.get("thuat_toan") != "AES-256-GCM" or not 4096 <= mm.get("khoi", 0) <= (16 << 20):
-        raise LoiGoi("tham so ma hoa khong ho tro")
+        raise LoiGoi("tham số mã hóa không hỗ trợ")
     tien_to, tt = K.unb64(mm["tien_to"]), dau["tai_trong"]
     if len(tien_to) != 8 or len(dek) != 32:
-        raise LoiGoi("tien to nonce/khoa goi sai do dai")
+        raise LoiGoi("tiền tố nonce/khóa gói sai độ dài")
     h_dau, aes, h, tong = hashlib.sha256(dau_b).digest(), AESGCM(dek), hashlib.sha256(), 0
     with open(dich_tar, "wb") as out:
         for i in range(tt["so_khoi"]):
             raw = f.read(4)
             if len(raw) != 4:
-                raise LoiGoi("goi bi cat cut (khoi %d)" % i)
+                raise LoiGoi("gói bị cắt cụt (khối %d)" % i)
             (n,) = struct.unpack(">I", raw)
             if not 16 <= n <= mm["khoi"] + 16:
-                raise LoiGoi("do dai khoi %d khong hop le" % i)
+                raise LoiGoi("độ dài khối %d không hợp lệ" % i)
             ct = f.read(n)
             if len(ct) != n:
-                raise LoiGoi("goi bi cat cut (khoi %d)" % i)
+                raise LoiGoi("gói bị cắt cụt (khối %d)" % i)
             try:
                 kh = aes.decrypt(tien_to + struct.pack(">I", i), ct, _aad(h_dau, i, i == tt["so_khoi"] - 1))
             except InvalidTag:
-                raise LoiGoi("khoi %d sai tag (goi bi sua / sai khoa goi / sai thu tu)" % i)
+                raise LoiGoi("khối %d sai tag (gói bị sửa / sai khóa gói / sai thứ tự)" % i)
             h.update(kh)
             tong += len(kh)
             out.write(kh)
         if f.read(1):
-            raise LoiGoi("con du lieu thua sau khoi cuoi")
+            raise LoiGoi("còn dữ liệu thừa sau khối cuối")
     if tong != tt["kich_thuoc"] or h.hexdigest() != tt["sha256"]:
-        raise LoiGoi("kich thuoc/sha256 tai trong khong khop dau goi")
+        raise LoiGoi("kích thước/SHA-256 tải trọng không khớp đầu gói")
 
 
 def _ten_an_toan(ten):
@@ -230,20 +230,20 @@ def giai_nen_an_toan(tar_gz, dich, manifest):
     with tarfile.open(tar_gz, "r:gz") as tf:
         for dem, tv in enumerate(tf, 1):
             if dem > TOI_DA_SO_FILE:
-                raise LoiGoi("qua nhieu muc trong goi")
+                raise LoiGoi("quá nhiều mục trong gói")
             if not _ten_an_toan(tv.name):
-                raise LoiGoi("ten khong an toan trong goi: %r" % tv.name)
+                raise LoiGoi("tên không an toàn trong gói: %r" % tv.name)
             p = os.path.join(dich, tv.name)
             if tv.isdir():
                 os.makedirs(p, mode=0o755, exist_ok=True)
                 continue
             if not tv.isfile():
-                raise LoiGoi("loai muc khong cho phep (link/thiet bi): %r" % tv.name)
+                raise LoiGoi("loại mục không cho phép (link/thiết bị): %r" % tv.name)
             if tv.name not in khai:
-                raise LoiGoi("file KHONG co trong manifest: %r" % tv.name)
+                raise LoiGoi("file KHÔNG có trong manifest: %r" % tv.name)
             tong += tv.size
             if tong > TOI_DA_GIAI_NEN:
-                raise LoiGoi("dung luong giai nen vuot tran")
+                raise LoiGoi("dung lượng giải nén vượt trần")
             os.makedirs(os.path.dirname(p), mode=0o755, exist_ok=True)
             h = hashlib.sha256()
             fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o755 if tv.mode & 0o111 else 0o644)
@@ -253,11 +253,11 @@ def giai_nen_an_toan(tar_gz, dich, manifest):
                     h.update(kh)
                     out.write(kh)
             if h.hexdigest() != khai[tv.name]:
-                raise LoiGoi("file %r SAI sha256 so voi manifest" % tv.name)
+                raise LoiGoi("file %r SAI SHA-256 so với manifest" % tv.name)
             thay.add(tv.name)
     thieu = sorted(set(khai) - thay)
     if thieu:
-        raise LoiGoi("thieu %d file so voi manifest: %s" % (len(thieu), thieu[:3]))
+        raise LoiGoi("thiếu %d file so với manifest: %s" % (len(thieu), thieu[:3]))
 
 
 # ----------------------------------------------------------------------------------------------- dieu kien cai
@@ -265,22 +265,22 @@ def kiem_dieu_kien_cai(manifest, hien_tai, ha_cap=False):
     """Tra ve danh sach ly do KHONG cai duoc (rong = duoc). hien_tai: {phien_ban, so_phat_hanh, kien_truc, kenh, ban_toi_thieu_ha_cap}."""
     loi = []
     if manifest["kien_truc"] != hien_tai["kien_truc"]:
-        loi.append("sai kien truc (goi %s, may %s)" % (manifest["kien_truc"], hien_tai["kien_truc"]))
+        loi.append("sai kiến trúc (gói %s, máy %s)" % (manifest["kien_truc"], hien_tai["kien_truc"]))
     if manifest["kenh"] != hien_tai["kenh"]:
-        loi.append("sai kenh (goi %s, may %s)" % (manifest["kenh"], hien_tai["kenh"]))
+        loi.append("sai kênh (gói %s, máy %s)" % (manifest["kenh"], hien_tai["kenh"]))
     try:
         if ha_cap:
             if manifest["so_phat_hanh"] >= hien_tai["so_phat_hanh"]:
-                loi.append("ha cap phai ve ban CU hon (so phat hanh %s >= %s)" % (manifest["so_phat_hanh"], hien_tai["so_phat_hanh"]))
+                loi.append("hạ cấp phải về bản CŨ hơn (số phát hành %s >= %s)" % (manifest["so_phat_hanh"], hien_tai["so_phat_hanh"]))
             toi_thieu = hien_tai.get("ban_toi_thieu_ha_cap")
             if toi_thieu is None or khoa_phien_ban(manifest["phien_ban"]) < khoa_phien_ban(toi_thieu):
-                loi.append("khong cho phep ha cap ve %s (ban thap nhat duoc phep: %s)" % (manifest["phien_ban"], toi_thieu))
+                loi.append("không cho phép hạ cấp về %s (bản thấp nhất được phép: %s)" % (manifest["phien_ban"], toi_thieu))
         else:
             if manifest["so_phat_hanh"] <= hien_tai["so_phat_hanh"]:
-                loi.append("goi CU hon hoac bang ban dang chay (so phat hanh %s <= %s) - chong phat lai ban cu" % (manifest["so_phat_hanh"], hien_tai["so_phat_hanh"]))
+                loi.append("gói CŨ hơn hoặc bằng bản đang chạy (số phát hành %s <= %s) - chống phát lại bản cũ" % (manifest["so_phat_hanh"], hien_tai["so_phat_hanh"]))
             bat_buoc = manifest.get("ban_truoc_bat_buoc")
             if bat_buoc is not None and khoa_phien_ban(bat_buoc) != khoa_phien_ban(hien_tai["phien_ban"]):
-                loi.append("phai len TUAN TU: goi nay yeu cau dang o %s, may dang o %s (khong nhay cap)" % (bat_buoc, hien_tai["phien_ban"]))
+                loi.append("phải lên TUẦN TỰ: gói này yêu cầu đang ở %s, máy đang ở %s (không nhảy cấp)" % (bat_buoc, hien_tai["phien_ban"]))
     except LoiGoi as e:
         loi.append(str(e))
     return loi
@@ -308,7 +308,7 @@ def cai_goi(duong, dek, khoa_hop_le, hien_tai, thu_muc_releases, ha_cap=False, l
             cay = os.path.join(tam, "cay")
             giai_nen_an_toan(tar, cay, manifest)                # 4. giai nen an toan + sha256 tung file
             if not os.path.isfile(os.path.join(cay, PH.TEN_RELEASE)):
-                raise LoiGoi("thieu RELEASE.json trong goi")
+                raise LoiGoi("thiếu RELEASE.json trong gói")
             PH._khoa_chi_doc(cay)
             os.rename(cay, dich)
             if luu_chu_ky:

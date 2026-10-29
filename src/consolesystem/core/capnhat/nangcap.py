@@ -101,7 +101,7 @@ def khoa_chay(moi, cho=False):
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | (0 if cho else fcntl.LOCK_NB))
         except OSError:
-            raise LoiNangCap("dang co mot lan nang cap/ha cap khac chay")
+            raise LoiNangCap("đang có một lần nâng cấp/hạ cấp khác chạy")
         yield
     finally:
         os.close(fd)
@@ -137,25 +137,25 @@ def kiem_dieu_kien_nang_cap(moi, tuy_chon=None):
     except M.LoiCapNhat as e:
         chan.append(str(e))
     if ts.get("loi"):
-        chan.append("Lan kiem tra gan nhat bi loi: %s" % ts["loi"])
+        chan.append("Lần kiểm tra gần nhất bị lỗi: %s" % ts["loi"])
     if not ban:
-        chan.append("Khong co ban ke tiep de nang cap (da moi nhat, hoac phai qua ban trung gian).")
+        chan.append("Không có bản kế tiếp để nâng cấp (đã mới nhất, hoặc phải qua bản trung gian).")
     if dang_chay(moi):
-        chan.append("Dang co mot lan nang cap/ha cap chay.")
+        chan.append("Đang có một lần nâng cấp/hạ cấp chạy.")
     nv = NV.kiem(moi)
     if nv["trang_thai"] == "lech":
-        chan.append("CHUONG TRINH DANG CHAY BI SUA DOI so voi ban da ky (%s). Cap nhat tu dong bi chan de khong de len mot he thong khong tin cay. "
-                    "Cach xu ly: tim nguyen nhan, roi cai lai ban hien tai tu nguon tin cay (console-system-release.py cai) truoc khi cap nhat." % nv["ly_do"])
+        chan.append("CHƯƠNG TRÌNH ĐANG CHẠY BỊ SỬA ĐỔI so với bản đã ký (%s). Cập nhật tự động bị chặn để không đè lên một hệ thống không tin cậy. "
+                    "Cách xử lý: tìm nguyên nhân, rồi cài lại bản hiện tại từ nguồn tin cậy (console-system-release.py cai) trước khi cập nhật." % nv["ly_do"])
     j = doc_job(moi)
     if j and j.get("trang_thai") == "dang-chay":
-        chan.append("Con mot cong viec cap nhat chua ket thuc.")
+        chan.append("Còn một công việc cập nhật chưa kết thúc.")
     if not ts.get("co_khoa_may"):
-        chan.append("May chua co khoa rieng tu kho (chua tu dang ky voi kho) - mo trang Kho trung tam de dang ky.")
+        chan.append("Máy chưa có khóa riêng từ kho (chưa đăng ký với kho) - mở trang Kho trung tâm để đăng ký.")
     if moi.pxe_dang_bat_fn():
         if tuy_chon.get("bo_qua_pxe"):
-            canh_bao.append("PXE dang chay - may khach dang cai Windows co the BI LOI neu dich vu khoi dong lai giua chung.")
+            canh_bao.append("PXE đang chạy - máy khách đang cài Windows có thể BỊ LỖI nếu dịch vụ khởi động lại giữa chừng.")
         else:
-            chan.append("PXE dang chay (co the dang cai Windows qua mang). Tat PXE hoac xac nhan chap nhan nguy co.")
+            chan.append("PXE đang chạy (có thể đang cài Windows qua mạng). Tắt PXE hoặc xác nhận chấp nhận nguy cơ.")
     if ban and cur:
         try:
             moi.khoa_goc()
@@ -164,11 +164,11 @@ def kiem_dieu_kien_nang_cap(moi, tuy_chon=None):
         can = ban.get("kich_thuoc", 0) * 3 + DUNG_LUONG_DU
         try:
             if moi.dung_luong_trong_fn(moi.thu_muc) < can:
-                chan.append("Khong du cho trong (can ~%d MB)." % (can >> 20))
+                chan.append("Không đủ chỗ trống (cần khoảng %d MB)." % (can >> 20))
         except OSError:
             pass
         if ban.get("ban_truoc_bat_buoc") and G.khoa_phien_ban(ban["ban_truoc_bat_buoc"]) != G.khoa_phien_ban(cur["phien_ban"]):
-            chan.append("Phai len tuan tu: ban %s yeu cau dang o %s." % (ban["phien_ban"], ban["ban_truoc_bat_buoc"]))
+            chan.append("Phải lên tuần tự: bản %s yêu cầu đang ở %s." % (ban["phien_ban"], ban["ban_truoc_bat_buoc"]))
     return chan, canh_bao, ban
 
 
@@ -184,19 +184,19 @@ def bat_dau_nang_cap(moi, tuy_chon=None):
            "so_phat_hanh_den": ban["so_phat_hanh"], "buoc": "kiem", "trang_thai": "dang-chay", "bat_dau": int(moi.gio()), "tuy_chon": tuy_chon,
            "canh_bao": canh_bao, "nhat_ky": []}
     _luu_job(moi, job)
-    _nhat_ky(moi, job, "Bat dau nang cap %s -> %s" % (job["tu"], job["den"]))
+    _nhat_ky(moi, job, "Bắt đầu nâng cấp %s -> %s" % (job["tu"], job["den"]))
     return job
 
 
 # ----------------------------------------------------------------------------------------------- cac buoc nang cap
 def _b_kiem(moi, job):
     chan, _cb, ban = kiem_dieu_kien_nang_cap(moi, job.get("tuy_chon"))
-    chan = [c for c in chan if "Dang co mot lan" not in c and "Con mot cong viec" not in c]         # chinh minh dang chay
+    chan = [c for c in chan if "Đang có một lần" not in c and "Còn một công việc" not in c]         # chinh minh dang chay
     if chan:
         raise LoiNangCap(" | ".join(chan))
     if ban and ban["phien_ban"] != job["den"]:
-        raise LoiNangCap("ban ke tiep da doi (%s -> %s) tu luc bam; kiem tra lai" % (job["den"], ban["phien_ban"]))
-    _nhat_ky(moi, job, "Dieu kien nang cap dat")
+        raise LoiNangCap("bản kế tiếp đã đổi (%s -> %s) từ lúc bấm; kiểm tra lại" % (job["den"], ban["phien_ban"]))
+    _nhat_ky(moi, job, "Điều kiện nâng cấp đạt")
 
 
 def _b_sao_luu(moi, job):
@@ -206,7 +206,7 @@ def _b_sao_luu(moi, job):
     if not (job.get("sao_luu") and os.path.exists(job["sao_luu"])):
         moi.hook("sao_luu_fn")(duong)
         job["sao_luu"] = duong
-        _nhat_ky(moi, job, "Da sao luu cau hinh: %s (%d byte)" % (os.path.basename(duong), os.path.getsize(duong)))
+        _nhat_ky(moi, job, "Đã sao lưu cấu hình: %s (%d byte)" % (os.path.basename(duong), os.path.getsize(duong)))
 
 
 def _duong_goi(moi, job):
@@ -226,9 +226,9 @@ def _b_tai(moi, job):
         if hashlib.sha256(open(part, "rb").read()).hexdigest() != ban["sha256_goi"]:
             with contextlib.suppress(OSError):
                 os.remove(part)
-            raise LoiNangCap("goi tai ve SAI sha256 so voi danh muc da ky (tai lai)")
+            raise LoiNangCap("gói tải về SAI SHA-256 so với danh mục đã ký (tải lại)")
         os.replace(part, dich)
-    _nhat_ky(moi, job, "Da tai goi %s (%d byte, sha256 dung)" % (os.path.basename(dich), os.path.getsize(dich)))
+    _nhat_ky(moi, job, "Đã tải gói %s (%d byte, SHA-256 đúng)" % (os.path.basename(dich), os.path.getsize(dich)))
 
 
 def _tin_cay_va_khoa(moi, job):
@@ -237,7 +237,7 @@ def _tin_cay_va_khoa(moi, job):
         tin_cay = moi.kho_json("tin-cay.json", {}).doc()
         khoa_hl, _so = K.khoa_hop_le(tin_cay, moi.khoa_goc(), "phat-hanh", bay_gio=moi.gio(), so_hieu_da_thay=ts.get("tin_cay_so_hieu", 0))
     except K.LoiKhoa as e:
-        raise LoiNangCap("tai lieu tin cay: %s" % e)
+        raise LoiNangCap("tài liệu tin cậy: %s" % e)
     return khoa_hl
 
 
@@ -245,34 +245,34 @@ def _b_cai(moi, job):
     thu_releases = os.path.join(moi.opt, "releases")
     dich = os.path.join(thu_releases, job["den"])
     if os.path.isdir(dich) and PH.kiem_ban(moi.opt, job["den"]) == [] and job.get("da_cai_ban"):
-        _nhat_ky(moi, job, "Ban %s da giai nen va kiem tung file truoc do" % job["den"])
+        _nhat_ky(moi, job, "Bản %s đã giải nén và kiểm từng file trước đó" % job["den"])
         return
     if os.path.isdir(dich):
         PH.xoa_ban(dich)                                                # ban do dang (chua tung duoc doi) -> lam lai tu goi da kiem
     boc = moi.kho.khoa_goi(job["den"], job["kien_truc"], job["kenh"])
     khoa_may = M.doc_khoa_may(moi.khoa_may_duong)
     if khoa_may is None:
-        raise LoiNangCap("khong doc duoc khoa may")
+        raise LoiNangCap("không đọc được khóa máy")
     dek = M.mo_khoa_goi(khoa_may, moi.hook("token_fn")(), job["den"], job["kien_truc"], job["kenh"], boc)
     cur = M.hien_tai(moi)
     try:
         ten, manifest = G.cai_goi(_duong_goi(moi, job), dek, _tin_cay_va_khoa(moi, job), cur, thu_releases,
                                 luu_chu_ky=lambda t, db, cs: NV.luu_chu_ky(moi, t, db, cs))
     except G.LoiGoi as e:
-        raise LoiNangCap("goi KHONG hop le: %s" % e)
+        raise LoiNangCap("gói KHÔNG hợp lệ: %s" % e)
     if manifest["so_phat_hanh"] != job["so_phat_hanh_den"] or ten != job["den"]:
         PH.xoa_ban(os.path.join(thu_releases, ten))
-        raise LoiNangCap("manifest trong goi khong khop danh muc da ky (phien ban/so phat hanh)")
+        raise LoiNangCap("manifest trong gói không khớp danh mục đã ký (phiên bản/số phát hành)")
     job["manifest"] = {k: manifest.get(k) for k in ("phien_ban", "so_phat_hanh", "ban_truoc_bat_buoc", "ban_toi_thieu_ha_cap", "can_khoi_dong_lai", "migration", "ghi_chu")}
     job["da_cai_ban"] = True
-    _nhat_ky(moi, job, "Da kiem chu ky, giai ma, giai nen va doi chieu TUNG FILE: ban %s san sang (chua kich hoat)" % ten)
+    _nhat_ky(moi, job, "Đã kiểm chữ ký, giải mã, giải nén và đối chiếu TỪNG FILE: bản %s sẵn sàng (chưa kích hoạt)" % ten)
 
 
 def _b_migration(moi, job):
     job["migration_bat_dau"] = True                                    # ghi truoc khi lam: mat dien giua chung -> phuc_hoi biet phai tra du lieu
     _luu_job(moi, job)
     moi.hook("migration_fn")(os.path.join(moi.opt, "releases", job["den"]))
-    _nhat_ky(moi, job, "Da chay migration du lieu cho ban %s" % job["den"])
+    _nhat_ky(moi, job, "Đã chuyển đổi dữ liệu cho bản %s" % job["den"])
 
 
 def _b_doi_ban(moi, job):
@@ -283,13 +283,13 @@ def _b_doi_ban(moi, job):
         PH.chuyen_ban(moi.opt, job["den"])
     moi.hook("ap_dung_fn")(ban_dir)
     job["doi_ban_xong"] = True
-    _nhat_ky(moi, job, "Da doi current sang %s va ap dung cau hinh he thong" % job["den"])
+    _nhat_ky(moi, job, "Đã chuyển sang bản %s và áp dụng cấu hình hệ thống" % job["den"])
 
 
 def _b_khoi_dong_lai(moi, job):
     moi.hook("khoi_dong_lai_fn")()
     job["da_khoi_dong_lai"] = True
-    _nhat_ky(moi, job, "Da khoi dong lai dich vu")
+    _nhat_ky(moi, job, "Đã khởi động lại dịch vụ")
 
 
 def _b_suc_khoe(moi, job):
@@ -301,12 +301,12 @@ def _b_suc_khoe(moi, job):
         if ok:
             sai = PH.kiem_ban(moi.opt, ten)
             if not sai:
-                _nhat_ky(moi, job, "Kiem suc khoe dat; moi file chuong trinh khop ban %s" % ten)
+                _nhat_ky(moi, job, "Kiểm tra sức khỏe đạt; mọi file chương trình khớp bản %s" % ten)
                 return
-            ok, msg = False, "%d file chuong trinh lech so voi ban phat hanh: %s" % (len(sai), ", ".join(sai[:3]))
+            ok, msg = False, "%d file chương trình lệch so với bản phát hành: %s" % (len(sai), ", ".join(sai[:3]))
         cuoi = msg
         if moi.gio() >= han:
-            raise LoiNangCap("Kiem suc khoe THAT BAI sau %ds: %s" % (moi.cho_suc_khoe, cuoi), hoan_tac=True)
+            raise LoiNangCap("Kiểm tra sức khỏe THẤT BẠI sau %ds: %s" % (moi.cho_suc_khoe, cuoi), hoan_tac=True)
         moi.ngu(2)
 
 
@@ -318,7 +318,7 @@ def _b_hoan_tat(moi, job):
     xoa = PH.don_ban_cu(moi.opt)
     with contextlib.suppress(OSError):
         os.remove(_duong_goi(moi, job))
-    _nhat_ky(moi, job, "Hoan tat. Don ban cu: %s" % (xoa or "khong"))
+    _nhat_ky(moi, job, "Hoàn tất. Dọn bản cũ: %s" % (xoa or "khong"))
 
 
 _BUOC_NC = {"kiem": _b_kiem, "sao-luu": _b_sao_luu, "tai": _b_tai, "cai": _b_cai, "migration": _b_migration, "doi-ban": _b_doi_ban,
@@ -336,37 +336,37 @@ def kiem_dieu_kien_ha_cap(moi, tuy_chon=None):
         return [str(e)], [], None
     bd = M.doc_da_cai(moi).get(cur["ten_ban"]) or M.doc_da_cai(moi).get(cur["phien_ban"])
     if dang_chay(moi):
-        chan.append("Dang co mot lan nang cap/ha cap chay.")
+        chan.append("Đang có một lần nâng cấp/hạ cấp chạy.")
     if not bd or not bd.get("ban_truoc"):
-        chan.append("Khong co ban truoc de ha cap (ban nay khong duoc cai bang bo nang cap).")
+        chan.append("Không có bản trước để hạ cấp (bản này không được cài bằng bộ nâng cấp).")
         return chan, canh_bao, None
     ten = bd.get("ten_ban_truoc") or bd["ban_truoc"]
     thu = os.path.join(moi.opt, "releases", ten)
     if not os.path.isdir(thu):
-        chan.append("Ban %s da bi don khoi may - khong ha cap duoc." % bd["ban_truoc"])
+        chan.append("Bản %s đã bị dọn khỏi máy - không hạ cấp được." % bd["ban_truoc"])
     elif PH.kiem_ban(moi.opt, ten):
-        chan.append("Ban %s tren dia khong con nguyen ven." % bd["ban_truoc"])
+        chan.append("Bản %s trên đĩa không còn nguyên vẹn." % bd["ban_truoc"])
     toi_thieu = bd.get("ban_toi_thieu_ha_cap")
     if toi_thieu is None:
-        chan.append("Ban hien tai khong cho phep ha cap (manifest khong khai ban toi thieu).")
+        chan.append("Bản hiện tại không cho phép hạ cấp (manifest không khai bản tối thiểu).")
     elif G.khoa_phien_ban(bd["ban_truoc"]) < G.khoa_phien_ban(toi_thieu):
-        chan.append("Khong duoc ha cap ve %s (ban thap nhat duoc phep: %s)." % (bd["ban_truoc"], toi_thieu))
+        chan.append("Không được hạ cấp về %s (bản thấp nhất được phép: %s)." % (bd["ban_truoc"], toi_thieu))
     sao = bd.get("sao_luu_truoc")
     if tuy_chon.get("khoi_phuc_du_lieu", True):
         if not (sao and os.path.exists(sao)):
-            chan.append("Khong con ban sao luu luc nang cap de khoi phuc du lieu.")
+            chan.append("Không còn bản sao lưu lúc nâng cấp để khôi phục dữ liệu.")
         else:
-            canh_bao.append("Du lieu se tro ve luc TRUOC khi nang cap: moi thay doi tu do den gio se MAT (trang thai hien tai van duoc sao luu truoc).")
+            canh_bao.append("Dữ liệu sẽ trở về lúc TRƯỚC khi nâng cấp: mọi thay đổi từ đó đến giờ sẽ MẤT (trạng thái hiện tại vẫn được sao lưu trước).")
     else:
         try:
             ho_tro = moi.hook("schema_fn")(thu)
             hien = _schema_hien_tai(moi)
             if hien > ho_tro:
-                chan.append("Du lieu hien tai (schema %d) moi hon ban %s hieu duoc (%d) - phai khoi phuc du lieu cu." % (hien, bd["ban_truoc"], ho_tro))
+                chan.append("Dữ liệu hiện tại (schema %d) mới hơn mức bản %s hiểu được (%d) - phải khôi phục dữ liệu cũ." % (hien, bd["ban_truoc"], ho_tro))
         except (LoiNangCap, OSError, ValueError) as e:
-            chan.append("Khong kiem duoc tuong thich du lieu: %s" % e)
+            chan.append("Không kiểm được tương thích dữ liệu: %s" % e)
     if moi.pxe_dang_bat_fn() and not tuy_chon.get("bo_qua_pxe"):
-        chan.append("PXE dang chay (co the dang cai Windows qua mang).")
+        chan.append("PXE đang chạy (có thể đang cài Windows qua mạng).")
     dich = {"phien_ban": bd["ban_truoc"], "ten_ban": ten, "sao_luu": sao}
     return chan, canh_bao, dich
 
@@ -389,16 +389,16 @@ def bat_dau_ha_cap(moi, tuy_chon=None):
            "ten_ban_truoc": cur["ten_ban"], "ten_ban_dich": dich["ten_ban"], "pre_sao_luu": dich["sao_luu"], "kien_truc": cur["kien_truc"], "kenh": cur["kenh"],
            "buoc": "kiem", "trang_thai": "dang-chay", "bat_dau": int(moi.gio()), "tuy_chon": tuy_chon, "canh_bao": canh_bao, "nhat_ky": []}
     _luu_job(moi, job)
-    _nhat_ky(moi, job, "Bat dau ha cap %s -> %s" % (job["tu"], job["den"]))
+    _nhat_ky(moi, job, "Bắt đầu hạ cấp %s -> %s" % (job["tu"], job["den"]))
     return job
 
 
 def _h_kiem(moi, job):
     chan, _cb, _d = kiem_dieu_kien_ha_cap(moi, job.get("tuy_chon"))
-    chan = [c for c in chan if "Dang co mot lan" not in c]
+    chan = [c for c in chan if "Đang có một lần" not in c]
     if chan:
         raise LoiNangCap(" | ".join(chan))
-    _nhat_ky(moi, job, "Dieu kien ha cap dat")
+    _nhat_ky(moi, job, "Điều kiện hạ cấp đạt")
 
 
 def _h_sao_luu(moi, job):
@@ -408,7 +408,7 @@ def _h_sao_luu(moi, job):
     if not (job.get("sao_luu") and os.path.exists(job["sao_luu"])):
         moi.hook("sao_luu_fn")(duong)
         job["sao_luu"] = duong
-        _nhat_ky(moi, job, "Da sao luu trang thai HIEN TAI (de quay lai neu can): %s" % os.path.basename(duong))
+        _nhat_ky(moi, job, "Đã sao lưu trạng thái HIỆN TẠI (để quay lại nếu cần): %s" % os.path.basename(duong))
 
 
 def _h_doi_ban(moi, job):
@@ -418,7 +418,7 @@ def _h_doi_ban(moi, job):
         PH.chuyen_ban(moi.opt, job["ten_ban_dich"])
     moi.hook("ap_dung_fn")(os.path.join(moi.opt, "releases", job["ten_ban_dich"]))
     job["doi_ban_xong"] = True
-    _nhat_ky(moi, job, "Da doi current ve %s" % job["den"])
+    _nhat_ky(moi, job, "Đã chuyển về bản %s" % job["den"])
 
 
 def _h_khoi_phuc(moi, job):
@@ -426,9 +426,9 @@ def _h_khoi_phuc(moi, job):
         job["du_lieu_bat_dau"] = True
         _luu_job(moi, job)
         moi.hook("khoi_phuc_fn")(job["pre_sao_luu"])
-        _nhat_ky(moi, job, "Da khoi phuc du lieu tu ban sao luu luc nang cap")
+        _nhat_ky(moi, job, "Đã khôi phục dữ liệu từ bản sao lưu lúc nâng cấp")
     else:
-        _nhat_ky(moi, job, "Giu nguyen du lieu hien tai (khong khoi phuc)")
+        _nhat_ky(moi, job, "Giữ nguyên dữ liệu hiện tại (không khôi phục)")
 
 
 def _h_suc_khoe(moi, job):
@@ -440,7 +440,7 @@ def _h_suc_khoe(moi, job):
 def _h_hoan_tat(moi, job):
     da = moi.kho_json("da-cai.json", {})
     da.sua(lambda x: x.pop(job["ten_ban_truoc"], None))                 # ban vua roi khong con la "ban hien tai co ban truoc"
-    _nhat_ky(moi, job, "Hoan tat ha cap ve %s" % job["den"])
+    _nhat_ky(moi, job, "Hoàn tất hạ cấp về %s" % job["den"])
 
 
 _BUOC_HC = {"kiem": _h_kiem, "sao-luu": _h_sao_luu, "doi-ban": _h_doi_ban, "khoi-phuc-du-lieu": _h_khoi_phuc,
@@ -469,7 +469,7 @@ def chay_job(moi):
                 job["buoc"] = ds[i]
                 _luu_job(moi, job)                                     # WRITE-AHEAD: ghi truoc khi lam
                 if job.get("huy") and job["loai"] == "nang-cap" and ds[i] in ("tai", "cai"):
-                    raise LoiNangCap("nguoi dung huy truoc khi doi ban")
+                    raise LoiNangCap("người dùng hủy trước khi đổi bản")
                 ham[ds[i]](moi, job)
                 i += 1
             _ket_thuc(moi, job, "xong", "")
@@ -514,19 +514,19 @@ def hoan_tac(moi, job, ly_do):
                 PH.chuyen_ban(moi.opt, truoc)
             moi.hook("ap_dung_fn")(os.path.join(moi.opt, "releases", truoc))
         else:
-            loi.append("ban cu %s khong con tren dia" % truoc)
+            loi.append("bản cũ %s không còn trên đĩa" % truoc)
     except Exception as e:
-        loi.append("khong tra current ve ban cu: %s" % e)
+        loi.append("không trả về được bản cũ: %s" % e)
     if job.get("migration_bat_dau") or job.get("du_lieu_bat_dau"):
         sao = job.get("sao_luu")
         try:
             if sao and os.path.exists(sao):
                 moi.hook("khoi_phuc_fn")(sao)
-                _nhat_ky(moi, job, "Da khoi phuc du lieu tu ban sao luu truoc khi nang cap")
+                _nhat_ky(moi, job, "Đã khôi phục dữ liệu từ bản sao lưu trước khi nâng cấp")
             else:
-                loi.append("khong co ban sao luu de khoi phuc du lieu")
+                loi.append("không có bản sao lưu để khôi phục dữ liệu")
         except Exception as e:
-            loi.append("khoi phuc du lieu loi: %s" % e)
+            loi.append("khôi phục dữ liệu lỗi: %s" % e)
     try:
         moi.hook("khoi_dong_lai_fn")()
         ok, msg = False, ""
@@ -537,13 +537,13 @@ def hoan_tac(moi, job, ly_do):
                 break
             moi.ngu(2)
         if not ok:
-            loi.append("sau hoan tac he thong chua khoe: %s" % msg)
+            loi.append("sau hoàn tác hệ thống chưa ổn: %s" % msg)
     except Exception as e:
-        loi.append("khoi dong lai/kiem sau hoan tac loi: %s" % e)
+        loi.append("khởi động lại/kiểm tra sau hoàn tác lỗi: %s" % e)
     if loi:
         _ket_thuc(moi, job, "can-xu-ly-tay", "%s. Hoan tac gap van de: %s. Huong dan: sudo python3 /opt/console-pi/scripts/console-system-release.py lui; "
-                  "khoi phuc cau hinh: saoluu.py khoi-phuc %s" % (ly_do, "; ".join(loi), job.get("sao_luu", "<file sao luu>")))
-        _bao_cao_kho(moi, job, "loi", "hoan tac that bai: " + "; ".join(loi)[:300])
+                  "khoi phuc cau hinh: saoluu.py khoi-phuc %s" % (ly_do, "; ".join(loi), job.get("sao_luu", "<file sao lưu>")))
+        _bao_cao_kho(moi, job, "loi", "hoàn tác thất bại: " + "; ".join(loi)[:300])
         return
     if job["loai"] == "nang-cap" and os.path.isdir(os.path.join(moi.opt, "releases", job["den"])) and PH.hien_tai(moi.opt) != job["den"]:
         PH.xoa_ban(os.path.join(moi.opt, "releases", job["den"]))        # ban hong khong de lai
@@ -563,15 +563,15 @@ def phuc_hoi(moi):
         job = doc_job(moi)
         buoc = job.get("buoc")
         if buoc == "hoan-tac":                                                   # dang hoan tac thi mat dien: lam lai hoan tac (idempotent)
-            hoan_tac(moi, job, job.get("ly_do") or "bi gian doan luc dang hoan tac")
+            hoan_tac(moi, job, job.get("ly_do") or "bị gián đoạn lúc đang hoàn tác")
             return "hoan-tac-lai", doc_job(moi)
         den_migration = job.get("migration_bat_dau") or job.get("doi_ban_bat_dau") or job.get("du_lieu_bat_dau")
         if buoc == "migration" or (den_migration and not job.get("doi_ban_xong") and job["loai"] == "nang-cap" and buoc != "doi-ban") \
                 or (job["loai"] == "ha-cap" and buoc == "khoi-phuc-du-lieu"):
-            hoan_tac(moi, job, "Bi gian doan (mat dien/khoi dong lai) o buoc %s - tra ve trang thai an toan" % buoc)
+            hoan_tac(moi, job, "Bị gián đoạn (mất điện/khởi động lại) ở bước %s - trả về trạng thái an toàn" % buoc)
             return "hoan-tac", doc_job(moi)
         if not den_migration and buoc in ("kiem", "sao-luu", "tai", "cai"):
-            _ket_thuc(moi, job, "da-huy", "Bi gian doan o buoc %s truoc khi dong vao he thong - khong co gi thay doi, co the thu lai" % buoc)
+            _ket_thuc(moi, job, "da-huy", "Bị gián đoạn ở bước %s trước khi đụng vào hệ thống - không có gì thay đổi, có thể thử lại" % buoc)
             return "huy", doc_job(moi)
     chay_job(moi)                                                                # buoc sau doi-ban: tiep tuc (cac buoc deu idempotent)
     return "tiep-tuc", doc_job(moi)

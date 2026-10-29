@@ -54,14 +54,14 @@ def test_chua_co_khoa_goc_thi_tat_cap_nhat(he):
         ts = M.kiem_tra(moi, bat_buoc=True)
     finally:
         os.environ.pop("CS_KHOA_GOC_FILE")
-    assert ts["loai_loi"] == "cau-hinh" and "KHOA GOC" in ts["loi"] and not M.co_ban_moi(moi)
+    assert ts["loai_loi"] == "cau-hinh" and "KHÓA GỐC" in ts["loi"] and not M.co_ban_moi(moi)
 
 
 def test_danh_muc_het_han_va_dong_ho_lech(he):
     moi = he.moi()
     he.t[0] += 8 * 86400                                      # qua han 7 ngay cua danh muc
     ts = M.kiem_tra(moi, bat_buoc=True)
-    assert ts["loai_loi"] == "an-ninh" and "HET HAN" in ts["loi"] and not ts.get("co_ban_moi")
+    assert ts["loai_loi"] == "an-ninh" and "HẾT HẠN" in ts["loi"] and not ts.get("co_ban_moi")
 
 
 def test_danh_muc_lui_so_hieu_bi_chan(he):
@@ -73,7 +73,7 @@ def test_danh_muc_lui_so_hieu_bi_chan(he):
     M.kiem_tra(moi, bat_buoc=True)                                     # ghi nho so_hieu 5
     he.danh_muc_pb = old                                               # ke tan cong phat lai danh muc CU
     ts = M.kiem_tra(moi, bat_buoc=True)
-    assert ts["loai_loi"] == "an-ninh" and "CU hon" in ts["loi"]
+    assert ts["loai_loi"] == "an-ninh" and "CŨ hơn" in ts["loi"]
 
 
 def test_danh_muc_ky_boi_khoa_la_bi_chan(he):
@@ -82,7 +82,7 @@ def test_danh_muc_ky_boi_khoa_la_bi_chan(he):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     he.danh_muc_pb = DM.tao_danh_muc("on-dinh", 9, he.ban, Ed25519PrivateKey.from_private_bytes(priv2), he.ph_id, bay_gio=int(he.t[0]))
     ts = M.kiem_tra(moi, bat_buoc=True)
-    assert ts["loai_loi"] == "an-ninh" and "chu ky" in ts["loi"].lower()
+    assert ts["loai_loi"] == "an-ninh" and "chữ ký" in ts["loi"].lower()
 
 
 # ====================================================================================== C4: nang cap thanh cong
@@ -130,29 +130,29 @@ def test_chan_khi_pxe_dang_chay_nhung_cho_phep_xac_nhan(he):
 
 def test_chan_khi_het_cho_hoac_thieu_khoa_may_hoac_khong_co_ban(he):
     moi, _ = san_sang(he, dung_luong_trong_fn=lambda d: 1 << 20)
-    with pytest.raises(N.LoiNangCap, match="cho trong"):
+    with pytest.raises(N.LoiNangCap, match="chỗ trống"):
         N.bat_dau_nang_cap(moi)
     moi2 = he.moi()
     M.kiem_tra(moi2, bat_buoc=True)
     M.kho = M.__dict__["kho"] if False else None
     ts = M.trang_thai(moi2)
     moi2.kho_json("trang-thai.json", {}).sua(lambda d: d.update(co_khoa_may=False))
-    with pytest.raises(N.LoiNangCap, match="khoa rieng"):
+    with pytest.raises(N.LoiNangCap, match="khóa riêng"):
         N.bat_dau_nang_cap(moi2)
     moi3 = he.moi()
     moi3.kho_json("trang-thai.json", {}).ghi({"hoi_luc": 1})
-    with pytest.raises(N.LoiNangCap, match="Khong co ban ke tiep"):
+    with pytest.raises(N.LoiNangCap, match="Không có bản kế tiếp"):
         N.bat_dau_nang_cap(moi3)
 
 
 def test_khong_bam_hai_lan(he):
     moi, _ = san_sang(he)
     N.bat_dau_nang_cap(moi)
-    with pytest.raises(N.LoiNangCap, match="chua ket thuc"):
+    with pytest.raises(N.LoiNangCap, match="chưa kết thúc"):
         N.bat_dau_nang_cap(moi)
     with N.khoa_chay(moi):
         assert N.dang_chay(moi)
-        with pytest.raises(N.LoiNangCap, match="khac chay"):
+        with pytest.raises(N.LoiNangCap, match="khác chạy"):
             N.chay_job(moi)
 
 
@@ -168,7 +168,7 @@ def chay_loi(he, truoc_khi=None):
 def test_goi_tai_ve_sai_sha_thi_that_bai_khong_dong_vao_he_thong(he):
     he.kho.tai_hong = True
     moi, j = chay_loi(he)
-    assert j["trang_thai"] == "that-bai" and "sha256" in j["ly_do"]
+    assert j["trang_thai"] == "that-bai" and "SHA-256" in j["ly_do"]
     assert PH.hien_tai(he.opt) == "2.0.0" and kiem_nhat_quan(he, moi) == "2.0.0" and not os.path.isdir(os.path.join(he.opt, "releases", "2.0.1"))
     assert "migration" not in he.nhat_ky and "ap_dung" not in he.nhat_ky
 
@@ -196,7 +196,7 @@ def test_goi_dung_sha_nhung_ky_sai_thi_chan_o_buoc_cai(he, tmp_path):
     he.ban[0]["sha256_goi"] = hashlib.sha256(open(p, "rb").read()).hexdigest()
     he.ghi_danh_muc(so_hieu=2)
     moi, j = chay_loi(he)
-    assert j["trang_thai"] == "that-bai" and "KHONG hop le" in j["ly_do"] and PH.hien_tai(he.opt) == "2.0.0"
+    assert j["trang_thai"] == "that-bai" and "KHÔNG hợp lệ" in j["ly_do"] and PH.hien_tai(he.opt) == "2.0.0"
 
 
 @pytest.mark.parametrize("hook", ["migration", "ap_dung", "khoi_dong_lai"])
@@ -222,7 +222,7 @@ def test_suc_khoe_that_bai_thi_hoan_tac_va_ban_cu_khoe_lai(he):
     moi, _ = san_sang(he, suc_khoe_fn=suc_khoe)
     N.bat_dau_nang_cap(moi)
     j = chay(moi)
-    assert j["trang_thai"] == "da-hoan-tac" and "suc khoe" in j["ly_do"].lower() and PH.hien_tai(he.opt) == "2.0.0"
+    assert j["trang_thai"] == "da-hoan-tac" and "sức khỏe" in j["ly_do"].lower() and PH.hien_tai(he.opt) == "2.0.0"
 
 
 def test_hoan_tac_cung_that_bai_thi_bao_can_xu_ly_tay_co_huong_dan(he):
@@ -312,7 +312,7 @@ def test_ha_cap_ve_ban_truoc_khoi_phuc_du_lieu(he):
     moi = nang_len(he)
     he.nhat_ky.clear()
     job = N.bat_dau_ha_cap(moi)
-    assert job["den"] == "2.0.0" and any("MAT" in c for c in job["canh_bao"])
+    assert job["den"] == "2.0.0" and any("MẤT" in c for c in job["canh_bao"])
     j = chay(moi)
     assert j["trang_thai"] == "xong", j["nhat_ky"][-3:]
     assert PH.hien_tai(he.opt) == "2.0.0" and kiem_nhat_quan(he, moi) == "2.0.0"
@@ -325,14 +325,14 @@ def test_ha_cap_ve_ban_truoc_khoi_phuc_du_lieu(he):
 def test_ha_cap_bi_chan_khi_khong_duoc_phep_hoac_thieu_ban(he):
     moi = nang_len(he)
     moi.kho_json("da-cai.json", {}).sua(lambda d: d["2.0.1"].update(ban_toi_thieu_ha_cap="2.0.1"))
-    with pytest.raises(N.LoiNangCap, match="Khong duoc ha cap"):
+    with pytest.raises(N.LoiNangCap, match="Không được hạ cấp"):
         N.bat_dau_ha_cap(moi)
     moi.kho_json("da-cai.json", {}).sua(lambda d: d["2.0.1"].update(ban_toi_thieu_ha_cap=None))
-    with pytest.raises(N.LoiNangCap, match="khong cho phep ha cap"):
+    with pytest.raises(N.LoiNangCap, match="không cho phép hạ cấp"):
         N.bat_dau_ha_cap(moi)
     moi.kho_json("da-cai.json", {}).sua(lambda d: d["2.0.1"].update(ban_toi_thieu_ha_cap="2.0.0"))
     PH.xoa_ban(os.path.join(he.opt, "releases", "2.0.0"))
-    with pytest.raises(N.LoiNangCap, match="don khoi may"):
+    with pytest.raises(N.LoiNangCap, match="dọn khỏi máy"):
         N.bat_dau_ha_cap(moi)
 
 
@@ -341,7 +341,7 @@ def test_ha_cap_bi_chan_khi_ban_cu_khong_con_nguyen_ven(he):
     p = os.path.join(he.opt, "releases", "2.0.0", "app.py")
     os.chmod(p, 0o644)
     open(p, "a").write("sua")
-    with pytest.raises(N.LoiNangCap, match="nguyen ven"):
+    with pytest.raises(N.LoiNangCap, match="nguyên vẹn"):
         N.bat_dau_ha_cap(moi)
 
 

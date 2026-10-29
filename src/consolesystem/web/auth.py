@@ -131,6 +131,26 @@ def local_bypass_enabled():
         return True
 
 
+def la_quan_tri(user=None):
+    """Tai khoan QUAN TRI: root hoac thanh vien nhom sudo/wheel/admin cua Linux. Man hinh kiosk chua dang nhap KHONG tinh
+    (chuc nang Cap nhat chi danh cho quan tri - ke hoach 2.0 C1)."""
+    if user is None:
+        from flask import has_request_context
+        user = session.get("user") if has_request_context() else None
+    if not user:
+        return False
+    if user == "root":
+        return True
+    import grp
+    import pwd
+    try:
+        nhom = {g.gr_name for g in grp.getgrall() if user in g.gr_mem}
+        nhom.add(grp.getgrgid(pwd.getpwnam(user).pw_gid).gr_name)
+    except KeyError:
+        return False
+    return bool(nhom & {"sudo", "wheel", "admin", "root"})
+
+
 def _is_local_screen():
     """
     Man hinh cam ung gan tren Pi duoc vao thang khong can dang nhap - go mat

@@ -65,9 +65,9 @@ def doc_ma(chuoi):
     try:
         ma = base64.b32decode(s + "=" * (-len(s) % 8))
     except (ValueError, TypeError):
-        raise LoiKhoaLenh("ma mo khoa sai dinh dang")
+        raise LoiKhoaLenh("mã mở khóa sai định dạng")
     if len(ma) != DO_DAI_MA:
-        raise LoiKhoaLenh("ma mo khoa sai do dai")
+        raise LoiKhoaLenh("mã mở khóa sai độ dài")
     return ma
 
 
@@ -108,24 +108,24 @@ def kiem_lenh(phong_bi, khoa_lenh_hop_le, token, bay_gio, so_da_thay=0, id_da_th
     id_ky = (phong_bi or {}).get("khoa")
     pub = dict(khoa_lenh_hop_le).get(id_ky)
     if pub is None:
-        raise LoiKhoaLenh("lenh ky boi khoa %r khong phai khoa lenh-khoa tin cay" % id_ky)
+        raise LoiKhoaLenh("lệnh ký bởi khóa %r không phải khóa lệnh-khóa tin cậy" % id_ky)
     try:
         d = K.mo_tai_lieu(phong_bi, pub)
     except K.LoiKhoa as e:
         raise LoiKhoaLenh(str(e))
     if d.get("loai") != "lenh-khoa" or d.get("hanh_dong") != "khoa":
-        raise LoiKhoaLenh("sai loai lenh")
+        raise LoiKhoaLenh("sai loại lệnh")
     if d.get("token_bam") != token_bam(token):
-        raise LoiKhoaLenh("lenh danh cho may khac")
+        raise LoiKhoaLenh("lệnh dành cho máy khác")
     if not (d.get("tao_luc", 0) - 600 <= bay_gio <= d.get("het_han", 0)) or d["het_han"] - d["tao_luc"] > HAN_TOI_DA:
-        raise LoiKhoaLenh("lenh het han hoac tao o tuong lai")
+        raise LoiKhoaLenh("lệnh hết hạn hoặc tạo ở tương lai")
     if d.get("id_lenh") in id_da_thay or int(d.get("so_thu_tu", 0)) <= so_da_thay:
-        raise LoiKhoaLenh("lenh cu/da dung (chong phat lai)")
+        raise LoiKhoaLenh("lệnh cũ/đã dùng (chống phát lại)")
     try:
         if len(K.unb64(d["khoa_cong_khai_mo"])) != 32:
             raise ValueError
     except (KeyError, ValueError, K.LoiKhoa):
-        raise LoiKhoaLenh("lenh thieu khoa cong khai mo khoa")
+        raise LoiKhoaLenh("lệnh thiếu khóa công khai mở khóa")
     return d
 
 
@@ -160,7 +160,7 @@ def khoa_may(moi, lenh, files):
     st = moi.kho_json(TEP_TRANG_THAI, {})
     cu = st.doc()
     if cu.get("trang_thai") in ("dang-khoa", "khoa"):
-        raise LoiKhoaLenh("may da o trang thai khoa")
+        raise LoiKhoaLenh("máy đã ở trạng thái khóa")
     bi_mat = _doc_bi_mat(files)
     ks = os.urandom(32)
     nonce = os.urandom(12)
@@ -193,7 +193,7 @@ def mo_khoa(moi, ma_chuoi):
     st = moi.kho_json(TEP_TRANG_THAI, {})
     d = st.doc()
     if d.get("trang_thai") not in ("khoa", "dang-khoa"):
-        raise LoiKhoaLenh("may khong bi khoa")
+        raise LoiKhoaLenh("máy không bị khóa")
     ma = doc_ma(ma_chuoi)
     try:
         kc = HKDF(hashes.SHA256(), 32, b"cs-khoa-boc", ("csmo|" + d["id_lenh"]).encode()).derive(
@@ -202,7 +202,7 @@ def mo_khoa(moi, ma_chuoi):
         raw = open(_tep(moi, TEP_BLOB), "rb").read()
         bi_mat = json.loads(AESGCM(ks).decrypt(raw[:12], raw[12:], d["id_lenh"].encode("ascii")))
     except (InvalidTag, ValueError, KeyError, OSError):
-        raise LoiKhoaLenh("MA MO KHOA KHONG DUNG (hoac du lieu khoa bi hong)")
+        raise LoiKhoaLenh("MÃ MỞ KHÓA KHÔNG ĐÚNG (hoặc dữ liệu khóa bị hỏng)")
     for p, b in bi_mat.items():
         ghi_nguyen_tu(p, K.unb64(b), 0o600)
     st.sua(lambda x: x.update({"trang_thai": "mo", "mo_luc": int(moi.gio()), "boc": "", "eph_pub": "", "files": []}))

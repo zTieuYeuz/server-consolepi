@@ -159,9 +159,9 @@ def mo_tai_lieu(phong_bi, pub_raw):
         nd = phong_bi["noi_dung"].encode("utf-8")
         cs = unb64(phong_bi["chu_ky"])
     except (KeyError, AttributeError, TypeError):
-        raise LoiKhoa("phong bi tai lieu thieu truong")
+        raise LoiKhoa("phong bì tài liệu thiếu trường")
     if not xac_minh(pub_raw, b"CSDOC\0" + nd, cs):
-        raise LoiKhoa("chu ky tai lieu KHONG hop le")
+        raise LoiKhoa("chữ ký tài liệu KHÔNG hợp lệ")
     return json.loads(nd.decode("utf-8"))
 
 
@@ -182,9 +182,9 @@ def khoa_hop_le(tai_lieu_tin_cay, pub_goc, vai_tro, bay_gio=None, so_hieu_da_tha
     bay_gio = bay_gio or time.time()
     d = mo_tai_lieu(tai_lieu_tin_cay, pub_goc)
     if d.get("loai") != "tin-cay":
-        raise LoiKhoa("khong phai tai lieu tin cay")
+        raise LoiKhoa("không phải tài liệu tin cậy")
     if d["het_han"] < bay_gio:
-        raise LoiKhoa("tai lieu tin cay DA HET HAN (nghi bi giu lai tai lieu cu) - can lam moi tu kho")
+        raise LoiKhoa("tài liệu tin cậy ĐÃ HẾT HẠN (nghi bị giữ lại tài liệu cũ) - cần làm mới từ kho")
     if d["so_hieu"] < so_hieu_da_thay:
-        raise LoiKhoa("tai lieu tin cay CU HON ban da thay (%s < %s) - tu choi" % (d["so_hieu"], so_hieu_da_thay))
+        raise LoiKhoa("tài liệu tin cậy CŨ HƠN bản đã thấy (%s < %s) - từ chối" % (d["so_hieu"], so_hieu_da_thay))
     return [(k["id"], unb64(k["khoa_cong_khai"])) for k in d["khoa"] if k["vai_tro"] == vai_tro and k["tu"] <= bay_gio <= k["den"]], d["so_hieu"]

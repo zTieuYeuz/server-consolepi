@@ -48,25 +48,25 @@ def kiem(moi, ten=None):
         ten = ten or PH.hien_tai(moi.opt)
         kq["ban"] = ten
         if not ten:
-            kq["ly_do"] = "khong xac dinh duoc ban dang chay"
+            kq["ly_do"] = "không xác định được bản đang chạy"
             return kq
         luu = json.load(open(_duong(moi, ten), encoding="utf-8"))
         dau_b, cs = K.unb64(luu["dau"]), K.unb64(luu["chu_ky"])
         dau = json.loads(dau_b.decode("utf-8"))
         if K.chuan_json(dau) != dau_b:
-            raise G.LoiGoi("chu ky luu khong o dang chuan")
+            raise G.LoiGoi("chữ ký lưu không ở dạng chuẩn")
     except FileNotFoundError:
-        kq["ly_do"] = "ban nay khong cai bang goi ky (cai tay/phat trien) - khong co bang bam da ky de doi chieu"
+        kq["ly_do"] = "bản này không cài bằng gói đã ký (cài tay/phát triển) - không có bảng băm đã ký để đối chiếu"
         return kq
     except (OSError, ValueError, KeyError, K.LoiKhoa, G.LoiGoi) as e:
-        kq.update({"trang_thai": "lech", "ly_do": "chu ky da luu bi hong/bi sua: %s" % e})
+        kq.update({"trang_thai": "lech", "ly_do": "chữ ký đã lưu bị hỏng/bị sửa: %s" % e})
         return kq
     ky_ok, ly_do_ky = False, ""
     try:
         G.kiem_chu_ky(dau, dau_b, cs, _khoa_phat_hanh(moi))
         ky_ok = True
     except G.LoiGoi as e:
-        if "KHONG nam trong" in str(e) or "khong nam trong" in str(e):
+        if "nằm trong" in str(e) or "nam trong" in str(e):
             ly_do_ky = str(e)
         else:
             kq.update({"trang_thai": "lech", "ly_do": str(e)})
@@ -82,17 +82,17 @@ def kiem(moi, ten=None):
         if os.path.exists(rl):
             that[PH.TEN_RELEASE] = PH._bam_file(rl)
     except OSError as e:
-        kq.update({"trang_thai": "lech", "ly_do": "khong doc duoc cay chuong trinh: %s" % e})
+        kq.update({"trang_thai": "lech", "ly_do": "không đọc được cây chương trình: %s" % e})
         return kq
     lech = sorted([k for k in khai if that.get(k) != khai[k]] + [k for k in that if k not in khai])
     kq["so_file"] = len(khai)
     kq["lech"] = lech[:200]
     if lech:
-        kq.update({"trang_thai": "lech", "ly_do": "%d file khong khop bang bam da ky (vi du: %s)" % (len(lech), ", ".join(lech[:3]))})
+        kq.update({"trang_thai": "lech", "ly_do": "%d file không khớp bảng băm đã ký (ví dụ: %s)" % (len(lech), ", ".join(lech[:3]))})
     elif ky_ok:
         kq["trang_thai"] = "ok"
     else:
-        kq.update({"trang_thai": "khong-xac-minh", "ly_do": "bam khop ban da luu nhung khong xac minh lai duoc chu ky: " + ly_do_ky})
+        kq.update({"trang_thai": "khong-xac-minh", "ly_do": "băm khớp bản đã lưu nhưng không xác minh lại được chữ ký: " + ly_do_ky})
     return kq
 
 

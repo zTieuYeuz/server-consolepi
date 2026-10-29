@@ -113,18 +113,18 @@ def test_tai_lieu_tin_cay_va_xoay_khoa(khoa):
     tc = K.tao_tai_lieu_tin_cay([{"vai_tro": "phat-hanh", "khoa_cong_khai": K.b64(ph_pub), "den": now + 1000}], 5, now + 1000, goc_priv, goc_id)
     ds, so = K.khoa_hop_le(tc, goc_pub, "phat-hanh")
     assert [x[1] for x in ds] == [ph_pub] and so == 5
-    with pytest.raises(K.LoiKhoa, match="CU HON"):
+    with pytest.raises(K.LoiKhoa, match="CŨ HƠN"):
         K.khoa_hop_le(tc, goc_pub, "phat-hanh", so_hieu_da_thay=6)                                  # lui so hieu
-    with pytest.raises(K.LoiKhoa, match="HET HAN"):
+    with pytest.raises(K.LoiKhoa, match="HẾT HẠN"):
         K.khoa_hop_le(tc, goc_pub, "phat-hanh", bay_gio=now + 5000)                                 # tan cong dong bang
     gia_priv, gia_pub = K.tao_cap_khoa()
     gia = K.tao_tai_lieu_tin_cay([{"vai_tro": "phat-hanh", "khoa_cong_khai": K.b64(gia_pub), "den": now + 1000}], 9, now + 1000,
                                  K.Ed25519PrivateKey.from_private_bytes(gia_priv), "x")
-    with pytest.raises(K.LoiKhoa, match="chu ky tai lieu"):
+    with pytest.raises(K.LoiKhoa, match="chữ ký tài liệu"):
         K.khoa_hop_le(gia, goc_pub, "phat-hanh")                                                    # khong phai khoa goc ky
     sua = dict(tc)
     sua["noi_dung"] = tc["noi_dung"].replace('"so_hieu":5', '"so_hieu":6')
-    with pytest.raises(K.LoiKhoa, match="chu ky tai lieu"):
+    with pytest.raises(K.LoiKhoa, match="chữ ký tài liệu"):
         K.khoa_hop_le(sua, goc_pub, "phat-hanh")
     # xoay khoa: tai lieu moi chi chua khoa moi -> khoa cu het hieu luc
     p2, pub2 = K.tao_cap_khoa()
@@ -221,7 +221,7 @@ def test_du_lieu_thua_sau_goi_bi_chan(cay, he, tmp_path):
     dich, m, dek = lam_goi(cay, he, tmp_path)
     bad = str(tmp_path / "thua.cspkg")
     open(bad, "wb").write(open(dich, "rb").read() + b"\0")
-    with pytest.raises(G.LoiGoi, match="thua|cat cut|khoi"):
+    with pytest.raises(G.LoiGoi, match="thừa|cắt cụt|khối"):
         cai(bad, dek, he, tmp_path)
 
 
@@ -242,7 +242,7 @@ def test_doi_thu_tu_khoi_bi_chan(cay, he, tmp_path):
     khoi[1], khoi[2] = khoi[2], khoi[1]
     bad = str(tmp_path / "doi.cspkg")
     open(bad, "wb").write(raw[:vi_tri] + b"".join(khoi))
-    with pytest.raises(G.LoiGoi, match="tag|khoi"):
+    with pytest.raises(G.LoiGoi, match="tag|khối"):
         cai(bad, dek, he, tmp_path)
 
 
@@ -275,11 +275,11 @@ def test_chu_ky_cua_khoa_la_bi_chan(cay, he, tmp_path):
     ke_gia = Ed25519PrivateKey.from_private_bytes(priv2)
     dich = str(tmp_path / "gia.cspkg")
     _m, dek = G.dong_goi(cay, tt(), ke_gia, he[1], dich)                      # gia danh id khoa phat-hanh that, ky bang khoa la
-    with pytest.raises(G.LoiGoi, match="CHU KY KHONG HOP LE"):
+    with pytest.raises(G.LoiGoi, match="CHỮ KÝ KHÔNG HỢP LỆ"):
         cai(dich, dek, he, tmp_path)
     dich2 = str(tmp_path / "gia2.cspkg")
     _m, dek2 = G.dong_goi(cay, tt(), ke_gia, K.dau_van_tay(pub2), dich2)      # khai dung id khoa la -> khong nam trong tin cay
-    with pytest.raises(G.LoiGoi, match="khong nam trong danh sach khoa tin cay"):
+    with pytest.raises(G.LoiGoi, match="không nằm trong danh sách khóa tin cậy"):
         cai(dich2, dek2, he, tmp_path)
 
 
@@ -287,19 +287,19 @@ def test_khoa_lenh_khoa_khong_ky_duoc_goi(cay, khoa, he, tmp_path):
     lk_priv, _lk_pub, lk_id = tai_khoa(khoa, "lenh-khoa")
     dich = str(tmp_path / "lk.cspkg")
     _m, dek = G.dong_goi(cay, tt(), lk_priv, lk_id, dich)
-    with pytest.raises(G.LoiGoi, match="khong nam trong danh sach khoa tin cay"):
+    with pytest.raises(G.LoiGoi, match="không nằm trong danh sách khóa tin cậy"):
         cai(dich, dek, he, tmp_path)                                           # khoa lenh-khoa khong co quyen ky goi
 
 
 def test_phat_lai_goi_cu_va_nhay_cap_bi_chan(cay, he, tmp_path):
     dich, m, dek = lam_goi(cay, he, tmp_path)                                  # so_phat_hanh 2, can o 2.0.0
-    with pytest.raises(G.LoiGoi, match="CU hon hoac bang"):
+    with pytest.raises(G.LoiGoi, match="CŨ hơn hoặc bằng"):
         cai(dich, dek, he, tmp_path, ht=dict(HT, so_phat_hanh=2, phien_ban="2.0.0"))            # phat lai
-    with pytest.raises(G.LoiGoi, match="TUAN TU"):
+    with pytest.raises(G.LoiGoi, match="TUẦN TỰ"):
         cai(dich, dek, he, tmp_path, ht=dict(HT, phien_ban="1.9.5"))                            # nhay cap tu 1.9.5
-    with pytest.raises(G.LoiGoi, match="kien truc"):
+    with pytest.raises(G.LoiGoi, match="kiến trúc"):
         cai(dich, dek, he, tmp_path, ht=dict(HT, kien_truc="arm64"))
-    with pytest.raises(G.LoiGoi, match="kenh"):
+    with pytest.raises(G.LoiGoi, match="kênh"):
         cai(dich, dek, he, tmp_path, ht=dict(HT, kenh="thu-nghiem"))
     assert not os.path.exists(tmp_path / "releases" / "2.0.1")
     cai(dich, dek, he, tmp_path)                                               # dung dieu kien: OK
@@ -311,8 +311,8 @@ def test_ha_cap_chi_khi_duoc_phep(cay, he, tmp_path):
     dich, m, dek = lam_goi(cay, he, tmp_path, phien_ban="2.0.0", so_phat_hanh=1, ban_truoc_bat_buoc=None)
     cur = {"phien_ban": "2.0.1", "so_phat_hanh": 2, "kien_truc": "amd64", "kenh": "on-dinh", "ban_toi_thieu_ha_cap": "2.0.0"}
     assert G.kiem_dieu_kien_cai(m, cur, ha_cap=True) == []
-    assert "ha cap" in " ".join(G.kiem_dieu_kien_cai(m, dict(cur, ban_toi_thieu_ha_cap="2.0.1"), ha_cap=True))
-    assert "ha cap" in " ".join(G.kiem_dieu_kien_cai(m, dict(cur, ban_toi_thieu_ha_cap=None), ha_cap=True))
+    assert "hạ cấp" in " ".join(G.kiem_dieu_kien_cai(m, dict(cur, ban_toi_thieu_ha_cap="2.0.1"), ha_cap=True))
+    assert "hạ cấp" in " ".join(G.kiem_dieu_kien_cai(m, dict(cur, ban_toi_thieu_ha_cap=None), ha_cap=True))
     assert G.kiem_dieu_kien_cai(m, cur, ha_cap=False)                          # khong phai che do ha cap -> chan (so phat hanh thap)
 
 
@@ -356,26 +356,26 @@ def tar_gz(thanh_vien, ra):
 @pytest.mark.parametrize("ten", ["../x", "/etc/passwd", "a/../../x", "a//b", "./a", "a\\b"])
 def test_giai_nen_chan_ten_nguy_hiem(tmp_path, ten):
     t = tar_gz([(ten, b"x", "file")], str(tmp_path / "t.tar.gz"))
-    with pytest.raises(G.LoiGoi, match="khong an toan"):
+    with pytest.raises(G.LoiGoi, match="không an toàn"):
         G.giai_nen_an_toan(t, str(tmp_path / "ra"), {"tep": {ten: "0"}})
 
 
 @pytest.mark.parametrize("loai", ["sym", "hard", "dev"])
 def test_giai_nen_chan_link_va_thiet_bi(tmp_path, loai):
     t = tar_gz([("l", b"", loai)], str(tmp_path / "t.tar.gz"))
-    with pytest.raises(G.LoiGoi, match="loai muc"):
+    with pytest.raises(G.LoiGoi, match="loại mục"):
         G.giai_nen_an_toan(t, str(tmp_path / "ra"), {"tep": {"l": "0"}})
 
 
 def test_giai_nen_chan_file_ngoai_manifest_thieu_file_va_sai_ma_bam(tmp_path):
     h = hashlib.sha256(b"x").hexdigest()
     t = tar_gz([("a", b"x", "file"), ("b", b"y", "file")], str(tmp_path / "t.tar.gz"))
-    with pytest.raises(G.LoiGoi, match="KHONG co trong manifest"):
+    with pytest.raises(G.LoiGoi, match="KHÔNG có trong manifest"):
         G.giai_nen_an_toan(t, str(tmp_path / "r1"), {"tep": {"a": h}})
     t2 = tar_gz([("a", b"x", "file")], str(tmp_path / "t2.tar.gz"))
-    with pytest.raises(G.LoiGoi, match="thieu 1 file"):
+    with pytest.raises(G.LoiGoi, match="thiếu 1 file"):
         G.giai_nen_an_toan(t2, str(tmp_path / "r2"), {"tep": {"a": h, "c": h}})
-    with pytest.raises(G.LoiGoi, match="SAI sha256"):
+    with pytest.raises(G.LoiGoi, match="SAI SHA-256"):
         G.giai_nen_an_toan(t2, str(tmp_path / "r3"), {"tep": {"a": "0" * 64}})
 
 
@@ -405,7 +405,7 @@ def test_goi_co_file_la_trong_tai_trong_bi_chan_du_chu_ky_dung(cay, he, tmp_path
     monkeypatch.setattr(G, "_tar_xac_dinh", them_file_la)
     _m, dek = G.dong_goi(cay, tt(), ph_priv, ph_id, dich)
     monkeypatch.undo()
-    with pytest.raises(G.LoiGoi, match="KHONG co trong manifest"):
+    with pytest.raises(G.LoiGoi, match="KHÔNG có trong manifest"):
         cai(dich, dek, he, tmp_path)
     assert not os.path.exists(tmp_path / "releases" / "2.0.1") and not [x for x in os.listdir(tmp_path / "releases") if x.startswith(".")]
 
@@ -436,19 +436,19 @@ def test_danh_muc_hop_le_va_ban_ke_tiep_tuan_tu(he):
 def test_danh_muc_het_han_tuong_lai_lui_so_hieu_sai_kenh_sai_khoa(he):
     now = time.time()
     pb = lam_dm(he, han=100, bay_gio=int(now) - 1000)
-    with pytest.raises(G.LoiGoi, match="HET HAN"):
+    with pytest.raises(G.LoiGoi, match="HẾT HẠN"):
         DM.mo_danh_muc(pb, he[4], "on-dinh")
-    with pytest.raises(G.LoiGoi, match="TUONG LAI"):
+    with pytest.raises(G.LoiGoi, match="TƯƠNG LAI"):
         DM.mo_danh_muc(lam_dm(he, bay_gio=int(now) + 3600), he[4], "on-dinh")
-    with pytest.raises(G.LoiGoi, match="CU hon"):
+    with pytest.raises(G.LoiGoi, match="CŨ hơn"):
         DM.mo_danh_muc(lam_dm(he), he[4], "on-dinh", so_hieu_da_thay=11)
-    with pytest.raises(G.LoiGoi, match="sai loai/kenh"):
+    with pytest.raises(G.LoiGoi, match="sai loại/kênh"):
         DM.mo_danh_muc(lam_dm(he), he[4], "thu-nghiem")
     sua = lam_dm(he)
     sua["noi_dung"] = sua["noi_dung"].replace('"so_hieu":10', '"so_hieu":99')
-    with pytest.raises(G.LoiGoi, match="chu ky"):
+    with pytest.raises(G.LoiGoi, match="chữ ký"):
         DM.mo_danh_muc(sua, he[4], "on-dinh")
-    with pytest.raises(G.LoiGoi, match="khong nam trong khoa tin cay"):
+    with pytest.raises(G.LoiGoi, match="không nằm trong khóa tin cậy"):
         DM.mo_danh_muc(lam_dm(he, id_khoa="khoa-la"), he[4], "on-dinh")
 
 

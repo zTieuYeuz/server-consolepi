@@ -98,7 +98,7 @@ def test_hai_bo_nang_cap_chay_cung_luc_chi_mot_duoc_lam(he):
         N.chay_job(moi)                                                   # nguoi thu hai khi bo thu nhat dang giu khoa
         bi_chan = False
     except N.LoiNangCap as e:
-        bi_chan = "khac chay" in str(e)
+        bi_chan = "khác chạy" in str(e)
     finally:
         tiep.set()
         t.join(30)
@@ -135,7 +135,7 @@ def test_dong_ho_may_lech_nhieu(he, lech):
     else:
         assert ts.get("co_ban_moi") and not ts.get("loi")                    # nhanh 3 ngay van trong han 7 ngay
     if ts.get("loi"):
-        assert "Dong ho may lech" in ts["loi"], ts["loi"]                      # nguoi dung duoc chi ro nguyen nhan, khong chi 'khoa khong tin cay'
+        assert "Đồng hồ máy lệch" in ts["loi"], ts["loi"]                      # nguoi dung duoc chi ro nguyen nhan, khong chi 'khoa khong tin cay'
 
 
 def test_bo_qua_phien_ban_phai_len_tuan_tu_khong_nhay_coc(he):

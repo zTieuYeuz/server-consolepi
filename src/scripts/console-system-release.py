@@ -82,6 +82,10 @@ def main(argv=None):
                 if not os.path.islink(P.TEN_CU):
                     os.symlink(os.path.join(a.opt, "current"), P.TEN_CU)
             bc = P.ap_dung(os.path.join(a.opt, "releases", ten), sao_luu)
+            if DD.BO_CUC_MOI:                        # gom du lieu nam ngoai ve thu muc du lieu (sao luu 1 thu muc la du)
+                from consolesystem.core import gomdulieu as GOM
+                for x in GOM.gom(DD.GOC):
+                    print("gom:", x)
             print("ban %s dang dung. he thong doi: %s; loi: %s" % (ten, bc["doi"] or "khong", bc["loi"] or "khong"))
             print("da xoa ban cu:", P.don_ban_cu(a.opt) or "khong")
             if not a.khong_khoi_dong_lai:

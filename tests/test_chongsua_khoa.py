@@ -102,9 +102,9 @@ def test_nang_cap_bi_chan_khi_chuong_trinh_bi_sua_nhung_ha_cap_thi_khong(he):
     sua(os.path.join(he.opt, "releases", "2.0.1", "app.py"), b"print('bi sua')\n")
     M.kiem_tra(moi, bat_buoc=True)
     chan, _cb, _ban = N.kiem_dieu_kien_nang_cap(moi, {})
-    assert any("BI SUA DOI" in c for c in chan), chan
+    assert any("BỊ SỬA ĐỔI" in c for c in chan), chan
     chan2, _ = N.kiem_dieu_kien_ha_cap(moi, {})[:2]
-    assert not any("BI SUA DOI" in c for c in chan2)
+    assert not any("BỊ SỬA ĐỔI" in c for c in chan2)
 
 
 def test_bao_kho_dung_mot_lan(he):

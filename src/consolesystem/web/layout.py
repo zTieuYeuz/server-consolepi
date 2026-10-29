@@ -598,10 +598,11 @@ def render_page(body_html, active="/", title=TEN_NGAN, subtitle="", extra_css=""
     """
     chips = get_status_chips()
     che_do = che_do_giao_dien()
+    from consolesystem.web.auth import la_quan_tri as _la_quan_tri     # chuong chi cho tai khoan quan tri
     try:                                  # chuong bao co ban cap nhat moi (chi doc trang thai da luu; xem core/capnhat/may.py)
         from consolesystem.core.capnhat.may import co_ban_moi_nhanh
         chuong_html = ('<a href="/cap-nhat" class="btn" title="Có bản cập nhật mới - bấm để xem" style="position:relative">🔔'
-                       '<span style="position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:50%;background:#F87171"></span></a>') if co_ban_moi_nhanh() else ""
+                       '<span style="position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:50%;background:#F87171"></span></a>') if co_ban_moi_nhanh() and _la_quan_tri() else ""
     except Exception:
         chuong_html = ""
     body_html = doi_mau_viet_cung(body_html)

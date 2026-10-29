@@ -30,6 +30,7 @@ Bao mat (ca hai):
     dung tailnet do moi ket noi toi duoc Pi.
 """
 import sys as _sys
+from consolesystem.core import duongdan as _DD_TS  # noqa: E402
 from consolesystem.integrations.cloudflare import CONF_DIR, TOKEN_FILE, SERVICE, da_cai, co_token, dang_chay  # noqa: F401
 _sys.modules["ui.remote"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import os
@@ -40,7 +41,7 @@ import subprocess
 DEB_URL = ("https://github.com/cloudflare/cloudflared/releases/latest/"
            "download/cloudflared-linux-{arch}.deb")
 
-TS_AUTHKEY_FILE = "/etc/tailscale-console-pi-authkey"
+TS_AUTHKEY_FILE = _DD_TS.FILE_TS_AUTHKEY       # 2.0: trong secrets/ (sao luu cung thu muc du lieu)
 TS_HOSTNAME = "console-pi"
 
 

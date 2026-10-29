@@ -24,18 +24,18 @@ from consolesystem.web.layout import render_page
 from consolesystem.features.updates import thuc_te as T
 
 DIEU_KHOAN = """\
-1. Cap nhat Console System thay doi chuong trinh dang chay tren may nay va CO THE KHOI DONG LAI cac dich vu (ke ca trang web quan ly). Trong luc do viec
-   cai Windows qua mang (PXE), tai file, quet mang... dang chay co the BI GIAN DOAN hoac LOI.
-2. He thong tu sao luu cau hinh truoc khi nang cap va tu hoan tac neu co loi; tuy nhien KHONG co phan mem nao dam bao tuyet doi. Ban co trach nhiem
-   sao luu rieng du lieu quan trong (kho phan mem, anh he dieu hanh, cau hinh may chu) truoc khi cap nhat.
-3. Goi cap nhat duoc ky so va ma hoa; he thong chi cai goi hop le tu nha phat hanh, tung ban mot theo thu tu, va kiem lai tung file sau khi cai.
-4. Phan mem duoc cung cap theo hien trang. Nha phat hanh khong chiu trach nhiem ve thiet hai gian tiep hay mat du lieu do ban khong sao luu hoac do
-   thay doi trai phep ma nguon/he thong cap nhat.
-5. Tinh nang cap nhat co the bi chan neu phat hien chuong trinh bi sua doi trai phep (xem muc Chong chinh sua). Day la lop phat hien thay doi, khong
-   chong duoc nguoi da co quyen root tren may.
-6. KHOA MAY: neu may bi nghi ngo (vd chuong trinh bi sua, may that lac/bi sao chep), CHU HE THONG co the ky mot lenh khoa; may nhan lenh thi ma hoa cac
-   bi mat NHO (khoa phien web, token kho, khoa Samba...) va chi mo lai khi nhap MA MO KHOA do chu he thong giu. Lenh chi co hieu luc khi co chu ky hop le,
-   dung may, con han; khong ai (ke ca kho) mo khoa tu xa. Mat ma mo khoa = mat cac bi mat da khoa, nen hay giu ma o noi an toan.
+1. Cập nhật Console System thay đổi chương trình đang chạy trên máy này, KHỞI ĐỘNG LẠI các dịch vụ (kể cả trang web quản lý) và sau đó cần
+   khởi động lại máy. Trong lúc đó việc cài Windows qua mạng (PXE), tải file, quét mạng... đang chạy có thể BỊ GIÁN ĐOẠN hoặc LỖI.
+2. Hệ thống tự sao lưu cấu hình trước khi nâng cấp và tự hoàn tác nếu có lỗi; tuy nhiên KHÔNG có phần mềm nào bảo đảm tuyệt đối. Bạn có trách
+   nhiệm tự sao lưu dữ liệu quan trọng (kho phần mềm, ảnh hệ điều hành, cấu hình máy chủ) trước khi cập nhật.
+3. Gói cập nhật được ký số và mã hóa; hệ thống chỉ cài gói hợp lệ từ nhà phát hành, từng bản một theo thứ tự, và kiểm lại từng file sau khi cài.
+4. Phần mềm được cung cấp theo hiện trạng. Nhà phát hành không chịu trách nhiệm về thiệt hại gián tiếp hay mất dữ liệu do bạn không sao lưu hoặc do
+   thay đổi trái phép mã nguồn / hệ thống cập nhật.
+5. Tính năng cập nhật có thể bị chặn nếu phát hiện chương trình bị sửa đổi trái phép (xem mục Chống chỉnh sửa). Đây là lớp phát hiện thay đổi, không
+   chống được người đã có quyền root trên máy.
+6. KHÓA MÁY: nếu máy bị nghi ngờ (ví dụ chương trình bị sửa, máy thất lạc/bị sao chép), CHỦ HỆ THỐNG có thể ký một lệnh khóa; máy nhận lệnh thì mã hóa
+   các bí mật NHỎ (khóa phiên web, token kho, khóa Samba...) và chỉ mở lại khi nhập MÃ MỞ KHÓA do chủ hệ thống giữ. Lệnh chỉ có hiệu lực khi có chữ
+   ký hợp lệ, đúng máy, còn hạn; không ai (kể cả kho) mở khóa từ xa. Mất mã mở khóa = mất các bí mật đã khóa, nên hãy giữ mã ở nơi an toàn.
 """
 GO_XAC_NHAN = "CAP NHAT"
 GO_HA_CAP = "HA CAP"
@@ -64,10 +64,10 @@ def _form_nut(duong, nhan, cls="gray", an=None):
 
 
 def _trang_dieu_khoan():
-    nd = ('<p>Truoc khi dung chuc nang Cap nhat, vui long doc va dong y:</p><pre style="white-space:pre-wrap;background:rgba(0,0,0,.2);padding:12px;border-radius:8px">%s</pre>'
-          '<form method="POST" action="/cap-nhat/dong-y"><label><input type="checkbox" name="dong_y" value="1" required> Toi da doc va dong y voi dieu khoan tren</label><br><br>'
-          '<button class="blue">Dong y va tiep tuc</button></form>') % esc(DIEU_KHOAN)
-    return render_page(_the("Dieu khoan su dung chuc nang Cap nhat", nd), active="/cap-nhat", title="Cập nhật", subtitle="Điều khoản")
+    nd = ('<p>Trước khi dùng chức năng Cập nhật, vui lòng đọc và đồng ý:</p><pre style="white-space:pre-wrap;background:rgba(0,0,0,.2);padding:12px;border-radius:8px">%s</pre>'
+          '<form method="POST" action="/cap-nhat/dong-y"><label><input type="checkbox" name="dong_y" value="1" required> Tôi đã đọc và đồng ý với điều khoản trên</label><br><br>'
+          '<button class="blue">Đồng ý và tiếp tục</button></form>') % esc(DIEU_KHOAN)
+    return render_page(_the("Điều khoản sử dụng chức năng Cập nhật", nd), active="/cap-nhat", title="Cập nhật", subtitle="Điều khoản")
 
 
 def _khoi_tien_do(job):
@@ -124,7 +124,10 @@ def _khoi_ban_moi(moi, ts, cur, job_chay):
         form = ('<details><summary class="btn blue">Cập nhật lên %(v)s…</summary><form method="POST" action="/cap-nhat/bat-dau" style="margin-top:12px">'
                 '<p><b>Trước khi tiếp tục:</b> hệ thống tự sao lưu cấu hình, nâng cấp tự động và <b>tự hoàn tác nếu lỗi</b>; dịch vụ sẽ KHỞI ĐỘNG LẠI.</p>'
                 '<pre style="white-space:pre-wrap;font-size:12px">%(dk)s</pre>'
+                '<p><b>Bước 1 - tải bản sao lưu về máy của bạn</b> (hệ thống cũng tự sao lưu cấu hình, nhưng nên giữ thêm một bản bên ngoài): '
+                '<a class="btn gray" href="/settings/sao-luu">Tải sao lưu cấu hình</a> <a class="btn gray" href="/settings/sao-luu?che_do=toanbo">Tải sao lưu toàn bộ (kèm kho, ảnh Windows)</a></p>'
                 '<label><input type="checkbox" name="da_sao_luu" value="1" required> Tôi đã sao lưu dữ liệu và máy chủ quan trọng và đồng ý điều khoản trên</label><br>%(pxe)s'
+                '<label>Mật khẩu tài khoản quản trị của bạn: <input type="password" name="mat_khau" autocomplete="current-password" required></label><br>'
                 '<label>Gõ <b>%(go)s</b> để xác nhận: <input name="xac_nhan" autocomplete="off" required></label> <button class="blue">Bắt đầu cập nhật</button></form></details>') \
             % {"v": esc(ban["phien_ban"]), "dk": esc(DIEU_KHOAN), "pxe": bo_pxe, "go": GO_XAC_NHAN}
     ghi = '<p><b>Có gì mới:</b> %s</p>' % esc(ban.get("ghi_chu") or "(không có ghi chú)")
@@ -143,8 +146,36 @@ def _khoi_ha_cap(moi, job_chay):
                 ('<details><summary class="btn gray">Hạ cấp…</summary><form method="POST" action="/cap-nhat/ha-cap" style="margin-top:12px">'
                  '<div class="msg warn">%s</div><label><input type="checkbox" name="khoi_phuc_du_lieu" value="1" checked> Khôi phục dữ liệu về lúc trước khi nâng cấp '
                  '(bỏ chọn nếu muốn giữ dữ liệu hiện tại và dữ liệu tương thích)</label><br>'
+                 '<label>Mật khẩu tài khoản quản trị: <input type="password" name="mat_khau" autocomplete="current-password" required></label><br>'
                  '<label>Gõ <b>%s</b>: <input name="xac_nhan" autocomplete="off" required></label> <button class="gray">Hạ cấp</button></form></details>') %
                 ("<br>".join(esc(c) for c in canh_bao) or "Trạng thái hiện tại được sao lưu trước khi hạ cấp.", GO_HA_CAP))
+
+
+def _thoi_diem_khoi_dong():
+    try:
+        with open("/proc/uptime") as f:
+            return time.time() - float(f.read().split()[0])
+    except (OSError, ValueError):
+        return 0
+
+
+def _can_khoi_dong_lai(moi, job):
+    """Nang/ha cap xong ma may CHUA khoi dong lai tu luc do (goi khai can_khoi_dong_lai, mac dinh co) -> nhac khoi dong lai (hoi truoc)."""
+    if not job or job.get("trang_thai") != "xong" or not job.get("ket_thuc"):
+        return False
+    if job.get("loai") == "nang-cap" and (job.get("manifest") or {}).get("can_khoi_dong_lai") is False:
+        return False
+    return _thoi_diem_khoi_dong() < job["ket_thuc"]
+
+
+def _khoi_khoi_dong_lai(moi, job):
+    if not _can_khoi_dong_lai(moi, job):
+        return ""
+    return _the("Cần khởi động lại máy",
+                "<p>Đã %s lên bản <b>%s</b>. Để hoàn tất, hãy <b>khởi động lại máy</b> (máy khách đang cài Windows qua PXE sẽ bị gián đoạn).</p>%s"
+                % ("nâng cấp" if job.get("loai") == "nang-cap" else "hạ cấp", esc(job.get("den", "")),
+                   '<form method="POST" action="/cap-nhat/khoi-dong-lai-may" onsubmit="return confirm(this.dataset.hoi);" data-hoi="Khởi động lại máy Console System ngay bây giờ?">'
+                   '<button class="blue">Khởi động lại máy ngay</button></form>'), "#FBBF24")
 
 
 def _khoi_cai_dat(cfg):
@@ -182,6 +213,16 @@ def register_capnhat(app):
     def _moi():
         return T.moi_thuc()
 
+    @app.before_request
+    def _chi_quan_tri():
+        if not request.path.startswith("/cap-nhat") or _auth.la_quan_tri():
+            return None
+        if not session.get("user"):
+            return redirect("/login")
+        return Response(render_page(_the("Cập nhật", "<p>Chức năng Cập nhật chỉ dành cho <b>tài khoản quản trị</b> (thuộc nhóm sudo của máy). "
+                                                     "Đăng xuất rồi đăng nhập bằng tài khoản quản trị.</p>"), active="/cap-nhat", title="Cập nhật"),
+                        status=403, mimetype="text/html")
+
     @app.route("/cap-nhat")
     def trang_cap_nhat(msg="", ok=True):
         moi = _moi()
@@ -194,7 +235,7 @@ def register_capnhat(app):
         job = N.doc_job(moi)
         chay = bool(job and job.get("trang_thai") == "dang-chay")
         thong_bao = ('<div class="msg %s">%s</div>' % ("ok" if ok else "err", esc(msg))) if msg else ""
-        body = thong_bao + _khoi_tien_do(T.mo_ta_job(job) if job and (chay or time.time() - (job.get("ket_thuc") or 0) < 86400) else None) + _khoi_trang_thai(moi, ts, cur, cfg) \
+        body = thong_bao + _khoi_khoi_dong_lai(moi, job) + _khoi_tien_do(T.mo_ta_job(job) if job and (chay or time.time() - (job.get("ket_thuc") or 0) < 86400) else None) + _khoi_trang_thai(moi, ts, cur, cfg) \
             + _khoi_nguyen_ven(moi) + _khoi_ban_moi(moi, ts, cur, chay) + _khoi_ha_cap(moi, chay) + _khoi_cai_dat(cfg) + _khoi_lich_su(moi)
         return render_page(body, active="/cap-nhat", title="Cập nhật", subtitle="Phiên bản và nâng cấp")
 
@@ -223,6 +264,9 @@ def register_capnhat(app):
         moi = _moi()
         if request.form.get("xac_nhan", "").strip().upper() != go_dung:
             return trang_cap_nhat("Chưa gõ đúng chữ xác nhận.", False)
+        ok_mk, _tb = _auth.check_login(session.get("user", ""), request.form.get("mat_khau", ""))
+        if not ok_mk:
+            return trang_cap_nhat("Mật khẩu tài khoản quản trị không đúng.", False)
         try:
             ham_bat_dau(moi, tuy_chon)
         except N.LoiNangCap as e:
@@ -239,6 +283,16 @@ def register_capnhat(app):
     @app.route("/cap-nhat/ha-cap", methods=["POST"])
     def cap_nhat_ha_cap():
         return _khoi_dong(N.bat_dau_ha_cap, {"khoi_phuc_du_lieu": request.form.get("khoi_phuc_du_lieu") == "1"}, GO_HA_CAP)
+
+    @app.route("/cap-nhat/khoi-dong-lai-may", methods=["POST"])
+    def cap_nhat_khoi_dong_lai_may():
+        moi = _moi()
+        if not _can_khoi_dong_lai(moi, N.doc_job(moi)):
+            return redirect("/cap-nhat")
+        if N.dang_chay(moi):
+            return trang_cap_nhat("Đang có một lần nâng cấp/hạ cấp chạy, chưa khởi động lại được.", False)
+        T.khoi_dong_lai_may()
+        return render_page(_the("Đang khởi động lại máy", "<p>Máy đang khởi động lại. Chờ khoảng 1-2 phút rồi tải lại trang.</p>"), active="/cap-nhat", title="Cập nhật")
 
     @app.route("/cap-nhat/huy", methods=["POST"])
     def cap_nhat_huy():

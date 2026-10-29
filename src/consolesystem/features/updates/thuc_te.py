@@ -74,6 +74,11 @@ def schema(ban_dir):
     return int(m.group(1)) if m else 0
 
 
+def khoi_dong_lai_may():
+    """Khoi dong lai CA MAY (nguoi dung da xac nhan tren tab Cap nhat). Chay tach rieng de trang web kip tra loi."""
+    chay_lenh(["systemd-run", "--on-active=3", "--unit=console-system-reboot-" + str(int(time.time())), "systemctl", "reboot"], timeout=30)
+
+
 def khoi_dong_lai():
     chay_lenh(["systemctl", "daemon-reload"], timeout=60)
     for s in DICH_VU_KHAC:

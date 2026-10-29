@@ -20,6 +20,7 @@
 /cap-nhat/dong-y	POST	cap_nhat_dong_y
 /cap-nhat/ha-cap	POST	cap_nhat_ha_cap
 /cap-nhat/huy	POST	cap_nhat_huy
+/cap-nhat/khoi-dong-lai-may	POST	cap_nhat_khoi_dong_lai_may
 /cap-nhat/kiem-tra	POST	cap_nhat_kiem_tra
 /cap-nhat/tien-do	GET	cap_nhat_tien_do
 /commands	GET	commands_page
