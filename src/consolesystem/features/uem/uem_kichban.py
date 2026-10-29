@@ -74,10 +74,9 @@ def _nut_dieu_khien(kb, st):
     u = f'{URL}/{kb["id"]}'
     st = st or {}
     if st.get("bat"):
-        ra = _nut(u + "/dung", "Dừng", "do", "Dừng kịch bản? Máy đang chạy sẽ dừng sau bước đang làm; bấm Tiếp tục để chạy tiếp.")
-        if st.get("xong_luc") and not kb.get("lich_id"):
-            ra = _nut(u + "/chay", "Chạy lại", "chinh") + " " + ra
-        return ra
+        if st.get("xong_luc") and not kb.get("lich_id"):     # chay ngay, da xong: khong con gi de dung
+            return _nut(u + "/chay", "Chạy lại", "chinh")
+        return _nut(u + "/dung", "Dừng", "do", "Dừng kịch bản? Máy đang chạy sẽ dừng sau bước đang làm; bấm Tiếp tục để chạy tiếp.")
     if st.get("slot") and not st.get("xong_luc") and st.get("may"):
         return _nut(u + "/tiep-tuc", "Tiếp tục", "chinh") + " " + _nut(u + "/chay", "Chạy lại từ đầu", "", "Chạy lại từ đầu? Tiến độ hiện tại sẽ bị thay bằng lượt mới.")
     return _nut(u + "/chay", "Chạy", "chinh")
