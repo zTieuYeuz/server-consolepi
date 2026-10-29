@@ -570,6 +570,7 @@ def may_cua_kich_ban(kb):
     return ra
 
 
+MAY_BAN_NGOAI = set()     # id may dang chay "dot cai" cua Cai phan mem qua Agent (uem_trienkhai) - kich ban Agent cho may ranh (tranh msiexec 1618)
 _KENH_AGENT = [None]       # module agent (con_song, Client) - Quan ly may tram dang ky luc khoi dong (integrations khong import features)
 
 
@@ -830,6 +831,8 @@ def tick():
                 if (kb_id, ip) in _DANG:
                     continue
                 if m["tt"] in ("offline", "cho_thu_lai") and m.get("tiep", 0) > time.time():
+                    continue
+                if la_agent(kb) and ip in MAY_BAN_NGOAI:      # may dang cai dot khac: luot quet sau (15 giay)
                     continue
                 if m["tt"] == "dang":                      # dich vu khoi dong lai giua chung: chay lai tu buoc dang do
                     pass

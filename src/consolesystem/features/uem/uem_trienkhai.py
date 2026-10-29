@@ -127,6 +127,7 @@ def _chay_may(dot_id, may_id):
     finally:
         with _KHOA:
             _DANG.discard(may_id)
+            DC.MAY_BAN_NGOAI.discard(may_id)
         _DANH_THUC.set()                       # may nay ranh: xem con viec khac cho no khong
 
 
@@ -142,9 +143,10 @@ def _con_song(m):
 
 def _giao(dot_id, may_id):
     """Danh dau dang_chay va day vao hang doi neu may chua ban. Goi trong _KHOA."""
-    if may_id in _DANG:
+    if may_id in _DANG or any(k[1] == may_id for k in list(DC._DANG)):      # may dang chay kich ban Agent: cho luot sau
         return False
     _DANG.add(may_id)
+    DC.MAY_BAN_NGOAI.add(may_id)
     _dat(dot_id, may_id, tt="dang_chay", tb="")
     _EX.submit(_chay_may, dot_id, may_id)
     return True
@@ -240,10 +242,8 @@ def bat_dau(hanh_dong, goi_id, ten_goi, may_ids, thu_lai=2, het_han_ngay=7, wol=
         DOT_TK.sua(lambda ds: ds.__setitem__(dot_id, d))
         for i, x in d["may"].items():
             if x["tt"] == "cho":
-                if i in _DANG:             # may dang chay viec khac: doi luot sau
+                if not _giao(dot_id, i):   # may dang chay viec trien khai khac (dot / kich ban): doi luot sau
                     _dat(dot_id, i, tt="thu_lai", tb="Máy đang chạy việc triển khai khác, sẽ chạy ngay sau đó.", tiep=0)
-                else:
-                    _giao(dot_id, i)
     if can_danh_thuc:
         try:
             n, _ct = _MP.gui(can_danh_thuc)

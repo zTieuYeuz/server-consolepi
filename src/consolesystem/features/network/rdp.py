@@ -168,7 +168,7 @@ def _bat_tay_guacd(s, ts):
 
 
 def _tra_101(cs, hdr, key):
-    acc = base64.b64encode(hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode()
+    acc = base64.b64encode(hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode(), usedforsecurity=False).digest()).decode()
     sub = "\r\nSec-WebSocket-Protocol: guacamole" if "guacamole" in (hdr.get("sec-websocket-protocol") or "") else ""
     cs.sendall(f"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {acc}{sub}\r\n\r\n".encode())
     cs.settimeout(None)

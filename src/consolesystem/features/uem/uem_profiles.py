@@ -62,7 +62,7 @@ def _task_tu_tri(p):
 
 def _ver_bundle(p):
     mo = [(t["id"], str(t.get("ver")), t["loai"], json.dumps(t["tham_so"], sort_keys=True), bool(t.get("bo_qua_loi"))) for t in _task_tu_tri(p)]
-    return hashlib.sha1(json.dumps([mo, _chu_ky_phut(), p["id"]]).encode()).hexdigest()[:12]
+    return hashlib.sha1(json.dumps([mo, _chu_ky_phut(), p["id"]]).encode(), usedforsecurity=False).hexdigest()[:12]
 
 
 def mong_muon(m):

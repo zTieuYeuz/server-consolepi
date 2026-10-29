@@ -394,7 +394,7 @@ def _bat_tay(cs):
 
 
 def _tra_101(cs, hdr, key):
-    acc = base64.b64encode(hashlib.sha1(key.encode() + _GUID).digest()).decode()
+    acc = base64.b64encode(hashlib.sha1(key.encode() + _GUID, usedforsecurity=False).digest()).decode()
     sub = "\r\nSec-WebSocket-Protocol: binary" if "binary" in hdr.get("sec-websocket-protocol", "") else ""
     cs.sendall(f"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {acc}{sub}\r\n\r\n".encode())
     cs.settimeout(None)

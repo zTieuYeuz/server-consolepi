@@ -135,7 +135,13 @@ def khoi_phuc(root, tgz):
     """Dua phan nho cua thu muc du lieu ve DUNG nhu trong ban sao luu (xoa file moi sinh them)."""
     with tempfile.TemporaryDirectory(dir=root, prefix=".khoiphuc-") as tam:
         with tarfile.open(tgz) as t:
-            t.extractall(tam, filter="tar") if hasattr(tarfile, "data_filter") else t.extractall(tam)
+            if hasattr(tarfile, "data_filter"):
+                t.extractall(tam, filter="tar")  # nosec B202 - bo loc chuan "tar" cua Python
+            else:                                     # Python < 3.11.4 (Debian 12 goc): tu loc - chi file/thu muc, ten nam trong `tam`
+                for m in t.getmembers():
+                    if not (m.isfile() or m.isdir()) or m.name.startswith(("/", "..")) or ".." in m.name.split("/"):
+                        raise ValueError("ban sao luu migrate chua muc khong an toan: %r" % m.name)
+                t.extractall(tam)  # nosec B202 - da loc tung muc o tren
         for ten in list(_muc_nho(root)):
             if ten.startswith(".khoiphuc-"):
                 continue

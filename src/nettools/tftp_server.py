@@ -80,9 +80,15 @@ def bat_tftp():
         return True, "TFTP đang bật sẵn."
 
     os.makedirs(TFTP_ROOT, exist_ok=True)
-    # world-writable co chu dich: tftpd-hpa chay duoi user rieng "tftp",
-    # can ghi duoc vao thu muc nay de nhan file tu switch gui len.
-    os.chmod(TFTP_ROOT, 0o777)
+    # tftpd-hpa chay duoi user rieng "tftp", can GHI duoc vao thu muc nay de nhan file tu switch gui len:
+    # giao thu muc cho user tftp (0775) thay vi mo 0777 cho moi user tren may. Khong co user tftp -> 1777 (sticky).
+    try:
+        import pwd
+        u = pwd.getpwnam("tftp")
+        os.chown(TFTP_ROOT, u.pw_uid, u.pw_gid)
+        os.chmod(TFTP_ROOT, 0o775)
+    except (KeyError, OSError):
+        os.chmod(TFTP_ROOT, 0o1777)  # nosec B103 - du phong khi khong co user tftp: sticky, khong ai xoa duoc file nguoi khac
 
     ok, out = _sh(["systemctl", "start", DON_VI_SYSTEMD])
     if not ok:

@@ -89,6 +89,14 @@ UT._BAT_DAU = False
 UT.khoi_dong_bo_lap()
 kq["phuc_hoi_sau_khoi_dong"] = UT.trang_thai(d3)["may"]["m-xa"]["tt"] == "cho_online"
 
+# may dang chay kich ban Agent: dot moi nhuong (thu_lai), kich ban xong thi dot tu chay
+DC._DANG.add(("kb-gia", "m-bat"))
+d4, _ = UT.bat_dau("kho", "7z.exe", "7z.exe", ["m-bat"])
+kq["nhuong_kich_ban"] = UT.trang_thai(d4)["may"]["m-bat"]["tt"] == "thu_lai"
+DC._DANG.discard(("kb-gia", "m-bat"))
+UT._quet()
+kq["het_ban_thi_chay"] = cho(d4, lambda s: s["may"]["m-bat"]["tt"] == "da_lam") is not None and UT.trang_thai(d4)["may"]["m-bat"]["tt"] == "da_lam"
+
 # giao dien
 h = c.get("/uem/trien-khai/dot", headers=H).get_data(as_text=True)
 kq["trang_dot"] = "Trạng thái triển khai" in h and f"/uem/trien-khai/dot/{dot}" in h
