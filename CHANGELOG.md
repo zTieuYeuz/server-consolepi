@@ -10,6 +10,7 @@
 - **Cập nhật dễ tìm:** mục **Cập nhật** nằm trong menu Cài đặt; Cài đặt chung có thẻ "Cập nhật phần mềm" với nút mở trang Cập nhật (chỉ quản trị; báo "Có bản mới" khi đã biết). Giao diện chỉ còn kênh Ổn định (bỏ lựa chọn kênh Thử nghiệm qua LAN).
 - **Nhóm phần mềm chọn được ở mọi nơi cài:** Cài Windows qua mạng (bước Phần mềm) và Cài phần mềm qua Agent có khối "Nhóm phần mềm": tick nhóm là tự tick sẵn các phần mềm trong nhóm (bỏ tick từng cái vẫn được); script của nhóm gộp vào bước Script. Cài phần mềm qua LAN đã có bước "Nhóm phần mềm" và nay chỉ rõ đường tạo nhóm khi chưa có.
 - **Bitwarden và bộ cài tải mạng:** bộ cài "stub" (vài trăm KB, tải gói chính từ Internet lúc cài) làm bước cài treo hàng nghìn giây khi mạng chậm. Kho thay bằng gói chính thức đầy đủ kiểu Ứng dụng nhiều file (bộ cài + gói `nsis.7z` của hãng, cài offline: 38 giây, không cần Internet). Cài phần mềm qua Agent chọn được Ứng dụng nhiều file.
+- **Hỗ trợ từ xa (RustDesk):** hai ô trạng thái "Máy đang báo về" và "Chế độ kết nối" không còn chấm vàng cảnh báo khi hệ thống vẫn hoạt động bình thường (chế độ "Xin phép" là lựa chọn, không phải lỗi; chưa có máy báo về chỉ hiện chấm xám).
 - **Bộ kiểm:** công cụ xuất trang chạy ngoại tuyến, hết lỗi 500 ngẫu nhiên ở trang Kho trung tâm khi kho phản hồi chậm.
 - **Kho:** chặn chuyển hướng `/\evil` sau đăng nhập (bản sửa ở kho trung tâm).
 

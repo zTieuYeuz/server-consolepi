@@ -136,8 +136,8 @@ function danhBuoc(){[].slice.call(document.querySelectorAll('#rd-tabs .dep-tab')
   var i=a.querySelector('i');if(i)i.textContent=XONG[b]?'✓':b;});
  if(!DA_CHON&&XONG[1]&&XONG[2]&&XONG[3]&&XONG[4]){DA_CHON=true;location.hash='#5';}}
 function tong(){api('/rustdesk/api/cai-dat').then(function(d){
-  o('rd-t-nhip',d.nhip_gan>0?'ok':(d.tong_may?'vang':''),d.nhip_gan+' / '+d.tong_may+' máy');
-  o('rd-t-cd',d.che_do==='xin_phep'?'vang':'ok',(d.che_do==='xin_phep'?'Xin phép':'Thông báo')+(d.ghi_hinh?' · ghi hình':''));});}
+  o('rd-t-nhip',d.nhip_gan>0?'ok':'',d.nhip_gan+' / '+d.tong_may+' máy');
+  o('rd-t-cd','ok',(d.che_do==='xin_phep'?'Xin phép':'Thông báo')+(d.ghi_hinh?' · ghi hình':''));});}
 document.addEventListener('click',function(ev){var c=ev.target.dataset&&ev.target.dataset.chep;if(!c)return;var t=$(c).textContent,b=ev.target;
  var xong=function(){b.textContent='Đã chép';setTimeout(function(){b.textContent='Chép';},1500);};
  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(xong);else{var x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();try{document.execCommand('copy');}catch(_){}x.remove();xong();}});
