@@ -224,6 +224,8 @@ for _ in range(50):
 kq["vnc_chay_xong"] = _t2["tong"] == 1 and _t2["xong"] == 1 and _t2["kq"]["m-agent"]["ok"] is not None
 kq["rd_5_tab"] = all(('data-buoc="%d"' % i) in c.get("/rustdesk", headers=H).get_data(as_text=True) for i in range(1, 6))
 kq["tab_trien_khai"] = "Cài qua LAN (WinRM)" not in c.get("/uem/trien-khai", headers=H).get_data(as_text=True) and "Cài qua Agent (WinGet)" not in c.get("/deployos/trienkhai", headers=H).get_data(as_text=True)
+_kho = c.get("/uem/trien-khai/kho", headers=H); _goi = c.get("/uem/trien-khai/goi?kho=1&id=khong-co.exe", headers=H)
+kq["tab_cai_kho"] = _kho.status_code == 200 and "Cài từ kho phần mềm" in _kho.get_data(as_text=True) and "Cài bằng WinGet" in c.get("/uem/trien-khai", headers=H).get_data(as_text=True) and _goi.status_code == 302
 _c = RD.doc_cfg(); _c["may"]["m-agent"] = {"id": "123456789", "mk": "MatKhau#Chung1", "dong_bo": True}; RD.luu_cfg(_c)
 _b = c.get("/rustdesk/api/bang", headers=H).get_json()
 kq["kn_bang"] = any(x["mid"] == "m-agent" and x["id"] == "123456789" and x["agent"] for x in _b["may"]) and "chua_gan" in _b

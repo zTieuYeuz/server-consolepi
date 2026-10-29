@@ -372,6 +372,7 @@
 /uem/trien-khai/chay	POST	uem_td_chay
 /uem/trien-khai/danh-muc	POST	uem_td_dm
 /uem/trien-khai/goi	GET	uem_td_goi
+/uem/trien-khai/kho	GET	uem_td_kho
 /uem/trien-khai/lich-su	GET	uem_td_ls
 /uem/trien-khai/tt/<dot>	GET	uem_td_tt
 /vkeyboard.js	GET	nettools.vkeyboard_js

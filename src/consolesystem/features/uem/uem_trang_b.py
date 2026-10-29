@@ -187,6 +187,25 @@ def may_tu_form(form):
     return list(dict.fromkeys(ids))
 
 
+_TAB_CAI = [("winget", "Cài bằng WinGet", "/uem/trien-khai"), ("kho", "Cài từ kho phần mềm", "/uem/trien-khai/kho")]
+
+
+def _thanh_tab_cai(chinh):
+    return ('<div class="dep-tabs" style="margin-bottom:14px;">' + "".join(
+        f'<a href="{h}" class="dep-tab{" on" if m == chinh else ""}">{n}</a>' for m, n, h in _TAB_CAI) + "</div>")
+
+
+def trang_kho():
+    ds = DC.danh_sach_kho()
+    hang = "".join(f'<tr><td><b>{_esc(a["ten"])}</b></td><td class="tk-ghi">{_esc(a["tham_so"] or "chưa điền tham số cài im lặng")}</td>'
+                   f'<td><a class="tk-nut" href="/uem/trien-khai/goi?kho=1&id={_esc(a["ten"])}">Chọn máy</a></td></tr>' for a in ds)
+    body = (_thanh_tab_cai("kho") + '<div class="card"><p class="tk-ghi" style="margin-top:0;">Cài file .exe / .msi trong <a href="/tai-nguyen">Tài nguyên máy</a> lên máy đã có agent. '
+            'Console System đẩy file qua agent rồi chạy cài im lặng với tham số đã điền.</p>'
+            + ('<table class=tk-bang><tr><th>Phần mềm</th><th>Tham số cài im lặng</th><th></th></tr>' + hang + '</table>' if hang else '<p class=tk-ghi>Kho chưa có phần mềm nào.</p>')
+            + '</div>' + JS_TIEN_DO)
+    return trang(body, "td")
+
+
 def trang_trien_khai():
     q = (request.args.get("q") or "").strip()
     kq = UW.tim(q) if q else []
@@ -200,7 +219,7 @@ def trang_trien_khai():
         ham += (f'<tr><td><b>{_esc(g["ten"])}</b><div class="tk-ghi">{_esc(g["id"])}</div></td><td>{_esc(g["ban"])}</td>'
                 f'<td><a class="tk-nut" href="/uem/trien-khai/goi?id={_esc(g["id"])}">Chọn máy</a></td></tr>')
     ket_qua = f'<div class="card">{"<table class=tk-bang><tr><th>Phần mềm</th><th>Bản mới nhất</th><th></th></tr>" + ham + "</table>" if ham else "<p class=tk-ghi>Không tìm thấy gói nào khớp.</p>"}</div>' if q else ""
-    body = f"""{gui}
+    body = f"""{_thanh_tab_cai("winget")}{gui}
     <div class="card"><form method="GET" class="tk-f tk-hang"><input type="text" name="q" value="{_esc(q)}" placeholder="Tìm phần mềm trong danh mục WinGet (Chrome, 7-Zip, VLC...)" style="margin:0;height:42px;min-width:280px;flex:1;">
       <button class="tk-nut chinh" type="submit">Tìm</button>
       <span class="tk-ghi">{UW.so_goi():,} gói trong danh mục</span></form>
@@ -216,13 +235,17 @@ def trang_trien_khai():
 
 def trang_goi():
     gid = (request.args.get("id") or "").strip()
-    if gid != "*" and not re.fullmatch(r"[A-Za-z0-9._+-]{2,100}", gid):
+    kho = bool(request.args.get("kho"))
+    if kho:
+        if gid not in [a["ten"] for a in DC.danh_sach_kho()]:
+            return chuyen("/uem/trien-khai/kho", "Không có phần mềm này trong kho.", False)
+    elif gid != "*" and not re.fullmatch(r"[A-Za-z0-9._+-]{2,100}", gid):
         return chuyen("/uem/trien-khai", "Mã gói không hợp lệ.", False)
-    g = UW.lay(gid) if gid != "*" else {"id": "*", "ten": "Tất cả phần mềm có bản mới", "ban": ""}
+    g = ({"id": gid, "ten": gid, "ban": ""} if kho else UW.lay(gid) if gid != "*" else {"id": "*", "ten": "Tất cả phần mềm có bản mới", "ban": ""})
     ten = g["ten"] if g else gid
-    hd = ('<option value="nang">Nâng cấp tất cả</option>' if gid == "*"
+    hd = ('<option value="kho">Cài đặt từ kho</option>' if kho else '<option value="nang">Nâng cấp tất cả</option>' if gid == "*"
           else '<option value="cai">Cài đặt</option><option value="nang">Nâng cấp (nếu đã cài)</option><option value="go">Gỡ cài đặt</option>')
-    body = f"""<p><a class="tk-nut" href="/uem/trien-khai">Quay lại</a></p>
+    body = f"""<p><a class="tk-nut" href="{"/uem/trien-khai/kho" if kho else "/uem/trien-khai"}">Quay lại</a></p>
     <div class="card"><h3>{_esc(ten)}</h3><p class="tk-ghi">{_esc(gid)}{" · bản mới nhất " + _esc(g["ban"]) if g and g.get("ban") else ""}</p>
     <form method="POST" action="/uem/trien-khai/chay" class="tk-f"><input type="hidden" name="goi_id" value="{_esc(gid)}"><input type="hidden" name="ten_goi" value="{_esc(ten)}">
       <div class="tk-hang" style="gap:14px;flex-wrap:wrap;align-items:flex-end;"><div><label>Hành động</label><select name="hanh_dong" style="max-width:260px;margin:0;">{hd}</select></div>
@@ -1022,6 +1045,10 @@ def register_uem(app):
     @app.route("/uem/trien-khai")
     def uem_td():
         return trang_trien_khai()
+
+    @app.route("/uem/trien-khai/kho")
+    def uem_td_kho():
+        return trang_kho()
 
     @app.route("/uem/trien-khai/goi")
     def uem_td_goi():

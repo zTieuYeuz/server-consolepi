@@ -138,6 +138,10 @@ def _chay_ps(c, script):
 
 def _tai_ve_may(c, ip, duong_local, dich):
     """May dich tu tai file ve `dich`. File nho (<30 MB) ma tai loi thi day thang qua WinRM."""
+    if getattr(c, "loai", "") == "agent":      # agent: day thang qua kenh agent (may co the khong toi duoc Console System bang HTTP)
+        _chay_ps(c, f"New-Item -ItemType Directory -Force (Split-Path {_q(dich)}) | Out-Null")
+        c.copy(duong_local, dich)
+        return
     try:
         url = url_tai(ip, duong_local)
         out, err = _chay_ps(c, "$ProgressPreference='SilentlyContinue'; "
@@ -217,6 +221,17 @@ def _b_phanmem(c, ip, b, may):
             RD.ghi_may(may.get("id", ""), ma_id.group(1))
             tb += f", ID RustDesk {ma_id.group(1)}"
     return ok, tb
+
+
+def danh_sach_kho():
+    """Phan mem (.exe/.msi) trong Tai nguyen may, kem tham so cai im lang."""
+    from ui import deployos as D
+    return [{"ten": a["ten"], "tham_so": (a.get("tham_so") or D.tham_so_mac_dinh_app(a["ten"]) or "")} for a in D.danh_sach_app()]
+
+
+def cai_tu_kho(c, ip, ten, may):
+    """Cai 1 phan mem trong kho len may (c: client WinRM hoac agent). (ok, thong bao)"""
+    return _b_phanmem(c, ip, {"ref": ten}, may)
 
 
 def _chu_ky_thu_muc(p):

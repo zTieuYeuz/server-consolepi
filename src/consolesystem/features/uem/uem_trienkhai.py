@@ -24,7 +24,7 @@ from ui import uem_ketnoi as UK
 _EX = ThreadPoolExecutor(max_workers=4)
 _DOT = {}
 _KHOA = threading.Lock()
-TEN_HANH_DONG = {"cai": "Cài đặt", "go": "Gỡ cài đặt", "nang": "Nâng cấp"}
+TEN_HANH_DONG = {"cai": "Cài đặt", "go": "Gỡ cài đặt", "nang": "Nâng cấp", "kho": "Cài từ kho"}
 
 
 def _ps_nang(goi_id):
@@ -48,7 +48,10 @@ def _chay_may(dot_id, may_id):
     try:
         if m:
             c, mk, _cach = UK.ket_noi(m)
-            if d["hanh_dong"] == "nang":
+            if d["hanh_dong"] == "kho":
+                ok_k, tb_k = DC.cai_tu_kho(c, m["ip"], d["goi_id"], m)
+                tt, tb = ("da_lam" if ok_k else "loi"), tb_k
+            elif d["hanh_dong"] == "nang":
                 out, err = DC._chay_ps(c, _ps_nang(d["goi_id"]))
                 mm = re.search(r"ST=(DA_DAT|DA_LAM|LOI)\s*(.*)", out)
                 tt, tb = ({"DA_DAT": "da_dat", "DA_LAM": "da_lam", "LOI": "loi"}[mm.group(1)], mm.group(2).strip()) if mm else ("loi", (err or out)[:300])
@@ -73,7 +76,10 @@ def bat_dau(hanh_dong, goi_id, ten_goi, may_ids):
     """(dot_id, loi)"""
     if hanh_dong not in TEN_HANH_DONG:
         return None, "Hành động không hợp lệ."
-    if goi_id != "*" and not re.fullmatch(r"[A-Za-z0-9._+-]{2,100}", goi_id or ""):
+    if hanh_dong == "kho":
+        if goi_id not in [a["ten"] for a in DC.danh_sach_kho()]:
+            return None, "Không có phần mềm này trong kho."
+    elif goi_id != "*" and not re.fullmatch(r"[A-Za-z0-9._+-]{2,100}", goi_id or ""):
         return None, "Mã gói WinGet không hợp lệ."
     ds_may = DL.MAY.doc()
     ids = [i for i in dict.fromkeys(may_ids) if DL.tim(ds_may, i)]
