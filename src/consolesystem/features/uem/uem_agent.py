@@ -78,6 +78,8 @@ Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $
 Start-Sleep 2
 # Xoa khoa rieng cua chung chi agent khoi kho khoa may (neu khong se con sot 1 file trong MachineKeys)
 try { $d = Join-Path $env:ProgramData 'ConsoleSystem'; $cf = Get-Content (Join-Path $d 'config.json') -Raw | ConvertFrom-Json; $x = New-Object Security.Cryptography.X509Certificates.X509Certificate2 ((Join-Path $d 'client.pfx'), [string]$cf.pfx_pass, 'MachineKeySet'); $k = $x.PrivateKey; $k.PersistKeyInCsp = $false; $k.Clear() } catch {}
+# Xoa dang ky MSI: neu con sot, Windows van coi agent la da cai (cai lai goi moi bi tu choi, go bang MSI loi 1722 vi mat file)
+foreach ($k in @('HKLM:\SOFTWARE\Classes\Installer\Products\__NEN__', 'HKLM:\SOFTWARE\Classes\Installer\Features\__NEN__', 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\__NEN__', 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{__MA__}', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{__MA__}')) { Remove-Item -LiteralPath $k -Recurse -Force }
 Remove-Item -LiteralPath (Join-Path $env:ProgramFiles 'ConsoleSystem') -Recurse -Force
 Remove-Item -LiteralPath (Join-Path $env:ProgramData 'ConsoleSystem') -Recurse -Force
 Remove-Item -LiteralPath $PSCommandPath -Force
@@ -87,6 +89,18 @@ Set-Content -Path $f -Value $c -Encoding UTF8
 Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $f + '"') -WindowStyle Hidden
 'ST=DA_LAM Da go agent (dich vu se dung va xoa sau vai giay)'
 """
+
+
+MA_SAN_PHAM_MSI = "6B1F2C9E-4D7A-4E58-9C31-0A5D8E7F4B21"     # = Product Id trong ConsoleSystemAgent.wxs.tpl
+
+
+def ma_msi_nen(ma):
+    """GUID -> dang 'nen' Windows Installer dung lam ten khoa registry (dao nguoc tung khoi, dao tung cap ky tu o khoi cuoi)."""
+    h = ma.replace("-", "").replace("{", "").replace("}", "").upper()
+    return h[7::-1] + h[11:7:-1] + h[15:11:-1] + "".join(h[i + 1] + h[i] for i in range(16, 32, 2))
+
+
+PS_GO = PS_GO.replace("__NEN__", ma_msi_nen(MA_SAN_PHAM_MSI)).replace("__MA__", MA_SAN_PHAM_MSI)
 
 
 def ps_cai(url, may_id, cert, ca_pem=None, pk="", urls=None):
