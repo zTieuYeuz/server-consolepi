@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.1 - 29/10/2026
+
+**Sửa lỗi sau phát hành 2.0.0.**
+
+- **Gỡ agent từ console:** nay gỡ luôn đăng ký MSI trong Windows (trước đây chỉ xóa file, Windows vẫn coi agent là đã cài nên cài lại gói mới bị từ chối và gỡ bằng MSI báo lỗi 1722).
+- **Kho trung tâm qua Internet:** danh sách kho chờ tối đa 30 giây và tự thử lại một lần (đường truyền Cloudflare thỉnh thoảng đứng khoảng 20-30 giây, trước đây 10 giây là báo lỗi oan).
+- **Tài nguyên máy:** đổi tên tab "Nhóm tài nguyên" thành "Nhóm phần mềm" (mọi nơi hiển thị); sửa tên file dài tràn và chồng lên ô bên cạnh ở các thẻ chọn (cả Quản lý máy trạm).
+- **Kho:** chặn chuyển hướng `/\evil` sau đăng nhập (bản sửa ở kho trung tâm).
+
 ## 2.0.0 - 25/10/2026
 
 **Đại tu kiến trúc + hệ thống Cập nhật bảo mật.** Gộp toàn bộ 1.9.5 (Triển khai phần mềm, Quản lý máy trạm, agent v2, kho tải nhiều... xem mục 1.9.5 bên dưới).
