@@ -44,6 +44,7 @@ from ui.duongdan import FILE_KHO_TRUNGTAM, bao_dam_thu_muc_du_lieu
 from ui import duongdan as _DD
 
 TIMEOUT_DANH_SACH = 10
+TIMEOUT_DANH_SACH_KHO = 30   # danh sach qua Internet/Cloudflare luc cham toi 20 giay (do 29/10/2026) - 10 giay bao loi oan
 TIMEOUT_TAI = 30
 SO_LAN_THU_LAI = 20           # dut mang: thu lai toi da 20 lan (moi lan tai tiep)
 
@@ -172,11 +173,17 @@ def ghep_noi(url, ma):
 def danh_sach(cauhinh):
     """Lay toan bo muc dang co tren kho. Tra ve (True, [muc,...]) hoac
     (False, thong_bao_loi_de_hieu)."""
-    try:
-        r = requests.get(f"{cauhinh['url']}/api/danh-sach",
-                         headers=_headers(cauhinh), timeout=TIMEOUT_DANH_SACH)
-    except requests.RequestException as e:
-        return False, f"Không kết nối được tới kho: {e}"
+    r = None
+    for lan in range(2):                                         # cham do duong truyen: thu lai 1 lan truoc khi bao loi
+        try:
+            r = requests.get(f"{cauhinh['url']}/api/danh-sach",
+                             headers=_headers(cauhinh), timeout=TIMEOUT_DANH_SACH_KHO)
+            break
+        except requests.Timeout as e:
+            if lan:
+                return False, f"Không kết nối được tới kho: {e}"
+        except requests.RequestException as e:
+            return False, f"Không kết nối được tới kho: {e}"
     if r.status_code in (401, 403):
         return False, "Token không hợp lệ hoặc đã bị thu hồi trên kho."
     if r.status_code != 200:
