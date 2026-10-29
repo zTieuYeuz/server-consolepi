@@ -24,3 +24,5 @@ captures/
 deploy/
 samba-deploy.key
 tham-so-cai-dat.json
+.coverage
+.ruff_cache/
