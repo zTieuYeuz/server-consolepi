@@ -164,8 +164,8 @@ def trang_thai_may(m):
     """(nhan, mau) tong hop: vo hieu / chua gan tai khoan / khong ket noi / dang giam sat."""
     if not m.get("giam_sat", True):
         return "Vô hiệu", ""
-    if not m.get("tai_khoan_id") and not (m.get("agent") or {}).get("khoa"):
-        return "Chờ gán tài khoản", "vang"
+    if not m.get("tai_khoan_id") and not UA.co_agent(m):
+        return "Chưa cài agent", "vang"
     kn = m.get("ket_noi") or {}
     # Lan lay bao cao cuoi loi (vd may tat) nhung agent dang bao nhip -> may dang noi, khong bao "Khong ket noi"
     # (lab 28/10/2026: LaptopHome mo lai, remote binh thuong ma trang van do vai phut cho toi lan lay bao cao ke).
@@ -236,7 +236,7 @@ def _so_lieu():
     cd = UD.cai_dat()
     now = time.time()
     r = {"tong": len(ds), "giam_sat": len(gs), "vo_hieu": len(ds) - len(gs)}
-    r["cho_gan"] = sum(1 for m in gs if not m.get("tai_khoan_id"))
+    r["cho_gan"] = sum(1 for m in gs if not m.get("tai_khoan_id") and not UA.co_agent(m))
     r["online"] = sum(1 for m in gs if (m.get("ket_noi") or {}).get("ok") and now - (m.get("ket_noi") or {}).get("luc", 0) < 3 * max(5, int(cd.get("tan_suat_bao_cao", 60))) * 60 + 600)
     r["khong_bao_cao_24h"] = sum(1 for m in gs if m.get("tai_khoan_id") and now - m.get("bao_cao_luc", 0) > 86400)
     co = [m for m in gs if bc(m)]
@@ -290,7 +290,7 @@ def trang_tong_quan():
         the(r["profile_loi"], "Máy có tác vụ profile lỗi", "do" if r["profile_loi"] else "xanh", "/uem/profiles"),
         the(r["khong_bao_cao_24h"], "Máy không báo cáo trong 24 giờ", "vang" if r["khong_bao_cao_24h"] else "xanh", "/uem/may")])
     tk = "".join([the(r["tong"], "Tổng số máy", "", "/uem/may"), the(r["giam_sat"], "Đang giám sát", "xanh", "/uem/quan-tri/may"),
-                  the(r["online"], "Kết nối được gần đây", "xanh"), the(r["cho_gan"], "Chờ gán tài khoản", "vang" if r["cho_gan"] else "", "/uem/quan-tri/may"),
+                  the(r["online"], "Kết nối được gần đây", "xanh"), the(r["cho_gan"], "Chưa cài agent", "vang" if r["cho_gan"] else "", "/uem/quan-tri/may"),
                   the(r["vo_hieu"], "Đã vô hiệu", "", "/uem/quan-tri/may"), the(r["so_phan_mem"], "Phần mềm khác nhau", "", "/uem/phan-mem"),
                   the(r["trien_khai"], "Lượt triển khai đã chạy", "", "/uem/trien-khai/lich-su"), the(r["may_in"], "Máy in khác nhau"),
                   the(r["agent"], "Máy có agent đang chạy", "xanh" if r["agent"] else "", "/uem/quan-tri/agent"), the(r["hang"], "Hãng máy khác nhau"), the(r["nguoi_dung"], "Người dùng Windows"), the(r["the"], "Thẻ đang dùng", "", "/uem/quan-tri/the")])
@@ -339,7 +339,7 @@ def trang_may():
     nhom_opt = "".join(f'<option value="{g["id"]}">{_esc(g["ten"])} ({len(g.get("may", []))})</option>' for g in nhom_ds)
     the_opt = "".join(f'<option value="{t["id"]}">{_esc(t["ten"])}</option>' for t in the_ds)
     dd_opt = "".join(f'<option value="{d["id"]}">{_esc(d["ten"])}</option>' for d in dd)
-    tt_opt = "".join(f'<option value="{x}">{x}</option>' for x in ("Đang giám sát", "Không kết nối", "Chờ gán tài khoản", "Chưa có báo cáo", "Quá hạn báo cáo", "Vô hiệu"))
+    tt_opt = "".join(f'<option value="{x}">{x}</option>' for x in ("Đang giám sát", "Không kết nối", "Chưa cài agent", "Chưa có báo cáo", "Quá hạn báo cáo", "Vô hiệu"))
     tk_opt = "".join(f'<option value="{t["id"]}">{_esc(t["ten"])} ({_esc(t["user"])})</option>' for t in tk)
     bang = (f'''<div class="uem-ds" data-trang="15"><div class="uem-loc"><input type="text" class="uem-tim" placeholder="Tìm tên, IP, người dùng, model...">
       <select class="uem-chon" data-k="nhom"><option value="">Mọi nhóm máy</option>{nhom_opt}</select>
@@ -414,7 +414,7 @@ def khung_may(m, tab, noi_dung):
 
 
 def _chua_bao_cao(m):
-    if not m.get("tai_khoan_id") and not (m.get("agent") or {}).get("khoa"):
+    if not m.get("tai_khoan_id") and not UA.co_agent(m):
         return '<div class="card"><p>Máy chưa cài agent nên chưa lấy được báo cáo. Hãy cài agent ở tab <a href="/uem/may/' + m["id"] + '/agent">Agent</a>.</p></div>'
     return '<div class="card"><p>Chưa có báo cáo của máy này. Bấm <b>Lấy thông tin</b> ở phía trên (mất khoảng 25 giây).</p></div>'
 

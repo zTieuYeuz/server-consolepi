@@ -1008,5 +1008,6 @@
 "🔎 Quét rộng (thêm dải IP tĩnh)": "🔎 Wide scan (add static IP ranges)",
 "🔑 Kết nối": "🔑 Connect",
 "🔒 Phát AP ConsolePi (khóa)": "🔒 Broadcast AP ConsolePi (locked)",
-"Hỗ trợ từ xa - Console System": "Remote support - Console System"
+"Hỗ trợ từ xa - Console System": "Remote support - Console System",
+"Chưa cài agent": "No agent installed"
 }

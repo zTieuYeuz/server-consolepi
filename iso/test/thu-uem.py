@@ -66,7 +66,7 @@ kt("tong quan: khong lo script", "<script>alert(1)" not in h)
 h = trang_may_agent()
 kt("danh sach may: bi danh bi escape", "&lt;script&gt;alert(1)" in h and "<script>alert(1)" not in h)
 kt("danh sach may: 3 hang", h.count('data-t="') >= 3)
-kt("trang thai: Khong ket noi / Chua co bao cao / Dang giam sat", "Không kết nối" in h and "Chờ gán tài khoản" in h)
+kt("trang thai: Khong ket noi / Chua co bao cao / Dang giam sat", "Không kết nối" in h and "Chưa cài agent" in h)
 # ---- chi tiet may
 for tab in ("", "phan-cung", "he-dieu-hanh", "o-dia", "man-hinh", "mang", "may-in", "chia-se", "phan-mem", "cap-nhat", "ghi-chu", "metadata", "quan-ly", "tu-xa", "nguon", "trien-khai", "tac-vu"):
     r = get(f"/uem/may/m1/{tab}"); kt(f"chi tiet may tab '{tab or 'tq'}' 200", r.status_code == 200, str(r.status_code))
