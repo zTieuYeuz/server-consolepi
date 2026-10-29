@@ -483,12 +483,13 @@ def thu_ghi_hinh_may(m):
             break
         dich, tam = os.path.join(dich_dir, ten), os.path.join(dich_dir, "." + ten + ".tai")
         try:
-            UA.Client(m["id"]).fetch(THU_MUC_GHI_MAY + "\\" + ten, tam)
+            UA.Client(m["id"]).fetch(THU_MUC_GHI_MAY + "\\" + ten, tam, timeout=300 + kt // 100000)
             if os.path.getsize(tam) != kt:
                 raise RuntimeError("kích thước không khớp")
             os.replace(tam, dich)
         except Exception as e:                        # loi mang / agent: giu file tren may, lan sau lay lai
             _bo_qua(e)
+            _THU["loi"] = "Không lấy được %s từ máy %s: %s" % (ten, m.get("ten") or m["ip"], str(e)[:150])
             try:
                 os.remove(tam)
             except OSError:

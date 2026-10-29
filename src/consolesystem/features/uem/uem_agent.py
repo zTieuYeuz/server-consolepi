@@ -363,10 +363,10 @@ class Client:
         out, err = chay_ps(self.may_id, script)
         return out, _Luong(err), bool(err)
 
-    def fetch(self, src, dest):
+    def fetch(self, src, dest, timeout=3600):
         """Tai file tu may ve Console System (dang luong, toi da 2 GB)."""
         j = them_viec(self.may_id, "tep_len", duong=src, dich_local=dest)
-        out, err = cho_viec(j, 3600)
+        out, err = cho_viec(j, timeout)
         if err or not out.startswith("OK"):
             raise RuntimeError(err or out or "Không tải được file từ máy.")
 

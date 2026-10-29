@@ -322,7 +322,7 @@ _srv.shutdown()
 _tenghi = "incoming_123456789_%s123_display0_vp9.webm" % _t.strftime("%Y%m%d%H%M%S", _t.localtime(_p8[0]["bat_dau"] + 5))
 Gia_ps0 = Gia.execute_ps
 Gia.execute_ps = lambda self, script: (kich.append(script) or ("GHI=%s|10\r\nGHI=..\\bad.exe|3\r\nGHI_XONG\r\n" % _tenghi), Luong(), False) if "GHI_XONG" in script else Gia_ps0(self, script)
-_UA.Client.fetch = lambda self, src, dest: open(dest, "wb").write(b"0123456789")
+_UA.Client.fetch = lambda self, src, dest, timeout=3600: open(dest, "wb").write(b"0123456789")
 kq["gh_lay_ve"] = URD.thu_ghi_hinh_may(DL.tim(DL.MAY.doc(), "m-agent")) == 1 and any("Remove-Item -LiteralPath" in x and _tenghi in x for x in kich)
 Gia.execute_ps = Gia_ps0
 ls = c.get("/rustdesk/api/lich-su", headers=H).get_json()["ds"]
