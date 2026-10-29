@@ -465,6 +465,7 @@ def thu_ghi_hinh_may(m):
     """Lay cac ban ghi da xong tren 1 may (agent) ve Console, kiem kich thuoc roi xoa tren may. Tra so file da lay."""
     ok, out = DK._chay(m, PS_DS_GHI)
     if not ok or "GHI_XONG" not in (out or ""):
+        _THU["loi"] = "Không hỏi được thư mục ghi hình trên máy %s: %s" % (m.get("ten") or m["ip"], (out or "không có trả lời")[:150])
         return 0
     dich_dir = os.path.join(GS.thu_muc_ghi_hinh(), m["id"])
     os.makedirs(dich_dir, mode=0o700, exist_ok=True)
@@ -507,7 +508,7 @@ def _tick():
     if not GS.cai_dat()["ghi_hinh"]:
         return
     cfg = RD.doc_cfg()
-    tong, quet_het = 0, now - _THU.get("quet", 0) > 1800             # 30 phut hoi moi may 1 lan, con lai chi hoi may vua co ket noi
+    tong, quet_het = 0, now - _THU.get("quet", 0) > 600             # 10 phut hoi moi may 1 lan, con lai chi hoi may vua co ket noi
     co_phien = GS.lay_may_co_phien() | _THU.pop("cho", set())
     if quet_het:
         _THU["quet"] = now
@@ -522,8 +523,9 @@ def _tick():
             tong += thu_ghi_hinh_may(m)
         except Exception as e:
             _bo_qua(e)
+            _THU["loi"] = "Lấy bản ghi từ máy %s lỗi: %s" % (m.get("ten") or m["ip"], str(e)[:150])
     xoa = GS.don_ghi_hinh()
-    _THU.update(luc=int(now), tb="Lần lấy gần nhất: %d bản ghi mới%s." % (tong, (", xóa %d bản cũ cho vừa dung lượng" % xoa) if xoa else ""))
+    _THU.update(luc=int(now), tb=_THU.pop("loi", "") or "Lần lấy gần nhất: %d bản ghi mới%s." % (tong, (", xóa %d bản cũ cho vừa dung lượng" % xoa) if xoa else ""))
 
 
 def khoi_dong_bo_lap():
