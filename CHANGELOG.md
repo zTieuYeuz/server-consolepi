@@ -8,6 +8,7 @@
 - **Kho trung tâm qua Internet:** danh sách kho chờ tối đa 30 giây và tự thử lại một lần (đường truyền Cloudflare thỉnh thoảng đứng khoảng 20-30 giây, trước đây 10 giây là báo lỗi oan).
 - **Tài nguyên máy:** đổi tên tab "Nhóm tài nguyên" thành "Nhóm phần mềm" (mọi nơi hiển thị); sửa tên file dài tràn và chồng lên ô bên cạnh ở các thẻ chọn (cả Quản lý máy trạm).
 - **Cập nhật dễ tìm:** mục **Cập nhật** nằm trong menu Cài đặt; Cài đặt chung có thẻ "Cập nhật phần mềm" với nút mở trang Cập nhật (chỉ quản trị; báo "Có bản mới" khi đã biết). Giao diện chỉ còn kênh Ổn định (bỏ lựa chọn kênh Thử nghiệm qua LAN).
+- **Nhóm phần mềm chọn được ở mọi nơi cài:** Cài Windows qua mạng (bước Phần mềm) và Cài phần mềm qua Agent có khối "Nhóm phần mềm": tick nhóm là tự tick sẵn các phần mềm trong nhóm (bỏ tick từng cái vẫn được); script của nhóm gộp vào bước Script. Cài phần mềm qua LAN đã có bước "Nhóm phần mềm" và nay chỉ rõ đường tạo nhóm khi chưa có.
 - **Bộ kiểm:** công cụ xuất trang chạy ngoại tuyến, hết lỗi 500 ngẫu nhiên ở trang Kho trung tâm khi kho phản hồi chậm.
 - **Kho:** chặn chuyển hướng `/\evil` sau đăng nhập (bản sửa ở kho trung tâm).
 

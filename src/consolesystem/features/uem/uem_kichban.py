@@ -16,6 +16,7 @@ from flask import jsonify, request
 from ui import tk_dongco as DC
 from ui import tk_dulieu as DL
 from ui.uem_trang import _esc, chip, chuyen, gio, trang
+from consolesystem.web.chon_nhom_pm import khoi_nhom as khoi_nhom_pm
 
 URL = "/uem/trien-khai/kich-ban"
 TT_MAY = {"cho": ("Chờ chạy", ""), "dang": ("Đang chạy", "nhan"), "xong": ("Thành công", "xanh"), "loi": ("Không thành công", "do"),
@@ -143,6 +144,7 @@ def trang_sua():
       <h3 style="margin-top:0;">{"Sửa kịch bản" if kb else "Tạo kịch bản mới"}</h3>
       <label>Tên kịch bản</label><input type="text" name="ten" required value="{_esc(kb.get("ten", ""))}" placeholder="Ví dụ: Cài phần mềm văn phòng cho phòng kế toán">
       <h4 class="tk-tieude">1. Chọn phần mềm cài (theo thứ tự trong danh sách)</h4>
+      {khoi_nhom_pm("pm", the=False)}
       <div class="tk-luoi">{o_pm or '<p class="tk-ghi">Kho chưa có phần mềm. Thêm file .exe / .msi ở Tài nguyên máy.</p>'}</div>
       <label style="display:flex;gap:8px;align-items:center;margin-top:8px;"><input type="checkbox" name="mot_lan" value="1" style="width:auto;margin:0;"{" checked" if mot_lan else ""}>
         Máy đã cài thành công ở lượt trước thì bỏ qua (dùng cho kịch bản lặp lại theo lịch)</label>

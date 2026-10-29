@@ -9,6 +9,7 @@ import secrets
 from ui.duongdan import DEPLOY_DIR, BOOT_DIR, APPS_DIR, SCRIPTS_DIR, KICHBAN_DIR, OS_DIR, DRIVERS_DIR, UNGDUNG_DIR, FONTS_DIR, EXT_SCRIPT  # noqa: F401  (B3: khai bao o core/duongdan.py)
 from ui import datten as _dt
 from consolesystem.features.deploy_os.dos_chung import (BUOC_DAU, EXT_DRIVER, EXT_OS_ISO, EXT_OS_WIM, EXT_SXS, SO_BUOC, THU_MUC_THEO_DUONG, _bao_dam_thu_muc, _bo_dau_py, _con_trong_gb, _don_file_do_dang, _duong_dan_trong, _hoan_tat_ghi_thang, _liet_ke, _luu_tai_len, _mo_file_dich, _thu_muc_os_theo_duong, _xoa_file, bo_dau, co_kich_thuoc, so_hien_thi, ten_an_toan)  # noqa: F401  (B4: nguyen van o module nay)
+from consolesystem.web.chon_nhom_pm import khoi_nhom as khoi_nhom_pm
 from consolesystem.features.deploy_os.dos_phanmem import (GOI_Y_THAM_SO, HAU_TO_GO, _an_toan_trong_zip, _doc_meta_ungdung, _ghi_meta_ungdung, chuan_hoa_apps, chuan_hoa_ungdung, danh_sach_app, danh_sach_ungdung, dat_lenh_cai_ungdung, doc_thongtin_app, ghi_thongtin_app, giai_nen_ungdung, lay_ungdung, liet_ke_muc_ungdung, tao_ungdung_moi, tham_so_mac_dinh_app, xoa_muc_trong_ungdung, xoa_ungdung)  # noqa: F401  (B4: nguyen van o module nay)
 from consolesystem.features.deploy_os.dos_font import (MAX_FONT_BYTE, MAX_ZIP_FONT_BYTE, _doc_meta_bo_font, _don_tam_cu, _giai_nen_font_zip, _id_bo_font_tu_ten, _luu_font_hop_le, _xoa_tam, chuan_hoa_fonts, danh_sach_bo_font, duong_bo_font, lay_bo_font, tao_bo_font, them_font_vao_bo, xoa_bo_font, xoa_font_trong_bo)  # noqa: F401  (B4: nguyen van o module nay)
 from consolesystem.features.deploy_os.dos_os import (_CACHE_CHI_SO_PRO, chi_so_anh_pro, co_sxs, danh_sach_os, duong_boot_wim, duong_install_wim, lay_os, tao_os_moi, xoa_os)  # noqa: F401  (B4: nguyen van o module nay)
@@ -231,6 +232,12 @@ def _nhan_du_lieu_buoc(d, buoc, form):
         d["ungdung"] = chuan_hoa_ungdung([{"id": uid} for uid in form.getlist("ungdung")])
         # Bo font chu (xem muc BO FONT) - cai cho MOI tai khoan tren may
         d["fonts"] = chuan_hoa_fonts(form.getlist("font"))
+        # Script cua nhom da tick: script nam o buoc 6 nen gop thang vao danh sach script cua kich ban (buoc 6 hien lai da tick san)
+        from consolesystem.core import tk_dulieu as _DL
+        tick = set(form.getlist("nhom"))
+        them = [x for g in _DL.nhom_phan_mem() if g["id"] in tick for x in g["script"]]
+        if them:
+            d["scripts"] = list(dict.fromkeys(list(d.get("scripts") or []) + them))
 
     elif buoc == 6:
         d["scripts"] = form.getlist("script")
@@ -843,6 +850,7 @@ def _noi_dung_buoc(ma, d, buoc):
                       <div class="d">{co_kich_thuoc(a['cd'])} &middot; tham so: {ts}</div>
                     </label>"""
             than = f"""
+                {khoi_nhom_pm("app", "ungdung", "nhom", "chon")}
                 <div class="card"><h3>Chọn phần mềm sẽ cài</h3><div data-pt="25" data-pt-tim="1">{o}</div></div>
                 <div class="card">
                   <h3>Khi nào phần mềm được cài</h3>

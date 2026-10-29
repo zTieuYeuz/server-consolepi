@@ -11,7 +11,7 @@
     var r=$('b-ref'), q=bo_dau($('b-tim').value).split(/\s+/).filter(Boolean), l=$('b-loai').value, g=$('b-ghi'); r.textContent='';
     var kq = DS_HIEN.filter(function(x){ var h=bo_dau(x.ten+' '+(x.mo_ta||'')); return q.every(function(t){ return h.indexOf(t)>=0; }); });
     if (!kq.length){ var o=document.createElement('option'); o.value='';
-      o.textContent = !DS_HIEN.length ? (l==='nhom' ? '(chưa có nhóm phần mềm)' : '(chưa có tài nguyên loại này)') : '(không có kết quả khớp)'; r.appendChild(o); }
+      o.textContent = !DS_HIEN.length ? (l==='nhom' ? '(chưa có nhóm phần mềm - tạo ở Tài nguyên máy › Nhóm phần mềm)' : '(chưa có tài nguyên loại này)') : '(không có kết quả khớp)'; r.appendChild(o); }
     kq.forEach(function(x){ var o=document.createElement('option'); o.value=x.ref; o.textContent=x.ten + (x.mo_ta ? '  -  ' + x.mo_ta : ''); o.setAttribute('data-ten', x.ten); r.appendChild(o); });
     if (q.length && kq.length) r.selectedIndex = 0;
     $('b-so').textContent = DS_HIEN.length ? kq.length + ' / ' + DS_HIEN.length : '';

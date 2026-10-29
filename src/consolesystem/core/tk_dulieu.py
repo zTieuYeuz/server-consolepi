@@ -73,6 +73,18 @@ def tim(ds, id_):
     return next((x for x in ds if x.get("id") == id_), None)
 
 
+def nhom_phan_mem():
+    """Cac Nhom phan mem (Tai nguyen may) -> [{id, ten, phanmem:[ten file], ungdung:[id], script:[ten]}] de man hinh chon phan mem tick san."""
+    ra = []
+    for g in NHOM_TN.doc():
+        tv = {"phanmem": [], "ungdung": [], "script": []}
+        for m in g.get("muc", []):
+            if m.get("loai") in tv and m.get("ref"):
+                tv[m["loai"]].append(m["ref"])
+        ra.append({"id": g["id"], "ten": g.get("ten", ""), **tv})
+    return ra
+
+
 # ----------------------------------------------------------------- ma hoa mat khau
 def _fernet():
     from cryptography.fernet import Fernet
