@@ -371,6 +371,10 @@
 /uem/trien-khai	GET	uem_td
 /uem/trien-khai/chay	POST	uem_td_chay
 /uem/trien-khai/danh-muc	POST	uem_td_dm
+/uem/trien-khai/dot	GET	uem_td_dot
+/uem/trien-khai/dot/<dot>	GET	uem_td_dot_ct
+/uem/trien-khai/dot/<dot>/chay-lai	POST	uem_td_dot_lai
+/uem/trien-khai/dot/<dot>/huy	POST	uem_td_dot_huy
 /uem/trien-khai/goi	GET	uem_td_goi
 /uem/trien-khai/kho	GET	uem_td_kho
 /uem/trien-khai/lich-su	GET	uem_td_ls

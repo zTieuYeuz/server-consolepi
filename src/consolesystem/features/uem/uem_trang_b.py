@@ -111,17 +111,17 @@ JS_TIEN_DO = """
 <script>
 (function(){
   var po=document.getElementById('tk-popup'); if(!po) return;
-  var NHAN={cho:'Đang chờ',da_dat:'Đã đúng sẵn',da_lam:'Hoàn tất',loi:'Lỗi'}, MAU={cho:'',da_dat:'xanh',da_lam:'xanh',loi:'do'};
+  var MAU={da_dat:'xanh',da_lam:'xanh',loi:'do',het_han:'do',cho_online:'vang',thu_lai:'vang'};
   function hien(id){
     po.style.display='flex'; var dung=false; document.getElementById('tk-pd').onclick=function(){po.style.display='none';dung=true;};
     (function lap(){ if(dung) return;
       fetch('/uem/trien-khai/tt/'+id).then(function(r){return r.json();}).then(function(d){
         if(!d||d.loi){return;} document.getElementById('tk-pt').textContent=d.hanh_dong+' '+d.ten_goi;
-        document.getElementById('tk-ps').textContent=d.xong+' / '+d.tong+' máy đã xong';
-        var h=''; Object.keys(d.may).forEach(function(k){var m=d.may[k]; var s=m.xong?m.tt:'cho';
-          h+='<div style="padding:8px 0;border-bottom:1px solid var(--vien);"><b>'+esc(m.ten)+'</b> <span class="tk-chip '+(MAU[s]||'')+'">'+(m.xong?NHAN[s]:'Đang chạy...')+'</span><div class="tk-ghi">'+esc(m.tb||'')+'</div></div>';});
+        document.getElementById('tk-ps').innerHTML=esc(d.xong+' / '+d.tong+' máy đã xong')+(d.cho?'. <b>'+d.cho+' máy đang chờ</b> (máy tắt hoặc chờ thử lại), sẽ tự chạy khi máy bật, có thể đóng cửa sổ này. Xem ở <a href="/uem/trien-khai/dot/'+id+'">Trạng thái triển khai</a>.':'');
+        var h=''; Object.keys(d.may).forEach(function(k){var m=d.may[k];
+          h+='<div style="padding:8px 0;border-bottom:1px solid var(--vien);"><b>'+esc(m.ten)+'</b> <span class="tk-chip '+(MAU[m.tt]||'')+'">'+esc(m.nhan||m.tt)+'</span><div class="tk-ghi">'+esc(m.tb||'')+'</div></div>';});
         document.getElementById('tk-pb').innerHTML=h;
-        if(d.xong<d.tong) setTimeout(lap,2000);
+        if(d.dang>0) setTimeout(lap,2000);
       }).catch(function(){setTimeout(lap,4000);});
     })();
   }
@@ -187,12 +187,72 @@ def may_tu_form(form):
     return list(dict.fromkeys(ids))
 
 
-_TAB_CAI = [("winget", "Cài bằng WinGet", "/uem/trien-khai"), ("kho", "Cài từ kho phần mềm", "/uem/trien-khai/kho")]
+_TAB_CAI = [("winget", "Cài bằng WinGet", "/uem/trien-khai"), ("kho", "Cài từ kho phần mềm", "/uem/trien-khai/kho"),
+            ("dot", "Trạng thái triển khai", "/uem/trien-khai/dot"), ("ls", "Lịch sử", "/uem/trien-khai/lich-su")]
 
 
 def _thanh_tab_cai(chinh):
     return ('<div class="dep-tabs" style="margin-bottom:14px;">' + "".join(
         f'<a href="{h}" class="dep-tab{" on" if m == chinh else ""}">{n}</a>' for m, n, h in _TAB_CAI) + "</div>")
+
+
+_MAU_TT = {"da_lam": "xanh", "da_dat": "xanh", "loi": "do", "het_han": "do", "cho_online": "vang", "thu_lai": "vang", "dang_chay": "", "cho": "", "huy": ""}
+
+
+def _o_thu_lai():
+    return "".join(f'<option value="{i}"{" selected" if i == 2 else ""}>{"Không thử lại" if i == 0 else f"{i} lần"}</option>' for i in range(6))
+
+
+def _o_het_han():
+    return "".join(f'<option value="{i}"{" selected" if i == 7 else ""}>{i} ngày</option>' for i in (1, 3, 7, 14, 30))
+
+
+def _o_dem(t, n, mau=""):
+    return f'<span class="tk-chip {mau}" style="margin-right:6px;">{_esc(t)}: {n}</span>' if n else ""
+
+
+def _dem_html(s):
+    dm = s["dem"]
+    return (_o_dem("Hoàn tất", dm.get("da_lam", 0) + dm.get("da_dat", 0), "xanh") + _o_dem("Đang chạy", s["dang"])
+            + _o_dem("Chờ máy bật", dm.get("cho_online", 0), "vang") + _o_dem("Chờ thử lại", dm.get("thu_lai", 0), "vang")
+            + _o_dem("Lỗi", dm.get("loi", 0), "do") + _o_dem("Hết hạn", dm.get("het_han", 0), "do") + _o_dem("Đã hủy", dm.get("huy", 0)))
+
+
+def trang_dot():
+    hang = ""
+    for k, s in UT.danh_sach_dot()[:200]:
+        hang += (f'<tr><td>{_esc(gio(s["bat_dau"]))}</td><td><b>{_esc(UT.TEN_HANH_DONG.get(s["hanh_dong"], s["hanh_dong"]))}</b> {_esc(s["ten_goi"])}</td>'
+                 f'<td>{s["tong"]}</td><td>{_dem_html(s)}</td><td><a class="tk-nut" href="/uem/trien-khai/dot/{_esc(k)}">Chi tiết</a></td></tr>')
+    body = (_thanh_tab_cai("dot") + '<div class="card"><p class="tk-ghi" style="margin-top:0;">Mỗi lần bấm Bắt đầu là một đợt. Máy đang tắt nằm ở <b>Chờ máy bật</b> '
+            'và tự chạy khi agent kết nối lại, không cần làm lại. Đợt đã xong được giữ 30 ngày.</p>'
+            + ('<table class=tk-bang><tr><th>Bắt đầu</th><th>Việc</th><th>Số máy</th><th>Tình trạng</th><th></th></tr>' + hang + '</table>' if hang
+               else '<p class=tk-ghi>Chưa có đợt triển khai nào.</p>') + '</div>')
+    return trang(body, "td")
+
+
+def trang_dot_ct(dot):
+    s = UT.trang_thai(dot)
+    if s is None:
+        return chuyen("/uem/trien-khai/dot", "Không còn đợt này.", False)
+    hang = "".join(f'<tr><td><b>{_esc(x["ten"])}</b></td><td>{chip(x["nhan"], _MAU_TT.get(x["tt"], ""))}</td><td>{x.get("lan", 0)}</td>'
+                   f'<td>{_esc(gio(x.get("luc")))}</td><td class="tk-ghi">{_esc(x.get("tb", ""))}</td></tr>'
+                   for x in sorted(s["may"].values(), key=lambda v: (v["xong"], v["ten"])))
+    nut = ""
+    if s["cho"]:
+        nut += (f'<form method="POST" action="/uem/trien-khai/dot/{_esc(dot)}/huy" style="display:inline;" onsubmit="return confirm(this.dataset.hoi);" '
+                f'data-hoi="Hủy {s["cho"]} máy đang chờ? Các máy này sẽ không được chạy nữa."><button class="tk-nut do" type="submit">Hủy máy đang chờ</button></form> ')
+    n_loi = sum(s["dem"].get(k, 0) for k in ("loi", "het_han", "huy"))
+    if n_loi:
+        nut += (f'<form method="POST" action="/uem/trien-khai/dot/{_esc(dot)}/chay-lai" style="display:inline;"><button class="tk-nut chinh" type="submit">'
+                f'Chạy lại {n_loi} máy lỗi / hết hạn / đã hủy</button></form>')
+    wol = " · có Wake-on-LAN" if s["wol"] else ""
+    body = (_thanh_tab_cai("dot") + '<p><a class="tk-nut" href="/uem/trien-khai/dot">Quay lại</a></p>'
+            + f'<div class="card"><h3 style="margin-top:0;">{_esc(UT.TEN_HANH_DONG.get(s["hanh_dong"], s["hanh_dong"]))} {_esc(s["ten_goi"])}</h3>'
+            + f'<p class="tk-ghi">Bắt đầu {_esc(gio(s["bat_dau"]))} · chờ máy bật tới {_esc(gio(s["het_han"]))} · thử lại tối đa {s["thu_lai"]} lần{wol}</p>'
+            + f'<p>{_dem_html(s)}</p><div style="margin:10px 0;">{nut}</div>'
+            + f'<table class=tk-bang><tr><th>Máy</th><th>Trạng thái</th><th>Lần chạy</th><th>Cập nhật</th><th>Chi tiết</th></tr>{hang}</table></div>'
+            + ('<script>setTimeout(function(){location.reload();},10000);</script>' if (s["dang"] or s["cho"]) else ""))
+    return trang(body, "td")
 
 
 def trang_kho():
@@ -251,7 +311,13 @@ def trang_goi():
       <div class="tk-hang" style="gap:14px;flex-wrap:wrap;align-items:flex-end;"><div><label>Hành động</label><select name="hanh_dong" style="max-width:260px;margin:0;">{hd}</select></div>
       <div><label for="cg-loai">Áp dụng cho</label><select id="cg-loai" style="max-width:220px;margin:0;"><option value="may">Chọn máy</option><option value="nhom">Chọn group</option></select></div></div>
       {_chon_may_nhom_html()}
-      <p class="tk-ghi">Máy đã đúng trạng thái sẽ được bỏ qua, không cài lại. Tiến độ hiện ngay trong cửa sổ nổi.</p>
+      <h3 style="margin:16px 0 6px;">Chính sách triển khai</h3>
+      <div class="tk-hang" style="gap:14px;flex-wrap:wrap;align-items:flex-end;">
+        <div><label>Thử lại khi lỗi</label><select name="thu_lai" style="max-width:200px;margin:0;">{_o_thu_lai()}</select></div>
+        <div><label>Máy đang tắt: chờ tối đa</label><select name="het_han_ngay" style="max-width:200px;margin:0;">{_o_het_han()}</select></div>
+        <label style="display:flex;gap:8px;align-items:center;margin:0 0 10px;"><input type="checkbox" name="wol" value="1" style="width:auto;margin:0;"> Bật máy đang tắt bằng Wake-on-LAN</label></div>
+      <p class="tk-ghi">Máy đang bật chạy ngay. Máy đang tắt hoặc mất mạng sẽ ở trạng thái <b>Chờ máy bật</b> và tự chạy khi agent kết nối lại.
+        Máy lỗi được thử lại sau 5, 10, 15... phút. Máy đã đúng trạng thái sẽ được bỏ qua. Theo dõi ở tab <a href="/uem/trien-khai/dot">Trạng thái triển khai</a>.</p>
       <div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Bắt đầu</button></div></form></div>{JS_CHON}"""
     return trang(body, "td")
 
@@ -259,8 +325,8 @@ def trang_goi():
 def trang_lich_su():
     ds = list(reversed(UD.TRIEN_KHAI.doc()))[:300]
     hang = [[gio(x["luc"]), x.get("may", ""), UT.TEN_HANH_DONG.get(x.get("hanh_dong"), x.get("hanh_dong")), x.get("ten_goi", ""),
-             chip({"da_dat": "Đã đúng sẵn", "da_lam": "Hoàn tất", "loi": "Lỗi"}.get(x.get("tt"), "Lỗi"), "do" if x.get("tt") == "loi" else "xanh"), x.get("tb", "")] for x in ds]
-    return trang(f'<p><a class="tk-nut" href="/uem/trien-khai">Triển khai mới</a></p><div class="card">{bang(["Lúc", "Máy", "Hành động", "Phần mềm", "Kết quả", "Chi tiết"], hang, "Chưa triển khai lần nào.")}</div>', "td")
+             chip({"da_dat": "Đã đúng sẵn", "da_lam": "Hoàn tất", "loi": "Lỗi", "het_han": "Hết hạn"}.get(x.get("tt"), "Lỗi"), "do" if x.get("tt") in ("loi", "het_han") else "xanh"), x.get("tb", "")] for x in ds]
+    return trang(_thanh_tab_cai("ls") + f'<div class="card">{bang(["Lúc", "Máy", "Hành động", "Phần mềm", "Kết quả", "Chi tiết"], hang, "Chưa triển khai lần nào.")}</div>', "td")
 
 
 # ----------------------------------------------------------------- profiles
@@ -706,6 +772,7 @@ def register_uem(app):
     UBC.khoi_dong_bo_lap()
     UP.khoi_dong_bo_lap()
     UW.khoi_dong_bo_lap()
+    UT.khoi_dong_bo_lap()
     UV.khoi_dong_bridge()
     PKI.nap_lai_neu_doi()
     UAT.register_agent(app)
@@ -1046,6 +1113,24 @@ def register_uem(app):
     def uem_td():
         return trang_trien_khai()
 
+    @app.route("/uem/trien-khai/dot")
+    def uem_td_dot():
+        return trang_dot()
+
+    @app.route("/uem/trien-khai/dot/<dot>")
+    def uem_td_dot_ct(dot):
+        return trang_dot_ct(dot)
+
+    @app.route("/uem/trien-khai/dot/<dot>/huy", methods=["POST"])
+    def uem_td_dot_huy(dot):
+        n = UT.huy_cho(dot)
+        return chuyen(f"/uem/trien-khai/dot/{dot}", f"Đã hủy {n} máy đang chờ.", n > 0)
+
+    @app.route("/uem/trien-khai/dot/<dot>/chay-lai", methods=["POST"])
+    def uem_td_dot_lai(dot):
+        n = UT.chay_lai_loi(dot)
+        return chuyen(f"/uem/trien-khai/dot/{dot}", f"Đã đưa {n} máy vào hàng chờ chạy lại." if n else "Không có máy nào cần chạy lại.", n > 0)
+
     @app.route("/uem/trien-khai/kho")
     def uem_td_kho():
         return trang_kho()
@@ -1065,7 +1150,10 @@ def register_uem(app):
 
     @app.route("/uem/trien-khai/chay", methods=["POST"])
     def uem_td_chay():
-        dot, loi = UT.bat_dau(request.form.get("hanh_dong", ""), (request.form.get("goi_id") or "").strip(), (request.form.get("ten_goi") or "").strip()[:120], may_tu_form(request.form))
+        f = request.form
+        so = lambda k, md: int(f.get(k)) if (f.get(k) or "").isdigit() else md  # noqa: E731
+        dot, loi = UT.bat_dau(f.get("hanh_dong", ""), (f.get("goi_id") or "").strip(), (f.get("ten_goi") or "").strip()[:120], may_tu_form(f),
+                              thu_lai=so("thu_lai", 2), het_han_ngay=so("het_han_ngay", 7), wol=bool(f.get("wol")))
         if loi:
             return chuyen("/uem/trien-khai", loi, False)
         return redirect_dot(dot)

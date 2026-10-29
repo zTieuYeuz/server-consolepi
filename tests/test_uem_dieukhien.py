@@ -32,3 +32,17 @@ def test_file_cai_agent_bat_tu_nang_quyen_va_bo_qua_execution_policy():
     b64 = "".join(re.findall(r"^::B64:(.*?)\r?$", bat, re.M))
     assert base64.b64decode(b64).decode("utf-8") == ps1
     assert all(len(l) < 300 for l in bat.splitlines())
+
+
+def test_dot_trien_khai_cho_may_bat(tmp_path):
+    sys.path.insert(0, os.path.join(GOC, "src"))
+    from ui import dichuyen as DM
+    goc = str(tmp_path / "cs")
+    DM.tao_bo_cuc_moi(goc)
+    r = subprocess.run(["python3", os.path.join(GOC, "tests", "web_trienkhai_cho.py")], capture_output=True, text=True,
+                       env=dict(os.environ, CONSOLE_PI_DATA=goc), timeout=180)
+    dong = [x for x in r.stdout.splitlines() if x.startswith("KETQUA ")]
+    assert dong, r.stdout[-1500:] + r.stderr[-1500:]
+    kq = json.loads(dong[0][7:])
+    sai = [k for k, v in kq.items() if v is not True]
+    assert not sai, (sai, r.stderr[-800:])

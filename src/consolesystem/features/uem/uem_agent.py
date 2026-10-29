@@ -408,6 +408,12 @@ def xu_ly_nhip(m, body, ip_nguon):
             UBC.chay_nen(mid)
         except Exception as _loi:
             _bo_qua(_loi)
+    if cu is None or now - cu["luc"] > 120:          # may vua bat / noi lai: dot trien khai dang cho may nay chay ngay
+        try:
+            from ui import uem_trienkhai as UT
+            UT.danh_thuc(mid)
+        except Exception as _loi:
+            _bo_qua(_loi)
     if doi:                                          # chi ghi dia khi doi thong tin hoac moi 10 phut (may.json lon, khong ghi moi nhip)
         def ghi(ds):
             x = DL.tim(ds, mid)
