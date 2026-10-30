@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.5 - 30/10/2026
+
+- **Remote Desktop mở được nhiều máy liên tiếp:** sau khi bấm Kết nối (mở tab mới), nút ở trang gốc không còn kẹt ở "Đang xử lý...", nhập máy khác rồi bấm Kết nối tiếp được ngay. Sửa chung cho mọi form xử lý bằng JavaScript (nút chỉ khóa khi trang thật sự chuyển đi).
+
 ## 2.0.4 - 30/10/2026
 
 - **Ghi hình RustDesk xem được ngay trên trình duyệt:** khi bật ghi hình, Console đặt RustDesk trên máy dùng mã hóa phần mềm (VP9, file .webm) thay vì mã hóa phần cứng (H.265, file .mp4 mà Chrome/Firefox thường không phát được). Cần bấm Áp dụng ở bước Triển khai để đẩy xuống các máy đã cài. Bản ghi H.265 cũ: trang báo rõ là trình duyệt không phát được, tải về mở bằng VLC.

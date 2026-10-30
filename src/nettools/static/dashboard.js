@@ -95,6 +95,9 @@
     // Cho trinh duyet gui form xong roi moi khoa nut, neu khoa ngay thi
     // gia tri cua chinh nut do khong duoc gui kem
     setTimeout(function () {
+      // Form tu xu ly bang JS (fetch, mo tab moi...) da chan gui: trang khong chuyen di nen khong co
+      // gi mo khoa lai nut -> khong khoa (truoc day nut "Ket noi" Remote Desktop ket o "Dang xu ly...").
+      if (e.defaultPrevented) return;
       var label = btn.getAttribute("data-busy") || "Đang xử lý...";
       btn.dataset.cpOld = btn.innerHTML;
       btn.innerHTML = '<span class="cp-spin"></span>' + label;
