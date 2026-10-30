@@ -353,9 +353,11 @@ GS.cai_dat = _cd0
 _cdtt = c.get("/rustdesk/api/cai-dat", headers=H).get_json()
 kq["cd_tt"] = _cdtt["ghi_hinh_so"] == 1 and _cdtt["cong_api_ngoai"] == 21114 and "may_chu_api" in _cdtt
 kq["gh_trong_script"] = "allow-auto-record-incoming = 'N'" in RD.script_client("abcdef123456", khoa=K)
+kq["gh_tat_ghi_giu_hwcodec"] = "enable-hwcodec = 'Y'" in RD.script_client("abcdef123456", khoa=K)
 post("/rustdesk/api/cai-dat", {"che_do": "thong_bao", "ghi_hinh": True, "ghi_hinh_gb": 5})
 _sc = RD.script_client("abcdef123456", khoa=K)
 kq["gh_bat_script"] = "allow-auto-record-incoming = 'Y'" in _sc and "--option allow-auto-record-incoming Y" in _sc and "'allow-auto-record-incoming' = 'Y'" in _sc
+kq["gh_bat_tat_hwcodec"] = "enable-hwcodec = 'N'" in _sc and "--option enable-hwcodec N" in _sc and "'enable-hwcodec' = 'N'" in _sc   # VP9 .webm phat duoc tren trinh duyet
 kq["giu_api_server"] = "(?m)^api-server = '([^']*)'" in _sc and "api-server = '\" + $api" in _sc
 kq["gh_duyet_bo"] = "approve-mode = 'password'" in _sc and "click" not in _sc
 kq["kn_gan_sai"] = post("/rustdesk/api/gan", {"id": "999999999", "mid": "m-agent"}).get_json()["ok"] is False

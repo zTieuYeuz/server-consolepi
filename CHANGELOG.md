@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.4 - 30/10/2026
+
+- **Ghi hình RustDesk xem được ngay trên trình duyệt:** khi bật ghi hình, Console đặt RustDesk trên máy dùng mã hóa phần mềm (VP9, file .webm) thay vì mã hóa phần cứng (H.265, file .mp4 mà Chrome/Firefox thường không phát được). Cần bấm Áp dụng ở bước Triển khai để đẩy xuống các máy đã cài. Bản ghi H.265 cũ: trang báo rõ là trình duyệt không phát được, tải về mở bằng VLC.
+- Mỗi bản ghi trong Lịch sử kết nối hiện giờ bắt đầu (một phiên có thể có nhiều file khi RustDesk khởi động lại luồng hình).
+
 ## 2.0.3 - 30/10/2026
 
 - **Ghi hình RustDesk hiện trong Lịch sử kết nối:** trước đây bản ghi đã lấy về Console nhưng chỉ gắn vào phiên do chính máy báo về (cổng 21114); máy không tới được cổng này thì bản ghi nằm trên Console mà không thấy ở đâu. Nay bản ghi gắn vào lần bấm Kết nối từ Console gần nhất của máy đó, hoặc hiện thành dòng riêng "Ghi hình (không có nhật ký phiên)".

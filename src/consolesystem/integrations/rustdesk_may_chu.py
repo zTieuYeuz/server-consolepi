@@ -371,6 +371,7 @@ key = '%(khoa)s'
 allow-websocket = 'N'
 approve-mode = 'password'
 allow-auto-record-incoming = '%(ghi)s'
+enable-hwcodec = '%(hw)s'
 "@ + $(if ($api) { "`r`napi-server = '" + $api + "'" } else { '' }) | Set-Content -Path (Join-Path $cfg 'RustDesk2.toml') -Encoding ASCII
 try { Restart-Service RustDesk -ErrorAction Stop } catch { Start-Sleep 5; Start-Service RustDesk -ErrorAction SilentlyContinue }
 Start-Sleep 5
@@ -380,6 +381,7 @@ Start-Sleep 5
 & $rd --option allow-websocket N | Out-Null
 & $rd --option approve-mode password | Out-Null
 & $rd --option allow-auto-record-incoming %(ghi)s | Out-Null
+& $rd --option enable-hwcodec %(hw)s | Out-Null
 """
 
 
@@ -391,7 +393,10 @@ def _may_chu(host=None, relay=None, khoa=None):
         raise RuntimeError("Máy chủ RustDesk chưa sẵn sàng (chưa cài, chưa có khóa hoặc chưa có địa chỉ).")
     dc = dia_chi()
     p, q = (dc["cong_id"], dc["cong_relay"]) if host == host_hieu_luc() else (CONG_ID, CONG_RELAY)
-    return {"host": host, "khoa": khoa, "ghi": "Y" if doc_cfg().get("ghi_hinh") else "N", "rv": "%s:%d" % (host, p), "id": host if p == CONG_ID else "%s:%d" % (host, p),
+    ghi = bool(doc_cfg().get("ghi_hinh"))
+    # Ghi hinh: tat ma hoa phan cung -> RustDesk ma hoa VP9 (ban ghi .webm xem duoc tren moi trinh duyet); ma hoa phan cung cho ra H.265/.mp4
+    # ma Chrome/Firefox thuong khong phat duoc.
+    return {"host": host, "khoa": khoa, "ghi": "Y" if ghi else "N", "hw": "N" if ghi else "Y", "rv": "%s:%d" % (host, p), "id": host if p == CONG_ID else "%s:%d" % (host, p),
             "relay": relay if q == CONG_RELAY else "%s:%d" % (relay, q)}
 
 
@@ -409,7 +414,7 @@ def _khoi_tung_nguoi(t):
     tung_nguoi = r"""
 Get-Process rustdesk -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -ne 0 } | Stop-Process -Force
 Start-Sleep 2
-$set = [ordered]@{ 'custom-rendezvous-server' = '@HOST@'; 'relay-server' = '@RELAY@'; 'key' = '@KEY@'; 'allow-websocket' = 'N'; 'approve-mode' = 'password'; 'allow-auto-record-incoming' = '@GHI@' }
+$set = [ordered]@{ 'custom-rendezvous-server' = '@HOST@'; 'relay-server' = '@RELAY@'; 'key' = '@KEY@'; 'allow-websocket' = 'N'; 'approve-mode' = 'password'; 'allow-auto-record-incoming' = '@GHI@'; 'enable-hwcodec' = '@HW@' }
 Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object {
   $f = Join-Path $_.FullName 'AppData\Roaming\RustDesk\config\RustDesk2.toml'
   if (Test-Path -LiteralPath $f) {
@@ -424,7 +429,7 @@ Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object
     [IO.File]::WriteAllText($f, $t, (New-Object Text.UTF8Encoding($false)))
   }
 }"""
-    return tung_nguoi.replace("@RV@", t["rv"]).replace("@HOST@", t["id"]).replace("@RELAY@", t["relay"]).replace("@KEY@", t["khoa"]).replace("@GHI@", t["ghi"])
+    return tung_nguoi.replace("@RV@", t["rv"]).replace("@HOST@", t["id"]).replace("@RELAY@", t["relay"]).replace("@KEY@", t["khoa"]).replace("@GHI@", t["ghi"]).replace("@HW@", t["hw"])
 
 
 def script_cau_hinh_nguoi_dung(host=None, khoa=None, relay=None):
@@ -436,7 +441,7 @@ def script_cau_hinh_nguoi_dung(host=None, khoa=None, relay=None):
             "if (-not (Test-Path $rd)) { throw 'Máy này chưa cài RustDesk (cần bản cài đặt, không phải bản chạy trực tiếp).' }\n"
             "Get-Process rustdesk -ErrorAction SilentlyContinue | Stop-Process -Force\nStart-Sleep 2\n"
             "& $rd --option custom-rendezvous-server '%(id)s' | Out-Null\n& $rd --option relay-server '%(relay)s' | Out-Null\n"
-            "& $rd --option key '%(khoa)s' | Out-Null\n& $rd --option allow-websocket N | Out-Null\n& $rd --option approve-mode password | Out-Null\n& $rd --option allow-auto-record-incoming %(ghi)s | Out-Null\n"
+            "& $rd --option key '%(khoa)s' | Out-Null\n& $rd --option allow-websocket N | Out-Null\n& $rd --option approve-mode password | Out-Null\n& $rd --option allow-auto-record-incoming %(ghi)s | Out-Null\n& $rd --option enable-hwcodec %(hw)s | Out-Null\n"
             "Start-Process $rd\nWrite-Host 'Đã đổi RustDesk sang máy chủ ID %(id)s, chuyển tiếp %(relay)s. Đợi vài giây cho góc dưới RustDesk báo Ready.' -ForegroundColor Green\n"
             "Read-Host 'Nhan Enter de dong'\n") % t
 
