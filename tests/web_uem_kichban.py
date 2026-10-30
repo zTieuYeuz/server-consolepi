@@ -328,6 +328,19 @@ Gia.execute_ps = Gia_ps0
 ls = c.get("/rustdesk/api/lich-su", headers=H).get_json()["ds"]
 kq["gh_khop_phien"] = any(x["may"] == "MAY-AGENT-A" and any(g["ten"] == _tenghi for g in x["ghi_hinh"]) for x in ls)   # cac phien gia cung giay: chi kiem gan dung may
 kq["gh_chi_1_phien"] = sum(1 for x in ls for g in x["ghi_hinh"] if g["ten"] == _tenghi) == 1
+_mo_coi = "incoming_123456789_20200102030405123_display0_h265.mp4"          # may khong bao nhat ky phien: ban ghi van hien thanh dong rieng
+_f_coi = os.path.join(GS.thu_muc_ghi_hinh(), "m-agent", _mo_coi)
+open(_f_coi, "wb").write(b"x")
+ls = c.get("/rustdesk/api/lich-su", headers=H).get_json()["ds"]
+kq["gh_mo_coi_van_hien"] = [x["loai"] for x in ls if any(g["ten"] == _mo_coi for g in x["ghi_hinh"])] == ["Ghi hình (không có nhật ký phiên)"]
+os.remove(_f_coi)
+URD._ghi_console(DL.tim(DL.MAY.doc(), "m-agent"), "123456789", "nguoi-thu", "Mở kết nối")    # gan vao lan bam Ket noi tu Console
+_gan = "incoming_123456789_%s123_display0_h265.mp4" % _t.strftime("%Y%m%d%H%M%S", _t.localtime(_t.time() + 30))
+_f_gan = os.path.join(GS.thu_muc_ghi_hinh(), "m-agent", _gan)
+open(_f_gan, "wb").write(b"x")
+ls = c.get("/rustdesk/api/lich-su", headers=H).get_json()["ds"]
+kq["gh_gan_yeu_cau_console"] = [(x["loai"], x["nguoi_console"]) for x in ls if any(g["ten"] == _gan for g in x["ghi_hinh"])] == [("Yêu cầu từ Console", "nguoi-thu")]
+os.remove(_f_gan)
 kq["gh_xem"] = c.get("/rustdesk/ghi-hinh/m-agent/" + _tenghi, headers=H).status_code == 200
 kq["gh_duong_xau"] = c.get("/rustdesk/ghi-hinh/m-agent/..%2Frustdesk.json", headers=H).status_code == 404 and GS.duong_ghi_hinh("..", "a.webm") is None
 _cu = os.path.join(GS.thu_muc_ghi_hinh(), "m-agent", "incoming_1_20200101000000000_display0_vp9.webm")

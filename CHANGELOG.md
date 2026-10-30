@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.3 - 30/10/2026
+
+- **Ghi hình RustDesk hiện trong Lịch sử kết nối:** trước đây bản ghi đã lấy về Console nhưng chỉ gắn vào phiên do chính máy báo về (cổng 21114); máy không tới được cổng này thì bản ghi nằm trên Console mà không thấy ở đâu. Nay bản ghi gắn vào lần bấm Kết nối từ Console gần nhất của máy đó, hoặc hiện thành dòng riêng "Ghi hình (không có nhật ký phiên)".
+
 ## 2.0.2 - 29/10/2026
 
 **Sửa lỗi và hoàn thiện sau phát hành 2.0.0** (gồm các sửa đã đưa thử lên kho ở 2.0.1).

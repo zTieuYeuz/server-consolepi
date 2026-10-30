@@ -219,7 +219,7 @@ $('rd-cd-luu').onclick=function(){var c=document.querySelector('input[name=rd-cd
  api('/rustdesk/api/cai-dat',{che_do:c.value,ghi_hinh:$('rd-ghi').checked,ghi_hinh_gb:$('rd-gb').value}).then(function(d){$('rd-cd-tb').textContent=d.tb;if(d.ok){delete $('rd-chon').dataset.sua;taiCd();taiKn();}});};
 function kt(x){return x>=1073741824?(x/1073741824).toFixed(2)+' GB':x>=1048576?(x/1048576).toFixed(1)+' MB':Math.max(1,Math.round(x/1024))+' KB';}
 var LS=[];function tg(t){return t?new Date(t*1000).toLocaleString():'';}
-function dai(p){if(!p.ket_thuc)return p.loai==='Yêu cầu từ Console'?'':'<span class="rd-chip ok">đang mở</span>';var s=Math.round(p.ket_thuc-p.bat_dau);return s<60?s+' giây':Math.floor(s/60)+' phút '+(s%60)+' giây';}
+function dai(p){if(!p.ket_thuc)return p.loai==='Yêu cầu từ Console'||/^Ghi hình/.test(p.loai)?'':'<span class="rd-chip ok">đang mở</span>';var s=Math.round(p.ket_thuc-p.bat_dau);return s<60?s+' giây':Math.floor(s/60)+' phút '+(s%60)+' giây';}
 function veLs(){var q=bo($('rd-ls-tim').value),h='<tr><th style="min-width:95px;">Bắt đầu</th><th style="min-width:120px;">Máy</th><th style="min-width:120px;">Người kết nối</th><th>Từ IP</th><th>Loại</th><th>Thời lượng</th><th style="min-width:120px;">Kết quả</th><th style="min-width:215px;">Ghi hình</th></tr>',n=0;
  LS.forEach(function(p,i){p.kq=String(p.kq||'').replace(' (chế độ Thông báo)','');var ai=(p.nguoi_console?p.nguoi_console+' (Console)':'')+(p.nguoi?(p.nguoi_console?' · ':'')+p.nguoi+(p.peer?' ['+p.peer+']':''):'');
   if(q&&bo([p.may,p.rid,ai,p.ip,p.kq].join(' ')).indexOf(q)<0)return;n++;

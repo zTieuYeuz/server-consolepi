@@ -435,9 +435,18 @@ def lich_su_day_du():
         bd = _luc_ten_ghi(x["ten"])
         if not bd:
             continue
+        g = {"mid": x["mid"], "ten": x["ten"], "kich_thuoc": x["kich_thuoc"]}
         hop = [p for p in phien if mid_theo_rid[p["rid"]] == x["mid"] and p["bat_dau"] - 15 <= bd <= (p["ket_thuc"] or time.time()) + 15]
+        if not hop:               # may khong bao nhat ky phien (khong toi cong 21114): gan vao lan bam Ket noi tu Console gan nhat truoc do (trong 6 gio)
+            hop = [p for p in ra if p["loai"] == "Yêu cầu từ Console" and mid_theo_rid.get(p["rid"]) == x["mid"] and p["bat_dau"] - 15 <= bd <= p["bat_dau"] + 6 * 3600]
+            hop = [max(hop, key=lambda p: p["bat_dau"])] if hop else []
         if hop:
-            min(hop, key=lambda p: abs(p["bat_dau"] - bd))["ghi_hinh"].append({"mid": x["mid"], "ten": x["ten"], "kich_thuoc": x["kich_thuoc"]})
+            min(hop, key=lambda p: abs(p["bat_dau"] - bd))["ghi_hinh"].append(g)
+        else:                     # khong co dong nao: van hien ban ghi thanh dong rieng, khong de "mat" tren Console
+            rid = next((r for r, m in mid_theo_rid.items() if m == x["mid"]), "")
+            ra.append({"bat_dau": bd, "ket_thuc": None, "rid": rid, "may": ten.get(rid, "") or ds_may.get(x["mid"], ""), "ip": "", "nguoi": "", "peer": "",
+                       "loai": "Ghi hình (không có nhật ký phiên)", "kq": "", "nguoi_console": "", "conn": None, "ghi_hinh": [g]})
+    ra.sort(key=lambda p: p["bat_dau"], reverse=True)
     return ra
 
 
