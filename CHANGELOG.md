@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.6 - 31/10/2026
+
+- **Cài phần mềm qua Agent: "đợt kho" hỗ trợ Ứng dụng nhiều file:** tab Cài từ kho liệt kê thêm khối "Ứng dụng nhiều file" (Bitwarden, Cốc Cốc, Office...). Chọn ứng dụng, chọn máy hoặc nhóm, đặt chính sách (thử lại, chờ máy bật, Wake-on-LAN) như các đợt khác; agent nhận cả thư mục, giải nén trên máy rồi chạy dòng lệnh cài đã đặt ở Tài nguyên máy. Có kiểm tra id và hiện tên hành động riêng trong Trạng thái và Lịch sử triển khai.
+- **Giao diện tiếng Anh:** dịch thêm khoảng 380 đoạn văn dài (Cài Windows qua mạng, Tài nguyên máy, Quản lý máy trạm, công cụ mạng, Remote RustDesk, Wi-Fi, Cài đặt, Kho trung tâm). Đoạn có số liệu thay đổi (thời gian chạy, dung lượng, tên card mạng) vẫn giữ tiếng Việt vì chưa có cơ chế dịch theo mẫu.
+
 ## 2.0.5 - 30/10/2026
 
 - **Remote Desktop mở được nhiều máy liên tiếp:** sau khi bấm Kết nối (mở tab mới), nút ở trang gốc không còn kẹt ở "Đang xử lý...", nhập máy khác rồi bấm Kết nối tiếp được ngay. Sửa chung cho mọi form xử lý bằng JavaScript (nút chỉ khóa khi trang thật sự chuyển đi).
