@@ -35,7 +35,7 @@ _KHOA = threading.RLock()
 _DANG = set()                       # may_id dang chay 1 viec trien khai (RAM)
 _DANH_THUC = threading.Event()
 _BAT_DAU = False
-TEN_HANH_DONG = {"cai": "Cài đặt", "go": "Gỡ cài đặt", "nang": "Nâng cấp", "kho": "Cài từ kho"}
+TEN_HANH_DONG = {"cai": "Cài đặt", "go": "Gỡ cài đặt", "nang": "Nâng cấp", "kho": "Cài từ kho", "ungdung": "Cài ứng dụng nhiều file"}
 TEN_TT = {"cho": "Đang xếp hàng", "cho_online": "Chờ máy bật", "dang_chay": "Đang chạy", "thu_lai": "Chờ thử lại",
           "da_lam": "Hoàn tất", "da_dat": "Đã đúng sẵn", "loi": "Lỗi", "het_han": "Hết hạn", "huy": "Đã hủy"}
 CUOI = ("da_lam", "da_dat", "loi", "het_han", "huy")      # trang thai ket thuc
@@ -85,6 +85,9 @@ def _ghi_ket_qua(d, may_id, tt, tb):
 def _lam(d, m, c):
     if d["hanh_dong"] == "kho":
         ok, tb = DC.cai_tu_kho(c, m["ip"], d["goi_id"], m)
+        return ("da_lam" if ok else "loi"), tb
+    if d["hanh_dong"] == "ungdung":
+        ok, tb = DC.cai_ungdung(c, m["ip"], d["goi_id"], d["ten_goi"], m)
         return ("da_lam" if ok else "loi"), tb
     if d["hanh_dong"] == "nang":
         out, err = DC._chay_ps(c, _ps_nang(d["goi_id"]))
@@ -216,6 +219,9 @@ def bat_dau(hanh_dong, goi_id, ten_goi, may_ids, thu_lai=2, het_han_ngay=7, wol=
     if hanh_dong == "kho":
         if goi_id not in [a["ten"] for a in DC.danh_sach_kho()]:
             return None, "Không có phần mềm này trong kho."
+    elif hanh_dong == "ungdung":
+        if goi_id not in [u["id"] for u in DC.danh_sach_ungdung()]:
+            return None, "Không có ứng dụng nhiều file này trong kho."
     elif goi_id != "*" and not re.fullmatch(r"[A-Za-z0-9._+-]{2,100}", goi_id or ""):
         return None, "Mã gói WinGet không hợp lệ."
     ds_may = DL.MAY.doc()

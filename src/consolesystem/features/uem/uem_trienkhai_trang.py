@@ -173,10 +173,16 @@ def trang_kho():
     ds = DC.danh_sach_kho()
     hang = "".join(f'<tr><td><b>{_esc(a["ten"])}</b></td><td class="tk-ghi">{_esc(a["tham_so"] or "chưa điền tham số cài im lặng")}</td>'
                    f'<td><a class="tk-nut" href="/uem/trien-khai/goi?kho=1&id={_esc(a["ten"])}">Chọn máy</a></td></tr>' for a in ds)
+    ds_ud = DC.danh_sach_ungdung()
+    hang_ud = "".join(f'<tr><td><b>{_esc(u["ten_hien_thi"])}</b></td><td class="tk-ghi">{u["so_file"]} file · {_esc(u["kich_thuoc"])} · lệnh: {_esc(u["lenh_cai"] or "chưa đặt lệnh cài")}</td>'
+                      f'<td><a class="tk-nut" href="/uem/trien-khai/goi?ud=1&id={_esc(u["id"])}">Chọn máy</a></td></tr>' for u in ds_ud)
+    khoi_ud = ('<h2>Ứng dụng nhiều file (bộ cài kèm gói, cài offline)</h2><div class="card"><p class="tk-ghi" style="margin-top:0;">Cả thư mục ứng dụng được đẩy qua agent, '
+               'giải nén trên máy rồi chạy dòng lệnh cài đã đặt ở <a href="/tai-nguyen">Tài nguyên máy</a>.</p>'
+               '<table class=tk-bang><tr><th>Ứng dụng</th><th>Thông tin</th><th></th></tr>' + hang_ud + '</table></div>' if hang_ud else "")
     body = (_thanh_tab_cai("kho") + '<div class="card"><p class="tk-ghi" style="margin-top:0;">Cài file .exe / .msi trong <a href="/tai-nguyen">Tài nguyên máy</a> lên máy đã có agent. '
             'Console System đẩy file qua agent rồi chạy cài im lặng với tham số đã điền.</p>'
             + ('<table class=tk-bang><tr><th>Phần mềm</th><th>Tham số cài im lặng</th><th></th></tr>' + hang + '</table>' if hang else '<p class=tk-ghi>Kho chưa có phần mềm nào.</p>')
-            + '</div>' + JS_TIEN_DO)
+            + '</div>' + khoi_ud + JS_TIEN_DO)
     return trang(body, "td")
 
 
@@ -210,14 +216,21 @@ def trang_trien_khai():
 def trang_goi():
     gid = (request.args.get("id") or "").strip()
     kho = bool(request.args.get("kho"))
-    if kho:
+    ud = bool(request.args.get("ud"))
+    ung = None
+    if ud:
+        ung = next((u for u in DC.danh_sach_ungdung() if u["id"] == gid), None)
+        if not ung:
+            return chuyen("/uem/trien-khai/kho", "Không có ứng dụng nhiều file này trong kho.", False)
+        kho = True
+    elif kho:
         if gid not in [a["ten"] for a in DC.danh_sach_kho()]:
             return chuyen("/uem/trien-khai/kho", "Không có phần mềm này trong kho.", False)
     elif gid != "*" and not re.fullmatch(r"[A-Za-z0-9._+-]{2,100}", gid):
         return chuyen("/uem/trien-khai", "Mã gói không hợp lệ.", False)
-    g = ({"id": gid, "ten": gid, "ban": ""} if kho else UW.lay(gid) if gid != "*" else {"id": "*", "ten": "Tất cả phần mềm có bản mới", "ban": ""})
+    g = ({"id": gid, "ten": ung["ten_hien_thi"], "ban": ""} if ud else {"id": gid, "ten": gid, "ban": ""} if kho else UW.lay(gid) if gid != "*" else {"id": "*", "ten": "Tất cả phần mềm có bản mới", "ban": ""})
     ten = g["ten"] if g else gid
-    hd = ('<option value="kho">Cài đặt từ kho</option>' if kho else '<option value="nang">Nâng cấp tất cả</option>' if gid == "*"
+    hd = ('<option value="ungdung">Cài ứng dụng nhiều file</option>' if ud else '<option value="kho">Cài đặt từ kho</option>' if kho else '<option value="nang">Nâng cấp tất cả</option>' if gid == "*"
           else '<option value="cai">Cài đặt</option><option value="nang">Nâng cấp (nếu đã cài)</option><option value="go">Gỡ cài đặt</option>')
     body = f"""<p><a class="tk-nut" href="{"/uem/trien-khai/kho" if kho else "/uem/trien-khai"}">Quay lại</a></p>
     <div class="card"><h3>{_esc(ten)}</h3><p class="tk-ghi">{_esc(gid)}{" · bản mới nhất " + _esc(g["ban"]) if g and g.get("ban") else ""}</p>

@@ -21,6 +21,8 @@ kq = {}
 loi_may = set()
 UK.ket_noi = lambda m, bat_buoc_winrm=False: (object(), "", "agent")
 DC.danh_sach_kho = lambda: [{"ten": "7z.exe", "tham_so": "/S"}]
+DC.danh_sach_ungdung = lambda: [{"id": "ud-bw", "ten_hien_thi": "Bitwarden", "so_file": 2, "kich_thuoc": "90 MB", "lenh_cai": "setup.exe /S"}]
+DC.cai_ungdung = lambda cl, ip, uid, ten, may: (True, "%s: xong (mã thoát 0)" % ten) if uid == "ud-bw" else (False, "sai")
 DC.cai_tu_kho = lambda cl, ip, ten, may: (False, "ma thoat 1603") if may["id"] in loi_may else (True, "7z.exe: xong (mã thoát 0)")
 UT.UBC.chay_nen = lambda mid: None
 DL.MAY.sua(lambda ds: ds.extend([{"id": i, "ip": "10.8.8.%d" % n, "ten": i.upper(), "giam_sat": True, "agent": {"serie": "s-" + i, "luc_cuoi": 1}}
@@ -106,4 +108,17 @@ h = c.get("/uem/trien-khai/goi?kho=1&id=7z.exe", headers=H).get_data(as_text=Tru
 kq["chinh_sach_tren_form"] = 'name="thu_lai"' in h and 'name="het_han_ngay"' in h and 'name="wol"' in h
 r = c.post("/uem/trien-khai/chay", headers=H, data={"hanh_dong": "kho", "goi_id": "7z.exe", "ten_goi": "7z", "may": ["m-xa"], "thu_lai": "0", "het_han_ngay": "3"})
 kq["form_chay"] = r.status_code == 302 and "dot=" in r.headers.get("Location", "")
+# dot kho: ung dung nhieu file
+h = c.get("/uem/trien-khai/kho", headers=H).get_data(as_text=True)
+kq["kho_liet_ke_ungdung"] = "Bitwarden" in h and "/uem/trien-khai/goi?ud=1&amp;id=ud-bw" in h.replace("&id", "&amp;id") and "Ứng dụng nhiều file" in h
+h = c.get("/uem/trien-khai/goi?ud=1&id=ud-bw", headers=H).get_data(as_text=True)
+kq["form_ungdung"] = 'value="ungdung"' in h and 'name="thu_lai"' in h and "Bitwarden" in h
+kq["ungdung_la_khong_co"] = c.get("/uem/trien-khai/goi?ud=1&id=khong-co", headers=H).status_code == 302
+kq["ungdung_tu_choi_id_la"] = UT.bat_dau("ungdung", "khong-co", "x", ["m-bat"])[0] is None
+song("m-bat")
+du, loi_ud = UT.bat_dau("ungdung", "ud-bw", "Bitwarden", ["m-bat"], thu_lai=0)
+s = cho(du, lambda s: s["dang"] == 0)
+kq["dot_ungdung_chay"] = bool(du) and s["may"]["m-bat"]["tt"] == "da_lam"
+r = c.post("/uem/trien-khai/chay", headers=H, data={"hanh_dong": "ungdung", "goi_id": "ud-bw", "ten_goi": "Bitwarden", "may": ["m-xa"], "thu_lai": "0", "het_han_ngay": "3"})
+kq["form_chay_ungdung"] = r.status_code == 302 and "dot=" in r.headers.get("Location", "")
 print("KETQUA " + json.dumps(kq))

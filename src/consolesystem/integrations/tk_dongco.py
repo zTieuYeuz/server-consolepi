@@ -287,6 +287,11 @@ def cai_tu_kho(c, ip, ten, may):
     return _b_phanmem(c, ip, {"ref": ten}, may)
 
 
+def cai_ungdung(c, ip, ung_id, ten, may):
+    """Cai 1 ung dung nhieu file (dot cai tu kho) len may. (ok, thong bao)"""
+    return _b_ungdung(c, ip, {"ref": ung_id, "ten": ten}, may)
+
+
 def _chu_ky_thu_muc(p):
     tong, moi = 0, 0
     for goc, _d, fs in os.walk(p):
