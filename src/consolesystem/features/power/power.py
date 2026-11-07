@@ -37,12 +37,12 @@ def register_power(app):
         h = health.snapshot()
         power_msg = power_msg_html(h)
 
-        body = f"""
-        <h2>Trạng thái nguồn</h2>
-        <table>
-          <tr><td style="width:190px;">Nguồn điện (Pi)</td><td>{power_msg}</td></tr>
-        </table>
-
+        if h["throttle"] is None:               # may khong phai Raspberry Pi: khong co cam bien nguon -> khong bay nut tat/khoi dong lai o day
+            nut_nguon = ('<p style="color:#8b93a1;font-size:13px;margin-top:14px;">Trang này dành cho module Raspberry Pi. '
+                         'Máy chủ này không phải Raspberry Pi nên không có nút tắt máy / khởi động lại ở đây; '
+                         'dùng Terminal của Console System (<code>sudo reboot</code> hoặc <code>sudo poweroff</code>) khi cần.</p>')
+        else:
+            nut_nguon = f"""
         <h2>Tắt máy / Khởi động lại (module Raspberry Pi)</h2>
         <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
           <form method="POST" action="/power/reboot"
@@ -58,6 +58,14 @@ def register_power(app):
           Luôn tắt máy bằng nút này trước khi rút điện, tránh hỏng thẻ nhớ.
           Đợi đến khi đèn xanh (ACT) trên board Pi ngừng nhấp nháy rồi mới rút điện.
         </p>"""
+
+        body = f"""
+        <h2>Trạng thái nguồn</h2>
+        <table>
+          <tr><td style="width:190px;">Nguồn điện (Pi)</td><td>{power_msg}</td></tr>
+        </table>
+
+        {nut_nguon}"""
         return render_page(body, active="/power", title="Nguồn điện",
                            subtitle="Tắt máy / khởi động lại module Raspberry Pi")
 
