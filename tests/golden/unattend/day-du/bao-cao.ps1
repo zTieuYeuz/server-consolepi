@@ -184,6 +184,24 @@ $soDat   = @($ketQua | Where-Object { $_.Dat -eq $true }).Count
 $soHong  = @($ketQua | Where-Object { $_.Dat -eq $false }).Count
 $soKhong = @($ketQua | Where-Object { $_.Dat -eq $null }).Count
 
+# Gia nhap domain THAT BAI khong duoc im lang (video V19: bao cao "Da lam xong 35 viec" ma may van WORKGROUP). Bao cao chi liet ke viec
+# da xong, nen RIENG muc nay neu khong dat thi them nhom do "CAN XEM LAI" + ma loi doc tu NetSetup.log (Windows tu thu lai moi ~10 giay).
+$canChuY = @()
+foreach ($r in @($ketQua | Where-Object { $_.Nhan -eq 'Gia nhập domain' -and $_.Dat -ne $true })) {
+    $ma = ''
+    try {
+        $ln = Select-String -Path 'C:\Windows\debug\NetSetup.log' -Pattern 'status: 0x[0-9a-fA-F]+' -EA Stop | Select-Object -Last 1
+        if ($ln) { $ma = [regex]::Match($ln.Line, '0x[0-9a-fA-F]+').Value.ToLower() }
+    } catch { }
+    $y = ''
+    if ($ma -eq '0x52e') { $y = 'sai tài khoản hoặc mật khẩu gia nhập - sửa trong kịch bản' }
+    elseif ($ma -eq '0x54b') { $y = 'không tìm thấy domain qua DNS' }
+    elseif ($ma -eq '0x6ba') { $y = 'không kết nối được máy chủ domain (RPC)' }
+    elseif ($ma -eq '0x5') { $y = 'tài khoản gia nhập không đủ quyền thêm máy' }
+    $r.ChiTiet = 'KHÔNG vào được domain (' + $r.ChiTiet + ')' + $(if ($ma) { ', mã lỗi ' + $ma } else { '' }) + $(if ($y) { ': ' + $y } else { '' })
+    $canChuY += $r.ChiTiet
+}
+
 # ---------- Ghi ra file (luon ghi, du co ai doc popup hay khong) ----------
 $txt = New-Object System.Collections.Generic.List[string]
 $txt.Add('================================================================')
@@ -194,6 +212,7 @@ $txt.Add('   Thoi diem: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
 $txt.Add('================================================================')
 $txt.Add('')
 $txt.Add("   ĐÃ LÀM XONG: $soDat việc")
+foreach ($cc in $canChuY) { $txt.Add('   !!! ' + $cc) }
 $txt.Add('')
 # File van ban: CHI ghi viec DA LAM XONG, dung y het khoi hien tren cua so.
 $cac = @($ketQua | Where-Object { $_.Dat -eq $true })
@@ -257,6 +276,10 @@ $lblTo.Font = New-Object System.Drawing.Font('Segoe UI', 19, [System.Drawing.Fon
 $lblTo.ForeColor = [System.Drawing.Color]::White
 $lblTo.AutoSize = $true; $lblTo.Location = New-Object System.Drawing.Point(22, 16)
 $head.Controls.Add($lblTo)
+if ($canChuY.Count -gt 0) {
+    $head.BackColor = [System.Drawing.Color]::FromArgb(176, 48, 40)
+    $lblTo.Text = "Đã làm xong $soDat việc - CHƯA VÀO DOMAIN"
+}
 
 $lblPhu = New-Object System.Windows.Forms.Label
 $lblPhu.Text = "May: $env:COMPUTERNAME     Kich ban: $TEN_KICHBAN     " + (Get-Date -Format 'yyyy-MM-dd HH:mm')
@@ -349,6 +372,8 @@ function DoNhom($tieuDe, $mau, $cacMuc) {
 # chi la xac nhan may da lam xong nhung gi. Bo han 2 nhom kia khoi cua
 # so va khoi file .txt (van con dem so trong dong tieu de neu co viec
 # chua xong, khong giau hoan toan - xem $lblTo.Text ben duoi).
+DoNhom 'CẦN XEM LẠI' ([System.Drawing.Color]::FromArgb(248, 214, 210)) `
+       @($ketQua | Where-Object { $_.Nhan -eq 'Gia nhập domain' -and $_.Dat -ne $true })
 DoNhom 'ĐÃ LÀM XONG' ([System.Drawing.Color]::FromArgb(214, 240, 222)) `
        @($ketQua | Where-Object { $_.Dat -eq $true })
 $frm.Controls.Add($lv)

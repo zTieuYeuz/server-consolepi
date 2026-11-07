@@ -2,6 +2,18 @@
 
 ## 2.0.6 - 31/10/2026
 
+**Sửa lỗi phát hiện khi quay video hướng dẫn (07/11/2026):**
+
+- **Tắt PXE không cắt máy đang cài:** nếu còn máy giữ kết nối chia sẻ cài đặt (SMB 445) thì Console từ chối tắt và báo IP máy đó; có nút "Vẫn tắt" khi chắc chắn.
+- **Gia nhập domain thất bại được báo rõ:** báo cáo cuối khi cài Windows thêm nhóm "CẦN XEM LẠI" và dải đỏ "CHƯA VÀO DOMAIN" kèm mã lỗi đọc từ NetSetup.log (0x52e sai tài khoản/mật khẩu, 0x54b không thấy domain...). Form kịch bản cho biết rõ đã lưu mật khẩu gia nhập (để trống = giữ nguyên).
+- **Agent MSI có passkey:** hướng dẫn nói rõ không bấm đúp (hộp "Please wait" đứng và giữ khóa msiexec); lệnh gỡ ghi `msiexec /x "{mã}"` có ngoặc kép để chạy được trong PowerShell.
+- **Quản lý máy trạm:** sửa tên gọi/thẻ máy không còn báo sai "Đã có máy khác dùng IP này" (bỏ qua bản ghi đã xóa khỏi quản lý); cài lại Windows cùng MAC thì gộp bản ghi cũ (không còn agent sống) vào bản mới, giữ thẻ/địa điểm/ghi chú/nhóm; bỏ chữ "(theo mô hình OpenUEM)"; trang Phần mềm đã cài hiện tên máy.
+- **Kết quả có dấu tiếng Việt** (TightVNC, kiểm DNS/TLS); mã lỗi WinGet -1073741515 báo "WinGet không chạy được trên máy này".
+- **RustDesk:** che mật khẩu mặc định (nút Hiện/Ẩn), liên kết kết nối không còn mang `?password=` trong HTML.
+- **Nguồn điện:** máy không phải Raspberry Pi không còn hiện nút Khởi động lại/Tắt máy. **Nhật ký:** tab Log chỉ còn một ô tìm. **Profile:** hỏi xác nhận khi lưu profile đang bật áp dụng cho tất cả máy.
+- **Cải tiến nhỏ:** Tiến trình/Dịch vụ sắp xếp theo cột; nhật ký Thao tác và Log có nút "Ẩn nhịp agent", thao tác từ xa ghi thành câu; danh sách Máy tính lọc theo RAM và loại ổ (SSD/HDD); trang Bảo mật có "Chỉ máy có vấn đề", nút Làm mới dữ liệu, cột Báo cáo lúc, nhãn BitLocker rõ hơn; Ping nhiều đích cùng lúc (tối đa 8).
+- Chưa làm (cần máy Windows thật): CMD tiếng Việt (`chcp 65001 >nul`, patch ở ghi chú phát hành) vì phải build lại cs-agent.exe.
+
 - **Cài phần mềm qua Agent: "đợt kho" hỗ trợ Ứng dụng nhiều file:** tab Cài từ kho liệt kê thêm khối "Ứng dụng nhiều file" (Bitwarden, Cốc Cốc, Office...). Chọn ứng dụng, chọn máy hoặc nhóm, đặt chính sách (thử lại, chờ máy bật, Wake-on-LAN) như các đợt khác; agent nhận cả thư mục, giải nén trên máy rồi chạy dòng lệnh cài đã đặt ở Tài nguyên máy. Có kiểm tra id và hiện tên hành động riêng trong Trạng thái và Lịch sử triển khai.
 - **Giao diện tiếng Anh:** dịch thêm khoảng 380 đoạn văn dài (Cài Windows qua mạng, Tài nguyên máy, Quản lý máy trạm, công cụ mạng, Remote RustDesk, Wi-Fi, Cài đặt, Kho trung tâm). Đoạn có số liệu thay đổi (thời gian chạy, dung lượng, tên card mạng) vẫn giữ tiếng Việt vì chưa có cơ chế dịch theo mẫu.
 

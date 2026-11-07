@@ -310,6 +310,7 @@
 /uem/bao-cao/<ten>.csv	GET	uem_bc_csv
 /uem/bao-mat	GET	uem_bm
 /uem/bao-mat/cap-nhat	GET	uem_bm_cn
+/uem/bao-mat/lam-moi	POST	uem_bm_lam_moi
 /uem/may	GET	uem_may
 /uem/may/<mid>	GET	uem_may_ct
 /uem/may/<mid>/	GET	uem_may_ct

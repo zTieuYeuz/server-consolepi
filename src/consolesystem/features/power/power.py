@@ -42,7 +42,7 @@ def register_power(app):
                          'Máy chủ này không phải Raspberry Pi nên không có nút tắt máy / khởi động lại ở đây; '
                          'dùng Terminal của Console System (<code>sudo reboot</code> hoặc <code>sudo poweroff</code>) khi cần.</p>')
         else:
-            nut_nguon = f"""
+            nut_nguon = """
         <h2>Tắt máy / Khởi động lại (module Raspberry Pi)</h2>
         <div class="row" style="gap:10px;margin-top:13px;flex-wrap:wrap;">
           <form method="POST" action="/power/reboot"

@@ -12,6 +12,7 @@ Dung CHUNG kho may + tai khoan quan tri voi muc "Trien khai phan mem" (tk_dulieu
   bao_cao_luc   thoi diem lay bao cao cuoi    ket_noi      {"ok": bool, "loi": str, "luc": ts}
 """
 import sys as _sys
+from consolesystem.core.nhatky import bo_qua as _bo_qua
 _sys.modules["ui.uem_dulieu"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 from ui import tk_dulieu as DL
 from ui.tk_dulieu import Kho, KhoLon, moi_id, tim
@@ -54,8 +55,8 @@ def ghi_tac_vu(may_id, nguon, ten, ok, tb):
             m = tim(DL.MAY.doc(), may_id) or {}
             ten_may = m.get("bi_danh") or m.get("ten") or m.get("ip") or may_id
             errlog.ghi_thao_tac(f"{ten} trên máy {ten_may}: " + ("thành công" if ok else "thất bại"), (str(tb)[:120] if not ok else ""))
-        except Exception:
-            pass  # noqa: S110  (nhat ky la phu: khong duoc lam hong tac vu)
+        except Exception as _loi:                 # nhat ky la phu: khong duoc lam hong tac vu
+            _bo_qua(_loi)
 
 
 def sua_may(may_id, **kw):
