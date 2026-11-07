@@ -106,12 +106,12 @@ def _tu_dien(may_id, d):
 
 
 def _gop_theo_mac(may_id, mac):
-    """Cai lai Windows (doi ten may, cung MAC) tao ban ghi thu hai. Ban ghi cu khong con agent song -> gop thong tin nguoi dung dat
+    """Cai lai Windows (doi ten may, cung MAC VA cung IP) tao ban ghi thu hai. Khac IP thi KHONG gop (card ao/VPN co the dung chung MAC). Ban ghi cu khong con agent song -> gop thong tin nguoi dung dat
     (the, dia diem, bi danh, ghi chu, nhom) sang ban ghi moi roi AN ban ghi cu (nhu 'xoa khoi quan ly', agent cu bao nhip se hien lai).
     Ban ghi cu con agent song (nghi nhan ban/MAC trung that) thi KHONG gop, chi ghi canh bao vao lich su tac vu."""
     from ui import uem_agent as UA
     moi = DL.tim(DL.MAY.doc(), may_id)
-    cu = [x for x in DL.MAY.doc() if x["id"] != may_id and not x.get("an") and _chuan_mac(x.get("mac")) == _chuan_mac(mac)]
+    cu = [x for x in DL.MAY.doc() if x["id"] != may_id and not x.get("an") and _chuan_mac(x.get("mac")) == _chuan_mac(mac) and x.get("ip") == moi.get("ip")]
     if not moi or not cu:
         return
     song = [x for x in cu if UA.con_song(x)]

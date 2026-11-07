@@ -306,13 +306,21 @@ def trang_tong_quan():
 
 
 # ----------------------------------------------------------------- danh sach may
-def ram_gb(r):
-    """So GB RAM tu bao cao ('16 GB' / '512 MB'); None neu khong co."""
-    mm = re.match(r"\s*([\d.]+)\s*(GB|MB|TB)", str((r.get("computer") or {}).get("memory", "")), re.I)
+def _gb(chuoi):
+    mm = re.match(r"\s*([\d.]+)\s*(GB|MB|TB)", str(chuoi or ""), re.I)
     if not mm:
         return None
     v, dv = float(mm.group(1)), mm.group(2).upper()
     return v * (1024 if dv == "TB" else 1 if dv == "GB" else 1 / 1024)
+
+
+def ram_gb(r):
+    """So GB RAM that: cong dung luong tung thanh RAM (memoryslots); thieu thi dung computer.memory (TotalPhysicalMemory,
+    luon thap hon thuc te vi tru bo nho phan cung giu: may 8 GB bao ~7 GB). None neu khong co du lieu."""
+    cac = [_gb(x.get("size")) for x in (r.get("memoryslots") or [])]
+    if cac and all(v is not None for v in cac):
+        return sum(cac)
+    return _gb((r.get("computer") or {}).get("memory"))
 
 
 def loai_o_dia(r):

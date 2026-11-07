@@ -98,3 +98,24 @@ def test_ping_nhieu_dich(monkeypatch):
     ra = CN.ping_nhieu(["ok.com", "chet.com"], iface="eth0")
     assert "=== ok.com ===\n4 packets transmitted, 4 received, 0% packet loss" in ra and "=== chet.com ===" in ra and "100% packet loss" in ra
     assert CN.ping_nhieu(["ok.com"]).startswith("PING ok.com")                  # 1 dich: giu nguyen ket qua day du nhu cu
+
+
+def test_ram_gb_theo_thanh_ram_khong_bi_lech_do_bo_nho_giu():
+    from consolesystem.features.uem import uem_trang as T
+    r = {"computer": {"memory": "7 GB"}, "memoryslots": [{"size": "8 GB"}]}              # may 8 GB: TotalPhysicalMemory chi bao 7 GB
+    assert T.ram_gb(r) == 8
+    assert T.ram_gb({"computer": {"memory": "7 GB"}, "memoryslots": [{"size": "4 GB"}, {"size": "4096 MB"}]}) == 8
+    assert T.ram_gb({"computer": {"memory": "3 GB"}, "memoryslots": []}) == 3            # khong co thanh RAM (may ao): dung memory
+
+
+def test_profile_ket_qua_agent_tu_ap_dung_duoc_viet_hoa():
+    import inspect
+    from consolesystem.features.uem import uem_profiles as P, uem_profiles_trang as PT
+    assert "UB.viet_hoa(str(r.get(\"tb\", \"\")))" in inspect.getsource(P)
+    assert "UB.viet_hoa(tb)" in inspect.getsource(PT)
+
+
+def test_pxe_van_tat_la_form_rieng_co_input_an():
+    from consolesystem.features.deploy_os import dosui_caidat as C
+    ma = open(C.__file__, encoding="utf-8").read()
+    assert 'name="ep" value="1"' in ma and 'name="ep" value="1" class' not in ma        # input an trong form rieng, khong dua vao nut submit

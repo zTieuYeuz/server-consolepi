@@ -78,11 +78,14 @@ def _trang_caidat_pxe(msg="", ok=True):
               <input type="hidden" name="ve" value="/deployos/caidat">
               <button type="submit" class="red" data-busy="Đang tắt...">
                 Tắt PXE</button>
-              <button type="submit" name="ep" value="1" class="gray" data-busy="Đang tắt..."
-                onclick="return confirm('Vẫn tắt PXE? Máy đang cài Windows sẽ mất chia sẻ và có thể cài hỏng.')">
-                Vẫn tắt</button>
               <small style="color:#8b93a1;margin-left:8px;">Muốn đổi chế độ
                 mạng: tắt rồi bật lại.</small>
+            </form>
+            <form method="POST" action="/deployos/pxe/tat" style="margin-top:8px;"
+                  onsubmit="return confirm('Vẫn tắt PXE? Máy đang cài Windows sẽ mất chia sẻ và có thể cài hỏng.');">
+              <input type="hidden" name="ve" value="/deployos/caidat">
+              <input type="hidden" name="ep" value="1">
+              <button type="submit" class="gray" data-busy="Đang tắt...">Vẫn tắt (bỏ qua cảnh báo máy đang cài)</button>
             </form>"""
     else:
         o = ""

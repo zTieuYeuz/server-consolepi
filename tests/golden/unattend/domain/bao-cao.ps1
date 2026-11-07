@@ -99,8 +99,8 @@ $canChuY = @()
 foreach ($r in @($ketQua | Where-Object { $_.Nhan -eq 'Gia nhập domain' -and $_.Dat -ne $true })) {
     $ma = ''
     try {
-        $ln = Select-String -Path 'C:\Windows\debug\NetSetup.log' -Pattern 'status: 0x[0-9a-fA-F]+' -EA Stop | Select-Object -Last 1
-        if ($ln) { $ma = [regex]::Match($ln.Line, '0x[0-9a-fA-F]+').Value.ToLower() }
+        $ln = Select-String -Path 'C:\Windows\debug\NetSetup.log' -Pattern '(NetpDoDomainJoin|NetpJoinDomain|NetpJoinDomainOnDs).*status( of)?:? *0x[0-9a-fA-F]+' -EA Stop | Where-Object { $_.Line -notmatch 'status( of)?:? *0x0+\s*$' } | Select-Object -Last 1
+        if ($ln) { $ma = [regex]::Match($ln.Line, '0x[0-9a-fA-F]+\s*$').Value.Trim().ToLower() }
     } catch { }
     $y = ''
     if ($ma -eq '0x52e') { $y = 'sai tài khoản hoặc mật khẩu gia nhập - sửa trong kịch bản' }

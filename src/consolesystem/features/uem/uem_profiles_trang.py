@@ -134,7 +134,7 @@ def trang_profile(pid):
         st = tt.get(m["id"], {})
         hm += (f'<tr><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td><td>{chip({"ok": "Đúng cấu hình", "loi": "Có lỗi", "offline": "Không kết nối", "dang": "Đang chạy"}.get(st.get("trang_thai"), "Chưa chạy"), {"ok": "xanh", "loi": "do", "offline": "vang"}.get(st.get("trang_thai"), ""))}</td>'
                f'<td>{_esc(gio(st.get("luc")) if st.get("luc") else "—")}</td><td>{_esc(st.get("tom_tat", ""))}</td></tr>')
-    hv = "".join(f'<tr><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td><td>{_esc(tk)}</td><td>{_esc(tb)}</td></tr>' for m, tk, tb in van)
+    hv = "".join(f'<tr><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td><td>{_esc(tk)}</td><td>{_esc(UB.viet_hoa(tb))}</td></tr>' for m, tk, tb in van)
     ds_nhom = [g["ten"] for g in DL.NHOM_MAY.doc() if g["id"] in p.get("nhom_may", [])] + [t["ten"] for t in the_ds if t["id"] in p.get("the", [])]
     pham_vi = "tất cả máy" if p.get("ap_dung_tat_ca") else (", ".join(ds_nhom) or "chưa chọn máy")
     body = _CSS_PF + f"""<p><a class="tk-nut" href="/uem/profiles">← Danh sách profile</a></p>

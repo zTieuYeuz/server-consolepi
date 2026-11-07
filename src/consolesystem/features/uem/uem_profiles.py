@@ -115,7 +115,7 @@ def nhan_ket_qua_agent(m, items):
                     continue
                 cu = st["tasks"].get(tid, {})
                 tt_ = str(r.get("tt", ""))[:20]
-                st["tasks"][tid] = {"tt": tt_, "tb": str(r.get("tb", ""))[:400], "luc": r.get("luc") or luc, "ver": ten_task[tid].get("ver"),
+                st["tasks"][tid] = {"tt": tt_, "tb": UB.viet_hoa(str(r.get("tb", "")))[:400], "luc": r.get("luc") or luc, "ver": ten_task[tid].get("ver"),
                                     "ok_luc": (r.get("luc") or luc) if tt_ != "loi" else cu.get("ok_luc", 0)}
             hop_le = [t["id"] for t in p.get("tasks", []) if t.get("bat", True)]
             co_loi = any(st["tasks"].get(i, {}).get("tt") == "loi" for i in hop_le)
@@ -124,7 +124,7 @@ def nhan_ket_qua_agent(m, items):
         UD.TRANG_THAI_PROFILE.sua(luu)
         for tid, r in it["tasks"].items():
             if tid in ten_task and isinstance(r, dict) and r.get("tt") in ("da_lam", "loi"):
-                UD.ghi_tac_vu(mid, "profile", f'{p["ten"]}: {UB.mo_ta(ten_task[tid]["loai"], ten_task[tid]["tham_so"])} (agent tự áp dụng)', r.get("tt") == "da_lam", str(r.get("tb", "")))
+                UD.ghi_tac_vu(mid, "profile", f'{p["ten"]}: {UB.mo_ta(ten_task[tid]["loai"], ten_task[tid]["tham_so"])} (agent tự áp dụng)', r.get("tt") == "da_lam", UB.viet_hoa(str(r.get("tb", ""))))
     return acks
 
 

@@ -30,6 +30,13 @@ c.post("/uem/may/m-moi/quan-ly", data={"ip": "10.8.8.2"}, headers=H)
 t = c.get("/uem/may/m-moi/quan-ly", headers=H).get_data(as_text=True)
 kq["e_trung_that_van_chan"] = "Đã có máy khác dùng IP này." in t
 
+# (f0) cung MAC nhung KHAC IP -> khong gop
+DL.MAY.sua(lambda ds: ds.extend([
+    {"id": "m-vpn-a", "ip": "10.8.7.1", "ten": "VPN-A", "mac": "00:0C:29:77:88:99", "the": ["tx"], "giam_sat": True},
+    {"id": "m-vpn-b", "ip": "10.8.7.2", "ten": "", "mac": "", "giam_sat": True}]))
+UBC._tu_dien("m-vpn-b", {"hostname": "VPN-B", "mac": "00:0c:29:77:88:99"})
+kq["f_khac_ip_khong_gop"] = not DL.tim(DL.MAY.doc(), "m-vpn-a").get("an") and not DL.tim(DL.MAY.doc(), "m-vpn-b").get("the")
+
 # (f) cai lai cung MAC -> gop vao ban ghi moi, ban cu an
 DL.NHOM_MAY.sua(lambda ds: ds.append({"id": "g-f", "ten": "Nhom F", "may": ["m-f-cu", "m-khac"]}))
 DL.MAY.sua(lambda ds: ds.extend([
