@@ -77,3 +77,6 @@ def test_nhat_ky_thao_tac_khong_ghi_nhip_agent(tmp_path, monkeypatch):
     assert not os.path.exists(EL.LOG_THAO_TAC)                       # nhip/ket qua dinh ky cua agent khong lam nhieu nhat ky
     EL.ghi_thao_tac_tu_dong(Req("/deployos/kichban/xoa"), Resp())
     assert "/deployos/kichban/xoa" in open(EL.LOG_THAO_TAC, encoding="utf-8").read()
+    EL.ghi_thao_tac_tu_dong(Req("/uem/may/abc/dich-vu/api"), Resp())
+    EL.ghi_thao_tac_tu_dong(Req("/uem/may/abc/duyet-file/xoa"), Resp())
+    assert "dich-vu/api" not in open(EL.LOG_THAO_TAC, encoding="utf-8").read()        # da co cau dien giai tu ghi_tac_vu

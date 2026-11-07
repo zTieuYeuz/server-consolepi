@@ -73,4 +73,14 @@ kq["n_canh_bao_khi_bat_tat_ca"] = "áp dụng cho TẤT CẢ máy" in t
 # (P2) bo loc an nhip agent o tab Thao tac / Log; khong ghi dong nhip vao nhat ky thao tac
 kq["p2_nut_an_nhip"] = 'id="nk-nhip"' in c.get("/logs?tab=thaotac", headers=H).get_data(as_text=True) and 'id="nk-nhip"' not in c.get("/logs?tab=loi", headers=H).get_data(as_text=True)
 
+# (P2) nhat ky Thao tac dien giai thanh cau cho thao tac tu xa
+from ui import errlog as EL, uem_dulieu as UD  # noqa: E402
+UD.ghi_tac_vu("m-moi", "tu_xa", "Dịch vụ Spooler: dừng", True, "")
+UD.ghi_tac_vu("m-moi", "tu_xa", "Tải file C:\\a.txt", False, "khong doc duoc")
+UD.ghi_tac_vu("m-moi", "profile", "PF: x", True, "")                      # nguon khac: khong ghi them
+_nk = open(EL.LOG_THAO_TAC, encoding="utf-8").read()
+kq["p2_cau_dich_vu"] = "Dịch vụ Spooler: dừng trên máy May demo: thành công" in _nk
+kq["p2_cau_duyet_file_loi"] = "Tải file C:\\a.txt trên máy May demo: thất bại | khong doc duoc" in _nk
+kq["p2_nguon_khac_khong_ghi"] = "PF: x" not in _nk
+
 print("KETQUA " + json.dumps(kq))

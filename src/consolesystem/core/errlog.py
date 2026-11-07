@@ -140,6 +140,8 @@ def ghi_thao_tac(hanh_dong, chi_tiet="", nguoi=None, ip=None):
 # Cac thao tac POST KHONG ghi (da co dong ghi rieng chi tiet hon, hoac chay thuong xuyen/khong phai thao tac cua nguoi dung)
 _KHONG_GHI = ("/login", "/logout", "/power/", "/deployos/pxe/bat", "/deployos/pxe/tat", "/phien/api/", "/api/",
               "/tai-len/", "/giaodien", "/_auth", "/healthz", "/uem/agent/")        # agent bao nhip/ket qua dinh ky khong phai thao tac nguoi dung
+# Thao tac tu xa tren may (dich vu, tien trinh, duyet file) da tu ghi 1 CAU ("Dich vu X: dung trên máy Y: thanh cong") qua uem_dulieu.ghi_tac_vu
+_RE_TU_XA_DA_CO_CAU = re.compile(r"^/uem/may/[^/]+/(dich-vu/api|tien-trinh/api|duyet-file/(tai-len|tao-thu-muc|xoa)|cli/chay)$")
 _TRUONG_AN_TOAN = ("ten", "id", "ma", "bo_id", "os_id", "ung_id", "ten_may", "dev", "devname", "loai", "nguon")
 
 
@@ -153,7 +155,7 @@ def ghi_thao_tac_tu_dong(request, response):
         if request.method != "POST" or response.status_code >= 400:
             return
         duong = request.path
-        if any(duong.startswith(x) for x in _KHONG_GHI):
+        if any(duong.startswith(x) for x in _KHONG_GHI) or _RE_TU_XA_DA_CO_CAU.match(duong):
             return
         ct = []
         for k in _TRUONG_AN_TOAN:

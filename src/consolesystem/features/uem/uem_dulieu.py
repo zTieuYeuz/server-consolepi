@@ -48,6 +48,14 @@ def ghi_tac_vu(may_id, nguon, ten, ok, tb):
         ds.append({"luc": time.time(), "nguon": nguon, "ten": ten, "ok": bool(ok), "tb": str(tb)[:500]})
         del ds[:-200]
     BAO_CAO_TAC_VU.sua(ghi)
+    if nguon in ("tu_xa", "cli"):          # thao tac tu xa cua nguoi quan tri: ghi them 1 CAU vao Nhat ky, Thao tac (thay dong POST tho)
+        try:
+            from ui import errlog
+            m = tim(DL.MAY.doc(), may_id) or {}
+            ten_may = m.get("bi_danh") or m.get("ten") or m.get("ip") or may_id
+            errlog.ghi_thao_tac(f"{ten} trên máy {ten_may}: " + ("thành công" if ok else "thất bại"), (str(tb)[:120] if not ok else ""))
+        except Exception:
+            pass  # noqa: S110  (nhat ky la phu: khong duoc lam hong tac vu)
 
 
 def sua_may(may_id, **kw):
