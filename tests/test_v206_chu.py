@@ -88,3 +88,13 @@ def test_ram_gb_va_loai_o_dia():
     assert T.ram_gb({"computer": {}}) is None and T.ram_gb({}) is None
     r = {"physicaldisks": [{"model": "WDC WD10", "media_type": "HDD"}, {"model": "Samsung SSD 860", "media_type": "Unknown"}, {"model": "VMware Virtual disk"}, {"model": "ABC"}]}
     assert T.loai_o_dia(r) == ["HDD", "SSD", "Chưa rõ", "Ổ ảo"] or set(T.loai_o_dia(r)) == {"HDD", "SSD", "Chưa rõ", "Ổ ảo"}
+
+
+def test_ping_nhieu_dich(monkeypatch):
+    from nettools import connectivity as CN
+    assert CN.tach_dich("a.com, 1.1.1.1  8.8.8.8;a.com") == ["a.com", "1.1.1.1", "8.8.8.8"]
+    assert len(CN.tach_dich(",".join(f"h{i}.com" for i in range(20)))) == CN.TOI_DA_DICH and CN.tach_dich(" , ") == []
+    monkeypatch.setattr(CN, "run_ping", lambda h, iface=None, **k: f"PING {h}\n4 packets transmitted, 4 received, {'0' if h == 'ok.com' else '100'}% packet loss, time 3ms\n")
+    ra = CN.ping_nhieu(["ok.com", "chet.com"], iface="eth0")
+    assert "=== ok.com ===\n4 packets transmitted, 4 received, 0% packet loss" in ra and "=== chet.com ===" in ra and "100% packet loss" in ra
+    assert CN.ping_nhieu(["ok.com"]).startswith("PING ok.com")                  # 1 dich: giu nguyen ket qua day du nhu cu

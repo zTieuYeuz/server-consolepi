@@ -64,6 +64,28 @@ def run_traceroute(host, iface=None, max_hops=20, timeout=2):
         return f"(loi: {e})"
 
 
+TOI_DA_DICH = 8
+
+
+def tach_dich(chuoi):
+    """'a.com, 1.1.1.1 8.8.8.8' -> ['a.com','1.1.1.1','8.8.8.8'] (bo trung, toi da TOI_DA_DICH dich)."""
+    return list(dict.fromkeys(h for h in re.split(r"[\s,;]+", chuoi or "") if h))[:TOI_DA_DICH]
+
+
+def ping_nhieu(dich, iface=None):
+    """Ping dong thoi nhieu dich; tra ve chuoi: moi dich 1 khoi '=== host ===' kem dong tom tat mat goi (hoac lap lai ket qua day du khi chi co 1 dich)."""
+    from concurrent.futures import ThreadPoolExecutor
+    if len(dich) == 1:
+        return run_ping(dich[0], iface=iface)
+    with ThreadPoolExecutor(max_workers=len(dich)) as ex:
+        kq = list(ex.map(lambda h: run_ping(h, iface=iface), dich))
+    ra = []
+    for h, out in zip(dich, kq):
+        loss = next((d.strip() for d in out.splitlines() if "packet loss" in d), "")
+        ra.append(f"=== {h} ===\n{loss}\n{out.strip()}\n" if loss else f"=== {h} ===\n{out.strip()}\n")
+    return "\n".join(ra)
+
+
 PING_TEMPLATE = _taisan.doc("nettools/connectivity.PING_TEMPLATE.html")
 
 
@@ -76,14 +98,16 @@ def ping_route():
     che_do = request.form.get("che_do") if request.form.get("che_do") in ("ping", "traceroute") else "ca-hai"
     ping_out = trace_out = ""
     if ran:
-        if not _host_hop_le(host):
+        dich = tach_dich(host)
+        if not dich or not all(_host_hop_le(h) for h in dich):
             ping_out = trace_out = ("(dia chi khong hop le - chi cho chu, so va "
                                     "cac dau . - : , khong duoc bat dau bang dau -)")
         else:
             if che_do in ("ping", "ca-hai"):
-                ping_out = run_ping(host, iface=iface)
+                ping_out = ping_nhieu(dich, iface=iface)
             if che_do in ("traceroute", "ca-hai"):
-                trace_out = run_traceroute(host, iface=iface)
+                trace_out = (run_traceroute(dich[0], iface=iface) if len(dich) == 1
+                             else "(Traceroute chỉ chạy cho 1 đích mỗi lần - hãy nhập 1 đích, hoặc dùng Ping khi nhập nhiều đích.)")
 
     return render_template_string(
         PING_TEMPLATE, o_chon_cong=_o_chon_cong(iface), host=host, iface=iface, ran=ran,
