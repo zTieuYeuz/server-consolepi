@@ -580,7 +580,7 @@ def register_uem(app):
         ips = _ips_tu_chuoi(ip)
         if not ips or len(ips) != 1:
             return chuyen(f"/uem/may/{mid}/quan-ly", "Địa chỉ IP không hợp lệ.", False)
-        if any(x["ip"] == ips[0] and x["id"] != mid for x in DL.MAY.doc()):
+        if any(x["ip"] == ips[0] and x["id"] != mid and not x.get("an") for x in DL.MAY.doc()):
             return chuyen(f"/uem/may/{mid}/quan-ly", "Đã có máy khác dùng IP này.", False)
         mac = (f.get("mac") or "").strip()
         mac_c = _MP.chuan_mac(mac) if mac else ""
