@@ -83,6 +83,33 @@ def trang_phan_mem():
 
 
 # ----------------------------------------------------------------- bao mat
+def nhan_bitlocker(st):
+    """Encrypted = da bat; Unencrypted = may ho tro nhung chua bat; con lai (Unknown/trong) = khong ho tro hoac khong doc duoc."""
+    if st == "Encrypted":
+        return chip("Đã bật", "xanh")
+    if st == "Unencrypted":
+        return chip("Chưa bật", "vang")
+    return chip("Không hỗ trợ / không đọc được", "")
+
+
+def van_de_bao_mat(r):
+    """Danh sach van de bao mat ro rang cua 1 bao cao: diệt virus tat/cu, tuong lua tat, SMB1 bat. (BitLocker khong tinh: nhieu may khong ho tro.)"""
+    vd = []
+    av = r.get("antivirus") or {}
+    if not av.get("name"):
+        vd.append("Không có diệt virus")
+    elif not av.get("is_active"):
+        vd.append("Diệt virus đang tắt")
+    elif not av.get("is_updated"):
+        vd.append("CSDL diệt virus cũ")
+    tat = [x.get("ten", "?") for x in (r.get("firewall") or []) if not x.get("bat")]
+    if tat:
+        vd.append("Tường lửa tắt: " + ", ".join(tat))
+    if str(r.get("smb1", "")).lower() == "enabled":
+        vd.append("SMB1 đang bật")
+    return vd
+
+
 def trang_bao_mat(muc=""):
     ds = [m for m in DL.MAY.doc() if m.get("giam_sat", True) and bc(m)]
     con = '<div class="uem-con">' + "".join(f'<a href="/uem/bao-mat{("/" + k) if k else ""}" class="{"on" if k == muc else ""}">{n}</a>' for k, n in CON_BM) + "</div>"
@@ -99,14 +126,20 @@ def trang_bao_mat(muc=""):
         else:
             av, fw = r.get("antivirus") or {}, r.get("firewall") or []
             c = next((d for d in r.get("logicaldisks", []) if d.get("label") == "C:"), {})
-            hang += (f'<tr data-t="{_esc((ten_may(m) + " " + m["ip"] + " " + av.get("name", "")).lower())}"><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td>'
+            van_de = van_de_bao_mat(r)
+            ghi_vd = f'<div class="tk-ghi" style="color:var(--do);">{_esc("; ".join(van_de))}</div>' if van_de else ""
+            hang += (f'<tr data-t="{_esc((ten_may(m) + " " + m["ip"] + " " + av.get("name", "")).lower())}" data-vd="{"1" if van_de else ""}"><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a>{ghi_vd}</td>'
                      f'<td>{chip(av.get("name") or "Không có", "xanh" if av.get("is_active") else "do")}</td><td>{co_khong(av.get("is_updated"), "Mới", "Cũ")}</td>'
                      f'<td>{" ".join(chip(x["ten"], "xanh" if x["bat"] else "do") for x in fw) or "—"}</td>'
-                     f'<td>{chip(c.get("bitlocker_status", "—"), "xanh" if c.get("bitlocker_status") == "Encrypted" else "vang")}</td>'
-                     f'<td>{co_khong(str(r.get("smb1", "")).lower() != "enabled", "Tắt", "BẬT")}</td></tr>')
+                     f'<td>{nhan_bitlocker(c.get("bitlocker_status"))}</td>'
+                     f'<td>{co_khong(str(r.get("smb1", "")).lower() != "enabled", "Tắt", "BẬT")}</td>'
+                     f'<td class="tk-ghi">{gio(m.get("bao_cao_luc"))}</td></tr>')
     cot = (["Máy", "Tự động cập nhật", "Tìm lần cuối", "Cài lần cuối", "Chờ cài"] if muc == "cap-nhat"
-           else ["Máy", "Diệt virus", "CSDL", "Tường lửa (đang bật)", "BitLocker ổ C", "SMB1"])
-    return trang(con + f'<div class="card uem-ds" data-trang="20"><div class="uem-loc"><input type="text" class="uem-tim" placeholder="Tìm máy"><span class="tk-ghi"><b class="uem-dem"></b> máy</span></div>'
+           else ["Máy", "Diệt virus", "CSDL", "Tường lửa (đang bật)", "BitLocker ổ C", "SMB1", "Báo cáo lúc"])
+    loc_vd = ('<select class="uem-chon" data-k="vd"><option value="">Mọi máy</option><option value="1">Chỉ máy có vấn đề</option></select>'
+              '<form method="POST" action="/uem/bao-mat/lam-moi" style="display:inline;margin:0;"><button class="tk-nut" type="submit" title="Lấy lại báo cáo của mọi máy để cột Tường lửa, Diệt virus... cập nhật ngay">Làm mới dữ liệu</button></form>'
+              if muc != "cap-nhat" else "")
+    return trang(con + f'<div class="card uem-ds" data-trang="20"><div class="uem-loc"><input type="text" class="uem-tim" placeholder="Tìm máy">{loc_vd}<span class="tk-ghi"><b class="uem-dem"></b> máy</span></div>'
                  f'<div class="uem-bang-cuon"><table class="tk-bang"><thead><tr>{"".join(f"<th>{c}</th>" for c in cot)}</tr></thead><tbody>{hang}</tbody></table></div></div>', "bm")
 
 
@@ -781,6 +814,12 @@ def register_uem(app):
     @app.route("/uem/bao-mat")
     def uem_bm():
         return trang_bao_mat("")
+
+    @app.route("/uem/bao-mat/lam-moi", methods=["POST"])
+    def uem_bm_lam_moi():
+        ids = [m["id"] for m in DL.MAY.doc() if m.get("giam_sat", True) and not m.get("an") and UK.co_the_ket_noi(m)]
+        n = sum(1 for i in ids if UBC.chay_nen(i))
+        return chuyen("/uem/bao-mat", f"Đã xếp lịch lấy lại báo cáo của {n} máy. Tải lại trang sau ít giây (cột Báo cáo lúc cho biết dữ liệu mới nhất).", n > 0)
 
     @app.route("/uem/bao-mat/cap-nhat")
     def uem_bm_cn():

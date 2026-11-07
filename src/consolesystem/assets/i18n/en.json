@@ -1409,5 +1409,12 @@
 "Có ổ HDD": "Has HDD",
 "Ổ ảo (máy ảo)": "Virtual disk (VM)",
 "Chưa rõ loại ổ": "Drive type unknown",
-"Ẩn nhịp agent": "Hide agent heartbeats"
+"Ẩn nhịp agent": "Hide agent heartbeats",
+"Mọi máy": "All machines",
+"Chỉ máy có vấn đề": "Only machines with problems",
+"Làm mới dữ liệu": "Refresh data",
+"Báo cáo lúc": "Reported at",
+"Đã bật": "Enabled",
+"Chưa bật": "Not enabled",
+"Không hỗ trợ / không đọc được": "Not supported / unreadable"
 }

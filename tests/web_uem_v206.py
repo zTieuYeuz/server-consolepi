@@ -90,4 +90,24 @@ DL.MAY.sua(lambda ds: ds.append({"id": "m-ram", "ip": "10.8.9.1", "ten": "PC-RAM
 t = c.get("/uem/may", headers=H).get_data(as_text=True)
 kq["p2_loc_ram_loai_o"] = 'data-ram="lt8|lt16"' in t and 'data-dia="SSD"' in t and 'data-k="ram"' in t and 'data-k="dia"' in t
 
+# (P2) trang Bao mat: loc may co van de, nhan BitLocker, nut lam moi, cot bao cao luc
+DL.MAY.sua(lambda ds: ds.extend([
+    {"id": "m-tot", "ip": "10.8.9.2", "ten": "PC-TOT", "giam_sat": True, "bao_cao_luc": time.time(), "bao_cao": {
+        "antivirus": {"name": "Defender", "is_active": True, "is_updated": True}, "firewall": [{"ten": "Domain", "bat": True}], "smb1": "Disabled",
+        "logicaldisks": [{"label": "C:", "bitlocker_status": "Unknown"}]}},
+    {"id": "m-xau", "ip": "10.8.9.3", "ten": "PC-XAU", "giam_sat": True, "bao_cao": {
+        "antivirus": {"name": "Defender", "is_active": True, "is_updated": True}, "firewall": [{"ten": "Private", "bat": False}], "smb1": "Disabled",
+        "logicaldisks": [{"label": "C:", "bitlocker_status": "Unencrypted"}]}}]))
+t = c.get("/uem/bao-mat", headers=H).get_data(as_text=True)
+kq["p2_bm_loc_van_de"] = 'data-k="vd"' in t and "Chỉ máy có vấn đề" in t and "Tường lửa tắt: Private" in t
+import re as _re  # noqa: E402
+_hang = {m_.group(1): m_.group(0) for m_ in _re.finditer(r'<tr data-t="([^"]*)" data-vd="[^"]*">.*?</tr>', t, _re.S)}
+kq["p2_bm_vd_dung_may"] = any('data-vd="1"' in v and "pc-xau" in k for k, v in _hang.items()) and any('data-vd=""' in v and "pc-tot" in k for k, v in _hang.items())
+kq["p2_bm_bitlocker_nhan"] = "Chưa bật" in t and "Không hỗ trợ / không đọc được" in t
+_da_xep = []
+UBC.chay_nen = lambda i: _da_xep.append(i) or True        # khong that su lay bao cao (cho agent timeout)
+kq["p2_bm_lam_moi"] = ("/uem/bao-mat/lam-moi" in t and "Báo cáo lúc" in t and c.post("/uem/bao-mat/lam-moi", headers=H).status_code == 302)
+
+kq["p2_bm_lam_moi_xep_lich"] = len(_da_xep) > 0 and "m-ram" in _da_xep
+
 print("KETQUA " + json.dumps(kq))
