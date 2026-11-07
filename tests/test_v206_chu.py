@@ -30,3 +30,20 @@ def test_dns_tls_co_dau():
     assert '"Có" if result.tu_ky else "Không"' in tls and '"Co"' not in tls
     dns = (goc / "nettools/dns_check.py").read_text(encoding="utf-8")
     assert "ĐỊA CHỈ KHÁC HẲN" in dns and "DIA CHI KHAC" not in dns
+
+
+def test_rustdesk_che_mat_khau_trong_html(monkeypatch):
+    from consolesystem.features.uem import uem_rustdesk as U
+    monkeypatch.setattr(U.RD, "doc_cfg", lambda: {"may": {"m1": {"id": "123456789", "mk": "BiMat-xyz9"}}})
+    monkeypatch.setattr(U.RD, "trang_thai", lambda: {"da_cai": True, "dia_chi": {"id": "10.0.0.1"}})
+    h = U.khoi_tu_xa({"id": "m1", "ip": "10.0.0.5"})
+    assert 'href="rustdesk://connection/new/123456789"' in h                    # href khong mang mat khau
+    assert "?password=" not in h.split("onclick")[0]
+    assert ">••••••••</span>" in h and 'data-mk="BiMat-xyz9"' in h              # che mac dinh, co nut hien/an
+    assert h.count("BiMat-xyz9") == 2 and ">BiMat-xyz9<" not in h               # khong hien chu ro trong noi dung
+
+
+def test_trang_rustdesk_script_che_mat_khau():
+    from consolesystem.features.rustdesk import rustdesk as R
+    assert "function mkO(mk)" in R.TRANG and "data-hien-mk" in R.TRANG
+    assert "'+e(x.mk)+'</span>" not in R.TRANG and "e(x.mk||'chưa đặt')" not in R.TRANG

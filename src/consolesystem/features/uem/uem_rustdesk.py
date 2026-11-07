@@ -313,13 +313,16 @@ def khoi_tu_xa(m):
         return ('<div class="card"><h3>Điều khiển bằng RustDesk</h3><p class="tk-ghi">Máy này chưa có ID RustDesk trong Console System. Cách 1: vào <a href="/rustdesk">RustDesk</a>, '
                 'chọn máy rồi bấm <b>Cài lên máy đã chọn</b> (máy phải có agent), hoặc cài file <b>Cai-RustDesk-ConsoleSystem.msi</b> bằng Triển khai phần mềm (ID tự ghi vào đây). Cách 2: máy đã cài file .msi bằng tay (trỏ về máy chủ <b>' + _e(st["dia_chi"]["id"]) + '</b>): nhập ID (xem trong RustDesk trên máy đó) và mật khẩu chung:</p>'
                 f'<form method="POST" action="/uem/may/{m["id"]}/rustdesk/luu" class="tk-hang"><input type="text" name="id" value="' + _e(goi_y) + '" placeholder="ID RustDesk (số)" required style="max-width:200px;margin:0;">'
-                '<input type="text" name="mk" value="' + _e(RD.mk_chung()) + '" placeholder="Mật khẩu cố định" required autocomplete="off" style="max-width:220px;margin:0;"><button class="tk-nut chinh" type="submit">Lưu</button></form></div>')
+                '<input type="password" name="mk" value="' + _e(RD.mk_chung()) + '" placeholder="Mật khẩu cố định" required autocomplete="off" style="max-width:220px;margin:0;"><button class="tk-nut chinh" type="submit">Lưu</button></form></div>')
     i, mk = _e(ban["id"]), _e(ban["mk"])
     return (f'<div class="card"><h3>Điều khiển bằng RustDesk</h3>'
             f'<p class="tk-ghi">RustDesk không chạy trong trình duyệt (khác VNC phía trên): bấm nút để mở <b>ứng dụng RustDesk đã cài trên máy của anh</b> và kết nối thẳng xuống máy này. '
             f'Máy anh đang ngồi cần RustDesk trỏ về máy chủ <b>{_e(st["dia_chi"]["id"])}</b>: tải và chạy <a href="/rustdesk/Cai-RustDesk-ConsoleSystem.msi">file cài RustDesk</a> một lần là xong.</p>'
-            f'<div class="uem-2"><div>ID: <span class="rd-k" style="font-family:monospace;user-select:all;">{i}</span></div><div>Mật khẩu: <span style="font-family:monospace;user-select:all;">{mk}</span></div></div>'
-            f'<div class="tk-hang" style="margin-top:10px;"><a class="tk-nut chinh" href="rustdesk://connection/new/{i}?password={mk}">Mở RustDesk và kết nối</a>'
+            f'<div class="uem-2"><div>ID: <span class="rd-k" style="font-family:monospace;user-select:all;">{i}</span></div>'
+            f'<div>Mật khẩu: <span style="font-family:monospace;" id="rdmk-{i}" data-mk="{mk}" data-an="1">••••••••</span> '
+            f'<button type="button" class="tk-nut" style="padding:2px 9px;min-height:0;" onclick="var o=document.getElementById(\'rdmk-{i}\');if(o.dataset.an===\'1\'){{o.textContent=o.dataset.mk;o.dataset.an=\'0\';this.textContent=\'Ẩn\';}}else{{o.textContent=\'••••••••\';o.dataset.an=\'1\';this.textContent=\'Hiện\';}}">Hiện</button></div></div>'
+            f'<div class="tk-hang" style="margin-top:10px;"><a class="tk-nut chinh" href="rustdesk://connection/new/{i}" data-mk="{mk}" '
+            f'onclick="this.href=\'rustdesk://connection/new/{i}?password=\'+encodeURIComponent(this.dataset.mk);">Mở RustDesk và kết nối</a>'
             f'<a class="tk-nut" href="/rustdesk">Trang RustDesk (khóa, tải client)</a></div></div>')
 
 

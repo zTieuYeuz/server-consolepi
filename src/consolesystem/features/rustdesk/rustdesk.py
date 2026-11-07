@@ -105,6 +105,8 @@ TRANG = """@CSS@<style>
 <div class="card" data-buoc="1"><h3 style="font-size:16px;font-weight:600;margin:0 0 8px 0;">Thiết bị đã đăng ký với máy chủ</h3><table class="rd-tb" id="rd-dev"></table></div>
 <script>(function(){var $=function(i){return document.getElementById(i);};var D0={},MK0='';
 function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function mkO(mk){if(!mk)return '<span class="rd-k">chưa đặt</span>';return '<span class="rd-k" data-mk="'+e(mk)+'" data-an="1">••••••••</span><button class="rd-chep" type="button" data-hien-mk>Hiện</button>';}
+document.addEventListener('click',function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute('data-hien-mk'))return;var o=t.previousElementSibling;if(o.dataset.an==='1'){o.textContent=o.dataset.mk;o.dataset.an='0';t.textContent='Ẩn';}else{o.textContent='••••••••';o.dataset.an='1';t.textContent='Hiện';}});
 function api(u,b){return fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(function(r){return r.json();});}
 function chip(t,ok){return '<span class="rd-chip '+(ok?'ok':'loi')+'">'+t+'</span>';}
 function hd(){var v=function(i){return $(i).value.trim().toLowerCase();},h=v('rd-host'),lan=D0.ip_lan||'IP-Console',id=h||lan,nat=id,udp=id,rl=v('rd-relay')||id,x='';
@@ -155,7 +157,7 @@ function dev(){api('/rustdesk/api/thiet-bi').then(function(d){var h='<tr><th>ID<
  (d.ds||[]).forEach(function(x){h+='<tr><td><b>'+e(x.id)+'</b></td><td>'+(x.ten?e(x.ten):'<span class="tk-ghi">chưa rõ</span>')+'</td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td></tr>';});
  if(!(d.ds||[]).length) h+='<tr><td colspan="4" class="tk-ghi">Chưa có thiết bị nào đăng ký.</td></tr>'; $('rd-dev').innerHTML=h;
  $('rd-mk-tb').textContent=(d.dong_bo&&d.dong_bo.tb)||''; if(d.dong_bo&&d.dong_bo.dang) setTimeout(dev,2500);
- var m='<tr><th>Máy</th><th>ID RustDesk</th><th>Mật khẩu</th><th>Đồng bộ</th></tr>'; (d.may||[]).forEach(function(x){m+='<tr><td>'+e(x.ten)+'</td><td><b>'+e(x.id)+'</b></td><td><span class="rd-k">'+e(x.mk)+'</span></td><td>'+(x.dong_bo?'<span class="rd-chip ok">đã đồng bộ</span>':'<span class="rd-chip loi" title="'+e(x.loi)+'">chờ cập nhật</span>')+'</td></tr>';});
+ var m='<tr><th>Máy</th><th>ID RustDesk</th><th>Mật khẩu</th><th>Đồng bộ</th></tr>'; (d.may||[]).forEach(function(x){m+='<tr><td>'+e(x.ten)+'</td><td><b>'+e(x.id)+'</b></td><td>'+mkO(x.mk)+'</td><td>'+(x.dong_bo?'<span class="rd-chip ok">đã đồng bộ</span>':'<span class="rd-chip loi" title="'+e(x.loi)+'">chờ cập nhật</span>')+'</td></tr>';});
  $('rd-bang-may').innerHTML=(d.may||[]).length?m:''; ChonMay.ve('rd',d.agent||[]);});}
 $('rd-cai-client').onclick=function(){var ids=ChonMay.chon('rd'); if(!ids.length){$('rd-ct').textContent='Chọn ít nhất một máy.';return;}
  $('rd-ct').textContent='Đang cài (có thể mất 1-2 phút mỗi máy)...'; api('/rustdesk/api/cai-client',{may:ids}).then(function(d){$('rd-ct').textContent=(d.kq||[]).map(function(x){return x.ten+': '+x.tb;}).join(' | ');dev();});};
@@ -166,7 +168,7 @@ function bo(x){return (x||'').replace(/đ/g,'d').replace(/Đ/g,'D').normalize('N
 function veKn(){var q=bo($('rd-tim').value),h='<tr><th>Máy</th><th>IP</th><th>Trạng thái</th><th>ID RustDesk</th><th>Mật khẩu</th><th></th></tr>',n=0;
  BANG.may.forEach(function(x){if(q&&bo(x.ten+' '+x.ip+' '+x.id).indexOf(q)<0)return;n++;
   var tt=x.agent?'<span class="rd-on"><span class="rd-cham '+(x.online?'ok':'')+'"></span>'+(x.online?'Online':'Offline')+'</span>':'<span class="rd-on"><span class="rd-cham"></span>Không có agent</span>';
-  h+='<tr><td><b>'+e(x.ten)+'</b></td><td>'+e(x.ip)+'</td><td>'+tt+'</td><td>'+(x.id?'<b>'+e(x.id)+'</b>':'<span class="tk-ghi">chưa có (cài ở bước 3-4)</span>')+'</td><td>'+(x.id?'<span class="rd-k">'+e(x.mk||'chưa đặt')+'</span>':'')+'</td><td style="white-space:nowrap;">'
+  h+='<tr><td><b>'+e(x.ten)+'</b></td><td>'+e(x.ip)+'</td><td>'+tt+'</td><td>'+(x.id?'<b>'+e(x.id)+'</b>':'<span class="tk-ghi">chưa có (cài ở bước 3-4)</span>')+'</td><td>'+(x.id?mkO(x.mk):'')+'</td><td style="white-space:nowrap;">'
    +(x.id?'<button class="tk-nut chinh" data-kn="'+e(x.mid)+'" type="button">Kết nối</button> ':'')+(x.agent?'<button class="tk-nut" data-kt="'+e(x.mid)+'" type="button">Kiểm tra máy</button> ':'')+(x.id?'<button class="tk-nut do" data-xoa-may="'+e(x.mid)+'" data-xoa-id="'+e(x.id)+'" type="button">Xóa ID</button>':'')+'</td></tr>';});
  $('rd-bang-kn').innerHTML=n?h:'<tr><td class="tk-ghi">'+(BANG.may.length?'Không có máy nào khớp.':'Chưa có máy nào có agent hoặc ID RustDesk.')+'</td></tr>';
  var c='<tr><th>ID</th><th>Tên máy / người dùng</th><th>Hệ điều hành</th><th>Trạng thái</th><th>Đăng ký lúc</th><th>Gắn vào máy</th></tr>';
