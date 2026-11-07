@@ -48,4 +48,26 @@ DL.MAY.sua(lambda ds: ds.extend([
 UBC._tu_dien("m-s-moi", {"hostname": "BANSAO", "mac": "00:0C:29:11:22:33"})
 kq["f_ban_cu_song_khong_gop"] = not DL.tim(DL.MAY.doc(), "m-s-cu").get("an")
 
+# (l) Nguon dien: may khong phai Pi (khong co cam bien) -> khong co nut tat/khoi dong lai; Pi van co
+from ui import health as HL  # noqa: E402
+_goc_snap = HL.snapshot
+HL.snapshot = lambda: dict(_goc_snap(), throttle=None)
+t = c.get("/power", headers=H).get_data(as_text=True)
+kq["l_khong_pi_an_nut"] = "Không áp dụng" in t and "/power/reboot" not in t and "/power/poweroff" not in t
+HL.snapshot = lambda: dict(_goc_snap(), throttle={"now": [], "past": []})
+t = c.get("/power", headers=H).get_data(as_text=True)
+kq["l_pi_van_co_nut"] = "/power/reboot" in t and "/power/poweroff" in t
+HL.snapshot = _goc_snap
+
+# (m) tab Log: dung MOT input name=tim
+t = c.get("/logs?tab=log&tim=abc", headers=H).get_data(as_text=True)
+kq["m_mot_input_tim"] = t.count('name="tim"') == 1 and "nkGuiNguon" in t
+
+# (n) Profile moi: Ap dung cho KHONG tick 'tat ca may'; luu khong tick thi van khong
+r = c.post("/uem/profiles/tao", data={"ten": "PF thu 206"}, headers=H)
+pid = r.headers["Location"].rsplit("/", 1)[-1]
+t = c.get("/uem/profiles/" + pid, headers=H).get_data(as_text=True)
+kq["n_mac_dinh_khong_tick_tat_ca"] = 'id="pf-tatca" checked' not in t and 'id="pf-tatca"' in t
+kq["n_canh_bao_khi_bat_tat_ca"] = "áp dụng cho TẤT CẢ máy" in t
+
 print("KETQUA " + json.dumps(kq))

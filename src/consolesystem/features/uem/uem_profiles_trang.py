@@ -147,7 +147,7 @@ def trang_profile(pid):
       <button type="button" class="tk-nut" data-t="ket-qua">Kết quả từng máy</button><button type="button" class="tk-nut" data-t="van-de">Vấn đề ({len(van)})</button></div>
     <section data-pt="tac-vu"><div class="card"><p class="tk-ghi" style="margin-top:0;">Tác vụ chạy lần lượt từ trên xuống. Máy đã đúng thì tự bỏ qua.</p>
       {ht or '<p class="tk-ghi">Chưa có tác vụ nào.</p>'}{phan_them}</div></section>
-    <section data-pt="ap-dung" hidden><div class="card"><form method="POST" action="/uem/profiles/{pid}/luu" class="tk-f">
+    <section data-pt="ap-dung" hidden><div class="card"><form method="POST" action="/uem/profiles/{pid}/luu" class="tk-f" onsubmit="var t=document.getElementById('pf-tatca'),b=this.elements.bat;return !(t.checked&&b&&b.checked)||confirm('Profile đang BẬT và áp dụng cho TẤT CẢ máy. Vẫn lưu?');">
       <label>Tên</label><input type="text" name="ten" value="{_esc(p["ten"])}" required><label>Mô tả</label><input type="text" name="mo_ta" value="{_esc(p.get("mo_ta", ""))}">
       <label class="tk-o"><input type="checkbox" name="ap_dung_tat_ca" value="1" id="pf-tatca"{" checked" if p.get("ap_dung_tat_ca") else ""}><span><b>Áp dụng cho tất cả máy</b><small>Bỏ chọn để chỉ áp dụng cho nhóm máy hoặc máy có thẻ bên dưới</small></span></label>
       <div id="pf-chon"><label>Nhóm máy</label><div class="tk-luoi">{o_nhom or '<span class="tk-ghi">Chưa có nhóm máy, tạo ở Máy tính (chọn máy, Tạo nhóm).</span>'}</div>
