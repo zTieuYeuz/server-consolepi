@@ -266,7 +266,7 @@ def _khoi_log():
     dong, loi = _lay_log(khoang, muc, nguon, dv, tim, SO_DONG_HIEN)
 
     def _chon(ten, ds, cur, nhan):
-        return (f'<label>{nhan}<select name="{ten}" onchange="document.getElementById(\'nk-form-nguon\').submit()">' + "".join(
+        return (f'<label>{nhan}<select name="{ten}" onchange="nkGuiNguon()">' + "".join(
             f'<option value="{_esc(k)}"{" selected" if k == cur else ""}>{_esc(v)}</option>' for k, v in ds) + "</select></label>")
 
     ds_nguon = [("he-thong", "Nhật ký hệ thống (journal)")] + [(f, f"File: {f}") for f in _ds_file_log()]
@@ -274,10 +274,12 @@ def _khoi_log():
     qs = urlencode({"tab": "log", "khoang": khoang, "muc": muc, "nguon": nguon, "dv": dv, "tim": tim})
     o_dv = "" if nguon != "he-thong" else _chon("dv", ds_dv, dv, "Dịch vụ")
     khu = (f'<form method="GET" action="/logs" id="nk-form-nguon" class="nk-sel"><input type="hidden" name="tab" value="log">'
-           f'<input type="hidden" name="tim" value="{_esc(tim)}">'
            f'{_chon("nguon", ds_nguon, nguon, "Nguồn")}{o_dv}'
            f'{_chon("khoang", [(k, v[0]) for k, v in KHOANG.items()], khoang, "Khoảng thời gian")}'
            f'{_chon("muc", [(k, v[0]) for k, v in MUC.items()], muc, "Mức độ (máy chủ lọc)")}</form>')
+    # Chi MOT input name=tim trong trang (o tim tren): khi doi nguon/khoang/muc thi chep gia tri o tim vao form luc gui
+    khu += ("<script>function nkGuiNguon(){var f=document.getElementById('nk-form-nguon'),t=document.getElementById('nk-tim');"
+            "if(t&&t.value){var i=document.createElement('input');i.type='hidden';i.name='tim';i.value=t.value;f.appendChild(i);}f.submit();}</script>")
     thong_bao = f'<div class="msg err">{_esc(loi)}</div>' if loi else ""
     kind = "journal" if nguon == "he-thong" else "file"
     an = "".join(f'<input type="hidden" name="{k}" value="{_esc(v)}">'
