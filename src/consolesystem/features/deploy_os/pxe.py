@@ -708,10 +708,31 @@ def bat_pxe(kieu_boot="truc_tiep"):
         _KHOA.release()
 
 
-def tat_pxe():
+def may_dang_noi_smb():
+    """IP cac may dang giu ket noi SMB (cong 445) toi Pi - tuc dang bung/cai anh Windows qua share [deploy]. Khong doc duoc thi tra []."""
+    ok, out = _sh(["ss", "-Htn", "state", "established", "( sport = :445 )"], timeout=5)
+    if not ok:
+        return []
+    ips = set()
+    for dong in out.splitlines():
+        cot = dong.split()
+        if len(cot) >= 2:
+            ip = cot[-1].rsplit(":", 1)[0].strip("[]")
+            ips.add(ip[7:] if ip.startswith("::ffff:") else ip)
+    return sorted(ips)
+
+
+def tat_pxe(ep=False):
+    """ep=True: bo qua canh bao may dang cai (nguoi dung da xac nhan). Mac dinh KHONG tat khi con may dang noi SMB, vi tat PXE
+    dung Samba va tra cong mang -> may dang bung anh (DISM) mat share, cai hong."""
     if not _KHOA.acquire(blocking=False):
         return False, _DANG_LAM
     try:
+        dang_cai = [] if ep or not dang_bat() else may_dang_noi_smb()
+        if dang_cai:
+            return False, ("Chưa tắt PXE: đang có máy kết nối chia sẻ cài đặt (" + ", ".join(dang_cai) + ") - có thể đang cài Windows. "
+                           "Tắt lúc này sẽ cắt SMB cổng 445 và làm hỏng bản cài. Hãy chờ máy cài xong rồi tắt, "
+                           "hoặc bấm \"Vẫn tắt\" nếu chắc chắn.")
         return _tat_pxe_that()
     finally:
         _KHOA.release()
@@ -1067,7 +1088,7 @@ def register_pxe(app):
 
     @app.route("/deployos/pxe/tat", methods=["POST"])
     def deployos_pxe_tat():
-        ok, msg = tat_pxe()
+        ok, msg = tat_pxe(ep=request.form.get("ep") == "1")
         from ui.errlog import ghi_thao_tac
         ghi_thao_tac("Tắt PXE" if ok else "Tắt PXE THẤT BẠI")
         return _ve_lai(msg, ok)
