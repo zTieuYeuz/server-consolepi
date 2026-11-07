@@ -259,8 +259,11 @@ def khung_passkey():
       <ul><li><b>Triển khai phần mềm LAN và cài Windows (kịch bản):</b> bấm <b>Lưu passkey cho triển khai</b> ở gói đó (mục File cài đã tạo), rồi <b>Đưa vào kho phần mềm</b>.
         Ô tham số cài để <code>/qn /norestart</code>; Console System tự thêm <code>PASSKEY="..."</code> lúc cài, không cần (và không nên) gõ passkey vào ô tham số.</li>
       <li><b>Cài tay hoặc bằng công cụ khác (GPO, Intune, PDQ...):</b> <code>msiexec /i agent.msi /qn /norestart PASSKEY="passkey-của-gói"</code>.
-        Bấm đúp file MSI (không có <code>/qn</code>) thì bộ cài tự hỏi passkey.</li>
-      <li><b>Gỡ agent:</b> <code>msiexec /x {pc} /qn /norestart PASSKEY="passkey-của-gói"</code> (máy cài gói có passkey cũng cần passkey khi gỡ).</li></ul>
+        <b>Đừng bấm đúp</b> file MSI có passkey (đã gặp khi thử trên Windows 11: hộp "Please wait while Windows configures..." đứng mãi, không hỏi passkey và giữ khóa msiexec;
+        nghi do bước kiểm passkey chạy bằng tài khoản hệ thống nên hộp nhập không hiện lên màn hình người dùng). Lỡ bị kẹt thì tắt tiến trình <code>msiexec.exe</code> (Task Manager) rồi cài lại bằng lệnh trên
+        trong PowerShell/CMD chạy bằng quyền Administrator. Gói <b>không đặt passkey</b> thì bấm đúp bình thường.</li>
+      <li><b>Gỡ agent</b> (trong PowerShell nhớ để mã sản phẩm trong ngoặc kép, vì dấu <code>{{ }}</code> là ký hiệu riêng của PowerShell): <code>msiexec /x "{pc}" /qn /norestart PASSKEY="passkey-của-gói"</code>
+        (máy cài gói có passkey cũng cần passkey khi gỡ).</li></ul>
       <p class="tk-ghi">Passkey không lấy lại được từ file MSI (file chỉ chứa dấu băm). Quên passkey thì tạo gói mới.</p></div>''')
 
 
@@ -374,7 +377,7 @@ def register_agent(app):
         os.makedirs(_DD.APPS_DIR, exist_ok=True)
         shutil.copyfile(p, os.path.join(_DD.APPS_DIR, ten))
         from consolesystem.integrations.tk_dongco import dien_tham_so_app_neu_trong
-        dien_tham_so_app_neu_trong(ten, "/qn /norestart", f"msiexec /x {UG.MSI_PRODUCT_CODE} /qn /norestart")
+        dien_tham_so_app_neu_trong(ten, "/qn /norestart", f'msiexec /x "{UG.MSI_PRODUCT_CODE}" /qn /norestart')
         return chuyen("/uem/quan-tri/agent", f"Đã đưa {ten} vào kho phần mềm (Tài nguyên máy, Phần mềm). Khi triển khai, Console System tự điền passkey nếu đã lưu cho gói này. Mã sản phẩm: {UG.MSI_PRODUCT_CODE}")
 
     @app.route("/uem/quan-tri/agent/goi/<gid>/passkey", methods=["POST"])

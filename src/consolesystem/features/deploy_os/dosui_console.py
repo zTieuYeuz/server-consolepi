@@ -292,7 +292,7 @@ def _trang_apps(msg="", ok=True):
                       <input type="hidden" name="ten" value="{_esc(a['ten'])}">
                       <input type="hidden" name="kieu" value="go">
                       <input type="text" name="go_cai" value="{_esc(a['go_cai'])}"
-                             placeholder="vd: msiexec /x {{GUID}} /qn" style="max-width:290px;"
+                             placeholder="vd: msiexec /x &quot;{{GUID}}&quot; /qn" style="max-width:290px;"
                              autocapitalize="off">
                       <button type="submit" class="small gray">Lưu</button>
                     </form>
