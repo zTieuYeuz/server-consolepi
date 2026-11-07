@@ -63,13 +63,23 @@ def trang_phan_mem():
             hang.append([f'<a href="/uem/may/{m["id"]}/phan-mem">{_esc(ten_may(m))}</a>', m["ip"], a.get("version", ""), a.get("install_date") or "—"])
         return trang(f'<p><a class="tk-nut" href="/uem/phan-mem">Tất cả phần mềm</a></p><div class="card"><h3>{_esc(ten_chon)}</h3>'
                      f'<p class="tk-ghi">Nhà sản xuất: {_esc(e["nsx"]) or "—"} · cài trên {len(ds_may)} máy</p>{bang(["Máy", "IP", "Phiên bản", "Ngày cài"], hang)}</div>', "pm")
-    hang = "".join(f'<tr data-t="{_esc((k + " " + v["nsx"]).lower())}"><td><a href="/uem/phan-mem?ten={_esc(__import__("urllib.parse").parse.quote(k))}">{_esc(k)}</a></td>'
-                   f'<td>{_esc(v["nsx"]) or "—"}</td><td>{len(v["ban"])}</td><td><b>{len(v["may"])}</b></td></tr>' for k, v in sorted(pm.items(), key=lambda kv: (-len(kv[1]["may"]), kv[0].lower())))
+    ten_theo_id = {m["id"]: ten_may(m) for m in DL.MAY.doc()}
+
+    def _o_may(v):
+        ten = sorted(ten_theo_id.get(i, "") for i in v["may"])
+        ten = [t for t in ten if t]
+        return ", ".join(ten[:3]) + (f" … (+{len(ten) - 3})" if len(ten) > 3 else ""), " ".join(ten)
+
+    hang = ""
+    for k, v in sorted(pm.items(), key=lambda kv: (-len(kv[1]["may"]), kv[0].lower())):
+        cot_may, loc_may = _o_may(v)
+        hang += (f'<tr data-t="{_esc((k + " " + v["nsx"] + " " + loc_may).lower())}"><td><a href="/uem/phan-mem?ten={_esc(__import__("urllib.parse").parse.quote(k))}">{_esc(k)}</a></td>'
+                 f'<td>{_esc(v["nsx"]) or "—"}</td><td>{len(v["ban"])}</td><td><b>{len(v["may"])}</b></td><td>{_esc(cot_may)}</td></tr>')
     if not pm:
         return trang('<div class="card"><p>Chưa có dữ liệu phần mềm. Gán tài khoản cho máy rồi bấm Lấy thông tin ở <a href="/uem/may">Máy tính</a>.</p></div>', "pm")
-    return trang(f'<div class="card uem-ds" data-trang="20"><div class="uem-loc"><input type="text" class="uem-tim" placeholder="Tìm phần mềm hoặc nhà sản xuất">'
+    return trang(f'<div class="card uem-ds" data-trang="20"><div class="uem-loc"><input type="text" class="uem-tim" placeholder="Tìm phần mềm, nhà sản xuất hoặc tên máy">'
                  f'<span class="tk-ghi"><b class="uem-dem"></b> phần mềm khác nhau</span><a class="tk-nut" href="/uem/bao-cao/phan-mem.csv">Tải CSV</a></div>'
-                 f'<div class="uem-bang-cuon"><table class="tk-bang"><thead><tr><th>Phần mềm</th><th>Nhà sản xuất</th><th>Số phiên bản</th><th>Số máy</th></tr></thead><tbody>{hang}</tbody></table></div></div>', "pm")
+                 f'<div class="uem-bang-cuon"><table class="tk-bang"><thead><tr><th>Phần mềm</th><th>Nhà sản xuất</th><th>Số phiên bản</th><th>Số máy</th><th>Máy</th></tr></thead><tbody>{hang}</tbody></table></div></div>', "pm")
 
 
 # ----------------------------------------------------------------- bao mat

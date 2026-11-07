@@ -114,7 +114,7 @@ def chuyen(url, thong_bao, ok=True):
     return redirect(url)
 
 
-def trang(body, chinh, tieu_de="Quản lý máy trạm", phu_de="Kiểm kê, bảo mật, triển khai và cấu hình máy Windows trong mạng (theo mô hình OpenUEM)"):
+def trang(body, chinh, tieu_de="Quản lý máy trạm", phu_de="Kiểm kê, bảo mật, triển khai và cấu hình máy Windows trong mạng"):
     t = tb()
     thong = f'<div class="msg {"ok" if t[1] else "err"}">{_esc(t[0])}</div>' if t else ""
     canh = ""
