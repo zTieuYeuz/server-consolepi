@@ -2,6 +2,7 @@
 import json
 import os
 import runpy
+import time
 import sys
 import threading
 
@@ -41,7 +42,6 @@ kq["f_chuyen_the_ghi_chu"] = ds["m-f-moi"].get("the") == ["t1"] and ds["m-f-moi"
 kq["f_nhom_doi_sang_ban_moi"] = DL.tim(DL.NHOM_MAY.doc(), "g-f")["may"] == ["m-f-moi", "m-khac"]
 kq["f_ban_moi_khong_an"] = not ds["m-f-moi"].get("an")
 # ban cu con agent song -> khong gop
-import time  # noqa: E402
 DL.MAY.sua(lambda ds: ds.extend([
     {"id": "m-s-cu", "ip": "10.8.8.6", "ten": "SONG", "mac": "00:0C:29:11:22:33", "giam_sat": True, "agent": {"serie": "abc", "luc_cuoi": time.time()}},
     {"id": "m-s-moi", "ip": "10.8.8.7", "ten": "BANSAO", "mac": "", "giam_sat": True}]))
@@ -82,5 +82,12 @@ _nk = open(EL.LOG_THAO_TAC, encoding="utf-8").read()
 kq["p2_cau_dich_vu"] = "Dịch vụ Spooler: dừng trên máy May demo: thành công" in _nk
 kq["p2_cau_duyet_file_loi"] = "Tải file C:\\a.txt trên máy May demo: thất bại | khong doc duoc" in _nk
 kq["p2_nguon_khac_khong_ghi"] = "PF: x" not in _nk
+
+# (P2) loc RAM / loai o o danh sach May tinh
+DL.MAY.sua(lambda ds: ds.append({"id": "m-ram", "ip": "10.8.9.1", "ten": "PC-RAM6", "giam_sat": True, "agent": {"serie": "abc", "luc_cuoi": time.time()},
+                                 "bao_cao": {"computer": {"memory": "6 GB", "manufacturer": "Dell", "model": "X"},
+                                             "physicaldisks": [{"device_id": "d0", "model": "Samsung SSD 860", "serial_number": "1", "size_in_units": "256 GB", "media_type": "SSD"}]}}))
+t = c.get("/uem/may", headers=H).get_data(as_text=True)
+kq["p2_loc_ram_loai_o"] = 'data-ram="lt8|lt16"' in t and 'data-dia="SSD"' in t and 'data-k="ram"' in t and 'data-k="dia"' in t
 
 print("KETQUA " + json.dumps(kq))

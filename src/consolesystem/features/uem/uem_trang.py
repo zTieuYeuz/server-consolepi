@@ -306,6 +306,31 @@ def trang_tong_quan():
 
 
 # ----------------------------------------------------------------- danh sach may
+def ram_gb(r):
+    """So GB RAM tu bao cao ('16 GB' / '512 MB'); None neu khong co."""
+    mm = re.match(r"\s*([\d.]+)\s*(GB|MB|TB)", str((r.get("computer") or {}).get("memory", "")), re.I)
+    if not mm:
+        return None
+    v, dv = float(mm.group(1)), mm.group(2).upper()
+    return v * (1024 if dv == "TB" else 1 if dv == "GB" else 1 / 1024)
+
+
+def loai_o_dia(r):
+    """Tap loai o dia vat ly: SSD / HDD / O ao / Chua ro (doc media_type agent gui; cu hon thi doan tu ten model)."""
+    ra = set()
+    for d in r.get("physicaldisks") or []:
+        mt, model = str(d.get("media_type") or "").upper(), str(d.get("model") or "").upper()
+        if "VIRTUAL" in model or "VMWARE" in model or "QEMU" in model or "VBOX" in model:
+            ra.add("Ổ ảo")
+        elif mt == "SSD" or "SSD" in model or "NVME" in model:
+            ra.add("SSD")
+        elif mt == "HDD":
+            ra.add("HDD")
+        else:
+            ra.add("Chưa rõ")
+    return sorted(ra)
+
+
 def trang_may():
     ds = [m for m in DL.MAY.doc() if UA.co_agent(m)]                # Console chi quan ly may DA CAI agent (may chua cai: chi Trien khai phan mem dung qua WinRM)
     the_ds = UD.THE.doc()
@@ -321,11 +346,12 @@ def trang_may():
         nhan, mau = trang_thai_may(m)
         av = r.get("antivirus") or {}
         loc_t = "|".join(m.get("the", []))
+        gb_ram = ram_gb(r)
         tim = " ".join([ten_may(m), m["ip"], os_.get("description", ""), cs.get("model", ""), cs.get("manufacturer", ""), usr, m.get("ghi_chu", "")]).lower()
         dia = DL.tim(dd, m.get("dia_diem"))
         ng = [g for g in nhom_ds if m["id"] in g.get("may", [])]
         nhom_chip = "".join(f'<span class="uem-tag" style="background:#475569">{_esc(g["ten"])}</span>' for g in ng)
-        hang += (f'<tr data-nhom="{_esc("|".join(g["id"] for g in ng))}" data-t="{_esc(tim)}" data-os="{_esc(os_.get("description", ""))}" data-hang="{_esc(cs.get("manufacturer", ""))}" data-the="{_esc(loc_t)}" '
+        hang += (f'<tr data-nhom="{_esc("|".join(g["id"] for g in ng))}" data-t="{_esc(tim)}" data-os="{_esc(os_.get("description", ""))}" data-hang="{_esc(cs.get("manufacturer", ""))}" data-the="{_esc(loc_t)}" data-ram="{_esc("|".join(k for k, n in (("lt4", 4), ("lt8", 8), ("lt16", 16)) if gb_ram is not None and gb_ram < n))}" data-dia="{_esc("|".join(loai_o_dia(r)))}" '
                  f'data-tt="{_esc(nhan)}" data-dd="{_esc(m.get("dia_diem", ""))}">'
                  f'<td><input type="checkbox" name="may" value="{m["id"]}" form="f-hd"></td>'
                  f'<td><a href="/uem/may/{m["id"]}"><b>{_esc(ten_may(m))}</b></a><div class="tk-ghi">{_esc(m["ip"])}{" · " + _esc(dia["ten"]) if dia else ""}</div>{nhom_chip}{the_html(m, the_ds)}</td>'
@@ -345,6 +371,8 @@ def trang_may():
       <select class="uem-chon" data-k="nhom"><option value="">Mọi nhóm máy</option>{nhom_opt}</select>
       <select class="uem-chon" data-k="os"><option value="">Mọi hệ điều hành</option>{os_opt}</select>
       <select class="uem-chon" data-k="hang"><option value="">Mọi hãng</option>{hang_opt}</select>
+      <select class="uem-chon" data-k="ram"><option value="">Mọi dung lượng RAM</option><option value="lt4">RAM dưới 4 GB</option><option value="lt8">RAM dưới 8 GB</option><option value="lt16">RAM dưới 16 GB</option></select>
+      <select class="uem-chon" data-k="dia"><option value="">Mọi loại ổ đĩa</option><option value="SSD">Có ổ SSD</option><option value="HDD">Có ổ HDD</option><option value="Ổ ảo">Ổ ảo (máy ảo)</option><option value="Chưa rõ">Chưa rõ loại ổ</option></select>
       <select class="uem-chon" data-k="the"><option value="">Mọi thẻ</option>{the_opt}</select>
       <select class="uem-chon" data-k="dd"><option value="">Mọi địa điểm</option>{dd_opt}</select>
       <select class="uem-chon" data-k="tt"><option value="">Mọi trạng thái</option>{tt_opt}</select>
@@ -463,9 +491,9 @@ def tab_may(m, tab):
         ld = [[d["label"], d.get("volume_name") or "—", d["filesystem"], d["size_in_units"], d["remaining_space_in_units"],
                Raw(f'<div class="tk-vach" style="min-width:110px"><i style="width:{d["usage"]}%;background:{"var(--do)" if d["usage"] >= 90 else "var(--xanh)"}"></i></div> {d["usage"]}%'),
                chip(d["bitlocker_status"], "xanh" if d["bitlocker_status"] == "Encrypted" else ("do" if d["bitlocker_status"] == "Unencrypted" else ""))] for d in r.get("logicaldisks", [])]
-        pd = [[d["device_id"], d["model"], d["serial_number"], d["size_in_units"]] for d in r.get("physicaldisks", [])]
+        pd = [[d["device_id"], d["model"], d["serial_number"], d["size_in_units"], {"SSD": "SSD", "HDD": "HDD"}.get(d.get("media_type"), "Chưa rõ")] for d in r.get("physicaldisks", [])]
         return khung_may(m, tab, f'<h2>Ổ đĩa logic</h2><div class="card">{bang(["Ổ", "Tên", "Hệ tập tin", "Dung lượng", "Còn trống", "Mức dùng", "BitLocker"], ld)}</div>'
-                                 f'<h2>Ổ đĩa vật lý</h2><div class="card">{bang(["Thiết bị", "Model", "Số serial", "Dung lượng"], pd)}</div>')
+                                 f'<h2>Ổ đĩa vật lý</h2><div class="card">{bang(["Thiết bị", "Model", "Số serial", "Dung lượng", "Loại"], pd)}</div>')
     if tab == "man-hinh":
         mn = [[x["manufacturer"], x["model"], x["serial"], x["week_of_manufacture"], x["year_of_manufacture"]] for x in r.get("monitors", [])]
         return khung_may(m, tab, f'<div class="card">{bang(["Hãng", "Model", "Serial", "Tuần sản xuất", "Năm sản xuất"], mn, "Không đọc được màn hình (Windows chỉ cung cấp thông tin này cho phiên đăng nhập có màn hình; qua WinRM thường để trống).")}</div>')

@@ -80,3 +80,11 @@ def test_nhat_ky_thao_tac_khong_ghi_nhip_agent(tmp_path, monkeypatch):
     EL.ghi_thao_tac_tu_dong(Req("/uem/may/abc/dich-vu/api"), Resp())
     EL.ghi_thao_tac_tu_dong(Req("/uem/may/abc/duyet-file/xoa"), Resp())
     assert "dich-vu/api" not in open(EL.LOG_THAO_TAC, encoding="utf-8").read()        # da co cau dien giai tu ghi_tac_vu
+
+
+def test_ram_gb_va_loai_o_dia():
+    from consolesystem.features.uem import uem_trang as T
+    assert T.ram_gb({"computer": {"memory": "16 GB"}}) == 16 and T.ram_gb({"computer": {"memory": "512 MB"}}) == 0.5
+    assert T.ram_gb({"computer": {}}) is None and T.ram_gb({}) is None
+    r = {"physicaldisks": [{"model": "WDC WD10", "media_type": "HDD"}, {"model": "Samsung SSD 860", "media_type": "Unknown"}, {"model": "VMware Virtual disk"}, {"model": "ABC"}]}
+    assert T.loai_o_dia(r) == ["HDD", "SSD", "Chưa rõ", "Ổ ảo"] or set(T.loai_o_dia(r)) == {"HDD", "SSD", "Chưa rõ", "Ổ ảo"}

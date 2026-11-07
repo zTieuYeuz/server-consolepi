@@ -1399,5 +1399,15 @@
 "Vẫn tắt": "Turn off anyway",
 "Có": "Yes",
 "Không": "No",
-"Ẩn": "Hide"
+"Ẩn": "Hide",
+"Mọi dung lượng RAM": "Any RAM size",
+"RAM dưới 4 GB": "RAM under 4 GB",
+"RAM dưới 8 GB": "RAM under 8 GB",
+"RAM dưới 16 GB": "RAM under 16 GB",
+"Mọi loại ổ đĩa": "Any drive type",
+"Có ổ SSD": "Has SSD",
+"Có ổ HDD": "Has HDD",
+"Ổ ảo (máy ảo)": "Virtual disk (VM)",
+"Chưa rõ loại ổ": "Drive type unknown",
+"Ẩn nhịp agent": "Hide agent heartbeats"
 }
