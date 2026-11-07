@@ -100,6 +100,54 @@ def _tu_dien(may_id, d):
         kw["ten"] = host
     if kw:
         UD.sua_may(may_id, **kw)
+    mac_dung = kw.get("mac") or m.get("mac")
+    if mac_dung:
+        _gop_theo_mac(may_id, mac_dung)
+
+
+def _gop_theo_mac(may_id, mac):
+    """Cai lai Windows (doi ten may, cung MAC) tao ban ghi thu hai. Ban ghi cu khong con agent song -> gop thong tin nguoi dung dat
+    (the, dia diem, bi danh, ghi chu, nhom) sang ban ghi moi roi AN ban ghi cu (nhu 'xoa khoi quan ly', agent cu bao nhip se hien lai).
+    Ban ghi cu con agent song (nghi nhan ban/MAC trung that) thi KHONG gop, chi ghi canh bao vao lich su tac vu."""
+    from ui import uem_agent as UA
+    moi = DL.tim(DL.MAY.doc(), may_id)
+    cu = [x for x in DL.MAY.doc() if x["id"] != may_id and not x.get("an") and _chuan_mac(x.get("mac")) == _chuan_mac(mac)]
+    if not moi or not cu:
+        return
+    song = [x for x in cu if UA.con_song(x)]
+    if song:
+        UD.ghi_tac_vu(may_id, "he-thong", "Trùng MAC", False, "Có máy khác đang hoạt động cùng MAC " + _chuan_mac(mac) + ": "
+                      + ", ".join(x.get("ten") or x["ip"] for x in song) + ". Không tự gộp.")
+        return
+    mid_cu = {x["id"] for x in cu}
+
+    def ghi(ds):
+        n = DL.tim(ds, may_id)
+        if n is None:
+            return
+        for x in ds:
+            if x["id"] not in mid_cu:
+                continue
+            n["the"] = sorted(set(n.get("the") or []) | set(x.get("the") or []))
+            for k in ("bi_danh", "dia_diem", "ghi_chu", "loai"):
+                if x.get(k) and not n.get(k):
+                    n[k] = x[k]
+            x["an"] = True
+            x["gop_vao"] = may_id
+    DL.MAY.sua(ghi)
+
+    def ghi_nhom(ds):
+        for g in ds:
+            if mid_cu & set(g.get("may") or []):
+                moi_ds = []
+                for i in g["may"]:
+                    j = may_id if i in mid_cu else i
+                    if j not in moi_ds:
+                        moi_ds.append(j)
+                g["may"] = moi_ds
+    DL.NHOM_MAY.sua(ghi_nhom)
+    UD.ghi_tac_vu(may_id, "he-thong", "Gộp theo MAC", True, "Đã gộp bản ghi cũ cùng MAC (" + ", ".join(x.get("ten") or x["ip"] for x in cu)
+                  + "); bản cũ được ẩn, thông tin thẻ/địa điểm/ghi chú chuyển sang bản mới.")
 
 
 def bao_cao_may(may_id):
