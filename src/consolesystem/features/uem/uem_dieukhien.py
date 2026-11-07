@@ -99,22 +99,27 @@ TRANG_DS = """<div class="card"><h3>__TIEUDE__</h3><div class="tk-hang"><input t
 <div class="uem-bang-cuon"><table class="tk-bang" id="ds-bang"></table></div></div>
 <script>(function(){var $=function(i){return document.getElementById(i);}, U='__URL__', LOAI='__LOAI__', DS=[];
 function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var SX=LOAI==='dv'?['name',1]:['mem',-1], KEY={dv:{name:function(x){return (x.DisplayName||x.Name||'').toLowerCase();},state:function(x){return x.State||'';},start:function(x){return x.StartMode||'';}},
+ tt:{id:function(x){return +x.Id||0;},name:function(x){return (x.ProcessName||'').toLowerCase();},cpu:function(x){return +x.cpu||0;},mem:function(x){return +x.mem||0;},win:function(x){return (x.tieude||'').toLowerCase();}}};
+function sx(a){var k=KEY[LOAI][SX[0]];return a.sort(function(p,q){var u=k(p),v=k(q);return (u<v?-1:u>v?1:0)*SX[1];});}
+function th(k,t){return '<th data-s="'+k+'" style="cursor:pointer;white-space:nowrap;" title="Bấm để sắp xếp">'+t+(SX[0]===k?(SX[1]>0?' ▲':' ▼'):'')+'</th>';}
 function ve(){var q=($('ds-loc').value||'').toLowerCase(), h='';
- if(LOAI==='dv'){h='<tr><th>Tên</th><th>Mô tả</th><th>Trạng thái</th><th>Khởi động</th><th></th></tr>';
-  DS.filter(function(x){return !q||(x.Name+' '+x.DisplayName).toLowerCase().indexOf(q)>=0;}).forEach(function(x){
+ if(LOAI==='dv'){h='<tr>'+th('name','Tên')+'<th>Mô tả</th>'+th('state','Trạng thái')+th('start','Khởi động')+'<th></th></tr>';
+  sx(DS.filter(function(x){return !q||(x.Name+' '+x.DisplayName).toLowerCase().indexOf(q)>=0;})).forEach(function(x){
    var chay=x.State==='Running';
    h+='<tr><td><b>'+e(x.DisplayName||x.Name)+'</b><div class="tk-ghi">'+e(x.Name)+'</div></td><td class="tk-ghi">'+e((x.Mota||'').slice(0,120))+'</td><td><span class="tk-chip '+(chay?'xanh':'')+'">'+e(x.State)+'</span></td><td>'+e(x.StartMode)+'</td><td>'
    +(chay?'<button class="tk-nut" data-v="dung" data-n="'+e(x.Name)+'">Dừng</button> <button class="tk-nut" data-v="khoi_dong_lai" data-n="'+e(x.Name)+'">Khởi động lại</button>':'<button class="tk-nut xanh" data-v="chay" data-n="'+e(x.Name)+'">Chạy</button>')
    +' <select data-kd="'+e(x.Name)+'"><option value="">Kiểu khởi động...</option><option value="tu_dong">Tự động</option><option value="thu_cong">Thủ công</option><option value="tat">Tắt (Disabled)</option></select></td></tr>';});}
- else{h='<tr><th>PID</th><th>Tên</th><th>CPU (giây)</th><th>RAM (MB)</th><th>Cửa sổ</th><th></th></tr>';
-  DS.filter(function(x){return !q||(x.ProcessName+' '+x.tieude).toLowerCase().indexOf(q)>=0;}).sort(function(a,b){return (b.mem||0)-(a.mem||0);}).forEach(function(x){
+ else{h='<tr>'+th('id','PID')+th('name','Tên')+th('cpu','CPU (giây)')+th('mem','RAM (MB)')+th('win','Cửa sổ')+'<th></th></tr>';
+  sx(DS.filter(function(x){return !q||(x.ProcessName+' '+x.tieude).toLowerCase().indexOf(q)>=0;})).forEach(function(x){
    h+='<tr><td>'+x.Id+'</td><td><b>'+e(x.ProcessName)+'</b></td><td>'+e(x.cpu)+'</td><td>'+e(x.mem)+'</td><td class="tk-ghi">'+e(x.tieude)+'</td><td><button class="tk-nut do" data-kill="'+x.Id+'" data-n="'+e(x.ProcessName)+'">Kết thúc</button></td></tr>';});}
  $('ds-bang').innerHTML=h;}
 function goi(body){return fetch(U,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();});}
 function tai(){$('ds-tt').textContent='Đang tải...'; goi({viec:'ds'}).then(function(d){if(!d.ok){$('ds-tt').textContent='Lỗi: '+d.loi;return;} DS=d.ds; $('ds-tt').textContent=DS.length+' mục, '+new Date().toLocaleTimeString('vi-VN'); ve();}).catch(function(){$('ds-tt').textContent='Không gọi được máy chủ.';});}
 function lam(b){$('ds-tt').textContent='Đang thực hiện...'; goi(b).then(function(d){$('ds-tt').textContent=d.ok?(d.tb||'Xong.'):('Lỗi: '+d.loi); tai();});}
 $('ds-tai').onclick=tai; $('ds-loc').oninput=ve;
-$('ds-bang').addEventListener('click',function(ev){var t=ev.target; if(t.dataset.v){ if(t.dataset.v==='dung'&&!confirm('Dừng dịch vụ '+t.dataset.n+'?'))return; lam({viec:t.dataset.v,ten:t.dataset.n}); }
+$('ds-bang').addEventListener('click',function(ev){var t=ev.target; if(t.dataset.s){ SX=[t.dataset.s, SX[0]===t.dataset.s?-SX[1]:(t.dataset.s==='cpu'||t.dataset.s==='mem'?-1:1)]; ve(); }
+ else if(t.dataset.v){ if(t.dataset.v==='dung'&&!confirm('Dừng dịch vụ '+t.dataset.n+'?'))return; lam({viec:t.dataset.v,ten:t.dataset.n}); }
  else if(t.dataset.kill){ if(!confirm('Kết thúc tiến trình '+t.dataset.n+' (PID '+t.dataset.kill+')? Dữ liệu chưa lưu có thể mất.'))return; lam({viec:'kill',pid:+t.dataset.kill}); }});
 $('ds-bang').addEventListener('change',function(ev){var t=ev.target; if(t.dataset.kd&&t.value){ if(t.value==='tat'&&!confirm('Tắt hẳn dịch vụ '+t.dataset.kd+'?')){t.value='';return;} lam({viec:'khoi_dong',ten:t.dataset.kd,kieu:t.value}); }});
 tai();})();</script>"""

@@ -47,3 +47,11 @@ def test_trang_rustdesk_script_che_mat_khau():
     from consolesystem.features.rustdesk import rustdesk as R
     assert "function mkO(mk)" in R.TRANG and "data-hien-mk" in R.TRANG
     assert "'+e(x.mk)+'</span>" not in R.TRANG and "e(x.mk||'chưa đặt')" not in R.TRANG
+
+
+def test_tien_trinh_dich_vu_co_sap_xep_theo_cot():
+    from consolesystem.features.uem import uem_dieukhien as K
+    t = K.TRANG_DS
+    assert "th('cpu','CPU (giây)')" in t and "th('mem','RAM (MB)')" in t and "th('state','Trạng thái')" in t
+    assert "function sx(a)" in t and "t.dataset.s" in t
+    assert t.count("{") == t.count("}") and t.count("(") == t.count(")") and t.count("[") == t.count("]")
