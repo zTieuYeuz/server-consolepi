@@ -1040,6 +1040,7 @@ def _noi_dung_buoc(ma, d, buoc):
                 <label style="margin-top:10px;">Mật khẩu tài khoản gia nhập</label>
                 <input type="password" name="domain_pass" autocomplete="new-password"
                        placeholder="{'(đã có - để trống nếu không đổi)' if d.get('domain_pass') else ''}">
+                {'<small style="color:#4ade80;">✔ Đã lưu mật khẩu gia nhập trong kịch bản (không hiện lại). Để trống = giữ nguyên; nhập mới = thay.</small>' if d.get('domain_pass') else ''}
               </div>"""
 
         return f"""
