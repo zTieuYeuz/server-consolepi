@@ -80,8 +80,8 @@ def _truy_van_mot_server(server, domain, timeout):
         return thoi_gian_ms, [], f"Không đọc được phản hồi: {e}"
 
     if resp.rcode != 0:
-        ten_loi = {1: "loi dinh dang", 2: "loi server", 3: "khong ton tai (NXDOMAIN)",
-                  5: "bi tu choi (REFUSED)"}.get(int(resp.rcode), f"ma loi {resp.rcode}")
+        ten_loi = {1: "lỗi định dạng", 2: "lỗi server", 3: "không tồn tại (NXDOMAIN)",
+                  5: "bị từ chối (REFUSED)"}.get(int(resp.rcode), f"mã lỗi {resp.rcode}")
         return thoi_gian_ms, [], f"DNS server trả về: {ten_loi}"
 
     dia_chi = []
@@ -130,11 +130,11 @@ def kiem_tra_dns(domain, timeout=3):
     canh_bao = None
     if co_mau_thuan:
         canh_bao = (
-            "Co DNS server tra ve DIA CHI KHAC HAN (khong trung IP nao) cho cung 1 ten mien. Voi domain rieng/noi "
-            "bo, day la dau hieu manh cua DNS bi can thiep (ISP chen quang cao, mang cong ty "
-            "loc/chan, hoac captive portal). Luu y: voi cac trang lon dung CDN toan cau (Google, "
-            "Facebook, Cloudflare...) thi lech ket qua theo VI TRI DIA LY la BINH THUONG, khong "
-            "phai dau hieu xau - hay thu lai voi mot domain rieng/it dung CDN de ket luan chac chan hon."
+            "Có DNS server trả về ĐỊA CHỈ KHÁC HẲN (không trùng IP nào) cho cùng 1 tên miền. Với domain riêng/nội "
+            "bộ, đây là dấu hiệu mạnh của DNS bị can thiệp (ISP chèn quảng cáo, mạng công ty "
+            "lọc/chặn, hoặc captive portal). Lưu ý: với các trang lớn dùng CDN toàn cầu (Google, "
+            "Facebook, Cloudflare...) thì lệch kết quả theo VỊ TRÍ ĐỊA LÝ là BÌNH THƯỜNG, không "
+            "phải dấu hiệu xấu - hãy thử lại với một domain riêng/ít dùng CDN để kết luận chắc chắn hơn."
         )
 
     return {"ok": True, "error": None, "domain": domain, "servers": ket_qua,

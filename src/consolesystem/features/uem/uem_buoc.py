@@ -495,6 +495,44 @@ def tao_kich_ban(loai, ts, ip=""):
     return ""
 
 
+# ----------------------------------------------------------------- viet hoa ket qua (script PS tra chu khong dau de an toan qua WinRM)
+_VIET = {
+    "Chua cai TightVNC tren may nay": "Chưa cài TightVNC trên máy này", "Chua cai TightVNC": "Chưa cài TightVNC", "Chua cai san": "Chưa cài sẵn",
+    "Chua cai": "Chưa cài", "Da cai san, da cau hinh lai": "Đã cài sẵn, đã cấu hình lại", "Da cai san": "Đã cài sẵn", "Da co san": "Đã có sẵn",
+    "Da dung san": "Đã đúng sẵn", "Da la ban moi nhat": "Đã là bản mới nhất", "Gia tri mac dinh da dung": "Giá trị mặc định đã đúng",
+    "Gia tri da dung": "Giá trị đã đúng", "Gia tri khong ton tai": "Giá trị không tồn tại", "Khoa da co": "Khóa đã có",
+    "Khoa khong ton tai": "Khóa không tồn tại", "Khong co ai can go": "Không có ai cần gỡ", "Khong co goi nao can nang cap": "Không có gói nào cần nâng cấp",
+    "Khong co quy tac nay": "Không có quy tắc này", "Nguoi dung da dung cau hinh": "Người dùng đã đúng cấu hình",
+    "Nguoi dung khong ton tai": "Người dùng không tồn tại", "Nhom da dung cau hinh": "Nhóm đã đúng cấu hình", "Nhom khong ton tai": "Nhóm không tồn tại",
+    "Quy tac da dung": "Quy tắc đã đúng", "Da cai TightVNC (dich vu thu cong, dang tat)": "Đã cài TightVNC (dịch vụ chạy thủ công, đang tắt)",
+    "Da cai agent": "Đã cài agent", "Da cai": "Đã cài", "Da cap nhat quy tac": "Đã cập nhật quy tắc", "Da cap nhat": "Đã cập nhật",
+    "Da dat gia tri mac dinh": "Đã đặt giá trị mặc định", "Da dat gia tri": "Đã đặt giá trị", "Da doi": "Đã đổi",
+    "Da go agent (dich vu se dung va xoa sau vai giay)": "Đã gỡ agent (dịch vụ sẽ dừng và xóa sau vài giây)", "Da go TightVNC": "Đã gỡ TightVNC", "Da go": "Đã gỡ",
+    "Da nang cap tat ca goi co ban moi": "Đã nâng cấp tất cả gói có bản mới", "Da nang cap len ban moi nhat": "Đã nâng cấp lên bản mới nhất", "Da nang cap": "Đã nâng cấp",
+    "Da tao khoa": "Đã tạo khóa", "Da tao nguoi dung": "Đã tạo người dùng", "Da tao quy tac": "Đã tạo quy tắc",
+    "Da tat dich vu va doi ma PIN": "Đã tắt dịch vụ và đổi mã PIN", "Da xoa gia tri": "Đã xóa giá trị", "Da xoa khoa": "Đã xóa khóa",
+    "Da xoa nguoi dung": "Đã xóa người dùng", "Da xoa nhom": "Đã xóa nhóm", "Da xoa": "Đã xóa", "San sang": "Sẵn sàng",
+    "Bien dich agent that bai": "Biên dịch agent thất bại", "Dich vu TightVNC khong mo duoc cong": "Dịch vụ TightVNC không mở được cổng",
+    "File TightVNC tai ve khong khop ma SHA-256": "File TightVNC tải về không khớp mã SHA-256", "Gia tri bam khong khop": "Giá trị băm không khớp",
+    "Khong thay file MSI": "Không thấy file MSI", "Khong them duoc": "Không thêm được", "May chua cai goi nay": "Máy chưa cài gói này",
+    "May khong co dich vu nay": "Máy không có dịch vụ này", "May nay chua co WinGet (App Installer)": "Máy này chưa có WinGet (App Installer)",
+    "May nay khong co .NET Framework 4 (csc.exe)": "Máy này không có .NET Framework 4 (csc.exe)", "Windows khong co nhom quy tac nay": "Windows không có nhóm quy tắc này",
+    "msiexec ma": "msiexec mã", "winget ma": "winget mã", "TAI_LOI BITS=": "Tải lỗi BITS=",
+}
+_VIET_RE = re.compile("|".join(re.escape(k) for k in sorted(_VIET, key=len, reverse=True)))
+# Ma thoat winget -1073741515 = 0xC0000135 (STATUS_DLL_NOT_FOUND): winget.exe khong nap duoc thanh phan -> may khong co/hong WinGet (App Installer)
+_MA_WINGET = {"-1073741515": "WinGet không chạy được trên máy này (máy chưa có hoặc thiếu thành phần của WinGet/App Installer; mã -1073741515)"}
+
+
+def viet_hoa(tb):
+    """Dua thong diep ket qua (ST=...) ve tieng Viet co dau; ma loi winget biet truoc thi noi ro nguyen nhan."""
+    tb = str(tb or "")
+    m = re.match(r"\s*(?:winget|Winget)\s+ma\s+(-?\d+)", tb)
+    if m and m.group(1) in _MA_WINGET:
+        return _MA_WINGET[m.group(1)]
+    return _VIET_RE.sub(lambda x: _VIET[x.group(0)], tb)
+
+
 def chay(c, ip, loai, ts):
     """Chay 1 tac vu tren may da ket noi. Tra ve (trang_thai, thong_diep): trang_thai = 'da_dat' | 'da_lam' | 'loi'."""
     kb = tao_kich_ban(loai, ts, ip)
@@ -507,7 +545,7 @@ def chay(c, ip, loai, ts):
     if not m:
         return "loi", ("Không nhận được kết quả từ máy đích. " + (err or out.strip())[:300]).strip()
     tt = {"DA_DAT": "da_dat", "DA_LAM": "da_lam", "LOI": "loi"}[m.group(1)]
-    return tt, (m.group(2).strip() or ("Đã đúng sẵn" if tt == "da_dat" else "Xong"))[:400]
+    return tt, (viet_hoa(m.group(2).strip()) or ("Đã đúng sẵn" if tt == "da_dat" else "Xong"))[:400]
 
 
 def moi_id():

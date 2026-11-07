@@ -92,7 +92,7 @@ def _lam(d, m, c):
     if d["hanh_dong"] == "nang":
         out, err = DC._chay_ps(c, _ps_nang(d["goi_id"]))
         mm = re.search(r"ST=(DA_DAT|DA_LAM|LOI)\s*(.*)", out)
-        return ({"DA_DAT": "da_dat", "DA_LAM": "da_lam", "LOI": "loi"}[mm.group(1)], mm.group(2).strip()) if mm else ("loi", (err or out)[:300])
+        return ({"DA_DAT": "da_dat", "DA_LAM": "da_lam", "LOI": "loi"}[mm.group(1)], UB.viet_hoa(mm.group(2).strip())) if mm else ("loi", (err or out)[:300])
     return UB.chay(c, m["ip"], "winget_cai" if d["hanh_dong"] == "cai" else "winget_go", {"goi_id": d["goi_id"]})
 
 

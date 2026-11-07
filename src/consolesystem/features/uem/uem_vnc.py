@@ -157,7 +157,8 @@ def _st(out, err):
     m = re.search(r"ST=(DA_DAT|DA_LAM|LOI)\s*(.*)", out or "")
     if not m:
         return False, ("Không nhận được kết quả từ máy. " + (err or (out or "").strip())[:300]).strip()
-    return m.group(1) != "LOI", m.group(2).strip()[:300]
+    from ui import uem_buoc as UB
+    return m.group(1) != "LOI", UB.viet_hoa(m.group(2).strip())[:300]
 
 
 def _may(mid):

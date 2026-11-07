@@ -67,8 +67,8 @@
                         {% elif result.ngay_con_lai < 30 %}<span style="color:#ffb74d;font-weight:600;">Còn {{ result.ngay_con_lai }} ngày - sắp hết hạn</span>
                         {% else %}<span style="color:#8fd99a;">Còn {{ result.ngay_con_lai }} ngày</span>{% endif %}
                     </td></tr>
-                <tr><th>Tự ký</th><td>{{ "Co" if result.tu_ky else "Khong" }}</td></tr>
-                <tr><th>Khớp tên miền</th><td>{{ "Co" if result.khop_ten else "Khong" }}</td></tr>
+                <tr><th>Tự ký</th><td>{{ "Có" if result.tu_ky else "Không" }}</td></tr>
+                <tr><th>Khớp tên miền</th><td>{{ "Có" if result.khop_ten else "Không" }}</td></tr>
                 {% if result.ten_thay_the %}
                 <tr><th>Tên thay thế (SAN)</th><td>{% for t in result.ten_thay_the %}<span class="chip">{{ t }}</span>{% endfor %}</td></tr>
                 {% endif %}
