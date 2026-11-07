@@ -139,7 +139,7 @@ def ghi_thao_tac(hanh_dong, chi_tiet="", nguoi=None, ip=None):
 
 # Cac thao tac POST KHONG ghi (da co dong ghi rieng chi tiet hon, hoac chay thuong xuyen/khong phai thao tac cua nguoi dung)
 _KHONG_GHI = ("/login", "/logout", "/power/", "/deployos/pxe/bat", "/deployos/pxe/tat", "/phien/api/", "/api/",
-              "/tai-len/", "/giaodien", "/_auth", "/healthz")
+              "/tai-len/", "/giaodien", "/_auth", "/healthz", "/uem/agent/")        # agent bao nhip/ket qua dinh ky khong phai thao tac nguoi dung
 _TRUONG_AN_TOAN = ("ten", "id", "ma", "bo_id", "os_id", "ung_id", "ten_may", "dev", "devname", "loai", "nguon")
 
 

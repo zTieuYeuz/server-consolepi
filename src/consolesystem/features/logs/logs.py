@@ -235,6 +235,8 @@ def _trang_xem(tab, kind, dong, tim="", tim_may_chu=False, gioi_han=0, khu_chon=
     form_dau = '<form method="GET" action="/logs" class="nk-o">' if tab == "log" else '<div class="nk-o">'
     form_cuoi = "</form>" if tab == "log" else "</div>"
     an = an_form
+    nut_nhip = ('<button type="button" class="nk-btn on" id="nk-nhip" title="Ẩn các dòng agent báo nhịp / báo cáo định kỳ để thấy thao tác thật">Ẩn nhịp agent</button>'
+                if tab in ("thaotac", "log") else "")
     return f"""
     <div class="nk-bar"><div class="nk-bar-in">
       {khu_chon}
@@ -249,7 +251,7 @@ def _trang_xem(tab, kind, dong, tim="", tim_may_chu=False, gioi_han=0, khu_chon=
         {chip_khoang}
       </div>
       <div class="nk-h">
-        <button type="button" class="nk-btn on" id="nk-moi">Mới nhất ở trên</button>
+        {nut_nhip}<button type="button" class="nk-btn on" id="nk-moi">Mới nhất ở trên</button>
         <button type="button" class="nk-btn on" id="nk-dong">Xuống dòng</button>
         <a class="nk-btn" href="{_esc(request.full_path)}">{svg_icon("refresh")} Làm mới</a>
         <a class="nk-btn" href="{_esc(tai_href)}">{svg_icon("save")} Tải về (.txt)</a>

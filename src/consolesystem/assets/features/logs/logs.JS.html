@@ -63,7 +63,9 @@
     var p = n.split("-"), s = p[2] + "/" + p[1] + "/" + p[0];
     return d === 0 ? "Hôm nay · " + s : d === 1 ? "Hôm qua · " + s : s;
   }
+  var anNhip = !!$("nk-nhip");   // tab Thao tác / Log toàn bộ: mặc định ẩn dòng nhịp tim / báo cáo định kỳ của agent (agent/nhip, agent/ketqua)
   function khop(e) {
+    if (anNhip && /agent\/(nhip|ketqua)/.test(e.tim)) return false;
     if (muc === "loi" && e.muc !== "loi") return false;
     if (muc === "canh" && !e.muc) return false;
     if (khoang && e.ts && BAY_GIO - e.ts > khoang * 1000) return false;
@@ -125,6 +127,7 @@
   $("nk-tim").addEventListener("input", function (e) { q = bo(e.target.value.trim()); hienToiDa = 300; ve(); });
   $("nk-xoa").addEventListener("click", function () { $("nk-tim").value = ""; q = ""; ve(); $("nk-tim").focus(); });
   if (!D.tim_may_chu) $("nk-tim").form && $("nk-tim").form.addEventListener("submit", function (e) { e.preventDefault(); });
+  if ($("nk-nhip")) $("nk-nhip").onclick = function () { anNhip = !anNhip; this.classList.toggle("on", anNhip); hienToiDa = 300; ve(); };
   $("nk-moi").onclick = function () { moiTruoc = !moiTruoc; this.classList.toggle("on", moiTruoc); ve(); };
   $("nk-dong").onclick = function () { xuongDong = !xuongDong; this.classList.toggle("on", xuongDong); ve(); };
   if (D.tim) { $("nk-tim").value = D.tim; q = bo(D.tim); }

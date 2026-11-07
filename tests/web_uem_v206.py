@@ -70,4 +70,7 @@ t = c.get("/uem/profiles/" + pid, headers=H).get_data(as_text=True)
 kq["n_mac_dinh_khong_tick_tat_ca"] = 'id="pf-tatca" checked' not in t and 'id="pf-tatca"' in t
 kq["n_canh_bao_khi_bat_tat_ca"] = "áp dụng cho TẤT CẢ máy" in t
 
+# (P2) bo loc an nhip agent o tab Thao tac / Log; khong ghi dong nhip vao nhat ky thao tac
+kq["p2_nut_an_nhip"] = 'id="nk-nhip"' in c.get("/logs?tab=thaotac", headers=H).get_data(as_text=True) and 'id="nk-nhip"' not in c.get("/logs?tab=loi", headers=H).get_data(as_text=True)
+
 print("KETQUA " + json.dumps(kq))

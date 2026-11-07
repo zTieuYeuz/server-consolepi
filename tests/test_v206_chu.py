@@ -55,3 +55,25 @@ def test_tien_trinh_dich_vu_co_sap_xep_theo_cot():
     assert "th('cpu','CPU (giây)')" in t and "th('mem','RAM (MB)')" in t and "th('state','Trạng thái')" in t
     assert "function sx(a)" in t and "t.dataset.s" in t
     assert t.count("{") == t.count("}") and t.count("(") == t.count(")") and t.count("[") == t.count("]")
+
+
+def test_nhat_ky_thao_tac_khong_ghi_nhip_agent(tmp_path, monkeypatch):
+    from consolesystem.core import errlog as EL
+
+    class Req:
+        method = "POST"
+        form = {}
+
+        def __init__(self, path):
+            self.path = path
+
+    class Resp:
+        status_code = 200
+
+    monkeypatch.setattr(EL, "LOG_THAO_TAC", str(tmp_path / "thao-tac.log"))
+    monkeypatch.setattr(EL, "_NGU_CANH", lambda: ("admin", "10.0.0.1"))
+    EL.ghi_thao_tac_tu_dong(Req("/uem/agent/nhip"), Resp())
+    EL.ghi_thao_tac_tu_dong(Req("/uem/agent/ketqua"), Resp())
+    assert not os.path.exists(EL.LOG_THAO_TAC)                       # nhip/ket qua dinh ky cua agent khong lam nhieu nhat ky
+    EL.ghi_thao_tac_tu_dong(Req("/deployos/kichban/xoa"), Resp())
+    assert "/deployos/kichban/xoa" in open(EL.LOG_THAO_TAC, encoding="utf-8").read()
