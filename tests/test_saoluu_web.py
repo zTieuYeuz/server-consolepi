@@ -21,4 +21,5 @@ def test_luong_web_sao_luu_khoi_phuc(tmp_path):
     dong = [x for x in r.stdout.splitlines() if x.startswith("KETQUA ")]
     assert dong, r.stdout[-800:] + r.stderr[-800:]
     kq = json.loads(dong[0][7:])
-    assert all(v is True or v == "cauhinh" for v in kq.values()), kq
+    sai = {k: v for k, v in kq.items() if not (v is True or v == "cauhinh")}
+    assert not sai, "muc sai: %r | stderr: %s" % (sai, r.stderr[-600:])

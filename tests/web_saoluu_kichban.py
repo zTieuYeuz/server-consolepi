@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 
+os.environ.setdefault("CONSOLE_PI_LOG", __import__("tempfile").mkdtemp(prefix="cs-test-log-"))   # nhat ky cua lan chay nay vao thu muc tam, khong ghi /var/log that
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
 sys.path.insert(0, SRC)
 os.chdir(SRC)
@@ -28,7 +29,7 @@ kq["trang_co_the_moi"] = "Tải sao lưu toàn bộ" in t and r.status_code == 2
 r = c.get("/settings/sao-luu?che_do=cauhinh", headers=H)
 data = r.get_data()
 kq["tai_ve_ok"] = r.status_code == 200 and "filename=" in r.headers.get("Content-Disposition", "") and len(data) > 100
-_goi = os.path.join(DD.GOC, "goi-web.tar.gz")   # duong dan rieng cua lan chay (khong dung /tmp co dinh: chay song song se dap nhau)
+_goi = os.path.join(__import__("tempfile").mkdtemp(prefix="cs-goi-web-"), "goi-web.tar.gz")   # NGOAI thu muc dang sao luu (DD.GOC) va khong dung /tmp co dinh: chay song song / sao luu dang ghi se dap nhau
 open(_goi, "wb").write(data)
 kq["goi_kiem_duoc"] = SL.kiem_goi(_goi)["che_do"]
 r = c.post("/settings/nap-sao-luu", headers=H, data={"file": (io.BytesIO(data), "g.tar.gz")}, content_type="multipart/form-data")
@@ -38,8 +39,7 @@ import re
 m = re.search(r'name="ten" value="([^"]+)"', t)
 ten = m.group(1) if m else ""
 # file hong
-hong = bytearray(data)
-hong[len(hong) // 2] ^= 0xFF
+hong = bytearray(data[:len(data) // 2])        # cat doi file: luon hong (lat 1 byte giua file doi khi roi vao cho gzip khong kiem -> ca chap chon)
 r = c.post("/settings/nap-sao-luu", headers=H, data={"file": (io.BytesIO(bytes(hong)), "h.tar.gz")}, content_type="multipart/form-data")
 kq["file_hong_bi_chan"] = "KHÔNG dùng được" in r.get_data(as_text=True)
 kq["khong_con_file_hong"] = sorted(x for x in os.listdir(os.path.join(DD.GOC, "backups")) if x.startswith("tai-len-")) == [ten]

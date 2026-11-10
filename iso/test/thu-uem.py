@@ -2,6 +2,7 @@
 import json, os, re, sys, tempfile, time
 TMP = tempfile.mkdtemp(prefix="uem-test-")
 os.environ["CONSOLE_PI_DATA"] = TMP
+os.environ.setdefault("CONSOLE_PI_LOG", __import__("tempfile").mkdtemp(prefix="cs-test-log-"))   # nhat ky cua lan chay nay vao thu muc tam, khong ghi /var/log that
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src")
 sys.path.insert(0, SRC); os.chdir(SRC)
 import threading
