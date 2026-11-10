@@ -32,21 +32,22 @@ def test_dns_tls_co_dau():
     assert "ĐỊA CHỈ KHÁC HẲN" in dns and "DIA CHI KHAC" not in dns
 
 
-def test_rustdesk_che_mat_khau_trong_html(monkeypatch):
+def test_rustdesk_mat_khau_khong_nam_trong_html(monkeypatch):
+    """LOI-003 (Cao): trang tu xa cua may KHONG chua mat khau (khong value=, khong data-mk, khong ?password=); chi lay qua API khi bam."""
     from consolesystem.features.uem import uem_rustdesk as U
-    monkeypatch.setattr(U.RD, "doc_cfg", lambda: {"may": {"m1": {"id": "123456789", "mk": "BiMat-xyz9"}}})
+    monkeypatch.setattr(U.RD, "doc_cfg", lambda: {"may": {"m1": {"id": "123456789", "mk": "BiMat-xyz9"}}, "mk_chung": "Chung-abc1"})
     monkeypatch.setattr(U.RD, "trang_thai", lambda: {"da_cai": True, "dia_chi": {"id": "10.0.0.1"}})
     h = U.khoi_tu_xa({"id": "m1", "ip": "10.0.0.5"})
-    assert 'href="rustdesk://connection/new/123456789"' in h                    # href khong mang mat khau
-    assert "?password=" not in h.split("onclick")[0]
-    assert ">••••••••</span>" in h and 'data-mk="BiMat-xyz9"' in h              # che mac dinh, co nut hien/an
-    assert h.count("BiMat-xyz9") == 2 and ">BiMat-xyz9<" not in h               # khong hien chu ro trong noi dung
+    assert "BiMat-xyz9" not in h and "Chung-abc1" not in h and "?password=" not in h and "data-mk" not in h
+    assert ">••••••••</span>" in h and "/rustdesk/api/xem-mat-khau" in h and "/rustdesk/api/ket-noi" in h
+    h2 = U.khoi_tu_xa({"id": "m2", "ip": "10.0.0.6"})                          # may chua co ID: form Luu khong dien san mat khau chung
+    assert "Chung-abc1" not in h2 and "Để trống = dùng mật khẩu chung" in h2
 
 
 def test_trang_rustdesk_script_che_mat_khau():
     from consolesystem.features.rustdesk import rustdesk as R
-    assert "function mkO(mk)" in R.TRANG and "data-hien-mk" in R.TRANG
-    assert "'+e(x.mk)+'</span>" not in R.TRANG and "e(x.mk||'chưa đặt')" not in R.TRANG
+    assert "function mkO(co,mid)" in R.TRANG and "data-hien-mk" in R.TRANG and "/rustdesk/api/xem-mat-khau" in R.TRANG
+    assert "data-mk" not in R.TRANG and "d.mk_chung" not in R.TRANG and "x.mk)" not in R.TRANG
 
 
 def test_tien_trinh_dich_vu_co_sap_xep_theo_cot():
@@ -98,6 +99,25 @@ def test_ping_nhieu_dich(monkeypatch):
     ra = CN.ping_nhieu(["ok.com", "chet.com"], iface="eth0")
     assert "=== ok.com ===\n4 packets transmitted, 4 received, 0% packet loss" in ra and "=== chet.com ===" in ra and "100% packet loss" in ra
     assert CN.ping_nhieu(["ok.com"]).startswith("PING ok.com")                  # 1 dich: giu nguyen ket qua day du nhu cu
+
+
+def test_ping_qua_8_dich_bao_ro_dich_bi_bo_va_cau_loi_co_dau(monkeypatch):
+    """LOI-001: nhap 9 dich thi khong bo lang le dich thu 9; dich sai bao co dau."""
+    from flask import Flask
+    from nettools import connectivity as CN, nettools_bp
+    assert CN.tach_dich_day_du(",".join(f"h{i}.com" for i in range(1, 10))) == ([f"h{i}.com" for i in range(1, 9)], ["h9.com"])
+    monkeypatch.setattr(CN, "run_ping", lambda h, iface=None, **k: f"PING {h}\n4 packets transmitted, 4 received, 0% packet loss\n")
+    monkeypatch.setattr(CN, "_o_chon_cong", lambda *a, **k: "")
+    monkeypatch.setattr(CN, "_cong_mac_dinh", lambda: "eth0")
+    app = Flask(__name__)
+    app.register_blueprint(nettools_bp)
+    c = app.test_client()
+    t = c.post("/nettools/ping", data={"host": " ".join(f"127.0.0.{i}" for i in range(1, 10)), "che_do": "ping"}).get_data(as_text=True)
+    assert "tối đa 8 đích" in t and "Đã bỏ qua 1 đích: 127.0.0.9" in t and "=== 127.0.0.8 ===" in t and "=== 127.0.0.9 ===" not in t
+    t = c.post("/nettools/ping", data={"host": "-rf", "che_do": "ping"}).get_data(as_text=True)
+    assert "địa chỉ không hợp lệ" in t and "dia chi khong hop le" not in t
+    t = c.post("/nettools/ping", data={"host": "1.1.1.1 2.2.2.2 3.3.3.3 4.4.4.4 5.5.5.5 6.6.6.6 7.7.7.7 8.8.8.8 -rf", "che_do": "ping"}).get_data(as_text=True)
+    assert "địa chỉ không hợp lệ" in t                      # dich sai nam o vi tri thu 9 van bi chan
 
 
 def test_ram_gb_theo_thanh_ram_khong_bi_lech_do_bo_nho_giu():

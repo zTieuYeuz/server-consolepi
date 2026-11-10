@@ -60,7 +60,7 @@ TRANG = """@CSS@<style>
 <div class="card" data-buoc="2" hidden><h3><span class="rd-buoc">2</span>Thông tin kết nối ra Internet</h3>
 <p class="tk-ghi">Nhập tên miền (trỏ về IP WAN của router) hoặc IP WAN, và mật khẩu chung. Cổng cố định 21115, 21116, 21117. Để trống tên miền = chỉ dùng trong LAN.</p>
 <div class="rd-o"><div><label for="rd-host">Tên miền hoặc IP WAN</label><input type="text" id="rd-host" placeholder="vd rustdesk.congty.com"></div>
-<div><label for="rd-mk">Mật khẩu cố định chung cho các máy</label><input type="text" id="rd-mk" autocomplete="off" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -"></div></div>
+<div><label for="rd-mk">Mật khẩu cố định chung cho các máy</label><input type="text" id="rd-mk" autocomplete="off" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -"><button class="tk-nut" id="rd-mk-hien" type="button" hidden style="margin-top:6px;">Hiện mật khẩu chung</button></div></div>
 <details style="margin-top:8px;"><summary class="tk-ghi">Nâng cao: máy chủ chuyển tiếp ở địa chỉ khác</summary><div class="rd-o" style="margin-top:6px;"><div><label for="rd-relay">Tên miền máy chủ chuyển tiếp (TCP 21117)</label><input type="text" id="rd-relay" placeholder="để trống = trùng tên miền ở trên"></div></div></details>
 <div class="nut-hang" style="margin-top:10px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button></div><div class="tk-ghi" id="rd-luu-tb" style="margin-top:6px;"></div>
 <div class="rd-hd" id="rd-hd"></div></div>
@@ -105,8 +105,10 @@ TRANG = """@CSS@<style>
 <div class="card" data-buoc="1"><h3 style="font-size:16px;font-weight:600;margin:0 0 8px 0;">Thiết bị đã đăng ký với máy chủ</h3><table class="rd-tb" id="rd-dev"></table></div>
 <script>(function(){var $=function(i){return document.getElementById(i);};var D0={},MK0='';
 function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-function mkO(mk){if(!mk)return '<span class="rd-k">chưa đặt</span>';return '<span class="rd-k" data-mk="'+e(mk)+'" data-an="1">••••••••</span><button class="rd-chep" type="button" data-hien-mk>Hiện</button>';}
-document.addEventListener('click',function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute('data-hien-mk'))return;var o=t.previousElementSibling;if(o.dataset.an==='1'){o.textContent=o.dataset.mk;o.dataset.an='0';t.textContent='Ẩn';}else{o.textContent='••••••••';o.dataset.an='1';t.textContent='Hiện';}});
+function mkO(co,mid){if(!co)return '<span class="rd-k">chưa đặt</span>';return '<span class="rd-k" data-mid="'+e(mid)+'" data-an="1">••••••••</span><button class="rd-chep" type="button" data-hien-mk>Hiện</button>';}
+document.addEventListener('click',function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute('data-hien-mk'))return;var o=t.previousElementSibling;
+ if(o.dataset.an==='1'){t.disabled=true;api('/rustdesk/api/xem-mat-khau',{mid:o.dataset.mid}).then(function(d){t.disabled=false;if(!d.ok){o.textContent=d.tb||'Không lấy được';return;}o.textContent=d.mk;o.dataset.an='0';t.textContent='Ẩn';});}
+ else{o.textContent='••••••••';o.dataset.an='1';t.textContent='Hiện';}});
 function api(u,b){return fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(function(r){return r.json();});}
 function chip(t,ok){return '<span class="rd-chip '+(ok?'ok':'loi')+'">'+t+'</span>';}
 function hd(){var v=function(i){return $(i).value.trim().toLowerCase();},h=v('rd-host'),lan=D0.ip_lan||'IP-Console',id=h||lan,nat=id,udp=id,rl=v('rd-relay')||id,x='';
@@ -124,14 +126,14 @@ function ve(d){D0=d;
  $('rd-tt').innerHTML=h;
  $('rd-nut').innerHTML=!d.da_cai?'<button class="tk-nut chinh" data-v="cai"'+(d.cai.dang?' disabled':'')+'>Cài máy chủ RustDesk</button>':'<button class="tk-nut xanh" data-v="start">Chạy</button><button class="tk-nut" data-v="restart">Khởi động lại</button><button class="tk-nut" data-v="stop">Dừng</button><button class="tk-nut do" data-v="go">Gỡ dịch vụ</button>';
  $('rd-tb').textContent=d.cai.tb||'';
- [['rd-host',d.host],['rd-relay',d.relay],['rd-mk',d.mk_chung]].forEach(function(a){if(document.activeElement!==$(a[0])&&!$(a[0]).dataset.sua) $(a[0]).value=a[1]||'';});
- if(d.relay) $('rd-relay').closest('details').open=true; MK0=d.mk_chung||''; $('rd-h').textContent=d.dia_chi.id; $('rd-r').textContent=d.dia_chi.relay; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
+ [['rd-host',d.host],['rd-relay',d.relay]].forEach(function(a){if(document.activeElement!==$(a[0])&&!$(a[0]).dataset.sua) $(a[0]).value=a[1]||'';});
+ if(d.relay) $('rd-relay').closest('details').open=true; if(!MK0&&!$('rd-mk').dataset.sua){$('rd-mk').value='';} $('rd-mk').placeholder=d.co_mk_chung?'Đã đặt (để trống = giữ nguyên)':'8-64 ký tự: chữ, số, ! @ # % ^ * . _ -'; $('rd-mk-hien').hidden=!d.co_mk_chung; $('rd-h').textContent=d.dia_chi.id; $('rd-r').textContent=d.dia_chi.relay; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
  $('rd-kho-tb').textContent=d.kho.dang?d.kho.tb:(d.kho.co?('Đã có trong kho Triển khai phần mềm (Tài nguyên máy, Phần mềm): '+d.kho.ten+', tạo lúc '+new Date(d.kho.luc*1000).toLocaleString()):(d.kho.tb||'Chưa có (cần cài máy chủ và đặt mật khẩu chung ở bước 2).'));
  $('rd-tai-msi').disabled=!d.kho.co||d.kho.dang; if(d.kho.dang) setTimeout(tai,2000);
  hd(); if(d.cai.dang) setTimeout(tai,1500);
  var chay=d.da_cai&&d.hbbs&&d.hbbr;o('rd-t-mc',d.da_cai?(chay?'ok':'loi'):'vang',!d.da_cai?'Chưa cài':(chay?'Đang chạy':'Đã dừng'));
  o('rd-t-dc',d.host?'ok':'vang',d.dia_chi.id+(d.host?'':' (chỉ LAN)'));
- XONG[1]=!!chay;XONG[2]=!!(d.host&&d.mk_chung);XONG[3]=!!d.kho.co;danhBuoc();}
+ XONG[1]=!!chay;XONG[2]=!!(d.host&&d.co_mk_chung);XONG[3]=!!d.kho.co;danhBuoc();}
 var XONG={1:false,2:false,3:false,4:false},DA_CHON=!!location.hash;
 function o(id,mau,t){$(id).innerHTML='<span class="rd-cham '+mau+'"></span>'+e(t);}
 function danhBuoc(){[].slice.call(document.querySelectorAll('#rd-tabs .dep-tab')).forEach(function(a){var b=a.dataset.b;a.classList.toggle('xong',!!XONG[b]);
@@ -150,25 +152,26 @@ $('rd-nut').addEventListener('click',function(ev){var v=ev.target.dataset.v; if(
  api(v==='cai'?'/rustdesk/api/cai':'/rustdesk/api/hanh-dong',{viec:v}).then(function(d){$('rd-tb').textContent=d.tb||'';tai();});});
 $('rd-luu').onclick=function(){var mk=$('rd-mk').value.trim();
  api('/rustdesk/api/cau-hinh',{host:$('rd-host').value,relay:$('rd-relay').value,ten_nat:'',ten_udp:''}).then(function(d){
-  var t=d.tb; var xong=function(){['rd-host','rd-relay','rd-mk'].forEach(function(i){delete $(i).dataset.sua;});$('rd-luu-tb').textContent=t;tai();setTimeout(dev,1500);};
-  if(d.ok&&mk!==MK0) api('/rustdesk/api/mat-khau',{mk:mk}).then(function(m){t+=' '+m.tb;xong();}); else xong();});};
+  var t=d.tb; var xong=function(){['rd-host','rd-relay','rd-mk'].forEach(function(i){delete $(i).dataset.sua;});MK0='';$('rd-mk').value='';$('rd-luu-tb').textContent=t;tai();setTimeout(dev,1500);};
+  if(d.ok&&mk&&mk!==MK0) api('/rustdesk/api/mat-khau',{mk:mk}).then(function(m){t+=' '+m.tb;xong();}); else xong();});};
 $('rd-kho').onclick=function(){api('/rustdesk/api/kho',{}).then(function(d){$('rd-kho-tb').textContent=d.tb;tai();});};
 function dev(){api('/rustdesk/api/thiet-bi').then(function(d){var h='<tr><th>ID</th><th>Tên máy</th><th>IP gần nhất</th><th>Đăng ký lúc</th></tr>';
  (d.ds||[]).forEach(function(x){h+='<tr><td><b>'+e(x.id)+'</b></td><td>'+(x.ten?e(x.ten):'<span class="tk-ghi">chưa rõ</span>')+'</td><td>'+e(x.ip)+'</td><td>'+e(x.tao)+'</td></tr>';});
  if(!(d.ds||[]).length) h+='<tr><td colspan="4" class="tk-ghi">Chưa có thiết bị nào đăng ký.</td></tr>'; $('rd-dev').innerHTML=h;
  $('rd-mk-tb').textContent=(d.dong_bo&&d.dong_bo.tb)||''; if(d.dong_bo&&d.dong_bo.dang) setTimeout(dev,2500);
- var m='<tr><th>Máy</th><th>ID RustDesk</th><th>Mật khẩu</th><th>Đồng bộ</th></tr>'; (d.may||[]).forEach(function(x){m+='<tr><td>'+e(x.ten)+'</td><td><b>'+e(x.id)+'</b></td><td>'+mkO(x.mk)+'</td><td>'+(x.dong_bo?'<span class="rd-chip ok">đã đồng bộ</span>':'<span class="rd-chip loi" title="'+e(x.loi)+'">chờ cập nhật</span>')+'</td></tr>';});
+ var m='<tr><th>Máy</th><th>ID RustDesk</th><th>Mật khẩu</th><th>Đồng bộ</th></tr>'; (d.may||[]).forEach(function(x){m+='<tr><td>'+e(x.ten)+'</td><td><b>'+e(x.id)+'</b></td><td>'+mkO(x.co_mk,x.mid)+'</td><td>'+(x.dong_bo?'<span class="rd-chip ok">đã đồng bộ</span>':'<span class="rd-chip loi" title="'+e(x.loi)+'">chờ cập nhật</span>')+'</td></tr>';});
  $('rd-bang-may').innerHTML=(d.may||[]).length?m:''; ChonMay.ve('rd',d.agent||[]);});}
 $('rd-cai-client').onclick=function(){var ids=ChonMay.chon('rd'); if(!ids.length){$('rd-ct').textContent='Chọn ít nhất một máy.';return;}
  $('rd-ct').textContent='Đang cài (có thể mất 1-2 phút mỗi máy)...'; api('/rustdesk/api/cai-client',{may:ids}).then(function(d){$('rd-ct').textContent=(d.kq||[]).map(function(x){return x.ten+': '+x.tb;}).join(' | ');dev();});};
 $('rd-ap').onclick=function(){api('/rustdesk/api/ap-cau-hinh',{}).then(function(d){$('rd-ct').textContent=d.ok?'Đang áp dụng, xem kết quả bên dưới...':'Đang có việc khác chạy.';setTimeout(dev,2500);});};
+$('rd-mk-hien').onclick=function(){var b=this;b.disabled=true;api('/rustdesk/api/xem-mat-khau',{mid:'chung'}).then(function(d){b.disabled=false;if(d.ok){$('rd-mk').value=d.mk;MK0=d.mk;}else{$('rd-mk-tb').textContent=d.tb||'';}});};
 $('rd-mk-bo').onclick=function(){api('/rustdesk/api/dong-bo',{}).then(function(d){$('rd-mk-tb').textContent=d.tb;setTimeout(dev,1500);});};
 var BANG={may:[],chua_gan:[],tat_ca:[]},KN_OK=false;
 function bo(x){return (x||'').replace(/đ/g,'d').replace(/Đ/g,'D').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 function veKn(){var q=bo($('rd-tim').value),h='<tr><th>Máy</th><th>IP</th><th>Trạng thái</th><th>ID RustDesk</th><th>Mật khẩu</th><th></th></tr>',n=0;
  BANG.may.forEach(function(x){if(q&&bo(x.ten+' '+x.ip+' '+x.id).indexOf(q)<0)return;n++;
   var tt=x.agent?'<span class="rd-on"><span class="rd-cham '+(x.online?'ok':'')+'"></span>'+(x.online?'Online':'Offline')+'</span>':'<span class="rd-on"><span class="rd-cham"></span>Không có agent</span>';
-  h+='<tr><td><b>'+e(x.ten)+'</b></td><td>'+e(x.ip)+'</td><td>'+tt+'</td><td>'+(x.id?'<b>'+e(x.id)+'</b>':'<span class="tk-ghi">chưa có (cài ở bước 3-4)</span>')+'</td><td>'+(x.id?mkO(x.mk):'')+'</td><td style="white-space:nowrap;">'
+  h+='<tr><td><b>'+e(x.ten)+'</b></td><td>'+e(x.ip)+'</td><td>'+tt+'</td><td>'+(x.id?'<b>'+e(x.id)+'</b>':'<span class="tk-ghi">chưa có (cài ở bước 3-4)</span>')+'</td><td>'+(x.id?mkO(x.co_mk,x.mid):'')+'</td><td style="white-space:nowrap;">'
    +(x.id?'<button class="tk-nut chinh" data-kn="'+e(x.mid)+'" type="button">Kết nối</button> ':'')+(x.agent?'<button class="tk-nut" data-kt="'+e(x.mid)+'" type="button">Kiểm tra máy</button> ':'')+(x.id?'<button class="tk-nut do" data-xoa-may="'+e(x.mid)+'" data-xoa-id="'+e(x.id)+'" type="button">Xóa ID</button>':'')+'</td></tr>';});
  $('rd-bang-kn').innerHTML=n?h:'<tr><td class="tk-ghi">'+(BANG.may.length?'Không có máy nào khớp.':'Chưa có máy nào có agent hoặc ID RustDesk.')+'</td></tr>';
  var c='<tr><th>ID</th><th>Tên máy / người dùng</th><th>Hệ điều hành</th><th>Trạng thái</th><th>Đăng ký lúc</th><th>Gắn vào máy</th></tr>';

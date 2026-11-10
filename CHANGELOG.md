@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.6 - 31/10/2026
+## 2.0.6 - chưa phát hành (đang sửa, 10/11/2026; chốt ngày khi phát hành)
 
 **Sửa lỗi phát hiện khi quay video hướng dẫn (07/11/2026):**
 
@@ -9,7 +9,9 @@
 - **Agent MSI có passkey:** hướng dẫn nói rõ không bấm đúp (hộp "Please wait" đứng và giữ khóa msiexec); lệnh gỡ ghi `msiexec /x "{mã}"` có ngoặc kép để chạy được trong PowerShell.
 - **Quản lý máy trạm:** sửa tên gọi/thẻ máy không còn báo sai "Đã có máy khác dùng IP này" (bỏ qua bản ghi đã xóa khỏi quản lý); cài lại Windows cùng MAC thì gộp bản ghi cũ (không còn agent sống) vào bản mới, giữ thẻ/địa điểm/ghi chú/nhóm; bỏ chữ "(theo mô hình OpenUEM)"; trang Phần mềm đã cài hiện tên máy.
 - **Kết quả có dấu tiếng Việt** (TightVNC, kiểm DNS/TLS); mã lỗi WinGet -1073741515 báo "WinGet không chạy được trên máy này".
-- **RustDesk:** che mật khẩu mặc định (nút Hiện/Ẩn), liên kết kết nối không còn mang `?password=` trong HTML.
+- **RustDesk: mật khẩu không còn nằm trong trang (LỖI-003):** cả mật khẩu chung lẫn mật khẩu từng máy không còn trong HTML hay danh sách JSON; chỉ lấy khi bấm Hiện hoặc Kết nối, và mỗi lần lấy đều ghi vào nhật ký thao tác (không ghi mật khẩu). Form lưu ID của máy chưa có ID: để trống mật khẩu = dùng mật khẩu chung.
+- **Ping nhiều đích (LỖI-001):** nhập quá 8 đích thì báo rõ đích nào bị bỏ qua; thông báo lỗi ping/traceroute có dấu tiếng Việt.
+- **Bộ kiểm:** `thu-uem.py` dùng cổng cầu nối riêng (hết chập chờn khi cổng 8895 đang bị tiến trình khác giữ); nhật ký của test ghi vào thư mục tạm (`CONSOLE_PI_LOG`), không ghi `/var/log` của máy chạy test.
 - **Nguồn điện:** máy không phải Raspberry Pi không còn hiện nút Khởi động lại/Tắt máy. **Nhật ký:** tab Log chỉ còn một ô tìm. **Profile:** hỏi xác nhận khi lưu profile đang bật áp dụng cho tất cả máy.
 - **Cải tiến nhỏ:** Tiến trình/Dịch vụ sắp xếp theo cột; nhật ký Thao tác và Log có nút "Ẩn nhịp agent", thao tác từ xa ghi thành câu; danh sách Máy tính lọc theo RAM và loại ổ (SSD/HDD); trang Bảo mật có "Chỉ máy có vấn đề", nút Làm mới dữ liệu, cột Báo cáo lúc, nhãn BitLocker rõ hơn; Ping nhiều đích cùng lúc (tối đa 8).
 - Chưa làm (cần máy Windows thật): CMD tiếng Việt (`chcp 65001 >nul`, patch ở ghi chú phát hành) vì phải build lại cs-agent.exe.

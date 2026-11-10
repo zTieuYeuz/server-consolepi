@@ -46,9 +46,9 @@ def run_ping(host, iface=None, count=4, timeout=2):
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=count * timeout + 10)
         return result.stdout + result.stderr
     except subprocess.TimeoutExpired:
-        return "(qua thoi gian cho)"
+        return "(quá thời gian chờ)"
     except Exception as e:
-        return f"(loi: {e})"
+        return f"(lỗi: {e})"
 
 
 def run_traceroute(host, iface=None, max_hops=20, timeout=2):
@@ -57,19 +57,25 @@ def run_traceroute(host, iface=None, max_hops=20, timeout=2):
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=max_hops * timeout + 15)
         return result.stdout + result.stderr
     except FileNotFoundError:
-        return "(chua cai traceroute)"
+        return "(chưa cài traceroute)"
     except subprocess.TimeoutExpired:
-        return "(qua thoi gian cho)"
+        return "(quá thời gian chờ)"
     except Exception as e:
-        return f"(loi: {e})"
+        return f"(lỗi: {e})"
 
 
 TOI_DA_DICH = 8
 
 
+def tach_dich_day_du(chuoi):
+    """'a.com, 1.1.1.1 8.8.8.8' -> (['a.com','1.1.1.1','8.8.8.8'], []) : (cac dich se chay - toi da TOI_DA_DICH, cac dich bi bo qua vi vuot gioi han). Bo dich trung."""
+    tat_ca = list(dict.fromkeys(h for h in re.split(r"[\s,;]+", chuoi or "") if h))
+    return tat_ca[:TOI_DA_DICH], tat_ca[TOI_DA_DICH:]
+
+
 def tach_dich(chuoi):
-    """'a.com, 1.1.1.1 8.8.8.8' -> ['a.com','1.1.1.1','8.8.8.8'] (bo trung, toi da TOI_DA_DICH dich)."""
-    return list(dict.fromkeys(h for h in re.split(r"[\s,;]+", chuoi or "") if h))[:TOI_DA_DICH]
+    """Nhu tach_dich_day_du nhung chi tra cac dich se chay."""
+    return tach_dich_day_du(chuoi)[0]
 
 
 def ping_nhieu(dich, iface=None):
@@ -98,16 +104,20 @@ def ping_route():
     che_do = request.form.get("che_do") if request.form.get("che_do") in ("ping", "traceroute") else "ca-hai"
     ping_out = trace_out = ""
     if ran:
-        dich = tach_dich(host)
-        if not dich or not all(_host_hop_le(h) for h in dich):
-            ping_out = trace_out = ("(dia chi khong hop le - chi cho chu, so va "
-                                    "cac dau . - : , khong duoc bat dau bang dau -)")
+        dich, bo_qua = tach_dich_day_du(host)
+        if not dich or not all(_host_hop_le(h) for h in dich + bo_qua):
+            ping_out = trace_out = ("(địa chỉ không hợp lệ - chỉ cho chữ, số và "
+                                    "các dấu . - : , không được bắt đầu bằng dấu -)")
         else:
             if che_do in ("ping", "ca-hai"):
                 ping_out = ping_nhieu(dich, iface=iface)
             if che_do in ("traceroute", "ca-hai"):
                 trace_out = (run_traceroute(dich[0], iface=iface) if len(dich) == 1
                              else "(Traceroute chỉ chạy cho 1 đích mỗi lần - hãy nhập 1 đích, hoặc dùng Ping khi nhập nhiều đích.)")
+            if bo_qua:                       # khong bo lang le: noi ro dich nao khong duoc chay
+                tb = "(Chỉ chạy tối đa %d đích mỗi lần. Đã bỏ qua %d đích: %s. Hãy chạy lại với các đích này.)\n\n" % (TOI_DA_DICH, len(bo_qua), ", ".join(bo_qua))
+                ping_out = tb + ping_out if ping_out else ping_out
+                trace_out = tb + trace_out if trace_out else trace_out
 
     return render_template_string(
         PING_TEMPLATE, o_chon_cong=_o_chon_cong(iface), host=host, iface=iface, ran=ran,

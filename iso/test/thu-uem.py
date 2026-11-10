@@ -527,7 +527,14 @@ r = c.get("/uem/novnc/../../../etc/passwd", headers=H); kt("noVNC khong cho duye
 import socket as _s
 srv = _s.socket(); srv.bind(("127.0.0.1", 0)); srv.listen(1); UV.CONG_VNC = srv.getsockname()[1]
 with UV._KHOA: UV.PHIEN["tokgia1234567890abcdefghi"] = {"may_id": "m1", "ip": "127.0.0.1", "pin": "Ab3dE6gH", "luc": time.time(), "kenh": 0, "tunnel": False, "agent_sock": None, "agent_xong": threading.Event()}
-UV.khoi_dong_bridge()
+_sw = _s.socket(); _sw.bind(("127.0.0.1", 0)); UV.CONG_WS = _sw.getsockname()[1]; _sw.close()   # cong rieng cho lan chay nay: cong co dinh 8895 hay bi tien trinh khac giu (may thu chay song song / Console that) -> WS tra 404
+UV._BRIDGE_CHAY = False    # cau noi co the da duoc app tu khoi dong (hoac that bai) tren cong cu -> khoi dong lai tren cong rieng
+kt("cau noi WS khoi dong duoc tren cong rieng", UV.khoi_dong_bridge() is True)
+for _ in range(50):        # doi luong nghe san sang (bind chay trong thread)
+    try:
+        _sw = _s.create_connection(("127.0.0.1", UV.CONG_WS), timeout=0.2); _sw.close(); break
+    except OSError:
+        time.sleep(0.1)
 def nhan_gia():
     cs, _a = srv.accept(); cs.sendall(b"RFB 003.008\n"); d = cs.recv(100); cs.sendall(d[::-1]); time.sleep(0.3); cs.close()
 th = threading.Thread(target=nhan_gia, daemon=True); th.start()

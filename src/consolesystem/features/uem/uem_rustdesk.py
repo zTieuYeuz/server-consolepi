@@ -32,7 +32,7 @@ def bang_dieu_khien():
         co_ag = bool(UA.co_agent(m))
         if m.get("an") or not (ban.get("id") or co_ag):
             continue
-        may.append({"mid": m["id"], "ten": m.get("ten") or m["ip"], "ip": m["ip"], "id": ban.get("id", ""), "mk": ban.get("mk", ""), "agent": co_ag,
+        may.append({"mid": m["id"], "ten": m.get("ten") or m["ip"], "ip": m["ip"], "id": ban.get("id", ""), "co_mk": bool(ban.get("mk")), "agent": co_ag,
                     "online": bool(UA.con_song(m)) if co_ag else None, "dong_bo": bool(ban.get("dong_bo", True)) or not cfg.get("mk_chung")})
     da_gan = {v.get("id") for v in cfg["may"].values() if v.get("id")}
     ip_ten = {m["ip"]: (m.get("ten") or m["ip"]) for m in ds_may}
@@ -59,7 +59,7 @@ def register_uem_rustdesk(app):
     @app.route("/uem/may/<mid>/rustdesk/luu", methods=["POST"])
     def uem_rustdesk_luu(mid):
         m = may_theo_id(mid)
-        i, mk = (request.form.get("id") or "").replace(" ", ""), (request.form.get("mk") or "").strip()
+        i, mk = (request.form.get("id") or "").replace(" ", ""), (request.form.get("mk") or "").strip() or RD.mk_chung()   # de trong = mat khau chung (khong gui xuong trinh duyet)
         if not re.fullmatch(r"\d{6,12}", i) or not re.fullmatch(r"[A-Za-z0-9!@#$%^&*._\-]{4,64}", mk):
             return chuyen(f"/uem/may/{mid}/tu-xa", "ID phải là 6 đến 12 chữ số; mật khẩu 4 đến 64 ký tự (chữ, số, ký hiệu thường).", False)
         cfg = RD.doc_cfg()
@@ -75,12 +75,34 @@ def register_uem_rustdesk(app):
         ds_may = DL.MAY.doc()
         ten = {m["id"]: (m.get("ten") or m["ip"]) for m in ds_may}
         agent = [{"id": m["id"], "ten": m.get("ten") or m["ip"], "ip": m["ip"], "online": UA.con_song(m)} for m in ds_may if UA.co_agent(m) and not m.get("an")]
-        may = [{"ten": ten.get(k, k), "id": v.get("id", ""), "mk": v.get("mk", ""), "dong_bo": bool(v.get("dong_bo", True)) or not cfg.get("mk_chung"),
+        may = [{"mid": k, "ten": ten.get(k, k), "id": v.get("id", ""), "co_mk": bool(v.get("mk")), "dong_bo": bool(v.get("dong_bo", True)) or not cfg.get("mk_chung"),
                 "loi": v.get("loi", "")} for k, v in cfg["may"].items()]
         theo_id = {v.get("id"): ten.get(k, "") for k, v in cfg["may"].items() if v.get("id")}
         theo_ip = {m["ip"]: (m.get("ten") or "") for m in ds_may}
         ds = [dict(x, ten=theo_id.get(x["id"]) or theo_ip.get(x["ip"], "")) for x in RD.thiet_bi()]   # ten may: theo ID da ghi, khong thi theo IP
-        return jsonify({"ds": ds, "may": may, "agent": agent, "mk_chung": cfg.get("mk_chung", ""), "dong_bo": dict(_DONG_BO)})
+        return jsonify({"ds": ds, "may": may, "agent": agent, "co_mk_chung": bool(cfg.get("mk_chung")), "dong_bo": dict(_DONG_BO)})
+
+    @app.route("/rustdesk/api/xem-mat-khau", methods=["POST"])
+    def rustdesk_api_xem_mk():
+        """Mat khau RustDesk KHONG nam trong HTML / danh sach JSON: chi tra khi nguoi dung bam Hien / Ket noi, va moi lan xem deu ghi nhat ky (khong ghi mat khau)."""
+        from ui import errlog
+        mid = str((request.get_json(silent=True) or {}).get("mid", ""))
+        if mid == "chung":
+            mk = RD.mk_chung()
+            if not mk:
+                return jsonify({"ok": False, "mk": "", "tb": "Chưa đặt mật khẩu chung."})
+        else:
+            m = next((x for x in DL.MAY.doc() if x["id"] == mid), None)
+            mk = ((RD.doc_cfg()["may"].get(mid) or {}).get("mk", "")) if m else ""
+            if not m or not mk:
+                return jsonify({"ok": False, "mk": "", "tb": "Máy này chưa có mật khẩu RustDesk."})
+        if mid == "chung":
+            errlog.ghi_thao_tac("Xem mật khẩu RustDesk chung")
+        else:                                             # ghi_tac_vu tu ghi them 1 cau vao Nhat ky, Thao tac
+            UD.ghi_tac_vu(mid, "tu_xa", "Xem mật khẩu RustDesk", True, "")
+        r = jsonify({"ok": True, "mk": mk})
+        r.headers["Cache-Control"] = "no-store"
+        return r
 
     @app.route("/rustdesk/api/bang")
     def rustdesk_api_bang():
@@ -313,17 +335,25 @@ def khoi_tu_xa(m):
         return ('<div class="card"><h3>Điều khiển bằng RustDesk</h3><p class="tk-ghi">Máy này chưa có ID RustDesk trong Console System. Cách 1: vào <a href="/rustdesk">RustDesk</a>, '
                 'chọn máy rồi bấm <b>Cài lên máy đã chọn</b> (máy phải có agent), hoặc cài file <b>Cai-RustDesk-ConsoleSystem.msi</b> bằng Triển khai phần mềm (ID tự ghi vào đây). Cách 2: máy đã cài file .msi bằng tay (trỏ về máy chủ <b>' + _e(st["dia_chi"]["id"]) + '</b>): nhập ID (xem trong RustDesk trên máy đó) và mật khẩu chung:</p>'
                 f'<form method="POST" action="/uem/may/{m["id"]}/rustdesk/luu" class="tk-hang"><input type="text" name="id" value="' + _e(goi_y) + '" placeholder="ID RustDesk (số)" required style="max-width:200px;margin:0;">'
-                '<input type="password" name="mk" value="' + _e(RD.mk_chung()) + '" placeholder="Mật khẩu cố định" required autocomplete="off" style="max-width:220px;margin:0;"><button class="tk-nut chinh" type="submit">Lưu</button></form></div>')
-    i, mk = _e(ban["id"]), _e(ban["mk"])
+                '<input type="password" name="mk" placeholder="' + ("Để trống = dùng mật khẩu chung" if RD.mk_chung() else "Mật khẩu cố định") + '" ' + ("" if RD.mk_chung() else "required ") + 'autocomplete="new-password" style="max-width:240px;margin:0;"><button class="tk-nut chinh" type="submit">Lưu</button></form></div>')
+    i, mid = _e(ban["id"]), _e(m["id"])
     return (f'<div class="card"><h3>Điều khiển bằng RustDesk</h3>'
             f'<p class="tk-ghi">RustDesk không chạy trong trình duyệt (khác VNC phía trên): bấm nút để mở <b>ứng dụng RustDesk đã cài trên máy của anh</b> và kết nối thẳng xuống máy này. '
             f'Máy anh đang ngồi cần RustDesk trỏ về máy chủ <b>{_e(st["dia_chi"]["id"])}</b>: tải và chạy <a href="/rustdesk/Cai-RustDesk-ConsoleSystem.msi">file cài RustDesk</a> một lần là xong.</p>'
             f'<div class="uem-2"><div>ID: <span class="rd-k" style="font-family:monospace;user-select:all;">{i}</span></div>'
-            f'<div>Mật khẩu: <span style="font-family:monospace;" id="rdmk-{i}" data-mk="{mk}" data-an="1">••••••••</span> '
-            f'<button type="button" class="tk-nut" style="padding:2px 9px;min-height:0;" onclick="var o=document.getElementById(\'rdmk-{i}\');if(o.dataset.an===\'1\'){{o.textContent=o.dataset.mk;o.dataset.an=\'0\';this.textContent=\'Ẩn\';}}else{{o.textContent=\'••••••••\';o.dataset.an=\'1\';this.textContent=\'Hiện\';}}">Hiện</button></div></div>'
-            f'<div class="tk-hang" style="margin-top:10px;"><a class="tk-nut chinh" href="rustdesk://connection/new/{i}" data-mk="{mk}" '
-            f'onclick="this.href=\'rustdesk://connection/new/{i}?password=\'+encodeURIComponent(this.dataset.mk);">Mở RustDesk và kết nối</a>'
-            f'<a class="tk-nut" href="/rustdesk">Trang RustDesk (khóa, tải client)</a></div></div>')
+            f'<div>Mật khẩu: <span style="font-family:monospace;" id="rdmk-{mid}" data-an="1">' + ("••••••••" if ban.get("mk") else "chưa đặt") + '</span> '
+            + (f'<button type="button" class="tk-nut" style="padding:2px 9px;min-height:0;" id="rdmk-nut-{mid}">Hiện</button>' if ban.get("mk") else "") + '</div></div>'
+            f'<div class="tk-hang" style="margin-top:10px;"><button type="button" class="tk-nut chinh" id="rdkn-{mid}">Mở RustDesk và kết nối</button>'
+            f'<a class="tk-nut" href="/rustdesk">Trang RustDesk (khóa, tải client)</a></div><div class="tk-ghi" id="rdkn-tb-{mid}"></div>'
+            + _JS_TU_XA.replace("__MID__", mid) + '</div>')
+
+
+# Mat khau RustDesk KHONG nam trong HTML: bam Hien / Ket noi thi moi hoi may chu (moi lan hoi deu ghi nhat ky).
+_JS_TU_XA = """<script>(function(){var M='__MID__',o=document.getElementById('rdmk-'+M),n=document.getElementById('rdmk-nut-'+M),k=document.getElementById('rdkn-'+M),t=document.getElementById('rdkn-tb-'+M);
+function post(u,b){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json();});}
+if(n)n.onclick=function(){if(o.dataset.an==='1'){n.disabled=true;post('/rustdesk/api/xem-mat-khau',{mid:M}).then(function(d){n.disabled=false;if(!d.ok){t.textContent=d.tb||'Không lấy được mật khẩu.';return;}o.textContent=d.mk;o.dataset.an='0';n.textContent='Ẩn';},function(){n.disabled=false;t.textContent='Không lấy được mật khẩu.';});}else{o.textContent='••••••••';o.dataset.an='1';n.textContent='Hiện';}};
+function theo(ma,bd){fetch('/rustdesk/api/ket-noi/'+ma).then(function(r){return r.json();}).then(function(d){if(!d.xong){t.textContent=d.tb+' ('+Math.round((Date.now()-bd)/1000)+' giây)';setTimeout(function(){theo(ma,bd);},2000);return;}k.disabled=false;t.textContent=d.tb;if(d.ok&&d.url)location.href=d.url;});}
+k.onclick=function(){k.disabled=true;t.textContent='Đang gửi yêu cầu...';post('/rustdesk/api/ket-noi',{mid:M}).then(function(d){t.textContent=d.tb||'';if(!d.xong&&d.ma){theo(d.ma,Date.now());return;}k.disabled=false;if(d.ok&&d.url)location.href=d.url;},function(){k.disabled=false;t.textContent='Không gửi được yêu cầu.';});};})();</script>"""
 
 
 # ------------------------------------------------------------------ ket noi theo che do (thong bao / xin phep 5 phut)

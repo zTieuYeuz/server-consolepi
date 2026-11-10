@@ -28,8 +28,9 @@ kq["trang_co_the_moi"] = "Tải sao lưu toàn bộ" in t and r.status_code == 2
 r = c.get("/settings/sao-luu?che_do=cauhinh", headers=H)
 data = r.get_data()
 kq["tai_ve_ok"] = r.status_code == 200 and "filename=" in r.headers.get("Content-Disposition", "") and len(data) > 100
-open("/tmp/goi-web.tar.gz", "wb").write(data)
-kq["goi_kiem_duoc"] = SL.kiem_goi("/tmp/goi-web.tar.gz")["che_do"]
+_goi = os.path.join(DD.GOC, "goi-web.tar.gz")   # duong dan rieng cua lan chay (khong dung /tmp co dinh: chay song song se dap nhau)
+open(_goi, "wb").write(data)
+kq["goi_kiem_duoc"] = SL.kiem_goi(_goi)["che_do"]
 r = c.post("/settings/nap-sao-luu", headers=H, data={"file": (io.BytesIO(data), "g.tar.gz")}, content_type="multipart/form-data")
 t = r.get_data(as_text=True)
 kq["tai_len_hop_le"] = "File hợp lệ" in t and "Xác nhận khôi phục" in t

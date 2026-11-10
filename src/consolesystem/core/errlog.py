@@ -28,7 +28,7 @@ import subprocess
 import time
 import traceback
 
-THU_MUC_LOG = "/var/log"
+THU_MUC_LOG = os.environ.get("CONSOLE_PI_LOG") or "/var/log"       # CONSOLE_PI_LOG chi de bo test / may thu: khong ghi vao nhat ky that cua may
 LOG_FILE = os.path.join(THU_MUC_LOG, "console-pi-errors.log")
 # Nhat ky THAO TAC (19/10/2026): ai lam gi - dang nhap thanh cong / that bai, tat may, bat tat PXE...
 # Khac nhat ky loi: day la dau vet hanh dong de truy lai khi can, khong phai loi phan mem.
@@ -139,7 +139,7 @@ def ghi_thao_tac(hanh_dong, chi_tiet="", nguoi=None, ip=None):
 
 # Cac thao tac POST KHONG ghi (da co dong ghi rieng chi tiet hon, hoac chay thuong xuyen/khong phai thao tac cua nguoi dung)
 _KHONG_GHI = ("/login", "/logout", "/power/", "/deployos/pxe/bat", "/deployos/pxe/tat", "/phien/api/", "/api/",
-              "/tai-len/", "/giaodien", "/_auth", "/healthz", "/uem/agent/")        # agent bao nhip/ket qua dinh ky khong phai thao tac nguoi dung
+              "/tai-len/", "/giaodien", "/_auth", "/healthz", "/uem/agent/", "/rustdesk/api/xem-mat-khau")        # agent bao nhip/ket qua dinh ky khong phai thao tac nguoi dung
 # Thao tac tu xa tren may (dich vu, tien trinh, duyet file) da tu ghi 1 CAU ("Dich vu X: dung trên máy Y: thanh cong") qua uem_dulieu.ghi_tac_vu
 _RE_TU_XA_DA_CO_CAU = re.compile(r"^/uem/may/[^/]+/(dich-vu/api|tien-trinh/api|duyet-file/(tai-len|tao-thu-muc|xoa)|cli/chay)$")
 _TRUONG_AN_TOAN = ("ten", "id", "ma", "bo_id", "os_id", "ung_id", "ten_may", "dev", "devname", "loai", "nguon")

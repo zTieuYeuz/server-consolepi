@@ -166,7 +166,7 @@ def trang_thai():
     cfg = doc_cfg()
     return {"kien_truc": kien_truc(), "ban": VER_SERVER, "da_cai": da_cai(), "hbbs": _hoat_dong(DV_HBBS), "hbbr": _hoat_dong(DV_HBBR),
             "cong": {str(c): _cong_nghe(c) for c in (21115, 21116, 21117)}, "khoa": khoa_cong_khai(), "host": cfg["host"], "relay": cfg["relay"],
-            "cong_id": cfg["cong_id"], "cong_relay": cfg["cong_relay"], "ten_nat": cfg.get("ten_nat", ""), "ten_udp": cfg.get("ten_udp", ""), "mk_chung": cfg.get("mk_chung", ""), "dia_chi": dia_chi(),
+            "cong_id": cfg["cong_id"], "cong_relay": cfg["cong_relay"], "ten_nat": cfg.get("ten_nat", ""), "ten_udp": cfg.get("ten_udp", ""), "co_mk_chung": bool(cfg.get("mk_chung")), "dia_chi": dia_chi(),
             "kho": tep_kho_tt(), "host_hieu_luc": host_hieu_luc(), "relay_hieu_luc": relay_hieu_luc(), "ip_lan": ip_lan(), "cai": dict(_CAI)}
 
 

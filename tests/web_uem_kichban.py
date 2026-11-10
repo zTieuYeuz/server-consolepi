@@ -137,7 +137,7 @@ for _ in range(30):
 kq["mk_chung_day_xuong_may"] = RD.doc_cfg()["may"]["m-agent"].get("mk") == "MatKhau#Chung1" and RD.doc_cfg()["may"]["m-agent"].get("dong_bo") is True
 kq["mk_chung_gui_dung_lenh"] = "--password 'MatKhau#Chung1'" in kich[-1]
 d = c.get("/rustdesk/api/thiet-bi", headers=H).get_json()
-kq["mk_chung_hien_thi"] = d["mk_chung"] == "MatKhau#Chung1" and d["may"][0]["dong_bo"] is True
+kq["mk_chung_hien_thi"] = d["co_mk_chung"] is True and d["may"][0]["dong_bo"] is True and "MatKhau" not in c.get("/rustdesk/api/thiet-bi", headers=H).get_data(as_text=True)
 K = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 kq["rd_relay_xau"] = post("/rustdesk/api/cau-hinh", {"host": "id.example.com", "relay": "a b"}).get_json()["ok"] is False
 post("/rustdesk/api/cau-hinh", {"host": "id.example.com", "relay": ""})
