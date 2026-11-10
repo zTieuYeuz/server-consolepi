@@ -525,14 +525,34 @@ JS_MAY_B1 = r"""<script>
   function mo(v) {
     them.classList.toggle('mo', v); nen.classList.toggle('mo', v && hep.matches); nut.setAttribute('aria-expanded', v ? 'true' : 'false');
     if (v && hep.matches) setTimeout(function () { them.querySelector('select').focus(); }, 60);
-    if (!v && hep.matches) nut.focus();
+    if (!v) nut.focus();
   }
   nut.onclick = function () { mo(!them.classList.contains('mo')); };
   nen.onclick = function () { mo(false); };
   them.querySelector('.a-dong').onclick = function () { mo(false); };
   chan.querySelector('.a-xem').onclick = function () { mo(false); };
   chan.querySelector('.a-xoa').onclick = xoaHet;
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && them.classList.contains('mo')) mo(false); });
+  // LOI-005: dien thoai = hop thoai modal that: role=dialog + aria-modal, Tab/Shift+Tab vong trong ngan keo, Esc dong, tra focus ve nut Bo loc
+  function chinhRole() {
+    if (hep.matches) { them.setAttribute('role', 'dialog'); them.setAttribute('aria-modal', 'true'); them.setAttribute('aria-label', 'Bộ lọc'); }
+    else { them.setAttribute('role', 'group'); them.removeAttribute('aria-modal'); }
+  }
+  chinhRole(); hep.addEventListener('change', chinhRole);
+  function dsFocus() { return Array.prototype.filter.call(them.querySelectorAll('button, select, input, [href]'), function (x) { return !x.disabled && x.offsetParent !== null; }); }
+  document.addEventListener('keydown', function (e) {
+    if (!them.classList.contains('mo')) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); mo(false); nut.focus(); return; }
+    if (e.key === 'Tab' && hep.matches) {
+      var ds = dsFocus(); if (!ds.length) return;
+      var i = ds.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); ds[ds.length - 1].focus(); }
+      else if (!e.shiftKey && (i < 0 || i === ds.length - 1)) { e.preventDefault(); ds[0].focus(); }
+      else if (i < 0) { e.preventDefault(); ds[0].focus(); }
+    }
+  }, true);
+  document.addEventListener('focusin', function (e) {
+    if (hep.matches && them.classList.contains('mo') && !them.contains(e.target)) { var ds = dsFocus(); if (ds.length) ds[0].focus(); }
+  });
   sels.forEach(function (s) { s.addEventListener('change', function () { setTimeout(veLai, 0); }); });
   veLai();
 
