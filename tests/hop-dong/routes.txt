@@ -280,6 +280,7 @@
 /rustdesk/vnc/api/tt/<ma>	GET	remote_vnc_tt
 /rustdesk/vnc/tai/<bits>	GET	remote_vnc_tai
 /settings	GET	settings_page
+/settings/api/xem-mat-khau-terminal	POST	xem_mat_khau_terminal
 /settings/don-rac	POST	settings_don_rac
 /settings/khoi-phuc	POST	settings_khoi_phuc
 /settings/kiosk/bat	POST	settings_kiosk_bat
@@ -403,3 +404,4 @@
 /wifi-mac-tat	POST	wifi_mac_tat_route
 /wifi-rescan	POST	wifi_rescan
 /wifi-status	GET	wifi_status
+/wifi/api/xem-mat-khau-ap	POST	wifi_xem_mat_khau_ap

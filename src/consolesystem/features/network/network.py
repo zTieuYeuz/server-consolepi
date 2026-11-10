@@ -1063,10 +1063,12 @@ def _wifi_page(msg="", ok=True):
     ap_tt = (f"""
       <table style="max-width:460px;margin:0 0 12px;">
         <tr><td style="width:150px;">Tên WiFi</td><td><code>{_esc(ap_ssid)}</code></td></tr>
-        <tr><td>Mật khẩu</td><td><code id="ap-mk" data-mk="{_esc(ap_mk)}">••••••••••</code>
+        <tr><td>Mật khẩu</td><td><code id="ap-mk" data-an="1">••••••••••</code>
           <button type="button" class="small gray" style="margin-left:8px;"
-            onclick="var c=document.getElementById('ap-mk');var h=c.textContent.indexOf('•')<0;
-                     c.textContent=h?'••••••••••':c.dataset.mk;this.textContent=h?'Hiện':'Ẩn';">Hiện</button></td></tr>
+            onclick="var b=this,c=document.getElementById('ap-mk');
+                     if(c.dataset.an!=='1'){{c.textContent='••••••••••';c.dataset.an='1';b.textContent='Hiện';return;}}
+                     b.disabled=true;fetch('/wifi/api/xem-mat-khau-ap',{{method:'POST'}}).then(function(r){{return r.json();}}).then(function(d){{b.disabled=false;
+                       if(d.ok){{c.textContent=d.mk;c.dataset.an='0';b.textContent='Ẩn';}}else{{c.textContent=d.tb||'Không lấy được';}}}},function(){{b.disabled=false;c.textContent='Không lấy được';}});">Hiện</button></td></tr>
         <tr><td>Địa chỉ giao diện</td><td><code>http://192.168.50.1</code></td></tr>
       </table>""" if ap_mk else "")
     ap_card = f"""
@@ -1732,6 +1734,19 @@ def register_network(app):
         if forget:
             m += f" Đã quên {len(removed)} thiết bị - cần ghép cặp lại từ đầu."
         return _bt_page(msg=m, ok=True)
+
+    @app.route("/wifi/api/xem-mat-khau-ap", methods=["POST"])
+    def wifi_xem_mat_khau_ap():
+        """Mat khau WiFi AP KHONG nam trong HTML: chi tra khi bam Hien, moi lan xem ghi nhat ky (khong ghi mat khau)."""
+        from flask import jsonify
+        from ui.errlog import ghi_thao_tac
+        mk = _doc_ap()[1]
+        if not mk:
+            return jsonify({"ok": False, "tb": "Chưa có mật khẩu WiFi."})
+        ghi_thao_tac("Xem mật khẩu WiFi phát sóng (AP)")
+        r = jsonify({"ok": True, "mk": mk})
+        r.headers["Cache-Control"] = "no-store"
+        return r
 
     @app.route("/wifi-status")
     def wifi_status():

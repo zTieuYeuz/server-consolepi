@@ -257,6 +257,19 @@ def register_settings(app):
                                      + " ".join(_esc(x) for x in tb)
                                      + " Dịch vụ đang khởi động lại - tải lại trang sau vài giây."), ok=True)
 
+    @app.route("/settings/api/xem-mat-khau-terminal", methods=["POST"])
+    def xem_mat_khau_terminal():
+        """Mat khau terminal KHONG nam trong HTML: chi tra khi bam Hien, moi lan xem ghi nhat ky (khong ghi mat khau)."""
+        from flask import jsonify
+        from ui.errlog import ghi_thao_tac
+        mk = get_term_credential()[1]
+        if not mk:
+            return jsonify({"ok": False, "tb": "Chưa có mật khẩu terminal."})
+        ghi_thao_tac("Xem mật khẩu terminal")
+        r = jsonify({"ok": True, "mk": mk})
+        r.headers["Cache-Control"] = "no-store"
+        return r
+
     @app.route("/settings/regen-term-pass", methods=["POST"])
     def regen_term_pass():
         import secrets
@@ -318,7 +331,7 @@ def _render_settings(msg="", ok=True):
     has_screen, name, transform, raw = get_display_info()
     cfg = load_config()
     saved = cfg.get("screen_rotation", "normal")
-    user, pw = get_term_credential()
+    user = get_term_credential()[0]
 
     msg_html = f'<div class="msg {"ok" if ok else "err"}">{msg}</div>' if msg else ""
 
@@ -361,10 +374,12 @@ def _render_settings(msg="", ok=True):
       <h3>Mật khẩu terminal</h3>
       <table style="max-width:430px;margin-bottom:12px;">
         <tr><th style="width:150px;">Tài khoản</th><td><code>{user}</code></td></tr>
-        <tr><th>Mật khẩu</th><td><code id="term-mk" data-mk="{pw}">••••••••••</code>
+        <tr><th>Mật khẩu</th><td><code id="term-mk" data-an="1">••••••••••</code>
           <button type="button" class="small gray" style="margin-left:8px;"
-            onclick="var c=document.getElementById('term-mk');var h=c.textContent.indexOf('•')<0;
-                     c.textContent=h?'••••••••••':c.dataset.mk;this.textContent=h?'Hiện':'Ẩn';">Hiện</button>
+            onclick="var b=this,c=document.getElementById('term-mk');
+                     if(c.dataset.an!=='1'){{c.textContent='••••••••••';c.dataset.an='1';b.textContent='Hiện';return;}}
+                     b.disabled=true;fetch('/settings/api/xem-mat-khau-terminal',{{method:'POST'}}).then(function(r){{return r.json();}}).then(function(d){{b.disabled=false;
+                       if(d.ok){{c.textContent=d.mk;c.dataset.an='0';b.textContent='Ẩn';}}else{{c.textContent=d.tb||'Không lấy được';}}}},function(){{b.disabled=false;c.textContent='Không lấy được';}});">Hiện</button>
           <!-- Che mac dinh (26/09/2026): truoc day hien thang chu ro - ai liec man
                hinh / chup anh la lo. Bam Hien moi thay. --></td></tr>
       </table>

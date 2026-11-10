@@ -146,4 +146,18 @@ kq["a1_co_ghi_nhat_ky_khong_lo_mat_khau"] = "Xem mật khẩu RustDesk chung" in
 c.post("/uem/may/m-rd-chua/rustdesk/luu", data={"id": "987654321", "mk": ""}, headers=H)
 kq["a1_luu_de_trong_dung_mat_khau_chung"] = RD.doc_cfg()["may"].get("m-rd-chua", {}).get("mk") == _MKC
 
+# (A10) mat khau WiFi AP + mat khau terminal: KHONG nam trong HTML, chi lay khi bam Hien, co ghi nhat ky
+from consolesystem.features.network import network as _NW  # noqa: E402
+from consolesystem.features.settings import settings as _ST  # noqa: E402
+_MKAP, _MKTM = "MkWifiAp-6612", "MkTerm-9048"
+_NW._doc_ap = lambda: ("ConsolePi-demo", _MKAP)
+_ST.get_term_credential = lambda: ("console", _MKTM)
+_h = [c.get("/wifi", headers=H).get_data(as_text=True), c.get("/settings", headers=H).get_data(as_text=True)]
+kq["a10_html_khong_co_mat_khau_ap_terminal"] = all(_MKAP not in x and _MKTM not in x and "data-mk" not in x for x in _h) and "xem-mat-khau-ap" in _h[0] and "xem-mat-khau-terminal" in _h[1]
+_r1 = c.post("/wifi/api/xem-mat-khau-ap", headers=H)
+_r2 = c.post("/settings/api/xem-mat-khau-terminal", headers=H)
+kq["a10_hien_tra_dung"] = _r1.get_json() == {"ok": True, "mk": _MKAP} and _r2.get_json() == {"ok": True, "mk": _MKTM} and "no-store" in _r1.headers.get("Cache-Control", "")
+_nk = open(_el.LOG_THAO_TAC, encoding="utf-8").read()
+kq["a10_co_ghi_nhat_ky_khong_lo_mat_khau"] = "Xem mật khẩu WiFi phát sóng (AP)" in _nk and "Xem mật khẩu terminal" in _nk and _MKAP not in _nk and _MKTM not in _nk and "POST /wifi/api" not in _nk
+
 print("KETQUA " + json.dumps(kq))
