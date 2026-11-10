@@ -114,7 +114,19 @@ def chuyen(url, thong_bao, ok=True):
     return redirect(url)
 
 
-def trang(body, chinh, tieu_de="Quản lý máy trạm", phu_de="Kiểm kê, bảo mật, triển khai và cấu hình máy Windows trong mạng"):
+# Tieu de (h1) theo TUNG TRANG thay vi "Quan ly may tram" chung cho moi trang (NV6 diem 7: Agent, May tinh, Trien khai
+# deu cung mot h1 -> khong biet minh dang o dau). Ten lay dung nhan menu trai; "Quan ly may tram" lui xuong dong phu.
+_TIEU_DE_RIENG = {"tq": "Tổng quan máy trạm"}
+PHU_DE_UEM = "Quản lý máy trạm"
+
+
+def trang(body, chinh, tieu_de=None, phu_de=None):
+    if tieu_de is None:
+        tieu_de = _TIEU_DE_RIENG.get(chinh) or next((n for m_, n, _h in TABS if m_ == chinh), "Quản lý máy trạm")
+        if phu_de is None:
+            phu_de = (PHU_DE_UEM + ": kiểm kê, bảo mật, triển khai và cấu hình máy Windows trong mạng" if chinh == "tq" else PHU_DE_UEM)
+    if phu_de is None:
+        phu_de = PHU_DE_UEM
     t = tb()
     thong = f'<div class="msg {"ok" if t[1] else "err"}">{_esc(t[0])}</div>' if t else ""
     canh = ""

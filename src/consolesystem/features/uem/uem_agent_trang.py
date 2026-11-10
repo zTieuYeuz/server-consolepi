@@ -14,6 +14,7 @@ from ui import uem_agent_goi as UG
 from ui import uem_pki as PKI
 from ui import uem_trang as T
 from ui.uem_trang import _esc, chip, chuyen, gio, may_theo_id, ten_may
+from ui.layout import svg_icon
 from consolesystem.core import duongdan as _DD
 
 MAX_BODY = UA.TOI_DA_BODY
@@ -116,32 +117,47 @@ def khung_ket_noi():
     ips = " ".join(chip(i, "xanh") for i in _ips_lan()) or '<span class="tk-ghi">Không có địa chỉ mạng</span>'
     luachon = "".join(f'<label style="white-space:nowrap;"><input type="checkbox" value="{_esc(v)}"{" checked" if i < 2 and (cd["domain"] or i == 0) else ""}> {_esc(n)}</label>' for i, (n, v) in enumerate(UG.dia_chi_chon()))
     dis = "" if ok else " disabled"
+    ly_do = "" if ok else ' aria-describedby="kn-ly"'      # nut vo hieu: trinh doc man hinh doc luon ly do (NV6 diem 6)
     return f"""<div class="card" id="kn" style="margin-top:14px;"><h3>Kết nối của agent</h3>
       <div class="tk-hang" style="align-items:center;gap:10px;"><b style="min-width:150px;">IP LAN của server</b><span id="kn-ips">{ips}</span>
         <span class="tk-ghi" id="kn-doi"></span></div>
       <p class="tk-ghi" style="margin:4px 0 14px;">Tự cập nhật khi server đổi IP. File đã tạo bằng IP LAN sẽ không còn đúng sau khi IP đổi; dùng domain để không phụ thuộc IP.</p>
       <form method="POST" action="/uem/quan-tri/agent/cai-dat" class="tk-f tk-hang" style="align-items:center;gap:10px;" onsubmit="return confirm('Lưu địa chỉ và cổng? Nếu đổi cổng, các agent đã cài trước đó vẫn nối cổng cũ và cần cài lại bằng file mới.');">
         <b style="min-width:150px;">Domain và cổng</b>
-        <input type="text" name="domain" value="{_esc(cd["domain"])}" placeholder="Domain hoặc IP công cộng (có thể bỏ trống)" style="margin:0;height:42px;min-width:260px;max-width:340px;">
-        <span>cổng</span><input type="number" name="cong" value="{cd["cong"]}" min="1024" max="65535" title="Cổng mTLS của agent (1024 đến 65535). Đổi cổng khác mặc định {PKI.CONG_TLS} để giảm bị dò quét." style="margin:0;height:42px;width:110px;">
-        <button type="submit" class="tk-nut">Lưu</button>
-        <span class="tk-ghi">{"Đang nghe cổng " + str(cd["cong"]) if ok else "Chưa bật cổng mTLS"}</span></form>
-      <div class="tk-hang" style="align-items:center;gap:10px;margin-top:14px;" id="kn-tao"><b style="min-width:150px;">Tạo file cài</b>
-        <input type="text" id="kn-ten" placeholder="Tên file (ví dụ Agent-VanPhong)" style="margin:0;height:42px;min-width:200px;max-width:240px;">
-        <span id="kn-dc" style="display:inline-flex;flex-wrap:wrap;gap:4px 14px;align-items:center;max-width:430px;" title="Tick nhiều địa chỉ: agent thử theo thứ tự này, địa chỉ nào không nối được thì chuyển sang địa chỉ kế tiếp">{luachon}</span>
-        <input type="text" id="kn-pk" autocomplete="off" placeholder="Passkey (để trống = không đặt)" title="Passkey bắt buộc nhập khi cài và khi gỡ agent trên máy. Chỉ lưu dấu băm, không xem lại được." style="margin:0;height:42px;min-width:200px;max-width:240px;"></div>
+        <div class="kn-o"><label for="kn-domain">Domain hoặc IP công cộng</label>
+          <input type="text" id="kn-domain" name="domain" value="{_esc(cd["domain"])}" placeholder="vd: vpn.congty.vn" aria-describedby="kn-domain-g" style="margin:0;height:42px;min-width:240px;max-width:320px;">
+          <span class="tk-ghi" id="kn-domain-g">Có thể bỏ trống nếu chỉ dùng trong LAN.</span></div>
+        <div class="kn-o"><label for="kn-cong">Cổng</label>
+          <input type="number" id="kn-cong" name="cong" value="{cd["cong"]}" min="1024" max="65535" aria-describedby="kn-cong-g" style="margin:0;height:42px;width:110px;">
+          <span class="tk-ghi" id="kn-cong-g">1024 đến 65535</span></div>
+        <div class="kn-o"><span class="kn-trong" aria-hidden="true">&nbsp;</span><button type="submit" class="tk-nut">Lưu</button>
+          <span class="tk-ghi">{"Đang nghe cổng " + str(cd["cong"]) if ok else "Chưa bật cổng mTLS"}</span></div></form>
+      <div class="tk-hang" style="align-items:flex-start;gap:10px;margin-top:14px;" id="kn-tao"><b style="min-width:150px;padding-top:24px;">Tạo file cài</b>
+        <div class="kn-o"><label for="kn-ten">Tên file</label>
+          <input type="text" id="kn-ten" placeholder="vd: Agent-VanPhong" style="margin:0;height:42px;min-width:200px;max-width:240px;"></div>
+        <div class="kn-o"><span class="kn-nhan" id="kn-dc-n">Agent nối về (theo thứ tự)</span>
+          <span id="kn-dc" role="group" aria-labelledby="kn-dc-n" aria-describedby="kn-dc-g" style="display:inline-flex;flex-wrap:wrap;gap:4px 14px;align-items:center;max-width:430px;min-height:42px;">{luachon}</span>
+          <span class="tk-ghi" id="kn-dc-g">Tick nhiều địa chỉ để có địa chỉ dự phòng: địa chỉ đầu không nối được thì agent thử địa chỉ kế tiếp.</span></div>
+        <div class="kn-o"><label for="kn-pk">Passkey</label>
+          <span class="kn-mk"><input type="password" id="kn-pk" autocomplete="new-password" aria-describedby="kn-pk-g" style="margin:0;height:42px;min-width:200px;max-width:240px;">
+          <button type="button" class="tk-nut" id="kn-pk-hien" aria-controls="kn-pk" aria-pressed="false">Hiện</button></span>
+          <span class="tk-ghi" id="kn-pk-g">Để trống = không đặt. Có passkey thì phải nhập khi cài và khi gỡ agent; chỉ lưu dấu băm, không xem lại được.</span></div></div>
       <div class="tk-hang" style="align-items:center;gap:10px;margin-top:8px;"><b style="min-width:150px;"></b>
         <label style="display:flex;gap:6px;align-items:center;margin:0;font-weight:500;font-size:13px;cursor:pointer;" title="Để dùng file MSI này trong Triển khai phần mềm (cài hàng loạt qua WinRM) mà không phải gõ passkey. Passkey được mã hóa bằng khóa riêng của Console System; file MSI vẫn chỉ chứa dấu băm.">
           <input type="checkbox" id="kn-tk" checked> Cho phép Triển khai phần mềm tự điền passkey (lưu mã hóa trên máy chủ)</label></div>
       <div class="tk-hang" style="align-items:center;gap:10px;margin-top:12px;"><b style="min-width:150px;"></b>
-        <button type="button" class="tk-nut chinh" id="kn-msi"{dis}>Tạo file MSI</button>
-        <button type="button" class="tk-nut chinh" id="kn-ps1"{dis}>Tạo script</button>
-        <button type="button" class="tk-nut chinh" id="kn-bat"{dis}>Tạo file .bat (chuột đúp là cài)</button>
-        <span class="tk-ghi">File chứa địa chỉ, dấu vân tay CA và một mã ghi danh; không chứa mật khẩu hay chứng chỉ.{"" if ok else " Bật kết nối an toàn ở khung trên trước."} Tick nhiều địa chỉ để agent tự chuyển sang địa chỉ dự phòng khi địa chỉ đầu không nối được (ví dụ domain khi ở ngoài, IP LAN khi ở công ty).</span></div>
+        <button type="button" class="tk-nut{" chinh" if ok else ""}" id="kn-msi"{dis}{ly_do}>Tạo file MSI</button>
+        <button type="button" class="tk-nut" id="kn-ps1"{dis}{ly_do}>Tạo script</button>
+        <button type="button" class="tk-nut" id="kn-bat"{dis}{ly_do}>Tạo file .bat (chuột đúp là cài)</button>
+        {"" if ok else '<span class="kn-ly" id="kn-ly">' + svg_icon("info") + 'Chưa bật kết nối an toàn: bấm <b>Bật kết nối an toàn</b> ở khung trên trước.</span>'}</div>
+      <p class="tk-ghi" style="margin:8px 0 0;">File chứa địa chỉ, dấu vân tay CA và một mã ghi danh; không chứa mật khẩu hay chứng chỉ.</p>
       <div id="kn-tl" style="display:none;margin-top:12px;"></div></div>{_JS_KN}"""
 
 
 _JS_KN = r"""<style>
+.kn-o{display:flex;flex-direction:column;gap:4px}.kn-o>label,.kn-o .kn-nhan{margin:0;font-size:13px;font-weight:500;color:var(--chu-mo)}
+.kn-o .kn-trong{font-size:13px}.kn-o>.tk-ghi{max-width:320px;font-size:12.5px}.kn-mk{display:inline-flex;gap:6px;align-items:center}
+.kn-ly{display:inline-flex;gap:6px;align-items:center;color:var(--msg-warn);font-size:13px}.kn-ly svg.i{width:16px;height:16px;color:var(--vang)}
 .tl{position:relative;margin:6px 0 0 8px;padding-left:26px;border-left:2px solid var(--vien,#2a3550)}
 .tl .b{position:relative;padding:5px 0 9px}.tl .b:before{content:"";position:absolute;left:-35px;top:9px;width:14px;height:14px;border-radius:50%;background:#2a3550;border:2px solid #0b1020}
 .tl .b.xong:before{background:#38c172}.tl .b.loi:before{background:#e3342f}.tl .b.dang:before{background:#f6ad55;animation:tlp 1s infinite}
@@ -164,6 +180,7 @@ function tao(loai){var f=new FormData();f.append('loai',loai);f.append('ten',doc
     fetch(location.pathname,{credentials:'same-origin'}).then(function(r){return r.text()}).then(function(h){var d=new DOMParser().parseFromString(h,'text/html'),n=d.getElementById('goi-ds'),o=document.getElementById('goi-ds');if(n&&o)o.innerHTML=n.innerHTML})}
   }).catch(function(){setTimeout(poll,1000)})})()
  }).catch(function(e){t.innerHTML='<div class="msg warn">'+E(e)+'</div>';nm.disabled=np.disabled=nb.disabled=false})}
+var pk=document.getElementById('kn-pk'),ph=document.getElementById('kn-pk-hien');ph.onclick=function(){var an=pk.type==='password';pk.type=an?'text':'password';ph.textContent=an?'Ẩn':'Hiện';ph.setAttribute('aria-pressed',an?'true':'false')};
 document.getElementById('kn-msi').onclick=function(){tao('msi')};document.getElementById('kn-ps1').onclick=function(){tao('ps1')};document.getElementById('kn-bat').onclick=function(){tao('bat')};
 var cu=null;function ip(){fetch('/uem/quan-tri/agent/thongtin.json',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
  var k=j.ips.join(',');if(cu!==null&&k!==cu){document.getElementById('kn-doi').textContent='IP vừa thay đổi'}cu=k;
@@ -240,7 +257,7 @@ def trang_admin():
         mau = {"online": "xanh", "offline": "vang", "chua_cai": ""}[tt]
         hang += (f'<tr><td><a href="/uem/may/{m["id"]}/agent"><b>{_esc(ten_may(m))}</b></a><div class="tk-ghi">{_esc(m["ip"])}</div></td><td>{chip(mt, mau)}</td>'
                  f'<td>{_esc(a.get("ban") or "—")}</td><td>{_esc(gio(a.get("luc_cuoi")) if a.get("luc_cuoi") else "—")}</td></tr>')
-    return (khung_tls() + khung_ket_noi() + khung_goi() + f'<div class="card" style="margin-top:14px;">{("<table class=tk-bang><tr><th>Máy</th><th>Agent</th><th>Phiên bản</th><th>Nhịp cuối</th></tr>" + hang + "</table>") if hang else "<p class=tk-ghi>Chưa có máy nào.</p>"}'
+    return (khung_tls() + khung_ket_noi() + khung_goi() + f'<h2 style="margin-top:22px;">Trạng thái agent trên các máy</h2><div class="card">{("<table class=tk-bang><tr><th>Máy</th><th>Agent</th><th>Phiên bản</th><th>Nhịp cuối</th></tr>" + hang + "</table>") if hang else "<p class=tk-ghi>Chưa có máy nào.</p>"}'
             f'<p class="tk-ghi">Phiên bản agent hiện hành: {UA.PHIEN_BAN}. Agent cũ tự cập nhật khi báo nhịp.</p></div>' + khung_tls_thu_gon() + khung_huong_dan())
 
 

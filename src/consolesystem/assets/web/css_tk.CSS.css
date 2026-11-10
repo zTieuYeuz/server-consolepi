@@ -58,4 +58,6 @@ body.cd-cu .tk-nut { min-height:44px; height:44px; }
 .tk-b small { color:var(--chu-mo2); display:block; overflow-wrap:anywhere; }
 .tk-nk { background:var(--pre-nen); color:var(--pre-chu); border:1px solid var(--vien); border-radius:10px; padding:10px 12px; font:12.5px/1.6 var(--mono); max-height:200px; overflow:auto; white-space:pre-wrap; }
 @media (max-width:760px) { .tk-bang { display:block; overflow-x:auto; } }
+/* Huy hieu trang thai khong vo dong tren dien thoai ('Mat lien lac' tung vo 3 dong - NV6 diem 7) */
+.tk-chip, .uem-tag { white-space:nowrap; }
 </style>

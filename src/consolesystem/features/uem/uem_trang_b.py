@@ -210,7 +210,7 @@ def trang_quan_tri(muc):
                      f'<form method="POST" action="/uem/may/{m["id"]}/quan-ly" style="display:inline;"><input type="hidden" name="chi" value="giam_sat"><input type="hidden" name="giam_sat" value="{"" if m.get("giam_sat", True) else "1"}">'
                      f'<button class="tk-nut">{"Vô hiệu" if m.get("giam_sat", True) else "Bật lại"}</button></form></td></tr>')
         return trang(con + f'<div class="card">{("<table class=tk-bang><tr><th>Máy</th><th>Trạng thái</th><th>Tài khoản</th><th>Báo cáo lúc</th><th></th></tr>" + hang + "</table>") if hang else "<p class=tk-ghi>Chưa có máy nào.</p>"}'
-                     f'<p class="tk-ghi">Danh sách máy dùng chung với <a href="/deployos/trienkhai/may">Triển khai phần mềm, Máy</a> và <a href="/deployos/trienkhai/may/quet">Quét mạng</a>. Máy chưa gán tài khoản quản trị thì chưa lấy được báo cáo: gán ở tab Quản lý của máy hoặc chọn nhiều máy ở trang Máy tính.</p></div>', "qt")
+                     f'<p class="tk-ghi">Danh sách máy dùng chung với <a href="/deployos/trienkhai/may">Triển khai phần mềm, Máy</a> và <a href="/deployos/trienkhai/may/quet">Quét mạng</a>. Máy chưa gán tài khoản quản trị thì chưa lấy được báo cáo: gán ở tab Quản lý của máy hoặc chọn nhiều máy ở trang Máy tính.</p></div>', "qt", tieu_de=dict(CON_QT).get(muc, "Quản trị"), phu_de="Quản lý máy trạm · Quản trị")
     if muc in ("the", "dia-diem", "metadata"):
         kho, ten = {"the": (UD.THE, "Thẻ"), "dia-diem": (UD.DIA_DIEM, "Địa điểm"), "metadata": (UD.METADATA, "Trường thông tin thêm")}[muc]
         ds = kho.doc()
@@ -226,9 +226,9 @@ def trang_quan_tri(muc):
         return trang(con + f'<div class="card">{("<table class=tk-bang><tr><th>Tên</th><th>Mô tả</th><th>Đang dùng</th><th></th></tr>" + hang + "</table>") if hang else "<p class=tk-ghi>Chưa có mục nào.</p>"}</div>'
                      f'<h2>{"Sửa" if sua else "Thêm"} {ten.lower()}</h2><div class="card"><form method="POST" action="/uem/quan-tri/{muc}/luu" class="tk-f"><input type="hidden" name="id" value="{(sua or {}).get("id", "")}">'
                      f'<label>Tên</label><input type="text" name="ten" value="{_esc((sua or {}).get("ten", ""))}" required maxlength="60"><label>Mô tả</label><input type="text" name="mo_ta" value="{_esc((sua or {}).get("mo_ta", ""))}" maxlength="200">{mau_o}'
-                     f'<div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Lưu</button></div></form></div>', "qt")
+                     f'<div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Lưu</button></div></form></div>', "qt", tieu_de=dict(CON_QT).get(muc, "Quản trị"), phu_de="Quản lý máy trạm · Quản trị")
     if muc == "agent":
-        return trang(con + UAT.trang_admin(), "qt")
+        return trang(con + UAT.trang_admin(), "qt", tieu_de=dict(CON_QT).get(muc, "Quản trị"), phu_de="Quản lý máy trạm · Quản trị")
     if muc == "cai-dat":
         cd = UD.cai_dat()
         return trang(con + f'''<div class="card"><form method="POST" action="/uem/quan-tri/cai-dat" class="tk-f">
@@ -237,7 +237,7 @@ def trang_quan_tri(muc):
           <label>Chu kỳ áp dụng profile (phút, từ 5 đến 1440)</label><input type="text" name="tan_suat_profile" value="{int(cd.get("tan_suat_profile", 30))}" style="max-width:140px;">
           <div style="margin-top:12px;"><button class="tk-nut chinh" type="submit">Lưu</button></div></form></div>
           <div class="card" style="margin-top:14px;"><h3>Danh mục WinGet</h3><p class="tk-ghi">{UW.so_goi():,} gói. Tự cập nhật mỗi 24 giờ khi có Internet.</p>
-          <form method="POST" action="/uem/trien-khai/danh-muc"><button class="tk-nut">Cập nhật ngay</button></form></div>''', "qt")
+          <form method="POST" action="/uem/trien-khai/danh-muc"><button class="tk-nut">Cập nhật ngay</button></form></div>''', "qt", tieu_de=dict(CON_QT).get(muc, "Quản trị"), phu_de="Quản lý máy trạm · Quản trị")
     if muc == "nhat-ky":
         tong = []
         ten = {m["id"]: ten_may(m) for m in DL.MAY.doc()}
@@ -246,7 +246,7 @@ def trang_quan_tri(muc):
                 tong.append((x["luc"], ten.get(mid, "(máy đã xóa)"), x))
         tong.sort(key=lambda t: -t[0])
         hang = [[gio(l), t, {"profile": "Profile", "trien_khai": "Triển khai", "tu_xa": "Điều khiển"}.get(x["nguon"], x["nguon"]), x["ten"], chip("Thành công" if x["ok"] else "Lỗi", "xanh" if x["ok"] else "do"), x["tb"]] for l, t, x in tong[:300]]
-        return trang(con + f'<div class="card">{bang(["Lúc", "Máy", "Nguồn", "Tác vụ", "Kết quả", "Chi tiết"], hang, "Chưa có tác vụ nào.")}</div>', "qt")
+        return trang(con + f'<div class="card">{bang(["Lúc", "Máy", "Nguồn", "Tác vụ", "Kết quả", "Chi tiết"], hang, "Chưa có tác vụ nào.")}</div>', "qt", tieu_de=dict(CON_QT).get(muc, "Quản trị"), phu_de="Quản lý máy trạm · Quản trị")
     abort(404)
 
 
