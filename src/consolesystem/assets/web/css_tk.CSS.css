@@ -60,4 +60,75 @@ body.cd-cu .tk-nut { min-height:44px; height:44px; }
 @media (max-width:760px) { .tk-bang { display:block; overflow-x:auto; } }
 /* Huy hieu trang thai khong vo dong tren dien thoai ('Mat lien lac' tung vo 3 dong - NV6 diem 7) */
 .tk-chip, .uem-tag { white-space:nowrap; }
+/* ===== B1 Mau A: bo loc gon + thanh thao tac noi (trang Danh sach may) ===== */
+/* PHUONG AN A - "Bo loc gon + thanh thao tac noi"
+   Thanh tren: 2 dong tren dien thoai (logo + nut | dai o trang thai cuon ngang) - da co o chung.css.
+   Bo loc: o tim + 2 bo loc hay dung (Nhom, Trang thai) + nut "Bo loc (n)".
+     PC: bam nut -> bung khung 6 bo loc con lai ngay duoi.
+     Dien thoai: bam nut -> ngan keo tu duoi len (bottom sheet) chua ca 8 bo loc,
+                 "Xoa loc" / "Xem N may" ghim day ngan.
+   Bo loc dang bat hien thanh vien thuoc co nut x de bo nhanh.
+   Thao tac hang loat: an han; tick >= 1 may thi hien thanh noi "Da chon N may" o day khung. */
+.uem-loc { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.uem-loc .uem-tim { flex: 1 1 260px; max-width: 360px; margin: 0; }
+.loc-o { display: flex; flex-direction: column; gap: 4px; margin: 0; font-size: 12.5px; color: var(--chu-mo); }
+.loc-o select { margin: 0; min-width: 170px; max-width: 220px; }
+.loc-nhan { font-size: 12.5px; color: var(--chu-mo); font-weight: 500; }
+.a-nut-loc { position: relative; }
+.a-nut-loc .so { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; background: var(--nhan); color: var(--chu-tren-nhan); font-size: 12px; font-weight: 700; }
+.a-them { display: none; width: 100%; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px;
+  padding: 14px; margin-top: 2px; background: var(--hang-nen); border: 1px solid var(--vien); border-radius: 12px; }
+.a-them.mo { display: grid; }
+.a-them .loc-o select { max-width: none; min-width: 0; width: 100%; }
+.a-dau-sheet, .a-chan-sheet, .a-nen { display: none; }
+.a-dem { margin-left: auto; align-self: center; }
+.a-dang-loc { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.a-dang-loc:empty { display: none; }
+.a-dang-loc button { min-height: 32px !important; padding: 4px 6px 4px 11px !important; border-radius: 999px; font-size: 13px;
+  background: var(--nhan-mo); color: var(--nhan); border: 1px solid transparent; font-weight: 600; gap: 4px; }
+.a-dang-loc button svg { width: 16px; height: 16px; }
+.a-dang-loc .xoa-het { background: transparent; color: var(--chu-mo); text-decoration: underline; }
+
+/* thanh thao tac noi */
+#f-hd { display: none; }
+#f-hd.co-chon { display: block; position: sticky; bottom: 12px; z-index: 5; background: var(--the-noi);
+  border: 1px solid var(--nhan) !important; border-radius: 14px; padding: 12px 14px !important; box-shadow: 0 10px 30px rgba(0,0,0,.28); }
+#f-hd > div:not(.a-bar):first-child { display: none; }
+.a-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.a-bar .a-so { font-weight: 700; color: var(--chu); white-space: nowrap; }
+.a-bar .a-bo { background: none; border: 0; color: var(--chu-mo); min-height: 36px; padding: 0 4px; text-decoration: underline; font-weight: 500; }
+#f-hd .hl-luoi { display: flex !important; flex-wrap: wrap; gap: 10px; align-items: flex-end; flex: 1; }
+#f-hd .hl-o { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+#f-hd .hl-o[hidden] { display: none; }
+#f-hd .hl-o select, #f-hd .hl-o input { min-width: 200px; margin: 0; }
+#f-hd > div:last-of-type { margin-top: 0 !important; }
+
+@media (max-width: 760px) {
+  .card:has(.uem-ds) { padding: 14px; }
+  .uem-loc .uem-tim { flex: 1 1 0; max-width: none; min-width: 0; }
+  .uem-loc > .loc-o { display: none; }                 /* tren dien thoai moi bo loc nam trong ngan keo */
+  .a-dem { width: 100%; margin: 0; }
+  .a-them { display: flex !important; flex-direction: column; position: fixed; left: 0; right: 0; bottom: 0; z-index: 2147483002;  /* tren ca nut ban phim ao (2147483000) */
+    max-height: 82vh; overflow-y: auto; margin: 0; padding: 0 16px; border-radius: 20px 20px 0 0; background: var(--nen-noi);
+    box-shadow: 0 -20px 60px rgba(0,0,0,.45); transform: translateY(105%); transition: transform .28s var(--muot); gap: 12px; }
+  .a-them.mo { transform: none; }
+  .a-them .loc-o { display: flex; }
+  .a-them .loc-o select { min-height: 48px; }
+  .a-dau-sheet { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0;
+    background: var(--nen-noi); padding: 14px 0 6px; font-size: 17px; font-weight: 700; z-index: 1; }
+  .a-dau-sheet::before { content: ""; position: absolute; top: 6px; left: 50%; width: 40px; height: 4px; margin-left: -20px;
+    border-radius: 4px; background: var(--vien-ro); }
+  .a-chan-sheet { display: flex; gap: 10px; position: sticky; bottom: 0; background: var(--nen-noi); padding: 12px 0 18px;
+    border-top: 1px solid var(--vien); margin-top: 4px; }
+  .a-chan-sheet button { flex: 1; }
+  .a-nen.mo { display: block; position: fixed; inset: 0; background: rgba(5,8,12,.55); z-index: 2147483001; }
+  #f-hd.co-chon { position: fixed; left: 10px; right: 10px; bottom: 88px; z-index: 2147482991; }
+  #f-hd .hl-luoi { flex-direction: column; align-items: stretch; width: 100%; }
+  #f-hd .hl-o select, #f-hd .hl-o input { min-width: 0; width: 100%; max-width: none; }
+  .a-bar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .a-bar .a-so { display: flex; align-items: center; justify-content: space-between; }
+  .a-bar .a-bo { position: absolute; right: 14px; top: 10px; }
+  .a-bar .tk-nut.chinh, .a-bar .tk-nut.do { width: 100%; }
+}
 </style>

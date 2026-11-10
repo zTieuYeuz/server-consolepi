@@ -120,7 +120,7 @@ _TIEU_DE_RIENG = {"tq": "Tổng quan máy trạm"}
 PHU_DE_UEM = "Quản lý máy trạm"
 
 
-def trang(body, chinh, tieu_de=None, phu_de=None):
+def trang(body, chinh, tieu_de=None, phu_de=None, cuoi=""):
     if tieu_de is None:
         tieu_de = _TIEU_DE_RIENG.get(chinh) or next((n for m_, n, _h in TABS if m_ == chinh), "Quản lý máy trạm")
         if phu_de is None:
@@ -133,7 +133,7 @@ def trang(body, chinh, tieu_de=None, phu_de=None):
     if not DC.co_san():
         canh = ('<div class="msg warn">Chưa cài thư viện WinRM: chạy <code>sudo bash /opt/console-pi/tools/cai-winrm.sh</code> trong Terminal '
                 "của Console System rồi tải lại trang.</div>")
-    return render_page(_CSS_TK + CSS + thong + canh + body + JS_BANG, active=next((h for m_, _n, h in TABS if m_ == chinh), "/uem"), title=tieu_de, subtitle=phu_de)
+    return render_page(_CSS_TK + CSS + thong + canh + body + JS_BANG + cuoi, active=next((h for m_, _n, h in TABS if m_ == chinh), "/uem"), title=tieu_de, subtitle=phu_de)
 
 
 # ----------------------------------------------------------------- tien ich du lieu
@@ -417,7 +417,143 @@ def trang_may():
       </div>
       <style>@media(min-width:760px){{.hl-luoi{{grid-template-columns:repeat(3,1fr)!important;}}}}</style>
       <div style="display:flex;justify-content:flex-end;margin-top:12px;"><button type="submit" class="tk-nut chinh">Thực hiện</button></div></form></div>"""
-    return trang(body, "may")
+    return trang(body, "may", cuoi=JS_MAY_B1)
+
+
+# JS B1 Mau A (bo loc gon + thanh thao tac noi), chay sau JS_BANG; chi tac dung o trang Danh sach may
+JS_MAY_B1 = r"""<script>
+/* chay SAU JS_BANG (trang(..., cuoi=JS_MAY_B1)): JS_BANG bat cac o loc luc khoi dong, di chuyen o loc truoc no la bo loc mat tac dung. Khong dung setTimeout: __csGen=0 giua luc tai trang huy timer. */
+(function(){ if(!document.querySelector('.uem-loc .uem-chon[data-k="nhom"]')) return;
+/* B1 - PHAN CHUNG cho ca 2 phuong an (trang /uem/may). NV6 10/11/2026.
+   Mau dung bang cach phu len trang that; khi lam that NV3 sinh thang HTML nay o uem_trang.trang_may().
+   - Nhan that cho 8 bo loc (truoc day chi co chu "Moi ..." trong o, trinh doc man hinh khong doc duoc).
+   - Thao tac hang loat: chi hien o can cho viec dang chon (them vao nhom -> chi o Nhom;
+     dat dia diem -> chi o Dia diem...), thay vi luc nao cung bay 6 o. */
+(function () {
+  var NHAN = { nhom: 'Nhóm máy', os: 'Hệ điều hành', hang: 'Hãng', ram: 'Dung lượng RAM', dia: 'Loại ổ đĩa',
+               the: 'Thẻ', dd: 'Địa điểm', tt: 'Trạng thái' };
+  document.querySelectorAll('.uem-loc .uem-chon').forEach(function (s) {
+    var k = s.getAttribute('data-k'), w = document.createElement('label');
+    w.className = 'loc-o'; w.setAttribute('data-k', k);
+    var t = document.createElement('span'); t.className = 'loc-nhan'; t.textContent = NHAN[k] || k;
+    s.parentNode.insertBefore(w, s); w.appendChild(t); w.appendChild(s);
+    s.options[0].textContent = 'Tất cả';
+  });
+  var tim = document.querySelector('.uem-loc .uem-tim');
+  if (tim) { tim.setAttribute('aria-label', 'Tìm máy'); tim.placeholder = 'Tìm tên, IP, người dùng…'; }
+
+  var f = document.getElementById('f-hd');
+  if (!f) return;
+  var viec = f.querySelector('[name=viec]');
+  var CAN = { them_nhom: ['nhom'], bo_nhom: ['nhom'], nhom_moi: ['nhom_moi'], them_the: ['the'], bo_the: ['the'],
+              dia_diem: ['dd'], bao_cao: ['tk'] };
+  var NHAN_HL = { viec: 'Việc cần làm', tk: 'Tài khoản WinRM (không bắt buộc)', nhom: 'Nhóm máy', nhom_moi: 'Tên nhóm mới', the: 'Thẻ', dd: 'Địa điểm' };
+  ['viec', 'tk', 'nhom', 'nhom_moi', 'the', 'dd'].forEach(function (n) {
+    var el = f.querySelector('[name=' + n + ']'); if (!el) return;
+    var w = document.createElement('label'); w.className = 'hl-o'; w.setAttribute('data-n', n);
+    var t = document.createElement('span'); t.className = 'loc-nhan'; t.textContent = NHAN_HL[n];
+    el.parentNode.insertBefore(w, el); w.appendChild(t); w.appendChild(el);
+    if (el.tagName === 'SELECT' && /^\(/.test(el.options[0].textContent)) el.options[0].textContent = 'Chọn…';
+    if (n === 'nhom_moi') el.placeholder = 'ví dụ: Phòng Kế toán';
+  });
+  function hienO() {
+    var can = CAN[viec.value] || [];
+    f.querySelectorAll('.hl-o').forEach(function (w) {
+      var n = w.getAttribute('data-n'); w.hidden = n !== 'viec' && can.indexOf(n) < 0;
+    });
+    var ok = f.querySelector('button[type=submit]');
+    if (ok) { ok.className = viec.value === 'xoa' || viec.value === 'tat' ? 'tk-nut do' : 'tk-nut chinh'; }
+  }
+  viec.addEventListener('change', hienO); hienO();
+  window.csDemChon = function () { return document.querySelectorAll('input[name=may][form=f-hd]:checked').length; };
+})();
+
+/* PHUONG AN A - xem A.css. Chay SAU chung.js. */
+(function () {
+  var loc = document.querySelector('.uem-loc'); if (!loc) return;
+  var tm = loc.querySelector('.uem-tim'); if (tm) tm.placeholder = 'Tìm tên, IP…';
+  var o = {}; loc.querySelectorAll('.loc-o').forEach(function (w) { o[w.getAttribute('data-k')] = w; });
+  var dem = loc.querySelector('.tk-ghi'); dem.classList.add('a-dem');
+  var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var LOC = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>';
+
+  var nut = document.createElement('button'); nut.type = 'button'; nut.className = 'tk-nut a-nut-loc';
+  nut.setAttribute('aria-expanded', 'false'); nut.setAttribute('aria-controls', 'a-them');
+  var them = document.createElement('div'); them.id = 'a-them'; them.className = 'a-them';
+  them.setAttribute('role', 'group'); them.setAttribute('aria-label', 'Bộ lọc');
+  them.innerHTML = '<div class="a-dau-sheet"><span>Bộ lọc</span><button type="button" class="tk-nut a-dong" aria-label="Đóng">' + X + '</button></div>';
+  var nen = document.createElement('div'); nen.className = 'a-nen';
+  var dang = document.createElement('div'); dang.className = 'a-dang-loc';
+  var chan = document.createElement('div'); chan.className = 'a-chan-sheet';
+  chan.innerHTML = '<button type="button" class="tk-nut a-xoa">Xoá lọc</button><button type="button" class="tk-nut chinh a-xem">Xem máy</button>';
+
+  var hep = matchMedia('(max-width:760px)');
+  function bay() {
+    // PC: Nhom + Trang thai nam ngoai; 6 bo loc con lai trong khung bung. Dien thoai: ca 8 trong ngan keo.
+    if (hep.matches) { ['nhom', 'tt'].forEach(function (k) { them.insertBefore(o[k], chan); }); }
+    else { loc.insertBefore(o.nhom, nut); loc.insertBefore(o.tt, nut); }
+    ['os', 'hang', 'ram', 'dia', 'the', 'dd'].forEach(function (k) { them.insertBefore(o[k], chan); });
+    // Dien thoai: ngan keo + nen mo nam thang duoi <body> de khong bi khung noi dung (stacking context) de len
+    if (hep.matches) document.body.appendChild(them); else loc.insertBefore(them, dang);
+    // Thanh "Da chon N may" (position:fixed) cung phai ra <body>: .content co animation fill-mode both nen
+    // la "containing block" cua moi phan tu fixed ben trong -> fixed bi tinh theo khung noi dung, nam duoi thanh duoi.
+    var fh = document.getElementById('f-hd'), the_ = document.querySelector('.uem-ds');
+    if (fh) { if (hep.matches) document.body.appendChild(fh); else if (the_ && fh.parentNode === document.body) the_.parentNode.appendChild(fh); }
+  }
+  var sels = document.querySelectorAll('.uem-loc .uem-chon');
+  loc.insertBefore(nut, dem); loc.appendChild(them); them.appendChild(chan); loc.appendChild(dang); document.body.appendChild(nen);
+  bay(); hep.addEventListener('change', bay);
+  function veLai() {
+    var n = 0, an = 0; dang.innerHTML = '';
+    sels.forEach(function (s) {
+      if (!s.value) return; n++;
+      var w = s.closest('.loc-o'), k = w.getAttribute('data-k');
+      if (!hep.matches && (k === 'nhom' || k === 'tt')) {} else an++;
+      var b = document.createElement('button'); b.type = 'button';
+      b.innerHTML = w.querySelector('.loc-nhan').textContent + ': ' + s.options[s.selectedIndex].textContent + X;
+      b.setAttribute('aria-label', 'Bỏ lọc ' + w.querySelector('.loc-nhan').textContent);
+      b.onclick = function () { s.value = ''; s.dispatchEvent(new Event('change')); };
+      dang.appendChild(b);
+    });
+    if (n > 1) { var h = document.createElement('button'); h.type = 'button'; h.className = 'xoa-het'; h.textContent = 'Xoá tất cả';
+      h.onclick = xoaHet; dang.appendChild(h); }
+    var so = hep.matches ? n : an;
+    nut.innerHTML = LOC + (hep.matches ? 'Bộ lọc' : 'Bộ lọc khác') + (so ? ' <span class="so">' + so + '</span>' : '');
+    chan.querySelector('.a-xem').textContent = 'Xem ' + (dem.querySelector('.uem-dem').textContent.split(' / ')[0] || '') + ' máy';
+  }
+  function xoaHet() { sels.forEach(function (s) { s.value = ''; }); if (sels[0]) sels[0].dispatchEvent(new Event('change')); }
+  function mo(v) {
+    them.classList.toggle('mo', v); nen.classList.toggle('mo', v && hep.matches); nut.setAttribute('aria-expanded', v ? 'true' : 'false');
+    if (v && hep.matches) setTimeout(function () { them.querySelector('select').focus(); }, 60);
+    if (!v && hep.matches) nut.focus();
+  }
+  nut.onclick = function () { mo(!them.classList.contains('mo')); };
+  nen.onclick = function () { mo(false); };
+  them.querySelector('.a-dong').onclick = function () { mo(false); };
+  chan.querySelector('.a-xem').onclick = function () { mo(false); };
+  chan.querySelector('.a-xoa').onclick = xoaHet;
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && them.classList.contains('mo')) mo(false); });
+  sels.forEach(function (s) { s.addEventListener('change', function () { setTimeout(veLai, 0); }); });
+  veLai();
+
+  // Thanh thao tac noi khi da tick may
+  var f = document.getElementById('f-hd'); if (!f) return;
+  var bar = document.createElement('div'); bar.className = 'a-bar';
+  bar.innerHTML = '<span class="a-so"></span><button type="button" class="a-bo">Bỏ chọn</button>';
+  f.insertBefore(bar, f.firstChild);
+  var luoi = f.querySelector('.hl-luoi'), ok = f.querySelector('button[type=submit]');
+  bar.appendChild(luoi); bar.appendChild(ok); f.querySelectorAll(':scope > div:not(.a-bar)').forEach(function (d) { d.style.display = 'none'; });
+  function capNhat() {
+    var n = window.csDemChon(); f.classList.toggle('co-chon', n > 0);
+    bar.querySelector('.a-so').textContent = 'Đã chọn ' + n + ' máy';
+  }
+  bar.querySelector('.a-bo').onclick = function () { document.querySelectorAll('input[name=may][form=f-hd]:checked').forEach(function (c) { c.checked = false; }); capNhat(); };
+  document.addEventListener('change', function (e) { if (e.target.name === 'may') capNhat(); });
+  capNhat();
+})();
+
+})();
+</script>"""
 
 
 # ----------------------------------------------------------------- chi tiet may

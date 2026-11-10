@@ -594,3 +594,54 @@ body.cd-pc.thu-gon .side { width:72px; flex:0 0 72px; }
 
 /* chuyen trang khong tai lai ca trang (layout _NAV_JS) */
 .wrap .content.dang-tai { opacity:.55; pointer-events:none; transition:opacity .15s; }
+
+/* ===== B1 (NV6 10/11/2026, anh chon Mau A): LOI-002 tran ngang 375px + bang may thanh the tren dien thoai ===== */
+/* B1 - PHAN CHUNG cho ca 2 phuong an (khong phai lua chon, la sua loi LOI-002).
+   NV6 10/11/2026. Ap vao cuoi layout.BASE_CSS.css khi anh chon xong.
+
+   1) Tran ngang 375px: o Che do cam ung, "body.cd-cu .top{flex-wrap:nowrap}" va
+      "body.cd-cu .top .chips{flex-wrap:nowrap}" thang quy tac dien thoai -> 2 o trang thai
+      day trang rong 619px. Duoi 760px: thanh tren LUON xuong dong, o trang thai khong
+      bao gio rong hon man hinh.
+   2) Thanh noi duoi che nut cuoi form: scroll-padding-bottom de moi lan cuon toi / focus
+      (Tab) mot o, trinh duyet chua cho thanh duoi (WCAG 2.4.11 "focus khong bi che").
+   3) Bang may -> danh sach the tren dien thoai: ten may khong bi ngat 3 dong. */
+@media (max-width: 760px) {
+  html { scroll-padding-bottom: 104px; }
+  body.cd-cu .top, body.cd-pc .top { flex-wrap: wrap; padding: 8px 12px; gap: 8px; }
+  body.cd-cu .top .chips, body.cd-pc .top .chips, .top.f3 .chips {
+    flex: 1 1 100% !important; order: 9; min-width: 0; max-width: 100%;
+    flex-wrap: nowrap !important; overflow-x: auto !important; max-height: none !important;
+    scrollbar-width: none; justify-content: flex-start; }
+  .top .chips::-webkit-scrollbar { display: none; }
+  .top .chip { flex: none; }
+  body.cd-cu .top .chip { padding: 6px 11px; font-size: 12.5px; border-radius: 999px; }
+  body.cd-cu .top .chip .v, body.cd-cu .top .chip .k { font-size: 12.5px; }
+  .top .chip .kd { display: none; }                       /* bo "(ens192)" tren man hep */
+  body.cd-cu .top .act .btn { min-height: 44px; padding: 8px 11px; }
+  /* ten trang hien logo o ca 2 che do (truoc day che do PC tren dien thoai khong co logo) */
+  body.cd-pc .top .ten-cu { display: flex; }
+  .top .ten-cu { font-size: 15px; gap: 8px; }
+  .top .ten-cu img { width: 30px; height: 30px; }
+  .top .tim { display: none !important; }                 /* thanh duoi da co nut Tim */
+  .top .act { margin-left: auto; }
+
+  /* Bang may -> the */
+  .uem-bang-cuon table, .uem-bang-cuon tbody { display: block; width: 100%; }
+  .uem-bang-cuon thead { display: none; }
+  .uem-bang-cuon tbody tr { display: grid; grid-template-columns: 34px minmax(0,1fr) auto;
+    column-gap: 10px; row-gap: 2px; padding: 12px 4px; border-bottom: 1px solid var(--vien); align-items: start; }
+  .uem-bang-cuon td { border: 0 !important; padding: 0 !important; font-size: 14px; }
+  .uem-bang-cuon td:nth-child(1) { grid-row: 1 / span 3; padding-top: 2px !important; }
+  .uem-bang-cuon td:nth-child(2) { grid-column: 2; min-width: 0; }
+  .uem-bang-cuon td:nth-child(2) b { display: block; }   /* xuong dong o dau gach (PC-MARKETING- / 07), khong cat chu */
+  .uem-bang-cuon td:nth-child(7) { grid-column: 3; grid-row: 1; text-align: right; white-space: nowrap; font-size: 13px; }
+  .uem-bang-cuon td:nth-child(7) .tk-ghi { display: none; }
+  .uem-bang-cuon td:nth-child(3) { grid-column: 2 / 4; color: var(--chu-mo); font-size: 13px; }
+  .uem-bang-cuon td:nth-child(3) .tk-ghi, .uem-bang-cuon td:nth-child(4), .uem-bang-cuon td:nth-child(5) { display: none; }
+  .uem-bang-cuon td:nth-child(6) { grid-column: 2 / 4; font-size: 12.5px; }
+  .uem-bang-cuon td:nth-child(6):empty, .uem-bang-cuon td:nth-child(6):not(:has(.uem-tag, span)) { display: none; }
+}
+/* Huy hieu trang thai khong vo dong (muc 7 danh gia, dung chung) */
+.uem-tag, .tk-chip, .chip-tt { white-space: nowrap; }
+@media (max-width: 760px) { .rd-tb { display: block; overflow-x: auto; max-width: 100%; } }   /* bang RustDesk tran 445px o 375px */
