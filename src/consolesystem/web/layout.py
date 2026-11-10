@@ -902,24 +902,40 @@ import re as _re
 # "cac bang xac nhan deu phai popup ra giua"). Khong sua tung trang: thay window.confirm - lan dau tra
 # false (chan hanh dong) va hien popup; bam dong y thi lap lai dung su kien goc (submit / click / change)
 # voi confirm tra true. Trang moi cu viet confirm('...') nhu thuong la tu duoc popup.
+#
+# BAN PHIM (NV6 10/11/2026 - loi that: popup mo la focus san o "Dong y" ke ca khi XOA, nen bam Enter theo
+# thoi quen la xoa luon; Tab lai thoat ra trang phia sau):
+#   - thao tac NGUY HIEM (xoa, go, reset, tat, dung, ket thuc, khoi dong lai, giam bao mat...): nut Dong y to do
+#     va focus dat san vao "Huy" -> Enter = Huy. Thao tac thuong: focus vao "Dong y" nhu cu.
+#   - Tab / Shift+Tab chi vong trong popup; Esc = Huy; dong popup thi tra focus ve nut da mo no.
+#   - role=alertdialog + aria-labelledby/describedby de trinh doc man hinh doc dung tieu de va noi dung.
 _XN_JS = """<div id="xn-nen" hidden style="position:fixed;inset:0;z-index:9000;background:rgba(5,8,12,.62);display:flex;align-items:center;justify-content:center;padding:16px;">
-<div role="dialog" aria-modal="true" style="background:var(--the,#141A23);border:1px solid var(--vien-ro,#2B3746);border-radius:14px;max-width:460px;width:100%;padding:20px 22px;box-shadow:0 18px 50px rgba(0,0,0,.5);">
-<div style="font-weight:600;font-size:16px;margin-bottom:8px;">Xác nhận</div>
+<div role="alertdialog" aria-modal="true" aria-labelledby="xn-tieude" aria-describedby="xn-noi" style="background:var(--the,#141A23);border:1px solid var(--vien-ro,#2B3746);border-radius:14px;max-width:460px;width:100%;padding:20px 22px;box-shadow:0 18px 50px rgba(0,0,0,.5);">
+<div id="xn-tieude" style="font-weight:600;font-size:16px;margin-bottom:8px;">Xác nhận</div>
 <div id="xn-noi" style="white-space:pre-wrap;line-height:1.5;color:var(--chu,#E3E8EF);"></div>
 <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
 <button type="button" class="gray" id="xn-huy">Huỷ</button><button type="button" id="xn-ok">Đồng ý</button></div></div></div>
 <script>
 (function(){
   var nen=document.getElementById('xn-nen'), noi=document.getElementById('xn-noi'), ok=document.getElementById('xn-ok'), huy=document.getElementById('xn-huy');
-  var goc=window.confirm, qua=false, lam=null;
+  var goc=window.confirm, qua=false, lam=null, truoc=null, dau=ok;
+  var NGUY=/xo[aá]|x[oó]a|g[ỡo]|reset|kh[oô]i ph|c[aả]nh b[aá]o|ghi [dđ][eè]|hu[ỷy]|tắt|dừng|kết thúc|khởi động lại|giảm bảo mật/i;
   nen.hidden=true; nen.style.display='none';
-  function dong(){nen.style.display='none'; nen.hidden=true; lam=null;}
-  function mo(msg, fn){noi.textContent=msg; lam=fn; ok.className=/xo[aá]|x[oó]a|g[ỡo]|reset|kh[oô]i ph|c[aả]nh b[aá]o|ghi [dđ][eè]|hu[ỷy]/i.test(msg)?'red':'';
-    nen.hidden=false; nen.style.display='flex'; ok.focus();}
+  function dong(){var t=truoc; nen.style.display='none'; nen.hidden=true; lam=null; truoc=null;
+    if(t&&t.focus&&document.contains(t)){try{t.focus({preventScroll:true});}catch(e){}}}
+  function mo(msg, fn){truoc=document.activeElement; noi.textContent=msg; lam=fn;
+    var nguy=NGUY.test(msg); ok.className=nguy?'red':''; dau=nguy?huy:ok;
+    nen.hidden=false; nen.style.display='flex'; dau.focus();}
   ok.onclick=function(){var f=lam; dong(); if(f){qua=true; try{f();}finally{qua=false;}}};
   huy.onclick=dong;
   nen.addEventListener('click',function(e){if(e.target===nen)dong();});
-  document.addEventListener('keydown',function(e){if(!nen.hidden&&e.key==='Escape')dong();});
+  document.addEventListener('keydown',function(e){
+    if(nen.hidden) return;
+    if(e.key==='Escape'){e.preventDefault(); e.stopPropagation(); dong(); return;}
+    if(e.key==='Tab'){var ds=[huy,ok], i=ds.indexOf(document.activeElement); e.preventDefault();
+      i=e.shiftKey?(i<=0?ds.length-1:i-1):(i<0||i>=ds.length-1?0:i+1); ds[i].focus();}
+  },true);
+  document.addEventListener('focusin',function(e){if(!nen.hidden&&!nen.contains(e.target))dau.focus();});
   window.confirm=function(msg){
     if(qua) return true;
     var ev=window.event, t=ev&&ev.target, fn=null;

@@ -29,7 +29,7 @@
   --vien-ro:  #2A323E;
   --chu:      #E7EAF0;
   --chu-mo:   #98A1B0;
-  --chu-mo2:  #7A8496;
+  --chu-mo2:  #8690A1;   /* >= 5.2:1 tren moi nen toi (ca --the-noi); #7A8496 cu chi 4.49:1 tren --the-noi (NV6 10/11/2026) */
   --nhan:     #6C9CFF;
   --nhan-dam: #8AB1FF;
   --nhan-mo:  rgba(108,156,255,.14);
@@ -55,7 +55,7 @@
    o Che do PC. Chi doi bien, khong doi bo cuc. */
 body.nen-sang {
   --nen:#F3F4F6; --nen-noi:#FFFFFF; --the:#FFFFFF; --the-noi:#F6F7F9;
-  --vien:#E4E7EC; --vien-ro:#CBD1DA; --chu:#12161D; --chu-mo:#505A6A; --chu-mo2:#6B7586;
+  --vien:#E4E7EC; --vien-ro:#CBD1DA; --chu:#12161D; --chu-mo:#505A6A; --chu-mo2:#5F6879;   /* >= 4.8:1 tren moi nen sang; #6B7586 cu chi 4.23:1 tren --nen, chua dat WCAG AA */
   --nhan:#2358D8; --nhan-dam:#1B47B3; --nhan-mo:#E7EEFF;
   --xanh:#157A4A; --xanh-mo:#E3F6EA; --vang:#9A5B07; --vang-mo:#FEF3DC;
   --do:#C62828; --do-mo:#FDE7E7;
