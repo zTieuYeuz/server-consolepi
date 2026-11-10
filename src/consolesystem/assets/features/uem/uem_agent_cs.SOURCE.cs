@@ -374,8 +374,8 @@ public class CsAgent : ServiceBase
                 ProcessStartInfo psi = new ProcessStartInfo();
                 // Ca hai chay trong cmd da "chcp 65001": PowerShell ke thua bang ma UTF-8 cua console an -> tieng Viet vao/ra dung.
                 psi.FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
-                psi.Arguments = ps ? "/Q /C chcp 65001 >nul & \"" + Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe") + "\" -NoLogo -NoProfile -ExecutionPolicy Bypass -Command -"
-                                   : "/Q /K chcp 65001 >nul";
+                psi.Arguments = ps ? "/Q /C chcp 65001>nul & \"" + Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe") + "\" -NoLogo -NoProfile -ExecutionPolicy Bypass -Command -"
+                                   : "/Q /K chcp 65001>nul";
                 psi.UseShellExecute = false; psi.CreateNoWindow = true;
                 psi.RedirectStandardInput = true; psi.RedirectStandardOutput = true; psi.RedirectStandardError = true;
                 psi.WorkingDirectory = Environment.GetEnvironmentVariable("SystemDrive") + "\\";
