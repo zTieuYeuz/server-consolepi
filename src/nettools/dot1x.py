@@ -120,11 +120,11 @@ def dot1x_route():
         eap_methods=EAP_METHODS, phase2_methods=PHASE2_METHODS,
         radius_ip=f.get("radius_ip") if ran else None,
         radius_port=f.get("radius_port") if ran else 1812,
-        radius_secret=f.get("radius_secret") if ran else None,
+        radius_secret=None,
         eap=f.get("eap") if ran else "PEAP",
         phase2=f.get("phase2") if ran else "MSCHAPV2",
         identity=f.get("identity") if ran else None,
-        password=f.get("password") if ran else None,
+        password=None,
     )
 
 

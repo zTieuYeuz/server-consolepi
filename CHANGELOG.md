@@ -11,6 +11,7 @@
 - **Kết quả có dấu tiếng Việt** (TightVNC, kiểm DNS/TLS); mã lỗi WinGet -1073741515 báo "WinGet không chạy được trên máy này".
 - **RustDesk: mật khẩu không còn nằm trong trang (LỖI-003):** cả mật khẩu chung lẫn mật khẩu từng máy không còn trong HTML hay danh sách JSON; chỉ lấy khi bấm Hiện hoặc Kết nối, và mỗi lần lấy đều ghi vào nhật ký thao tác (không ghi mật khẩu). Form lưu ID của máy chưa có ID: để trống mật khẩu = dùng mật khẩu chung.
 - **Mật khẩu WiFi phát sóng (AP) và mật khẩu terminal không còn nằm trong trang (A10, cùng loại LỖI-003):** chỉ lấy khi bấm Hiện, có ghi nhật ký thao tác (không ghi mật khẩu).
+- **Key Windows trong kịch bản cài không điền sẵn ra trang (A10):** ô chỉ gợi ý 5 ký tự cuối ("Đã lưu: …-ABCDE - để trống = giữ nguyên"); kịch bản cũ có key giữ nguyên khi lưu lại không nhập; tích "Xóa khóa đã lưu" để bỏ. Công cụ mạng Netmiko và 802.1X không trả lại mật khẩu/radius secret vừa gõ (ô để trống; bước xem trước Netmiko hỏi nhập lại mật khẩu thiết bị).
 - **Ping nhiều đích (LỖI-001):** nhập quá 8 đích thì báo rõ đích nào bị bỏ qua; thông báo lỗi ping/traceroute có dấu tiếng Việt.
 - **Bộ kiểm:** `thu-uem.py` dùng cổng cầu nối riêng (hết chập chờn khi cổng 8895 đang bị tiến trình khác giữ); nhật ký của test ghi vào thư mục tạm (`CONSOLE_PI_LOG`), không ghi `/var/log` của máy chạy test.
 - **Nguồn điện:** máy không phải Raspberry Pi không còn hiện nút Khởi động lại/Tắt máy. **Nhật ký:** tab Log chỉ còn một ô tìm. **Profile:** hỏi xác nhận khi lưu profile đang bật áp dụng cho tất cả máy.

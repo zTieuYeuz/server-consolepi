@@ -37,7 +37,7 @@
         <label>RADIUS Port:</label>
         <input type="number" name="radius_port" value="{{ radius_port or 1812 }}" style="max-width:100px;">
         <label>Shared Secret:</label>
-        <input type="text" name="radius_secret" value="{{ radius_secret or '' }}" required>
+        <input type="password" name="radius_secret" value="" autocomplete="new-password" required>
 
         <label>EAP Method:</label>
         <select name="eap" id="eapSel" onchange="togglePhase2()">
@@ -58,7 +58,7 @@
         <label>Identity/Username:</label>
         <input type="text" name="identity" value="{{ identity or '' }}" required>
         <label>Password:</label>
-        <input type="password" name="password" value="{{ password or '' }}" required>
+        <input type="password" name="password" value="" autocomplete="new-password" required>
 
         <button type="submit">Chạy test</button>
     </form>

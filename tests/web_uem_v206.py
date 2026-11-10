@@ -160,4 +160,31 @@ kq["a10_hien_tra_dung"] = _r1.get_json() == {"ok": True, "mk": _MKAP} and _r2.ge
 _nk = open(_el.LOG_THAO_TAC, encoding="utf-8").read()
 kq["a10_co_ghi_nhat_ky_khong_lo_mat_khau"] = "Xem mật khẩu WiFi phát sóng (AP)" in _nk and "Xem mật khẩu terminal" in _nk and _MKAP not in _nk and _MKTM not in _nk and "POST /wifi/api" not in _nk
 
+# (A10b) Key Windows trong kich ban cai: khong dien san ra trang, de trong = giu, tick Xoa = bo; netmiko/dot1x khong tra lai mat khau vua go
+from werkzeug.datastructures import MultiDict  # noqa: E402
+from consolesystem.features.deploy_os import dosui_kichban as _KB  # noqa: E402
+_KEY = "AAAAA-BBBBB-CCCCC-DDDDD-EEEEE"
+_d = {"os_ho": "windows", "ten_may": "PC1", "ten_may_che_do": "co_dinh", "mk_admin": "x", "product_key": _KEY, "bat_admin": True}
+with app.test_request_context("/"):
+    _loi1 = _KB._nhan_du_lieu_buoc(_d, 3, MultiDict({"ten_may": "PC1", "ten_may_che_do": "co_dinh", "product_key": ""}))
+    kq["a10_key_de_trong_giu_nguyen"] = not _loi1 and _d["product_key"] == _KEY
+    _tr = _KB._noi_dung_buoc("ma1", _d, 3)
+    _tr = _tr if isinstance(_tr, str) else " ".join(str(x) for x in _tr)
+    kq["a10_key_khong_dien_san_chi_goi_y"] = _KEY not in _tr and "AAAAA-BBBBB" not in _tr and "EEEEE" in _tr and "xoa_product_key" in _tr
+    _loi2 = _KB._nhan_du_lieu_buoc(_d, 3, MultiDict({"ten_may": "PC1", "ten_may_che_do": "co_dinh", "product_key": "11111-22222-33333-44444-55555"}))
+    kq["a10_key_nhap_moi_ghi_de"] = not _loi2 and _d["product_key"] == "11111-22222-33333-44444-55555"
+    _loi3 = _KB._nhan_du_lieu_buoc(_d, 3, MultiDict({"ten_may": "PC1", "ten_may_che_do": "co_dinh", "product_key": "", "xoa_product_key": "1"}))
+    kq["a10_key_xoa"] = not _loi3 and _d["product_key"] == ""
+    _loi4 = _KB._nhan_du_lieu_buoc(_d, 3, MultiDict({"ten_may": "PC1", "ten_may_che_do": "co_dinh", "product_key": "ABC"}))
+    kq["a10_key_sai_do_dai_van_bi_chan"] = bool(_loi4)
+from nettools import netmiko_tool as _NM, dot1x as _D1  # noqa: E402
+_NM.test_connection = lambda *a, **k: {"ok": True, "output": "ok", "error": ""}
+_D1.run_eapol_test = lambda *a, **k: {"ok": True, "output": "EAP-SUCCESS", "error": ""}
+_MKN = "MkThietBi-4417"
+_t1 = c.post("/nettools/netmiko/test", data={"host": "10.0.0.1", "device_type": "cisco_ios", "port": "22", "username": "u", "password": _MKN, "test_cmd": "show version"}, headers=H).get_data(as_text=True)
+_t2 = c.post("/nettools/netmiko/preview", data={"host": "10.0.0.1", "device_type": "cisco_ios", "port": "22", "username": "u", "password": _MKN, "commands": "conf t"}, headers=H).get_data(as_text=True)
+_t3 = c.post("/nettools/dot1x", data={"radius_ip": "10.0.0.2", "radius_port": "1812", "radius_secret": _MKN + "S", "eap": "PEAP", "phase2": "MSCHAPV2", "identity": "u", "password": _MKN}, headers=H).get_data(as_text=True)
+kq["a10_netmiko_dot1x_khong_tra_lai_mat_khau"] = all(_MKN not in x for x in (_t1, _t2, _t3)) and _MKN + "S" not in _t3 and 'name="radius_secret"' in _t3
+kq["a10_netmiko_preview_nhap_lai_mat_khau"] = 'type="hidden" name="password"' not in _t2 and 'type="password" name="password"' in _t2 and len(_t1) > 1000 and len(_t3) > 1000
+
 print("KETQUA " + json.dumps(kq))

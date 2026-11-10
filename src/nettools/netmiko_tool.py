@@ -151,7 +151,7 @@ def netmiko_test_route():
         FORM_TEMPLATE, action_url="/nettools/netmiko/test", mode="test",
         device_types=DEVICE_TYPES, result=result,
         host=f.get("host"), device_type=f.get("device_type"), port=f.get("port"),
-        username=f.get("username"), password=f.get("password"),
+        username=f.get("username"), password=None,
         test_cmd=f.get("test_cmd"),
     )
 
@@ -164,7 +164,7 @@ def netmiko_preview_route():
     return render_template_string(
         PREVIEW_TEMPLATE,
         host=f.get("host", ""), device_type=f.get("device_type", "cisco_ios"),
-        port=f.get("port", 22), username=f.get("username", ""), password=f.get("password", ""),
+        port=f.get("port", 22), username=f.get("username", ""), password=None,
         commands=commands, commands_text=commands_text,
     )
 

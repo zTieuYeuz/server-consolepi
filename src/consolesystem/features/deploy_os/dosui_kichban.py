@@ -143,13 +143,16 @@ def _nhan_du_lieu_buoc(d, buoc, form):
             # Key Windows: bo het dau cach/gach noi thua roi chuan hoa
             # ve dang 5 nhom 5 ky tu. De TRONG la hop le - luc do dung
             # key KMS cong khai mac dinh (xem ui/unattend.py).
+            # Khoa KHONG duoc dien san ra trang (chi goi y 5 ky tu cuoi): de TRONG = giu khoa da luu;
+            # tick "Xoa khoa" = bo han (dung key KMS mac dinh). Kich ban cu co khoa van giu nguyen khi luu lai.
             pk = re.sub(r"[^A-Za-z0-9]", "", form.get("product_key") or "").upper()
             if pk:
                 if len(pk) != 25:
                     return ("Key Windows phải đúng 25 ký tự (5 nhóm 5 ký "
-                            "tự). Để trống nếu muốn dùng key mặc định.")
-                pk = "-".join(pk[i:i + 5] for i in range(0, 25, 5))
-            d["product_key"] = pk
+                            "tự). Để trống nếu muốn giữ key đã lưu / dùng key mặc định.")
+                d["product_key"] = "-".join(pk[i:i + 5] for i in range(0, 25, 5))
+            elif form.get("xoa_product_key"):
+                d["product_key"] = ""
 
             d["tu_dang_nhap"] = bool(form.get("tu_dang_nhap"))
             # Administrator LUON mo, bat buoc co mat khau (khong con tuy chon tat)
@@ -480,6 +483,12 @@ def _noi_dung_buoc(ma, d, buoc):
             an_mk = "" if d.get("bat_admin") else " hidden"
             nhac_mk_ad = ("Đã đặt rồi - để trống nếu không đổi"
                           if d.get("mk_admin") else "Mật khẩu cho Administrator")
+            pk_da_luu = d.get("product_key") or ""
+            goi_y_pk = (f"Đã lưu: XXXXX-XXXXX-XXXXX-XXXXX-{pk_da_luu[-5:]} - để trống = giữ nguyên" if pk_da_luu
+                        else "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX")
+            khoi_xoa_pk = ('<label style="display:flex;gap:8px;align-items:center;margin:7px 0 0;font-weight:400;">'
+                           '<input type="checkbox" name="xoa_product_key" value="1" style="width:auto;margin:0;"> '
+                           'Xóa khóa đã lưu (dùng key mặc định)</label>' if pk_da_luu else "")
             khoi_windows = f"""
                 <label>Ngôn ngữ hiển thị của Windows</label>
                 <select name="ngon_ngu">{opt_nn}</select>
@@ -496,10 +505,10 @@ def _noi_dung_buoc(ma, d, buoc):
                   Unikey/EVKey, nên cứ để US là đúng.</p>
 
                 <label>Key Windows (để trống nếu không có)</label>
-                <input type="text" name="product_key"
-                       value="{_esc(d.get('product_key') or '')}"
-                       placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+                <input type="text" name="product_key" value=""
+                       placeholder="{_esc(goi_y_pk)}"
                        autocapitalize="characters" autocomplete="off">
+                {khoi_xoa_pk}
                 <p style="color:#8b93a1;font-size:12.5px;margin:7px 0 0;">
                   Để trống thì dùng key KMS công khai chính thức của Microsoft
                   (cài được nhưng máy ở trạng thái CHƯA kích hoạt cho tới khi

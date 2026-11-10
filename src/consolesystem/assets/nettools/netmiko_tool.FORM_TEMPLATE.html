@@ -57,7 +57,7 @@
         <input type="text" name="username" value="{{ username or '' }}" required>
 
         <label>Password:</label>
-        <input type="password" name="password" value="{{ password or '' }}" required>
+        <input type="password" name="password" value="" autocomplete="new-password" required>
 
         {% if mode == 'test' %}
         <label>Lệnh đọc để test (không vào config mode):</label>
