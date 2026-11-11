@@ -342,7 +342,7 @@ r = c.get(f"/uem/agent/cai/{_ead['ma']}.ps1?h=HOME-DHCP", headers={"X-CS-TLS-Sec
 _p2 = DL.tim(DL.MAY.doc(), "pre2")
 kt("ghi danh: may co san doi IP (DHCP) khop theo ten may, cap nhat IP", r.status_code == 200 and len(DL.MAY.doc()) == nB and _p2["ip"] == "203.0.113.88" and (_p2.get("agent") or {}).get("serie"))
 _wx = open(os.path.join(SRC, "ui", "agent_bin", "ConsoleSystemAgent.wxs.tpl"), encoding="utf-8").read()
-kt("MSI: ghi danh chay ca khi cai lai/sua (lan truoc ghi danh loi giua chung van hoan tat duoc), khong chay khi go", 'Action="CsGhiDanh" Sequence="6601">NOT REMOVE AND CODE' in _wx and 'Action="CsDatPs" Sequence="1001">NOT REMOVE<' in _wx)
+kt("MSI: ghi danh chay ca khi cai lai/sua (lan truoc ghi danh loi giua chung van hoan tat duoc), khong chay khi go", 'Action="CsGhiDanh" Sequence="6599">NOT REMOVE AND CODE' in _wx and 'Action="CsDatPs" Sequence="1001">NOT REMOVE<' in _wx)
 # ---- 23/10/2026: tu dien tu bao cao, nhom may, doi ten nut Lay thong tin
 from ui import uem_baocao as UBC2, uem_profiles as UP2
 DL.MAY.sua(lambda ds: ds.extend([{"id": "g1", "ten": "", "ip": "10.7.7.1", "mac": ""}, {"id": "g2", "ten": "Ten tay", "ip": "10.7.7.2", "mac": "11:22:33:44:55:66"}, {"id": "g3", "ten": "", "ip": "10.7.7.3", "mac": ""}]))
