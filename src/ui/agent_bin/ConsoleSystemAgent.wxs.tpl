@@ -30,7 +30,7 @@
       <ComponentRef Id="CsUninstallBat" />
     </Feature>
     <CustomAction Id="CsDatPs" Property="CSPSEXE" Value="[System64Folder]WindowsPowerShell\v1.0\powershell.exe" />
-    <CustomAction Id="CsGhiDanh" Property="CSPSEXE" Execute="immediate" Return="check" ExeCommand="-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLDIR]cs-install.ps1&quot; -Server &quot;[SERVER]&quot; -Pin &quot;[PIN]&quot; -Code &quot;[CODE]&quot;" />
+    <CustomAction Id="CsGhiDanh" Property="CSPSEXE" Execute="deferred" Impersonate="no" Return="check" ExeCommand="-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;[INSTALLDIR]cs-install.ps1&quot; -Server &quot;[SERVER]&quot; -Pin &quot;[PIN]&quot; -Code &quot;[CODE]&quot;" />
     <CustomAction Id="CsCheckPk" FileKey="CsAgentExeFile" Execute="deferred" Return="check" ExeCommand="--check-passkey &quot;[PKH]&quot; &quot;[PASSKEY]&quot; [UILevel]" />
     <CustomAction Id="CsCheckPkRm" FileKey="CsAgentExeFile" Execute="deferred" Return="check" ExeCommand="--check-local &quot;[PASSKEY]&quot; [UILevel]" />
     <CustomAction Id="CsGoAgent" FileKey="CsAgentExeFile" Execute="deferred" Return="ignore" ExeCommand="--teardown" />
@@ -39,7 +39,7 @@
       <Custom Action="CsCheckPkRm" Sequence="3401">REMOVE="ALL"</Custom>
       <Custom Action="CsGoAgent" Sequence="3402">REMOVE="ALL"</Custom>
       <Custom Action="CsCheckPk" Sequence="4001">NOT Installed</Custom>
-      <Custom Action="CsGhiDanh" Sequence="6601">NOT REMOVE AND CODE AND PIN AND SERVER</Custom>
+      <Custom Action="CsGhiDanh" Sequence="6599">NOT REMOVE AND CODE AND PIN AND SERVER</Custom>
     </InstallExecuteSequence>
   </Product>
 </Wix>

@@ -34,3 +34,13 @@ def test_ps_go_xoa_dang_ky_msi():
                  "UserData\\S-1-5-18\\Products\\E9C2F1B6A7D485E4C913A0D5E8F7B412", "Uninstall\\{6B1F2C9E-4D7A-4E58-9C31-0A5D8E7F4B21}"):
         assert khoa in UA.PS_GO
     assert UA.PS_GO.index("Installer\\Products") < UA.PS_GO.index("Remove-Item -LiteralPath (Join-Path $env:ProgramFiles")
+
+
+def test_ghi_danh_chay_bang_he_thong_khong_theo_quyen_nguoi_bam_dup():
+    """LOI-007: bam dup MSI + UAC, client khong nang quyen -> hanh dong ghi danh (immediate, mac dinh chay bang quyen nguoi dung da loc)
+    cai dich vu that bai (1722). Phai la deferred + Impersonate=no (SYSTEM), truoc InstallFinalize."""
+    w = open(WXS, encoding="utf-8").read()
+    ca = next(x for x in w.splitlines() if 'CustomAction Id="CsGhiDanh"' in x)
+    assert 'Execute="deferred"' in ca and 'Impersonate="no"' in ca
+    seq = next(x for x in w.splitlines() if 'Action="CsGhiDanh"' in x)
+    assert int(seq.split('Sequence="')[1].split('"')[0]) < 6600
