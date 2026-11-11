@@ -712,6 +712,20 @@ def _chay_mot_may(kb_id, ip):
             if b.get("mot_lan") and khoa_buoc in DL.TRANG_THAI.doc().get(kb_id, {}).get("da_xong", {}).get(ip, []):
                 _buoc_cap_nhat(kb_id, ip, i, tt="ok", tb="Đã cài xong ở lượt trước, bỏ qua (kịch bản đặt 'chỉ cài một lần').", luc=time.time())
                 continue
+            if agent and b["loai"] == "nguon" and b["ref"] == "khoi_dong_lai":
+                kq = _khoi_dong_lai_agent(kb_id, ip, i, buoc, may, tt_truoc)
+                if kq == "cho":
+                    return
+                if kq == "loi":
+                    thu = st0.get("thu", 0) + 1
+                    cuoi = thu >= TOI_DA_THU
+                    _may_cap_nhat(kb_id, ip, tt="loi" if cuoi else "cho_thu_lai", thu=thu, tiep=0 if cuoi else time.time() + THU_LAI_LOI_BUOC)
+                    _ghi_nk(kb_id, ip, f"Bước {i + 1}/{len(buoc)} LỖI (lần {thu}/{TOI_DA_THU}): khởi động lại không thành công."
+                            + (" Không thành công." if cuoi else " Thử lại sau 5 phút."))
+                    return
+                c = None                           # sau khi may khoi dong lai, ket noi cu khong con dung
+                _ghi_nk(kb_id, ip, f"Bước {i + 1}/{len(buoc)} xong: {DL.TRANG_THAI.doc()[kb_id]['may'][ip]['buoc'][i].get('tb', '')}")
+                continue
             _buoc_cap_nhat(kb_id, ip, i, tt="dang", tb="Đang chạy...", luc=time.time())
             try:
                 if agent:
@@ -775,6 +789,83 @@ def _chay_mot_may(kb_id, ip):
         _CAI_BANG.tk = None
         with _KHOA:
             _DANG.discard((kb_id, ip))
+
+
+LUC_TOI_THIEU_KHOI_DONG = 15          # lenh shutdown /t 10: truoc moc nay may chua tat, dung kiem tra vo ich
+CHO_KHOI_DONG_TOI_DA = 1800           # 30 phut ma may khong tro lai
+CHO_KHOI_DONG_KHONG_DOI = 300         # may van song sau 5 phut va gio khoi dong khong doi = lenh khong co tac dung
+_PS_GIO_KHOI_DONG = "(Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToString('o')"
+
+
+def _co_viec_truoc(kb_id, ip, i):
+    """Co buoc nao that su chay (khong phai bo qua 'chi cai mot lan') ke tu lan khoi dong lai truoc do khong."""
+    bs = DL.TRANG_THAI.doc().get(kb_id, {}).get("may", {}).get(ip, {}).get("buoc", [])
+    for j in range(i - 1, -1, -1):
+        b = bs[j]
+        if b.get("loai") == "nguon":
+            break
+        if b.get("tt") == "ok" and not (b.get("tb") or "").startswith("Đã cài xong ở lượt trước"):
+            return True
+    return False
+
+
+def _khoi_dong_lai_agent(kb_id, ip, i, buoc, may, tt_truoc):
+    """Buoc 'Khoi dong lai' cua kich ban Agent: gui lenh, roi cho MAY THAT SU khoi dong lai (gio khoi dong doi) moi tinh la xong.
+    Khong chan luong: moi lan quet (20 giay) xem lai, nho vay Console System khoi dong lai giua chung van chay tiep dung cho.
+    Tra ve 'xong' | 'cho' (da dat lich xem lai) | 'loi'."""
+    UA = _KENH_AGENT[0]
+    if UA is None:
+        _buoc_cap_nhat(kb_id, ip, i, tt="loi", tb="Chưa nạp chức năng Quản lý máy trạm (agent).", luc=time.time())
+        return "loi"
+    cur = DL.TRANG_THAI.doc().get(kb_id, {}).get("may", {}).get(ip, {}).get("buoc", [{}] * (i + 1))[i]
+    gui = cur.get("gui_luc", 0)
+    bay_gio = time.time()
+    if not gui:
+        if any(x.get("mot_lan") for x in buoc) and not _co_viec_truoc(kb_id, ip, i):
+            _buoc_cap_nhat(kb_id, ip, i, tt="ok", tb="Bỏ qua khởi động lại: các bước trước đã làm xong ở lượt trước.", luc=bay_gio)
+            return "xong"
+        if not UA.con_song(may):
+            _cho_may_bat(kb_id, ip, i, tt_truoc)
+            return "cho"
+        try:
+            c = UA.Client(may["id"])
+            boot0, _e = _chay_ps(c, _PS_GIO_KHOI_DONG)
+            ok, tb = _b_nguon(c, ip, {"ref": "khoi_dong_lai"}, may)
+        except Exception as e:
+            _buoc_cap_nhat(kb_id, ip, i, tt="loi", tb=_loi_dep(e, ""), luc=bay_gio)
+            return "loi"
+        if not ok:
+            _buoc_cap_nhat(kb_id, ip, i, tt="loi", tb=tb, luc=bay_gio)
+            return "loi"
+        _buoc_cap_nhat(kb_id, ip, i, tt="dang", tb="Đã gửi lệnh khởi động lại, đang chờ máy bật lại...", luc=bay_gio,
+                       gui_luc=bay_gio, boot0=(boot0 or "").strip())
+        _ghi_nk(kb_id, ip, f"Bước {i + 1}/{len(buoc)}: đã gửi lệnh khởi động lại, chờ máy bật lại rồi chạy tiếp.")
+        gui, cur = bay_gio, dict(cur, boot0=(boot0 or "").strip())
+    boot0 = cur.get("boot0", "")
+    cho = bay_gio - gui
+    if cho >= LUC_TOI_THIEU_KHOI_DONG and UA.con_song(may):
+        try:
+            boot1, _e = _chay_ps(UA.Client(may["id"]), _PS_GIO_KHOI_DONG)
+        except Exception:
+            boot1 = ""
+        boot1 = (boot1 or "").strip()
+        if boot1 and boot0 and boot1 != boot0:
+            _buoc_cap_nhat(kb_id, ip, i, tt="ok", tb=f"Máy đã khởi động lại và trực tuyến trở lại (sau {int(cho)} giây).", luc=bay_gio)
+            return "xong"
+        if boot1 and not boot0:                       # khong doc duoc gio khoi dong truoc do: dua vao viec agent da mat nhip roi quay lai
+            if cur.get("thay_tat"):
+                _buoc_cap_nhat(kb_id, ip, i, tt="ok", tb=f"Máy đã trực tuyến trở lại (sau {int(cho)} giây).", luc=bay_gio)
+                return "xong"
+        if boot1 and cho >= CHO_KHOI_DONG_KHONG_DOI:
+            _buoc_cap_nhat(kb_id, ip, i, tt="loi", tb="Máy không khởi động lại sau lệnh (giờ khởi động không đổi, có thể đang bị chặn bởi chương trình).", luc=bay_gio)
+            return "loi"
+    elif cho >= LUC_TOI_THIEU_KHOI_DONG and not cur.get("thay_tat"):
+        _buoc_cap_nhat(kb_id, ip, i, thay_tat=True)
+    if cho >= CHO_KHOI_DONG_TOI_DA:
+        _buoc_cap_nhat(kb_id, ip, i, tt="loi", tb="Máy không trở lại sau 30 phút kể từ lệnh khởi động lại.", luc=bay_gio)
+        return "loi"
+    _may_cap_nhat(kb_id, ip, tt="offline", tiep=bay_gio + 20)
+    return "cho"
 
 
 def _cho_may_bat(kb_id, khoa, i, tt_truoc):

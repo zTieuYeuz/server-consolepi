@@ -9,6 +9,8 @@ Dung chung dong co kich ban cua Cai phan mem qua LAN (tk_dongco: KICH_BAN + LICH
 voi kenh="agent": vao may bang agent thay vi WinRM, may tat thi "Cho may bat" va tu chay khi agent ket noi lai.
 Kich ban Agent khong hien o trang LAN va nguoc lai.
 """
+import json
+import re
 import time
 
 from flask import jsonify, request
@@ -16,12 +18,61 @@ from flask import jsonify, request
 from ui import tk_dongco as DC
 from ui import tk_dulieu as DL
 from ui.uem_trang import _esc, chip, chuyen, gio, trang
-from consolesystem.web.chon_nhom_pm import khoi_nhom as khoi_nhom_pm
+from consolesystem.core import duongdan as _DD
+from consolesystem.core import taisan as _taisan
 
 URL = "/uem/trien-khai/kich-ban"
 TT_MAY = {"cho": ("Chờ chạy", ""), "dang": ("Đang chạy", "nhan"), "xong": ("Thành công", "xanh"), "loi": ("Không thành công", "do"),
           "offline": ("Chờ máy bật", "vang"), "cho_thu_lai": ("Chờ thử lại", "vang"), "dung": ("Đã dừng", "")}
 TT_BUOC = {"cho": ("Chờ", ""), "dang": ("Đang chạy", "nhan"), "ok": ("Xong", "xanh"), "loi": ("Lỗi", "do")}
+
+
+# Cac loai buoc kich ban Agent cho phep (A5): cai app, script trong kho, khoi dong lai/tat may, WinGet, nhom phan mem.
+NGUON_AGENT = {"khoi_dong_lai": "Khởi động lại máy (đợi máy bật lại rồi mới chạy bước sau)", "tat": "Tắt máy"}
+LOAI_AGENT = ("phanmem", "ungdung", "script", "winget", "nguon", "nhom")
+
+
+def _tai_nguyen():
+    from ui import deployos as D
+    return {
+        "phanmem": [{"ref": a["ten"], "ten": a["ten"], "mo_ta": a.get("tham_so") or "chưa điền tham số cài im lặng"} for a in DC.danh_sach_kho()],
+        "ungdung": [{"ref": u["id"], "ten": u["ten_hien_thi"], "mo_ta": u.get("lenh_cai") or "chưa có dòng lệnh cài"} for u in DC.danh_sach_ungdung()],
+        "script": [{"ref": x["ten"], "ten": x["ten"], "mo_ta": ""} for x in D._liet_ke(_DD.SCRIPTS_DIR, _DD.EXT_SCRIPT)],
+    }
+
+
+def chuan_buoc(buoc):
+    """Danh sach buoc tu giao dien (buoc_json) -> danh sach sach, bo buoc khong hop le."""
+    tn = _tai_nguyen()
+    sach = []
+    for b in buoc if isinstance(buoc, list) else []:
+        if not isinstance(b, dict):
+            continue
+        loai, ref = str(b.get("loai", "")), str(b.get("ref", ""))
+        if loai not in LOAI_AGENT:
+            continue
+        if loai in ("phanmem", "ungdung", "script"):
+            t = next((x for x in tn[loai] if x["ref"] == ref), None)
+            if not t:
+                continue
+            m = {"loai": loai, "ref": ref, "ten": t["ten"]}
+        elif loai == "winget":
+            if not re.fullmatch(r"[A-Za-z0-9._+-]{2,100}", ref):
+                continue
+            m = {"loai": loai, "ref": ref, "ten": "WinGet: " + ref}
+        elif loai == "nguon":
+            if ref not in NGUON_AGENT:
+                continue
+            m = {"loai": loai, "ref": ref}
+        else:
+            g = DL.tim(DL.NHOM_TN.doc(), ref)
+            if not g:
+                continue
+            m = {"loai": loai, "ref": ref, "ten": g["ten"]}
+        if b.get("mot_lan") and loai in ("phanmem", "ungdung", "winget", "nhom"):
+            m["mot_lan"] = True
+        sach.append(m)
+    return sach
 
 
 def _ds():
@@ -120,16 +171,10 @@ var n=new DOMParser().parseFromString(h,'text/html').getElementById('kb-khung'),
 def trang_sua():
     from ui import uem_trang_b as TB
     kb = DL.tim(_ds(), request.args.get("id", "")) or {}
-    kho = DC.danh_sach_kho()
-    da = [b["ref"] for b in kb.get("buoc", [])]
-    mot_lan = any(b.get("mot_lan") for b in kb.get("buoc", []))
-    ds_ud = DC.danh_sach_ungdung()
-    da_ud = [b["ref"] for b in kb.get("buoc", []) if b.get("loai") == "ungdung"]
-    o_ud = "".join(f'<label class="tk-o"><input type="checkbox" name="ud" value="{_esc(u["id"])}"{" checked" if u["id"] in da_ud else ""}>'
-                   f'<span><b>{_esc(u["ten_hien_thi"])}</b><small>{u["so_file"]} file · {_esc(u["kich_thuoc"])} · lệnh: {_esc(u["lenh_cai"] or "chưa đặt lệnh cài")}</small></span></label>' for u in ds_ud)
-    khoi_ud = (f'<h4 class="tk-tieude">Ứng dụng nhiều file (bộ cài kèm gói, cài offline)</h4><div class="tk-luoi">{o_ud}</div>' if ds_ud else "")
-    o_pm = "".join(f'<label class="tk-o"><input type="checkbox" name="pm" value="{_esc(a["ten"])}"{" checked" if a["ten"] in da else ""}>'
-                   f'<span><b>{_esc(a["ten"])}</b><small>{_esc(a["tham_so"] or "chưa điền tham số cài im lặng")}</small></span></label>' for a in kho)
+    tn = _tai_nguyen()
+    du_lieu = json.dumps({"tn": tn, "nhom": [{"ref": g["id"], "ten": g["ten"], "mo_ta": f'{len(g.get("muc", []))} mục'} for g in DL.NHOM_TN.doc()],
+                          "buoc": kb.get("buoc", []), "ten_loai": DC.TEN_LOAI_BUOC, "nguon": NGUON_AGENT, "loai": list(LOAI_AGENT)},
+                         ensure_ascii=False).replace("</", "<\\/")
     tk = DL.tai_khoan_cong_khai()
     o_tk = ('<option value="">Tài khoản hệ thống SYSTEM của agent (mặc định, quyền cao nhất)</option>'
             + "".join(f'<option value="{t["id"]}"{" selected" if kb.get("tai_khoan_id") == t["id"] else ""}>Chạy bằng tài khoản: {_esc(t["ten"])} ({_esc(t["user"])})</option>' for t in tk))
@@ -145,15 +190,20 @@ def trang_sua():
                   f'{" checked" if i in rieng.get("thu", []) else ""}>{t}</label>' for i, t in enumerate(DL.THU))
     thang = "".join(f'<option value="{i}"{" selected" if rieng.get("thang") == i else ""}>Tháng {i}</option>' for i in range(1, 13))
     body = (TB._thanh_tab_cai("kb") + f'''<p><a class="tk-nut" href="{URL}">Quay lại</a></p>
-    <form method="POST" action="{URL}/luu" class="card tk-f" id="f-kb"><input type="hidden" name="id" value="{_esc(kb.get("id", ""))}">
+    <form method="POST" action="{URL}/luu" class="card tk-f" id="f-kb"><input type="hidden" name="id" value="{_esc(kb.get("id", ""))}"><input type="hidden" name="buoc_json" id="buoc-json">
       <h3 style="margin-top:0;">{"Sửa kịch bản" if kb else "Tạo kịch bản mới"}</h3>
       <label>Tên kịch bản</label><input type="text" name="ten" required value="{_esc(kb.get("ten", ""))}" placeholder="Ví dụ: Cài phần mềm văn phòng cho phòng kế toán">
-      <h4 class="tk-tieude">1. Chọn phần mềm cài (theo thứ tự trong danh sách)</h4>
-      {khoi_nhom_pm("pm", "ud", the=False)}
-      <div class="tk-luoi">{o_pm or '<p class="tk-ghi">Kho chưa có phần mềm. Thêm file .exe / .msi ở Tài nguyên máy.</p>'}</div>
-      {khoi_ud}
-      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;"><input type="checkbox" name="mot_lan" value="1" style="width:auto;margin:0;"{" checked" if mot_lan else ""}>
-        Máy đã cài thành công ở lượt trước thì bỏ qua (dùng cho kịch bản lặp lại theo lịch)</label>
+      <h4 class="tk-tieude">1. Các bước (chạy lần lượt từ trên xuống)</h4>
+      <div id="ds-buoc"></div>
+      <div class="tk-hang" style="margin-top:8px;"><select id="b-loai" style="margin:0;height:42px;max-width:240px;"></select>
+        <input type="search" id="b-tim" placeholder="Tìm trong danh sách (gõ không dấu cũng được)" autocomplete="off" style="margin:0;height:42px;max-width:300px;">
+        <select id="b-ref" style="margin:0;height:42px;max-width:420px;"></select>
+        <input type="text" id="b-text" placeholder="Mã WinGet, ví dụ Google.Chrome" style="margin:0;height:42px;max-width:320px;display:none;">
+        <span class="tk-ghi" id="b-so"></span>
+        <button type="button" class="tk-nut" id="b-them">Thêm bước</button></div>
+      <p class="tk-ghi" id="b-ghi"></p>
+      <p class="tk-ghi">Ví dụ: cài phần mềm → chạy Script → Khởi động lại máy → cài phần mềm tiếp theo. Sau bước khởi động lại, Console System đợi máy bật lại
+        (agent trực tuyến, giờ khởi động đổi) rồi mới chạy bước kế tiếp; có thể tắt Console System giữa chừng, kịch bản vẫn tiếp tục.</p>
       <h4 class="tk-tieude">2. Chọn máy hoặc group</h4>
       <div class="tk-hang" style="gap:14px;"><div><label for="cg-loai">Áp dụng cho</label><select id="cg-loai" style="max-width:220px;margin:0;"><option value="may">Chọn máy</option><option value="nhom">Chọn group</option></select></div></div>
       {TB._chon_may_nhom_html(set(kb.get("may", [])), set(kb.get("nhom_may", [])))}
@@ -175,6 +225,8 @@ def trang_sua():
       <div class="tk-hang" style="margin-top:16px;gap:10px;"><button class="tk-nut chinh" type="submit" name="sau" value="luu">Lưu kịch bản</button>
         <button class="tk-nut" type="submit" name="sau" value="chay">Lưu và chạy</button></div>
     </form>{TB.JS_CHON}
+    <script id="kb-du-lieu" type="application/json">{du_lieu}</script>
+    <script>{_taisan.doc("features/software_deploy/tk_trang.JS_KICHBAN.js")}</script>
     <script>(function(){{var t=document.getElementById('kb-tg'),r=document.getElementById('kb-rieng'),s=document.getElementById('lich-kieu');
     function d(){{r.style.display=t.value==='rieng'?'':'none';document.querySelectorAll('#kb-rieng [data-k]').forEach(function(e){{
       e.style.display=e.getAttribute('data-k').split(' ').indexOf(s.value)>=0?'':'none';}});}}t.onchange=d;s.onchange=d;d();}})();</script>''')
@@ -188,19 +240,26 @@ def luu():
     if kid and not cu:
         return chuyen(URL, "Không còn kịch bản này.", False)
     ten = (f.get("ten") or "").strip()[:120]
-    kho = [a["ten"] for a in DC.danh_sach_kho()]
-    chon = set(f.getlist("pm"))
-    mot_lan = bool(f.get("mot_lan"))
-    buoc = [dict({"loai": "phanmem", "ref": t, "ten": t}, **({"mot_lan": True} if mot_lan else {})) for t in kho if t in chon]
-    chon_ud = set(f.getlist("ud"))
-    buoc += [dict({"loai": "ungdung", "ref": u["id"], "ten": u["ten_hien_thi"]}, **({"mot_lan": True} if mot_lan else {})) for u in DC.danh_sach_ungdung() if u["id"] in chon_ud]
+    try:
+        moi = json.loads(f.get("buoc_json") or "null")
+    except ValueError:
+        moi = None
+    if isinstance(moi, list):                       # giao dien moi: danh sach buoc co thu tu (cai app, script, khoi dong lai...)
+        buoc = chuan_buoc(moi)
+    else:                                           # tuong thich: bieu mau cu chon phan mem bang o tick
+        kho = [a["ten"] for a in DC.danh_sach_kho()]
+        chon = set(f.getlist("pm"))
+        mot_lan = bool(f.get("mot_lan"))
+        buoc = [dict({"loai": "phanmem", "ref": t, "ten": t}, **({"mot_lan": True} if mot_lan else {})) for t in kho if t in chon]
+        chon_ud = set(f.getlist("ud"))
+        buoc += [dict({"loai": "ungdung", "ref": u["id"], "ten": u["ten_hien_thi"]}, **({"mot_lan": True} if mot_lan else {})) for u in DC.danh_sach_ungdung() if u["id"] in chon_ud]
     may = [i for i in dict.fromkeys(f.getlist("may")) if DL.tim(DL.MAY.doc(), i)]
     nhom = [i for i in dict.fromkeys(f.getlist("nhom")) if DL.tim(DL.NHOM_MAY.doc(), i)]
     tk = f.get("tai_khoan_id", "")
     if tk and DL.lay_tai_khoan(tk)[0] is None:
         tk = ""
     if not ten or not buoc:
-        return chuyen(URL + "/sua" + (f"?id={kid}" if kid else ""), "Cần có tên và chọn ít nhất một phần mềm.", False)
+        return chuyen(URL + "/sua" + (f"?id={kid}" if kid else ""), "Cần có tên và ít nhất một bước hợp lệ.", False)
     if not may and not nhom:
         return chuyen(URL + "/sua" + (f"?id={kid}" if kid else ""), "Chọn ít nhất một máy hoặc một group.", False)
     kb_id = kid or DL.moi_id()

@@ -4,7 +4,7 @@
   var $ = function(i){ return document.getElementById(i); };
   var LOAI = [['phanmem','Phần mềm'],['ungdung','Ứng dụng nhiều file'],['script','Script'],['winget','WinGet (kho Microsoft)'],['rustdesk','RustDesk (kèm máy chủ ID / chuyển tiếp)'],
               ['nhom','Nhóm phần mềm'],['nguon','Bật / tắt / khởi động lại máy'],['baomat','Kiểm tra bảo mật'],['kiemke','Kiểm kê phần cứng và phần mềm']];
-  LOAI.forEach(function(l){ var o=document.createElement('option'); o.value=l[0]; o.textContent=l[1]; $('b-loai').appendChild(o); });
+  LOAI.filter(function(l){ return !D.loai || D.loai.indexOf(l[0])>=0; }).forEach(function(l){ var o=document.createElement('option'); o.value=l[0]; o.textContent=l[1]; $('b-loai').appendChild(o); });
   var DS_HIEN = [];
   function bo_dau(x){ return (x||'').replace(/đ/g,'d').replace(/Đ/g,'D').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
   function ve_ref(){
@@ -26,7 +26,7 @@
     if (l==='baomat'){ r.style.display='none'; g.textContent='Thu thập diệt virus, tường lửa, BitLocker, bản cập nhật đang chờ của từng máy và lưu ở Máy - nhóm máy.'; return; }
     var ds = l==='nguon' ? Object.keys(D.nguon).map(function(k){return {ref:k,ten:D.nguon[k]};}) : (l==='nhom' ? D.nhom : D.tn[l] || []);
     DS_HIEN = ds; if (l==='nguon') $('b-tim').style.display='none'; ve_ref(); 
-    if (l==='nguon') g.textContent = 'Bật máy dùng Wake-on-LAN (máy cần có địa chỉ MAC và bật Wake on LAN trong BIOS).';
+    if (l==='nguon' && D.nguon.bat) g.textContent = 'Bật máy dùng Wake-on-LAN (máy cần có địa chỉ MAC và bật Wake on LAN trong BIOS).';
   }
   function ten(b){
     if (b.loai==='nguon') return D.nguon[b.ref]||b.ref; if (b.loai==='baomat') return 'Kiểm tra bảo mật'; if (b.loai==='kiemke') return 'Kiểm kê phần cứng và phần mềm'; if (b.loai==='rustdesk') return 'Cài RustDesk (kèm máy chủ ID / chuyển tiếp)'; return b.ten||b.ref;
