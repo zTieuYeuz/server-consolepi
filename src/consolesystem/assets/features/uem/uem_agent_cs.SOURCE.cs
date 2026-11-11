@@ -414,11 +414,44 @@ public class CsAgent : ServiceBase
                         vao.Write(dau, 0, dau.Length); vao.Flush();
                     }
                     byte[] rb = new byte[65536];
+                    MemoryStream dong = new MemoryStream(); string thuMuc = null; int soTep = 0;
+                    try {
                     while (w.State == WebSocketState.Open && !cts.IsCancellationRequested)
                     {
                         WebSocketReceiveResult rr = w.ReceiveAsync(new ArraySegment<byte>(rb), cts.Token).Result;
                         if (rr.MessageType == WebSocketMessageType.Close) break;
                         if (rr.Count <= 0) continue;
+                        if (!ps)
+                        {
+                            // cmd doc stdin (pipe) tung byte roi doi bang ma trang: dong co chu co dau (UTF-8 nhieu byte) bi vo thanh U+FFFD,
+                            // du da "chcp 65001". Nen dong co ky tu >= 0x80 ghi ra tep .cmd UTF-8 (khong BOM) roi bao cmd "call" tep do (cmd doc tep
+                            // theo ma trang 65001 dung); dong thuan ASCII van di thang vao stdin nhu cu.
+                            for (int i = 0; i < rr.Count; i++)
+                            {
+                                byte c = rb[i]; dong.WriteByte(c);
+                                if (c != 10) continue;
+                                byte[] dl = dong.ToArray(); dong.SetLength(0);
+                                bool coDau = false; foreach (byte x in dl) if (x >= 0x80) { coDau = true; break; }
+                                if (coDau)
+                                {
+                                    try
+                                    {
+                                        if (thuMuc == null) { thuMuc = Path.Combine(Path.GetTempPath(), "cs-shell-" + p.Id); Directory.CreateDirectory(thuMuc); }
+                                        string tep = Path.Combine(thuMuc, (++soTep) + ".cmd");
+                                        List<byte> noiDung = new List<byte>(dl); noiDung.InsertRange(0, Encoding.ASCII.GetBytes("@echo off\r\n"));
+                                        File.WriteAllBytes(tep, noiDung.ToArray());
+                                        dl = Encoding.UTF8.GetBytes("call \"" + tep + "\"\r\n");
+                                    }
+                                    catch (Exception e2) { Log("shell: khong ghi duoc tep lenh: " + e2.Message); }
+                                }
+                                vao.Write(dl, 0, dl.Length);
+                            }
+                            // phan chua du dong: chi gom ky tu dieu khien (vd Ctrl+C = 0x03) thi chuyen luon; con lai doi du dong (khong chat doi 1 dong)
+                            byte[] du = dong.ToArray(); bool chiDieuKhien = du.Length > 0; foreach (byte x in du) if (x >= 0x20) { chiDieuKhien = false; break; }
+                            if (chiDieuKhien) { vao.Write(du, 0, du.Length); dong.SetLength(0); }
+                            vao.Flush();
+                            continue;
+                        }
                         vao.Write(rb, 0, rr.Count);
                         if (ps && rb[rr.Count - 1] == 10)          // PowerShell khong tu in dau nhac khi doc stdin -> tu in sau moi dong
                         {
@@ -427,6 +460,7 @@ public class CsAgent : ServiceBase
                         }
                         vao.Flush();
                     }
+                    } finally { if (thuMuc != null) { try { Directory.Delete(thuMuc, true); } catch { } } }
                 }
             }
             catch (Exception e) { Log("shell dong: " + e.GetBaseException().GetType().Name + ": " + e.GetBaseException().Message); }
