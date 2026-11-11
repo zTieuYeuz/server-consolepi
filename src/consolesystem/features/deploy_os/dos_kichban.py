@@ -255,7 +255,7 @@ def cauhinh_tu_kichban(kb):
     d["_da_qua_buoc6"] = True
     return d
 
-_TEN_CAM = set('"/\\[]:;|=,+*?<>@')
+_TEN_CAM = set('"/\\[]:;|=,+*?<>@&^`\'$%!')
 
 def loi_user_local(ten, mk, ten_may=""):
     """Kiem tra tai khoan local them (A4). Tra ve cau bao loi tieng Viet, hoac "" neu hop le. Ten rong = khong tao."""
@@ -265,7 +265,7 @@ def loi_user_local(ten, mk, ten_may=""):
     if len(ten) > 20:
         return "Tên tài khoản tối đa 20 ký tự."
     if any(c in _TEN_CAM for c in ten) or ten.strip(". ") == "" or any(ord(c) < 32 for c in ten):
-        return 'Tên tài khoản không được chứa các ký tự " / \\ [ ] : ; | = , + * ? < > @ và không chỉ gồm dấu chấm.'
+        return "Tên tài khoản không được chứa các ký tự \" / \\ [ ] : ; | = , + * ? < > @ & ^ ` ' $ % ! và không chỉ gồm dấu chấm."
     if ten.lower() in ("administrator", "guest", "defaultaccount", "system") or ten.lower() == (ten_may or "").lower():
         return "Tên tài khoản này đã dùng (Administrator/Guest/tên máy). Hãy chọn tên khác."
     if not mk:

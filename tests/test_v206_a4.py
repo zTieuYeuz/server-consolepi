@@ -52,3 +52,42 @@ def test_muc_rieng_tu_co_trong_danh_sach():
     x = sinh_unattend_offline_xml(_cauhinh(tuy_chon=[m[0] for m in rt]))
     md.parseString(x.encode("utf-8"))
     assert "AdvertisingInfo" in x and "ContentDeliveryManager" in x
+
+
+def test_ten_user_chan_ky_tu_nguy_hiem():
+    from consolesystem.features.deploy_os.dos_kichban import loi_user_local as L
+    for ten in ("a&b", "a`b", "a'b", "a^b", "a$b", "a!b"):
+        assert L(ten, "abc12345"), ten
+    assert L("nhan.vien-01_x", "abc12345") == ""
+
+
+def test_loi006_iso_chi_co_esd_duoc_doi_sang_wim(tmp_path, monkeypatch):
+    """ISO chi co install.esd -> sau khi tach phai co install.wim (khong con esd) va OS 'san_sang'."""
+    import shutil
+    import subprocess
+    import time
+    if not (shutil.which("wimlib-imagex") and shutil.which("xorriso") and shutil.which("7z")):
+        import pytest
+        pytest.skip("thieu wimlib-imagex/xorriso/7z")
+    nguon = tmp_path / "iso" / "sources"
+    nguon.mkdir(parents=True)
+    for ten, co_solid in (("boot.wim", False), ("install.esd", True)):
+        thu = tmp_path / ("c_" + ten)
+        thu.mkdir()
+        (thu / "f.txt").write_text("noi dung " + ten)
+        subprocess.run(["wimlib-imagex", "capture", str(thu), str(nguon / ten), "--quiet"] + (["--solid"] if co_solid else []), check=True)
+    os.makedirs(str(tmp_path / "os" / "w10"))
+    iso = tmp_path / "os" / "w10" / "w.iso"
+    subprocess.run(["xorriso", "-as", "mkisofs", "-o", str(iso), str(tmp_path / "iso")], check=True, capture_output=True)
+    from consolesystem.features.deploy_os import isotach as T
+    monkeypatch.setattr(T, "OS_DIR", str(tmp_path / "os"))
+    ok, _ = T.bat_dau_tach("w10", str(iso), xoa_iso_sau_khi_xong=False)
+    assert ok
+    for _ in range(300):
+        if not T.dang_chay():
+            break
+        time.sleep(0.2)
+    tt = T.trang_thai()
+    assert tt.get("xong"), tt
+    ra = os.listdir(str(tmp_path / "os" / "w10"))
+    assert "install.wim" in ra and "install.esd" not in ra, ra

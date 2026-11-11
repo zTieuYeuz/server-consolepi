@@ -401,7 +401,7 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
 
         # --- 2. Kiem tra dung luong
         _buoc(2, "Kiểm tra dung lượng trống", 5)
-        can = cd_boot + cd_inst + DU_PHONG_GB * (1024 ** 3)
+        can = cd_boot + cd_inst * (3 if la_esd else 1) + DU_PHONG_GB * (1024 ** 3)      # esd: con cho file wim sau khi doi (lon hon esd ~1,4 lan)
         trong = _con_trong(thu_muc)
         if trong < can:
             _xong_buoc("loi", f"cần {_co(can)}, chỉ còn {_co(trong)}")
@@ -496,6 +496,33 @@ def _worker(os_id, duong_iso, xoa_iso_sau_khi_xong):
             _dat(xong=False, loi=f"Không đưa được file vào thư mục hệ điều hành: {e}")
             return
         _xong_buoc("ok", f"boot.wim: {ct_b} · {ten_dich}: {ct_i}")
+
+        # --- 5a. LOI-006 (2.0.6): ISO Media Creation Tool chi co install.esd. Cac cho khac (trang OS, deploy.cmd, chia FAT32)
+        # deu doi install.wim, nen doi esd -> wim bang wimlib (khong nen "solid" de dism va chia .swm doc duoc).
+        if la_esd:
+            _buoc(4, "Đổi install.esd sang install.wim (vài phút)", 92)
+            esd = os.path.join(thu_muc, "install.esd")
+            wim_moi = os.path.join(thu_muc, "install.wim.doi")
+            ma, _ra, loi_doi = _chay_huy(["wimlib-imagex", "export", esd, "all", wim_moi, "--compress=LZX", "--quiet"], 7200)
+            if ma != 0 or not os.path.isfile(wim_moi):
+                try:
+                    os.remove(wim_moi)
+                except OSError:
+                    pass
+                _xong_buoc("loi", f"wimlib export lỗi (mã {ma})")
+                _dat(xong=False, loi=("Đổi install.esd sang install.wim thất bại" + (" (đã huỷ)" if ma == 130 else "")
+                                       + f": {(loi_doi or '').strip()[-200:] or 'mã ' + str(ma)}. File install.esd vẫn còn nhưng OS chưa dùng được."))
+                return
+            ok_w, ct_w = kiem_chung_wim(wim_moi, os.path.getsize(wim_moi))
+            if not ok_w:
+                os.remove(wim_moi)
+                _xong_buoc("loi", f"install.wim sau khi đổi không qua kiểm chứng: {ct_w}")
+                _dat(xong=False, loi=f"install.wim sau khi đổi từ esd không qua kiểm chứng: {ct_w}")
+                return
+            os.replace(wim_moi, os.path.join(thu_muc, "install.wim"))
+            os.remove(esd)
+            ten_dich = "install.wim"
+            _xong_buoc("ok", f"install.wim {_co(os.path.getsize(os.path.join(thu_muc, 'install.wim')))} (đã bỏ install.esd)")
 
         # --- 5b. Goi .NET 3.5 offline (sources/sxs/*.cab, ~70 MB): giu lai de luc cai Windows bat
         # NetFx3 OFFLINE ~1 phut thay vi tai qua mang ~9 phut. Co gang het suc, loi thi bo qua.
