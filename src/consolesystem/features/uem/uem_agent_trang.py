@@ -276,9 +276,8 @@ def khung_passkey():
       <ul><li><b>Triển khai phần mềm LAN và cài Windows (kịch bản):</b> bấm <b>Lưu passkey cho triển khai</b> ở gói đó (mục File cài đã tạo), rồi <b>Đưa vào kho phần mềm</b>.
         Ô tham số cài để <code>/qn /norestart</code>; Console System tự thêm <code>PASSKEY="..."</code> lúc cài, không cần (và không nên) gõ passkey vào ô tham số.</li>
       <li><b>Cài tay hoặc bằng công cụ khác (GPO, Intune, PDQ...):</b> <code>msiexec /i agent.msi /qn /norestart PASSKEY="passkey-của-gói"</code>.
-        <b>Đừng bấm đúp</b> file MSI có passkey (đã gặp khi thử trên Windows 11: hộp "Please wait while Windows configures..." đứng mãi, không hỏi passkey và giữ khóa msiexec;
-        nghi do bước kiểm passkey chạy bằng tài khoản hệ thống nên hộp nhập không hiện lên màn hình người dùng). Lỡ bị kẹt thì tắt tiến trình <code>msiexec.exe</code> (Task Manager) rồi cài lại bằng lệnh trên
-        trong PowerShell/CMD chạy bằng quyền Administrator. Gói <b>không đặt passkey</b> thì bấm đúp bình thường.</li>
+        <b>Bấm đúp</b> file MSI có passkey (agent bản 2.3.9 trở lên): hộp "Nhập passkey để tiếp tục" hiện lên trên cùng, nhập đúng thì cài tiếp; sai 3 lần, bấm Hủy hoặc 3 phút không nhập thì cài đặt dừng và báo lỗi
+        (không còn đứng mãi). Đã thử trên Windows 10 và Windows 11. Gói tạo bằng agent cũ hơn vẫn bị hộp "Please wait while Windows configures..." che hộp nhập: hãy tạo lại gói, hoặc cài bằng lệnh trên. Gói <b>không đặt passkey</b> thì bấm đúp bình thường.</li>
       <li><b>Gỡ agent</b> (trong PowerShell nhớ để mã sản phẩm trong ngoặc kép, vì dấu <code>{{ }}</code> là ký hiệu riêng của PowerShell): <code>msiexec /x "{pc}" /qn /norestart PASSKEY="passkey-của-gói"</code>
         (máy cài gói có passkey cũng cần passkey khi gỡ).</li></ul>
       <p class="tk-ghi">Passkey không lấy lại được từ file MSI (file chỉ chứa dấu băm). Quên passkey thì tạo gói mới.</p></div>''')

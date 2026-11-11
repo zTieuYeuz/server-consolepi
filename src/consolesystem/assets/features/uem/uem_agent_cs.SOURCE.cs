@@ -820,19 +820,49 @@ public class CsAgent : ServiceBase
         try { File.AppendAllText(Path.Combine(Environment.GetEnvironmentVariable("windir"), "Temp\\cs-agent-msi.log"), DateTime.Now.ToString("s") + " " + s + "\r\n"); } catch { }
     }
 
-    // Hop thoai nhap passkey (che ky tu). Tra ve null neu bam Huy.
-    static string Prompt(string title, string text)
+    [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+
+    // Dua hop thoai len TREN CUNG va giu phim nhap: khi bam dup MSI, cua so "Please wait while Windows configures..." cua Windows Installer
+    // hien sau va che hop thoai, nguoi dung khong thay -> cai dat nhu bi treo (A8, 2.0.6). Nhan Alt gia de Windows cho phep chiem tieu diem.
+    static void LenTren(Form f)
+    {
+        try
+        {
+            SetWindowPos(f.Handle, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);   // HWND_TOPMOST, NOSIZE | NOMOVE | SHOWWINDOW
+            keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);        // VK_MENU nhan roi nha
+            SetForegroundWindow(f.Handle);
+            f.Activate();
+        }
+        catch { }
+    }
+
+    // Hop thoai nhap passkey (che ky tu). Tra ve null neu bam Huy hoac het gio (giay) - khong de MSI cho mai.
+    static string Prompt(string title, string text, int gioiHanGiay)
     {
         using (Form f = new Form())
         {
             f.Text = title; f.FormBorderStyle = FormBorderStyle.FixedDialog; f.StartPosition = FormStartPosition.CenterScreen; f.MaximizeBox = false; f.MinimizeBox = false;
-            f.ClientSize = new Size(420, 130); f.TopMost = true; f.ShowInTaskbar = true;
+            f.ClientSize = new Size(420, 150); f.TopMost = true; f.ShowInTaskbar = true;
             Label l = new Label(); l.Text = text; l.Left = 14; l.Top = 14; l.Width = 392; l.Height = 36;
             TextBox t = new TextBox(); t.Left = 14; t.Top = 56; t.Width = 392; t.UseSystemPasswordChar = true;
-            Button ok = new Button(); ok.Text = "OK"; ok.Left = 232; ok.Top = 90; ok.Width = 84; ok.DialogResult = DialogResult.OK;
-            Button hu = new Button(); hu.Text = "Hủy"; hu.Left = 322; hu.Top = 90; hu.Width = 84; hu.DialogResult = DialogResult.Cancel;
-            f.Controls.Add(l); f.Controls.Add(t); f.Controls.Add(ok); f.Controls.Add(hu); f.AcceptButton = ok; f.CancelButton = hu;
-            return f.ShowDialog() == DialogResult.OK ? t.Text : null;
+            Label con = new Label(); con.Left = 14; con.Top = 86; con.Width = 392; con.Height = 18; con.ForeColor = Color.DimGray;
+            Button ok = new Button(); ok.Text = "OK"; ok.Left = 232; ok.Top = 112; ok.Width = 84; ok.DialogResult = DialogResult.OK;
+            Button hu = new Button(); hu.Text = "Hủy"; hu.Left = 322; hu.Top = 112; hu.Width = 84; hu.DialogResult = DialogResult.Cancel;
+            f.Controls.Add(l); f.Controls.Add(t); f.Controls.Add(con); f.Controls.Add(ok); f.Controls.Add(hu); f.AcceptButton = ok; f.CancelButton = hu; f.ActiveControl = t;
+            DateTime het = DateTime.UtcNow.AddSeconds(gioiHanGiay);
+            System.Windows.Forms.Timer tm = new System.Windows.Forms.Timer(); tm.Interval = 700;
+            tm.Tick += delegate
+            {
+                int con_ = (int)(het - DateTime.UtcNow).TotalSeconds;
+                if (con_ <= 0) { f.DialogResult = DialogResult.Cancel; return; }
+                con.Text = "Tự hủy sau " + con_ + " giây nếu không nhập.";
+                LenTren(f); t.Focus();
+            };
+            f.Shown += delegate { LenTren(f); t.Focus(); tm.Start(); };
+            DialogResult kq = f.ShowDialog(); tm.Stop();
+            return kq == DialogResult.OK ? t.Text : null;
         }
     }
 
@@ -847,7 +877,7 @@ public class CsAgent : ServiceBase
         {
             for (int i = 0; i < 3; i++)
             {
-                string v = Prompt("Console System Agent", i == 0 ? "Nhập passkey để tiếp tục:" : "Passkey sai. Nhập lại (" + (3 - i) + " lần còn lại):");
+                string v = Prompt("Console System Agent", i == 0 ? "Nhập passkey để tiếp tục:" : "Passkey sai. Nhập lại (" + (3 - i) + " lần còn lại):", 180);
                 if (v == null) { MsiLog("nguoi dung huy nhap passkey"); return 1; }
                 if (PkOk(need, v)) { MsiLog("passkey dung"); return 0; }
             }
@@ -922,7 +952,7 @@ public class CsAgent : ServiceBase
             bool ok = false;
             for (int i = 0; i < 3 && !ok; i++)
             {
-                string v = Prompt("Gỡ Console System Agent", i == 0 ? "Nhập passkey để gỡ agent:" : "Passkey sai. Nhập lại (" + (3 - i) + " lần còn lại):");
+                string v = Prompt("Gỡ Console System Agent", i == 0 ? "Nhập passkey để gỡ agent:" : "Passkey sai. Nhập lại (" + (3 - i) + " lần còn lại):", 180);
                 if (v == null) return 1;
                 if (PkOk(pk, v)) { ok = true; pw = v; }
             }
