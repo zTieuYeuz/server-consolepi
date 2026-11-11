@@ -62,6 +62,46 @@ TUY_CHON_WINDOWS = [
          r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection"'
          r' /v AllowTelemetry /t REG_DWORD /d 0 /f',
      ]),
+    # ---- Quyen rieng tu (A4, 2.0.6): moi muc la 1 khoa registry chinh thuc (chinh sach / cai dat nguoi dung)
+    ("rt_quang_cao", "Quyền riêng tư: tắt mã quảng cáo cá nhân",
+     "Ứng dụng không dùng mã quảng cáo để theo dõi và gợi ý theo bạn", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo"'
+         r' /v DisabledByGroupPolicy /t REG_DWORD /d 1 /f',
+     ]),
+    ("rt_dinh_vi", "Quyền riêng tư: tắt dịch vụ định vị",
+     "Windows và ứng dụng không được dùng vị trí của máy", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors"'
+         r' /v DisableLocation /t REG_DWORD /d 1 /f',
+     ]),
+    ("rt_lich_su_hoat_dong", "Quyền riêng tư: tắt lịch sử hoạt động (Timeline)",
+     "Không ghi lại và không gửi lịch sử ứng dụng/tập tin đã mở", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"'
+         r' /v EnableActivityFeed /t REG_DWORD /d 0 /f',
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"'
+         r' /v PublishUserActivities /t REG_DWORD /d 0 /f',
+     ]),
+    ("rt_tim_kiem_web", "Quyền riêng tư: tắt gợi ý web trong ô tìm kiếm",
+     "Gõ vào ô tìm kiếm Start không gửi từ khoá lên Bing", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search"'
+         r' /v DisableWebSearch /t REG_DWORD /d 1 /f',
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search"'
+         r' /v ConnectedSearchUseWeb /t REG_DWORD /d 0 /f',
+     ]),
+    ("rt_goi_y_noi_dung", "Quyền riêng tư: tắt gợi ý/quảng cáo trong Start và Cài đặt",
+     "Không tự cài app gợi ý, không hiện quảng cáo trong menu Start", "ho_so", [
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"'
+         r' /v SubscribedContent-338388Enabled /t REG_DWORD /d 0 /f',
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"'
+         r' /v SubscribedContent-338389Enabled /t REG_DWORD /d 0 /f',
+         r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"'
+         r' /v SilentInstalledAppsEnabled /t REG_DWORD /d 0 /f',
+     ]),
+    ("rt_phan_hoi", "Quyền riêng tư: không hỏi ý kiến phản hồi",
+     "Windows không hiện hộp xin đánh giá/phản hồi", "may", [
+         r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection"'
+         r' /v DoNotShowFeedbackNotifications /t REG_DWORD /d 1 /f',
+     ]),
+
     ("hien_duoi_file", "Hiện phần mở rộng tập tin",
      "Thấy .exe .bat .pdf... thay vì giấu đi", "ho_so", [
          r'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"'

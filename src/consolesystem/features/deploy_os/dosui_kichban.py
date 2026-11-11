@@ -14,7 +14,7 @@ from consolesystem.features.deploy_os.dos_phanmem import (GOI_Y_THAM_SO, HAU_TO_
 from consolesystem.features.deploy_os.dos_font import (MAX_FONT_BYTE, MAX_ZIP_FONT_BYTE, _doc_meta_bo_font, _don_tam_cu, _giai_nen_font_zip, _id_bo_font_tu_ten, _luu_font_hop_le, _xoa_tam, chuan_hoa_fonts, danh_sach_bo_font, duong_bo_font, lay_bo_font, tao_bo_font, them_font_vao_bo, xoa_bo_font, xoa_font_trong_bo)  # noqa: F401  (B4: nguyen van o module nay)
 from consolesystem.features.deploy_os.dos_os import (_CACHE_CHI_SO_PRO, chi_so_anh_pro, co_sxs, danh_sach_os, duong_boot_wim, duong_install_wim, lay_os, tao_os_moi, xoa_os)  # noqa: F401  (B4: nguyen van o module nay)
 from consolesystem.features.deploy_os.dos_driver import (EXT_GOI_NEN_DRIVER, _tu_may, danh_sach_driver, dat_driver_cho_boot, dat_model_driver, driver_hop_model, giai_nen_goi_driver, khop_model, tao_driver_moi, xoa_driver, xoa_file_trong_driver)  # noqa: F401  (B4: nguyen van o module nay)
-from consolesystem.features.deploy_os.dos_kichban import (MAU_PHAN_VUNG_WINDOWS, _TRUONG_KICHBAN, _WIZARD, _WIZARD_HAN, _cauhinh_mac_dinh, _don_wizard_cu, _dong_tongket_windows, _khoi_go_app, _phan_vung_mac_dinh, _pv_win, _u_tuychon, _wizard_lay, _wizard_moi, cauhinh_tu_kichban, danh_sach_kichban, doc_kichban, kiem_tra_san_sang, loi_bat_buoc, luu_kichban, thieu_gi, xoa_kichban)  # noqa: F401  (B4: nguyen van o module nay)
+from consolesystem.features.deploy_os.dos_kichban import (MAU_PHAN_VUNG_WINDOWS, _TRUONG_KICHBAN, _WIZARD, _WIZARD_HAN, _cauhinh_mac_dinh, _don_wizard_cu, _dong_tongket_windows, _khoi_go_app, _phan_vung_mac_dinh, _pv_win, _u_tuychon, _wizard_lay, _wizard_moi, cauhinh_tu_kichban, danh_sach_kichban, doc_kichban, kiem_tra_san_sang, loi_bat_buoc, loi_user_local, luu_kichban, thieu_gi, xoa_kichban)  # noqa: F401  (B4: nguyen van o module nay)
 from consolesystem.features.deploy_os.dos_tomtat import (_mo_ta_ngan, _o_tom_tat, _ten_os, _tom_tat_day_du)  # noqa: F401  (B4: nguyen van o module nay)
 from consolesystem.features.deploy_os.dos_hangso import (APPS_META, BAN_PHIM, DANH_SACH_OS, EXT_APP, EXT_BOOT, EXT_UNGDUNG_ZIP, EXT_WINPE, KIEU_BOOT, MIN_FREE_GB, MUI_GIO, NGON_NGU, TEN_BUOC, _unattend)  # noqa: F401  (B4: nguyen van o module nay)
 from consolesystem.features.deploy_os.dos_giaodien import (_JS_TAI_FONT, _tabs_trienkhai, ngu_canh_trienkhai, tabs_deployos, ve_bao_cao_o_dia)  # noqa: F401  (B4: nguyen van o module nay)
@@ -163,6 +163,17 @@ def _nhan_du_lieu_buoc(d, buoc, form):
             if not d["mk_admin"]:
                 return ("Phải đặt mật khẩu cho tài khoản Administrator. Đây là "
                         "tài khoản duy nhất để đăng nhập vào máy sau khi cài.")
+
+            # A4: tai khoan local them (tuy chon). De trong ten = khong tao. Mat khau KHONG dien san ra trang: de trong = giu mat khau da luu.
+            d["ul_ten"] = (form.get("ul_ten") or "").strip()
+            d["ul_quyen"] = "Administrators" if form.get("ul_quyen") == "Administrators" else "Users"
+            if form.get("ul_mk"):
+                d["ul_mk"] = form.get("ul_mk")
+            if not d["ul_ten"]:
+                d["ul_mk"] = ""
+            loi_ul = loi_user_local(d["ul_ten"], d.get("ul_mk"), d.get("ten_may"))
+            if loi_ul:
+                return loi_ul
 
         if not d["ten_may"] and not _dt.la_dong(d):
             return "Chưa điền tên máy."
@@ -525,6 +536,19 @@ def _noi_dung_buoc(ma, d, buoc):
                     quyền và KHÔNG bị khoá sau nhiều lần nhập sai - hãy đặt mật
                     khẩu mạnh.</p>
                 </div>
+
+                <label>Tài khoản local thêm (tùy chọn)</label>
+                <input type="text" name="ul_ten" value="{_esc(d.get('ul_ten') or '')}" maxlength="20"
+                       autocomplete="off" placeholder="Tên tài khoản, ví dụ nhanvien (để trống = không tạo)">
+                <input type="password" name="ul_mk" value="" autocomplete="new-password"
+                       placeholder="{'Đã đặt rồi - để trống nếu không đổi' if d.get('ul_mk') else 'Mật khẩu cho tài khoản này'}">
+                <select name="ul_quyen">
+                  <option value="Users"{'' if d.get('ul_quyen') == 'Administrators' else ' selected'}>Người dùng thường (Users)</option>
+                  <option value="Administrators"{' selected' if d.get('ul_quyen') == 'Administrators' else ''}>Quản trị (Administrators)</option>
+                </select>
+                <p style="color:#8b93a1;font-size:12.5px;margin:7px 0 0;">
+                  Tạo thêm một tài khoản đăng nhập ngoài Administrator. Tối đa 20 ký tự; mật khẩu tối đa 60 ký tự,
+                  không dùng dấu " hoặc %. Máy vẫn tự đăng nhập Administrator lần đầu để chạy phần cài đặt.</p>
 
                 <label class="chon" style="margin-top:14px;">
                   <input type="checkbox" name="tu_dang_nhap" value="1"{tdn_ch}
@@ -1147,6 +1171,7 @@ def _ve_tongket(ma, d):
             <tr><td>Tên máy</td><td>{_esc(_dt.mo_ta(d))}</td></tr>
             <tr><td>Tài khoản</td><td>{_esc(d['username'] if d['os_ho'] == 'linux' else 'Administrator')}</td></tr>
             <tr><td>Mật khẩu</td><td>{'&bull;' * 8 + ' <span style="color:#8b93a1;">(đã đặt)</span>' if (d['password'] if d['os_ho'] == 'linux' else d.get('mk_admin')) else '<span style="color:#f59e0b;">Chưa đặt</span>'}</td></tr>
+            {('<tr><td>Tài khoản thêm</td><td>' + _esc(d['ul_ten']) + ' (' + ('Quản trị' if d.get('ul_quyen') == 'Administrators' else 'Người dùng thường') + ') · mật khẩu đã đặt</td></tr>') if (d.get('ul_ten') and d['os_ho'] != 'linux') else ''}
             <tr><td>SSH</td><td>{'Bật' if d.get('ssh') else ('Tắt' if d['os_ho'] == 'linux' else '<span style="color:#8b93a1;">Không áp dụng cho Windows</span>')}</td></tr>
             <tr><td>Múi giờ</td><td>{_esc(d['mui_gio'])}</td></tr>
             {_dong_tongket_windows(d, _esc)}

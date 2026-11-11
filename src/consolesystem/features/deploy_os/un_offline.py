@@ -31,6 +31,22 @@ def _lenh_bat_administrator(d):
             "$a | Enable-LocalUser; "
             "if ($a.Name -ne 'Administrator') { Rename-LocalUser $a -NewName Administrator }\""]
 
+def _lenh_tao_user_local(d):
+    r"""
+    Tao them 1 tai khoan local tuy y (A4, 2.0.6) - ngoai Administrator co san. Chay o pha specialize (quyen he thong).
+    Nhom theo SID chu khong theo ten (S-1-5-32-544 = Administrators, S-1-5-32-545 = Users): ten nhom doi theo ngon ngu Windows.
+    Mat khau nam trong dong lenh nen dosui_kichban chan truoc ky tu " va % (cmd se hieu sai) va gioi han do dai.
+    """
+    ten = (d.get("ul_ten") or "").strip()
+    if not ten or not d.get("ul_mk"):
+        return []
+    q = lambda x: x.replace("'", "''")
+    sid = "S-1-5-32-544" if d.get("ul_quyen") == "Administrators" else "S-1-5-32-545"
+    ps = "powershell -NoProfile -ExecutionPolicy Bypass -Command "
+    return [ps + "\"New-LocalUser -Name '" + q(ten) + "' -Password (ConvertTo-SecureString '" + q(d["ul_mk"])
+            + "' -AsPlainText -Force) -PasswordNeverExpires | Out-Null\"",
+            ps + "\"Add-LocalGroupMember -SID " + sid + " -Member '" + q(ten) + "'\""]
+
 # Ho so mac dinh: moi tai khoan moi duoc tao bang cach chep C:\Users\Default.
 # HKCU\Software\Classes KHONG nam trong NTUSER.DAT ma trong UsrClass.dat (vd
 # menu chuot phai kieu cu cua Windows 11) - phai nap rieng file do.
@@ -86,6 +102,7 @@ def _khoi_runsync_specialize(d):
     """
     lenh = (_lenh_tat_hoi_mang()
             + _lenh_bat_administrator(d)
+            + _lenh_tao_user_local(d)
             + ([f"powershell -NoProfile -ExecutionPolicy Bypass -File {DUONG_PS_GO_APP}"]
                if _ds_go_app(d) else [])
             + _lenh_theo_pha(d, "may")
