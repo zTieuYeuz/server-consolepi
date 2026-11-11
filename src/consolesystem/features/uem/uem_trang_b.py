@@ -7,6 +7,7 @@ import sys as _sys
 _sys.modules["ui.uem_trang_b"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import csv
 import io
+import json
 import os
 import re
 import tempfile
@@ -954,21 +955,27 @@ def register_uem(app):
             return chuyen(f"/uem/profiles/{pid}?loai={loai}" + (f"&sua={tid}" if tid else "") + "#tac-vu", loi, False)
         bo_qua = bool(request.form.get("bo_qua_loi"))
 
+        cu = []
+
         def ghi(pp):
             if tid:
                 t = DL.tim(pp["tasks"], tid)
                 if t:
+                    cu.append(json.loads(json.dumps(t)))
                     if loai == "user_them" and not ts.get("mat_khau"):
                         ts["mat_khau"] = t["tham_so"].get("mat_khau", "")
                     t.update(tham_so=ts, bo_qua_loi=bo_qua, ver=DL.moi_id())
                     return
             pp["tasks"].append({"id": DL.moi_id(), "loai": loai, "tham_so": ts, "bat": True, "bo_qua_loi": bo_qua, "ver": DL.moi_id()})
         _sua_pf(pid, ghi)
+        if cu and cu[0]["loai"] == "fw_quy_tac" and (loai != "fw_quy_tac" or cu[0]["tham_so"].get("ten") != ts.get("ten")):
+            UP.lap_don_dep_task(pid, cu[0])        # doi ten quy tac = quy tac moi: go quy tac ten cu con sot tren may
         return chuyen(f"/uem/profiles/{pid}#tac-vu", "Đã lưu tác vụ.")
 
     @app.route("/uem/profiles/<pid>/task/<tid>/hanh-dong", methods=["POST"])
     def uem_pf_task_hd(pid, tid):
         viec = request.form.get("viec", "")
+        bi_xoa = []
 
         def ghi(p):
             ds = p["tasks"]
@@ -976,7 +983,7 @@ def register_uem(app):
             if i is None:
                 return
             if viec == "xoa":
-                ds.pop(i)
+                bi_xoa.append(ds.pop(i))
             elif viec == "bat_tat":
                 ds[i]["bat"] = not ds[i].get("bat", True)
             elif viec == "len" and i > 0:
@@ -984,6 +991,9 @@ def register_uem(app):
             elif viec == "xuong" and i < len(ds) - 1:
                 ds[i + 1], ds[i] = ds[i], ds[i + 1]
         _sua_pf(pid, ghi)
+        n_go = sum(UP.lap_don_dep_task(pid, t) for t in bi_xoa)
+        if n_go:
+            return chuyen(f"/uem/profiles/{pid}", f"Đã xóa tác vụ. Đang gỡ quy tắc tường lửa của tác vụ này khỏi {n_go} máy (máy tắt sẽ gỡ khi bật lại).")
         return chuyen(f"/uem/profiles/{pid}", "Đã cập nhật tác vụ.")
 
     @app.route("/uem/bao-cao")

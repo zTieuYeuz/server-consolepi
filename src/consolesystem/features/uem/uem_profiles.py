@@ -249,7 +249,91 @@ def ap_dung_ngay(pid):
     return n
 
 
+# ----------------------------------------------------------------- A6: xoa / doi ten tac vu quy tac tuong lua -> go quy tac tren may
+DON_DEP_THU_LAI = 300            # may tat / mat mang: thu lai moi 5 phut
+DON_DEP_HET_HAN = 14 * 86400     # qua 14 ngay khong vao duoc may thi thoi
+_KHOA_DD = threading.Lock()
+
+
+def _quy_tac_con_duoc_khai_bao(ten, bo_task_id):
+    """Con tac vu quy tac tuong lua nao (profile nao, dang bat hay tat deu tinh) van dat TEN nay khong - khi do khong duoc go."""
+    return any(t["id"] != bo_task_id and t["loai"] == "fw_quy_tac" and t["tham_so"].get("ten") == ten
+               for pf in UD.PROFILES.doc() for t in pf.get("tasks", []))
+
+
+def lap_don_dep_task(pid, task):
+    """Tac vu `task` vua bi xoa (hoac vua doi ten quy tac) khoi profile `pid`: len ke hoach go quy tac tren cac may da ap dung no.
+    Chi dong khi task la quy tac tuong lua. Tra ve so may se duoc go."""
+    if (task or {}).get("loai") != "fw_quy_tac":
+        return 0
+    ten = (task.get("tham_so") or {}).get("ten", "")
+    if not ten or _quy_tac_con_duoc_khai_bao(ten, task["id"]):
+        return 0
+    p = DL.tim(UD.PROFILES.doc(), pid) or {}
+    tt = UD.TRANG_THAI_PROFILE.doc().get(pid, {})
+    may_ids = [mid for mid, st in tt.items() if (st.get("tasks", {}).get(task["id"]) or {}).get("tt") in ("da_dat", "da_lam")
+               and DL.tim(DL.MAY.doc(), mid)]
+    if not may_ids:
+        return 0
+
+    def ghi(ds):
+        co = {(x["may_id"], x["ten"]) for x in ds}
+        for mid in may_ids:
+            if (mid, ten) not in co:
+                ds.append({"id": DL.moi_id(), "may_id": mid, "ten": ten, "profile": p.get("ten", ""), "tao": time.time(), "thu": 0, "tiep": 0, "tb": ""})
+    UD.DON_DEP.sua(ghi)
+    try:
+        _EX.submit(xu_ly_don_dep)
+    except RuntimeError as _loi:
+        _bo_qua(_loi)
+    return len(may_ids)
+
+
+def xu_ly_don_dep():
+    """Chay cac viec go quy tac con cho; may nao vao duoc va go xong (hoac quy tac khong con) thi bo viec; chua vao duoc thi 5 phut sau thu lai."""
+    if not _KHOA_DD.acquire(blocking=False):
+        return 0
+    xong = 0
+    try:
+        for e in list(UD.DON_DEP.doc()):
+            bay_gio = time.time()
+            if e.get("tiep", 0) > bay_gio:
+                continue
+            m = DL.tim(DL.MAY.doc(), e["may_id"])
+            if m is None or bay_gio - e.get("tao", bay_gio) > DON_DEP_HET_HAN:
+                UD.DON_DEP.sua(lambda ds, i=e["id"]: ds.__setitem__(slice(None), [x for x in ds if x["id"] != i]))
+                continue
+            if _quy_tac_con_duoc_khai_bao(e["ten"], ""):             # co tac vu moi dat lai ten nay: dung go
+                UD.DON_DEP.sua(lambda ds, i=e["id"]: ds.__setitem__(slice(None), [x for x in ds if x["id"] != i]))
+                continue
+            try:
+                c, _mk, _cach = UK.ket_noi(m)
+                tt, tb = UB.chay(c, m["ip"], "fw_go_cua_console", {"ten": e["ten"]})
+            except UK.LoiMay as ex:
+                tt, tb = "cho", str(ex)
+            except Exception as ex:
+                tt, tb = "cho", DC._loi_dep(ex)
+            if tt in ("da_dat", "da_lam", "loi"):
+                if tt != "loi":
+                    UD.DON_DEP.sua(lambda ds, i=e["id"]: ds.__setitem__(slice(None), [x for x in ds if x["id"] != i]))
+                    xong += 1
+                    UD.ghi_tac_vu(m["id"], "profile", f'{e.get("profile", "")}: gỡ quy tắc tường lửa "{e["ten"]}" (tác vụ đã bị xóa)', True, tb)
+                    continue
+            def hoan(ds, i=e["id"], tb=tb):
+                x = DL.tim(ds, i)
+                if x:
+                    x.update(thu=x.get("thu", 0) + 1, tiep=time.time() + DON_DEP_THU_LAI, tb=str(tb)[:300])
+            UD.DON_DEP.sua(hoan)
+    finally:
+        _KHOA_DD.release()
+    return xong
+
+
 def _tick():
+    try:
+        xu_ly_don_dep()
+    except Exception as _loi:
+        _bo_qua(_loi)
     chu_ky = max(5, int(UD.cai_dat().get("tan_suat_profile", 30))) * 60
     now = time.time()
     tt = UD.TRANG_THAI_PROFILE.doc()

@@ -26,6 +26,12 @@ _CSS_PF = """<style>
 </style>"""
 
 
+HOI_XOA_FW = "Xóa tác vụ này? Quy tắc tường lửa do tác vụ đã đặt sẽ được gỡ khỏi các máy (máy đang tắt sẽ gỡ khi bật lại)."
+# Nhan ket qua tung tac vu tren tung may: ST=DA_DAT / DA_LAM... cua kich ban -> chu cho nguoi dung
+NHAN_TT = {"da_dat": ("ĐÃ ĐẶT SẴN", "xanh"), "da_lam": ("ĐÃ LÀM", "xanh"), "da_chay_truoc": ("ĐÃ CHẠY TRƯỚC ĐÓ", "xanh"),
+           "loi": ("LỖI", "do"), "bo_qua": ("BỎ QUA", "vang"), None: ("CHƯA CHẠY", "")}
+
+
 def _o_nhap(f, gt=None):
     ten, nhan, kieu, bb, mac_dinh, ghi = f
     gt = mac_dinh if gt is None else gt
@@ -109,7 +115,7 @@ def trang_profile(pid):
                f'<form method="POST" action="/uem/profiles/{pid}/task/{t["id"]}/hanh-dong">'
                f'<button class="tk-nut" name="viec" value="len" title="Lên"{" disabled" if i == 0 else ""}>↑</button><button class="tk-nut" name="viec" value="xuong" title="Xuống"{" disabled" if i == len(tasks) - 1 else ""}>↓</button>'
                f'<a class="tk-nut" href="/uem/profiles/{pid}?sua={t["id"]}#tac-vu">Sửa</a><button class="tk-nut" name="viec" value="bat_tat">{"Tắt" if t.get("bat", True) else "Bật"}</button>'
-               f'<button class="tk-nut do" name="viec" value="xoa" onclick="return confirm(\'Xóa tác vụ này?\');">Xóa</button></form></div>')
+               f'<button class="tk-nut do" name="viec" value="xoa" onclick="return confirm(\'{HOI_XOA_FW if t["loai"] == "fw_quy_tac" else "Xóa tác vụ này?"}\');">Xóa</button></form></div>')
     # form them / sua
     sua = next((t for t in tasks if t["id"] == request.args.get("sua")), None)
     loai = (sua or {}).get("loai") or request.args.get("loai", "")
@@ -132,8 +138,11 @@ def trang_profile(pid):
     hm = ""
     for m in may:
         st = tt.get(m["id"], {})
+        ct = "".join(f'<div style="margin:2px 0;">{chip(*NHAN_TT.get((st.get("tasks", {}).get(t["id"]) or {}).get("tt"), NHAN_TT[None]))} {_esc(UB.mo_ta(t["loai"], t["tham_so"]))}'
+                     f'{(" <span class=tk-ghi>" + _esc((st["tasks"][t["id"]].get("tb") or "")[:160]) + "</span>") if (st.get("tasks", {}).get(t["id"]) or {}).get("tb") else ""}</div>'
+                     for t in tasks if t.get("bat", True))
         hm += (f'<tr><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td><td>{chip({"ok": "Đúng cấu hình", "loi": "Có lỗi", "offline": "Không kết nối", "dang": "Đang chạy"}.get(st.get("trang_thai"), "Chưa chạy"), {"ok": "xanh", "loi": "do", "offline": "vang"}.get(st.get("trang_thai"), ""))}</td>'
-               f'<td>{_esc(gio(st.get("luc")) if st.get("luc") else "—")}</td><td>{_esc(st.get("tom_tat", ""))}</td></tr>')
+               f'<td>{_esc(gio(st.get("luc")) if st.get("luc") else "—")}</td><td>{_esc(st.get("tom_tat", ""))}<div style="margin-top:4px;">{ct}</div></td></tr>')
     hv = "".join(f'<tr><td><a href="/uem/may/{m["id"]}">{_esc(ten_may(m))}</a></td><td>{_esc(tk)}</td><td>{_esc(UB.viet_hoa(tb))}</td></tr>' for m, tk, tb in van)
     ds_nhom = [g["ten"] for g in DL.NHOM_MAY.doc() if g["id"] in p.get("nhom_may", [])] + [t["ten"] for t in the_ds if t["id"] in p.get("the", [])]
     pham_vi = "tất cả máy" if p.get("ap_dung_tat_ca") else (", ".join(ds_nhom) or "chưa chọn máy")

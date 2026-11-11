@@ -24,6 +24,7 @@ PROFILES = Kho("uem_profiles.json", [])      # [{id, ten, mo_ta, bat, ap_dung_ta
 BAO_CAO_TAC_VU = KhoLon("uem_tac_vu", {})  # {may_id: [{luc, nguon, ten, ok, tb}]}  (lich su tac vu / task reports)
 TRIEN_KHAI = KhoLon("uem_trien_khai", [])  # lich su cai/go/cap nhat WinGet [{luc, may_id, goi_id, ten_goi, hanh_dong, ok, tb}]
 TRANG_THAI_PROFILE = KhoLon("uem_profile_tt", {})  # {profile_id: {may_id: {task_id: {ok, tb, luc, lan}}}}
+DON_DEP = Kho("uem_don_dep.json", [])      # A6: viec go quy tac tuong lua con sot tren may sau khi xoa tac vu [{id, may_id, ten, profile, tao, thu, tiep, tb}]
 CAI_DAT = Kho("uem_cai_dat.json", {})
 
 MAC_DINH = {"tan_suat_bao_cao": 60, "tan_suat_profile": 30, "so_dong_trang": 10, "tu_dong_giam_sat": True,

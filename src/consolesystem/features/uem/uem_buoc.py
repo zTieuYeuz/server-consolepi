@@ -424,6 +424,9 @@ def _ps_tuong_lua(loai, ts):
     if loai == "fw_xoa_quy_tac":
         return (f"$r = @(Get-NetFirewallRule -DisplayName {_q(ts['ten'])} -ErrorAction SilentlyContinue); "
                 "if (-not $r) { 'ST=DA_DAT Khong co quy tac nay'; return }; $r | Remove-NetFirewallRule; 'ST=DA_LAM Da xoa ' + $r.Count + ' quy tac'")
+    if loai == "fw_go_cua_console":      # noi bo (A6): go quy tac do Console System tao (nhom 'Console System') khi tac vu bi xoa; khong dung quy tac cung ten do nguoi khac tao
+        return (f"$r = @(Get-NetFirewallRule -Group 'Console System' -ErrorAction SilentlyContinue | Where-Object {{ $_.DisplayName -eq {_q(ts['ten'])} }}); "
+                "if (-not $r) { 'ST=DA_DAT Quy tac da khong con tren may'; return }; $r | Remove-NetFirewallRule; 'ST=DA_LAM Da go ' + $r.Count + ' quy tac'")
     if loai == "fw_nhom":
         bat = ts["trang_thai"] == "bat"
         return (f"$rs = @(Get-NetFirewallRule -Group {_q(_FW_NHOM[ts['nhom']])} -ErrorAction SilentlyContinue); "
