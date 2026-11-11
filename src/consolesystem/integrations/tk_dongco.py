@@ -276,6 +276,12 @@ def danh_sach_kho():
     return [{"ten": a["ten"], "tham_so": (a.get("tham_so") or D.tham_so_mac_dinh_app(a["ten"]) or "")} for a in D.danh_sach_app()]
 
 
+def danh_sach_script():
+    """Script (.ps1/.bat/.cmd) trong Tai nguyen may: [ten]."""
+    from ui import deployos as D
+    return [x["ten"] for x in D._liet_ke(_DD.SCRIPTS_DIR, _DD.EXT_SCRIPT)]
+
+
 def danh_sach_ungdung():
     """Ung dung nhieu file (bo cai kem goi, tai tu kho ve Tai nguyen may) de chon lam buoc cai: [{id, ten_hien_thi, so_file, kich_thuoc, lenh_cai}]."""
     from ui import deployos as D

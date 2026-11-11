@@ -18,7 +18,6 @@ from flask import jsonify, request
 from ui import tk_dongco as DC
 from ui import tk_dulieu as DL
 from ui.uem_trang import _esc, chip, chuyen, gio, trang
-from consolesystem.core import duongdan as _DD
 from consolesystem.core import taisan as _taisan
 
 URL = "/uem/trien-khai/kich-ban"
@@ -33,11 +32,10 @@ LOAI_AGENT = ("phanmem", "ungdung", "script", "winget", "nguon", "nhom")
 
 
 def _tai_nguyen():
-    from ui import deployos as D
     return {
         "phanmem": [{"ref": a["ten"], "ten": a["ten"], "mo_ta": a.get("tham_so") or "chưa điền tham số cài im lặng"} for a in DC.danh_sach_kho()],
         "ungdung": [{"ref": u["id"], "ten": u["ten_hien_thi"], "mo_ta": u.get("lenh_cai") or "chưa có dòng lệnh cài"} for u in DC.danh_sach_ungdung()],
-        "script": [{"ref": x["ten"], "ten": x["ten"], "mo_ta": ""} for x in D._liet_ke(_DD.SCRIPTS_DIR, _DD.EXT_SCRIPT)],
+        "script": [{"ref": x, "ten": x, "mo_ta": ""} for x in DC.danh_sach_script()],
     }
 
 

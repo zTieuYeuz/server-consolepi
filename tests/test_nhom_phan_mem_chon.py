@@ -44,7 +44,7 @@ def test_khoi_nhom_trong_chi_cach_tao(monkeypatch):
 
 
 def test_agent_luu_buoc_ung_dung_nhieu_file():
-    """Form kich ban Agent co luoi 'Ung dung nhieu file' (name=ud) va buoc luu loai 'ungdung' (Bitwarden ban offline, 29/10/2026)."""
+    """Kich ban Agent: buoc 'Ung dung nhieu file' va 'Nhom phan mem' chon duoc trong trinh dung buoc co thu tu (buoc_json, A5 2.0.6); bieu mau cu (pm/ud) van duoc nhan."""
     src = open(os.path.join(GOC, "src", "consolesystem", "features", "uem", "uem_kichban.py"), encoding="utf-8").read()
-    assert 'name="ud"' in src and 'getlist("ud")' in src and '"loai": "ungdung"' in src
-    assert 'khoi_nhom_pm("pm", "ud", the=False)' in src
+    assert 'getlist("ud")' in src and '"loai": "ungdung"' in src
+    assert 'LOAI_AGENT = ("phanmem", "ungdung", "script", "winget", "nguon", "nhom")' in src and 'name="buoc_json"' in src
