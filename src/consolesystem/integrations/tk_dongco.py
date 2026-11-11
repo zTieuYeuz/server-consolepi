@@ -404,10 +404,10 @@ def _b_rustdesk(c, ip, b, may, url=None, sha=None):
 def _b_nguon(c, ip, b, may):
     hd = b.get("ref")
     if hd == "tat":
-        c.execute_cmd('shutdown /s /t 10 /f /c "Console System: tắt máy theo kịch bản"')
+        _chay_ps(c, 'shutdown /s /t 10 /f /c "Console System: tắt máy theo kịch bản"')      # execute_ps: kênh agent chỉ có execute_ps (LỖI-008)
         return True, "Đã gửi lệnh tắt máy (sau 10 giây)."
     if hd == "khoi_dong_lai":
-        c.execute_cmd('shutdown /r /t 10 /f /c "Console System: khởi động lại theo kịch bản"')
+        _chay_ps(c, 'shutdown /r /t 10 /f /c "Console System: khởi động lại theo kịch bản"')
         return True, "Đã gửi lệnh khởi động lại (sau 10 giây)."
     return False, "Hành động nguồn không hợp lệ."
 

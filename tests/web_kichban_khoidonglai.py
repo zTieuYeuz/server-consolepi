@@ -32,13 +32,12 @@ class GiaClient:
         self.loai = "agent"
 
     def execute_ps(self, script):
+        if "shutdown /" in script:
+            may["lenh"].append(script)
+            return "", type("S", (), {"error": []})(), False
         if "LastBootUpTime" in script:
             return may["boot"], type("S", (), {"error": []})(), False
         return "", type("S", (), {"error": []})(), False
-
-    def execute_cmd(self, lenh):
-        may["lenh"].append(lenh)
-        return "", "", 0
 
 
 UA.Client = GiaClient
