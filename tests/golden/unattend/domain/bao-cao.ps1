@@ -8,7 +8,7 @@ $MUC = @(
   @{ Nhom='May'; Nhan='Gia nhập domain'; Loai='ps'; Ma={
             $c = Get-CimInstance Win32_ComputerSystem
             @{ Dat = ($c.PartOfDomain -and $c.Domain -eq 'congty.local');
-                ChiTiet = $(if ($c.PartOfDomain) { $c.Domain } else { 'chua vao domain' }) }
+                ChiTiet = $(if ($c.PartOfDomain) { 'ĐÃ VÀO DOMAIN ' + $c.Domain } else { 'chua vao domain' }) }
         } },
   @{ Nhom='Phải giữ lại'; Nhan='Microsoft Store'; Loai='ps'; Ma={
             $g = Get-AppxPackage -Name 'Microsoft.WindowsStore' -EA SilentlyContinue

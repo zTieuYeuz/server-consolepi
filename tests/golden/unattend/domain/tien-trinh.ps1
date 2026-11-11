@@ -49,6 +49,29 @@ function BaoPi($duong, $goi) {
     } catch { }
 }
 
+
+$DomainMuonVao = 'congty.local'
+function KiemDomain {
+    try {
+        $c = Get-CimInstance Win32_ComputerSystem
+        if ($c.PartOfDomain) {
+            BaoPi 'domain' @{ may = $TenMay; trang_thai = 'da_vao'; domain = "$($c.Domain)" }
+            return
+        }
+        $ma = ''
+        try {
+            $ln = Select-String -Path 'C:\Windows\debug\NetSetup.log' -Pattern '(NetpDoDomainJoin|NetpJoinDomain|NetpJoinDomainOnDs).*status( of)?:? *0x[0-9a-fA-F]+' -EA Stop | Where-Object { $_.Line -notmatch 'status( of)?:? *0x0+\s*$' } | Select-Object -Last 1
+            if ($ln) { $ma = [regex]::Match($ln.Line, '0x[0-9a-fA-F]+\s*$').Value.Trim().ToLower() }
+        } catch { }
+        $y = 'không rõ nguyên nhân, xem C:\Windows\debug\NetSetup.log trên máy'
+        if ($ma -eq '0x52e') { $y = 'sai tài khoản hoặc mật khẩu gia nhập - sửa trong kịch bản' }
+        elseif ($ma -eq '0x54b') { $y = 'không tìm thấy domain qua DNS' }
+        elseif ($ma -eq '0x6ba') { $y = 'không kết nối được máy chủ domain (RPC)' }
+        elseif ($ma -eq '0x5') { $y = 'tài khoản gia nhập không đủ quyền thêm máy' }
+        elseif ($ma -eq '0x2b') { $y = 'giờ máy lệch domain quá 5 phút' }
+        BaoPi 'domain' @{ may = $TenMay; trang_thai = 'loi'; domain = $DomainMuonVao; ma = $ma; ghi_chu = $y }
+    } catch { }
+}
 # ------------------------------------------------------------ cua so
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -149,6 +172,7 @@ $XAM   = [System.Drawing.Color]::FromArgb(130, 138, 150)
 Ghi "===== Bat dau cai dat: $KichBan ====="
 BaoPi 'batdau' @{ may = $TenMay; kichban = $KichBan;
                    buoc = @($Buoc | ForEach-Object { $_.Ten }) }
+KiemDomain
 
 $i = 0
 $soLoi = 0
@@ -306,6 +330,7 @@ foreach ($b in $Buoc) {
 }
 
 Ghi "===== Xong ====="
+KiemDomain
 # 'ketthuc' gui SAU khi bao cao da ghi ra dia (ben duoi) - lab 26/09/2026:
 # Pi bao "da xong" truoc, tat may ngay luc do thi thu muc ConsolePi KHONG co
 # bao cao (bao-cao.ps1 mat ~30s de kiem).

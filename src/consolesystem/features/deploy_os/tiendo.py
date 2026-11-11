@@ -142,6 +142,22 @@ def cap_nhat(ten_may, chi_so, trang_thai, giay=0, ghi_chu="", ten="",
     return True
 
 
+def dat_domain(ten_may, trang_thai, domain="", ma="", ghi_chu=""):
+    """A9: trang thai gia nhap domain cua may (may dich bao sau khi dang nhap). trang_thai: 'da_vao' | 'loi'. Co the goi nhieu lan (lan cuoi thang)."""
+    if trang_thai not in ("da_vao", "loi"):
+        return False
+    with _khoa:
+        _nap()
+        m = _du_lieu.get(ten_may)
+        if not m:
+            m = {"kichban": "?", "bat_dau": time.time(), "buoc": []}
+            _du_lieu[ten_may] = m
+        m["domain"] = {"trang_thai": trang_thai, "ten": str(domain)[:100], "ma": str(ma)[:20], "ghi_chu": str(ghi_chu)[:200], "luc": time.time()}
+        m["cap_nhat"] = time.time()
+        _ghi()
+    return True
+
+
 def ket_thuc(ten_may):
     with _khoa:
         _nap()
@@ -166,6 +182,7 @@ def danh_sach():
                 "cap_nhat": m.get("cap_nhat", 0),
                 "xong_luc": m.get("xong_luc"),
                 "buoc": buoc,
+                "domain": m.get("domain"),
                 "so_xong": sum(1 for b in buoc if b["trang_thai"] == "xong"),
                 "so_loi": sum(1 for b in buoc
                               if b["trang_thai"] in ("loi", "qua_gio")),
@@ -258,6 +275,12 @@ def register_tiendo(app):
         _bao_lich_su(g, _khoa_may(g))
         return jsonify({"ok": True})
 
+    @app.route("/api/tiendo/domain", methods=["POST"])
+    def api_tiendo_domain():
+        g = _goi()
+        dat_domain(_khoa_may(g), str(g.get("trang_thai") or ""), str(g.get("domain") or ""), str(g.get("ma") or ""), str(g.get("ghi_chu") or ""))
+        return jsonify({"ok": True})
+
     @app.route("/api/tiendo/ketthuc", methods=["POST"])
     def api_tiendo_ketthuc():
         g = _goi()
@@ -289,6 +312,20 @@ def register_tiendo(app):
                 nhan = '<span style="color:#f59e0b;">đang chạy...</span>'
 
             pct = round(m["so_xong"] * 100 / m["tong"]) if m["tong"] else 0
+            dm = m.get("domain") or {}
+            if dm.get("trang_thai") == "da_vao":
+                chip_dm = (f'<span class="tt-domain da" style="background:#1f6f3a;color:#fff;border-radius:6px;padding:2px 9px;font-size:12.5px;font-weight:600;">'
+                           f'ĐÃ VÀO DOMAIN {esc(dm.get("ten", ""))}</span>')
+                dai_dm = ""
+            elif dm.get("trang_thai") == "loi":
+                chip_dm = ('<span class="tt-domain loi" style="background:#a82525;color:#fff;border-radius:6px;padding:2px 9px;font-size:12.5px;font-weight:600;">'
+                           'CHƯA VÀO DOMAIN</span>')
+                ma_loi = f' &middot; mã lỗi <b>{esc(dm["ma"])}</b>' if dm.get("ma") else ""
+                dai_dm = (f'<div class="tt-dai-do" style="margin:0 0 10px;padding:9px 12px;border-radius:6px;background:#4a1818;border:1px solid #a82525;color:#ffb4b4;font-size:13.5px;">'
+                          f'<b>Máy không vào được domain {esc(dm.get("ten", ""))}</b>{ma_loi}'
+                          f'{(": " + esc(dm["ghi_chu"])) if dm.get("ghi_chu") else ""}</div>')
+            else:
+                chip_dm, dai_dm = "", ""
             hang = ""
             for i, b in enumerate(m["buoc"], 1):
                 ten_tt, mau = TRANG_THAI.get(b["trang_thai"], ("?", "#8b93a1"))
@@ -319,9 +356,11 @@ def register_tiendo(app):
                   <span>{esc(m["ten_may"])}</span>
                   <small style="color:#8b93a1;font-weight:400;font-size:13px;">
                     {esc(m["kichban"])}</small>
+                  {chip_dm}
                   <span style="margin-left:auto;font-size:13.5px;font-weight:400;">
                     {m["so_xong"]}/{m["tong"]} &mdash; {nhan}</span>
                 </h3>
+                {dai_dm}
                 <div style="background:#2c3036;border-radius:5px;height:9px;overflow:hidden;">
                   <div style="width:{pct}%;height:100%;background:#4CAF50;"></div>
                 </div>

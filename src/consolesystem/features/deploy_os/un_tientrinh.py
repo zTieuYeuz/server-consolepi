@@ -6,6 +6,35 @@ from consolesystem.features.deploy_os.un_kiemtra import (GIAY_TOI_DA_MOI_BUOC, _
 from consolesystem.features.deploy_os.un_offline import (BUILD_TOI_THIEU_HEADLESS)  # noqa: F401
 
 
+# A9 (2.0.6): bao TRANG THAI GIA NHAP DOMAIN len trang Tien trinh cua Pi (xanh "ĐÃ VÀO DOMAIN" / dai do + ma loi doc tu NetSetup.log).
+# Gia nhap chay o buoc specialize (truoc khi dang nhap), nen luc nay chi doc ket qua; goi 2 lan (dau + cuoi) phong Windows tu thu lai.
+# Chen vao script qua bien (khong qua f-string) nen ngoac nhon de don.
+_KHOI_DOMAIN = r"""
+$DomainMuonVao = __DOMAIN__
+function KiemDomain {
+    try {
+        $c = Get-CimInstance Win32_ComputerSystem
+        if ($c.PartOfDomain) {
+            BaoPi 'domain' @{ may = $TenMay; trang_thai = 'da_vao'; domain = "$($c.Domain)" }
+            return
+        }
+        $ma = ''
+        try {
+            $ln = Select-String -Path 'C:\Windows\debug\NetSetup.log' -Pattern '(NetpDoDomainJoin|NetpJoinDomain|NetpJoinDomainOnDs).*status( of)?:? *0x[0-9a-fA-F]+' -EA Stop | Where-Object { $_.Line -notmatch 'status( of)?:? *0x0+\s*$' } | Select-Object -Last 1
+            if ($ln) { $ma = [regex]::Match($ln.Line, '0x[0-9a-fA-F]+\s*$').Value.Trim().ToLower() }
+        } catch { }
+        $y = 'không rõ nguyên nhân, xem C:\Windows\debug\NetSetup.log trên máy'
+        if ($ma -eq '0x52e') { $y = 'sai tài khoản hoặc mật khẩu gia nhập - sửa trong kịch bản' }
+        elseif ($ma -eq '0x54b') { $y = 'không tìm thấy domain qua DNS' }
+        elseif ($ma -eq '0x6ba') { $y = 'không kết nối được máy chủ domain (RPC)' }
+        elseif ($ma -eq '0x5') { $y = 'tài khoản gia nhập không đủ quyền thêm máy' }
+        elseif ($ma -eq '0x2b') { $y = 'giờ máy lệch domain quá 5 phút' }
+        BaoPi 'domain' @{ may = $TenMay; trang_thai = 'loi'; domain = $DomainMuonVao; ma = $ma; ghi_chu = $y }
+    } catch { }
+}
+"""
+
+
 def sinh_script_tien_trinh(d, dia_chi_pi):
     r"""
     Sinh script PowerShell DIEU PHOI toan bo viec cai dat sau khi dang nhap,
@@ -46,6 +75,8 @@ def sinh_script_tien_trinh(d, dia_chi_pi):
     mang_buoc = ",\n".join(dong) if dong else ""
 
     ten_kb = d.get("tu_kichban") or d.get("ten_kichban") or "(khong ten)"
+    khoi_domain = _KHOI_DOMAIN.replace("__DOMAIN__", _ps_chuoi(d["domain"])) if d.get("domain") else ""
+    goi_domain = "KiemDomain\n" if d.get("domain") else ""
 
     return f"""# ============================================================
 #  Console Pi - dieu phoi cai dat sau khi dang nhap
@@ -98,7 +129,7 @@ function BaoPi($duong, $goi) {{
     }} catch {{ }}
 }}
 
-# ------------------------------------------------------------ cua so
+{khoi_domain}# ------------------------------------------------------------ cua so
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
@@ -198,7 +229,7 @@ $XAM   = [System.Drawing.Color]::FromArgb(130, 138, 150)
 Ghi "===== Bat dau cai dat: $KichBan ====="
 BaoPi 'batdau' @{{ may = $TenMay; kichban = $KichBan;
                    buoc = @($Buoc | ForEach-Object {{ $_.Ten }}) }}
-
+{goi_domain}
 $i = 0
 $soLoi = 0
 # Ket qua tung buoc -> bao-cao.ps1 doc lai de BAO CAO co ca script, lenh
@@ -355,7 +386,7 @@ foreach ($b in $Buoc) {{
 }}
 
 Ghi "===== Xong ====="
-# 'ketthuc' gui SAU khi bao cao da ghi ra dia (ben duoi) - lab 26/09/2026:
+{goi_domain}# 'ketthuc' gui SAU khi bao cao da ghi ra dia (ben duoi) - lab 26/09/2026:
 # Pi bao "da xong" truoc, tat may ngay luc do thi thu muc ConsolePi KHONG co
 # bao cao (bao-cao.ps1 mat ~30s de kiem).
 try {{

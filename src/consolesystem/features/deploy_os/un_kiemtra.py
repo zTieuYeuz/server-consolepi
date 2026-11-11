@@ -151,7 +151,7 @@ def _muc_kiem_tra(d):
         them("May", "Gia nhập domain", loai="ps", ma=f"""
             $c = Get-CimInstance Win32_ComputerSystem
             @{{ Dat = ($c.PartOfDomain -and $c.Domain -eq {_ps_chuoi(d['domain'])});
-                ChiTiet = $(if ($c.PartOfDomain) {{ $c.Domain }} else {{ 'chua vao domain' }}) }}
+                ChiTiet = $(if ($c.PartOfDomain) {{ 'ĐÃ VÀO DOMAIN ' + $c.Domain }} else {{ 'chua vao domain' }}) }}
         """)
 
     # --- Tuy chon Windows da tich: suy cach kiem tu CHINH lenh se chay
