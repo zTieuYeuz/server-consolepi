@@ -6,6 +6,7 @@
 /api/tiendo/batdau	POST	api_tiendo_batdau
 /api/tiendo/buoc	POST	api_tiendo_buoc
 /api/tiendo/data	GET	api_tiendo_data
+/api/tiendo/domain	POST	api_tiendo_domain
 /api/tiendo/ketthuc	POST	api_tiendo_ketthuc
 /bluetooth	GET	bt_page
 /bt-connect	POST	bt_connect_route
