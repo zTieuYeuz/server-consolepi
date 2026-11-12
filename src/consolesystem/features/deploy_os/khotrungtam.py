@@ -658,13 +658,13 @@ def _lech_gio_voi_kho(url):
         return 0
 
 
-def tu_dang_ky():
-    """Gui goi thong tin da ma hoa len kho. Tra (ok, thong_diep)."""
+def tu_dang_ky(bo_token=False):
+    """Gui goi thong tin da ma hoa len kho. Tra (ok, thong_diep). bo_token=True: dang ky nhu may MOI (kho da mat / thu hoi token cu)."""
     import secrets as _sec
     cu = doc_cauhinh()
     url = cu["url"] if cu else URL_KHO_MAC_DINH
     du = {"ts": int(time.time() + _lech_gio_voi_kho(url)), "ma_goi": _sec.token_hex(16),
-          "token": cu["token"] if cu else "", "may": thong_tin_may()}
+          "token": "" if bo_token else (cu["token"] if cu else ""), "may": thong_tin_may()}
     try:
         phong_bi, k = _ma_hoa_goi(du)
         r = requests.post(f"{url}/api/dang-ky", json=phong_bi, timeout=TIMEOUT_DANH_SACH,
@@ -690,13 +690,44 @@ def tu_dang_ky():
             luu_khoa_may(_DD.FILE_KHOA_MAY, kq["khoa_may"])
         except Exception as e:
             print(f"[tu-dang-ky-kho] khong luu duoc khoa may: {type(e).__name__}", flush=True)
-    if cu and cu.get("token") == kq.get("token") and cu["url"] == url:
+    if not bo_token and cu and cu.get("token") == kq.get("token") and cu["url"] == url:
         return True, "Đã cập nhật thông tin máy lên kho."
     return luu_cauhinh(url, kq["token"])
 
 
 _KHOA_DANG_KY = threading.Lock()
 LAN_THU_CUOI = {"luc": 0, "ok": False, "msg": ""}
+
+
+HOI_PHUC = {"luc": 0.0, "ok": None, "msg": "", "chan": False, "lan": []}     # tu hoi phuc khi kho tra 401/403 (xem tu_hoi_phuc_token)
+HOI_PHUC_CACH = 600           # toi thieu 10 phut giua hai lan
+HOI_PHUC_TOI_DA_NGAY = 6      # toi da 6 lan / 24 gio: khong lap vo han
+
+
+def tu_hoi_phuc_token(gio=time.time):
+    """Kho tra 401/403 voi token dang dung (kho bi dung lai / thu hoi): tu dang ky lai nhu may moi de nhan token moi.
+    Gioi han tan suat, ghi nhat ky, DUNG ha neu kho bao may bi chan that. Tra True neu da co token moi (de thu lai yeu cau)."""
+    now = gio()
+    with _KHOA_DANG_KY:
+        HOI_PHUC["lan"] = [t for t in HOI_PHUC["lan"] if now - t < 86400]
+        if HOI_PHUC["chan"] and now - HOI_PHUC["luc"] < 86400:
+            return False
+        if now - HOI_PHUC["luc"] < HOI_PHUC_CACH or len(HOI_PHUC["lan"]) >= HOI_PHUC_TOI_DA_NGAY:
+            return False
+        HOI_PHUC["luc"] = now
+        HOI_PHUC["lan"].append(now)
+        try:
+            ok, msg = tu_dang_ky(bo_token=True)
+        except Exception as e:
+            ok, msg = False, f"{type(e).__name__}: {e}"
+        HOI_PHUC.update(ok=ok, msg=msg, chan=("bị chặn" in msg))
+    print(f"[kho-hoi-phuc] {'OK' if ok else 'KHONG DUOC'}: {msg}", flush=True)
+    try:
+        from ui.errlog import ghi_thao_tac
+        ghi_thao_tac("Kho từ chối token, Console tự đăng ký lại: " + ("thành công" if ok else "chưa được"), msg[:120], nguoi="-")
+    except Exception as _loi:
+        _bo_qua(_loi)
+    return bool(ok)
 
 
 def thu_dang_ky_ngay(cach_toi_thieu=0):

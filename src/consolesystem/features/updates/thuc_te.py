@@ -37,7 +37,7 @@ def kho_thuc():
         cfg = {}
     if cfg.get("kho_url") and cfg.get("kho_token"):
         return KhoCapNhat(lambda: {"url": KT.chuan_hoa_url(cfg["kho_url"]), "token": cfg["kho_token"]}, lambda: {}, KT._phien_ban)
-    return KhoCapNhat(KT.doc_cauhinh, KT.cf_access_headers, KT._phien_ban)
+    return KhoCapNhat(KT.doc_cauhinh, KT.cf_access_headers, KT._phien_ban, KT.tu_hoi_phuc_token)
 
 
 def _py(duong_script, *args, timeout=900):

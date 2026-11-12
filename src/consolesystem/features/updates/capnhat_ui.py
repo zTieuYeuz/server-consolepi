@@ -103,7 +103,13 @@ def _khoi_trang_thai(moi, ts, cur, cfg):
     loi = ""
     if ts.get("loi"):
         mau = "#F87171" if ts.get("loai_loi") == "an-ninh" else "#FBBF24"
-        loi = '<div class="msg err" style="border-color:%s">%s</div>' % (mau, esc(ts["loi"]))
+        tx = ts["loi"]
+        if " 401" in tx or " 403" in tx:
+            tx = ("Kho không nhận token của máy này (kho đã dựng lại hoặc thu hồi token). Console sẽ tự đăng ký lại với kho (tối đa 6 lần mỗi 24 giờ, cách nhau 10 phút); "
+                  "bấm Kiểm tra ngay để thử. Chi tiết: " + tx)
+        loi = '<div class="msg err" style="border-color:%s">%s</div>' % (mau, esc(tx))
+        if ts.get("loi_tu") and time.time() - ts["loi_tu"] > 86400:
+            loi += '<div class="msg err" style="border-color:#F87171"><b>Lỗi này đã kéo dài hơn 24 giờ</b> (từ %s): máy chưa nhận được bản cập nhật nào. Cần người quản trị xem.</div>' % esc(_gio(ts["loi_tu"]))
     nut = _form_nut("/cap-nhat/kiem-tra", "Kiểm tra ngay", "blue")
     return _the("Cập nhật Console System", "<table>%s</table>%s<p>%s</p>" % ("".join(dong), loi, nut))
 

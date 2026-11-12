@@ -182,6 +182,7 @@ def kiem_tra(moi, bat_buoc=False):
         kq.update({"loi": str(e), "loai_loi": "an-ninh" if str(e).startswith("AN NINH") else "cau-hinh"})
     except LoiDuLieu as e:
         kq.update({"loi": "Lỗi dữ liệu: %s" % e, "loai_loi": "kho"})
+    kq["loi_tu"] = (ts.get("loi_tu") or now) if kq["loi"] else 0          # tu luc nao loi lien tuc (de canh bao khi keo dai > 24 gio)
     moi.kho_json("trang-thai.json", {}).sua(lambda d: (d.update(kq), [d.pop(k) for k in ("ban_ke_tiep", "ban_moi_nhat") if kq.get(k) is None and k in d]))
     return trang_thai(moi)
 

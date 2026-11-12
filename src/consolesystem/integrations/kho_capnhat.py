@@ -11,8 +11,9 @@ TIMEOUT = 20
 
 
 class KhoCapNhat:
-    def __init__(self, cau_hinh_fn, headers_fn=lambda: {}, phien_ban_fn=lambda: ""):
-        self._cau_hinh, self._headers_fn, self._pb = cau_hinh_fn, headers_fn, phien_ban_fn
+    def __init__(self, cau_hinh_fn, headers_fn=lambda: {}, phien_ban_fn=lambda: "", hoi_phuc_fn=None):
+        """hoi_phuc_fn() -> True neu vua lay lai duoc token moi (kho tra 401/403 vi mat/thu hoi token): _get thu lai MOT lan voi cau hinh moi."""
+        self._cau_hinh, self._headers_fn, self._pb, self._hoi_phuc = cau_hinh_fn, headers_fn, phien_ban_fn, hoi_phuc_fn
 
     def _co(self):
         c = self._cau_hinh()
@@ -26,13 +27,25 @@ class KhoCapNhat:
 
     def _get(self, duong, **kw):
         c = self._co()
-        try:
-            r = requests.get(c["url"] + duong, headers={**self._h(c), **kw.pop("headers", {})}, timeout=kw.pop("timeout", TIMEOUT), **kw)
-        except (requests.ConnectionError, requests.Timeout) as e:
-            raise LoiKho("khong toi duoc kho (%s)" % type(e).__name__)
-        except requests.RequestException as e:
-            raise LoiKho("loi mang: %s" % type(e).__name__)
-        return r
+        thu_lai = True
+        while True:
+            try:
+                r = requests.get(c["url"] + duong, headers={**self._h(c), **kw.get("headers", {})}, timeout=kw.get("timeout", TIMEOUT),
+                                 **{k: v for k, v in kw.items() if k not in ("headers", "timeout")})
+            except (requests.ConnectionError, requests.Timeout) as e:
+                raise LoiKho("khong toi duoc kho (%s)" % type(e).__name__)
+            except requests.RequestException as e:
+                raise LoiKho("loi mang: %s" % type(e).__name__)
+            if r.status_code in (401, 403) and thu_lai and self._hoi_phuc is not None:
+                thu_lai = False                       # chi thu lai MOT lan moi yeu cau: khong lap vo han
+                try:
+                    ok = bool(self._hoi_phuc())
+                except Exception:
+                    ok = False
+                if ok:
+                    c = self._co()
+                    continue
+            return r
 
     def danh_muc(self, kenh):
         r = self._get("/api/cap-nhat/danh-muc", params={"kenh": kenh})
