@@ -83,7 +83,7 @@ def test_moi_route_cua_app_da_khai_hoac_cong_khai_va_chan_theo_vai_tro(tmp_path)
 
 def test_cong_vao_terminal_la_muc_ghi_ke_ca_get(tmp_path, monkeypatch):
     RB = _rb(tmp_path, monkeypatch)
-    for p in ("/term-ssh/ws", "/term-phien/x", "/uem-vnc-ws/a"):
+    for p in ("/term-phien/x", "/uem-vnc-ws/a"):
         assert RB.dich_vu_cua(p) == "remote", p
         assert RB.muc_can("GET", p) == "ghi", p
         assert RB.cho_phep("van_hanh", "GET", p)[0] and RB.cho_phep("quan_tri", "GET", p)[0]
@@ -125,11 +125,11 @@ def test_chuan_may_khoa_dieu_khien():
 def test_shell_root_cua_pi_va_serial_chi_quan_tri(tmp_path, monkeypatch):
     """LOI-011-F (CEO chot): terminal tai cho + console/serial + gui phim/thu vien lenh vao terminal cua Pi + cai goi tren Pi chi Quan tri; SSH/RDP/VNC toi may dich van cho Van hanh."""
     RB = _rb(tmp_path, monkeypatch)
-    for uri in ("/term-local/", "/term-local/ws", "/term-console/ttyUSB0/x", "/term-phien/?arg=local", "/term-phien/ws?arg=serial-ttyUSB0"):
+    for uri in ("/term-ssh/", "/term-ssh/ws?arg=x", "/term-local/", "/term-local/ws", "/term-console/ttyUSB0/x", "/term-phien/?arg=local", "/term-phien/ws?arg=serial-ttyUSB0"):
         assert RB.muc_cong_vao(uri) == "quan_tri", uri
         assert not RB.cho_phep("van_hanh", "GET", uri.split("?")[0], RB.muc_cong_vao(uri))[0], uri
         assert RB.cho_phep("quan_tri", "GET", uri.split("?")[0], RB.muc_cong_vao(uri))[0], uri
-    for uri in ("/term-phien/?arg=abc123", "/term-ssh/", "/uem-vnc-ws/x", "/term-phien/"):
+    for uri in ("/term-phien/?arg=abc123", "/uem-vnc-ws/x", "/term-phien/"):
         assert RB.muc_cong_vao(uri) is None, uri
         assert RB.cho_phep("van_hanh", "GET", uri.split("?")[0], RB.muc_cong_vao(uri))[0], uri
     for m, p in (("GET", "/terminal"), ("POST", "/terminal/paste"), ("POST", "/api/send-keys"), ("POST", "/commands/send"), ("POST", "/commands/add"),
@@ -160,5 +160,5 @@ def test_lach_duong_dan_vao_cong_quan_tri_bi_chan(tmp_path, monkeypatch):
         d, q, lat = RB.chuan_uri(uri)
         assert RB.muc_cong_vao(uri) == "quan_tri", uri
         assert not RB.cho_phep("van_hanh", "GET", d, RB.muc_cong_vao(uri))[0], uri
-    for uri in ("/term-phien/?arg=abc", "/term-phien/ws?arg=abc-123", "/term-ssh/token", "/uem-vnc-ws/x"):
+    for uri in ("/term-phien/?arg=abc", "/term-phien/ws?arg=abc-123", "/term-phien/token", "/uem-vnc-ws/x"):
         assert RB.muc_cong_vao(uri) is None, uri

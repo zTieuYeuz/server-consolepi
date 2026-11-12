@@ -81,7 +81,7 @@ def la_pha_huy(path):
 
 # Cong vao nginx chi danh cho Quan tri (LOI-011-F, CEO chot 12/11): shell root cua chinh Pi (terminal tai cho) va cong console/serial. Cong phien SSH (?arg=<ma>) van
 # cho Van hanh, TRU phien dac biet "local" (terminal may nay) va "serial-*" (cong serial).
-CONG_VAO_QUAN_TRI = ("/term-local", "/term-console")
+CONG_VAO_QUAN_TRI = ("/term-local", "/term-ssh", "/term-console")   # /term-ssh = ttyd SSH dung chung kieu cu (root, con chay, khong con trang dan toi): chi Quan tri (LOI-013)
 
 
 def chuan_uri(uri):
