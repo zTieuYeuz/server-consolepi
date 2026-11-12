@@ -22,6 +22,8 @@ _goc = threading.Thread.start
 threading.Thread.start = lambda self: None if getattr(getattr(self, "_target", None), "__name__", "") in ("tu_dang_ky_nen", "_driver_nen", "vong") else _goc(self)
 app = runpy.run_path(os.path.join(SRC, "app.py"), run_name="dev")["app"]
 c = app.test_client()
+with c.session_transaction() as _s:
+    _s["user"] = "root"          # thao tac xoa chi danh cho Quan tri (RBAC 2.0.7); man hinh cuc bo = Van hanh
 H = {"X-ConsolePi-Local": "1"}
 LOG = []
 THU_BODY = os.environ.get("HV_BODY")          # thu muc luu noi dung da chuan hoa de diff khi can

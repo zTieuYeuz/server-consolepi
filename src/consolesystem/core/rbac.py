@@ -11,6 +11,7 @@ Tai khoan CUU HO: root va thanh vien nhom sudo luon la quan_tri (khong bi bang v
 """
 import json
 import os
+import re
 import threading
 import time
 
@@ -38,6 +39,9 @@ REGISTRY = {
 }
 # Cong vao do nginx chuyen thang toi ttyd/cau noi VNC (khong qua route Flask), chi kiem bang auth_request /_auth: nhap phim/dieu khien = muc "ghi" ke ca khi la GET/WebSocket
 CONG_VAO = ("/term-local", "/term-ssh", "/term-phien", "/term-console", "/uem-vnc-ws")
+# Thao tac "huy diet" (khong GET): Van hanh/Chi xem KHONG duoc dung du dich vu chua la quan tri - tat/khoi dong lai Pi, doi mang loi, xoa du lieu/may/kich ban
+PHA_HUY_TIEN_TO = ("/power", "/rename", "/direct", "/force-ap", "/release-ap", "/deployos/pxe/bat", "/deployos/pxe/tat", "/deployos/pxe/cong")
+PHA_HUY_DOAN = re.compile(r"(^|/)(xoa|xoa-[a-z-]+|delete|[a-z]+-delete|huy-het|xoa-het)(/|$)")
 # dich vu ma van_hanh/chi_xem KHONG duoc dung (ke ca doc): quyet o thiet ke RBAC G1 muc 2 va cau hoi 4
 DICH_VU_QUAN_TRI = {"cap-nhat", "sao-luu", "nguoi-dung"}
 # Loi vao KHONG qua RBAC (khong co phien Console): moi muc co co che xac thuc rieng trong web/auth.py; liet ke HET de test khong cho them am tham.
@@ -72,6 +76,8 @@ def dich_vu_cua(path):
 def muc_can(method, path):
     dv = dich_vu_cua(path)
     if dv in DICH_VU_QUAN_TRI:
+        return "quan_tri"
+    if method.upper() not in ("GET", "HEAD", "OPTIONS") and (any(_khop(path, t.rstrip("/")) for t in PHA_HUY_TIEN_TO) or PHA_HUY_DOAN.search(path)):
         return "quan_tri"
     if any(_khop(path, t) for t in CONG_VAO):
         return "ghi"

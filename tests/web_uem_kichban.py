@@ -41,6 +41,8 @@ DL.MAY.sua(lambda ds: ds.extend([
     {"id": "m-agent", "ip": "10.9.9.1", "ten": "MAY-AGENT-A", "giam_sat": True, "agent": {"serie": "abc", "luc_cuoi": 1}},
     {"id": "m-thuong", "ip": "10.9.9.2", "ten": "MAY-THUONG-B", "giam_sat": True}]))
 c = app.test_client()
+with c.session_transaction() as _s:
+    _s["user"] = "root"          # xoa du lieu chi danh cho Quan tri (RBAC 2.0.7); man hinh cuc bo = Van hanh bi chan
 H = {"X-ConsolePi-Local": "1"}
 kq = {}
 

@@ -17,6 +17,8 @@ app = runpy.run_path(os.path.join(SRC, "app.py"), run_name="dev")["app"]
 from ui import tk_dongco as DC, tk_dulieu as DL, uem_agent as UA  # noqa: E402
 
 c = app.test_client()
+with c.session_transaction() as _s:
+    _s["user"] = "root"          # xoa du lieu chi danh cho Quan tri (RBAC 2.0.7); man hinh cuc bo = Van hanh bi chan
 H = {"X-ConsolePi-Local": "1"}
 kq = {}
 goi = []                     # (may_id, phan mem, cai_bang)

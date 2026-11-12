@@ -19,7 +19,10 @@ DAT, HONG = [], []
 def kt(ten, dk, ct=""):
     (DAT if dk else HONG).append(ten); print(("  OK   " if dk else "  HONG ") + ten + ("" if dk or not ct else f"  -> {ct}"), flush=True)
 c = app.test_client(); H = {"X-ConsolePi-Local": "1"}
-def post(p, d=None, **kw): return c.post(p, data=d or {}, headers=H, follow_redirects=True, **kw)
+cr = app.test_client()
+with cr.session_transaction() as _s:
+    _s["user"] = "root"          # thao tac xoa chi danh cho Quan tri (RBAC 2.0.7); man hinh cuc bo (c) = Van hanh
+def post(p, d=None, **kw): return cr.post(p, data=d or {}, headers=H, follow_redirects=True, **kw)
 def get(p): return c.get(p, headers=H, follow_redirects=True)
 def txt(r): return r.get_data(as_text=True)
 import ui.uem_agent as _UAg  # noqa: E402

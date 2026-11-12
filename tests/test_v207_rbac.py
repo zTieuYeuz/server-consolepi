@@ -102,3 +102,15 @@ def test_moi_location_auth_request_cua_nginx_nam_trong_cong_vao():
         goc = re.sub(r"^\^", "", loc)
         m = re.match(r"(/[A-Za-z0-9_-]+)", goc)
         assert m and m.group(1) in RB.CONG_VAO, (loc, "chua khai vao core.rbac.CONG_VAO")
+
+
+def test_thao_tac_huy_diet_chi_quan_tri(tmp_path, monkeypatch):
+    RB = _rb(tmp_path, monkeypatch)
+    for p in ("/power/reboot", "/power/poweroff", "/rename", "/force-ap", "/deployos/pxe/tat", "/deployos/os/xoa", "/deployos/kichban/xoa",
+              "/uem/may/m1/xoa", "/uem/profiles/p1/xoa", "/storage/xoa", "/wifi-delete", "/nettools/tftp/xoa", "/deployos/o-dia/xoa-het", "/phien/api/xoa"):
+        assert RB.muc_can("POST", p) == "quan_tri", p
+        assert not RB.cho_phep("van_hanh", "POST", p)[0], p
+        assert not RB.cho_phep("chi_xem", "POST", p)[0], p
+        assert RB.cho_phep("quan_tri", "POST", p)[0], p
+    assert RB.cho_phep("van_hanh", "GET", "/power")[0]                  # trang xem van mo cho Van hanh
+    assert RB.cho_phep("van_hanh", "POST", "/ssh/xin")[0]               # thao tac thuong van duoc
