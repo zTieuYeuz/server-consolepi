@@ -22,9 +22,10 @@
 - **Kịch bản Agent có bước chạy script và khởi động lại:** trình dựng bước theo thứ tự (cài phần mềm, ứng dụng nhiều file, nhóm, WinGet, script trong kho, khởi động lại, tắt máy). Sau bước khởi động lại, Console đợi máy thật sự bật lại (giờ khởi động đổi) rồi mới chạy bước kế tiếp; tắt Console giữa chừng vẫn tiếp tục được; kịch bản "chỉ cài một lần" không khởi động lại máy vô ích.
 - **Xóa hoặc đổi tên tác vụ tường lửa thì gỡ quy tắc trên máy:** chỉ gỡ quy tắc do Console tạo, máy đang tắt sẽ gỡ khi bật lại; kết quả từng máy có nhãn ĐÃ ĐẶT SẴN / ĐÃ LÀM / LỖI. Hạ cấp có khôi phục dữ liệu nay cảnh báo rõ: máy cài agent sau lúc nâng cấp sẽ bị từ chối (403) và cần cài lại agent.
 - **Trang Tiến trình hiện trạng thái gia nhập domain:** chip xanh "ĐÃ VÀO DOMAIN" hoặc dải đỏ kèm mã lỗi và gợi ý cách xử lý; báo cáo cuối ghi "ĐÃ VÀO DOMAIN <tên>" khi thành công.
+- **Tab Ổ đĩa của máy trạm dùng cùng cách phân loại với bộ lọc:** ổ ảo VMware hiện "Ổ ảo" thay vì "SSD".
 
 - **Cài phần mềm qua Agent: "đợt kho" hỗ trợ Ứng dụng nhiều file:** tab Cài từ kho liệt kê thêm khối "Ứng dụng nhiều file" (Bitwarden, Cốc Cốc, Office...). Chọn ứng dụng, chọn máy hoặc nhóm, đặt chính sách (thử lại, chờ máy bật, Wake-on-LAN) như các đợt khác; agent nhận cả thư mục, giải nén trên máy rồi chạy dòng lệnh cài đã đặt ở Tài nguyên máy. Có kiểm tra id và hiện tên hành động riêng trong Trạng thái và Lịch sử triển khai.
-- **Giao diện tiếng Anh:** dịch thêm khoảng 380 đoạn văn dài (Cài Windows qua mạng, Tài nguyên máy, Quản lý máy trạm, công cụ mạng, Remote RustDesk, Wi-Fi, Cài đặt, Kho trung tâm). Đoạn có số liệu thay đổi (thời gian chạy, dung lượng, tên card mạng) vẫn giữ tiếng Việt vì chưa có cơ chế dịch theo mẫu.
+- **Giao diện tiếng Anh:** dịch thêm khoảng 380 đoạn văn dài (Cài Windows qua mạng, Tài nguyên máy, Quản lý máy trạm, công cụ mạng, Remote RustDesk, Wi-Fi, Cài đặt, Kho trung tâm). Đoạn có số liệu thay đổi (thời gian chạy, dung lượng, tên card mạng) vẫn giữ tiếng Việt vì chưa có cơ chế dịch theo mẫu. Một số trang quản lý máy trạm còn lẫn chữ tiếng Việt, sẽ dịch tiếp ở 2.0.7.
 
 ## 2.0.5 - 30/10/2026
 
