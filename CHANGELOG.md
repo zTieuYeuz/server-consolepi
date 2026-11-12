@@ -1,12 +1,12 @@
 # Changelog
 
-## 2.0.6 - chưa phát hành (đang sửa, 10/11/2026; chốt ngày khi phát hành)
+## 2.0.6 - 12/11/2026
 
 **Sửa lỗi phát hiện khi quay video hướng dẫn (07/11/2026):**
 
 - **Tắt PXE không cắt máy đang cài:** nếu còn máy giữ kết nối chia sẻ cài đặt (SMB 445) thì Console từ chối tắt và báo IP máy đó; có nút "Vẫn tắt" khi chắc chắn.
 - **Gia nhập domain thất bại được báo rõ:** báo cáo cuối khi cài Windows thêm nhóm "CẦN XEM LẠI" và dải đỏ "CHƯA VÀO DOMAIN" kèm mã lỗi đọc từ NetSetup.log (0x52e sai tài khoản/mật khẩu, 0x54b không thấy domain...). Form kịch bản cho biết rõ đã lưu mật khẩu gia nhập (để trống = giữ nguyên).
-- **Agent MSI có passkey:** hướng dẫn nói rõ không bấm đúp (hộp "Please wait" đứng và giữ khóa msiexec); lệnh gỡ ghi `msiexec /x "{mã}"` có ngoặc kép để chạy được trong PowerShell.
+- **Agent MSI có passkey bấm đúp được (agent 2.3.9):** hộp nhập passkey hiện lên trên cùng (không còn bị cửa sổ "Please wait" của Windows Installer che), nhập sai báo còn mấy lần, quá 3 phút không nhập thì cài đặt dừng và báo lỗi thay vì đứng mãi; bước ghi danh chạy bằng quyền hệ thống nên cài được cả khi bấm đúp và chọn Yes ở UAC (trước đây lỗi 1722). Lệnh gỡ ghi `msiexec /x "{mã}"` có ngoặc kép để chạy được trong PowerShell.
 - **Quản lý máy trạm:** sửa tên gọi/thẻ máy không còn báo sai "Đã có máy khác dùng IP này" (bỏ qua bản ghi đã xóa khỏi quản lý); cài lại Windows cùng MAC thì gộp bản ghi cũ (không còn agent sống) vào bản mới, giữ thẻ/địa điểm/ghi chú/nhóm; bỏ chữ "(theo mô hình OpenUEM)"; trang Phần mềm đã cài hiện tên máy.
 - **Kết quả có dấu tiếng Việt** (TightVNC, kiểm DNS/TLS); mã lỗi WinGet -1073741515 báo "WinGet không chạy được trên máy này".
 - **RustDesk: mật khẩu không còn nằm trong trang (LỖI-003):** cả mật khẩu chung lẫn mật khẩu từng máy không còn trong HTML hay danh sách JSON; chỉ lấy khi bấm Hiện hoặc Kết nối, và mỗi lần lấy đều ghi vào nhật ký thao tác (không ghi mật khẩu). Form lưu ID của máy chưa có ID: để trống mật khẩu = dùng mật khẩu chung.
@@ -19,6 +19,9 @@
 - CMD từ xa tiếng Việt (agent 2.3.8): cmd đọc stdin dạng pipe từng byte nên dòng có chữ có dấu bị vỡ dù đã `chcp 65001`; dòng có ký tự ngoài ASCII được ghi ra tệp .cmd UTF-8 rồi `call` (dòng ASCII đi thẳng như cũ). Cần NV4 thử trên Windows thật.
 - Kịch bản cài Windows (A4): thêm một tài khoản local tùy ý (tên, mật khẩu, nhóm Users hoặc Administrators; tạo bằng PowerShell theo SID nhóm nên đúng ở mọi ngôn ngữ Windows) và 6 mục "Quyền riêng tư" trong tùy chọn (mã quảng cáo, định vị, lịch sử hoạt động, tìm kiếm web, gợi ý Start, hỏi phản hồi). Đã chạy thử các lệnh trên Windows 10 thật; chưa cài full qua PXE.
 - LỖI-006: ISO Windows chỉ có `install.esd` (Media Creation Tool) giờ được tự đổi sang `install.wim` (wimlib, có kiểm chứng) sau khi tách, nên OS báo sẵn sàng và deploy dùng được; tên tài khoản thêm chặn thêm `& ^ ` ' $ % !`. Đã thử với ISO giả có esd thật (wimlib/xorriso), chưa thử ISO Windows thật.
+- **Kịch bản Agent có bước chạy script và khởi động lại:** trình dựng bước theo thứ tự (cài phần mềm, ứng dụng nhiều file, nhóm, WinGet, script trong kho, khởi động lại, tắt máy). Sau bước khởi động lại, Console đợi máy thật sự bật lại (giờ khởi động đổi) rồi mới chạy bước kế tiếp; tắt Console giữa chừng vẫn tiếp tục được; kịch bản "chỉ cài một lần" không khởi động lại máy vô ích.
+- **Xóa hoặc đổi tên tác vụ tường lửa thì gỡ quy tắc trên máy:** chỉ gỡ quy tắc do Console tạo, máy đang tắt sẽ gỡ khi bật lại; kết quả từng máy có nhãn ĐÃ ĐẶT SẴN / ĐÃ LÀM / LỖI. Hạ cấp có khôi phục dữ liệu nay cảnh báo rõ: máy cài agent sau lúc nâng cấp sẽ bị từ chối (403) và cần cài lại agent.
+- **Trang Tiến trình hiện trạng thái gia nhập domain:** chip xanh "ĐÃ VÀO DOMAIN" hoặc dải đỏ kèm mã lỗi và gợi ý cách xử lý; báo cáo cuối ghi "ĐÃ VÀO DOMAIN <tên>" khi thành công.
 
 - **Cài phần mềm qua Agent: "đợt kho" hỗ trợ Ứng dụng nhiều file:** tab Cài từ kho liệt kê thêm khối "Ứng dụng nhiều file" (Bitwarden, Cốc Cốc, Office...). Chọn ứng dụng, chọn máy hoặc nhóm, đặt chính sách (thử lại, chờ máy bật, Wake-on-LAN) như các đợt khác; agent nhận cả thư mục, giải nén trên máy rồi chạy dòng lệnh cài đã đặt ở Tài nguyên máy. Có kiểm tra id và hiện tên hành động riêng trong Trạng thái và Lịch sử triển khai.
 - **Giao diện tiếng Anh:** dịch thêm khoảng 380 đoạn văn dài (Cài Windows qua mạng, Tài nguyên máy, Quản lý máy trạm, công cụ mạng, Remote RustDesk, Wi-Fi, Cài đặt, Kho trung tâm). Đoạn có số liệu thay đổi (thời gian chạy, dung lượng, tên card mạng) vẫn giữ tiếng Việt vì chưa có cơ chế dịch theo mẫu.
