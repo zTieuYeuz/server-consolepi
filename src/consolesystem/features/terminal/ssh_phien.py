@@ -93,8 +93,24 @@ def ma_xem(chu):
         return ma
 
 
+def chuan_may(may):
+    """Dua ve dang chuan 'host:cong' de khoa khong bi lach: chu thuong, bo user@, localhost/::1/127.x -> 127.0.0.1, thieu cong -> 22.
+    Chua phan giai ten mien sang IP (hai ten khac nhau cung tro mot may van la hai khoa)."""
+    may = (may or "").strip().lower()
+    if "@" in may:
+        may = may.rsplit("@", 1)[1]
+    host, _, cong = may.rpartition(":") if ":" in may and may.count(":") == 1 else (may, "", "")
+    if not host:
+        host, cong = may, ""
+    host = host.strip("[]")
+    if host in ("localhost", "::1", "0.0.0.0") or host.startswith("127."):
+        host = "127.0.0.1"
+    return "%s:%s" % (host, cong or "22")
+
+
 def lay_khoa(may, nguoi, gio=time.time):
     """Xin/giu quyen DIEU KHIEN may dich. Tra ("dieu_khien", nguoi) hoac ("chi_xem", chu_dang_giu). Goi lai de gia han (nhip)."""
+    may = chuan_may(may)
     now = gio()
     with _KHOA:
         d = _doc()
@@ -110,6 +126,7 @@ def lay_khoa(may, nguoi, gio=time.time):
 
 def xin(may, nguoi, gio=time.time):
     """Nguoi dang chi xem xin dieu khien: ghi yeu cau; neu chu da bo di (het han) thi nhan luon. Tra (da_nhan, thong_diep)."""
+    may = chuan_may(may)
     now = gio()
     with _KHOA:
         d = _doc()
@@ -127,6 +144,7 @@ def xin(may, nguoi, gio=time.time):
 
 def nhuong(may, chu, gio=time.time):
     """Chu dang dieu khien dong y nhuong cho nguoi dang xin. Tra (ok, thong_diep)."""
+    may = chuan_may(may)
     now = gio()
     with _KHOA:
         d = _doc()
@@ -141,6 +159,7 @@ def nhuong(may, chu, gio=time.time):
 
 
 def tha(may, nguoi):
+    may = chuan_may(may)
     with _KHOA:
         d = _doc()
         if d["khoa"].get(may, {}).get("chu") == nguoi:

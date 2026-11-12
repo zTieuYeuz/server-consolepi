@@ -17,6 +17,8 @@ app = runpy.run_path(os.path.join(SRC, "app.py"), run_name="dev")["app"]
 from ui import tk_dongco as DC, tk_dulieu as DL, uem_agent as UA, uem_dulieu as UD, uem_ketnoi as UK, uem_trienkhai as UT  # noqa: E402
 
 c = app.test_client()
+with c.session_transaction() as _s:
+    _s["user"] = "root"          # thao tac huy diet / nguon dien chi danh cho Quan tri (RBAC 2.0.7)
 H = {"X-ConsolePi-Local": "1"}
 kq = {}
 loi_may = set()

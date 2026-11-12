@@ -131,6 +131,15 @@ def local_bypass_enabled():
         return True
 
 
+def _vai_tro_gan(user):
+    """Vai tro do Quan tri gan cho `user` trong rbac.json (None neu chua gan hoac doc loi)."""
+    try:
+        from consolesystem.core import rbac as _rb
+        return _rb.danh_sach().get(user, {}).get("vai_tro")
+    except Exception:
+        return None
+
+
 def la_quan_tri(user=None):
     """Tai khoan QUAN TRI: root hoac thanh vien nhom sudo/wheel/admin cua Linux. Man hinh kiosk chua dang nhap KHONG tinh
     (chuc nang Cap nhat chi danh cho quan tri - ke hoach 2.0 C1)."""
@@ -147,8 +156,10 @@ def la_quan_tri(user=None):
         nhom = {g.gr_name for g in grp.getgrall() if user in g.gr_mem}
         nhom.add(grp.getgrgid(pwd.getpwnam(user).pw_gid).gr_name)
     except KeyError:
-        return False
-    return bool(nhom & {"sudo", "wheel", "admin", "root"})
+        return _vai_tro_gan(user) == "quan_tri"
+    if nhom & {"sudo", "wheel", "admin", "root"}:
+        return True
+    return _vai_tro_gan(user) == "quan_tri"
 
 
 def _is_local_screen():

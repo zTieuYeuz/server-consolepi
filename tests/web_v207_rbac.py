@@ -35,7 +35,15 @@ RB.dat_vai_tro("vh1", "van_hanh")
 RB.dat_vai_tro("xem1", "chi_xem")
 RB.dat_vai_tro("qt1", "quan_tri")
 # 1) chua gan vai tro: bi chan ca xem lan ghi
+# luoi an toan: route khong-GET co ten giong thao tac huy diet phai nam trong PHA_HUY (hoac MIEN_PHA_HUY); PHA_HUY khong duoc co muc mo coi
+quy = {r.rule for r in app.url_map.iter_rules() if r.methods & {"POST", "DELETE", "PUT", "PATCH"}}
+sot = sorted(r for r in quy if RB.MAU_NGHI_HUY.search(r) and r not in RB.PHA_HUY and r not in RB.MIEN_PHA_HUY)
+kq["luoi_an_toan_khong_sot"] = not sot or sot
+mo_coi = sorted(m for m in RB.PHA_HUY if m not in quy)
+kq["pha_huy_khong_mo_coi"] = not mo_coi or mo_coi
+kq["logout_nguoi_chua_vai_tro"] = khach("khongvaitro").get("/logout").status_code != 403
 c = khach("khongvaitro")
+kq["tiendo_data_can_vai_tro"] = c.get("/api/tiendo/data").status_code == 403
 kq["chua_vai_tro_chan_xem"] = c.get("/logs").status_code == 403
 kq["chua_vai_tro_chan_ghi"] = c.post("/ssh/xin", data={"may": "10.0.0.1:22"}).status_code == 403
 kq["chua_vai_tro_json_403"] = c.get("/api/x", headers={"Accept": "application/json"}).status_code in (403, 404) and \
@@ -45,6 +53,9 @@ kq["da_ghi_nhan_su_kien"] = any(x["nguoi"] == "khongvaitro" and x["path"] == "/s
 c = khach("vh1")
 kq["van_hanh_khong_cap_nhat"] = c.get("/cap-nhat").status_code == 403
 kq["van_hanh_khong_nguoi_dung"] = c.get("/nguoi-dung").status_code == 403
+kq["van_hanh_khong_xem_power"] = c.get("/power").status_code == 403
+kq["van_hanh_khong_power_post"] = c.post("/power/reboot").status_code == 403
+kq["van_hanh_khong_xoa_may"] = c.post("/uem/may/m1/xoa").status_code == 403
 kq["van_hanh_vao_logs"] = c.get("/logs").status_code != 403
 # 3) Chi xem: GET duoc, POST khong
 c = khach("xem1")
@@ -53,6 +64,9 @@ kq["chi_xem_post_chan"] = c.post("/ssh/xin", data={"may": "10.0.0.1:22"}).status
 c = khach("qt1")
 # 5) cong khai / agent khong co phien: khong bi chan
 a = app.test_client()
+from consolesystem.web.auth import la_quan_tri  # noqa: E402
+kq["quan_tri_gan_la_quan_tri"] = la_quan_tri("qt1") is True and la_quan_tri("vh1") is False
+kq["quan_tri_gan_vao_cap_nhat"] = khach("qt1").get("/cap-nhat").status_code != 403
 kq["cong_khai_login"] = a.get("/login").status_code == 200
 kq["healthz"] = a.get("/healthz").status_code == 200
 kq["agent_khong_phien_khong_bi_rbac"] = a.get("/uem/agent/x").status_code != 403

@@ -45,11 +45,11 @@ def test_tai_khoan_cuu_ho_va_man_hinh_cuc_bo(tmp_path, monkeypatch):
 def test_cong_khai_khong_leo_thang():
     from consolesystem.core import rbac as RB
     assert set(RB.CONG_KHAI) == {"/login", "/healthz", "/_auth", "/vkeyboard.js", "/dashboard.js", "/favicon.ico", "/static", "/thuong-hieu",
-                                 "/deployos/pxeboot", "/api/tiendo", "/tk/tai", "/uem/agent", "/uem/novnc"}, "them loi vao cong khai phai la quyet dinh co chu y"
+                                 "/deployos/pxeboot", "/api/tiendo/batdau", "/api/tiendo/buoc", "/api/tiendo/domain", "/api/tiendo/ketthuc", "/logout", "/tk/tai", "/uem/agent", "/uem/novnc"}, "them loi vao cong khai phai la quyet dinh co chu y"
     for p in ("/uem/agent/nhip", "/uem/agent/cai/abc.ps1", "/api/tiendo/domain", "/deployos/pxeboot/x"):
         assert RB.la_cong_khai(p)
     # lan can KHONG duoc ke thua: cac trang quan tri cung tien to gan giong phai van la dich vu co kiem quyen
-    for p in ("/uem/quan-tri/agent", "/uem/may/x", "/uem/profiles", "/deployos/trienkhai/kichban", "/deployos/kichban", "/tk", "/apiX/tiendo", "/uem/agentx"):
+    for p in ("/uem/quan-tri/agent", "/uem/may/x", "/uem/profiles", "/deployos/trienkhai/kichban", "/deployos/kichban", "/tk", "/apiX/tiendo", "/uem/agentx", "/api/tiendo/data", "/api/tiendo"):
         assert not RB.la_cong_khai(p), p
     assert RB.cho_phep(None, "POST", "/uem/quan-tri/agent/goi/1/passkey")[0] is False
     assert RB.cho_phep("chi_xem", "POST", "/uem/quan-tri/agent/goi/1/passkey")[0] is False
@@ -112,5 +112,11 @@ def test_thao_tac_huy_diet_chi_quan_tri(tmp_path, monkeypatch):
         assert not RB.cho_phep("van_hanh", "POST", p)[0], p
         assert not RB.cho_phep("chi_xem", "POST", p)[0], p
         assert RB.cho_phep("quan_tri", "POST", p)[0], p
-    assert RB.cho_phep("van_hanh", "GET", "/power")[0]                  # trang xem van mo cho Van hanh
+    assert not RB.cho_phep("van_hanh", "GET", "/power")[0] and not RB.cho_phep(None, "GET", "/power")[0]   # ca trang /power cung chi Quan tri (LOI-011-A)
     assert RB.cho_phep("van_hanh", "POST", "/ssh/xin")[0]               # thao tac thuong van duoc
+
+
+def test_chuan_may_khoa_dieu_khien():
+    from consolesystem.features.terminal.ssh_phien import chuan_may as c
+    assert c("localhost") == c("127.0.0.1") == c("root@LocalHost:22") == c("::1") == "127.0.0.1:22"
+    assert c("10.0.0.1") == "10.0.0.1:22" and c("10.0.0.1:2222") == "10.0.0.1:2222" and c("10.0.0.1:22") != c("10.0.0.1:2222")

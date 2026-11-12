@@ -27,7 +27,8 @@ REGISTRY = {
     "cap-nhat": ("Cập nhật Console System", ["/cap-nhat", "/khoa-may", "/commands/update"]),
     "sao-luu": ("Sao lưu / khôi phục / khóa", ["/settings/sao-luu", "/settings/nap-sao-luu", "/settings/khoi-phuc", "/settings/rotate", "/settings/regen-term-pass"]),
     "nguoi-dung": ("Người dùng và vai trò", ["/nguoi-dung"]),
-    "cai-windows": ("Cài Windows qua mạng (PXE)", ["/deployos", "/gopy"]),
+    "nguon": ("Nguồn điện: tắt / khởi động lại Pi", ["/power"]),
+    "cai-windows": ("Cài Windows qua mạng (PXE)", ["/deployos", "/gopy", "/api/tiendo/data"]),
     "phan-mem": ("Triển khai / kho phần mềm", ["/deployos/trienkhai", "/deployos/kho", "/deployos/ungdung", "/deployos/font", "/deployos/drivers", "/kho-trung-tam", "/tk"]),
     "may-tram": ("Quản lý máy trạm", ["/uem"]),
     "remote": ("Remote: SSH, terminal, RDP, VNC, đường hầm", ["/ssh", "/terminal", "/phien", "/remote", "/remote-desktop", "/console", "/api/send-keys", "/commands", "/term-local", "/term-ssh", "/term-phien", "/term-console", "/uem-vnc-ws"]),
@@ -35,20 +36,50 @@ REGISTRY = {
     "mang": ("Mạng, WiFi, Bluetooth", ["/nettools", "/wifi", "/wifi-", "/connect-wifi", "/release-ap", "/force-ap", "/bluetooth", "/bt-", "/direct", "/rename"]),
     "luu-tru": ("Lưu trữ / tài nguyên", ["/storage", "/tai-nguyen"]),
     "nhat-ky": ("Nhật ký", ["/logs"]),
-    "chung": ("Trang chung và cài đặt", ["/", "/settings", "/giaodien", "/ngon-ngu", "/docs", "/giaitri", "/api/status", "/api/suckhoe", "/logout", "/power"]),
+    "chung": ("Trang chung và cài đặt", ["/", "/settings", "/giaodien", "/ngon-ngu", "/docs", "/giaitri", "/api/status", "/api/suckhoe", "/logout"]),
 }
 # Cong vao do nginx chuyen thang toi ttyd/cau noi VNC (khong qua route Flask), chi kiem bang auth_request /_auth: nhap phim/dieu khien = muc "ghi" ke ca khi la GET/WebSocket
 CONG_VAO = ("/term-local", "/term-ssh", "/term-phien", "/term-console", "/uem-vnc-ws")
-# Thao tac "huy diet" (khong GET): Van hanh/Chi xem KHONG duoc dung du dich vu chua la quan tri - tat/khoi dong lai Pi, doi mang loi, xoa du lieu/may/kich ban
-PHA_HUY_TIEN_TO = ("/power", "/rename", "/direct", "/force-ap", "/release-ap", "/deployos/pxe/bat", "/deployos/pxe/tat", "/deployos/pxe/cong")
-PHA_HUY_DOAN = re.compile(r"(^|/)(xoa|xoa-[a-z-]+|delete|[a-z]+-delete|huy-het|xoa-het)(/|$)")
+# Thao tac "huy diet" (khong GET) KHAI TUONG MINH theo mau route Flask (<x> = mot doan): Van hanh/Chi xem KHONG duoc dung. Tat/khoi dong lai Pi, doi mang loi,
+# bat/tat dich vu mang, xoa du lieu/may/kich ban/phien, khoi phuc. Route moi co ten giong the ma chua khai o day (hoac o MIEN_PHA_HUY) thi test CI do.
+PHA_HUY = (
+    "/power/<what>", "/rename", "/force-ap", "/release-ap", "/direct/bat", "/direct/tat", "/deployos/pxe/bat", "/deployos/pxe/tat", "/deployos/pxe/cong", "/nettools/tftp/bat", "/nettools/tftp/tat",
+    "/remote/bat", "/remote/tat", "/remote/ts/bat", "/remote/ts/tat", "/settings/kiosk/bat", "/settings/kiosk/tat", "/wifi-delete",
+    "/commands/delete", "/deployos/caidat/wol/xoa", "/deployos/console/apps/xoa", "/deployos/console/file/xoa", "/deployos/console/scripts/xoa",
+    "/deployos/drivers/<driver_id>/xoa-file", "/deployos/drivers/xoa", "/deployos/font/<bo_id>/xoa-font", "/deployos/font/xoa", "/deployos/kho/huy",
+    "/deployos/kho/xoa-cauhinh", "/deployos/kho/xoa-xong", "/deployos/kichban/xoa", "/deployos/lichsu/xoa", "/deployos/o-dia/xoa", "/deployos/o-dia/xoa-het",
+    "/deployos/os/xoa", "/deployos/tiendo/xoa", "/deployos/trienkhai/kichban/xoa", "/deployos/trienkhai/lich/xoa", "/deployos/trienkhai/may/nhom/xoa",
+    "/deployos/trienkhai/may/taikhoan/xoa", "/deployos/trienkhai/may/xoa", "/deployos/trienkhai/nhom-tn/xoa", "/deployos/trienkhai/tt/<kb_id>/xoa",
+    "/deployos/ungdung/<ung_id>/xoa-muc", "/deployos/ungdung/xoa", "/nettools/console-backup/xoa", "/nettools/ifthen/delete", "/nettools/tftp/xoa",
+    "/phien/api/nhom/doi-ten", "/phien/api/nhom/xoa", "/phien/api/xoa", "/remote/xoa-token", "/rustdesk/api/ghi-hinh/xoa", "/rustdesk/api/xoa-id",
+    "/settings/khoi-phuc", "/settings/nap-sao-luu", "/storage/xoa", "/uem/may/<mid>/duyet-file/xoa", "/uem/may/<mid>/may-in/xoa", "/uem/may/<mid>/xoa",
+    "/uem/profiles/<pid>/xoa", "/uem/quan-tri/<muc>/xoa", "/uem/quan-tri/agent/goi/<gid>/xoa", "/uem/trien-khai/dot/<dot>/huy", "/uem/trien-khai/kich-ban/<kb_id>/xoa",
+)
+# Route co ten giong thao tac huy diet nhung CO Y cho Van hanh (khai ro de test khong bao): bat/tat tinh nang thuong ngay, khong mat du lieu
+MIEN_PHA_HUY = {"/nguoi-dung/xoa": "da la quan_tri qua dich vu nguoi-dung", "/bt-reset": "reset adapter Bluetooth", "/uem/profiles/<pid>/bat-tat": "bat/tat ap dung profile (khoi phuc duoc)",
+                "/wifi-mac-bat": "loc MAC wifi", "/wifi-mac-tat": "loc MAC wifi", "/cap-nhat/bat-dau": "da la quan_tri qua dich vu cap-nhat",
+                "/cap-nhat/huy": "da la quan_tri qua dich vu cap-nhat"}
+MAU_NGHI_HUY = re.compile(r"(^|[/_-])(xoa|delete|remove|reset|wipe|format|restore|shutdown|reboot|poweroff|power|doi-ten|rename|tat|bat|huy|khoi-phuc|nap)([/_-]|$)")
+
+
+def _mau_ra_regex(mau):
+    return re.compile("^" + "".join("[^/]+" if x.startswith("<") else re.escape(x) for x in re.split(r"(<[^>]+>)", mau)) + "$")
+
+
+_PHA_HUY_RE = [_mau_ra_regex(m) for m in PHA_HUY]
+
+
+def la_pha_huy(path):
+    return any(r.match(path) for r in _PHA_HUY_RE)
+
+
 # dich vu ma van_hanh/chi_xem KHONG duoc dung (ke ca doc): quyet o thiet ke RBAC G1 muc 2 va cau hoi 4
-DICH_VU_QUAN_TRI = {"cap-nhat", "sao-luu", "nguoi-dung"}
+DICH_VU_QUAN_TRI = {"cap-nhat", "sao-luu", "nguoi-dung", "nguon"}
 # Loi vao KHONG qua RBAC (khong co phien Console): moi muc co co che xac thuc rieng trong web/auth.py; liet ke HET de test khong cho them am tham.
 CONG_KHAI = {
-    "/login": "dang nhap", "/healthz": "kiem tra song", "/_auth": "nginx auth_request", "/vkeyboard.js": "tai nguyen tinh", "/dashboard.js": "tai nguyen tinh",
+    "/login": "dang nhap", "/logout": "tu thoat (ca nguoi chua gan vai tro)", "/healthz": "kiem tra song", "/_auth": "nginx auth_request", "/vkeyboard.js": "tai nguyen tinh", "/dashboard.js": "tai nguyen tinh",
     "/favicon.ico": "tai nguyen tinh", "/static": "tai nguyen tinh", "/thuong-hieu": "logo",
-    "/deployos/pxeboot": "may boot PXE (chi khi PXE bat, mang noi bo)", "/api/tiendo": "may vua cai bao tien trinh (chi khi PXE bat)",
+    "/deployos/pxeboot": "may boot PXE (chi khi PXE bat, mang noi bo)", "/api/tiendo/batdau": "may vua cai bao tien trinh (chi khi PXE bat)", "/api/tiendo/buoc": "nt", "/api/tiendo/domain": "nt", "/api/tiendo/ketthuc": "nt",
     "/tk/tai": "may dich tai goi cai (Trien khai phan mem)", "/uem/agent": "agent Windows (mTLS / ma ghi danh)", "/uem/novnc": "tai nguyen noVNC tinh",
 }
 
@@ -77,7 +108,7 @@ def muc_can(method, path):
     dv = dich_vu_cua(path)
     if dv in DICH_VU_QUAN_TRI:
         return "quan_tri"
-    if method.upper() not in ("GET", "HEAD", "OPTIONS") and (any(_khop(path, t.rstrip("/")) for t in PHA_HUY_TIEN_TO) or PHA_HUY_DOAN.search(path)):
+    if method.upper() not in ("GET", "HEAD", "OPTIONS") and la_pha_huy(path):
         return "quan_tri"
     if any(_khop(path, t) for t in CONG_VAO):
         return "ghi"

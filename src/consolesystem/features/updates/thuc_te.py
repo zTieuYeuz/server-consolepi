@@ -53,6 +53,16 @@ def sao_luu(duong):
     SL.kiem_goi(duong)                                        # sao luu phai doc lai duoc moi coi la co
 
 
+def kho_bi_chan():
+    """True neu lan tu dang ky lai gan nhat (trong 24 gio) duoc kho tra loi 'may bi chan': tu phuc hoi da DUNG, can quan tri kho mo chan."""
+    try:
+        import time
+        KT = _kt()
+        return bool(KT.HOI_PHUC.get("chan")) and time.time() - KT.HOI_PHUC.get("luc", 0) < 86400
+    except Exception:
+        return False
+
+
 def khoi_phuc(duong):
     from consolesystem.features.backup import saoluu as SL
     for s in (DICH_VU_CHINH,) + DICH_VU_KHAC:
