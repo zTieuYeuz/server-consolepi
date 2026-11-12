@@ -23,7 +23,7 @@ cr = app.test_client()
 with cr.session_transaction() as _s:
     _s["user"] = "root"          # thao tac xoa chi danh cho Quan tri (RBAC 2.0.7); man hinh cuc bo (c) = Van hanh
 def post(p, d=None, **kw): return cr.post(p, data=d or {}, headers=H, follow_redirects=True, **kw)
-def get(p): return c.get(p, headers=H, follow_redirects=True)
+def get(p): return cr.get(p, headers=H, follow_redirects=True)
 def txt(r): return r.get_data(as_text=True)
 import ui.uem_agent as _UAg  # noqa: E402
 def trang_may_agent():
@@ -318,7 +318,7 @@ v = _cho(rj["id"])
 kt("tao script: 6 buoc deu xong, co goi_id", v["tt"] == "xong" and len(v["buoc"]) == 6 and all(b["tt"] == "xong" for b in v["buoc"]) and v["goi_id"], v)
 g = UG.tim_goi(v["goi_id"])
 kt("tao script: ten file duoc lam sach (khong ky tu HTML)", g["ten_file"] == "ThubVP.ps1", g["ten_file"])
-rd = c.get(f"/uem/quan-tri/agent/goi/{g['id']}/tai", headers=H); sc = rd.data.decode("utf-8-sig")
+rd = cr.get(f"/uem/quan-tri/agent/goi/{g['id']}/tai", headers=H); sc = rd.data.decode("utf-8-sig")
 ma = UA.ds_ghi_danh()[0]["ma"]
 kt("script: nhung dung dia chi + dau van tay CA + ma, KHONG co khoa rieng / mat khau", rd.status_code == 200 and "https://test.server.org:9443" in sc and PKI.ca_sha256() in sc and ma in sc and "PRIVATE KEY" not in sc and "PfxPass" not in sc and "RunAs" in sc)
 kt("script: dung chung doan ghim voi lenh cai (UA.PIN_CS)", UA.PIN_CS in sc)
@@ -385,7 +385,7 @@ _gd = UA._gd_doc(); [x.update(het_han=time.time() - 5) for x in _gd if x["id"] =
 kt("ma het han khong dung duoc va khong liet ke", c.get(f"/uem/agent/cai/{e2['ma']}.ps1?h=A", headers=HN).status_code == 404 and all(x["id"] != e2["id"] for x in UA.ds_ghi_danh()))
 # xoa file -> thu hoi ma
 post(f"/uem/quan-tri/agent/goi/{g['id']}/xoa")
-kt("xoa file: file mat + ma bi thu hoi (may chua cai khong dung duoc nua)", UG.tim_goi(g["id"]) is None and c.get(f"/uem/agent/cai/{ma}.ps1?h=PC-KT-03", headers=HN).status_code == 404 and c.get(f"/uem/quan-tri/agent/goi/{g['id']}/tai", headers=H).status_code == 404)
+kt("xoa file: file mat + ma bi thu hoi (may chua cai khong dung duoc nua)", UG.tim_goi(g["id"]) is None and c.get(f"/uem/agent/cai/{ma}.ps1?h=PC-KT-03", headers=HN).status_code == 404 and cr.get(f"/uem/quan-tri/agent/goi/{g['id']}/tai", headers=H).status_code == 404)
 # ---- passkey + go cai dat + khay he thong (v2.2.0)
 pk = UA.bam_passkey("Abcd1234")
 kt("passkey: dinh dang p1:100000:muoi:bam, khong chua passkey goc", re.fullmatch(r"p1:100000:[0-9a-f]{32}:[0-9a-f]{64}", pk) and "Abcd1234" not in pk)
@@ -476,16 +476,16 @@ if _sh.which("wixl"):
     rj = json.loads(txt(c.post("/uem/quan-tri/agent/tao", data={"loai": "msi", "ten": "Agent-VP", "dia_chi": "test.server.org:9443", "ngay": "30", "toi_da": "0"}, headers=H)))
     v = _cho(rj["id"]); gm = UG.tim_goi(v["goi_id"]) if v["goi_id"] else None
     kt("tao MSI: 6 buoc xong", v["tt"] == "xong" and len(v["buoc"]) == 6 and gm, v)
-    rm = c.get(f"/uem/quan-tri/agent/goi/{gm['id']}/tai", headers=H)
+    rm = cr.get(f"/uem/quan-tri/agent/goi/{gm['id']}/tai", headers=H)
     kt("MSI: tai duoc, dung OLE, dung ten, nhung dia chi + CA + ma vao file", rm.status_code == 200 and rm.data[:4] == b"\xd0\xcf\x11\xe0" and b"test.server.org:9443" in rm.data and PKI.ca_sha256().encode() in rm.data and [x for x in UA.ds_ghi_danh() if x["id"] == gm["ma_id"]][0]["ma"].encode() in rm.data and "Agent-VP.msi" in rm.headers.get("Content-Disposition", ""))
     kt("MSI: ProductCode khop giao dien", UG.MSI_PRODUCT_CODE.encode() in rm.data)
     kt("MSI: an khoi Control Panel (ARPSYSTEMCOMPONENT) + co uninstall.bat", b"ARPSYSTEMCOMPONENT" in rm.data and b"uninstall.bat" in rm.data and b"--check-passkey" in rm.data and b"--teardown" in rm.data)
     rj2 = json.loads(txt(c.post("/uem/quan-tri/agent/tao", data={"loai": "msi", "ten": "Agent-PK", "dia_chi": "test.server.org:9443", "ngay": "30", "toi_da": "0", "passkey": "Abcd1234"}, headers=H)))
-    v2 = _cho(rj2["id"]); g2 = UG.tim_goi(v2["goi_id"]); rm2 = c.get(f"/uem/quan-tri/agent/goi/{g2['id']}/tai", headers=H)
+    v2 = _cho(rj2["id"]); g2 = UG.tim_goi(v2["goi_id"]); rm2 = cr.get(f"/uem/quan-tri/agent/goi/{g2['id']}/tai", headers=H)
     kt("MSI co passkey: nhung dau bam PKH, KHONG nhung passkey goc", v2["tt"] == "xong" and UA.ds_ghi_danh()[-1]["pk"].encode() in rm2.data and b"Abcd1234" not in rm2.data)
     post(f"/uem/quan-tri/agent/goi/{g2['id']}/xoa")
     rj3 = json.loads(txt(c.post("/uem/quan-tri/agent/tao", data={"loai": "msi", "ten": "MSI-nhieu", "dia_chi": "test.server.org:9443,192.168.1.5:9443", "ngay": "7", "toi_da": "0"}, headers=H)))
-    v3 = _cho(rj3["id"]); g3 = UG.tim_goi(v3["goi_id"]); rm3 = c.get(f"/uem/quan-tri/agent/goi/{g3['id']}/tai", headers=H)
+    v3 = _cho(rj3["id"]); g3 = UG.tim_goi(v3["goi_id"]); rm3 = cr.get(f"/uem/quan-tri/agent/goi/{g3['id']}/tai", headers=H)
     kt("MSI nhieu dia chi: property SERVER chua danh sach phan cach dau phay", v3["tt"] == "xong" and b"test.server.org:9443,192.168.1.5:9443" in rm3.data)
     post(f"/uem/quan-tri/agent/goi/{g3['id']}/xoa")
     from ui import deployos as _D

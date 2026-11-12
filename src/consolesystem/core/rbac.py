@@ -67,12 +67,23 @@ MAU_NGHI_HUY = re.compile(r"(^|[/_-])(xoa|delete|remove|reset|wipe|format|restor
 
 
 def _mau_ra_regex(mau):
-    return re.compile("^" + "".join("[^/]+" if x.startswith("<") else re.escape(x) for x in re.split(r"(<[^>]+>)", mau)) + "$")
+    return re.compile("^" + "".join((".+" if x.startswith("<path:") else "[^/]+") if x.startswith("<") else re.escape(x) for x in re.split(r"(<[^>]+>)", mau)) + "$")
 
 
 # Phien serial / terminal may nay trong trang Phien (ma = local | serial-*): shell root + cong serial cua Pi
 PHA_HUY_RE_PHU = (re.compile(r"^/phien/api/(local|serial-[^/]+)/"),)
 _PHA_HUY_RE = [_mau_ra_regex(m) for m in PHA_HUY] + list(PHA_HUY_RE_PHU)
+
+
+# GET KHONG dong nghia an toan: doc noi dung terminal/serial/log phien, ban chup goi tin, ban sao luu cau hinh thiet bi, goi agent, tai khoan trien khai... (LOI NV8-02)
+GET_QUAN_TRI = (
+    "/phien/api/<ma>/log", "/nettools/pcap", "/nettools/pcap/download/<path:filename>", "/nettools/console-backup", "/nettools/console-backup/tai/<path:ten>",
+    "/nettools/tftp/tai/<path:ten>", "/logs/tai", "/uem/quan-tri/agent/goi/<gid>/tai", "/deployos/trienkhai/may/taikhoan",
+)
+# GET chi cho Van hanh tro len (Chi xem khong): ban ghi man hinh, tai tep tu may tram
+GET_GHI = ("/rustdesk/ghi-hinh/<mid>/<ten>", "/uem/may/<mid>/duyet-file/tai", "/rustdesk/api/lich-su")
+_GET_QT_RE = [_mau_ra_regex(m) for m in GET_QUAN_TRI]
+_GET_GHI_RE = [_mau_ra_regex(m) for m in GET_GHI]
 
 
 def la_pha_huy(path):
@@ -156,6 +167,11 @@ def muc_can(method, path):
         return "quan_tri"
     if any(_khop(path, t) for t in CONG_VAO):
         return "ghi"
+    if method.upper() in ("GET", "HEAD", "OPTIONS"):
+        if any(r.match(path) for r in _GET_QT_RE):
+            return "quan_tri"
+        if any(r.match(path) for r in _GET_GHI_RE):
+            return "ghi"
     return "xem" if method.upper() in ("GET", "HEAD", "OPTIONS") else "ghi"
 
 

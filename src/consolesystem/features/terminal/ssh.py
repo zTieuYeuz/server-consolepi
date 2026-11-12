@@ -25,6 +25,8 @@ TU DIEN MAT KHAU - vi sao KHONG dung sshpass:
 from consolesystem.core import taisan as _taisan
 import sys as _sys
 _sys.modules["ui.ssh"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
+import json
+import os
 import re
 import subprocess
 import time
@@ -81,6 +83,33 @@ def _cho_dau_nhac_mat_khau(session, truoc, giay_toi_da=12):
     return False
 
 
+DIR_YC = os.environ.get("CS_SSH_YC") or "/var/lib/console-ssh/yeu-cau"
+
+
+def lenh_hien_tai(ten):
+    """Ten lenh dang chay o tien canh cua phien tmux (vd 'ssh', 'python3')."""
+    try:
+        r = subprocess.run(["tmux", "display-message", "-p", "-t", ten, "#{pane_current_command}"], capture_output=True, text=True, timeout=5)
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def ghi_yeu_cau(ten, host, user, cong):
+    """Yeu cau ket noi cho launcher: file JSON nho trong thu muc yeu cau (chi chua dich, KHONG co mat khau)."""
+    os.makedirs(DIR_YC, exist_ok=True)
+    f = os.path.join(DIR_YC, ten + ".json")
+    tam = f + ".tmp"
+    with open(os.open(tam, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o660), "w", encoding="utf-8") as h:
+        json.dump({"host": host, "user": user, "port": int(cong)}, h)
+    try:
+        import grp
+        os.chown(tam, -1, grp.getgrnam("console-ssh").gr_gid)
+    except (KeyError, OSError, ImportError):
+        pass                              # chua co user console-ssh (may chua mo phien lan nao): launcher chay root doc duoc
+    os.replace(tam, f)
+
+
 def start_ssh_in_tmux(host, user, port=22, password="", nguoi=""):
     """Chay lenh ssh trong phien tmux RIENG cua `nguoi`; tu dien mat khau neu duoc nhap san. Moi may dich chi mot nguoi dieu khien (ssh_phien.lay_khoa)."""
     host = (host or "").strip()
@@ -132,11 +161,12 @@ def start_ssh_in_tmux(host, user, port=22, password="", nguoi=""):
                        "Vào khung terminal xử lý xong (nhập mật khẩu hoặc bấm Ctrl+C) "
                        "rồi bấm Kết nối lại.")
 
-    cmd = f"ssh -o StrictHostKeyChecking=accept-new -p {cong} {user}@{host}"
+    if lenh_hien_tai(PHIEN_TMUX) == "ssh":
+        return False, "Đang có một kết nối SSH trong terminal. Thoát kết nối đó (gõ exit) rồi bấm Kết nối lại."
+    # KHONG go lenh vao shell (phien SSH khong con shell - LOI-013): ghi yeu cau cho launcher phien-ssh.py, no tu chay ssh bang danh sach doi so.
     try:
-        subprocess.run(["tmux", "send-keys", "-t", PHIEN_TMUX, cmd, "Enter"],
-                       capture_output=True, timeout=5)
-    except Exception as e:
+        ghi_yeu_cau(PHIEN_TMUX, host, user, cong)
+    except OSError as e:
         return False, f"Lỗi: {e}"
 
     if not password:
@@ -290,6 +320,8 @@ def register_ssh(app):
             ten = SP.phien_cua(_nguoi(), dang_chay=tmux_session_exists)[1]
         except ValueError as e:
             return _tra_ve(False, str(e), noi_dung)
+        if lenh_hien_tai(ten) != "ssh":
+            return _tra_ve(False, "Chưa có kết nối SSH đang chạy: chỉ dán được vào thiết bị đã kết nối (terminal này không có shell của Pi).", noi_dung)
         ok, msg = dan_thong_minh(ten, noi_dung)
         return _tra_ve(ok, msg, noi_dung)
 

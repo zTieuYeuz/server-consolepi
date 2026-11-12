@@ -84,7 +84,7 @@ def test_phu_thuoc_giua_cac_goi_dung_luat_va_no_ky_thuat_chi_giam():
 
 
 # ------------------------------------------------------------------------------------------------ B7: lenh he thong luon co timeout
-NGOAI_LE_TIMEOUT = {"scripts/phien-chay.py"}                       # phien terminal TUONG TAC: chay den khi nguoi dung thoat
+NGOAI_LE_TIMEOUT = {"scripts/phien-chay.py", "scripts/phien-ssh.py"}                       # phien terminal TUONG TAC: chay den khi nguoi dung thoat
 
 
 def test_moi_subprocess_run_co_timeout():

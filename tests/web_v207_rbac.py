@@ -56,10 +56,12 @@ kq["van_hanh_khong_nguoi_dung"] = c.get("/nguoi-dung").status_code == 403
 kq["van_hanh_khong_xem_power"] = c.get("/power").status_code == 403
 kq["van_hanh_khong_power_post"] = c.post("/power/reboot").status_code == 403
 kq["van_hanh_khong_xoa_may"] = c.post("/uem/may/m1/xoa").status_code == 403
+kq["van_hanh_get_log_terminal_403"] = c.get("/phien/api/local/log").status_code == 403 and c.get("/phien/api/serial-ttyUSB0/log").status_code == 403
 kq["van_hanh_vao_logs"] = c.get("/logs").status_code != 403
 # 3) Chi xem: GET duoc, POST khong
 c = khach("xem1")
 kq["chi_xem_get"] = c.get("/logs").status_code != 403
+kq["chi_xem_get_nhay_cam_403"] = all(c.get(u).status_code == 403 for u in ("/phien/api/local/log", "/phien/api/serial-ttyUSB0/log", "/nettools/pcap", "/logs/tai", "/nettools/console-backup"))
 kq["chi_xem_post_chan"] = c.post("/ssh/xin", data={"may": "10.0.0.1:22"}).status_code == 403
 c = khach("qt1")
 # 5) cong khai / agent khong co phien: khong bi chan

@@ -162,3 +162,20 @@ def test_lach_duong_dan_vao_cong_quan_tri_bi_chan(tmp_path, monkeypatch):
         assert not RB.cho_phep("van_hanh", "GET", d, RB.muc_cong_vao(uri))[0], uri
     for uri in ("/term-phien/?arg=abc", "/term-phien/ws?arg=abc-123", "/term-phien/token", "/uem-vnc-ws/x"):
         assert RB.muc_cong_vao(uri) is None, uri
+
+
+def test_get_nhay_cam_khong_phai_muc_xem(tmp_path, monkeypatch):
+    """NV8-02: GET log terminal/serial, pcap, ban sao luu thiet bi, goi agent... = quan_tri; ghi hinh / tai tep tu may tram = it nhat van_hanh. Chi xem khong doc duoc."""
+    RB = _rb(tmp_path, monkeypatch)
+    qt = ("/phien/api/local/log", "/phien/api/serial-ttyUSB0/log", "/phien/api/abc123/log", "/nettools/pcap", "/nettools/pcap/download/a/b.pcap",
+          "/nettools/console-backup", "/nettools/console-backup/tai/sw1/run.cfg", "/nettools/tftp/tai/x.cfg", "/logs/tai", "/uem/quan-tri/agent/goi/g1/tai",
+          "/deployos/trienkhai/may/taikhoan")
+    for p in qt:
+        assert RB.muc_can("GET", p) == "quan_tri", p
+        for vt in ("van_hanh", "chi_xem", None):
+            assert not RB.cho_phep(vt, "GET", p)[0], (vt, p)
+        assert RB.cho_phep("quan_tri", "GET", p)[0], p
+    for p in ("/rustdesk/ghi-hinh/m1/a.mp4", "/uem/may/m1/duyet-file/tai"):
+        assert RB.muc_can("GET", p) == "ghi", p
+        assert RB.cho_phep("van_hanh", "GET", p)[0] and not RB.cho_phep("chi_xem", "GET", p)[0], p
+    assert RB.cho_phep("chi_xem", "GET", "/logs")[0] and RB.cho_phep("chi_xem", "GET", "/uem/profiles")[0]   # trang xem thuong van mo
