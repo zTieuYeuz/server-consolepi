@@ -68,9 +68,18 @@ def main(argv):
         print("Ten phien khong hop le.")
         time.sleep(5)
         return 1
+    if os.geteuid() == 0 and os.environ.get("CS_SSH_CHO_PHEP_ROOT") != "1":
+        # FAIL CLOSED (NV8-12): launcher khong bao gio chay bang root (phien-mo.sh ha quyen xuong console-ssh; neu khong ha duoc thi khong mo)
+        print("Tu choi: terminal SSH khong duoc chay bang root.")
+        time.sleep(8)
+        return 1
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     known_hosts = os.path.join(HOME_SSH, "known_hosts")
     fd = sys.stdin.fileno()
+    try:
+        os.remove(os.path.join(DIR_YC, ten + ".dang-ssh"))      # dau vet cu neu launcher tung bi giet
+    except OSError:
+        pass
     while True:
         print("\r\nChưa kết nối. Nhập địa chỉ, tài khoản rồi bấm Kết nối ở phía trên trang.\r", flush=True)
         yc = None
@@ -88,7 +97,19 @@ def main(argv):
             print("Yêu cầu kết nối không hợp lệ.\r", flush=True)
             continue
         signal.signal(signal.SIGINT, signal.SIG_DFL)
-        subprocess.call(lenh)
+        danh_dau = os.path.join(DIR_YC, ten + ".dang-ssh")       # Console doc de biet ssh dang chay (LOI-014: pane_current_command luon la python3)
+        try:
+            open(danh_dau, "w").close()
+        except OSError:
+            danh_dau = None
+        try:
+            subprocess.call(lenh)
+        finally:
+            if danh_dau:
+                try:
+                    os.remove(danh_dau)
+                except OSError:
+                    pass
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         print("\r\n== Kết nối SSH đã kết thúc ==\r", flush=True)
 

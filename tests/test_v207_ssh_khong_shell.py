@@ -10,6 +10,7 @@ import pytest
 
 GOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 SCRIPTS = os.path.join(GOC, "src", "scripts")
+sys.path.insert(0, os.path.join(GOC, "src"))
 sys.path.insert(0, SCRIPTS)
 
 
@@ -48,7 +49,7 @@ def test_phien_mo_sh_khong_con_duong_ra_shell():
 
 @pytest.mark.skipif(not shutil.which("tmux"), reason="khong co tmux")
 def test_phien_ssh_tmux_that_khong_go_duoc_lenh_shell(tmp_path):
-    env = dict(os.environ, TMUX_TMPDIR=str(tmp_path), CS_SSH_YC=str(tmp_path / "yc"), CS_SSH_HOME=str(tmp_path / "home"))
+    env = dict(os.environ, TMUX_TMPDIR=str(tmp_path), CS_SSH_YC=str(tmp_path / "yc"), CS_SSH_HOME=str(tmp_path / "home"), CS_SSH_CHO_PHEP_ROOT="1")
     os.makedirs(env["CS_SSH_YC"])
     os.makedirs(env["CS_SSH_HOME"])
     fake = tmp_path / "bin"
@@ -83,14 +84,71 @@ def test_phien_ssh_tmux_that_khong_go_duoc_lenh_shell(tmp_path):
         # yeu cau hop le -> ssh (gia) chay voi doi so cung; phim go truoc do KHONG ro ri sang ssh
         json.dump({"host": "10.0.0.5", "user": "admin", "port": 22}, open(os.path.join(env["CS_SSH_YC"], "ssh-test.json"), "w"))
         assert cho("FAKE-SSH")
+        assert os.path.exists(os.path.join(env["CS_SSH_YC"], "ssh-test.dang-ssh"))                 # LOI-014: tep danh dau ssh dang chay
         hien = man_hinh()
         assert "-e none" in hien and "PermitLocalCommand=no" in hien and "admin@10.0.0.5" in hien
         tmux("send-keys", "-t", "ssh-test", "xin-chao", "Enter")
         assert cho("NHAN:[xin-chao]"), man_hinh()                                        # sau khi noi ssh, phim toi ssh; truoc do khong lan
         assert cho("Kết nối SSH đã kết thúc", 10)
+        assert not os.path.exists(os.path.join(env["CS_SSH_YC"], "ssh-test.dang-ssh"))
         # yeu cau xau bi tu choi, khong chay gi
         json.dump({"host": "-oProxyCommand=id", "user": "admin", "port": 22}, open(os.path.join(env["CS_SSH_YC"], "ssh-test.json"), "w"))
         assert cho("không hợp lệ")
         assert "uid=" not in man_hinh()
     finally:
         tmux("kill-server")
+
+
+@pytest.mark.skipif(os.geteuid() != 0, reason="chi y nghia khi chay bang root")
+def test_launcher_tu_choi_chay_bang_root(tmp_path):
+    """NV8-12: fail closed - launcher chay root (khong ha quyen duoc) thi tu choi, khong cho chay ssh."""
+    env = dict(os.environ, CS_SSH_YC=str(tmp_path), CS_SSH_HOME=str(tmp_path))
+    env.pop("CS_SSH_CHO_PHEP_ROOT", None)
+    (tmp_path / "ssh-ab.json").write_text(json.dumps({"host": "10.0.0.5", "user": "x", "port": 22}))
+    r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "phien-ssh.py"), "ssh-ab"], env=env, capture_output=True, text=True, timeout=5 + 10)
+    assert r.returncode == 1 and "Tu choi" in r.stdout
+    assert (tmp_path / "ssh-ab.json").exists()                                    # khong doc/khong chay yeu cau
+
+
+def test_phien_mo_sh_fail_closed_va_khop_chinh_xac():
+    s = open(os.path.join(SCRIPTS, "phien-mo.sh"), encoding="utf-8").read()
+    ssh_case = s[s.index("ssh-*|xem-*)"):s.index("serial-tty*)")]
+    assert "exit 1" in ssh_case and "tu choi mo terminal SSH" in ssh_case
+    assert "phien-ssh.py \"$TEN\")\n        else\n            LAUNCH=(/usr/bin/python3" not in ssh_case          # khong con nhanh chay root
+    import re
+    for m in re.finditer(r"tmux [a-z-]+ (?:-[a-z] )*-t \"([^\"]+)\"", s):
+        assert m.group(1).startswith("="), m.group(0)                                  # moi -t deu '=ten:' (khop chinh xac)
+
+
+@pytest.mark.skipif(not shutil.which("tmux"), reason="khong co tmux")
+def test_tmux_khop_chinh_xac_khong_theo_tien_to(tmp_path):
+    """NV8-11: user 'admin' chua co phien khong the gui phim/xem man hinh/attach vao 'ssh-administrator'."""
+    from consolesystem.core.tmuxten import chinh_xac
+    env = dict(os.environ, TMUX_TMPDIR=str(tmp_path))
+
+    def tmux(*a):
+        return subprocess.run(["tmux", *a], env=env, capture_output=True, text=True, timeout=15)
+    tmux("new-session", "-d", "-s", "ssh-administrator", "sleep 30")
+    try:
+        assert tmux("has-session", "-t", "ssh-admin").returncode == 0                  # hanh vi cu: khop tien to (loi)
+        assert tmux("has-session", "-t", chinh_xac("ssh-admin")).returncode != 0
+        assert tmux("send-keys", "-t", chinh_xac("ssh-admin"), "x").returncode != 0
+        assert tmux("capture-pane", "-p", "-t", chinh_xac("ssh-admin")).returncode != 0
+        assert tmux("has-session", "-t", chinh_xac("ssh-administrator")).returncode == 0
+        assert tmux("capture-pane", "-p", "-t", chinh_xac("ssh-administrator")).returncode == 0
+        assert chinh_xac("=x:") == "=x:"
+    finally:
+        tmux("kill-server")
+
+
+def test_moi_lenh_tmux_trong_python_dung_ten_chinh_xac():
+    """Moi ["tmux", ..., "-t", X] trong ma Python phai boc _tx(...) (core.tmuxten.chinh_xac) tru ten chuoi hang bat dau bang '='."""
+    import re
+    bad = []
+    for d, _ds, fs in os.walk(os.path.join(GOC, "src")):
+        for f in fs:
+            if f.endswith(".py"):
+                t = open(os.path.join(d, f), encoding="utf-8").read()
+                for m in re.finditer(r'"tmux",[^\]\n]*?"-t", (?!_tx\()([^,\]\)]+)', t):
+                    bad.append("%s: %s" % (f, m.group(0)[:80]))
+    assert not bad, bad

@@ -24,6 +24,7 @@ BAO MAT:
     "co_mat_khau"). Go mat khau = tmux send-keys -l khi thay dau nhac.
 """
 from consolesystem.core import taisan as _taisan
+from consolesystem.core.tmuxten import chinh_xac as _tx
 import sys as _sys
 _sys.modules["ui.phien"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
@@ -261,7 +262,7 @@ def xoa(ma):
 def ngat(ma):
     # Ke ca "Terminal may nay" (19/10/2026, anh Thoai: tat phien roi mo lai van ra man hinh cu): truoc day
     # khong bao gio kill phien "local" nen mo lai luon ra dung noi dung cu. Phien tmux tu tao lai khi mo.
-    subprocess.run(["tmux", "kill-session", "-t", ten_tmux(ma)], capture_output=True, timeout=5)
+    subprocess.run(["tmux", "kill-session", "-t", _tx(ten_tmux(ma))], capture_output=True, timeout=5)
 
 
 def ket_noi_nhanh(chuoi):
@@ -299,7 +300,7 @@ def ket_noi_nhanh(chuoi):
 
 
 def _man_hinh(tmux):
-    r = subprocess.run(["tmux", "capture-pane", "-p", "-t", tmux], capture_output=True, text=True, timeout=5)
+    r = subprocess.run(["tmux", "capture-pane", "-p", "-t", _tx(tmux)], capture_output=True, text=True, timeout=5)
     return r.stdout if r.returncode == 0 else ""
 
 
@@ -315,8 +316,8 @@ def go_mat_khau(ma, mk=None, cho_giay=15):
     while time.time() < het:
         dong = [l.rstrip() for l in _man_hinh(tmux).splitlines() if l.strip()]
         if dong and _DAU_NHAC_MK.search(dong[-1]):
-            subprocess.run(["tmux", "send-keys", "-t", tmux, "-l", mk], capture_output=True, timeout=5)
-            subprocess.run(["tmux", "send-keys", "-t", tmux, "Enter"], capture_output=True, timeout=5)
+            subprocess.run(["tmux", "send-keys", "-t", _tx(tmux), "-l", mk], capture_output=True, timeout=5)
+            subprocess.run(["tmux", "send-keys", "-t", _tx(tmux), "Enter"], capture_output=True, timeout=5)
             return True, "Đã gõ mật khẩu."
         time.sleep(0.4)
     return False, "Không thấy dấu nhắc mật khẩu trên màn hình phiên này."
@@ -458,17 +459,17 @@ def register_phien(app):
         if not p:
             return jsonify({"ok": False})
         tmux, baud = "console-" + p["cong"], str(int(p.get("baud") or 9600))
-        r = subprocess.run(["tmux", "show-options", "-v", "-t", tmux, "@baud"],
+        r = subprocess.run(["tmux", "show-options", "-v", "-t", _tx(tmux), "@baud"],
                            capture_output=True, text=True, timeout=5)
         dang = (r.stdout or "").strip() or "9600"
         if r.returncode == 0 and dang == baud:
             return jsonify({"ok": True})
-        co = subprocess.run(["tmux", "has-session", "-t", tmux], capture_output=True, timeout=5).returncode == 0
+        co = subprocess.run(["tmux", "has-session", "-t", _tx(tmux)], capture_output=True, timeout=5).returncode == 0
         if co and dang != baud:
-            subprocess.run(["tmux", "respawn-pane", "-k", "-t", tmux, "/usr/bin/microcom", "-s", baud,
+            subprocess.run(["tmux", "respawn-pane", "-k", "-t", _tx(tmux), "/usr/bin/microcom", "-s", baud,
                             "-p", "/dev/" + p["cong"]], capture_output=True, timeout=5)
         if co:
-            subprocess.run(["tmux", "set-option", "-t", tmux, "@baud", baud], capture_output=True, timeout=5)
+            subprocess.run(["tmux", "set-option", "-t", _tx(tmux), "@baud", baud], capture_output=True, timeout=5)
         return jsonify({"ok": True})
 
     @app.route("/phien/api/<ma>/ngat", methods=["POST"])
@@ -481,7 +482,7 @@ def register_phien(app):
     def phien_api_log(ma):
         if not _ma_hop_le(ma):
             return "Mã phiên không hợp lệ.", 400
-        r = subprocess.run(["tmux", "capture-pane", "-p", "-J", "-S", "-", "-E", "-", "-t", ten_tmux(ma)],
+        r = subprocess.run(["tmux", "capture-pane", "-p", "-J", "-S", "-", "-E", "-", "-t", _tx(ten_tmux(ma))],
                            capture_output=True, text=True, timeout=10)
         if r.returncode != 0:
             return "Phiên chưa mở hoặc đã đóng.", 404

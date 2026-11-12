@@ -23,6 +23,7 @@ TU DIEN MAT KHAU - vi sao KHONG dung sshpass:
     noi duoc...) thi BAO THAT la khong thay, khong im lang coi nhu xong.
 """
 from consolesystem.core import taisan as _taisan
+from consolesystem.core.tmuxten import chinh_xac as _tx
 import sys as _sys
 _sys.modules["ui.ssh"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
@@ -50,7 +51,7 @@ _DAU_NHAC_MK = re.compile(r"(?:password|passphrase).*:\s*$", re.I)
 def _chup_man_hinh(session):
     """Doc noi dung dang hien tren man hinh cua phien tmux."""
     try:
-        r = subprocess.run(["tmux", "capture-pane", "-p", "-t", session],
+        r = subprocess.run(["tmux", "capture-pane", "-p", "-t", _tx(session)],
                            capture_output=True, text=True, timeout=5)
         return r.stdout if r.returncode == 0 else ""
     except Exception:
@@ -87,12 +88,8 @@ DIR_YC = os.environ.get("CS_SSH_YC") or "/var/lib/console-ssh/yeu-cau"
 
 
 def lenh_hien_tai(ten):
-    """Ten lenh dang chay o tien canh cua phien tmux (vd 'ssh', 'python3')."""
-    try:
-        r = subprocess.run(["tmux", "display-message", "-p", "-t", ten, "#{pane_current_command}"], capture_output=True, text=True, timeout=5)
-        return r.stdout.strip() if r.returncode == 0 else ""
-    except Exception:
-        return ""
+    """'ssh' neu launcher bao dang chay ssh (tep danh dau do phien-ssh.py tao), nguoc lai ''. Khong dung pane_current_command vi launcher goi ssh nhu tien trinh con."""
+    return "ssh" if os.path.exists(os.path.join(DIR_YC, ten + ".dang-ssh")) else ""
 
 
 def ghi_yeu_cau(ten, host, user, cong):
@@ -181,9 +178,9 @@ def start_ssh_in_tmux(host, user, port=22, password="", nguoi=""):
     try:
         # -l = gui NGUYEN VAN. Thieu -l thi tmux dich cac chuoi trung ten phim
         # (vi du mat khau chua "Enter", "Space") thanh phim bam thay vi ky tu.
-        subprocess.run(["tmux", "send-keys", "-l", "-t", PHIEN_TMUX, password],
+        subprocess.run(["tmux", "send-keys", "-l", "-t", _tx(PHIEN_TMUX), password],
                        capture_output=True, timeout=5)
-        subprocess.run(["tmux", "send-keys", "-t", PHIEN_TMUX, "Enter"],
+        subprocess.run(["tmux", "send-keys", "-t", _tx(PHIEN_TMUX), "Enter"],
                        capture_output=True, timeout=5)
     except Exception as e:
         return False, f"Lỗi khi gửi mật khẩu: {e}"

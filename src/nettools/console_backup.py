@@ -45,6 +45,7 @@ nao cam vao eth0 cung tai ve duoc, khong can xac thuc. De ban luu o do la
 tu tay lam ro thong tin nhay cam.
 """
 from consolesystem.core import taisan as _taisan
+from consolesystem.core.tmuxten import chinh_xac as _tx
 import os
 import re
 import subprocess
@@ -123,7 +124,7 @@ def phien_tmux(dev):
 
 
 def phien_dang_chay(dev):
-    ok, out = _sh(["tmux", "has-session", "-t", phien_tmux(dev)])
+    ok, out = _sh(["tmux", "has-session", "-t", _tx(phien_tmux(dev))])
     return ok
 
 
@@ -139,14 +140,14 @@ def danh_sach_cong():
 
 def _capture(dev, tu_dong=None):
     """Hung lai chu dang co tren man hinh + lich su cuon cua phien tmux."""
-    lenh = ["tmux", "capture-pane", "-p", "-J", "-t", phien_tmux(dev),
+    lenh = ["tmux", "capture-pane", "-p", "-J", "-t", _tx(phien_tmux(dev)),
             "-S", str(tu_dong if tu_dong is not None else "-")]
     ok, out = _sh(lenh, timeout=30)
     return out if ok else ""
 
 
 def _go(dev, chuoi, enter=True):
-    cmd = ["tmux", "send-keys", "-t", phien_tmux(dev), chuoi]
+    cmd = ["tmux", "send-keys", "-t", _tx(phien_tmux(dev)), chuoi]
     if enter:
         cmd.append("Enter")
     return _sh(cmd, timeout=10)[0]

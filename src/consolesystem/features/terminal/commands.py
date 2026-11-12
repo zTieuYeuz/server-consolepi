@@ -9,6 +9,7 @@ Luu cac tap lenh hay dung, them/sua/xoa duoc qua web. Tu day co the:
 File luu: /opt/console-pi/command-library.json  (giu nguyen khi cai dat lai)
 """
 from consolesystem.core import taisan as _taisan
+from consolesystem.core.tmuxten import chinh_xac as _tx
 from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.commands"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
@@ -133,7 +134,7 @@ def send_to_tmux(session_name, text, press_enter=False):
     import tempfile
 
     try:
-        has = subprocess.run(["tmux", "has-session", "-t", session_name],
+        has = subprocess.run(["tmux", "has-session", "-t", _tx(session_name)],
                              capture_output=True, timeout=5)
         if has.returncode != 0:
             return False, (f"Chưa có phiên terminal '{session_name}'. "
@@ -147,10 +148,10 @@ def send_to_tmux(session_name, text, press_enter=False):
             subprocess.run(["tmux", "load-buffer", "-b", buf_name, tmp],
                            capture_output=True, timeout=5)
             subprocess.run(["tmux", "paste-buffer", "-p", "-b", buf_name,
-                            "-t", session_name],
+                            "-t", _tx(session_name)],
                            capture_output=True, timeout=5)
             if press_enter:
-                subprocess.run(["tmux", "send-keys", "-t", session_name, "Enter"],
+                subprocess.run(["tmux", "send-keys", "-t", _tx(session_name), "Enter"],
                                capture_output=True, timeout=5)
         finally:
             os.unlink(tmp)
@@ -171,7 +172,7 @@ def send_to_tmux(session_name, text, press_enter=False):
 
 def _chup_man_hinh_tmux(session_name):
     try:
-        r = subprocess.run(["tmux", "capture-pane", "-p", "-t", session_name],
+        r = subprocess.run(["tmux", "capture-pane", "-p", "-t", _tx(session_name)],
                            capture_output=True, text=True, timeout=5)
         return r.stdout if r.returncode == 0 else ""
     except Exception:
@@ -185,7 +186,7 @@ VO_SHELL = {"bash", "sh", "zsh", "dash", "fish", "ash", "ksh", "tmux"}
 def _lenh_dang_chay(session_name):
     """Chuong trinh dang chay trong phien tmux: 'bash', 'ssh', 'microcom'..."""
     try:
-        r = subprocess.run(["tmux", "display-message", "-p", "-t", session_name,
+        r = subprocess.run(["tmux", "display-message", "-p", "-t", _tx(session_name),
                             "#{pane_current_command}"],
                            capture_output=True, text=True, timeout=5)
         return r.stdout.strip() if r.returncode == 0 else ""
@@ -276,7 +277,7 @@ def _cho_thiet_bi_in_xong(session_name, im_lang_giay=0.5,
 
         # Kiem tra o MOI vong, khong phu thuoc man hinh co doi hay khong
         if "--more--" in cuoi.lower():
-            subprocess.run(["tmux", "send-keys", "-t", session_name, "Space"],
+            subprocess.run(["tmux", "send-keys", "-t", _tx(session_name), "Space"],
                            capture_output=True, timeout=5)
             truoc = hien
             lan_doi_cuoi = time.time()
@@ -328,7 +329,7 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.25, toi_da_dong=120):
                        f"Chia nhỏ ra dán làm nhiều lần cho an toàn.")
 
     try:
-        has = subprocess.run(["tmux", "has-session", "-t", session_name],
+        has = subprocess.run(["tmux", "has-session", "-t", _tx(session_name)],
                              capture_output=True, timeout=5)
         if has.returncode != 0:
             return False, (f"Chưa có phiên terminal '{session_name}'. "
@@ -345,12 +346,12 @@ def dan_tung_dong_vao_tmux(session_name, text, tre_giay=0.25, toi_da_dong=120):
 
             # -l = gui NGUYEN VAN, khong dich cac chuoi trung ten phim
             # (vi du dong lenh co chu "Space" hay "Enter") thanh phim bam.
-            subprocess.run(["tmux", "send-keys", "-l", "-t", session_name, d],
+            subprocess.run(["tmux", "send-keys", "-l", "-t", _tx(session_name), d],
                            capture_output=True, timeout=5)
             da_gui += 1
 
             if i < len(dong) - 1:
-                subprocess.run(["tmux", "send-keys", "-t", session_name, "Enter"],
+                subprocess.run(["tmux", "send-keys", "-t", _tx(session_name), "Enter"],
                                capture_output=True, timeout=5)
                 # Cho THIET BI in xong roi moi gui dong ke tiep (khong phai
                 # cho mot khoang co dinh - xem giai thich o tren).

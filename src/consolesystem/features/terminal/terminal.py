@@ -18,6 +18,7 @@ BAO MAT: 2 cong nay cho quyen root day du nen ttyd chay kem xac thuc co ban
 dashboard.
 """
 import sys as _sys
+from consolesystem.core.tmuxten import chinh_xac as _tx
 _sys.modules["ui.terminal"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
 import json
 import os
@@ -44,7 +45,7 @@ SSH_PORT = 8011
 
 def tmux_session_exists(name):
     try:
-        r = subprocess.run(["tmux", "has-session", "-t", name],
+        r = subprocess.run(["tmux", "has-session", "-t", _tx(name)],
                            capture_output=True, timeout=5)
         return r.returncode == 0
     except Exception:
@@ -94,7 +95,7 @@ def send_keys(session_name, keys):
     if not tmux_session_exists(session_name):
         return False, f"Chưa có phiên terminal '{session_name}'."
 
-    cmd = ["tmux", "send-keys", "-t", session_name]
+    cmd = ["tmux", "send-keys", "-t", _tx(session_name)]
     if keys not in _PHIM_DAC_BIET:
         cmd.append("-l")
         # LOI THAT DA GAP: go dau ";" qua ban phim ao thi khong ra gi ca -
