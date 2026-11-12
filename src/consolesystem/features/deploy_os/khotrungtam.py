@@ -700,8 +700,37 @@ LAN_THU_CUOI = {"luc": 0, "ok": False, "msg": ""}
 
 
 HOI_PHUC = {"luc": 0.0, "ok": None, "msg": "", "chan": False, "lan": []}     # tu hoi phuc khi kho tra 401/403 (xem tu_hoi_phuc_token)
+HOI_PHUC_FILE = os.path.join(os.path.dirname(FILE_KHO_TRUNGTAM), "kho-hoi-phuc.json")     # gioi han tan suat luu BEN qua khoi dong lai (NV8-05)
+_HP_NAP = {"da": False}
 HOI_PHUC_CACH = 600           # toi thieu 10 phut giua hai lan
 HOI_PHUC_TOI_DA_NGAY = 6      # toi da 6 lan / 24 gio: khong lap vo han
+
+
+def _hp_nap():
+    """Nap bo dem tu dia mot lan (sau khi khoi dong lai van nho 6 lan/24h va co 'chan')."""
+    if _HP_NAP["da"]:
+        return
+    _HP_NAP["da"] = True
+    try:
+        with open(HOI_PHUC_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+        HOI_PHUC["lan"] = [float(t) for t in d.get("lan", [])]
+        HOI_PHUC["luc"] = float(d.get("luc", 0))
+        HOI_PHUC["chan"] = bool(d.get("chan", False))
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def _hp_ghi():
+    try:
+        os.makedirs(os.path.dirname(HOI_PHUC_FILE), exist_ok=True)
+        tam = HOI_PHUC_FILE + ".tmp"
+        fd = os.open(tam, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump({"lan": HOI_PHUC["lan"], "luc": HOI_PHUC["luc"], "chan": HOI_PHUC["chan"]}, f)
+        os.replace(tam, HOI_PHUC_FILE)
+    except OSError as e:
+        print("[kho-hoi-phuc] khong luu duoc bo dem: %s" % type(e).__name__, flush=True)
 
 
 def tu_hoi_phuc_token(gio=time.time):
@@ -709,6 +738,7 @@ def tu_hoi_phuc_token(gio=time.time):
     Gioi han tan suat, ghi nhat ky, DUNG ha neu kho bao may bi chan that. Tra True neu da co token moi (de thu lai yeu cau)."""
     now = gio()
     with _KHOA_DANG_KY:
+        _hp_nap()
         HOI_PHUC["lan"] = [t for t in HOI_PHUC["lan"] if now - t < 86400]
         if HOI_PHUC["chan"] and now - HOI_PHUC["luc"] < 86400:
             return False
@@ -716,11 +746,13 @@ def tu_hoi_phuc_token(gio=time.time):
             return False
         HOI_PHUC["luc"] = now
         HOI_PHUC["lan"].append(now)
+        _hp_ghi()                                  # ghi TRUOC khi goi mang: Console chet giua chung van tinh la da thu
         try:
             ok, msg = tu_dang_ky(bo_token=True)
         except Exception as e:
             ok, msg = False, f"{type(e).__name__}: {e}"
         HOI_PHUC.update(ok=ok, msg=msg, chan=("bị chặn" in msg))
+        _hp_ghi()
     print(f"[kho-hoi-phuc] {'OK' if ok else 'KHONG DUOC'}: {msg}", flush=True)
     try:
         from ui.errlog import ghi_thao_tac

@@ -106,7 +106,7 @@ def _khoi_trang_thai(moi, ts, cur, cfg):
         tx = ts["loi"]
         if (" 401" in tx or " 403" in tx) and T.kho_bi_chan():
             tx = ("Kho đã CHẶN máy này (Console đã thử tự đăng ký lại và bị từ chối, nên dừng tự thử trong 24 giờ). "
-                  "Cần người quản trị kho mở chặn cho máy này rồi bấm Kiểm tra ngay. Chi tiết: " + tx)
+                  "Cần người quản trị kho mở chặn cho máy này rồi bấm Kiểm tra ngay. (Trên kho: nút Chặn = thu hồi hẳn máy; Thu hồi/xóa token chỉ cho máy đăng ký lại.) Chi tiết: " + tx)
         elif " 401" in tx or " 403" in tx:
             tx = ("Kho không nhận token của máy này (kho đã dựng lại hoặc thu hồi token). Console sẽ tự đăng ký lại với kho (tối đa 6 lần mỗi 24 giờ, cách nhau 10 phút); "
                   "bấm Kiểm tra ngay để thử. Chi tiết: " + tx)

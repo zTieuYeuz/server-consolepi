@@ -112,7 +112,16 @@ class _LocTruyCap(_logging.Filter):
     _DUOI = (".js", ".css", ".png", ".svg", ".woff2", ".woff", ".ico", ".jpg", ".map")
     _CHINH = ("/healthz", "/_auth", "/favicon.ico", "/phien/api/ds")
 
+    _BI_MAT = _re.compile(r"(/tu-xa/vnc/|[?&](?:arg|xem|ma)=)([A-Za-z0-9_-]{6,})")
+
     def filter(self, record):
+        # Che token phien VNC / ma phien terminal trong nhat ky truy cap (NV8-06): /logs doc duoc boi nhieu vai tro
+        try:
+            msg = record.getMessage()
+            if self._BI_MAT.search(msg):
+                record.msg, record.args = self._BI_MAT.sub(r"\1***", msg), ()
+        except Exception:
+            return True
         try:
             # Werkzeug to mau dong truy cap (ma ANSI quanh "GET /x HTTP/1.1") khi chay duoi systemd -> bo truoc khi so khop
             m = self._RE.search(self._ANSI.sub("", record.getMessage()))

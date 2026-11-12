@@ -77,20 +77,25 @@ def phien_cua(nguoi, gio=time.time, dang_chay=lambda t: True):
         return "ssh-" + ma, ten
 
 
-def ma_xem(chu):
-    """Ma (ngau nhien) de XEM phien cua `chu` o che do chi doc; None neu chu chua co phien."""
+HAN_MA_XEM = 600          # ma xem terminal nguoi khac song 10 phut (NV8-04)
+
+
+def ma_xem(chu, nguoi_xem="", gio=time.time, dang_chay=lambda t: True):
+    """Ma (ngau nhien, NGAN HAN, gan voi nguoi xem) de XEM phien cua `chu` o che do chi doc; None neu chu khong co phien dang chay.
+    Moi lan xin cap ma moi va thu hoi ma cu cua cung cap (chu, nguoi_xem); co ghi nhat ky 'A xem terminal cua B'."""
+    now = gio()
     with _KHOA:
         d = _doc()
         goc = next((p for p in d["phien"].values() if p["chu"] == chu and not p.get("chi_xem")), None)
-        if not goc:
+        if not goc or not dang_chay(goc["tmux"]):
             return None
-        for ma, p in d["phien"].items():
-            if p.get("chi_xem") and p["chu"] == chu:
-                return ma
+        d["phien"] = {k: v for k, v in d["phien"].items()
+                      if not (v.get("chi_xem") and (v.get("het", 0) < now or (v["chu"] == chu and v.get("cho") == nguoi_xem)))}
         ma = "xem-" + secrets.token_hex(8)
-        d["phien"][ma] = {"chu": chu, "tmux": goc["tmux"], "chi_xem": True}
+        d["phien"][ma] = {"chu": chu, "tmux": goc["tmux"], "chi_xem": True, "cho": nguoi_xem, "het": now + HAN_MA_XEM}
         _ghi(d)
-        return ma
+    _nhat_ky("Terminal SSH: %s xem terminal của %s (chỉ đọc)" % (nguoi_xem or "?", chu), "", nguoi_xem or "-")
+    return ma
 
 
 def chuan_may(may):

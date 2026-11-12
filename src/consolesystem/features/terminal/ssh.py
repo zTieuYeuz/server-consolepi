@@ -228,7 +228,14 @@ def _render(msg="", ok=True, prefill="", xem=""):
     nguoi = _nguoi()
     try:
         if xem and xem != nguoi:
-            ma = SP.ma_xem(xem)
+            from consolesystem.core import rbac as _RB
+            from consolesystem.web.auth import la_quan_tri as _lqt
+            if _RB.vai_tro_cua(nguoi, _lqt) not in ("quan_tri", "van_hanh"):
+                msg, ok, ma = "Bạn không có quyền xem terminal của người khác.", False, None
+            else:
+                ma = SP.ma_xem(xem, nguoi, dang_chay=tmux_session_exists)
+                if ma is None:
+                    msg, ok = "%s chưa mở terminal SSH nào." % xem, False
         else:
             ma = SP.phien_cua(nguoi, dang_chay=tmux_session_exists)[0]
     except ValueError as e:

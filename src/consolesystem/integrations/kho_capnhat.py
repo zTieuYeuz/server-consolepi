@@ -10,6 +10,17 @@ from consolesystem.core.capnhat.may import LoiKho
 TIMEOUT = 20
 
 
+def _la_loi_token_cua_kho(r):
+    """Chi 401/403 do KHO tra (JSON co truong loi noi ve token) moi kich hoat tu dang ky lai. 401/403 cua Cloudflare Access / proxy (HTML, het han dich vu...) KHONG
+    (NV8-05): neu khong Console se dang ky them 'may moi' moi 10 phut va lam rac danh sach thiet bi cua kho."""
+    try:
+        j = r.json()
+    except ValueError:
+        return False
+    loi = str(j.get("loi", "")) if isinstance(j, dict) else ""
+    return "token" in loi.lower()
+
+
 class KhoCapNhat:
     def __init__(self, cau_hinh_fn, headers_fn=lambda: {}, phien_ban_fn=lambda: "", hoi_phuc_fn=None):
         """hoi_phuc_fn() -> True neu vua lay lai duoc token moi (kho tra 401/403 vi mat/thu hoi token): _get thu lai MOT lan voi cau hinh moi."""
@@ -36,7 +47,7 @@ class KhoCapNhat:
                 raise LoiKho("khong toi duoc kho (%s)" % type(e).__name__)
             except requests.RequestException as e:
                 raise LoiKho("loi mang: %s" % type(e).__name__)
-            if r.status_code in (401, 403) and thu_lai and self._hoi_phuc is not None:
+            if r.status_code in (401, 403) and thu_lai and self._hoi_phuc is not None and _la_loi_token_cua_kho(r):
                 thu_lai = False                       # chi thu lai MOT lan moi yeu cau: khong lap vo han
                 try:
                     ok = bool(self._hoi_phuc())

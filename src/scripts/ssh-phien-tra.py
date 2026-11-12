@@ -23,6 +23,8 @@ try:
     p = json.load(open(f, encoding="utf-8"))["phien"][ma]
 except (OSError, ValueError, KeyError):
     sys.exit(1)
+if p.get("chi_xem") and p.get("het", 0) < __import__("time").time():       # ma xem het han (NV8-04)
+    sys.exit(1)
 if not re.fullmatch(r"ssh-[a-z0-9]{1,24}", p["tmux"]):
     sys.exit(1)
 print(("ro" if p.get("chi_xem") else "rw"), p["tmux"])

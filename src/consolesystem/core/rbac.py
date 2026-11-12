@@ -81,7 +81,7 @@ GET_QUAN_TRI = (
     "/nettools/tftp/tai/<path:ten>", "/logs/tai", "/uem/quan-tri/agent/goi/<gid>/tai", "/deployos/trienkhai/may/taikhoan",
 )
 # GET chi cho Van hanh tro len (Chi xem khong): ban ghi man hinh, tai tep tu may tram
-GET_GHI = ("/rustdesk/ghi-hinh/<mid>/<ten>", "/uem/may/<mid>/duyet-file/tai", "/rustdesk/api/lich-su")
+GET_GHI = ("/uem/may/<mid>/tu-xa/vnc/<tok>", "/rustdesk/ghi-hinh/<mid>/<ten>", "/uem/may/<mid>/duyet-file/tai", "/rustdesk/api/lich-su")
 _GET_QT_RE = [_mau_ra_regex(m) for m in GET_QUAN_TRI]
 _GET_GHI_RE = [_mau_ra_regex(m) for m in GET_GHI]
 
@@ -161,6 +161,8 @@ def dich_vu_cua(path):
 
 def muc_can(method, path):
     dv = dich_vu_cua(path)
+    if any(r.match(path) for r in PHA_HUY_RE_PHU):          # terminal may nay / cong serial trong trang Phien: MOI phuong thuc (GET log cung la quan_tri)
+        return "quan_tri"
     if dv in DICH_VU_QUAN_TRI:
         return "quan_tri"
     if method.upper() not in ("GET", "HEAD", "OPTIONS") and la_pha_huy(path):

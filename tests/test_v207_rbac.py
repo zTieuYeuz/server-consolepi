@@ -179,3 +179,37 @@ def test_get_nhay_cam_khong_phai_muc_xem(tmp_path, monkeypatch):
         assert RB.muc_can("GET", p) == "ghi", p
         assert RB.cho_phep("van_hanh", "GET", p)[0] and not RB.cho_phep("chi_xem", "GET", p)[0], p
     assert RB.cho_phep("chi_xem", "GET", "/logs")[0] and RB.cho_phep("chi_xem", "GET", "/uem/profiles")[0]   # trang xem thuong van mo
+
+
+def test_nv8_phien_local_serial_moi_phuong_thuc_va_vnc_token(tmp_path, monkeypatch):
+    RB = _rb(tmp_path, monkeypatch)
+    for m in ("GET", "POST"):
+        for p in ("/phien/api/local/log", "/phien/api/local/bat-ky", "/phien/api/serial-ttyUSB0/x", "/phien/api/serial-ttyACM1/log"):
+            assert RB.muc_can(m, p) == "quan_tri", (m, p)
+            assert not RB.cho_phep("van_hanh", m, p)[0] and not RB.cho_phep("chi_xem", m, p)[0]
+    # NV8-06: trang VNC (chua token + PIN) it nhat Van hanh; Chi xem khong thay
+    assert RB.cho_phep("van_hanh", "GET", "/uem/may/m1/tu-xa/vnc/abc123def")[0]
+    assert not RB.cho_phep("chi_xem", "GET", "/uem/may/m1/tu-xa/vnc/abc123def")[0]
+    # NV8-03: Chi xem khong mo VNC/CMD/PowerShell, khong lay mat khau RustDesk
+    for p in ("/uem/may/m1/tu-xa/vnc/mo", "/rustdesk/api/xem-mat-khau", "/uem/may/m1/tu-xa/vnc/go"):
+        assert not RB.cho_phep("chi_xem", "POST", p)[0], p
+
+
+def test_nhat_ky_che_token_phien_vnc_va_ma_terminal():
+    import logging
+    import runpy
+    import tempfile
+    os.environ.setdefault("CONSOLE_PI_LOG", tempfile.mkdtemp(prefix="cs-test-log-"))
+    ns = None
+    src = open(os.path.join(GOC, "src", "app.py"), encoding="utf-8").read()
+    i = src.index("class _LocTruyCap")
+    j = src.index("_logging.getLogger(\"werkzeug\").addFilter")
+    ns = {"_logging": logging, "_re": __import__("re")}
+    exec(src[i:j], ns)                                                        # noqa: S102 - chi chay doan dinh nghia bo loc
+    f = ns["_LocTruyCap"]()
+    rec = logging.LogRecord("werkzeug", 20, "x", 1, '"GET /uem/may/m1/tu-xa/vnc/SECRETTOK123 HTTP/1.1" 200 -', None, None)
+    f.filter(rec)
+    assert "SECRETTOK123" not in rec.getMessage() and "/tu-xa/vnc/***" in rec.getMessage()
+    rec = logging.LogRecord("werkzeug", 20, "x", 1, '"GET /ssh?xem=abcdef0123 HTTP/1.1" 500 -', None, None)
+    f.filter(rec)
+    assert "abcdef0123" not in rec.getMessage()
