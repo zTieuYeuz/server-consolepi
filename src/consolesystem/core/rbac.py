@@ -84,11 +84,31 @@ def la_pha_huy(path):
 CONG_VAO_QUAN_TRI = ("/term-local", "/term-console")
 
 
-def muc_cong_vao(uri):
-    """'quan_tri' neu URI cong vao (co ca query) cham toi shell root/serial cua Pi, nguoc lai None."""
-    from urllib.parse import parse_qs
+def chuan_uri(uri):
+    """Dua URI cong vao ve dang that: giai ma %xx lap lai (chong %252e), doi \\ thanh /, gon // va ./.. nhu nginx/ttyd. Tra (duong_chuan, query, la_lat_leo).
+    la_lat_leo = co '..' hoac ma hoa/ky tu la trong duong dan - nginx chon location theo duong dan chua chuan hoa nen kiem quyen khong duoc tin."""
+    import posixpath
+    from urllib.parse import unquote
     duong, _, query = (uri or "").partition("?")
-    if any(_khop(duong, t) for t in CONG_VAO_QUAN_TRI):
+    thô = duong
+    for _ in range(3):
+        giai = unquote(duong)
+        if giai == duong:
+            break
+        duong = giai
+    duong = duong.replace("\\", "/")
+    lat = (".." in duong.split("/")) or ("." in duong.split("/")[1:-1]) or ("%" in thô and duong != thô) or ("\x00" in duong) or ("//" in duong)
+    chuan = posixpath.normpath(duong) if duong else "/"
+    if duong.endswith("/") and not chuan.endswith("/"):
+        chuan += "/"
+    return chuan, query, lat
+
+
+def muc_cong_vao(uri):
+    """'quan_tri' neu URI cong vao (co ca query) cham toi shell root/serial cua Pi, nguoc lai None. URI co dau hieu lach duong dan (.., %2e, //) cung tinh la quan_tri."""
+    from urllib.parse import parse_qs
+    duong, query, lat = chuan_uri(uri)
+    if lat or any(_khop(duong, t) for t in CONG_VAO_QUAN_TRI):
         return "quan_tri"
     if _khop(duong, "/term-phien"):
         for a in parse_qs(query).get("arg", []):

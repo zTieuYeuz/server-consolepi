@@ -80,6 +80,9 @@ kq["cv_van_hanh_vnc"] = auth("vh1", "/uem-vnc-ws/abc") == 200
 kq["cv_chi_xem_bi_chan"] = auth("xem1", "/term-local/") == 403 and auth("xem1", "/uem-vnc-ws/abc") == 403
 kq["cv_chua_vai_tro_bi_chan"] = auth("khongvaitro", "/term-console/ttyUSB0/") == 403
 kq["cv_quan_tri_vao"] = auth("qt1", "/term-ssh/") == 200
+kq["cv_lach_duong_dan_van_hanh_403"] = all(auth("vh1", u) == 403 for u in ("/term-phien/../term-local/", "/term-phien/%2e%2e/term-local/", "/term-phien/./../term-local/", "/term-phien/..%2fterm-local/"))
+kq["cv_lach_duong_dan_quan_tri_van_vao"] = auth("qt1", "/term-phien/../term-local/") == 200
+kq["cv_phien_local_van_hanh_403"] = auth("vh1", "/term-phien/?arg=local") == 403 and auth("vh1", "/term-phien/?arg=abc") == 200
 kq["cv_uri_la_bi_chan"] = auth("vh1", "/term-khong-khai-bao/") == 403
 kq["cv_khong_dang_nhap_401"] = app.test_client().get("/_auth", environ_overrides={"REMOTE_ADDR": "10.1.2.3"}).status_code == 401
 # 6) cong tac quay ve ghi nhan

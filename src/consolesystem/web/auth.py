@@ -453,7 +453,7 @@ def register_auth(app):
             # RBAC buoc 3: cong vao terminal / VNC di thang toi ttyd, khong qua route Flask -> kiem vai tro o day (nhap phim = muc "ghi" tren dich vu Remote)
             try:
                 from consolesystem.core import rbac as _rb
-                ok, _ly = _rb.ghi_nhan("GET", goc.split("?", 1)[0], user, la_quan_tri, nang_muc=_rb.muc_cong_vao(goc))
+                ok, _ly = _rb.ghi_nhan("GET", _rb.chuan_uri(goc)[0], user, la_quan_tri, nang_muc=_rb.muc_cong_vao(goc))
             except Exception as e:
                 print("[rbac] loi kiem quyen cong vao: %s" % type(e).__name__, flush=True)
                 return "", 200

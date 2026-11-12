@@ -150,3 +150,15 @@ def test_danh_sach_route_ghi_da_duoc_duyet():
     assert "(CHUA KHAI)" not in ra.stdout
     moi, cu = set(ra.stdout.splitlines()), set(mau.splitlines())
     assert moi == cu, ("them:", sorted(moi - cu)[:10], "bo:", sorted(cu - moi)[:10])
+
+
+def test_lach_duong_dan_vao_cong_quan_tri_bi_chan(tmp_path, monkeypatch):
+    """LOI-012: /term-phien/../term-local/ va bien the ma hoa phai bi coi la cong quan_tri; duong hop le khong bi nang muc oan."""
+    RB = _rb(tmp_path, monkeypatch)
+    for uri in ("/term-phien/../term-local/", "/term-phien/%2e%2e/term-local/", "/term-phien/./../term-local/", "/term-phien/..%2fterm-local/", "/term-phien/%252e%252e/term-local/",
+                "/term-ssh/..\\term-local/", "/term-ssh//term-local/", "/term-ssh/../term-console/ttyUSB0/", "/term-phien/x/%2E%2E/%2e%2e/term-local", "/term-local/../term-local/"):
+        d, q, lat = RB.chuan_uri(uri)
+        assert RB.muc_cong_vao(uri) == "quan_tri", uri
+        assert not RB.cho_phep("van_hanh", "GET", d, RB.muc_cong_vao(uri))[0], uri
+    for uri in ("/term-phien/?arg=abc", "/term-phien/ws?arg=abc-123", "/term-ssh/token", "/uem-vnc-ws/x"):
+        assert RB.muc_cong_vao(uri) is None, uri
