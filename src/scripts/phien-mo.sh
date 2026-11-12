@@ -32,6 +32,15 @@ case "$MA" in
         # Terminal cua chinh may nay - dung chung phien voi trang Terminal cu
         exec tmux new-session -A -s consolepi-local \
             bash --rcfile /opt/console-pi/scripts/console-bashrc ;;
+    ssh-*|xem-*)
+        # Terminal SSH RIENG moi nguoi (2.0.7): ma ngau nhien tra ra ten phien tmux; xem-* = chi doc (tmux attach -r)
+        KQ="$(/usr/bin/python3 /opt/console-pi/scripts/ssh-phien-tra.py "$MA")" || { echo "Phien khong hop le hoac da het han."; sleep 5; exit 1; }
+        CHE="${KQ%% *}"; TEN="${KQ#* }"
+        if [[ "$CHE" == "ro" ]]; then
+            tmux has-session -t "$TEN" 2>/dev/null || { echo "Nguoi kia chua mo terminal."; sleep 5; exit 1; }
+            exec tmux attach-session -r -t "$TEN"
+        fi
+        exec tmux new-session -A -s "$TEN" ;;
     serial-tty*)
         # Cong console: DUNG CHUNG phien voi dich vu console-system-ttyd@<cong>
         # (1 cong serial chi 1 chuong trinh giu duoc - mo 2 microcom se tranh

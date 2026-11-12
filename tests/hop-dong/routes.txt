@@ -292,7 +292,11 @@
 /settings/sao-luu	GET	settings_sao_luu
 /ssh	GET	ssh_page
 /ssh/connect	POST	ssh_connect
+/ssh/nhuong	POST	ssh_nhuong
 /ssh/paste	POST	ssh_paste
+/ssh/tha	POST	ssh_tha
+/ssh/trang-thai-html	GET	ssh_trang_thai_html
+/ssh/xin	POST	ssh_xin
 /static/<path:filename>	GET	static
 /storage	GET	storage_page
 /storage/len	POST	storage_upload

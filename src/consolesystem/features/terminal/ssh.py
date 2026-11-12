@@ -34,7 +34,8 @@ from flask import request
 from ui.layout import render_page, gan_phien_tmux
 from ui.commands import load_library, dan_thong_minh
 from ui.soanlenh import khoi_soan_lenh, khoi_copy_terminal
-from ui.terminal import SSH_SESSION, tmux_session_exists, service_active
+from ui.terminal import SSH_SESSION, tmux_session_exists, service_active  # noqa: F401
+from consolesystem.features.terminal import ssh_phien as SP
 from consolesystem.core.esc import esc as _esc
 
 # Dau nhac mat khau cua ssh ("...'s password:", "Enter passphrase for key ...:")
@@ -79,8 +80,8 @@ def _cho_dau_nhac_mat_khau(session, truoc, giay_toi_da=12):
     return False
 
 
-def start_ssh_in_tmux(host, user, port=22, password=""):
-    """Chay lenh ssh trong phien tmux; tu dien mat khau neu duoc nhap san."""
+def start_ssh_in_tmux(host, user, port=22, password="", nguoi=""):
+    """Chay lenh ssh trong phien tmux RIENG cua `nguoi`; tu dien mat khau neu duoc nhap san. Moi may dich chi mot nguoi dieu khien (ssh_phien.lay_khoa)."""
     host = (host or "").strip()
     user = (user or "").strip()
     if not host or not user:
@@ -110,11 +111,19 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
     if not 1 <= cong <= 65535:
         return False, "Cổng phải trong khoảng 1-65535."
 
-    if not tmux_session_exists(SSH_SESSION):
+    may = "%s:%s" % (host.lower(), cong)
+    che, chu = SP.lay_khoa(may, nguoi or "khach")
+    if che != "dieu_khien":
+        return False, ("Máy %s đang do %s điều khiển. Bạn chỉ xem được; bấm \"Xin điều khiển\" để nhờ %s nhường." % (may, chu, chu))
+    try:
+        _ma, PHIEN_TMUX = SP.phien_cua(nguoi or "khach", dang_chay=tmux_session_exists)
+    except ValueError as e:
+        return False, str(e)
+    if not tmux_session_exists(PHIEN_TMUX):
         return False, ("Chưa có phiên terminal SSH. Mở khung terminal bên dưới "
                        "de tao phien truoc roi bam lai.")
 
-    truoc = _chup_man_hinh(SSH_SESSION)
+    truoc = _chup_man_hinh(PHIEN_TMUX)
     # Terminal dang dung o 1 dau nhac mat khau cu: go lenh vao day thi ca dong
     # lenh se bi hieu la mat khau. Dung lai va noi ro, thay vi lam roi them.
     if _la_dau_nhac_mat_khau(_dong_cuoi(truoc)):
@@ -124,7 +133,7 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
 
     cmd = f"ssh -o StrictHostKeyChecking=accept-new -p {cong} {user}@{host}"
     try:
-        subprocess.run(["tmux", "send-keys", "-t", SSH_SESSION, cmd, "Enter"],
+        subprocess.run(["tmux", "send-keys", "-t", PHIEN_TMUX, cmd, "Enter"],
                        capture_output=True, timeout=5)
     except Exception as e:
         return False, f"Lỗi: {e}"
@@ -133,7 +142,7 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
         return True, (f"Đã gửi lệnh kết nối tới {host}. "
                       f"Nhập mật khẩu trong khung terminal bên dưới.")
 
-    if not _cho_dau_nhac_mat_khau(SSH_SESSION, truoc, 12):
+    if not _cho_dau_nhac_mat_khau(PHIEN_TMUX, truoc, 12):
         return True, (f"Đã gửi lệnh kết nối tới {host} nhưng sau 12 giây không thấy dấu "
                       f"nhắc mật khẩu - có thể thiết bị phản hồi chậm, đang dùng khóa (key), "
                       f"hoặc không kết nối được. Xem khung terminal bên dưới, nhập tay nếu cần.")
@@ -141,9 +150,9 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
     try:
         # -l = gui NGUYEN VAN. Thieu -l thi tmux dich cac chuoi trung ten phim
         # (vi du mat khau chua "Enter", "Space") thanh phim bam thay vi ky tu.
-        subprocess.run(["tmux", "send-keys", "-l", "-t", SSH_SESSION, password],
+        subprocess.run(["tmux", "send-keys", "-l", "-t", PHIEN_TMUX, password],
                        capture_output=True, timeout=5)
-        subprocess.run(["tmux", "send-keys", "-t", SSH_SESSION, "Enter"],
+        subprocess.run(["tmux", "send-keys", "-t", PHIEN_TMUX, "Enter"],
                        capture_output=True, timeout=5)
     except Exception as e:
         return False, f"Lỗi khi gửi mật khẩu: {e}"
@@ -159,12 +168,45 @@ def start_ssh_in_tmux(host, user, port=22, password=""):
 SSH_JS = _taisan.doc("features/terminal/ssh.SSH_JS.html")
 
 
-def _render(msg="", ok=True, prefill=""):
-    term_running = service_active("console-system-term-ssh.service")
+def _nguoi():
+    from flask import session
+    return session.get("user") or "khach"
+
+
+def _khoi_trang_thai_html(nguoi):
+    """Danh sach may dang co nguoi dieu khien + nut Xin dieu khien / Nhuong / Thoi (cap nhat moi 5 giay bang JS)."""
+    ds = SP.trang_thai(nguoi)
+    if not ds:
+        return '<p class="tk-ghi" style="margin:0;">Chưa có máy nào đang được điều khiển qua SSH.</p>'
+    ra = ""
+    for k in ds:
+        may = _esc(k["may"])
+        if k["cua_toi"]:
+            nut = ('<form method="POST" action="/ssh/tha" style="display:inline"><input type="hidden" name="may" value="%s"><button class="gray small">Thôi điều khiển</button></form>' % may)
+            if k["xin"]:
+                nut += (' <b>%s xin điều khiển</b> <form method="POST" action="/ssh/nhuong" style="display:inline"><input type="hidden" name="may" value="%s">'
+                        '<button class="small">Nhường</button></form>' % (_esc(k["xin"]), may))
+            ra += '<div>%s: <b>bạn đang điều khiển</b> %s</div>' % (may, nut)
+        else:
+            ra += ('<div>%s: <b>%s</b> đang điều khiển (bạn chỉ xem) <form method="POST" action="/ssh/xin" style="display:inline"><input type="hidden" name="may" value="%s">'
+                   '<button class="small">Xin điều khiển</button></form> <a class="tk-nut" href="/ssh?xem=%s">Xem</a></div>' % (may, _esc(k["chu"]), may, _esc(k["chu"])))
+    return ra
+
+
+def _render(msg="", ok=True, prefill="", xem=""):
+    nguoi = _nguoi()
+    try:
+        if xem and xem != nguoi:
+            ma = SP.ma_xem(xem)
+        else:
+            ma = SP.phien_cua(nguoi, dang_chay=tmux_session_exists)[0]
+    except ValueError as e:
+        msg, ok, ma = str(e), False, None
+    term_running = service_active("console-system-term-phien.service")
     msg_html = f'<div class="msg {"ok" if ok else "err"}">{_esc(msg)}</div>' if msg else ""
     term_status = ("" if term_running else
                    '<div class="msg err">Dich vu terminal SSH chua chay: '
-                   '<code>sudo systemctl start console-system-term-ssh</code></div>')
+                   '<code>sudo systemctl start console-system-term-phien</code></div>')
 
     # Bo trong: chi 1 hang nhap gon, khong tieu de/doan giai thich dai - de
     # danh cang nhieu chieu cao cang tot cho khung terminal.
@@ -172,6 +214,9 @@ def _render(msg="", ok=True, prefill=""):
     {msg_html}
     {term_status}
     <div id="bao_server" class="msg ok" style="display:none;"></div>
+    {('<div class="msg ok">Bạn đang <b>xem</b> terminal của %s (chỉ đọc). <a href="/ssh">Về terminal của tôi</a></div>' % _esc(xem)) if (xem and xem != nguoi) else ''}
+    <div id="ssh-ai-dieu-khien" class="card" style="padding:8px 12px;margin-bottom:8px;">{_khoi_trang_thai_html(nguoi)}</div>
+    <script>setInterval(function(){{if(document.hidden)return;fetch('/ssh/trang-thai-html',{{cache:'no-store'}}).then(function(r){{return r.text();}}).then(function(h){{document.getElementById('ssh-ai-dieu-khien').innerHTML=h;}}).catch(function(){{}});}},5000);</script>
 
     <form method="POST" action="/ssh/connect" id="form_ket_noi" class="row"
           style="align-items:flex-end;margin-bottom:10px;">
@@ -188,7 +233,7 @@ def _render(msg="", ok=True, prefill=""):
     </form>
 
     <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px;">
-      <iframe src="/term-ssh/" title="SSH terminal"
+      <iframe src="{('/term-phien/?arg=' + ma) if ma else 'about:blank'}" title="SSH terminal"
               style="width:100%;height:calc(100vh - 330px);min-height:360px;border:0;display:block;background:#000;"></iframe>
     </div>
 
@@ -197,7 +242,7 @@ def _render(msg="", ok=True, prefill=""):
     {SSH_JS}"""
 
     html = render_page(body, active="/ssh", title="SSH", subtitle="")
-    return gan_phien_tmux(html, SSH_SESSION)
+    return gan_phien_tmux(html, SP.phien_cua(nguoi, dang_chay=tmux_session_exists)[1] if ma else SSH_SESSION)
 
 
 def register_ssh(app):
@@ -210,7 +255,7 @@ def register_ssh(app):
             i = int(lib_idx)
             if 0 <= i < len(lib):
                 prefill = lib[i].get("commands", "")
-        return _render(prefill=prefill)
+        return _render(prefill=prefill, xem=request.args.get("xem", ""))
 
     def _tra_ve(ok, msg, prefill=""):
         """
@@ -230,7 +275,7 @@ def register_ssh(app):
         ok, msg = start_ssh_in_tmux(f.get("host", "").strip(),
                                     f.get("user", "").strip(),
                                     f.get("port", 22) or 22,
-                                    f.get("password", ""))
+                                    f.get("password", ""), nguoi=_nguoi())
         # Khong bao gio tra mat khau nguoc lai trang.
         return _tra_ve(ok, msg)
 
@@ -242,7 +287,36 @@ def register_ssh(app):
         # Tu chon cach dan cho dung voi thu dang chay trong terminal (dang
         # SSH vao thiet bi thi gui tung dong; con dang o shell thi dan ca
         # khoi, khong dong nao chay). Xem dan_thong_minh().
-        ok, msg = dan_thong_minh(SSH_SESSION, noi_dung)
+        try:
+            ten = SP.phien_cua(_nguoi(), dang_chay=tmux_session_exists)[1]
+        except ValueError as e:
+            return _tra_ve(False, str(e), noi_dung)
+        ok, msg = dan_thong_minh(ten, noi_dung)
         return _tra_ve(ok, msg, noi_dung)
+
+    def _may_hop_le(may):
+        return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:\-]{0,260}", may or ""))
+
+    @app.route("/ssh/xin", methods=["POST"])
+    def ssh_xin():
+        may = request.form.get("may", "")
+        ok, msg = SP.xin(may, _nguoi()) if _may_hop_le(may) else (False, "Máy không hợp lệ.")
+        return _tra_ve(ok, msg)
+
+    @app.route("/ssh/nhuong", methods=["POST"])
+    def ssh_nhuong():
+        may = request.form.get("may", "")
+        ok, msg = SP.nhuong(may, _nguoi()) if _may_hop_le(may) else (False, "Máy không hợp lệ.")
+        return _tra_ve(ok, msg)
+
+    @app.route("/ssh/tha", methods=["POST"])
+    def ssh_tha():
+        may = request.form.get("may", "")
+        ok = _may_hop_le(may) and SP.tha(may, _nguoi())
+        return _tra_ve(ok, "Đã thôi điều khiển." if ok else "Bạn không đang điều khiển máy này.")
+
+    @app.route("/ssh/trang-thai-html")
+    def ssh_trang_thai_html():
+        return _khoi_trang_thai_html(_nguoi())
 
     return app

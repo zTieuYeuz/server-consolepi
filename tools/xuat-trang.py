@@ -40,6 +40,7 @@ def chuan(b):
     b = re.sub(rb"\d{1,2}:\d\d(:\d\d)?", b"<T>", b)
     b = re.sub(rb"\d{4}-\d\d-\d\d", b"<D>", b)
     b = re.sub(rb"[0-9a-f]{32,}", b"<H>", b)
+    b = re.sub(rb"(ssh|xem)-[0-9a-f]{16}", rb"\1-<M>", b)       # ma phien SSH ngau nhien (2.0.7)
     return b
 
 # trang doc trang thai may that (dung luong o, suc khoe...) -> khac nhau giua cac lan chay, chi so ma tra ve
