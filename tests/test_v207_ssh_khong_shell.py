@@ -85,12 +85,16 @@ def test_phien_ssh_tmux_that_khong_go_duoc_lenh_shell(tmp_path):
         json.dump({"host": "10.0.0.5", "user": "admin", "port": 22}, open(os.path.join(env["CS_SSH_YC"], "ssh-test.json"), "w"))
         assert cho("FAKE-SSH")
         assert os.path.exists(os.path.join(env["CS_SSH_YC"], "ssh-test.dang-ssh"))                 # LOI-014: tep danh dau ssh dang chay
+        from consolesystem.features.terminal import ssh as SSHM
+        SSHM.DIR_YC = env["CS_SSH_YC"]
+        assert SSHM.lenh_hien_tai("ssh-test") == "ssh"                                             # dang ket noi -> /ssh/paste duoc phep
         hien = man_hinh()
         assert "-e none" in hien and "PermitLocalCommand=no" in hien and "admin@10.0.0.5" in hien
         tmux("send-keys", "-t", "ssh-test", "xin-chao", "Enter")
         assert cho("NHAN:[xin-chao]"), man_hinh()                                        # sau khi noi ssh, phim toi ssh; truoc do khong lan
         assert cho("Kết nối SSH đã kết thúc", 10)
         assert not os.path.exists(os.path.join(env["CS_SSH_YC"], "ssh-test.dang-ssh"))
+        assert SSHM.lenh_hien_tai("ssh-test") == ""                                                # chua/het ket noi -> /ssh/paste bi tu choi
         # yeu cau xau bi tu choi, khong chay gi
         json.dump({"host": "-oProxyCommand=id", "user": "admin", "port": 22}, open(os.path.join(env["CS_SSH_YC"], "ssh-test.json"), "w"))
         assert cho("không hợp lệ")
