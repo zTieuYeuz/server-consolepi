@@ -27,11 +27,12 @@ REGISTRY = {
     "cap-nhat": ("Cập nhật Console System", ["/cap-nhat", "/khoa-may", "/commands/update"]),
     "sao-luu": ("Sao lưu / khôi phục / khóa", ["/settings/sao-luu", "/settings/nap-sao-luu", "/settings/khoi-phuc", "/settings/rotate", "/settings/regen-term-pass"]),
     "nguoi-dung": ("Người dùng và vai trò", ["/nguoi-dung"]),
+    "terminal-may": ("Terminal tại chỗ (shell root của Pi)", ["/terminal", "/api/send-keys"]),
     "nguon": ("Nguồn điện: tắt / khởi động lại Pi", ["/power"]),
     "cai-windows": ("Cài Windows qua mạng (PXE)", ["/deployos", "/gopy", "/api/tiendo/data"]),
     "phan-mem": ("Triển khai / kho phần mềm", ["/deployos/trienkhai", "/deployos/kho", "/deployos/ungdung", "/deployos/font", "/deployos/drivers", "/kho-trung-tam", "/tk"]),
     "may-tram": ("Quản lý máy trạm", ["/uem"]),
-    "remote": ("Remote: SSH, terminal, RDP, VNC, đường hầm", ["/ssh", "/terminal", "/phien", "/remote", "/remote-desktop", "/console", "/api/send-keys", "/commands", "/term-local", "/term-ssh", "/term-phien", "/term-console", "/uem-vnc-ws"]),
+    "remote": ("Remote: SSH, terminal, RDP, VNC, đường hầm", ["/ssh", "/terminal", "/phien", "/remote", "/remote-desktop", "/console", "/commands", "/term-local", "/term-ssh", "/term-phien", "/term-console", "/uem-vnc-ws"]),
     "rustdesk": ("RustDesk", ["/rustdesk"]),
     "mang": ("Mạng, WiFi, Bluetooth", ["/nettools", "/wifi", "/wifi-", "/connect-wifi", "/release-ap", "/force-ap", "/bluetooth", "/bt-", "/direct", "/rename"]),
     "luu-tru": ("Lưu trữ / tài nguyên", ["/storage", "/tai-nguyen"]),
@@ -45,7 +46,10 @@ CONG_VAO = ("/term-local", "/term-ssh", "/term-phien", "/term-console", "/uem-vn
 PHA_HUY = (
     "/power/<what>", "/rename", "/force-ap", "/release-ap", "/direct/bat", "/direct/tat", "/deployos/pxe/bat", "/deployos/pxe/tat", "/deployos/pxe/cong", "/nettools/tftp/bat", "/nettools/tftp/tat",
     "/remote/bat", "/remote/tat", "/remote/ts/bat", "/remote/ts/tat", "/settings/kiosk/bat", "/settings/kiosk/tat", "/wifi-delete",
-    "/commands/delete", "/deployos/caidat/wol/xoa", "/deployos/console/apps/xoa", "/deployos/console/file/xoa", "/deployos/console/scripts/xoa",
+    "/terminal/paste", "/api/send-keys", "/commands/add", "/commands/send", "/commands/delete",
+    # cai goi / dich vu tren chinh Pi, khoa mang, bi mat dich vu, bat goi tin
+    "/remote/cai", "/remote/token", "/remote/ts/cai", "/remote/ts/authkey", "/remote/ts/quen", "/remote-desktop/cai", "/rustdesk/api/cai", "/rustdesk/api/cai-dat",
+    "/rustdesk/api/hanh-dong", "/settings/api/xem-mat-khau-terminal", "/wifi/api/xem-mat-khau-ap", "/nettools/pcap/start", "/nettools/pcap/stop", "/nettools/pcap/convert", "/deployos/caidat/wol/xoa", "/deployos/console/apps/xoa", "/deployos/console/file/xoa", "/deployos/console/scripts/xoa",
     "/deployos/drivers/<driver_id>/xoa-file", "/deployos/drivers/xoa", "/deployos/font/<bo_id>/xoa-font", "/deployos/font/xoa", "/deployos/kho/huy",
     "/deployos/kho/xoa-cauhinh", "/deployos/kho/xoa-xong", "/deployos/kichban/xoa", "/deployos/lichsu/xoa", "/deployos/o-dia/xoa", "/deployos/o-dia/xoa-het",
     "/deployos/os/xoa", "/deployos/tiendo/xoa", "/deployos/trienkhai/kichban/xoa", "/deployos/trienkhai/lich/xoa", "/deployos/trienkhai/may/nhom/xoa",
@@ -66,15 +70,35 @@ def _mau_ra_regex(mau):
     return re.compile("^" + "".join("[^/]+" if x.startswith("<") else re.escape(x) for x in re.split(r"(<[^>]+>)", mau)) + "$")
 
 
-_PHA_HUY_RE = [_mau_ra_regex(m) for m in PHA_HUY]
+# Phien serial / terminal may nay trong trang Phien (ma = local | serial-*): shell root + cong serial cua Pi
+PHA_HUY_RE_PHU = (re.compile(r"^/phien/api/(local|serial-[^/]+)/"),)
+_PHA_HUY_RE = [_mau_ra_regex(m) for m in PHA_HUY] + list(PHA_HUY_RE_PHU)
 
 
 def la_pha_huy(path):
     return any(r.match(path) for r in _PHA_HUY_RE)
 
 
+# Cong vao nginx chi danh cho Quan tri (LOI-011-F, CEO chot 12/11): shell root cua chinh Pi (terminal tai cho) va cong console/serial. Cong phien SSH (?arg=<ma>) van
+# cho Van hanh, TRU phien dac biet "local" (terminal may nay) va "serial-*" (cong serial).
+CONG_VAO_QUAN_TRI = ("/term-local", "/term-console")
+
+
+def muc_cong_vao(uri):
+    """'quan_tri' neu URI cong vao (co ca query) cham toi shell root/serial cua Pi, nguoc lai None."""
+    from urllib.parse import parse_qs
+    duong, _, query = (uri or "").partition("?")
+    if any(_khop(duong, t) for t in CONG_VAO_QUAN_TRI):
+        return "quan_tri"
+    if _khop(duong, "/term-phien"):
+        for a in parse_qs(query).get("arg", []):
+            if a == "local" or a.startswith("serial-"):
+                return "quan_tri"
+    return None
+
+
 # dich vu ma van_hanh/chi_xem KHONG duoc dung (ke ca doc): quyet o thiet ke RBAC G1 muc 2 va cau hoi 4
-DICH_VU_QUAN_TRI = {"cap-nhat", "sao-luu", "nguoi-dung", "nguon"}
+DICH_VU_QUAN_TRI = {"cap-nhat", "sao-luu", "nguoi-dung", "nguon", "terminal-may"}
 # Loi vao KHONG qua RBAC (khong co phien Console): moi muc co co che xac thuc rieng trong web/auth.py; liet ke HET de test khong cho them am tham.
 CONG_KHAI = {
     "/login": "dang nhap", "/logout": "tu thoat (ca nguoi chua gan vai tro)", "/healthz": "kiem tra song", "/_auth": "nginx auth_request", "/vkeyboard.js": "tai nguyen tinh", "/dashboard.js": "tai nguyen tinh",
@@ -115,7 +139,7 @@ def muc_can(method, path):
     return "xem" if method.upper() in ("GET", "HEAD", "OPTIONS") else "ghi"
 
 
-def cho_phep(vai_tro, method, path):
+def cho_phep(vai_tro, method, path, nang_muc=None):
     """(ok, ly_do). Route chua khai: tu choi (mac dinh tu choi) - o buoc 1 chi duoc GHI NHAN."""
     if la_cong_khai(path):
         return True, "cong-khai"
@@ -125,6 +149,8 @@ def cho_phep(vai_tro, method, path):
     if vai_tro == "quan_tri":
         return True, ""
     m = muc_can(method, path)
+    if nang_muc == "quan_tri":
+        m = "quan_tri"
     if m == "quan_tri":
         return False, "can-quan-tri"
     if vai_tro == "van_hanh":
@@ -204,11 +230,11 @@ def dang_chan():
     return os.environ.get("CONSOLE_RBAC_GHI_NHAN", "") not in ("1", "true", "yes")
 
 
-def ghi_nhan(method, path, user, la_quan_tri_fn, gio=time.time):
+def ghi_nhan(method, path, user, la_quan_tri_fn, gio=time.time, nang_muc=None):
     """Buoc 1: tinh quyet dinh, neu SE bi tu choi thi ghi nhat ky (toi da 1 lan / 10 phut cho moi nguoi+dich vu+ly do) va nho 50 su kien gan nhat.
     KHONG bao gio chan. Tra (ok, ly_do) de test."""
     vt = vai_tro_cua(user, la_quan_tri_fn)
-    ok, ly = cho_phep(vt, method, path)
+    ok, ly = cho_phep(vt, method, path, nang_muc)
     if ok:
         return ok, ly
     now = gio()

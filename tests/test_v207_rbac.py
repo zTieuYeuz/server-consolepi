@@ -83,7 +83,7 @@ def test_moi_route_cua_app_da_khai_hoac_cong_khai_va_chan_theo_vai_tro(tmp_path)
 
 def test_cong_vao_terminal_la_muc_ghi_ke_ca_get(tmp_path, monkeypatch):
     RB = _rb(tmp_path, monkeypatch)
-    for p in ("/term-local/", "/term-ssh/ws", "/term-phien/x", "/term-console/ttyUSB0/", "/uem-vnc-ws/a"):
+    for p in ("/term-ssh/ws", "/term-phien/x", "/uem-vnc-ws/a"):
         assert RB.dich_vu_cua(p) == "remote", p
         assert RB.muc_can("GET", p) == "ghi", p
         assert RB.cho_phep("van_hanh", "GET", p)[0] and RB.cho_phep("quan_tri", "GET", p)[0]
@@ -120,3 +120,33 @@ def test_chuan_may_khoa_dieu_khien():
     from consolesystem.features.terminal.ssh_phien import chuan_may as c
     assert c("localhost") == c("127.0.0.1") == c("root@LocalHost:22") == c("::1") == "127.0.0.1:22"
     assert c("10.0.0.1") == "10.0.0.1:22" and c("10.0.0.1:2222") == "10.0.0.1:2222" and c("10.0.0.1:22") != c("10.0.0.1:2222")
+
+
+def test_shell_root_cua_pi_va_serial_chi_quan_tri(tmp_path, monkeypatch):
+    """LOI-011-F (CEO chot): terminal tai cho + console/serial + gui phim/thu vien lenh vao terminal cua Pi + cai goi tren Pi chi Quan tri; SSH/RDP/VNC toi may dich van cho Van hanh."""
+    RB = _rb(tmp_path, monkeypatch)
+    for uri in ("/term-local/", "/term-local/ws", "/term-console/ttyUSB0/x", "/term-phien/?arg=local", "/term-phien/ws?arg=serial-ttyUSB0"):
+        assert RB.muc_cong_vao(uri) == "quan_tri", uri
+        assert not RB.cho_phep("van_hanh", "GET", uri.split("?")[0], RB.muc_cong_vao(uri))[0], uri
+        assert RB.cho_phep("quan_tri", "GET", uri.split("?")[0], RB.muc_cong_vao(uri))[0], uri
+    for uri in ("/term-phien/?arg=abc123", "/term-ssh/", "/uem-vnc-ws/x", "/term-phien/"):
+        assert RB.muc_cong_vao(uri) is None, uri
+        assert RB.cho_phep("van_hanh", "GET", uri.split("?")[0], RB.muc_cong_vao(uri))[0], uri
+    for m, p in (("GET", "/terminal"), ("POST", "/terminal/paste"), ("POST", "/api/send-keys"), ("POST", "/commands/send"), ("POST", "/commands/add"),
+                 ("POST", "/phien/api/local/dan"), ("POST", "/phien/api/serial-ttyUSB0/baud"), ("POST", "/remote/cai"), ("POST", "/remote/ts/cai"),
+                 ("POST", "/rustdesk/api/cai"), ("POST", "/rustdesk/api/hanh-dong"), ("POST", "/nettools/pcap/start"), ("POST", "/settings/api/xem-mat-khau-terminal")):
+        assert not RB.cho_phep("van_hanh", m, p)[0], (m, p)
+        assert RB.cho_phep("quan_tri", m, p)[0], (m, p)
+    for m, p in (("POST", "/phien/api/abc123/dan"), ("POST", "/ssh/connect"), ("POST", "/remote-desktop/ket-noi"), ("POST", "/rustdesk/api/ket-noi"), ("GET", "/phien"), ("GET", "/commands")):
+        assert RB.cho_phep("van_hanh", m, p)[0], (m, p)
+
+
+def test_danh_sach_route_ghi_da_duoc_duyet():
+    """Moi route POST/PUT/DELETE o muc ghi (Van hanh dung duoc) nam trong tests/hop-dong/route-ghi.txt. Them route moi -> file doi -> phai co nguoi duyet muc quyen
+    (NV4/CEO doc file nay), roi chay tools/xuat-route-ghi.py tests/hop-dong/route-ghi.txt de ghi nhan."""
+    ra = subprocess.run([sys.executable, os.path.join(GOC, "tools", "xuat-route-ghi.py")], cwd=GOC, capture_output=True, text=True, timeout=300)
+    assert ra.returncode == 0, ra.stderr[-500:]
+    mau = open(os.path.join(GOC, "tests", "hop-dong", "route-ghi.txt"), encoding="utf-8").read()
+    assert "(CHUA KHAI)" not in ra.stdout
+    moi, cu = set(ra.stdout.splitlines()), set(mau.splitlines())
+    assert moi == cu, ("them:", sorted(moi - cu)[:10], "bo:", sorted(cu - moi)[:10])

@@ -41,6 +41,11 @@ from ui.layout import render_page
 FILE_PHIEN = os.path.join(THU_MUC_DU_LIEU, "phien.json")
 MAU_HOST = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:\-]{0,254}")
 MAU_USER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._\-\\]{0,63}")
+def _la_quan_tri():
+    from consolesystem.web.auth import la_quan_tri
+    return la_quan_tri()
+
+
 MAU_MA = re.compile(r"[a-z0-9][a-zA-Z0-9-]{0,47}")   # chu hoa: serial-ttyUSB0
 BAUD = (1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200)
 _DAU_NHAC_MK = re.compile(r"(password|passphrase|mat khau|mật khẩu)[^:]*:\s*$", re.I)
@@ -391,7 +396,10 @@ def register_phien(app):
 
     @app.route("/phien/api/luu", methods=["POST"])
     def phien_api_luu():
-        ok, msg, ma = luu(request.get_json(silent=True) or {})
+        j = request.get_json(silent=True) or {}
+        if j.get("loai") == "serial" and not _la_quan_tri():
+            return jsonify({"ok": False, "loi": "Cổng serial của Pi chỉ dành cho Quản trị."}), 403
+        ok, msg, ma = luu(j)
         return jsonify({"ok": ok, "loi": "" if ok else msg, "ma": ma})
 
     @app.route("/phien/api/xoa", methods=["POST"])
@@ -403,7 +411,10 @@ def register_phien(app):
 
     @app.route("/phien/api/nhanh", methods=["POST"])
     def phien_api_nhanh():
-        ok, msg, ma = ket_noi_nhanh((request.get_json(silent=True) or {}).get("chuoi", ""))
+        chuoi = (request.get_json(silent=True) or {}).get("chuoi", "")
+        if (chuoi or "").strip().lower().startswith(("tty", "/dev/tty", "local")) and not _la_quan_tri():
+            return jsonify({"ok": False, "loi": "Cổng serial và terminal của Pi chỉ dành cho Quản trị.", "ma": ""}), 403
+        ok, msg, ma = ket_noi_nhanh(chuoi)
         return jsonify({"ok": ok, "loi": msg, "ma": ma})
 
     @app.route("/phien/api/thu-vien")
