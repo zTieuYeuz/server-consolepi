@@ -29,13 +29,15 @@ REGISTRY = {
     "cai-windows": ("Cài Windows qua mạng (PXE)", ["/deployos", "/gopy"]),
     "phan-mem": ("Triển khai / kho phần mềm", ["/deployos/trienkhai", "/deployos/kho", "/deployos/ungdung", "/deployos/font", "/deployos/drivers", "/kho-trung-tam", "/tk"]),
     "may-tram": ("Quản lý máy trạm", ["/uem"]),
-    "remote": ("Remote: SSH, terminal, RDP, VNC, đường hầm", ["/ssh", "/terminal", "/phien", "/remote", "/remote-desktop", "/console", "/api/send-keys", "/commands"]),
+    "remote": ("Remote: SSH, terminal, RDP, VNC, đường hầm", ["/ssh", "/terminal", "/phien", "/remote", "/remote-desktop", "/console", "/api/send-keys", "/commands", "/term-local", "/term-ssh", "/term-phien", "/term-console", "/uem-vnc-ws"]),
     "rustdesk": ("RustDesk", ["/rustdesk"]),
     "mang": ("Mạng, WiFi, Bluetooth", ["/nettools", "/wifi", "/wifi-", "/connect-wifi", "/release-ap", "/force-ap", "/bluetooth", "/bt-", "/direct", "/rename"]),
     "luu-tru": ("Lưu trữ / tài nguyên", ["/storage", "/tai-nguyen"]),
     "nhat-ky": ("Nhật ký", ["/logs"]),
     "chung": ("Trang chung và cài đặt", ["/", "/settings", "/giaodien", "/ngon-ngu", "/docs", "/giaitri", "/api/status", "/api/suckhoe", "/logout", "/power"]),
 }
+# Cong vao do nginx chuyen thang toi ttyd/cau noi VNC (khong qua route Flask), chi kiem bang auth_request /_auth: nhap phim/dieu khien = muc "ghi" ke ca khi la GET/WebSocket
+CONG_VAO = ("/term-local", "/term-ssh", "/term-phien", "/term-console", "/uem-vnc-ws")
 # dich vu ma van_hanh/chi_xem KHONG duoc dung (ke ca doc): quyet o thiet ke RBAC G1 muc 2 va cau hoi 4
 DICH_VU_QUAN_TRI = {"cap-nhat", "sao-luu", "nguoi-dung"}
 # Loi vao KHONG qua RBAC (khong co phien Console): moi muc co co che xac thuc rieng trong web/auth.py; liet ke HET de test khong cho them am tham.
@@ -71,6 +73,8 @@ def muc_can(method, path):
     dv = dich_vu_cua(path)
     if dv in DICH_VU_QUAN_TRI:
         return "quan_tri"
+    if any(_khop(path, t) for t in CONG_VAO):
+        return "ghi"
     return "xem" if method.upper() in ("GET", "HEAD", "OPTIONS") else "ghi"
 
 

@@ -434,8 +434,20 @@ def register_auth(app):
         Nho vay terminal dung CHUNG phien dang nhap cua dashboard, khong can
         mat khau rieng nua.
         """
-        if session.get("user") or _is_local_screen():
-            return "", 200
-        return "", 401
+        user = session.get("user")
+        if not (user or _is_local_screen()):
+            return "", 401
+        goc = request.headers.get("X-Original-URI", "")
+        if goc:
+            # RBAC buoc 3: cong vao terminal / VNC di thang toi ttyd, khong qua route Flask -> kiem vai tro o day (nhap phim = muc "ghi" tren dich vu Remote)
+            try:
+                from consolesystem.core import rbac as _rb
+                ok, _ly = _rb.ghi_nhan("GET", goc.split("?", 1)[0], user, la_quan_tri)
+            except Exception as e:
+                print("[rbac] loi kiem quyen cong vao: %s" % type(e).__name__, flush=True)
+                return "", 200
+            if not ok and _rb.dang_chan():
+                return "", 403
+        return "", 200
 
     return app

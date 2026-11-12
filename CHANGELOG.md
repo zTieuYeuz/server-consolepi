@@ -7,6 +7,7 @@
 - **Người dùng đăng nhập mà không thuộc nhóm sudo/wheel/admin và chưa được gán vai trò sẽ bị chặn (403) ở mọi chức năng.** Trước đây ai có tài khoản Linux đăng nhập được đều dùng được hết. Quản trị (root hoặc nhóm sudo) vào trang **Người dùng** (`/nguoi-dung`) để gán vai trò **Quản trị / Vận hành / Chỉ xem** cho từng tài khoản trước khi nâng cấp.
 - **Vận hành** dùng được mọi chức năng trừ **Cập nhật**, **Sao lưu / khôi phục** (gồm đổi khóa, xoay mật khẩu terminal) và trang **Người dùng**. **Chỉ xem** chỉ đọc (GET), không thao tác ghi. Quản trị, root và sudo luôn đầy đủ quyền (tài khoản cứu hộ).
 - **Màn hình cảm ứng cục bộ trên Pi (không đăng nhập) có vai trò Vận hành**, không còn là Quản trị: không vào được Cập nhật và Sao lưu / khôi phục từ màn hình đó; cần đăng nhập tài khoản Quản trị.
+- **Terminal và điều khiển từ xa:** các cổng terminal (máy này, SSH, phiên chia sẻ, cổng console) và cầu nối VNC cũng kiểm vai trò: Quản trị và Vận hành dùng được, **Chỉ xem và người chưa gán vai trò bị chặn (403)**. Lần từ chối ghi vào nhật ký thao tác kèm vai trò.
 - Trang không thuộc nhóm nào đã khai báo mặc định bị từ chối. Các cổng cho máy khách không có phiên Console (khởi động PXE, báo tiến trình cài, tải gói triển khai, agent Windows, tài nguyên noVNC) giữ cách xác thực riêng, không đổi.
 - Gán sai vai trò, tự khóa mình: chạy `sudo python3 /opt/console-pi/scripts/rbac-reset.py` trên Pi để trả về mặc định. Cần quay lại chế độ chỉ ghi nhật ký (không chặn): đặt biến môi trường `CONSOLE_RBAC_GHI_NHAN=1` cho dịch vụ. Đăng nhập AD/LDAP để cho bản sau.
 

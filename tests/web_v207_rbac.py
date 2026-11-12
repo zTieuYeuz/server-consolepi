@@ -56,8 +56,21 @@ a = app.test_client()
 kq["cong_khai_login"] = a.get("/login").status_code == 200
 kq["healthz"] = a.get("/healthz").status_code == 200
 kq["agent_khong_phien_khong_bi_rbac"] = a.get("/uem/agent/x").status_code != 403
+# 5b) cong vao terminal/VNC qua nginx auth_request (/_auth + X-Original-URI): kiem vai tro o day
+def auth(user, uri):
+    return khach(user).get("/_auth", headers={"X-Original-URI": uri}).status_code
+
+
+kq["cv_van_hanh_terminal"] = auth("vh1", "/term-ssh/ws?arg=x") == 200 and auth("vh1", "/term-phien/") == 200
+kq["cv_van_hanh_vnc"] = auth("vh1", "/uem-vnc-ws/abc") == 200
+kq["cv_chi_xem_bi_chan"] = auth("xem1", "/term-local/") == 403 and auth("xem1", "/uem-vnc-ws/abc") == 403
+kq["cv_chua_vai_tro_bi_chan"] = auth("khongvaitro", "/term-console/ttyUSB0/") == 403
+kq["cv_quan_tri_vao"] = auth("qt1", "/term-ssh/") == 200
+kq["cv_uri_la_bi_chan"] = auth("vh1", "/term-khong-khai-bao/") == 403
+kq["cv_khong_dang_nhap_401"] = app.test_client().get("/_auth", environ_overrides={"REMOTE_ADDR": "10.1.2.3"}).status_code == 401
 # 6) cong tac quay ve ghi nhan
 os.environ["CONSOLE_RBAC_GHI_NHAN"] = "1"
 kq["cong_tac_ghi_nhan"] = khach("khongvaitro").get("/logs").status_code != 403
+kq["cong_tac_cong_vao"] = auth("xem1", "/term-local/") == 200
 del os.environ["CONSOLE_RBAC_GHI_NHAN"]
 print("KETQUA " + json.dumps(kq, ensure_ascii=False))

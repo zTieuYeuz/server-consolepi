@@ -79,3 +79,26 @@ def test_moi_route_cua_app_da_khai_hoac_cong_khai_va_chan_theo_vai_tro(tmp_path)
     kq = json.loads(dong[0][7:])
     sai = {k: v for k, v in kq.items() if v is not True}
     assert not sai, (sai, r.stderr[-600:])
+
+
+def test_cong_vao_terminal_la_muc_ghi_ke_ca_get(tmp_path, monkeypatch):
+    RB = _rb(tmp_path, monkeypatch)
+    for p in ("/term-local/", "/term-ssh/ws", "/term-phien/x", "/term-console/ttyUSB0/", "/uem-vnc-ws/a"):
+        assert RB.dich_vu_cua(p) == "remote", p
+        assert RB.muc_can("GET", p) == "ghi", p
+        assert RB.cho_phep("van_hanh", "GET", p)[0] and RB.cho_phep("quan_tri", "GET", p)[0]
+        assert not RB.cho_phep("chi_xem", "GET", p)[0] and not RB.cho_phep(None, "GET", p)[0]
+    assert RB.dich_vu_cua("/term-khac/") is None                  # tien to la khong tu dong thuoc Remote
+
+
+def test_moi_location_auth_request_cua_nginx_nam_trong_cong_vao():
+    """Them location moi co auth_request ma quen khai vao CONG_VAO thi RBAC bi hong am tham."""
+    import re
+    from consolesystem.core import rbac as RB
+    conf = open(os.path.join(GOC, "config", "nginx-console-pi.conf"), encoding="utf-8").read()
+    khoi = re.findall(r"location\s+(?:~\s+)?(\S+)\s*\{[^}]*?auth_request\s+/_auth", conf)
+    assert khoi
+    for loc in khoi:
+        goc = re.sub(r"^\^", "", loc)
+        m = re.match(r"(/[A-Za-z0-9_-]+)", goc)
+        assert m and m.group(1) in RB.CONG_VAO, (loc, "chua khai vao core.rbac.CONG_VAO")
