@@ -24,3 +24,12 @@ def test_kich_ban_agent_script_khoi_dong_lai(tmp_path):
 def test_canh_bao_ha_cap_noi_ro_agent_ghi_danh_sau_nang_cap_phai_cai_lai():
     src = open(os.path.join(GOC, "src", "consolesystem", "core", "capnhat", "nangcap.py"), encoding="utf-8").read()
     assert "cài agent SAU" in src and "403" in src and "cài lại agent" in src
+
+
+def test_loai_o_dia_tab_o_dia_va_bo_loc_dung_chung():
+    sys.path.insert(0, os.path.join(GOC, "src"))
+    from consolesystem.features.uem.uem_trang import loai_mot_o, loai_o_dia
+    ao = {"model": "VMware Virtual disk SCSI Disk Device", "media_type": "SSD"}
+    assert loai_mot_o(ao) == "Ổ ảo" and loai_mot_o({"model": "Samsung 980", "media_type": "SSD"}) == "SSD"
+    assert loai_mot_o({"model": "WDC", "media_type": "HDD"}) == "HDD" and loai_mot_o({"model": "X"}) == "Chưa rõ"
+    assert loai_o_dia({"physicaldisks": [ao]}) == ["Ổ ảo"]

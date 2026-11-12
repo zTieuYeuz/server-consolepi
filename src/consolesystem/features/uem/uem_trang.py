@@ -335,20 +335,21 @@ def ram_gb(r):
     return _gb((r.get("computer") or {}).get("memory"))
 
 
+def loai_mot_o(d):
+    """Loai cua MOT o dia vat ly: SSD / HDD / O ao / Chua ro (doc media_type agent gui; cu hon thi doan tu ten model). Dung chung cho tab O dia va bo loc."""
+    mt, model = str(d.get("media_type") or "").upper(), str(d.get("model") or "").upper()
+    if "VIRTUAL" in model or "VMWARE" in model or "QEMU" in model or "VBOX" in model:
+        return "Ổ ảo"
+    if mt == "SSD" or "SSD" in model or "NVME" in model:
+        return "SSD"
+    if mt == "HDD":
+        return "HDD"
+    return "Chưa rõ"
+
+
 def loai_o_dia(r):
-    """Tap loai o dia vat ly: SSD / HDD / O ao / Chua ro (doc media_type agent gui; cu hon thi doan tu ten model)."""
-    ra = set()
-    for d in r.get("physicaldisks") or []:
-        mt, model = str(d.get("media_type") or "").upper(), str(d.get("model") or "").upper()
-        if "VIRTUAL" in model or "VMWARE" in model or "QEMU" in model or "VBOX" in model:
-            ra.add("Ổ ảo")
-        elif mt == "SSD" or "SSD" in model or "NVME" in model:
-            ra.add("SSD")
-        elif mt == "HDD":
-            ra.add("HDD")
-        else:
-            ra.add("Chưa rõ")
-    return sorted(ra)
+    """Tap loai o dia vat ly cua may: SSD / HDD / O ao / Chua ro."""
+    return sorted({loai_mot_o(d) for d in r.get("physicaldisks") or []})
 
 
 def trang_may():
@@ -667,7 +668,7 @@ def tab_may(m, tab):
         ld = [[d["label"], d.get("volume_name") or "—", d["filesystem"], d["size_in_units"], d["remaining_space_in_units"],
                Raw(f'<div class="tk-vach" style="min-width:110px"><i style="width:{d["usage"]}%;background:{"var(--do)" if d["usage"] >= 90 else "var(--xanh)"}"></i></div> {d["usage"]}%'),
                chip(d["bitlocker_status"], "xanh" if d["bitlocker_status"] == "Encrypted" else ("do" if d["bitlocker_status"] == "Unencrypted" else ""))] for d in r.get("logicaldisks", [])]
-        pd = [[d["device_id"], d["model"], d["serial_number"], d["size_in_units"], {"SSD": "SSD", "HDD": "HDD"}.get(d.get("media_type"), "Chưa rõ")] for d in r.get("physicaldisks", [])]
+        pd = [[d["device_id"], d["model"], d["serial_number"], d["size_in_units"], loai_mot_o(d)] for d in r.get("physicaldisks", [])]
         return khung_may(m, tab, f'<h2>Ổ đĩa logic</h2><div class="card">{bang(["Ổ", "Tên", "Hệ tập tin", "Dung lượng", "Còn trống", "Mức dùng", "BitLocker"], ld)}</div>'
                                  f'<h2>Ổ đĩa vật lý</h2><div class="card">{bang(["Thiết bị", "Model", "Số serial", "Dung lượng", "Loại"], pd)}</div>')
     if tab == "man-hinh":
