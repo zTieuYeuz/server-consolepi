@@ -17,6 +17,8 @@ from consolesystem.core.capnhat import khoa as K, khoa_lenh as KL, may as M  # n
 
 H = {"X-ConsolePi-Local": "1"}
 c = app.test_client()
+with c.session_transaction() as _s:
+    _s["user"] = "root"          # Cap nhat / Sao luu chi danh cho Quan tri (RBAC 2.0.7 buoc 2): man hinh cuc bo = Van hanh bi chan
 moi = M.Moi()
 kq = {"truoc_khi_khoa_vao_duoc": c.get("/settings", headers=H).status_code == 200}
 kd = os.path.join(DD.GOC, "khoa-thu")

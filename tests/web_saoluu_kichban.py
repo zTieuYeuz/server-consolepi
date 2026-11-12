@@ -21,6 +21,8 @@ subprocess.run = lambda *a, **k: goi_lenh.append(("run", a[0])) or subprocess.Co
 subprocess.Popen = lambda *a, **k: goi_lenh.append(("popen", a[0]))                                               # noqa: E731
 SL.hau_khoi_phuc = lambda goc=None: ["gia lap"]
 c = app.test_client()
+with c.session_transaction() as _s:
+    _s["user"] = "root"          # Cap nhat / Sao luu chi danh cho Quan tri (RBAC 2.0.7 buoc 2): man hinh cuc bo = Van hanh bi chan
 H = {"X-ConsolePi-Local": "1"}
 kq = {"bo_cuc_moi": DD.BO_CUC_MOI}
 r = c.get("/settings", headers=H)

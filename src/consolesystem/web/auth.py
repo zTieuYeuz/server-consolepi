@@ -17,7 +17,7 @@ import ipaddress
 import os
 import secrets
 
-from flask import request, redirect, session, render_template_string
+from flask import request, redirect, session, render_template_string, Response
 
 # Duong dan cac trang khong can dang nhap
 from ui.gioithieu import DUONG_CONG_KHAI as _LOGO
@@ -340,9 +340,10 @@ def register_auth(app):
         return redirect("/login")
 
     @app.before_request
-    def _rbac_ghi_nhan():
-        """RBAC buoc 1 (2.0.7): CHI GHI NHAT KY neu yeu cau SE bi tu choi khi bat che do chan; khong bao gio chan, khong doi hanh vi.
-        Loi vao cong khai co dieu kien (PXE, agent...) khong co phien Console nen nam ngoai RBAC (liet ke o core/rbac.CONG_KHAI)."""
+    def _rbac_kiem_quyen():
+        """RBAC (2.0.7 buoc 2): chan yeu cau ma vai tro cua nguoi dung khong du quyen (403). root/sudo luon la Quan tri (cuu ho); man hinh cuc bo tren Pi
+        = Van hanh; nguoi khong sudo chua duoc gan vai tro bi chan. Loi vao cong khai co dieu kien (PXE, agent...) khong co phien Console nen nam ngoai
+        RBAC (core/rbac.CONG_KHAI). CONSOLE_RBAC_GHI_NHAN=1: quay lai chi ghi nhat ky."""
         if request.path in PUBLIC_PATHS or request.endpoint == "static":
             return None
         user = session.get("user")
@@ -350,10 +351,18 @@ def register_auth(app):
             return None
         try:
             from consolesystem.core import rbac as _rb
-            _rb.ghi_nhan(request.method, request.path, user, la_quan_tri)
+            ok, ly = _rb.ghi_nhan(request.method, request.path, user, la_quan_tri)
         except Exception as e:
-            print("[rbac] loi ghi nhan: %s" % type(e).__name__, flush=True)
-        return None
+            print("[rbac] loi kiem quyen: %s" % type(e).__name__, flush=True)
+            return None
+        if ok or not _rb.dang_chan():
+            return None
+        from flask import jsonify
+        thong_diep = ("Bạn không có quyền thực hiện thao tác này (%s). Nhờ quản trị gán vai trò ở trang Người dùng." % ly)
+        if request.path.startswith("/api/") or "/api/" in request.path or request.headers.get("X-Console-Pi") == "fetch" or "application/json" in (request.headers.get("Accept") or ""):
+            return jsonify({"ok": False, "loi": thong_diep}), 403
+        from ui.layout import render_page
+        return Response(render_page('<div class="msg err">%s</div>' % thong_diep, title="Không có quyền"), status=403, mimetype="text/html")
 
     @app.route("/login", methods=["GET", "POST"])
     def login():

@@ -55,7 +55,7 @@ def test_cong_khai_khong_leo_thang():
     assert RB.cho_phep("chi_xem", "POST", "/uem/quan-tri/agent/goi/1/passkey")[0] is False
 
 
-def test_ghi_nhan_khong_chan_va_gioi_han_tan_suat(tmp_path, monkeypatch):
+def test_ghi_nhan_tra_ket_qua_va_gioi_han_tan_suat(tmp_path, monkeypatch):
     RB = _rb(tmp_path, monkeypatch)
     RB._GHI_NHAN.update(sap_tu_choi=[], gan_nhat={})
     t = [1000.0]
@@ -67,7 +67,7 @@ def test_ghi_nhan_khong_chan_va_gioi_han_tan_suat(tmp_path, monkeypatch):
     assert len(RB.su_kien_gan_day()) == 2
 
 
-def test_moi_route_cua_app_da_khai_hoac_cong_khai_va_ghi_nhan_khong_chan(tmp_path):
+def test_moi_route_cua_app_da_khai_hoac_cong_khai_va_chan_theo_vai_tro(tmp_path):
     sys.path.insert(0, os.path.join(GOC, "src"))
     from ui import dichuyen as DM
     goc = str(tmp_path / "cs")
