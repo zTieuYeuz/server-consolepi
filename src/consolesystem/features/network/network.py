@@ -1183,7 +1183,7 @@ def _wifi_page(msg="", ok=True):
           <form method="POST" action="/connect-wifi">
             <label>Chọn WiFi ({len(ssids)} mạng tìm thấy)</label>
             <select name="ssid" required>{opts}</select>
-            {o_mat_khau("password", "Mật khẩu", bat_buoc=True)}
+            {o_mat_khau("password", "Mật khẩu", bat_buoc=True, id_="wifi-mk")}
             <label style="display:flex;align-items:center;gap:9px;margin-top:13px;">
               <input type="checkbox" name="save" value="1" checked style="width:20px;height:20px;">
               <span>Lưu để lần sau tự kết nối</span>
@@ -1241,7 +1241,7 @@ def _wifi_page(msg="", ok=True):
         Chỉ lưu vào danh sách, không kết nối ngay. Dùng khi biết trước WiFi nơi sắp đến.</p>
       <form method="POST" action="/wifi-add">
         <label>Tên WiFi (SSID)</label><input type="text" name="ssid" required>
-        {o_mat_khau("password", "Mật khẩu", bat_buoc=True)}
+        {o_mat_khau("password", "Mật khẩu", bat_buoc=True, id_="wifi-them-mk")}
         <div class="row" style="margin-top:13px;"><button type="submit">Lưu vào danh sách</button></div>
       </form>
     </div>"""

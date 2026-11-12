@@ -20,7 +20,7 @@ for ten, duong, ten_o in (("ssh", "/ssh", "password"), ("rdp", "/remote-desktop"
     kq[ten + "_khong_ro_ham"] = "o_mat_khau(" not in h and "@@MK@@" not in h
     kq[ten + "_o_password"] = ('name="%s"' % ten_o in h or 'id="%s"' % ten_o in h) and 'type="text" id="rd-mk"' not in h
     if ten != "rustdesk":
-        kq[ten + "_nut_hien"] = ">Hiện</button>" in h and "mk-khung" in h
+        kq[ten + "_nut_hien"] = 'aria-label="Hiện mật khẩu"' in h and "mk-khung" in h and "aria-pressed" not in h
 h = c.get("/remote", headers=H).get_data(as_text=True)
 kq["remote_khong_ro_ham"] = "o_mat_khau(" not in h
 print("KETQUA " + json.dumps(kq, ensure_ascii=False))

@@ -494,7 +494,7 @@ def register_remote(app):
                 &rarr; Keys</strong>, dán vào đây - KHÔNG cần bấm "Quên thiết bị" trước,
                 thiết bị vẫn giữ nguyên tên/địa chỉ cũ.</p>
               <form method="POST" action="/remote/ts/authkey">
-                {o_mat_khau("authkey", "", "tskey-auth-...", True, autocomplete="off", rong_toi_da=520)}
+                {o_mat_khau("authkey", "", "tskey-auth-...", True, id_="ts-doi-key", autocomplete="off", rong_toi_da=520, aria="Auth key mới")}
                 <div class="row" style="margin-top:11px;">
                   <button type="submit" class="gray" data-busy="Đang đổi key...">
                     Đổi sang key này</button>

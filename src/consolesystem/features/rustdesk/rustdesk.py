@@ -8,6 +8,7 @@ from flask import Response, jsonify, request
 
 from consolesystem.integrations import rustdesk_may_chu as RD
 from consolesystem.web import chon_may as CM
+from consolesystem.web.khung_mk import o_mat_khau
 
 TRANG = """@CSS@<style>
 .rd-k{font-family:var(--mono);font-size:13px;word-break:break-all;user-select:all;background:var(--pre-nen);color:var(--pre-chu);border:1px solid var(--vien);padding:5px 9px;border-radius:7px;font-variant-numeric:tabular-nums}
@@ -60,7 +61,7 @@ TRANG = """@CSS@<style>
 <div class="card" data-buoc="2" hidden><h3><span class="rd-buoc">2</span>Thông tin kết nối ra Internet</h3>
 <p class="tk-ghi">Nhập tên miền (trỏ về IP WAN của router) hoặc IP WAN, và mật khẩu chung. Cổng cố định 21115, 21116, 21117. Để trống tên miền = chỉ dùng trong LAN.</p>
 <div class="rd-o"><div><label for="rd-host">Tên miền hoặc IP WAN</label><input type="text" id="rd-host" placeholder="vd rustdesk.congty.com"></div>
-<div><label for="rd-mk">Mật khẩu cố định chung cho các máy</label><input type="password" id="rd-mk" autocomplete="new-password" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -"><button class="tk-nut" id="rd-mk-hien" type="button" hidden style="margin-top:6px;">Hiện mật khẩu chung</button></div></div>
+<div>@MK@<button class="gray small" id="rd-mk-hien" type="button" hidden style="margin-top:6px;">Điền mật khẩu đã lưu</button></div></div>
 <details style="margin-top:8px;"><summary class="tk-ghi">Nâng cao: máy chủ chuyển tiếp ở địa chỉ khác</summary><div class="rd-o" style="margin-top:6px;"><div><label for="rd-relay">Tên miền máy chủ chuyển tiếp (TCP 21117)</label><input type="text" id="rd-relay" placeholder="để trống = trùng tên miền ở trên"></div></div></details>
 <div class="nut-hang" style="margin-top:10px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button></div><div class="tk-ghi" id="rd-luu-tb" style="margin-top:6px;"></div>
 <div class="rd-hd" id="rd-hd"></div></div>
@@ -127,7 +128,7 @@ function ve(d){D0=d;
  $('rd-nut').innerHTML=!d.da_cai?'<button class="tk-nut chinh" data-v="cai"'+(d.cai.dang?' disabled':'')+'>Cài máy chủ RustDesk</button>':'<button class="tk-nut xanh" data-v="start">Chạy</button><button class="tk-nut" data-v="restart">Khởi động lại</button><button class="tk-nut" data-v="stop">Dừng</button><button class="tk-nut do" data-v="go">Gỡ dịch vụ</button>';
  $('rd-tb').textContent=d.cai.tb||'';
  [['rd-host',d.host],['rd-relay',d.relay]].forEach(function(a){if(document.activeElement!==$(a[0])&&!$(a[0]).dataset.sua) $(a[0]).value=a[1]||'';});
- if(d.relay) $('rd-relay').closest('details').open=true; if(!MK0&&!$('rd-mk').dataset.sua){$('rd-mk').value='';} $('rd-mk').placeholder=d.co_mk_chung?'Đã đặt (để trống = giữ nguyên)':'8-64 ký tự: chữ, số, ! @ # % ^ * . _ -'; $('rd-mk-hien').hidden=!d.co_mk_chung; $('rd-h').textContent=d.dia_chi.id; $('rd-r').textContent=d.dia_chi.relay; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
+ if(d.relay) $('rd-relay').closest('details').open=true; if(!MK0&&!$('rd-mk').dataset.sua){$('rd-mk').value='';} $('rd-mk').placeholder=d.co_mk_chung?'Đã đặt (để trống = giữ nguyên)':'8-64 ký tự'; $('rd-mk-hien').hidden=!d.co_mk_chung; $('rd-h').textContent=d.dia_chi.id; $('rd-r').textContent=d.dia_chi.relay; $('rd-key').textContent=d.khoa||'(chưa có, cài máy chủ trước)';
  $('rd-kho-tb').textContent=d.kho.dang?d.kho.tb:(d.kho.co?('Đã có trong kho Triển khai phần mềm (Tài nguyên máy, Phần mềm): '+d.kho.ten+', tạo lúc '+new Date(d.kho.luc*1000).toLocaleString()):(d.kho.tb||'Chưa có (cần cài máy chủ và đặt mật khẩu chung ở bước 2).'));
  $('rd-tai-msi').disabled=!d.kho.co||d.kho.dang; if(d.kho.dang) setTimeout(tai,2000);
  hd(); if(d.cai.dang) setTimeout(tai,1500);
@@ -253,7 +254,7 @@ def register_rustdesk(app):
 
     @app.route("/rustdesk")
     def rustdesk_trang():
-        body = TRANG.replace("@CSS@", CM.JS + CM.CSS + CM.thanh_tab(CM.TAB_REMOTE, "rustdesk")).replace("@KHUNG@", CM.khung("rd"))
+        body = TRANG.replace("@CSS@", CM.JS + CM.CSS + CM.thanh_tab(CM.TAB_REMOTE, "rustdesk")).replace("@KHUNG@", CM.khung("rd")).replace("@MK@", o_mat_khau("rd-mk", "Mật khẩu cố định chung cho các máy", "8-64 ký tự", id_="rd-mk", rong_toi_da=520) + '<div class="tk-ghi" style="margin-top:4px;">Được dùng: chữ, số và ! @ # % ^ * . _ -</div>')
         return render_page(body, active="/rustdesk", title="Hỗ trợ từ xa", subtitle="Remote RustDesk: máy chủ RustDesk tích hợp, file cài và triển khai")
 
     @app.route("/rustdesk/api/trang-thai")

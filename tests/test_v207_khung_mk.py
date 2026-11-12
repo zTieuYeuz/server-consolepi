@@ -25,4 +25,7 @@ def test_ham_khung_mat_khau():
     from consolesystem.web.khung_mk import o_mat_khau
     h = o_mat_khau("mk", "Mật khẩu", "gợi ý <x>", True, "o1")
     assert 'type="password"' in h and 'name="mk"' in h and "required" in h and 'autocomplete="new-password"' in h
-    assert "&lt;x&gt;" in h and ">Hiện</button>" in h and "height:42px" in h and 'value=' not in h     # khong bao gio co value (mat khau da luu)
+    assert "&lt;x&gt;" in h and "mk-hien" in h and "height:42px" in h and 'value=' not in h     # khong bao gio co value (mat khau da luu)
+    assert '<label for="o1"' in h and 'id="o1"' in h and 'aria-label="Hiện mật khẩu"' in h and "aria-pressed" not in h   # ban va 05: nhan gan voi o
+    h2 = o_mat_khau("mk", "", "x", aria="Auth key mới")
+    assert "<label" not in h2 and 'aria-label="Auth key mới"' in h2 and 'id="mk-mk"' in h2        # khong nhan thay duoc: aria-label + id tu sinh
