@@ -29,6 +29,7 @@ Bao mat (ca hai):
     khong can lop dang nhap PAM rieng vi chi thiet bi DA DUOC XAC THUC vao
     dung tailnet do moi ket noi toi duoc Pi.
 """
+from consolesystem.web.khung_mk import o_mat_khau
 import sys as _sys
 from consolesystem.core import duongdan as _DD_TS  # noqa: E402
 from consolesystem.integrations.cloudflare import CONF_DIR, TOKEN_FILE, SERVICE, da_cai, co_token, dang_chay  # noqa: F401
@@ -296,16 +297,14 @@ def register_remote(app):
                 ⬇ Cài cloudflared</button>
             </form>"""
         elif not tok:
-            khoi = """
+            khoi = f"""
             <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
               Vào <strong>Cloudflare Zero Trust &rarr; Networks &rarr; Tunnels</strong>,
               tạo một tunnel mới, chọn <em>Debian / arm64</em> (máy tính: amd64), rồi sao chép phần token
               trong dòng lệnh cài đặt (chuỗi dài sau <code>--token</code>).
               Trỏ tunnel đó vào <code>http://127.0.0.1:80</code>.</p>
             <form method="POST" action="/remote/token">
-              <label>Tunnel token</label>
-              <input type="password" name="token" required autocomplete="off"
-                     placeholder="eyJhIjoiN...">
+              {o_mat_khau("token", "Tunnel token", "eyJhIjoiN...", True, autocomplete="off", rong_toi_da=520)}
               <div class="row" style="margin-top:13px;">
                 <button type="submit" data-busy="Đang lưu...">Lưu và bật đường hầm</button>
               </div>
@@ -399,15 +398,13 @@ def register_remote(app):
                 ⬇ Cài Tailscale</button>
             </form>"""
         elif not ts_key:
-            ts_khoi = """
+            ts_khoi = f"""
             <p style="color:#8b93a1;font-size:13px;margin:0 0 11px;">
               Vào <strong>Tailscale admin console &rarr; Settings &rarr; Keys</strong>,
               tạo một <em>Auth key</em> (nên chọn <em>Reusable</em> nếu muốn dùng lại
               nhiều lần, hoặc đặt hạn sử dụng phù hợp).</p>
             <form method="POST" action="/remote/ts/authkey">
-              <label>Auth key</label>
-              <input type="password" name="authkey" required autocomplete="off"
-                     placeholder="tskey-auth-...">
+              {o_mat_khau("authkey", "Auth key", "tskey-auth-...", True, autocomplete="off", rong_toi_da=520)}
               <div class="row" style="margin-top:13px;">
                 <button type="submit" class="gray" data-busy="Đang lưu và kết nối...">
                   Lưu và kết nối</button>
@@ -497,8 +494,7 @@ def register_remote(app):
                 &rarr; Keys</strong>, dán vào đây - KHÔNG cần bấm "Quên thiết bị" trước,
                 thiết bị vẫn giữ nguyên tên/địa chỉ cũ.</p>
               <form method="POST" action="/remote/ts/authkey">
-                <input type="password" name="authkey" required autocomplete="off"
-                       placeholder="tskey-auth-...">
+                {o_mat_khau("authkey", "", "tskey-auth-...", True, autocomplete="off", rong_toi_da=520)}
                 <div class="row" style="margin-top:11px;">
                   <button type="submit" class="gray" data-busy="Đang đổi key...">
                     Đổi sang key này</button>

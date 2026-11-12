@@ -1,5 +1,6 @@
 # Console System - (c) 2026 zTieuYeuz. All rights reserved.
 """RustDesk phia quan ly may tram: cai client RustDesk len may qua agent/WinRM va liet ke may/ID/mat khau. Logic may chu: integrations/rustdesk_may_chu.py."""
+from consolesystem.web.khung_mk import o_mat_khau
 import os
 import re
 import threading
@@ -334,8 +335,8 @@ def khoi_tu_xa(m):
         goi_y = next((x["id"] for x in RD.thiet_bi() if x["ip"] == m.get("ip")), "")      # ID cua may da dang ky voi may chu tu cung dia chi IP
         return ('<div class="card"><h3>Điều khiển bằng RustDesk</h3><p class="tk-ghi">Máy này chưa có ID RustDesk trong Console System. Cách 1: vào <a href="/rustdesk">RustDesk</a>, '
                 'chọn máy rồi bấm <b>Cài lên máy đã chọn</b> (máy phải có agent), hoặc cài file <b>Cai-RustDesk-ConsoleSystem.msi</b> bằng Triển khai phần mềm (ID tự ghi vào đây). Cách 2: máy đã cài file .msi bằng tay (trỏ về máy chủ <b>' + _e(st["dia_chi"]["id"]) + '</b>): nhập ID (xem trong RustDesk trên máy đó) và mật khẩu chung:</p>'
-                f'<form method="POST" action="/uem/may/{m["id"]}/rustdesk/luu" class="tk-hang"><input type="text" name="id" value="' + _e(goi_y) + '" placeholder="ID RustDesk (số)" required style="max-width:200px;margin:0;">'
-                '<input type="password" name="mk" placeholder="' + ("Để trống = dùng mật khẩu chung" if RD.mk_chung() else "Mật khẩu cố định") + '" ' + ("" if RD.mk_chung() else "required ") + 'autocomplete="new-password" style="max-width:240px;margin:0;"><button class="tk-nut chinh" type="submit">Lưu</button></form></div>')
+                f'<form method="POST" action="/uem/may/{m["id"]}/rustdesk/luu" class="tk-hang"><input type="text" name="id" value="' + _e(goi_y) + '" placeholder="ID RustDesk (số)" required style="max-width:200px;margin:0;">' +
+                o_mat_khau("mk", "", "Để trống = dùng mật khẩu chung" if RD.mk_chung() else "Mật khẩu cố định", not RD.mk_chung(), rong_toi_da=260) + '<button class="tk-nut chinh" type="submit">Lưu</button></form></div>')
     i, mid = _e(ban["id"]), _e(m["id"])
     return (f'<div class="card"><h3>Điều khiển bằng RustDesk</h3>'
             f'<p class="tk-ghi">RustDesk không chạy trong trình duyệt (khác VNC phía trên): bấm nút để mở <b>ứng dụng RustDesk đã cài trên máy của anh</b> và kết nối thẳng xuống máy này. '

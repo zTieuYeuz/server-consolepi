@@ -7,6 +7,7 @@ Remote Desktop (RDP) ngay trong trinh duyet, qua guacd (Apache Guacamole) chay b
   * Mat khau RDP chi nam trong bo nho cua phien (khong ghi dia), ma phien chi dung de mo ket noi trong 2 phut.
   * Anh Thoai chon Docker guacd (28/10/2026) vi Debian 13 khong con goi guacd; can Internet luc cai lan dau.
 """
+from consolesystem.web.khung_mk import o_mat_khau
 import base64
 import hashlib
 import re
@@ -283,7 +284,7 @@ TRANG = """<div class="card" style="padding:12px 16px;"><div class="tk-hang" sty
 <div><label>Máy (IP hoặc tên)</label><input name="host" required placeholder="192.168.110.33"></div>
 <div><label>Cổng</label><input name="port" value="3389" inputmode="numeric"></div>
 <div><label>Tài khoản</label><input name="user" placeholder="Administrator"></div>
-<div><label>Mật khẩu</label><input name="mk" type="password" autocomplete="new-password"></div>
+<div>@@MK@@</div>
 <div><label>Domain (nếu có)</label><input name="domain"></div>
 <div><label>Bảo mật</label><select name="security"><option value="any">Tự chọn</option><option value="nla">NLA</option><option value="tls">TLS</option><option value="rdp">RDP cũ</option></select></div>
 </div>
@@ -357,7 +358,7 @@ def register_rdp(app):
 
     @app.route("/remote-desktop")
     def rdp_trang():
-        return render_page(CSS + TRANG, active="/remote-desktop", title="Remote Desktop",
+        return render_page(CSS + TRANG.replace("@@MK@@", o_mat_khau("mk", "Mật khẩu")), active="/remote-desktop", title="Remote Desktop",
                            subtitle="Điều khiển máy Windows qua RDP ngay trong trình duyệt (guacd)")
 
     @app.route("/remote-desktop/trang-thai")

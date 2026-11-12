@@ -7,6 +7,7 @@ debug thuc te: race condition voi systemd-networkd, vong doi D-Bus cua NAP,
 ngat ket noi truoc khi reset Bluetooth...). CHI thay doi phan hien thi de
 dung khung giao dien moi.
 """
+from consolesystem.web.khung_mk import o_mat_khau
 from consolesystem.core.nhatky import bo_qua as _bo_qua
 import sys as _sys
 _sys.modules["ui.network"] = _sys.modules[__name__]   # B2: ten cu tro toi chinh module nay ngay tu dau (vong import)
@@ -1182,8 +1183,7 @@ def _wifi_page(msg="", ok=True):
           <form method="POST" action="/connect-wifi">
             <label>Chọn WiFi ({len(ssids)} mạng tìm thấy)</label>
             <select name="ssid" required>{opts}</select>
-            <label>Mật khẩu</label>
-            <input type="password" name="password" required>
+            {o_mat_khau("password", "Mật khẩu", bat_buoc=True)}
             <label style="display:flex;align-items:center;gap:9px;margin-top:13px;">
               <input type="checkbox" name="save" value="1" checked style="width:20px;height:20px;">
               <span>Lưu để lần sau tự kết nối</span>
@@ -1241,7 +1241,7 @@ def _wifi_page(msg="", ok=True):
         Chỉ lưu vào danh sách, không kết nối ngay. Dùng khi biết trước WiFi nơi sắp đến.</p>
       <form method="POST" action="/wifi-add">
         <label>Tên WiFi (SSID)</label><input type="text" name="ssid" required>
-        <label>Mật khẩu</label><input type="password" name="password" required>
+        {o_mat_khau("password", "Mật khẩu", bat_buoc=True)}
         <div class="row" style="margin-top:13px;"><button type="submit">Lưu vào danh sách</button></div>
       </form>
     </div>"""

@@ -36,6 +36,7 @@ from ui.commands import load_library, dan_thong_minh
 from ui.soanlenh import khoi_soan_lenh, khoi_copy_terminal
 from ui.terminal import SSH_SESSION, tmux_session_exists, service_active  # noqa: F401
 from consolesystem.features.terminal import ssh_phien as SP
+from consolesystem.web.khung_mk import o_mat_khau
 from consolesystem.core.esc import esc as _esc
 
 # Dau nhac mat khau cua ssh ("...'s password:", "Enter passphrase for key ...:")
@@ -224,9 +225,7 @@ def _render(msg="", ok=True, prefill="", xem=""):
         <input type="text" name="host" placeholder="192.168.1.1" style="max-width:180px;" required></div>
       <div><label style="margin-top:0;">Tài khoản</label>
         <input type="text" name="user" placeholder="admin" style="max-width:140px;" required></div>
-      <div><label style="margin-top:0;">Mật khẩu</label>
-        <input type="password" name="password" autocomplete="new-password"
-               placeholder="để trống = tự nhập" style="max-width:175px;"></div>
+      <div style="flex:1 1 240px;max-width:340px;">{o_mat_khau("password", "Mật khẩu", "để trống = tự nhập")}</div>
       <div><label style="margin-top:0;">Cổng</label>
         <input type="number" name="port" value="22" style="max-width:85px;"></div>
       <div><button type="submit" id="nut_ket_noi">🔑 Kết nối</button></div>

@@ -60,7 +60,7 @@ TRANG = """@CSS@<style>
 <div class="card" data-buoc="2" hidden><h3><span class="rd-buoc">2</span>Thông tin kết nối ra Internet</h3>
 <p class="tk-ghi">Nhập tên miền (trỏ về IP WAN của router) hoặc IP WAN, và mật khẩu chung. Cổng cố định 21115, 21116, 21117. Để trống tên miền = chỉ dùng trong LAN.</p>
 <div class="rd-o"><div><label for="rd-host">Tên miền hoặc IP WAN</label><input type="text" id="rd-host" placeholder="vd rustdesk.congty.com"></div>
-<div><label for="rd-mk">Mật khẩu cố định chung cho các máy</label><input type="text" id="rd-mk" autocomplete="off" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -"><button class="tk-nut" id="rd-mk-hien" type="button" hidden style="margin-top:6px;">Hiện mật khẩu chung</button></div></div>
+<div><label for="rd-mk">Mật khẩu cố định chung cho các máy</label><input type="password" id="rd-mk" autocomplete="new-password" placeholder="8-64 ký tự: chữ, số, ! @ # % ^ * . _ -"><button class="tk-nut" id="rd-mk-hien" type="button" hidden style="margin-top:6px;">Hiện mật khẩu chung</button></div></div>
 <details style="margin-top:8px;"><summary class="tk-ghi">Nâng cao: máy chủ chuyển tiếp ở địa chỉ khác</summary><div class="rd-o" style="margin-top:6px;"><div><label for="rd-relay">Tên miền máy chủ chuyển tiếp (TCP 21117)</label><input type="text" id="rd-relay" placeholder="để trống = trùng tên miền ở trên"></div></div></details>
 <div class="nut-hang" style="margin-top:10px;"><button class="tk-nut chinh" id="rd-luu" type="button">Lưu</button></div><div class="tk-ghi" id="rd-luu-tb" style="margin-top:6px;"></div>
 <div class="rd-hd" id="rd-hd"></div></div>
