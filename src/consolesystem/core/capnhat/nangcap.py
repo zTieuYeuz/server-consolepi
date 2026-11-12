@@ -356,7 +356,9 @@ def kiem_dieu_kien_ha_cap(moi, tuy_chon=None):
         if not (sao and os.path.exists(sao)):
             chan.append("Không còn bản sao lưu lúc nâng cấp để khôi phục dữ liệu.")
         else:
-            canh_bao.append("Dữ liệu sẽ trở về lúc TRƯỚC khi nâng cấp: mọi thay đổi từ đó đến giờ sẽ MẤT (trạng thái hiện tại vẫn được sao lưu trước).")
+            canh_bao.append("Dữ liệu sẽ trở về lúc TRƯỚC khi nâng cấp: mọi thay đổi từ đó đến giờ sẽ MẤT (trạng thái hiện tại vẫn được sao lưu trước). "
+                              "Máy trạm đã cài agent SAU lúc nâng cấp sẽ bị Console từ chối (403) vì chứng chỉ của chúng không còn trong dữ liệu khôi phục; agent KHÔNG tự ghi danh lại "
+                              "(để máy đã bị thu hồi không tự quay lại), cần cài lại agent bằng file MSI/PS1 mới ở trang Agent.")
     else:
         try:
             ho_tro = moi.hook("schema_fn")(thu)

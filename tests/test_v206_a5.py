@@ -19,3 +19,8 @@ def test_kich_ban_agent_script_khoi_dong_lai(tmp_path):
     kq = json.loads(dong[0][7:])
     sai = [k for k, v in kq.items() if v is not True]
     assert not sai, (sai, r.stderr[-800:])
+
+
+def test_canh_bao_ha_cap_noi_ro_agent_ghi_danh_sau_nang_cap_phai_cai_lai():
+    src = open(os.path.join(GOC, "src", "consolesystem", "core", "capnhat", "nangcap.py"), encoding="utf-8").read()
+    assert "cài agent SAU" in src and "403" in src and "cài lại agent" in src
