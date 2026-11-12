@@ -216,6 +216,9 @@
 /nettools/tls-check	GET,POST	nettools.tls_check_route
 /nettools/topology	GET,POST	nettools.topology_route
 /ngon-ngu	GET	chon_ngon_ngu
+/nguoi-dung	GET	nguoi_dung_trang
+/nguoi-dung/luu	POST	nguoi_dung_luu
+/nguoi-dung/xoa	POST	nguoi_dung_xoa
 /phien	GET	phien_trang
 /phien/api/<ma>/baud	POST	phien_api_baud
 /phien/api/<ma>/dan	POST	phien_api_dan

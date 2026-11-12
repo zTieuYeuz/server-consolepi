@@ -29,6 +29,7 @@ from .gioithieu import register_gioithieu                  # noqa: F401
 from .tenmay import register_tenmay                        # noqa: F401
 from consolesystem.features.rustdesk.rustdesk import register_rustdesk   # noqa: F401,E402
 from consolesystem.features.updates.capnhat_ui import register_capnhat   # noqa: F401,E402  (Phan C)
+from consolesystem.features.rbac.nguoidung import register_rbac   # noqa: F401,E402  (RBAC buoc 1)
 
 
 def register_all(app):
@@ -58,6 +59,7 @@ def register_all(app):
     register_uem(app)
     register_gopy(app)
     register_phien(app)
+    register_rbac(app)
     register_gioithieu(app)
     register_tenmay(app)
     register_rustdesk(app)

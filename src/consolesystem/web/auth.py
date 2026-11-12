@@ -339,6 +339,22 @@ def register_auth(app):
 
         return redirect("/login")
 
+    @app.before_request
+    def _rbac_ghi_nhan():
+        """RBAC buoc 1 (2.0.7): CHI GHI NHAT KY neu yeu cau SE bi tu choi khi bat che do chan; khong bao gio chan, khong doi hanh vi.
+        Loi vao cong khai co dieu kien (PXE, agent...) khong co phien Console nen nam ngoai RBAC (liet ke o core/rbac.CONG_KHAI)."""
+        if request.path in PUBLIC_PATHS or request.endpoint == "static":
+            return None
+        user = session.get("user")
+        if not user and not _is_local_screen():
+            return None
+        try:
+            from consolesystem.core import rbac as _rb
+            _rb.ghi_nhan(request.method, request.path, user, la_quan_tri)
+        except Exception as e:
+            print("[rbac] loi ghi nhan: %s" % type(e).__name__, flush=True)
+        return None
+
     @app.route("/login", methods=["GET", "POST"])
     def login():
         error = ""
