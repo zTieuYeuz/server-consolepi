@@ -35,6 +35,7 @@ import tarfile
 import time
 
 from ui.duongdan import THU_MUC_DU_LIEU, DEPLOY_DIR, GOC as _GOC
+from ui import duongdan as _DD
 
 # Cac duong DUOI THU MUC DU LIEU duoc dua vao ban sao luu. Deu la file cau
 # hinh nho; moi thu khac (anh OS, bo cai) co the tai lai tu nguon goc.
@@ -45,6 +46,21 @@ CAC_MUC_SAO_LUU = [
     "deploy/kichban",            # CAC KICH BAN - thu quy nhat
     "deploy/apps/_thongtin.json",  # tham so cai im lang cua tung phan mem
 ]
+
+def _vi_tri_muc(muc):
+    """V6-4b (2.0.8): vi tri THAT tren dia cua tung muc sao luu theo bo cuc dang dung. TEN TRONG GOI (arcname) giu nguyen nhu 2.0.7 tro ve truoc,
+    nen ban sao luu cu van nap duoc; chi phan 'nam o dau tren may' moi dung bo cuc: o bo cuc moi deploy/* nam o <goc>/deploy,
+    kho-trungtam.json nam o secrets/, thu vien lenh o config/ (truoc day luon tinh tu data/ -> bo sot)."""
+    if muc == "command-library.json":
+        return _DD.FILE_THU_VIEN_LENH
+    if muc == "kho-trungtam.json":
+        return _DD.FILE_KHO_TRUNGTAM
+    if muc == "deploy/kichban":
+        return _DD.KICHBAN_DIR
+    if muc == "deploy/apps/_thongtin.json":
+        return os.path.join(_DD.APPS_DIR, "_thongtin.json")
+    return os.path.join(THU_MUC_DU_LIEU, muc)
+
 
 # Cac thu muc "nang" - chi DEM dung luong de hien, khong bao gio tu dong xoa
 THU_MUC_NANG = [
@@ -215,7 +231,7 @@ def tao_ban_sao_luu():
                "phien_ban": "1", "muc": []}
     with tarfile.open(fileobj=bo_nho, mode="w:gz") as tf:
         for muc in CAC_MUC_SAO_LUU:
-            duong = os.path.join(THU_MUC_DU_LIEU, muc)
+            duong = _vi_tri_muc(muc)
             if not os.path.exists(duong):
                 continue
             tf.add(duong, arcname=muc)
@@ -245,12 +261,14 @@ def _duong_an_toan(ten_trong_goi):
         return None
     if ten_trong_goi == "_console-pi-sao-luu.json":
         return None                      # file mo ta, khong can giai ra
-    goc = ten_trong_goi.split("/")[0]
-    cho_phep = {m.split("/")[0] for m in CAC_MUC_SAO_LUU}
-    if goc not in cho_phep:
+    muc = next((m for m in CAC_MUC_SAO_LUU if ten_trong_goi == m or ten_trong_goi.startswith(m + "/")), None)
+    if muc is None:
         return None
-    dich = os.path.realpath(os.path.join(THU_MUC_DU_LIEU, ten_trong_goi))
-    if not dich.startswith(os.path.realpath(THU_MUC_DU_LIEU) + os.sep):
+    nen = _vi_tri_muc(muc)
+    phan_con = ten_trong_goi[len(muc):].lstrip("/")
+    dich = os.path.realpath(os.path.join(nen, phan_con)) if phan_con else os.path.realpath(nen)
+    goc_nen = os.path.realpath(nen)
+    if dich != goc_nen and not dich.startswith(goc_nen + os.sep):
         return None
     return dich
 
@@ -283,7 +301,7 @@ def nap_ban_sao_luu(du_lieu):
             with open(dich, "wb") as ra:
                 shutil.copyfileobj(f, ra)
             # Kich ban co the chua mat khau may dich -> quyen 600 nhu ban goc
-            if "/kichban/" in dich or dich.endswith(".key"):
+            if "/kichban/" in dich or dich.endswith((".key", "kho-trungtam.json")):
                 try:
                     os.chmod(dich, 0o600)
                 except OSError:
