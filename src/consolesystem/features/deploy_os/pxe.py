@@ -617,11 +617,23 @@ def _bat_pxe_that(kieu_boot="truc_tiep"):
         return False, ("Bật được PXE nhưng không bật được kho Samba "
                        f"(smbd): {out_smb[:200]}")
 
+    # V3-3 (2.0.8): tai khoan Samba chi-doc cho cs-apps.cmd, mat khau moi chi khi PXE chuyen tu TAT sang BAT (khong doi giua luc may dang boot).
+    # Loi -> bao ro, PXE van chay (cs-apps.cmd lui ve tai khoan cu).
+    canh_bao_ro = ""
+    if not da_bat_san:
+        try:
+            from consolesystem.features.deploy_os import apps_ro as _ro
+            ok_ro, tb_ro = _ro.xoay_mat_khau()
+            if not ok_ro:
+                canh_bao_ro = " Lưu ý: " + tb_ro + "."
+        except Exception as e:                       # khong bao gio de viec nay lam hong viec bat PXE
+            canh_bao_ro = " Lưu ý: không đặt được tài khoản Samba chỉ-đọc cho công cụ WinPE (%s)." % type(e).__name__
+
     open(STATE_FLAG, "w").write(kieu_boot)
     dau = ("Đã ĐỔI chế độ PXE sang kiểu mới (tắt kiểu cũ rồi bật lại)."
            if doi_kieu else "Đã bật PXE.")
     return True, (f"{dau} {mo_ta_ket_noi(kieu_boot)} Vào BIOS/UEFI máy "
-                  "đó chọn boot qua mạng (Network Boot / PXE Boot)." + them_menu)
+                  "đó chọn boot qua mạng (Network Boot / PXE Boot)." + them_menu + canh_bao_ro)
 
 
 # ---- KHOA: moi luc chi 1 viec bat/tat PXE / dung anh dia.
@@ -1009,6 +1021,9 @@ def register_pxe(app):
         from ui import winperieng as _wr
         if not dang_bat():
             abort(404)
+        from consolesystem.features.deploy_os import apps_ro as _ro
+        if not _ro.khach_trong_mang_trien_khai(request.headers.get("X-Real-IP") or request.remote_addr, cong()):
+            abort(404)                               # V3-3: chi phat cho may o cung mang voi cong PXE (khong lo mat khau ra mang khac)
         nd = _wr.noi_dung_cs_apps(ten, request.host.split(":")[0])
         if nd is None:
             abort(404)

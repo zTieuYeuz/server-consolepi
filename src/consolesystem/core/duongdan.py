@@ -137,6 +137,8 @@ FILE_THU_VIEN_LENH = _vt(_duong("command-library.json"), "config/command-library
 # song sot qua cac lan cai lai code (neu mat, CSDL Samba va file khoa lech
 # nhau -> WinPE khong ket noi duoc kho nua).
 FILE_KHOA_SAMBA = _vt(_duong("samba-deploy.key"), "secrets/samba-deploy.key")
+# Mat khau tai khoan Samba CHI DOC cs-apps-ro (chi share [winpe-apps]), doi moi lan bat PXE - xem features/deploy_os/apps_ro.py (2.0.8 V3-3)
+FILE_KHOA_APPS_RO = _vt(_duong("cs-apps-ro.key"), "secrets/cs-apps-ro.key")
 
 # Cau hinh ket noi Kho luu tru trung tam (URL + token rieng cua Pi nay) -
 # xem ui/khotrungtam.py. Token la bi mat, de ben DU LIEU (khong phai ma

@@ -21,6 +21,12 @@ SERVICES=( console-system-dashboard console-system-kiosk console-system-kiosk-he
            console-system-tunnel bt-pan0 bt-agent bt-nap dnsmasq-bt
            dnsmasq-direct wifi-fallback.timer wifi-fallback )
 
+# V3-3 (2.0.8): tai khoan Samba chi-doc do PXE tao (deploy_os/apps_ro.py)
+if id cs-apps-ro >/dev/null 2>&1; then
+    smbpasswd -x cs-apps-ro >/dev/null 2>&1 || true
+    userdel cs-apps-ro 2>/dev/null || true
+fi
+
 echo "==> Dung va go cac dich vu"
 for s in "${SERVICES[@]}"; do
     systemctl disable --now "$s" 2>/dev/null || true

@@ -429,17 +429,16 @@ def noi_dung_cs_apps(file, dia_chi_pi):
     m = next((x for x in danh_sach() if x["file"] == file and x["apps_mang"]), None)
     if not m:
         return None
-    from ui.duongdan import FILE_KHOA_SAMBA
-    try:
-        with open(FILE_KHOA_SAMBA, encoding="utf-8") as f:
-            mk = f.read().strip()
-    except OSError:
+    from consolesystem.features.deploy_os import apps_ro as _ro
+    tk = _ro.thong_tin_apps()           # cs-apps-ro (chi doc winpe-apps, doi moi lan bat PXE) hoac lui ve consolepi-deploy
+    if tk is None:
         return None
+    user, mk = tk
     # share [winpe-apps] (config/smb.conf): bat oplock cho may khach giu dem - chay cong cu nhanh hon
     unc = f"\\\\{dia_chi_pi}\\winpe-apps\\{_d.ten_an_toan(m['apps_mang'])}"
     dong = ["@echo off", "wpeinit",
             "for /l %%i in (1,1,40) do (",
-            f'  net use {O_APPS} "{unc}" /user:consolepi-deploy {mk} >nul 2>&1 && goto xong',
+            f'  net use {O_APPS} "{unc}" /user:{user} {mk} >nul 2>&1 && goto xong',
             "  ping -n 3 127.0.0.1 >nul", ")", ":xong"]
     return "\r\n".join(dong) + "\r\n"
 

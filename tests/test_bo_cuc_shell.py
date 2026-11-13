@@ -90,7 +90,7 @@ def test_mau_cau_hinh_o_bo_cuc_cu_giong_het_ban_1_9_5(mt):
              'sed -e "s#/var/lib/console-system/deploy#$CS_DEPLOY#g" -e "s#/var/lib/console-system/data/o-dia#$DATA_DIR/o-dia#g" '
              '-e "s#/var/lib/console-system/data/lich-su-bao#$DATA_DIR/lich-su-bao#g" '
              '-e "s#/var/lib/console-system/secrets/samba-deploy.key#$CS_KHOA_SAMBA#g" config/smb.conf', env)
-    ra = [x for x in r.stdout.splitlines() if "samba-deploy.key" not in x]
+    ra = [x.replace(" cs-apps-ro", "") for x in r.stdout.splitlines() if "samba-deploy.key" not in x and "cs-apps-ro" not in x.split("=")[0] and not x.strip().startswith("# cs-apps-ro") and not x.strip().startswith("# giu de lui ve")]
     cu_ = [x for x in _mau_cu("smb.conf").splitlines() if "samba-deploy.key" not in x]
     assert ra == cu_
     r2 = bash('. src/scripts/duong-dan.sh; sed "s#/var/lib/console-system/deploy#$CS_DEPLOY#g" config/nginx-console-pi.conf', env)
