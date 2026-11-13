@@ -198,3 +198,14 @@ def test_route_login_qua_flask_khoa_sau_5_lan(monkeypatch):
         assert not s.get("user")
     r = c.post("/login", data={"username": "khac", "password": "dung"}, environ_overrides=env)       # nguoi khac van vao duoc
     assert r.status_code == 302
+
+
+def test_B2_don_bo_nho_khong_xoa_muc_dang_khoa():
+    from consolesystem.core import chongdoan as CD
+    t = 1000.0
+    for _ in range(5):
+        CD.xong(CD.thu("nan", "198.51.100.1", t)[1], "sai", t)                       # khoa cap (nan, IP)
+    assert CD.thu("nan", "198.51.100.1", t + 1)[0] > 0
+    for i in range(CD.TOI_DA_MUC + 300):                                              # tran bo nho bang rac
+        CD.thu("rac%d" % i, "", t + 2 + i * 0.001)
+    assert CD.thu("nan", "198.51.100.1", t + 10)[0] > 0                               # muc dang khoa van con

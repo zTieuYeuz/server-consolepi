@@ -63,11 +63,15 @@ def _tin(ten, ip, bay_gio):
 
 
 def _quet(bay_gio):
+    """Don bo nho khi qua day. KHONG bao gio xoa muc DANG KHOA (se mo khoa som cho ke tan cong)."""
     if len(_ds) > TOI_DA_MUC:
         for k in [k for k, v in _ds.items() if bay_gio - v[1] > CUA_SO and v[2] <= bay_gio]:
             del _ds[k]
-        while len(_ds) > TOI_DA_MUC:
-            del _ds[min(_ds, key=lambda k: _ds[k][1])]
+        con_xoa_duoc = sorted((k for k, v in _ds.items() if v[2] <= bay_gio), key=lambda k: _ds[k][1])
+        for k in con_xoa_duoc:
+            if len(_ds) <= TOI_DA_MUC:
+                break
+            del _ds[k]
     if len(_quen) > TOI_DA_MUC:
         for k in sorted(_quen, key=_quen.get)[:len(_quen) - TOI_DA_MUC]:
             del _quen[k]
