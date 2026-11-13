@@ -81,6 +81,14 @@ def xoay_mat_khau(sh=_sh, smb_conf=None):
     return True, "ok"
 
 
+def vo_hieu(sh=_sh):
+    """Goi khi TAT PXE: khoa tai khoan Samba cs-apps-ro (smbpasswd -d) va xoa mat khau da luu. Bat lai PXE se bat + doi mat khau."""
+    _xoa_khoa()
+    ok, _ = sh(["id", TAI_KHOAN])
+    if ok:
+        sh(["smbpasswd", "-d", TAI_KHOAN])
+
+
 def thong_tin_apps(smb_conf=None):
     """(tai_khoan, mat_khau) cho cs-apps.cmd, hoac None. Dung cs-apps-ro neu san sang, khong thi tai khoan cu."""
     if smb_conf_co_tai_khoan(smb_conf):

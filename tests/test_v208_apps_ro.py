@@ -110,3 +110,23 @@ def test_chi_phat_cho_cung_mang_voi_cong_pxe(R):
 def test_uninstall_don_tai_khoan():
     s = open(os.path.join(GOC, "uninstall.sh"), encoding="utf-8").read()
     assert "smbpasswd -x cs-apps-ro" in s and "userdel cs-apps-ro" in s
+
+
+def test_B4_tat_pxe_khoa_tai_khoan_va_xoa_mat_khau(R):
+    r, tmp = R
+    smb = _smb(tmp, SMB_MOI)
+    r.xoay_mat_khau(Sh(), smb)
+    assert (tmp / "apps-ro.key").exists()
+    sh = Sh(co_tai_khoan=True)
+    r.vo_hieu(sh)
+    assert "smbpasswd -d" in sh.goi and not (tmp / "apps-ro.key").exists()
+    assert r.thong_tin_apps(smb) == ("consolepi-deploy", "MK-CU")                      # sau khi tat, cs-apps.cmd khong dung tai khoan da khoa
+    sh2 = Sh(co_tai_khoan=True)
+    ok, _ = r.xoay_mat_khau(sh2, smb)                                                  # bat lai: bat + doi mat khau
+    assert ok and "smbpasswd -e" in sh2.goi
+
+
+def test_B4_pxe_tat_goi_vo_hieu():
+    s = open(os.path.join(GOC, "src", "consolesystem", "features", "deploy_os", "pxe.py"), encoding="utf-8").read()
+    i = s.index("def _tat_pxe_that")
+    assert "_ro.vo_hieu()" in s[i:i + 1500]

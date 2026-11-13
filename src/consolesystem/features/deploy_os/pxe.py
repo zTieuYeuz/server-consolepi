@@ -852,6 +852,11 @@ def _tat_pxe_that():
     # share [deploy] phuc vu PXE, khong con viec gi khac dung toi, nen tat
     # di de khong phoi SMB ra mang khi khong trien khai.
     _sh(["systemctl", "stop", "smbd"])
+    try:                                              # V3-3: khoa tai khoan Samba chi-doc khi tat PXE (bat lai se bat + doi mat khau)
+        from consolesystem.features.deploy_os import apps_ro as _ro
+        _ro.vo_hieu()
+    except Exception as e:
+        print("[pxe] khong khoa duoc cs-apps-ro: %s" % type(e).__name__, flush=True)
     try:
         kieu = open(STATE_FLAG).read().strip()
     except OSError:
