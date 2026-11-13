@@ -34,7 +34,7 @@ import subprocess
 import tarfile
 import time
 
-from ui.duongdan import THU_MUC_DU_LIEU, DEPLOY_DIR
+from ui.duongdan import THU_MUC_DU_LIEU, DEPLOY_DIR, GOC as _GOC
 
 # Cac duong DUOI THU MUC DU LIEU duoc dua vao ban sao luu. Deu la file cau
 # hinh nho; moi thu khac (anh OS, bo cai) co the tai lai tu nguon goc.
@@ -57,6 +57,26 @@ THU_MUC_NANG = [
     ("deploy/drivers", "Driver", "/deployos/drivers"),
     ("storage", "Kho file dùng chung", "/storage"),
 ]
+
+
+def _duong_nang(duong):
+    """V6-4 (2.0.8): cac muc nang (deploy/*, storage) nam duoi GOC (khong phai GOC/data o bo cuc moi)."""
+    return os.path.join(_GOC, duong)
+
+
+def _cac_goc_quet():
+    """Thu muc can quet file .part: du lieu + cac muc nang (khong quet secrets/pki)."""
+    ds = [THU_MUC_DU_LIEU]
+    for duong, _n, _l in THU_MUC_NANG:
+        d = _duong_nang(duong)
+        if os.path.isdir(d) and not (d + os.sep).startswith(os.path.realpath(THU_MUC_DU_LIEU) + os.sep) and d not in ds:
+            ds.append(d)
+    return ds
+
+
+def _quet_part():
+    for d in _cac_goc_quet():
+        yield from os.walk(d, onerror=lambda e: None)
 
 
 def _chay(cmd, timeout=120):
@@ -106,7 +126,7 @@ def tinh_dung_luong():
 
     muc = []
     for duong, nhan, lien_ket in THU_MUC_NANG:
-        d = os.path.join(THU_MUC_DU_LIEU, duong)
+        d = _duong_nang(duong)
         if os.path.exists(d):
             muc.append({"nhan": nhan, "byte": _do_thu_muc(d), "lien_ket": lien_ket})
     muc.sort(key=lambda x: -x["byte"])
@@ -144,7 +164,7 @@ def tim_rac():
     # chung. Chung vo dung 100% (khong bao gio duoc dung toi nua) nhung co
     # the nang vai GB - dung loai rac dang don nhat ma khong ai nghi toi.
     tong_part, so_part = 0, 0
-    for goc, _t, files in os.walk(THU_MUC_DU_LIEU, onerror=lambda e: None):
+    for goc, _t, files in _quet_part():
         for f in files:
             if f.endswith(".part"):
                 try:
@@ -168,7 +188,7 @@ def don_rac(ma):
                     if ok else f"Không cắt được: {out[:150]}")
     if ma == "part":
         so, byte = 0, 0
-        for goc, _t, files in os.walk(THU_MUC_DU_LIEU, onerror=lambda e: None):
+        for goc, _t, files in _quet_part():
             for f in files:
                 if f.endswith(".part"):
                     p = os.path.join(goc, f)
