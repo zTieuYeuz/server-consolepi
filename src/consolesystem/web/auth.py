@@ -63,6 +63,26 @@ def get_or_create_secret():
 
 
 def check_login(username, password):
+    """Xac thuc kem chong doan mat khau (2.0.8 V2-1): thu sai nhieu lan thi bi khoa TAM theo ten/IP, khi khoa khong goi PAM."""
+    if not username or not password:
+        return False, "Chưa nhập đầy đủ."
+    from consolesystem.core import chongdoan as _cd
+    try:
+        ip = _cd.ip_khach(request.remote_addr, request.headers)
+    except RuntimeError:                      # ngoai ngu canh yeu cau (goi tu script/test)
+        ip = ""
+    cho = _cd.cho_bao_lau(username, ip)
+    if cho:
+        return False, "Thử sai quá nhiều lần. Vui lòng đợi %d giây rồi thử lại." % cho
+    ok, msg = _xac_thuc_pam(username, password)
+    if ok:
+        _cd.ghi_thanh_cong(username, ip)
+    elif msg.startswith("Sai tài khoản"):     # chi dem that bai that su cua mat khau, khong dem loi he thong (thieu PAM...)
+        _cd.ghi_that_bai(username, ip)
+    return ok, msg
+
+
+def _xac_thuc_pam(username, password):
     """
     Xac thuc voi PAM (tai khoan Linux cua chinh may). Tra ve (ok, thong_bao).
 
