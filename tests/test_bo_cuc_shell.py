@@ -94,7 +94,15 @@ def test_mau_cau_hinh_o_bo_cuc_cu_giong_het_ban_1_9_5(mt):
     cu_ = [x for x in _mau_cu("smb.conf").splitlines() if "samba-deploy.key" not in x]
     assert ra == cu_
     r2 = bash('. src/scripts/duong-dan.sh; sed "s#/var/lib/console-system/deploy#$CS_DEPLOY#g" config/nginx-console-pi.conf', env)
-    assert r2.stdout.splitlines() == _mau_cu("nginx-console-pi.conf").splitlines()
+    ra2, trong = [], False
+    for x in r2.stdout.splitlines():                      # bo cac khoi them o 2.0.8 (danh dau #BEGIN-208..#END-208, khong lien quan bo cuc du lieu)
+        if x.strip() == "#BEGIN-208":
+            trong = True
+        elif x.strip() == "#END-208":
+            trong = False
+        elif not trong:
+            ra2.append(x)
+    assert ra2 == _mau_cu("nginx-console-pi.conf").splitlines()
 
 
 def test_phien_chay_chon_dung_thu_muc(tmp_path):
