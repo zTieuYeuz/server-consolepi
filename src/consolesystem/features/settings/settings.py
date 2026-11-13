@@ -19,6 +19,8 @@ from flask import request
 from ui.layout import render_page
 from ui.gioithieu import khoi_gioi_thieu, CSS_GIOI_THIEU
 from ui.terminal import load_config, save_config, get_term_credential
+from consolesystem.core.cauhinh import load_config_de_ghi
+from consolesystem.core.store import LoiDuLieu
 from ui import duongdan as _DD
 
 ROTATIONS = [
@@ -76,7 +78,10 @@ def set_rotation(value):
     if not ok:
         return False, f"Xoay thất bại: {out.strip()[:200]}"
 
-    cfg = load_config()
+    try:
+        cfg = load_config_de_ghi()
+    except LoiDuLieu:
+        return False, "Không đọc được config.json (file hỏng, đã giữ nguyên để khôi phục) nên không lưu hướng màn hình."
     cfg["screen_rotation"] = value
     save_config(cfg)
 
@@ -273,7 +278,10 @@ def register_settings(app):
     @app.route("/settings/regen-term-pass", methods=["POST"])
     def regen_term_pass():
         import secrets
-        cfg = load_config()
+        try:
+            cfg = load_config_de_ghi()
+        except LoiDuLieu:
+            return _render_settings(msg="Không đọc được config.json (file hỏng, đã giữ nguyên) nên không đổi mật khẩu terminal.", ok=False)
         cfg["terminal_auth"] = "console:" + secrets.token_urlsafe(12)
         save_config(cfg)
         for svc in ("console-system-term-local", "console-system-term-ssh"):

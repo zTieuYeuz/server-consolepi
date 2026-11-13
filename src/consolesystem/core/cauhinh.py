@@ -26,13 +26,23 @@ def load_config():
         return {}
 
 
+def load_config_de_ghi():
+    """Nhu load_config nhung de DOC-SUA-GHI: file hong thi NOI LEN LoiDuLieu (V6-3, 2.0.8) de nguoi goi bao loi, KHONG ghi de config.json
+    chi con mot khoa (mat khau terminal, huong man hinh... se mat)."""
+    return kho(_DD.FILE_CONFIG).doc()
+
+
 def save_config(cfg):
     kho(_DD.FILE_CONFIG).ghi(cfg)           # quyen 0600, ghi nguyen tu (tam + fsync + doi ten)
 
 
 def get_term_credential():
     """Lay (user, pass) cho ttyd. Tu sinh lan dau neu chua co."""
-    cfg = load_config()
+    try:
+        cfg = load_config_de_ghi()
+    except LoiDuLieu:
+        # config.json hong: KHONG ghi de. Tra thong tin tam (khong luu) de trang van mo duoc; nguoi dung xu ly file hong (.hong-*/.bak) roi dat lai.
+        return "console", secrets.token_urlsafe(12)
     cred = cfg.get("terminal_auth")
     if not cred or ":" not in cred:
         cred = "console:" + secrets.token_urlsafe(12)
