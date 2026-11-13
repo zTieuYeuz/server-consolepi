@@ -17,10 +17,12 @@ Type=simple
 # hoan toan vao viec tftp_server.py da chay bat_tftp() truoc do. Da gap
 # that: khoi dong thang unit nay (vd de kiem thu) ma bo qua ham Python thi
 # in.tftpd thoat ngay voi ma loi 66/NOINPUT vi thu muc chua ton tai.
-# Quyen 777 co chu dich: in.tftpd chay duoi user rieng "tftp" (giam quyen
+# Thu muc phai ghi duoc boi user rieng "tftp" (giam quyen
 # sau --user tftp ben duoi), can ghi duoc de nhan file switch gui len.
 ExecStartPre=/bin/mkdir -p /var/lib/console-system/data/tftp
-ExecStartPre=/bin/chmod 777 /var/lib/console-system/data/tftp
+# V5-2 (2.0.8): KHONG con chmod 777 (moi user cuc bo ghi/xoa duoc). Giao cho user tftp + 0775, dung nhu src/nettools/tftp_server.bat_tftp.
+ExecStartPre=-/bin/chown tftp:tftp /var/lib/console-system/data/tftp
+ExecStartPre=/bin/chmod 0775 /var/lib/console-system/data/tftp
 # --foreground    : chay doc lap (khong can inetd) VA KHONG tu phan nhanh
 #                   ve nen. DA GAP LOI THAT: dung "--listen" (khong co
 #                   -L/--foreground) thi in.tftpd tu detach/fork ra khoi
