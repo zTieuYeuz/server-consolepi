@@ -50,37 +50,99 @@ def test_sai_nhieu_lan_bi_khoa_tam_va_khong_goi_pam(pam):
     assert auth.check_login("nguoikhac", "dung")[0] is True                    # tai khoan khac khong bi anh huong
 
 
+def _sai(CD, ten, ip, t, n=1):
+    for _ in range(n):
+        cho, the = CD.thu(ten, ip, t)
+        assert not cho
+        CD.xong(the, "sai", t)
+
+
 def test_het_khoa_theo_thoi_gian_va_he_so_tang_dan():
     from consolesystem.core import chongdoan as CD
     t = 1000.0
-    for _ in range(5):
-        CD.ghi_that_bai("a", "", t)
-    assert CD.cho_bao_lau("a", "", t) in (CD.KHOA_DAU, CD.KHOA_DAU + 1)
-    assert CD.cho_bao_lau("a", "", t + CD.KHOA_DAU + 1) == 0                   # het han -> thu lai duoc
-    CD.ghi_that_bai("a", "", t + 40)                                           # sai tiep -> khoa lau hon
-    assert CD.cho_bao_lau("a", "", t + 40) > CD.KHOA_DAU
+    _sai(CD, "a", "203.0.113.1", t, 5)
+    cho, _ = CD.thu("a", "203.0.113.1", t)
+    assert cho in (CD.KHOA_DAU, CD.KHOA_DAU + 1)
+    assert CD.thu("a", "203.0.113.1", t + CD.KHOA_DAU + 1)[0] == 0              # het han -> thu lai duoc
+    cho2, _ = CD.thu("a", "203.0.113.1", t + 40)                                 # lan thu o t+31 da tinh 1 that bai -> khoa lau hon
+    assert cho2 > CD.KHOA_DAU or cho2 == 0
     for i in range(30):
-        CD.ghi_that_bai("a", "", t + 41 + i)
-    assert CD.cho_bao_lau("a", "", t + 71) <= CD.KHOA_TOI_DA + 1               # tran 5 phut, khong khoa vinh vien
+        CD.thu("a", "203.0.113.1", t + 400 + i)
+    assert CD.thu("a", "203.0.113.1", t + 431)[0] <= CD.KHOA_TOI_DA + 1          # tran 5 phut, khong khoa vinh vien
 
 
 def test_that_bai_cu_bi_quen():
     from consolesystem.core import chongdoan as CD
-    for _ in range(4):
-        CD.ghi_that_bai("b", "", 0)
-    CD.ghi_that_bai("b", "", CD.CUA_SO + 100)                                  # lan thu 5 nhung 4 lan truoc da qua cua so
-    assert CD.cho_bao_lau("b", "", CD.CUA_SO + 100) == 0
+    _sai(CD, "b", "203.0.113.2", 0, 4)
+    _sai(CD, "b", "203.0.113.2", CD.CUA_SO + 100)
+    assert CD.thu("b", "203.0.113.2", CD.CUA_SO + 100)[0] == 0
 
 
 def test_theo_ip_do_nhieu_ten_nhung_loopback_khong_dem():
     from consolesystem.core import chongdoan as CD
     for i in range(CD.NGUONG_IP):
-        CD.ghi_that_bai("ten%d" % i, "203.0.113.9", 0)                         # moi ten chi sai 1 lan nhung cung 1 IP
-    assert CD.cho_bao_lau("tenmoi", "203.0.113.9", 0) > 0
-    assert CD.cho_bao_lau("tenmoi", "203.0.113.10", 0) == 0
+        _sai(CD, "ten%d" % i, "203.0.113.9", 0)                                  # moi ten chi sai 1 lan nhung cung 1 IP
+    assert CD.thu("tenmoi", "203.0.113.9", 0)[0] > 0
+    assert CD.thu("tenmoi", "203.0.113.10", 0)[0] == 0
     for i in range(CD.NGUONG_IP * 2):
-        CD.ghi_that_bai("lo%d" % i, "127.0.0.1", 0)                            # loopback dung chung (cloudflared): khong khoa ca nhom
-    assert CD.cho_bao_lau("lomoi", "127.0.0.1", 0) == 0
+        CD.thu("lo%d" % i, "127.0.0.1", 0)                                       # loopback dung chung (cloudflared): khong khoa ca nhom
+    assert CD.thu("lomoi", "127.0.0.1", 0)[0] == 0
+
+
+def test_A1_ke_ngoai_biet_ten_khong_chan_duoc_nguoi_that_tu_ip_da_quen():
+    from consolesystem.core import chongdoan as CD
+    t = 5000.0
+    cho, the = CD.thu("admin", "198.51.100.5", t)                                # nguoi that dang nhap dung 1 lan -> nho cap (admin, IP)
+    CD.xong(the, "dung", t)
+    # ke tan cong tu nhieu IP khac nhau gui sai de khoa theo TEN (vuot nguong ten)
+    for i in range(CD.NGUONG_TEN + 5):
+        CD.xong(CD.thu("admin", "192.0.2.%d" % (i + 1), t + 1)[1], "sai", t + 1)
+    assert CD.thu("admin", "192.0.2.250", t + 2)[0] > 0                          # nguoi la (IP chua quen) bi khoa theo ten
+    cho, the = CD.thu("admin", "198.51.100.5", t + 3)                            # nhung nguoi that tu IP QUEN van vao duoc
+    assert cho == 0
+    CD.xong(the, "dung", t + 3)
+    # ke tan cong tu 1 IP: chi cap cua no bi khoa, khong anh huong nguoi that
+    for _ in range(5):
+        CD.xong(CD.thu("admin", "203.0.113.77", t + 10)[1], "sai", t + 10)
+    assert CD.thu("admin", "203.0.113.77", t + 11)[0] > 0
+    assert CD.thu("admin", "198.51.100.5", t + 11)[0] == 0
+
+
+def test_A1_cap_chua_quen_chi_bi_khoa_khi_vuot_nguong_ten_cao():
+    from consolesystem.core import chongdoan as CD
+    _sai(CD, "pi", "192.0.2.1", 0, 5)                                            # 5 sai tu mot IP: chi khoa cap cua IP do
+    assert CD.thu("pi", "192.0.2.2", 0)[0] == 0                                  # IP khac chua bi anh huong
+
+
+def test_A2_song_song_khong_cung_qua_kiem_khoa():
+    """40 luong cung xin thu luc dau: chi dung NGUONG_CAP luong duoc qua, so con lai bi tu choi (truoc day tat ca deu qua)."""
+    import threading
+    from consolesystem.core import chongdoan as CD
+    qua, lock, rao = [], threading.Lock(), threading.Barrier(40)
+
+    def chay():
+        rao.wait()
+        cho, the = CD.thu("song", "198.51.100.9", 100.0)
+        if not cho:
+            with lock:
+                qua.append(the)
+    ts = [threading.Thread(target=chay) for _ in range(40)]
+    [x.start() for x in ts]
+    [x.join() for x in ts]
+    assert len(qua) == CD.NGUONG_CAP, len(qua)
+    for the in qua:                                                              # PAM tra "sai" -> van la that bai
+        CD.xong(the, "sai", 100.0)
+    assert CD.thu("song", "198.51.100.9", 100.0)[0] > 0
+
+
+def test_xong_dung_hoan_lai_cho_va_loi_he_thong_khong_tinh():
+    from consolesystem.core import chongdoan as CD
+    for i in range(10):
+        cho, the = CD.thu("u", "198.51.100.3", 0)
+        assert not cho
+        CD.xong(the, "dung" if i % 2 else "loi", 0)                              # dung/loi he thong: khong tich luy
+    assert CD.thu("u", "198.51.100.3", 0)[0] == 0
+    assert CD._ds.get("p:u|198.51.100.3") is None or CD._ds["p:u|198.51.100.3"][0] <= 1
 
 
 def test_ip_khach_chi_tin_cf_khi_ket_noi_tu_loopback():
@@ -93,8 +155,8 @@ def test_ip_khach_chi_tin_cf_khi_ket_noi_tu_loopback():
 def test_bo_nho_co_tran():
     from consolesystem.core import chongdoan as CD
     for i in range(CD.TOI_DA_MUC + 500):
-        CD.ghi_that_bai("rac%d" % i, "", 10.0 + i)
-    assert len(CD._ds) <= CD.TOI_DA_MUC + 1
+        CD.thu("rac%d" % i, "", 10.0 + i)
+    assert len(CD._ds) <= CD.TOI_DA_MUC + 3
 
 
 def test_thieu_thong_tin_khong_dem_va_loi_he_thong_khong_dem(monkeypatch):
@@ -106,7 +168,7 @@ def test_thieu_thong_tin_khong_dem_va_loi_he_thong_khong_dem(monkeypatch):
     monkeypatch.setattr(auth, "_xac_thuc_pam", lambda u, p: (False, "Máy thiếu thư viện PAM cho Python."))
     for _ in range(10):
         auth.check_login("u", "x")
-    assert CD.cho_bao_lau("u", "") == 0
+    assert CD.thu("u", "")[0] == 0
 
 
 def test_route_login_qua_flask_khoa_sau_5_lan(monkeypatch):

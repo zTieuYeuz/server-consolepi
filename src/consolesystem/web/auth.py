@@ -71,14 +71,20 @@ def check_login(username, password):
         ip = _cd.ip_khach(request.remote_addr, request.headers)
     except RuntimeError:                      # ngoai ngu canh yeu cau (goi tu script/test)
         ip = ""
-    cho = _cd.cho_bao_lau(username, ip)
+    cho, the = _cd.thu(username, ip)
     if cho:
         return False, "Thử sai quá nhiều lần. Vui lòng đợi %d giây rồi thử lại." % cho
-    ok, msg = _xac_thuc_pam(username, password)
+    try:
+        ok, msg = _xac_thuc_pam(username, password)
+    except Exception:
+        _cd.xong(the, "loi")
+        raise
     if ok:
-        _cd.ghi_thanh_cong(username, ip)
-    elif msg.startswith("Sai tài khoản"):     # chi dem that bai that su cua mat khau, khong dem loi he thong (thieu PAM...)
-        _cd.ghi_that_bai(username, ip)
+        _cd.xong(the, "dung")
+    elif msg.startswith("Sai tài khoản"):     # that bai that su cua mat khau: giu nguyen la mot lan doan
+        _cd.xong(the, "sai")
+    else:                                     # loi he thong (thieu PAM...): khong tinh la doan
+        _cd.xong(the, "loi")
     return ok, msg
 
 
