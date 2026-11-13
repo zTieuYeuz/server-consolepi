@@ -85,7 +85,7 @@
             <td style="white-space:nowrap;">
                 <a class="nut-tai" href="/nettools/console-backup/tai/{{ f.ten | urlencode }}" download>Tải về</a>
                 <form method="POST" action="/nettools/console-backup/xoa" style="display:inline;"
-                      onsubmit="return confirm('Xóa {{ f.ten }}?');">
+                      onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xóa {{ f.ten }}?">
                     <input type="hidden" name="ten" value="{{ f.ten }}">
                     <button type="submit" class="red">Xóa</button>
                 </form>

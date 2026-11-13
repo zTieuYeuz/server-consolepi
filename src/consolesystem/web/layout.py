@@ -120,6 +120,8 @@ _STATUS_CACHE = {"data": None, "at": 0.0}
 STATUS_TTL = 4.0
 
 
+from consolesystem.core.esc import esc as _esc_chip   # SSID/ten tu ben ngoai di vao chip: phai thoat (2.0.8 X1)
+
 def _ipv4_of(name):
     """
     Lay dia chi IPv4 cua 1 interface bang ioctl - KHONG spawn tien trinh.
@@ -203,9 +205,9 @@ def get_status_chips(use_cache=True):
             _bo_qua(_loi)
 
         if mode == "AP":
-            extra = "Đang phát AP: " + (ssid or "ConsolePi")
+            extra = "Đang phát AP: " + _esc_chip(ssid or "ConsolePi")
         elif ssid:
-            extra = "Đã nối: " + ssid
+            extra = "Đã nối: " + _esc_chip(ssid)
         else:
             extra = "Chưa kết nối WiFi"
         chips.append({

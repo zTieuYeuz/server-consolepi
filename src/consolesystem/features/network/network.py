@@ -1140,8 +1140,8 @@ def _wifi_page(msg="", ok=True):
                      '⚪ Kết nối</button>')
         if s in visible_ssids:
             return (f'<form method="POST" action="/wifi-connect-saved" style="display:inline;"'
-                     f' onsubmit="return confirm(\'Chuyển sang WiFi {_esc(s)}? '
-                     f'Kết nối hiện tại (nếu có) sẽ bị ngắt trong lúc chuyển.\');">'
+                     f' onsubmit="return confirm(this.dataset.hoi);" data-hoi="Chuyển sang WiFi {_esc(s)}? '
+                     f'Kết nối hiện tại (nếu có) sẽ bị ngắt trong lúc chuyển.">'
                      f'<input type="hidden" name="ssid" value="{_esc(s)}">'
                      f'<button type="submit" data-busy="Đang kết nối...">'
                      f'🟢 Kết nối</button></form>')
@@ -1154,7 +1154,7 @@ def _wifi_page(msg="", ok=True):
         <td>{_esc(s)}</td>
         <td>{_connect_cell(s)}</td>
         <td><form method="POST" action="/wifi-delete"
-                  onsubmit="return confirm('Xóa WiFi {_esc(s)}?');">
+                  onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xóa WiFi {_esc(s)}?">
               <input type="hidden" name="ssid" value="{_esc(s)}">
               <button type="submit" class="red small">Xóa</button>
             </form></td>
@@ -1206,7 +1206,7 @@ def _wifi_page(msg="", ok=True):
                     'hoặc nối vào AP ConsolePi trước.</div>')
         disconnect_html = f"""
         <form method="POST" action="/wifi-disconnect" style="margin-top:12px;"
-              onsubmit="return confirm('Ngắt kết nối WiFi {_esc(ssid)}?');">
+              onsubmit="return confirm(this.dataset.hoi);" data-hoi="Ngắt kết nối WiFi {_esc(ssid)}?">
           <button type="submit" class="red" data-busy="Đang ngắt...">
             ⏏ Ngắt kết nối WiFi
           </button>
@@ -1330,7 +1330,7 @@ def _bt_page(msg="", ok=True, scanned=None):
               {btn}
             </form>
             <form method="POST" action="/bt-unpair" style="display:inline;"
-                  onsubmit="return confirm('Xóa ghép cặp {_esc(i['name'])}?');">
+                  onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xóa ghép cặp {_esc(i['name'])}?">
               <input type="hidden" name="mac" value="{_esc(mac)}">
               <button type="submit" class="red small">Xóa</button>
             </form>

@@ -134,7 +134,7 @@ def _trang_kho(msg="", ok=True):
         {"id": m.get("id", ""),
          "tim": bo_dau(" ".join(str(m.get(k, "")) for k in
                                     ("ten", "mo_ta", "du_lieu", "ten_file")))}
-        for m in ds], ensure_ascii=False)
+        for m in ds], ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")   # X1: JSON trong <script> khong duoc cat </script>
 
     ten_loai_hien = dict(TEN_LOAI_KHO)
     dem = {k: sum(1 for m in ds if m.get("loai") == k) for k in ten_loai_hien}

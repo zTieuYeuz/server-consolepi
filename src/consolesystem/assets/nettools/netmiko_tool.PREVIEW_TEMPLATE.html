@@ -26,7 +26,7 @@
     <div class="warn">Đây là bước ghi cấu hình THỰC SỰ lên thiết bị. Đọc lại kỹ trước khi xác nhận.</div>
 
     <form method="POST" action="/nettools/netmiko/run"
-          onsubmit="return confirm('XÁC NHẬN chạy {{ commands|length }} lệnh cấu hình trên {{ host }}?');">
+          onsubmit="return confirm(this.dataset.hoi);" data-hoi="XÁC NHẬN chạy {{ commands|length }} lệnh cấu hình trên {{ host }}?">
         <input type="hidden" name="host" value="{{ host }}">
         <input type="hidden" name="device_type" value="{{ device_type }}">
         <input type="hidden" name="port" value="{{ port }}">

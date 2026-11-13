@@ -511,7 +511,7 @@ JS_MAY_B1 = r"""<script>
       var w = s.closest('.loc-o'), k = w.getAttribute('data-k');
       if (!hep.matches && (k === 'nhom' || k === 'tt')) {} else an++;
       var b = document.createElement('button'); b.type = 'button';
-      b.innerHTML = w.querySelector('.loc-nhan').textContent + ': ' + s.options[s.selectedIndex].textContent + X;
+      var tx = document.createElement('span'); tx.textContent = w.querySelector('.loc-nhan').textContent + ': ' + s.options[s.selectedIndex].textContent; b.appendChild(tx); b.insertAdjacentHTML('beforeend', X);   /* X1/V4-1: ten tu may khach la VAN BAN, khong duoc di vao innerHTML */
       b.setAttribute('aria-label', 'Bỏ lọc ' + w.querySelector('.loc-nhan').textContent);
       b.onclick = function () { s.value = ''; s.dispatchEvent(new Event('change')); };
       dang.appendChild(b);

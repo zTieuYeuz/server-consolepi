@@ -3,7 +3,7 @@
 (function(){
   var DS = [], MO = [], DANG = null, THU_VIEN = [], NHOM = [], NHOM_DEM = {};
   var $ = function(i){ return document.getElementById(i); };
-  function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+  function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML.replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }   /* dung ca trong thuoc tinh: thoat " va ' (2.0.8 X1) */
   function api(u, du){
     var o = du ? {method:'POST', headers:{'Content-Type':'application/json','X-Console-Pi':'fetch'},
                   body:JSON.stringify(du)} : {};

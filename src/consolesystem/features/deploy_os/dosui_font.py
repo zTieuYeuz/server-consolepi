@@ -96,7 +96,7 @@ def register_font(app):
               <td>{_esc(co_kich_thuoc(m['byte']))}</td>
               <td><form method="POST" action="/deployos/font/{_esc(b['id'])}/xoa-font"
                         style="display:inline;"
-                        onsubmit="return confirm('Xóa font {_esc(m["ten"])}?');">
+                        onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xóa font {_esc(m["ten"])}?">
                     <input type="hidden" name="ten" value="{_esc(m['file'])}">
                     <button type="submit" class="red small">Xóa</button>
                   </form></td>

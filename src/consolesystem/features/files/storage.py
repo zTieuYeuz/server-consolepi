@@ -223,7 +223,7 @@ def register_storage(app):
               <td>
                 <a class="btn small" href="/storage/tai/{_esc(f['name'])}">Tải về</a>
                 <form method="POST" action="/storage/xoa" style="display:inline;"
-                      onsubmit="return confirm('Xóa {_esc(f['name'])}?');">
+                      onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xóa {_esc(f['name'])}?">
                   <input type="hidden" name="name" value="{_esc(f['name'])}">
                   <button type="submit" class="red small">Xóa</button>
                 </form>

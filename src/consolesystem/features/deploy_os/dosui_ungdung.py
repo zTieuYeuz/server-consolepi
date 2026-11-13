@@ -131,7 +131,7 @@ def register_ungdung(app):
             <tr><td>{bieu} {_esc(m['ten'])}</td><td>{chi_tiet}</td>
                 <td><form method="POST" action="/deployos/ungdung/{_esc(ung_id)}/xoa-muc"
                           style="display:inline;"
-                          onsubmit="return confirm('Xóa {_esc(m["ten"])}?');">
+                          onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xóa {_esc(m["ten"])}?">
                       <input type="hidden" name="ten" value="{_esc(m['ten'])}">
                       <button type="submit" class="red small">Xóa</button>
                     </form></td></tr>"""

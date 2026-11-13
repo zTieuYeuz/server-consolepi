@@ -92,16 +92,16 @@
 "p": "/deployos/console/apps",
 "s": 200,
 "loc": "",
-"n": 115556,
-"h": "dff7b34f1f2f"
+"n": 115608,
+"h": "21b83aa0b28d"
 },
 {
 "m": "GET",
 "p": "/deployos/console/scripts",
 "s": 200,
 "loc": "",
-"n": 102643,
-"h": "24add1b59a65"
+"n": 102695,
+"h": "bb4bbb10a735"
 },
 {
 "m": "GET",
@@ -428,80 +428,80 @@
 "p": "/deployos/console/apps/len",
 "s": 200,
 "loc": "",
-"n": 117501,
-"h": "89d6274e5b02"
+"n": 117579,
+"h": "dc39b9f77533"
 },
 {
 "m": "POST",
 "p": "/deployos/console/apps/thamso",
 "s": 200,
 "loc": "",
-"n": 117504,
-"h": "f67260009730"
+"n": 117582,
+"h": "316bf8f6e288"
 },
 {
 "m": "GET",
 "p": "/deployos/console/apps",
 "s": 200,
 "loc": "",
-"n": 117438,
-"h": "60d7d900e0b8"
+"n": 117516,
+"h": "daa079a0d2ea"
 },
 {
 "m": "POST",
 "p": "/deployos/console/scripts/len",
 "s": 200,
 "loc": "",
-"n": 103338,
-"h": "20ae7ba904c9"
+"n": 103416,
+"h": "9c87b1c5bde1"
 },
 {
 "m": "GET",
 "p": "/deployos/console/scripts",
 "s": 200,
 "loc": "",
-"n": 103274,
-"h": "b3abc214ce7b"
+"n": 103352,
+"h": "a3f44685e3e0"
 },
 {
 "m": "POST",
 "p": "/deployos/console/file/len",
 "s": 200,
 "loc": "",
-"n": 103445,
-"h": "b531ff2d6d2c"
+"n": 103471,
+"h": "7a3b26e010f4"
 },
 {
 "m": "GET",
 "p": "/deployos/console",
 "s": 200,
 "loc": "",
-"n": 103360,
-"h": "493ef17fe275"
+"n": 103386,
+"h": "1d7c603c1d03"
 },
 {
 "m": "POST",
 "p": "/deployos/console/apps/xoa",
 "s": 200,
 "loc": "",
-"n": 115613,
-"h": "f426b60e5d8e"
+"n": 115665,
+"h": "6615c5aca917"
 },
 {
 "m": "POST",
 "p": "/deployos/console/scripts/xoa",
 "s": 200,
 "loc": "",
-"n": 102700,
-"h": "799cb305f954"
+"n": 102752,
+"h": "c5de45eaa053"
 },
 {
 "m": "GET",
 "p": "/deployos/console/apps",
 "s": 200,
 "loc": "",
-"n": 115556,
-"h": "dff7b34f1f2f"
+"n": 115608,
+"h": "21b83aa0b28d"
 },
 {
 "m": "GET",
@@ -588,8 +588,8 @@
 "p": "/deployos/ungdung/kiemtra",
 "s": 200,
 "loc": "",
-"n": 93072,
-"h": "a79f71ee9da4"
+"n": 93098,
+"h": "ecbf644389c6"
 },
 {
 "m": "GET",

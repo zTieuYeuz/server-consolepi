@@ -799,7 +799,7 @@ def register_home(app):
           nay can ban phim that (cam USB) hoac dung tab Thu vien lenh de dan lenh.
         </div>"""
 
-        html = render_page(body, active="/", title=f"Console: {label}",
+        html = render_page(body, active="/", title=f"Console: {_esc(label)}",
                            subtitle="Cổng serial đang mở trong dashboard")
         # Bao cho ban phim ao biet go vao phien tmux nao (xem vkeyboard.js)
         return gan_phien_tmux(html, f"console-{devname}")

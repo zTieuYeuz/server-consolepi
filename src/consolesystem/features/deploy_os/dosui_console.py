@@ -111,7 +111,7 @@ def _bang_file(ds, duong_xoa, duong_tai):
               <td>
                 <a class="btn small gray" href="{duong_tai}/{_esc(f['ten'])}">Tải về</a>
                 <form method="POST" action="{duong_xoa}" style="display:inline;"
-                      onsubmit="return confirm('Xóa {_esc(f['ten'])}?');">
+                      onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xóa {_esc(f['ten'])}?">
                   <input type="hidden" name="ten" value="{_esc(f['ten'])}">
                   <button type="submit" class="red small">Xóa</button>
                 </form>
@@ -162,7 +162,7 @@ def _khoi_winpe_rieng():
             <tr><td><strong>{_esc(m['ten'])}</strong></td>
               <td style="color:#8b93a1;">{_esc(m['file'])}</td><td>{co_kich_thuoc(m['cd'])}</td>
               <td><form method="POST" action="/deployos/winpe-rieng/bo" style="display:inline;"
-                        onsubmit="return confirm('Bỏ {_esc(m['ten'])} khỏi menu PXE? (file vẫn giữ)');">
+                        onsubmit="return confirm(this.dataset.hoi);" data-hoi="Bỏ {_esc(m['ten'])} khỏi menu PXE? (file vẫn giữ)">
                 <input type="hidden" name="file" value="{_esc(m['file'])}">
                 <button type="submit" class="gray small">Bỏ khỏi menu</button></form></td></tr>"""
         for m in ds)
@@ -300,7 +300,7 @@ def _trang_apps(msg="", ok=True):
                   <td>
                     <a class="btn small gray" href="/deployos/console/apps/tai/{_esc(a['ten'])}">Tải về</a>
                     <form method="POST" action="/deployos/console/apps/xoa" style="display:inline;"
-                          onsubmit="return confirm('Xoa {_esc(a['ten'])}?');">
+                          onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xoa {_esc(a['ten'])}?">
                       <input type="hidden" name="ten" value="{_esc(a['ten'])}">
                       <button type="submit" class="red small">Xóa</button>
                     </form>

@@ -68,7 +68,7 @@
             <td>{{ r.device_type }}</td>
             <td>
                 <form method="POST" action="/nettools/ifthen/delete"
-                      onsubmit="return confirm('Xóa rule {{ r.name }}?');">
+                      onsubmit="return confirm(this.dataset.hoi);" data-hoi="Xóa rule {{ r.name }}?">
                     <input type="hidden" name="index" value="{{ i }}">
                     <button type="submit" class="del">Xóa</button>
                 </form>
