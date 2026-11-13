@@ -111,7 +111,7 @@ def bat_tftp(dia_chi=None):
         import pwd
         u = pwd.getpwnam("tftp")
         os.chown(TFTP_ROOT, u.pw_uid, u.pw_gid)
-        os.chmod(TFTP_ROOT, 0o775)
+        os.chmod(TFTP_ROOT, 0o775)  # nosec B103 - da chown cho user tftp, nhom ghi duoc, khong mo cho moi user
     except (KeyError, OSError):
         os.chmod(TFTP_ROOT, 0o1777)  # nosec B103 - du phong khi khong co user tftp: sticky, khong ai xoa duoc file nguoi khac
 

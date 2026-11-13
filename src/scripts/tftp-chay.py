@@ -6,6 +6,7 @@ Doc cau hinh do dashboard ghi (CS_TFTP_CAU_HINH, mac dinh /run/console-system-tf
 Moi dia chi mot tien trinh in.tftpd (in.tftpd chi bind duoc 1 dia chi). Ghi trang thai ra CS_TFTP_TRANG_THAI de trang web hien: dang nghe, con bao lau.
 NHAN ROI = khong co ket noi TFTP dang chep VA khong co thay doi file trong thu muc VA khong bam 'gia han' trong NHAN_ROI giay.
 Thoat 0 khi tu tat (systemd khong khoi dong lai); ExecStopPost cua don vi xoa co /run."""
+import ipaddress
 import json
 import os
 import re
@@ -29,7 +30,7 @@ MAU_IP = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
 def dia_chi_hop_le(ds):
     ra = []
     for a in ds or []:
-        if isinstance(a, str) and MAU_IP.match(a) and all(0 <= int(x) <= 255 for x in a.split(".")) and a != "0.0.0.0":
+        if isinstance(a, str) and MAU_IP.match(a) and all(0 <= int(x) <= 255 for x in a.split(".")) and not ipaddress.ip_address(a).is_unspecified:
             ra.append(a)
     return ra
 
