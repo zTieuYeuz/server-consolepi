@@ -18,6 +18,7 @@ def test_khung_mat_khau_dung_chung(tmp_path):
     assert dong, r.stdout[-1500:] + r.stderr[-1500:]
     kq = json.loads(dong[0][7:])
     sai = [k for k, v in kq.items() if v is not True]
+    assert not sai, sai                                    # V7-1 (2.0.8): truoc day tinh `sai` nhung khong assert -> luon xanh
 
 
 def test_ham_khung_mat_khau():
