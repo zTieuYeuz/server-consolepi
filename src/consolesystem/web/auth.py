@@ -138,6 +138,27 @@ def _xac_thuc_pam(username, password):
     return False, ("Máy thiếu thư viện PAM cho Python. Cài bằng: "
                    "sudo apt install python3-pam")
 
+def _rbac_dang_chan_an_toan():
+    """Co dang o che do CHAN khong - khi chinh viec kiem quyen loi thi mac dinh la CHAN (True) neu khong doc duoc trang thai."""
+    try:
+        from consolesystem.core import rbac as _rb
+        return bool(_rb.dang_chan())
+    except Exception:
+        return True
+
+
+def _tu_choi_rbac(thong_diep):
+    """Tra 403: JSON cho API/fetch, HTML cho trang. Khong dung gi co the hong de dung trang loi (fail-closed ca khi render loi)."""
+    from flask import jsonify
+    if request.path.startswith("/api/") or "/api/" in request.path or request.headers.get("X-Console-Pi") == "fetch" or "application/json" in (request.headers.get("Accept") or ""):
+        return jsonify({"ok": False, "loi": thong_diep}), 403
+    try:
+        from ui.layout import render_page
+        return Response(render_page('<div class="msg err">%s</div>' % thong_diep, title="Không có quyền"), status=403, mimetype="text/html")
+    except Exception:
+        return Response(thong_diep, status=403, mimetype="text/plain")
+
+
 def local_bypass_enabled():
     """
     Co cho phep man hinh gan tren Pi vao thang khong can dang nhap?
@@ -384,16 +405,14 @@ def register_auth(app):
             from consolesystem.core import rbac as _rb
             ok, ly = _rb.ghi_nhan(request.method, request.path, user, la_quan_tri)
         except Exception as e:
+            # R1 (2.0.8): FAIL-CLOSED. Loi trong luc kiem quyen KHONG duoc dan den cho qua; chi che do ghi nhan (CONSOLE_RBAC_GHI_NHAN=1, cuu ho) moi cho qua.
             print("[rbac] loi kiem quyen: %s" % type(e).__name__, flush=True)
+            if _rbac_dang_chan_an_toan():
+                return _tu_choi_rbac("Hệ thống kiểm quyền gặp lỗi tạm thời, thao tác bị chặn để an toàn.")
             return None
         if ok or not _rb.dang_chan():
             return None
-        from flask import jsonify
-        thong_diep = ("Bạn không có quyền thực hiện thao tác này (%s). Nhờ quản trị gán vai trò ở trang Người dùng." % ly)
-        if request.path.startswith("/api/") or "/api/" in request.path or request.headers.get("X-Console-Pi") == "fetch" or "application/json" in (request.headers.get("Accept") or ""):
-            return jsonify({"ok": False, "loi": thong_diep}), 403
-        from ui.layout import render_page
-        return Response(render_page('<div class="msg err">%s</div>' % thong_diep, title="Không có quyền"), status=403, mimetype="text/html")
+        return _tu_choi_rbac("Bạn không có quyền thực hiện thao tác này (%s). Nhờ quản trị gán vai trò ở trang Người dùng." % ly)
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
@@ -476,7 +495,7 @@ def register_auth(app):
                 ok, _ly = _rb.ghi_nhan("GET", _rb.chuan_uri(goc)[0], user, la_quan_tri, nang_muc=_rb.muc_cong_vao(goc))
             except Exception as e:
                 print("[rbac] loi kiem quyen cong vao: %s" % type(e).__name__, flush=True)
-                return "", 200
+                return ("", 403) if _rbac_dang_chan_an_toan() else ("", 200)     # R1: fail-closed
             if not ok and _rb.dang_chan():
                 return "", 403
         return "", 200
