@@ -44,7 +44,9 @@ ExecStartPre=/bin/chmod 0775 /var/lib/console-system/data/tftp
 #                   config tftp://). Thieu co nay thi tftpd chi cho DOC,
 #                   giong het han che cua dnsmasq ma du an nay co chu dich
 #                   tranh bang cach dung tftpd-hpa thay vi dnsmasq.
-ExecStart=/usr/sbin/in.tftpd --foreground --user tftp --address 0.0.0.0:69 \
-    --secure --create /var/lib/console-system/data/tftp
+# V5-2 (2.0.8): chay qua tftp-chay.py - chi nghe tren cac dia chi nguoi dung CHON (khong con 0.0.0.0), moi dia chi 1 in.tftpd, TU TAT khi nhan roi
+# 60 phut (khong chep, khong doi file, khong bam gia han) hoac khi thu muc vuot gioi han/the day. Van --secure --create nhu cu (switch GHI duoc).
+ExecStart=/usr/bin/python3 /opt/console-pi/scripts/tftp-chay.py
+ExecStopPost=-/bin/rm -f /run/console-system-tftp.flag /run/console-system-tftp.json /run/console-system-tftp.giahan
 Restart=on-failure
 RestartSec=3

@@ -39,7 +39,7 @@
 
     <div class="warn">
         TFTP KHÔNG có xác thực - bất kỳ thiết bị nào cắm vào cổng <strong>{{ iface }}</strong> đều
-        đọc/ghi được file. Chỉ bật khi đang thực sự làm việc, tắt ngay sau khi xong.
+        đọc/ghi được file. Chỉ bật khi đang thực sự làm việc; tự tắt sau 60 phút nhàn rỗi.
     </div>
 
     {% if not da_cai %}
@@ -50,14 +50,26 @@ sudo systemctl disable --now tftpd-hpa   # tắt dịch vụ mặc định của
     {% else %}
     <div class="card">
         {% if dang_bat %}
-        <p>Đang bật trên <strong>{{ iface }}</strong>. File nhận được hiện ở bảng bên dưới.</p>
-        <form method="POST" action="/nettools/tftp/tat">
+        <p>Đang bật, <strong>chỉ nghe trên: {{ tt.nghe|join(', ') if tt.nghe else '(đang khởi động...)' }}</strong>.
+           {% if tt.con_lai_phut is not none %}Tự tắt sau <strong>{{ tt.con_lai_phut }} phút</strong> nếu nhàn rỗi
+           (không có kết nối chép, không đổi file).{% endif %} File nhận được hiện ở bảng bên dưới.</p>
+        <form method="POST" action="/nettools/tftp/gia-han" style="display:inline;">
+            <button type="submit" data-busy="Đang gia hạn...">⏱ Gia hạn {{ nhan_roi }} phút</button>
+        </form>
+        <form method="POST" action="/nettools/tftp/tat" style="display:inline;">
             <button type="submit" class="red" data-busy="Đang tắt...">⏏ Tắt TFTP</button>
         </form>
         {% else %}
-        <p>Đang tắt.</p>
+        <p>Đang tắt.{% if tt.ly_do_tat %} <span class="hint">Lần trước: {{ tt.ly_do_tat }}.</span>{% endif %}</p>
         <form method="POST" action="/nettools/tftp/bat">
-            <button type="submit" data-busy="Đang bật...">▶ Bật TFTP trên {{ iface }}</button>
+            <p class="hint">Chọn cổng mà switch cắm vào. {% if co_ra_net %}Cổng ra Internet (đường mặc định) không được tích sẵn.{% else %}
+               Không nhận biết được cổng ra Internet nên <strong>không tích sẵn cổng nào</strong> - hãy chọn đúng cổng nối tới switch.{% endif %}</p>
+            {% for ip in danh_sach_ip %}
+            <label style="display:block;margin:4px 0;"><input type="checkbox" name="cong" value="{{ ip.ip }}"{{ ' checked' if ip.ip in mac_dinh else '' }}>
+                {{ ip.iface }}: <code>{{ ip.ip }}</code></label>
+            {% endfor %}
+            {% if not danh_sach_ip %}<p class="hint">Chưa có IP trên cổng mạng nào.</p>{% endif %}
+            <button type="submit" data-busy="Đang bật...">▶ Bật TFTP trên các cổng đã chọn</button>
         </form>
         {% endif %}
     </div>

@@ -210,6 +210,7 @@
 /nettools/ping	GET,POST	nettools.ping_route
 /nettools/tftp	GET	nettools.tftp_route
 /nettools/tftp/bat	POST	nettools.tftp_bat_route
+/nettools/tftp/gia-han	POST	nettools.tftp_gia_han_route
 /nettools/tftp/tai/<path:ten>	GET	nettools.tftp_tai_route
 /nettools/tftp/tat	POST	nettools.tftp_tat_route
 /nettools/tftp/xoa	POST	nettools.tftp_xoa_route

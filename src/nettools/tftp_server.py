@@ -52,7 +52,7 @@ STATE_FLAG = _DD.FLAG_TFTP
 # Chi la nhan hien thi: in.tftpd chay voi --address 0.0.0.0:69 (xem
 # systemd/console-system-tftp.service) nen nghe tren MOI cong. Truoc day ghi
 # "eth0" - sai ca tren Pi lan may x86 (cong ten ens3/enp1s0...).
-IFACE = "mọi cổng mạng"
+IFACE = "các cổng đã chọn"
 DON_VI_SYSTEMD = "console-system-tftp"
 
 
@@ -72,12 +72,37 @@ def da_cai_dat():
     return os.path.exists("/usr/sbin/in.tftpd")
 
 
-def bat_tftp():
+FILE_CAU_HINH = "/run/console-system-tftp.json"          # dashboard ghi, scripts/tftp-chay.py doc
+FILE_TRANG_THAI = "/run/console-system-tftp.trangthai.json"
+FILE_GIA_HAN = "/run/console-system-tftp.giahan"
+NHAN_ROI_PHUT = 60
+
+
+def cong_ra_internet():
+    """Ten cong mang cua duong mac dinh (ra Internet), hoac tap rong neu khong nhan biet duoc."""
+    ok, out = _sh(["ip", "-4", "route", "show", "default"])
+    return set(re.findall(r"\bdev\s+(\S+)", out)) if ok else set()
+
+
+def cong_nghe_mac_dinh(ds=None):
+    """IP duoc tich san: cac cong dang co IP TRU cong ra Internet. Khong nhan biet duoc duong mac dinh -> khong tich san gi (nguoi dung chon ro)."""
+    ds = ip_theo_giao_dien() if ds is None else ds
+    ra_net = cong_ra_internet()
+    if not ra_net:
+        return []
+    return [x["ip"] for x in ds if x["iface"] not in ra_net]
+
+
+def bat_tftp(dia_chi=None):
     if not da_cai_dat():
         return False, ("Chưa cài tftpd-hpa. Chạy: sudo apt install -y tftpd-hpa "
                        "(chi can cai 1 lan, khong tu dong bat)")
     if dang_bat():
         return True, "TFTP đang bật sẵn."
+    co_san = {x["ip"] for x in ip_theo_giao_dien()}
+    chon = [a for a in (dia_chi or []) if a in co_san]
+    if not chon:
+        return False, "Chưa chọn cổng nào để nghe (hoặc cổng đã chọn không còn IP). Tích ít nhất một cổng rồi bấm Bật."
 
     os.makedirs(TFTP_ROOT, exist_ok=True)
     # tftpd-hpa chay duoi user rieng "tftp", can GHI duoc vao thu muc nay de nhan file tu switch gui len:
@@ -90,12 +115,40 @@ def bat_tftp():
     except (KeyError, OSError):
         os.chmod(TFTP_ROOT, 0o1777)  # nosec B103 - du phong khi khong co user tftp: sticky, khong ai xoa duoc file nguoi khac
 
+    import json
+    with open(FILE_CAU_HINH, "w", encoding="utf-8") as f:
+        json.dump({"dia_chi": chon, "goc": TFTP_ROOT}, f)
+    for p in (FILE_GIA_HAN, FILE_TRANG_THAI):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
     ok, out = _sh(["systemctl", "start", DON_VI_SYSTEMD])
     if not ok:
         return False, f"Không bật được dịch vụ TFTP: {out[:200]}"
 
     open(STATE_FLAG, "w").close()
-    return True, f"Đã bật TFTP trên {IFACE}. Thư mục nhận file: {TFTP_ROOT}"
+    return True, f"Đã bật TFTP, chỉ nghe trên {', '.join(chon)}. Tự tắt sau {NHAN_ROI_PHUT} phút nhàn rỗi. Thư mục nhận file: {TFTP_ROOT}"
+
+
+def gia_han():
+    """Bam 'gia han': tinh lai bo dem nhan roi tu bay gio."""
+    if not dang_bat():
+        return False, "TFTP đang tắt."
+    open(FILE_GIA_HAN, "w").close()
+    os.utime(FILE_GIA_HAN, None)
+    return True, f"Đã gia hạn: tự tắt sau {NHAN_ROI_PHUT} phút nhàn rỗi tính từ bây giờ."
+
+
+def trang_thai():
+    """Tinh trang dang chay do tftp-chay.py ghi: dang nghe cong nao, con bao lau, ly do lan tat gan nhat."""
+    import json
+    try:
+        d = json.load(open(FILE_TRANG_THAI, encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"nghe": [], "con_lai_phut": None, "ly_do_tat": ""}
+    con = max(0, int((d.get("het_han", 0) - time.time()) // 60)) if d.get("nghe") else None
+    return {"nghe": d.get("nghe", []), "con_lai_phut": con, "ly_do_tat": d.get("ly_do_tat", "")}
 
 
 def tat_tftp():
@@ -180,7 +233,8 @@ def _render(msg="", ok=True):
     return render_template_string(
         TFTP_TEMPLATE, msg=msg, ok=ok, da_cai=da_cai_dat(), dang_bat=dang_bat(),
         iface=IFACE, tftp_root=TFTP_ROOT, danh_sach_ip=ip_theo_giao_dien(),
-        files=danh_sach_file(),
+        files=danh_sach_file(), mac_dinh=cong_nghe_mac_dinh(), tt=trang_thai(), nhan_roi=NHAN_ROI_PHUT,
+        co_ra_net=bool(cong_ra_internet()),
     )
 
 
@@ -191,7 +245,13 @@ def tftp_route():
 
 @nettools_bp.route("/nettools/tftp/bat", methods=["POST"])
 def tftp_bat_route():
-    ok, msg = bat_tftp()
+    ok, msg = bat_tftp(request.form.getlist("cong"))
+    return _render(msg=msg, ok=ok)
+
+
+@nettools_bp.route("/nettools/tftp/gia-han", methods=["POST"])
+def tftp_gia_han_route():
+    ok, msg = gia_han()
     return _render(msg=msg, ok=ok)
 
 
