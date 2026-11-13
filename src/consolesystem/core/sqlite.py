@@ -46,6 +46,21 @@ def _cach_ly_hong(duong, loi):
     _them_canh_bao("CO SO DU LIEU HONG: %s (%s). Da giu lai o %s va tao co so moi (trong). Khoi phuc tu ban sao luu neu can." % (duong, loi, hong))
 
 
+class _KiemTraHong(sqlite3.DatabaseError):
+    """quick_check bao hong that."""
+
+
+def _la_hong_that(e):
+    """V6-1 (2.0.8): chi cach ly khi file THAT SU hong (quick_check khong ok, 'malformed', 'not a database'). OperationalError tam thoi
+    ('database is locked', loi I/O the SD, het dung luong...) KHONG duoc coi la hong: cach ly se doi ten DB dang dung va tao DB rong."""
+    if isinstance(e, _KiemTraHong):
+        return True
+    m = str(e).lower()
+    if "malformed" in m or "not a database" in m or "encrypted" in m:
+        return True
+    return not isinstance(e, sqlite3.OperationalError)
+
+
 def ket_noi(duong):
     """Ket noi cua luong hien tai toi `duong`. File hong -> cach ly (giu lai), canh bao, tao moi."""
     kc = getattr(_local, "kc", None)
@@ -62,11 +77,13 @@ def ket_noi(duong):
             if duong not in _da_kiem:
                 r = c.execute("PRAGMA quick_check").fetchone()
                 if r and r[0] != "ok":
-                    raise sqlite3.DatabaseError("quick_check: %s" % r[0])
+                    raise _KiemTraHong("quick_check: %s" % r[0])
                 _da_kiem.add(duong)
         except sqlite3.DatabaseError as e:
             with contextlib.suppress(Exception):
                 c.close()
+            if not _la_hong_that(e):
+                raise                                  # loi tam thoi: de nguyen DB, bao loi cho nguoi goi (thu lai duoc)
             _cach_ly_hong(duong, e)
             c = _mo(duong)
         kc["c"][duong] = c
