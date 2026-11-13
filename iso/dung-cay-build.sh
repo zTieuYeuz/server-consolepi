@@ -59,6 +59,14 @@ dung_cay() {   # $1 = amd64 | i386
     # Cloudflare Access Service Token (tuy chon) cho kho trung tam: chi co khi
     # chu kho dat file rieng tren may build - khong bao gio nam trong repo.
     if [ -s /root/.config/zt/cf-access.json ]; then
+        # V7-2 (2.0.8): token dich vu KHONG duoc lot vao anh ISO phat hanh (ai co ISO cung lay duoc). Co tep tren may build -> DUNG build,
+        # tru khi chu build chu dong cho phep (ISO NOI BO, khong phat hanh) bang CS_CHO_PHEP_NHUNG_TOKEN_CF=1.
+        if [ "${CS_CHO_PHEP_NHUNG_TOKEN_CF:-}" != "1" ]; then
+            echo "!!! DUNG BUILD: co /root/.config/zt/cf-access.json tren may build, se bi nhung vao ISO." >&2
+            echo "!!! Di chuyen tep ra khoi may build, hoac dat CS_CHO_PHEP_NHUNG_TOKEN_CF=1 CHI cho ISO noi bo (khong phat hanh)." >&2
+            exit 1
+        fi
+        echo "!!! CANH BAO: nhung cf-access.json vao ISO NOI BO (CS_CHO_PHEP_NHUNG_TOKEN_CF=1). KHONG phat hanh ISO nay." >&2
         mkdir -p "$R/var/lib/console-system/secrets"      # bo cuc moi 2.0 (hook 0100 khoi tao bo cuc, giu file nay)
         install -m 600 /root/.config/zt/cf-access.json "$R/var/lib/console-system/secrets/cf-access.json"
     fi
