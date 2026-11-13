@@ -18,6 +18,8 @@ from consolesystem.integrations.kho_capnhat import KhoCapNhat
 
 DICH_VU_CHINH = "console-system-dashboard"
 DICH_VU_KHAC = ("console-system-tftp",)
+# V1-2 (2.0.8): don vi PHAI chay sau nang cap neu da duoc bat (is-enabled); khong bat thi khong doi hoi. Sai -> suc_khoe false -> thu lai den het gio -> hoan tac.
+DICH_VU_KIEM_SAU_NANG_CAP = ("nginx", "console-system-term-local", "console-system-term-phien")
 CONG_NOI_BO = 5000
 
 
@@ -113,6 +115,16 @@ def suc_khoe(ten_ban):
         return False, "%s: %s" % (type(e).__name__, e)
     if not chay_lenh(["nginx", "-t"], timeout=20).ok:
         return False, "nginx -t loi"
+    # Di QUA nginx (cong 80) toi dashboard: nginx -t chi kiem cu phap, khong chung to nginx dang chay va proxy duoc
+    try:
+        r2 = requests.get("http://127.0.0.1/healthz", timeout=5)
+        if r2.status_code != 200:
+            return False, "qua nginx (cong 80) healthz tra %s" % r2.status_code
+    except (requests.RequestException, OSError) as e:
+        return False, "khong goi duoc dashboard qua nginx: %s" % type(e).__name__
+    for dv in DICH_VU_KIEM_SAU_NANG_CAP:
+        if chay_lenh(["systemctl", "is-enabled", "--quiet", dv], timeout=15).ok and not chay_lenh(["systemctl", "is-active", "--quiet", dv], timeout=15).ok:
+            return False, "dich vu %s da bat nhung khong chay" % dv
     return True, "ok"
 
 
