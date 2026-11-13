@@ -154,3 +154,7 @@ def test_don_vi_dung_wrapper_va_giu_create():
     s = open(os.path.join(GOC, "systemd", "console-system-tftp.service"), encoding="utf-8").read()
     assert "tftp-chay.py" in s and "0.0.0.0" not in [x for x in s.splitlines() if x.startswith("ExecStart=")][0]
     assert "ExecStopPost=" in s and "console-system-tftp.flag" in s
+
+
+def test_B3_nhip_kiem_dung_luong_5_giay():
+    assert _chay().NHIP <= 5.0

@@ -22,7 +22,7 @@ GIA_HAN = os.environ.get("CS_TFTP_GIA_HAN", "/run/console-system-tftp.giahan")
 NHAN_ROI = int(os.environ.get("CS_TFTP_NHAN_ROI", "3600"))
 TOI_DA_BYTE = int(os.environ.get("CS_TFTP_TOI_DA", str(1024 ** 3)))          # tong dung luong thu muc TFTP
 CON_TRONG_TOI_THIEU = 200 * 1024 ** 2                                       # the con it hon thi dung ghi
-NHIP = float(os.environ.get("CS_TFTP_NHIP", "20"))
+NHIP = float(os.environ.get("CS_TFTP_NHIP", "5"))
 TFTPD = os.environ.get("CS_TFTPD", "/usr/sbin/in.tftpd")
 MAU_IP = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
 
