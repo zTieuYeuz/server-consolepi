@@ -43,10 +43,8 @@ def _doc():
 
 def _ghi(ds):
     os.makedirs(THU_MUC, mode=0o700, exist_ok=True)
-    tam = _FILE_DS + ".tmp"
-    with open(tam, "w", encoding="utf-8") as f:
-        json.dump(ds, f, ensure_ascii=False)
-    os.replace(tam, _FILE_DS)
+    from consolesystem.core.store import ghi_json
+    ghi_json(_FILE_DS, ds, ensure_ascii=False)
 
 
 def ds_goi():

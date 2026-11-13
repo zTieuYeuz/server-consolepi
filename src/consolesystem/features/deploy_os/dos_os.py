@@ -124,9 +124,8 @@ def tao_os_moi(ten_hien_thi, os_ho="windows"):
         return False, f'Da co he dieu hanh "{os_id}" roi.', None
     try:
         os.makedirs(p, exist_ok=True)
-        with open(os.path.join(p, "_thongtin.json"), "w") as f:
-            json.dump({"ten_hien_thi": ten_hien_thi, "os_ho": os_ho}, f,
-                      ensure_ascii=False)
+        from consolesystem.core.store import ghi_json
+        ghi_json(os.path.join(p, "_thongtin.json"), {"ten_hien_thi": ten_hien_thi, "os_ho": os_ho}, ensure_ascii=False)
     except OSError as e:
         return False, f"Không tạo được: {e}", None
     return True, f'Đã tạo "{ten_hien_thi}".', os_id

@@ -68,6 +68,12 @@ def ghi_nguyen_tu(duong, noi_dung, mode=0o644):
     _fsync_thu_muc(thu_muc)
 
 
+def ghi_json(duong, obj, mode=0o644, **kw_dump):
+    """Ghi 1 doi tuong JSON nguyen tu (tam + fsync + doi ten + fsync thu muc). Tuan tu hoa TRUOC khi dung toi file (loi kieu khong lam hong file).
+    kw_dump: indent, ensure_ascii, sort_keys... giong json.dump - giu NGUYEN dinh dang tung noi goi. Loi ghi nem OSError (nhu open/replace cu)."""
+    ghi_nguyen_tu(duong, json.dumps(obj, **kw_dump).encode("utf-8"), mode)
+
+
 class KhoJson:
     """Mot danh sach (list) hoac tu dien (dict) luu o 1 file JSON."""
 

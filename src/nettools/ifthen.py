@@ -34,8 +34,8 @@ def load_rules():
 
 
 def save_rules(rules):
-    with open(RULES_FILE, "w") as f:
-        json.dump(rules, f, indent=2, ensure_ascii=False)
+    from consolesystem.core.store import ghi_json
+    ghi_json(RULES_FILE, rules, indent=2, ensure_ascii=False)
 
 
 def add_rule(name, field, pattern, device_type, commands):

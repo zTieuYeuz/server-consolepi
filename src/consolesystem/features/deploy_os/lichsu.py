@@ -66,11 +66,8 @@ def _doc():
 
 def _ghi(ds):
     try:
-        os.makedirs(THU_MUC_DU_LIEU, exist_ok=True)
-        tam = FILE_LUU + ".tmp"
-        with open(tam, "w", encoding="utf-8") as f:
-            json.dump(ds[-GIU_TOI_DA:], f, ensure_ascii=False)
-        os.replace(tam, FILE_LUU)
+        from consolesystem.core.store import ghi_json
+        ghi_json(FILE_LUU, ds[-GIU_TOI_DA:], ensure_ascii=False)
     except OSError:
         pass
 

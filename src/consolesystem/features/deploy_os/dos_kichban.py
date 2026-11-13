@@ -61,11 +61,9 @@ def luu_kichban(cauhinh, ten):
     d["ten_kichban"] = ten
     d["tao_luc"] = time.strftime("%Y-%m-%d %H:%M:%S")
     try:
-        # Mo bang O_CREAT|O_WRONLY voi quyen 600 ngay tu luc tao - khong de
-        # co khe thoi gian nao file nam do voi quyen rong hon.
-        fd = os.open(p, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w") as f:
-            json.dump(d, f, ensure_ascii=False, indent=1)
+        # Ghi nguyen tu, tep tam tao voi quyen 600 ngay tu luc tao - khong co khe thoi gian nao file nam do voi quyen rong hon.
+        from consolesystem.core.store import ghi_json
+        ghi_json(p, d, mode=0o600, ensure_ascii=False, indent=1)
         os.chmod(p, 0o600)
     except OSError as e:
         return False, f"Không lưu được: {e}"

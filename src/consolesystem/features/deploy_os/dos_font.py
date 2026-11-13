@@ -88,8 +88,8 @@ def tao_bo_font(ten_hien_thi):
         return False, "Đã có bộ font cùng tên.", None
     try:
         os.makedirs(p)
-        with open(os.path.join(p, "_thongtin.json"), "w", encoding="utf-8") as f:
-            json.dump({"ten_hien_thi": ten_hien_thi}, f, ensure_ascii=False, indent=1)
+        from consolesystem.core.store import ghi_json
+        ghi_json(os.path.join(p, "_thongtin.json"), {"ten_hien_thi": ten_hien_thi}, ensure_ascii=False, indent=1)
     except OSError as e:
         return False, f"Không tạo được: {e}", None
     return True, f'Đã tạo bộ font "{ten_hien_thi}".', bo_id

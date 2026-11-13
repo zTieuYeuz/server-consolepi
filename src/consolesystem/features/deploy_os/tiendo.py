@@ -66,11 +66,8 @@ def _ghi():
     """Ghi ra file. Loi thi BO QUA - day chi la ban sao du phong, khong
     duoc phep lam hong luong bao tien trinh dang chay."""
     try:
-        os.makedirs(THU_MUC_DU_LIEU, exist_ok=True)
-        tam = FILE_LUU + ".tmp"
-        with open(tam, "w", encoding="utf-8") as f:
-            json.dump(_du_lieu, f, ensure_ascii=False)
-        os.replace(tam, FILE_LUU)
+        from consolesystem.core.store import ghi_json
+        ghi_json(FILE_LUU, _du_lieu, ensure_ascii=False)
     except OSError:
         pass
 

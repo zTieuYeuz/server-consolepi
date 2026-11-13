@@ -57,11 +57,8 @@ def doc_may():
 
 
 def _ghi_may(ds):
-    os.makedirs(THU_MUC_DU_LIEU, exist_ok=True)
-    tam = FILE_MAY + ".tmp"
-    with open(tam, "w", encoding="utf-8") as f:
-        json.dump(ds, f, ensure_ascii=False, indent=1)
-    os.replace(tam, FILE_MAY)
+    from consolesystem.core.store import ghi_json
+    ghi_json(FILE_MAY, ds, ensure_ascii=False, indent=1)
 
 
 def them_may(van_ban):

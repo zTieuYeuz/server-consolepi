@@ -92,9 +92,8 @@ def luu_cauhinh(kieu_boot=None, cho_giay=None):
         except (TypeError, ValueError):
             return False, "Số giây chờ không hợp lệ."
     try:
-        os.makedirs(os.path.dirname(FILE_CAUHINH), exist_ok=True)
-        with open(FILE_CAUHINH, "w", encoding="utf-8") as f:
-            json.dump(c, f, ensure_ascii=False, indent=1)
+        from consolesystem.core.store import ghi_json
+        ghi_json(FILE_CAUHINH, c, ensure_ascii=False, indent=1)
     except OSError as e:
         return False, f"Không lưu được: {e}"
     return True, "Đã lưu cài đặt menu PXE."

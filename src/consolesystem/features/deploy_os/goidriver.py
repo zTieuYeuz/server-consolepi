@@ -133,12 +133,13 @@ def _giai_nen_va_cai(g, f_tai, tam, da, tu_san=False):
                      if x.lower().endswith(".inf"))
         if not so_inf:
             return False, "Gói tải về không có file .inf nào - bỏ."
-        with open(os.path.join(ra_dir, "_thongtin.json"), "w", encoding="utf-8") as f:
-            json.dump({"ten_hien_thi": g["ten_hien_thi"], "cho_boot": True,
-                       "nguon": ("Có sẵn trong ISO (Red Hat, BSD-3-Clause) - " if tu_san else "")
-                                + (g.get("nguon") or g["url"]),
-                       "url": g["url"], "tu_goi_pho_bien": ma},
-                      f, ensure_ascii=False, indent=1)
+        from consolesystem.core.store import ghi_json
+        ghi_json(os.path.join(ra_dir, "_thongtin.json"),
+                 {"ten_hien_thi": g["ten_hien_thi"], "cho_boot": True,
+                  "nguon": ("Có sẵn trong ISO (Red Hat, BSD-3-Clause) - " if tu_san else "")
+                           + (g.get("nguon") or g["url"]),
+                  "url": g["url"], "tu_goi_pho_bien": ma},
+                 ensure_ascii=False, indent=1)
         dich = os.path.join(_DD.DRIVERS_DIR, TIEN_TO + ma)
         cu = dich + ".cu"
         shutil.rmtree(cu, ignore_errors=True)
@@ -181,9 +182,8 @@ def _them_da_nap(cac_ma):
         for m in cac_ma:
             if m not in ds:
                 ds.append(m)
-        os.makedirs(os.path.dirname(FILE_DRIVER_SAN), exist_ok=True)
-        with open(FILE_DRIVER_SAN, "w", encoding="utf-8") as f:
-            json.dump(ds, f)
+        from consolesystem.core.store import ghi_json
+        ghi_json(FILE_DRIVER_SAN, ds)
 
 
 def nap_san():

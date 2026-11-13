@@ -1565,8 +1565,8 @@ def register_network(app):
         except Exception:
             names = {}
         names[devname] = name
-        with open(NAMES_FILE, "w") as f:
-            json.dump(names, f, ensure_ascii=False)
+        from consolesystem.core.store import ghi_json
+        ghi_json(NAMES_FILE, names, ensure_ascii=False)
         return redirect("/")
 
     @app.route("/connect-wifi", methods=["POST"])

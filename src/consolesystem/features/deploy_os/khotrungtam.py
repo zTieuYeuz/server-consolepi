@@ -118,14 +118,8 @@ def luu_cauhinh(url, token):
     if not (url.startswith("http://") or url.startswith("https://")):
         return False, "Địa chỉ kho phải bắt đầu bằng http:// hoặc https://."
     bao_dam_thu_muc_du_lieu()
-    old = os.umask(0o077)
-    tam = FILE_KHO_TRUNGTAM + ".tmp"
-    try:
-        with open(tam, "w", encoding="utf-8") as f:
-            json.dump({"url": url, "token": token}, f)
-        os.replace(tam, FILE_KHO_TRUNGTAM)
-    finally:
-        os.umask(old)
+    from consolesystem.core.store import ghi_json
+    ghi_json(FILE_KHO_TRUNGTAM, {"url": url, "token": token}, mode=0o600)
     return True, "Đã lưu kết nối tới kho trung tâm."
 
 
@@ -723,12 +717,8 @@ def _hp_nap():
 
 def _hp_ghi():
     try:
-        os.makedirs(os.path.dirname(HOI_PHUC_FILE), exist_ok=True)
-        tam = HOI_PHUC_FILE + ".tmp"
-        fd = os.open(tam, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump({"lan": HOI_PHUC["lan"], "luc": HOI_PHUC["luc"], "chan": HOI_PHUC["chan"]}, f)
-        os.replace(tam, HOI_PHUC_FILE)
+        from consolesystem.core.store import ghi_json
+        ghi_json(HOI_PHUC_FILE, {"lan": HOI_PHUC["lan"], "luc": HOI_PHUC["luc"], "chan": HOI_PHUC["chan"]}, mode=0o600)
     except OSError as e:
         print("[kho-hoi-phuc] khong luu duoc bo dem: %s" % type(e).__name__, flush=True)
 

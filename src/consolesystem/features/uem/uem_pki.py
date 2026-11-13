@@ -49,11 +49,8 @@ def _p(ten):
 
 
 def _ghi(duong, data, mode=0o600):
-    tam = duong + ".tmp"
-    fd = os.open(tam, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
-    with os.fdopen(fd, "wb") as f:
-        f.write(data)
-    os.replace(tam, duong)
+    from consolesystem.core.store import ghi_nguyen_tu
+    ghi_nguyen_tu(duong, data, mode)
 
 
 def cai_dat():

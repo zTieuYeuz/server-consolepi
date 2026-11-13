@@ -169,10 +169,8 @@ def luu(form, files):
 
 def _ghi(ma, d):
     p = os.path.join(THU_MUC, ma, "gopy.json")
-    tam = p + ".tmp"
-    with open(tam, "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False)
-    os.replace(tam, p)
+    from consolesystem.core.store import ghi_json
+    ghi_json(p, d, ensure_ascii=False)
 
 
 def danh_sach(gioi_han=30):

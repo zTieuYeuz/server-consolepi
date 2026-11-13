@@ -60,10 +60,8 @@ def luu_chon_tay(day="", wifi=""):
         d["wifi"] = (wifi or "").strip()
     try:
         os.makedirs(THU_MUC_DU_LIEU, mode=0o755, exist_ok=True)
-        tam = FILE_CHON_CONG + ".tmp"
-        with open(tam, "w", encoding="utf-8") as f:
-            json.dump(d, f, ensure_ascii=False, indent=1)
-        os.replace(tam, FILE_CHON_CONG)
+        from consolesystem.core.store import ghi_json
+        ghi_json(FILE_CHON_CONG, d, ensure_ascii=False, indent=1)
         return True, "Đã lưu lựa chọn cổng mạng."
     except OSError as e:
         return False, f"Không lưu được: {e}"

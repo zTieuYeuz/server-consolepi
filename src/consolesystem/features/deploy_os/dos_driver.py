@@ -90,8 +90,8 @@ def dat_driver_cho_boot(driver_id, bat):
         _bo_qua(_loi)
     meta["cho_boot"] = bool(bat)
     try:
-        with open(f_meta, "w") as f:
-            json.dump(meta, f, ensure_ascii=False, indent=1)
+        from consolesystem.core.store import ghi_json
+        ghi_json(f_meta, meta, ensure_ascii=False, indent=1)
     except OSError as e:
         return False, f"Không ghi được: {e}"
     return True, ("Đã đánh dấu nạp vào ảnh boot." if bat
@@ -129,8 +129,8 @@ def dat_model_driver(driver_id, chuoi):
             mau.append(m)
     meta["model"] = mau[:30]
     try:
-        with open(f_meta, "w") as f:
-            json.dump(meta, f, ensure_ascii=False, indent=1)
+        from consolesystem.core.store import ghi_json
+        ghi_json(f_meta, meta, ensure_ascii=False, indent=1)
     except OSError as e:
         return False, f"Không ghi được: {e}"
     return True, (f"Đã lưu {len(mau)} dòng máy cho gói driver." if mau
@@ -219,8 +219,8 @@ def tao_driver_moi(ten_hien_thi):
         return False, f'Da co goi driver "{driver_id}" roi.', None
     try:
         os.makedirs(p, exist_ok=True)
-        with open(os.path.join(p, "_thongtin.json"), "w") as f:
-            json.dump({"ten_hien_thi": ten_hien_thi}, f, ensure_ascii=False)
+        from consolesystem.core.store import ghi_json
+        ghi_json(os.path.join(p, "_thongtin.json"), {"ten_hien_thi": ten_hien_thi}, ensure_ascii=False)
     except OSError as e:
         return False, f"Không tạo được: {e}", None
     return True, f'Đã tạo "{ten_hien_thi}".', driver_id

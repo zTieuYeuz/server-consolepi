@@ -192,12 +192,8 @@ def _lich_su(opt):
 
 
 def _ghi_lich_su(opt, ds):
-    tam = os.path.join(opt, "lich-su.json.tmp")
-    with open(tam, "w", encoding="utf-8") as f:
-        json.dump(ds[-50:], f, indent=1)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tam, os.path.join(opt, "lich-su.json"))
+    from consolesystem.core.store import ghi_json
+    ghi_json(os.path.join(opt, "lich-su.json"), ds[-50:], indent=1)
 
 
 def chuyen_ban(opt, ten):

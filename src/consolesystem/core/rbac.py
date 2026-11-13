@@ -211,12 +211,8 @@ def _doc():
 
 
 def _ghi(d):
-    os.makedirs(os.path.dirname(FILE), exist_ok=True)
-    tam = FILE + ".tmp"
-    fd = os.open(tam, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False)
-    os.replace(tam, FILE)
+    from consolesystem.core.store import ghi_json
+    ghi_json(FILE, d, mode=0o600, ensure_ascii=False)
 
 
 def danh_sach():

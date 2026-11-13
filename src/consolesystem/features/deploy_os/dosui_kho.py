@@ -549,8 +549,8 @@ def _tai_mot(muc_id):
                 meta = json.load(f)
             meta.update({"kho_id": muc_id, "phien_ban": m.get("du_lieu", ""),
                          "nguon": "kho"})
-            with open(f_meta, "w", encoding="utf-8") as f:
-                json.dump(meta, f, ensure_ascii=False)
+            from consolesystem.core.store import ghi_json
+            ghi_json(f_meta, meta, ensure_ascii=False)
 
         def sau_iso(duong):
             from ui import isotach as _it
@@ -700,8 +700,8 @@ def _tai_mot(muc_id):
             p_bo = os.path.join(FONTS_DIR, bo_id)
             meta = _doc_meta_bo_font(p_bo)
             meta.update({"kho_id": muc_id, "nguon": "kho"})
-            with open(os.path.join(p_bo, "_thongtin.json"), "w", encoding="utf-8") as f:
-                json.dump(meta, f, ensure_ascii=False, indent=1)
+            from consolesystem.core.store import ghi_json
+            ghi_json(os.path.join(p_bo, "_thongtin.json"), meta, ensure_ascii=False, indent=1)
         p_bo = os.path.join(FONTS_DIR, bo_id)
 
         def sau_font(duong):

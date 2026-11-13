@@ -65,15 +65,8 @@ def _doc():
 
 
 def _ghi(d):
-    os.makedirs(THU_MUC_DU_LIEU, exist_ok=True)
-    tam = FILE_PHIEN + ".tmp"
-    old = os.umask(0o077)
-    try:
-        with open(tam, "w", encoding="utf-8") as f:
-            json.dump(d, f, ensure_ascii=False, indent=1)
-        os.replace(tam, FILE_PHIEN)
-    finally:
-        os.umask(old)
+    from consolesystem.core.store import ghi_json
+    ghi_json(FILE_PHIEN, d, mode=0o600, ensure_ascii=False, indent=1)
 
 
 def _cong_serial():

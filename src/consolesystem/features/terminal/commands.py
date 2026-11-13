@@ -92,8 +92,8 @@ def load_library():
 
 def save_library(items):
     try:
-        with open(LIB_FILE, "w") as f:
-            json.dump(items, f, indent=2, ensure_ascii=False)
+        from consolesystem.core.store import ghi_json
+        ghi_json(LIB_FILE, items, indent=2, ensure_ascii=False)
         return True
     except Exception:
         return False

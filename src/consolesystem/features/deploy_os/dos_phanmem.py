@@ -27,10 +27,8 @@ def doc_thongtin_app():
 def ghi_thongtin_app(d):
     _bao_dam_thu_muc()
     try:
-        tam = APPS_META + ".tmp"
-        with open(tam, "w") as f:
-            json.dump(d, f, ensure_ascii=False, indent=1)
-        os.replace(tam, APPS_META)
+        from consolesystem.core.store import ghi_json
+        ghi_json(APPS_META, d, ensure_ascii=False, indent=1)
         return True
     except OSError:
         return False
@@ -138,8 +136,8 @@ def _doc_meta_ungdung(ung_id):
 def _ghi_meta_ungdung(ung_id, meta):
     p = os.path.join(UNGDUNG_DIR, ten_an_toan(ung_id), "_thongtin.json")
     try:
-        with open(p, "w") as f:
-            json.dump(meta, f, ensure_ascii=False, indent=1)
+        from consolesystem.core.store import ghi_json
+        ghi_json(p, meta, ensure_ascii=False, indent=1)
         return True
     except OSError:
         return False
