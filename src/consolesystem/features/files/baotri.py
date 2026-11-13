@@ -47,6 +47,9 @@ CAC_MUC_SAO_LUU = [
     "deploy/apps/_thongtin.json",  # tham so cai im lang cua tung phan mem
 ]
 
+MUC_LA_THU_MUC = ("deploy/kichban",)       # cac muc con lai la tep don
+
+
 def _vi_tri_muc(muc):
     """V6-4b (2.0.8): vi tri THAT tren dia cua tung muc sao luu theo bo cuc dang dung. TEN TRONG GOI (arcname) giu nguyen nhu 2.0.7 tro ve truoc,
     nen ban sao luu cu van nap duoc; chi phan 'nam o dau tren may' moi dung bo cuc: o bo cuc moi deploy/* nam o <goc>/deploy,
@@ -266,6 +269,8 @@ def _duong_an_toan(ten_trong_goi):
         return None
     nen = _vi_tri_muc(muc)
     phan_con = ten_trong_goi[len(muc):].lstrip("/")
+    if phan_con and muc not in MUC_LA_THU_MUC:
+        return None                      # muc la TEP don (vd kho-trungtam.json/x): khong co phan con hop le
     dich = os.path.realpath(os.path.join(nen, phan_con)) if phan_con else os.path.realpath(nen)
     goc_nen = os.path.realpath(nen)
     if dich != goc_nen and not dich.startswith(goc_nen + os.sep):
@@ -294,12 +299,16 @@ def nap_ban_sao_luu(du_lieu):
             if tv.isdir():
                 os.makedirs(dich, exist_ok=True)
                 continue
-            os.makedirs(os.path.dirname(dich), exist_ok=True)
-            f = tf.extractfile(tv)
-            if f is None:
+            try:
+                os.makedirs(os.path.dirname(dich), exist_ok=True)
+                f = tf.extractfile(tv)
+                if f is None:
+                    continue
+                with open(dich, "wb") as ra:
+                    shutil.copyfileobj(f, ra)
+            except OSError:
+                bo_qua.append(tv.name)          # khong ghi duoc (xung dot tep/thu muc, het cho...): bo qua muc nay, khong lam hong ca lan nap
                 continue
-            with open(dich, "wb") as ra:
-                shutil.copyfileobj(f, ra)
             # Kich ban co the chua mat khau may dich -> quyen 600 nhu ban goc
             if "/kichban/" in dich or dich.endswith((".key", "kho-trungtam.json")):
                 try:

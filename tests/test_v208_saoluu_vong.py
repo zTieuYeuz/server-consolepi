@@ -93,3 +93,26 @@ def test_van_chan_zip_slip_va_muc_la(monkeypatch, tmp_path):
     ok, tb = B.nap_ban_sao_luu(bo.getvalue())
     assert ok and "Bỏ qua 4" in tb
     assert not (tmp_path / "evil.txt").exists() and not (g / "deploy" / "os").exists()
+
+
+def test_B6_muc_tep_co_phan_con_khong_gay_500(monkeypatch, tmp_path):
+    from consolesystem.features.files import baotri as B
+    g, d = _bo_cuc(B, monkeypatch, tmp_path, True)
+    bo = io.BytesIO()
+    with tarfile.open(fileobj=bo, mode="w:gz") as tf:
+        for ten in ("kho-trungtam.json/x", "command-library.json/y/z", "command-library.json"):
+            ti = tarfile.TarInfo(ten)
+            ti.size = 1
+            tf.addfile(ti, io.BytesIO(b"x"))
+    ok, tb = B.nap_ban_sao_luu(bo.getvalue())                                           # truoc day: NotADirectoryError/500
+    assert ok and "Bỏ qua 2" in tb and os.path.exists(B._DD.FILE_THU_VIEN_LENH)
+    # loi ghi giua chung (xung dot tep/thu muc) cung khong lam hong ca lan nap
+    os.makedirs(os.path.join(B._DD.KICHBAN_DIR, "a", "kb.json"))
+    bo2 = io.BytesIO()
+    with tarfile.open(fileobj=bo2, mode="w:gz") as tf:
+        for ten in ("deploy/kichban/a/kb.json", "deploy/kichban/b/kb.json"):
+            ti = tarfile.TarInfo(ten)
+            ti.size = 1
+            tf.addfile(ti, io.BytesIO(b"x"))
+    ok, tb = B.nap_ban_sao_luu(bo2.getvalue())
+    assert ok and os.path.exists(os.path.join(B._DD.KICHBAN_DIR, "b", "kb.json"))
