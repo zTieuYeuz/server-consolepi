@@ -139,6 +139,16 @@ diskpart /s X:\ds.txt > X:\ds_out.txt 2>&1
 type X:\ds_out.txt >> %LOG%
 find /i "Disk 0 " X:\ds_out.txt >nul
 if errorlevel 1 goto khong_thay_o
+set BUS=NA
+(echo select disk 0& echo detail disk)> X:\dd.txt
+diskpart /s X:\dd.txt > X:\dd_out.txt 2>&1
+type X:\dd_out.txt >> %LOG%
+for /f "tokens=2 delims=:" %%t in ('type X:\dd_out.txt ^| find "Type   :"') do set BUS=%%t
+set BUS=%BUS: =%
+echo === Kiem tra an toan o so 0: bus=%BUS% === >> %LOG%
+if /i "%BUS%"=="USB" goto loi_o_usb
+if /i "%BUS%"=="SD" goto loi_o_usb
+if /i "%BUS%"=="MMC" goto loi_o_usb
 diskpart /s %DPT% >> %LOG% 2>&1
 if errorlevel 1 goto loi_dia
 if not exist W:\ goto loi_dia
@@ -230,6 +240,14 @@ if not errorlevel 1 goto :eof
 echo     [O DIA THIEU DRIVER] "%~1"
 echo [O DIA THIEU DRIVER] "%~1" >> %LOG%
 goto :eof
+
+:loi_o_usb
+echo.
+echo  O so 0 la o USB / the nho (bus=%BUS%) - KHONG xoa/chia gi ca.
+echo  So thu tu o dia co the da doi vi cam them o ngoai. Rut o USB ra roi cai lai, hoac chon cach chon o khac trong kich ban.
+set BUOC=O dia duoc chon theo so la o USB/the nho - KHONG xoa gi. Rut o ngoai hoac doi cach chon o trong kich ban
+goto bao_loi
+
 
 :loi_bung
 set BUOC=Bung anh he dieu hanh that bai - xem X:\dism_log.txt

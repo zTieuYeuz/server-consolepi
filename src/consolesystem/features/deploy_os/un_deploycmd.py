@@ -11,6 +11,42 @@ from consolesystem.features.deploy_os.un_hangso import (TEN_NHUNG_DRIVER, TEN_TA
 from consolesystem.features.deploy_os.un_offline import (BUILD_TOI_THIEU_HEADLESS)  # noqa: F401
 
 
+
+def _lenh_kiem_o_so(d):
+    """V3-2 (2.0.8): che do chon o theo SO (mac dinh) cung phai qua loc an toan truoc `clean`: o USB/the nho (BUS = USB/SD/MMC) bi TU CHOI,
+    vi so dia doi giua cac lan boot khi cam them o ngoai. Kich ban co o_dia_cho_usb=1 (cai co y vao o USB) thi bo qua loc."""
+    if str(d.get("o_dia_cho_usb") or "") == "1":
+        return ["echo === Che do chon o theo so: cho phep o USB (kich ban cho phep) === >> %LOG%"]
+    n = d.get("o_dia_so", "0")
+    return [
+        "set BUS=NA",
+        f"(echo select disk {n}& echo detail disk)> X:\\dd.txt",
+        "diskpart /s X:\\dd.txt > X:\\dd_out.txt 2>&1",
+        "type X:\\dd_out.txt >> %LOG%",
+        'for /f "tokens=2 delims=:" %%t in (\'type X:\\dd_out.txt ^| find "Type   :"\') do set BUS=%%t',
+        "set BUS=%BUS: =%",
+        f'echo === Kiem tra an toan o so {n}: bus=%BUS% === >> %LOG%',
+        'if /i "%BUS%"=="USB" goto loi_o_usb',
+        'if /i "%BUS%"=="SD" goto loi_o_usb',
+        'if /i "%BUS%"=="MMC" goto loi_o_usb',
+    ]
+
+
+def _lenh_loi_o_usb(d):
+    if o_chon(d)["chon"] != "so" or str(d.get("o_dia_cho_usb") or "") == "1":
+        return []
+    n = d.get("o_dia_so", "0")
+    return [
+        "",
+        ":loi_o_usb",
+        "echo.",
+        f"echo  O so {n} la o USB / the nho (bus=%BUS%) - KHONG xoa/chia gi ca.",
+        "echo  So thu tu o dia co the da doi vi cam them o ngoai. Rut o USB ra roi cai lai, hoac chon cach chon o khac trong kich ban.",
+        'set BUOC=O dia duoc chon theo so la o USB/the nho - KHONG xoa gi. Rut o ngoai hoac doi cach chon o trong kich ban',
+        "goto bao_loi",
+        "",
+    ]
+
 def _lenh_chep_app_script(d):
     """
     Cac dong batch chep phan mem + script tu kho tren Pi (o mang Z: dang
@@ -445,6 +481,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
     ] + ([
         f'find /i "Disk {d.get("o_dia_so", "0")} " X:\\ds_out.txt >nul',
         "if errorlevel 1 goto khong_thay_o",
+    ] + _lenh_kiem_o_so(d) + [
         "diskpart /s %DPT% >> %LOG% 2>&1",
     ] if o_chon(d)["chon"] == "so" else _lenh_chon_o(d) + [
         "diskpart /s X:\\dp.txt >> %LOG% 2>&1",
@@ -526,7 +563,7 @@ def sinh_deploy_cmd(d, dia_chi_pi="192.168.98.1"):
         "set BUOC=Chia o dia that bai (khong tao duoc o W:) - xem dong diskpart trong log",
         "goto bao_loi",
         "",
-    ] + _lenh_khong_thay_o(d) + (_ham_chon_o(d) if o_chon(d)["chon"] != "so" else []) + [
+    ] + _lenh_khong_thay_o(d) + _lenh_loi_o_usb(d) + (_ham_chon_o(d) if o_chon(d)["chon"] != "so" else []) + [
         "",
         ":loi_bung",
         "set BUOC=Bung anh he dieu hanh that bai - xem X:\\dism_log.txt",
