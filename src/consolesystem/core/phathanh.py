@@ -339,7 +339,7 @@ MAU_TEN_DON_VI = re.compile(r"^[A-Za-z0-9@][A-Za-z0-9@._-]*$")      # NV8 C3: te
 
 
 def ten_don_vi_hop_le(ten):
-    return isinstance(ten, str) and bool(MAU_TEN_DON_VI.match(ten)) and ".." not in ten and len(ten) <= 120
+    return isinstance(ten, str) and bool(MAU_TEN_DON_VI.fullmatch(ten)) and ".." not in ten and len(ten) <= 120      # fullmatch: "x\n" khong lot qua $
 
 
 def _tep_don_vi(ten):

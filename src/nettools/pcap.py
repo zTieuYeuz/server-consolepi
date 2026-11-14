@@ -96,10 +96,10 @@ def start_capture(iface=None, bpf_filter="", duration=60):
     if is_capturing():
         return {"ok": False, "error": "Đã có 1 phiên capture đang chạy."}
 
-    if not MAU_CONG.match(iface or ""):
+    if not MAU_CONG.fullmatch(iface or ""):
         return {"ok": False, "error": "Tên cổng mạng không hợp lệ."}
     bpf_filter = (bpf_filter or "").strip()
-    if not MAU_LOC.match(bpf_filter) or any(t.startswith("-") for t in bpf_filter.split()):      # them lop phong thu: khong token nao giong tuy chon
+    if not MAU_LOC.fullmatch(bpf_filter) or any(t.startswith("-") for t in bpf_filter.split()):      # them lop phong thu: khong token nao giong tuy chon
         return {"ok": False, "error": "Bộ lọc chứa ký tự không hợp lệ (chỉ nhận cú pháp BPF thông thường, tối đa 200 ký tự)."}
     try:
         duration = max(5, min(int(duration or 60), MAX_DURATION_SEC))

@@ -23,7 +23,7 @@ def main(argv):
         a, b = KHOA[argv[2]]
         ds = d[a][b]
         mau = MAU_GOI if a == "goi_apt" else MAU_DON_VI
-        if not isinstance(ds, list) or not all(isinstance(x, str) and mau.match(x) and ".." not in x for x in ds):
+        if not isinstance(ds, list) or not all(isinstance(x, str) and mau.fullmatch(x) and ".." not in x for x in ds):
             raise ValueError("danh sach khong hop le")
     except (OSError, ValueError, KeyError, TypeError) as e:
         print("hethong-doc: %s" % type(e).__name__, file=sys.stderr)

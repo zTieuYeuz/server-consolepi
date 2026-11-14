@@ -82,3 +82,7 @@ def test_convert_khong_theo_duong_dan(PC, tmp_path):
     for xau in ("../ok.pcap", "/etc/passwd.pcap", "a/../ok.pcap"):
         r = PC.convert_to_text(xau)
         assert not r["ok"], xau
+
+
+def test_N2_xuong_dong_cuoi_khong_lot_qua(PC):
+    assert not PC.start_capture("eth0\n", "", 30)["ok"] and not PC._goi

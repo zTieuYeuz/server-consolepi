@@ -288,3 +288,19 @@ def test_C3_hethong_doc_va_install_sh_tu_choi_ten_xau(tmp_path):
 
 
 import sys  # noqa: E402
+
+
+def test_N2_ten_co_xuong_dong_cuoi_khong_lot_qua_bo_loc(tmp_path):
+    from consolesystem.core import phathanh as P
+    assert not P.ten_don_vi_hop_le("console-system-x\n") and not P.ten_don_vi_hop_le("ok\n")
+    mf = tmp_path / "m.json"
+    d = json.load(open(MF, encoding="utf-8"))
+    d["don_vi"]["go"] = ["ok-1\n"]
+    mf.write_text(json.dumps(d))
+    r = subprocess.run([sys.executable, os.path.join(GOC, "src", "scripts", "hethong-doc.py"), str(mf), "go"], capture_output=True, text=True, timeout=10)
+    assert r.returncode == 1
+    d["don_vi"]["go"] = []
+    d["goi_apt"]["core"] = ["python3\n"]
+    mf.write_text(json.dumps(d))
+    r = subprocess.run([sys.executable, os.path.join(GOC, "src", "scripts", "hethong-doc.py"), str(mf), "apt-core"], capture_output=True, text=True, timeout=10)
+    assert r.returncode == 1
