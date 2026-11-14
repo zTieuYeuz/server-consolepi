@@ -114,13 +114,17 @@ def hien_tai(moi):
             continue
     if not pb:
         raise LoiCapNhat("không đọc được phiên bản đang chạy")
-    so, rl = 1, {}
+    so, rl, doc_duoc = 1, {}, True
     try:
         rl = json.load(open(os.path.join(moi.opt, "releases", cur or pb, PH.TEN_RELEASE), encoding="utf-8")) if cur else {}
         so = int(rl.get("so_phat_hanh", 1))
     except (OSError, ValueError):
-        pass
+        doc_duoc = False
     bd = doc_da_cai(moi).get(cur or pb, {})
+    if not doc_duoc and not bd.get("so_phat_hanh"):
+        # V1-11 (d): FAIL-CLOSED. Khong doc duoc so phat hanh cua ban dang chay (RELEASE.json hong/mat) va khong co ban ghi da-cai -> KHONG tu ha san ve 1
+        # (se cho phep phat lai goi cu da ky). Bao loi de nguoi quan tri xu ly.
+        raise LoiCapNhat("không đọc được số phát hành của bản đang chạy (RELEASE.json) và không có bản ghi đã cài - từ chối để tránh hạ sàn chống hạ cấp")
     so = max(so, int(bd.get("so_phat_hanh", 0)))
     return {"phien_ban": pb, "ten_ban": cur or pb, "so_phat_hanh": so, "kien_truc": moi.kien_truc, "kenh": cau_hinh(moi)["kenh"],
             "ban_toi_thieu_ha_cap": bd.get("ban_toi_thieu_ha_cap")}
