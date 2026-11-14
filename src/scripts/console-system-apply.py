@@ -34,8 +34,18 @@ def main(argv=None):
         print("  doi:", x)
     for x in bc["loi"]:
         print("  LOI:", x, file=sys.stderr)
-    if a.khoi_dong_lai and bc["unit_doi"]:
-        for u in bc["unit_doi"]:
+    ban_dir = os.path.join(a.opt, "releases", ten)
+    for x in bc["them"]:
+        print("  them don vi:", x)
+    for x in bc["go"]:
+        print("  go don vi:", x)
+    for x in bc["canh_bao"]:
+        print("  CANH BAO:", x)
+    thieu = P.thieu_goi_apt(ban_dir)
+    if thieu:
+        print("  CANH BAO: may thieu goi apt theo manifest (OTA khong tu cai, chay install.sh hoac apt install): %s" % " ".join(thieu))
+    if a.khoi_dong_lai and not a.thu and bc["unit_doi"]:
+        for u in P.dich_vu_can_khoi_dong_lai(ban_dir, bc["unit_doi"]):
             subprocess.run(["systemctl", "try-restart", u], capture_output=True, timeout=180)
     return 1 if bc["loi"] else 0
 

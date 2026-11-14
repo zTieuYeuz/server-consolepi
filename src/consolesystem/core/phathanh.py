@@ -318,9 +318,106 @@ def _kich_hoat_ten_moi(chuyen, chay):
                 chay(["systemctl", "start", ten_moi])
 
 
+# ----------------------------------------------------------------------- V1-1 (2.0.8): manifest he thong chung cai moi / OTA
+# Ban KHONG co config/hethong.json (2.0.7 tro ve truoc) thi dung danh sach cua install.sh 2.0.7: nho vay lui ve ban cu van them lai don vi da go.
+DON_VI_BAT_MAC_DINH = ("console-system-dashboard", "console-system-term-local", "console-system-term-ssh", "console-system-term-phien", "bt-pan0", "dnsmasq-bt",
+                       "bt-agent", "bt-nap", "wifi-fallback.timer", "console-system-selftest", "console-system-nang-cap-phuc-hoi")
+
+
+def doc_hethong(ban):
+    """Manifest he thong cua ban (dict) hoac None neu ban khong co/hong."""
+    try:
+        with open(os.path.join(ban, "system", "config", "hethong.json"), encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) and isinstance(d.get("don_vi"), dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _tep_don_vi(ten):
+    return ten if ten.endswith((".service", ".timer")) else ten + ".service"
+
+
+def ap_dung_don_vi(ban, kho, etc_goc, chay, thu, bc):
+    """(a) don vi trong "bat" ma ban co tep ma may CHUA co -> chep + enable; (b) don vi trong "go" -> sao luu vao etc-*, disable --now, xoa tep.
+    Loi o mot don vi chi ghi canh bao (bc["canh_bao"]), khong huy nang cap."""
+    mf = doc_hethong(ban)
+    dv = mf["don_vi"] if mf else {"bat": list(DON_VI_BAT_MAC_DINH), "go": []}
+    sd = os.path.join(ban, "system", "systemd")
+    etc_sd = os.path.join(etc_goc, "etc/systemd/system")
+    them, go = [], []
+    for ten in dv.get("bat") or []:
+        f = _tep_don_vi(ten)
+        nguon, dich = os.path.join(sd, f), os.path.join(etc_sd, f)
+        if os.path.isfile(nguon) and not os.path.lexists(dich):
+            bc["them"].append(f)
+            if not thu:
+                try:
+                    tam = dich + ".cs-moi"
+                    os.makedirs(etc_sd, exist_ok=True)
+                    shutil.copyfile(nguon, tam)
+                    os.chmod(tam, 0o644)
+                    os.replace(tam, dich)
+                    them.append(ten)
+                except OSError as e:
+                    bc["canh_bao"].append("khong them duoc don vi %s: %s" % (f, type(e).__name__))
+    for ten in dv.get("go") or []:
+        f = _tep_don_vi(ten)
+        dich = os.path.join(etc_sd, f)
+        if os.path.lexists(dich):
+            bc["go"].append(f)
+            if not thu:
+                try:
+                    bk = os.path.join(kho, "etc/systemd/system", f)
+                    os.makedirs(os.path.dirname(bk), exist_ok=True)
+                    shutil.copy2(dich, bk)                                  # sao luu TRUOC khi go (lui ban se them lai tu "bat" cua ban cu)
+                    chay(["systemctl", "disable", "--now", ten])
+                    os.remove(dich)
+                    go.append(ten)
+                except OSError as e:
+                    bc["canh_bao"].append("khong go duoc don vi %s: %s" % (f, type(e).__name__))
+    if (them or go) and not thu:
+        chay(["systemctl", "daemon-reload"])
+        for ten in them:
+            if chay(["systemctl", "enable", ten])[0] != 0:
+                bc["canh_bao"].append("chep don vi %s nhung khong enable duoc" % ten)
+
+
+def dich_vu_can_khoi_dong_lai(ban, unit_doi):
+    """Dich vu can try-restart khi tep don vi doi, theo manifest cua ban. Ban khong co manifest: tra chinh cac don vi doi (hanh vi cu cua --khoi-dong-lai)."""
+    mf = doc_hethong(ban)
+    if not mf:
+        return list(unit_doi)
+    anh_xa = mf.get("khoi_dong_lai_khi_doi") or {}
+    ra = []
+    for u in unit_doi:
+        for dv in anh_xa.get(u, []):
+            if dv not in ra:
+                ra.append(dv)
+    return ra
+
+
+def thieu_goi_apt(ban, chay=_chay_that, etc_goc="/"):
+    """Goi apt trong manifest ma may chua co (CHI KIEM, khong cai). Goi cho man hinh chi tinh khi may co kiosk."""
+    mf = doc_hethong(ban)
+    if not mf or not isinstance(mf.get("goi_apt"), dict):
+        return []
+    g = mf["goi_apt"]
+    ds = list(g.get("core") or []) + list(g.get("trien_khai") or [])
+    if os.path.exists(os.path.join(etc_goc, "etc/systemd/system/console-system-kiosk.service")):
+        ds += list(g.get("man_hinh") or [])
+    thieu = []
+    for p in ds:
+        if p == "7zip" and (shutil.which("7z") or shutil.which("7zz")):
+            continue
+        if chay(["dpkg", "-s", p])[0] != 0:
+            thieu.append(p)
+    return thieu
+
+
 def ap_dung(ban, sao_luu_vao, etc_goc="/", chay=_chay_that, thu=False):
     """Dua file he thong cua `ban` ra /etc (etc_goc="/" ; thu muc tam khi test). Tra ve bao cao dict. Khong nap lai dich vu khi thu=True."""
-    bc = {"doi": [], "khong_doi": 0, "bo_qua": [], "loi": [], "unit_doi": [], "da_tra_lai": [], "chuyen_ten": []}
+    bc = {"doi": [], "khong_doi": 0, "bo_qua": [], "loi": [], "unit_doi": [], "da_tra_lai": [], "chuyen_ten": [], "them": [], "go": [], "canh_bao": []}
     chuyen = chuyen_ten_dich_vu(ban, etc_goc, chay, thu)
     bc["chuyen_ten"] = list(chuyen)
     ts = time.strftime("%Y%m%d-%H%M%S")
@@ -347,6 +444,7 @@ def ap_dung(ban, sao_luu_vao, etc_goc="/", chay=_chay_that, thu=False):
         da_ghi.append((dich, bk, kieu, dich_abs))
     if chuyen and not thu:
         _kich_hoat_ten_moi(chuyen, chay)
+    ap_dung_don_vi(ban, kho, etc_goc, chay, thu, bc)
     if thu or not da_ghi:
         return bc
 

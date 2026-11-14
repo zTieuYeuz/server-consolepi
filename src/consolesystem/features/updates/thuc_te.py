@@ -74,7 +74,11 @@ def khoi_phuc(duong):
 
 
 def ap_dung(ban_dir):
-    _py(os.path.join(ban_dir, "scripts", "console-system-apply.py"), "--ban", os.path.basename(ban_dir.rstrip("/")))
+    # V1-1: --khoi-dong-lai = try-restart dung cac dich vu manifest cua ban liet ke khi tep don vi doi (dashboard do bo nang cap tu khoi dong lai sau)
+    out = _py(os.path.join(ban_dir, "scripts", "console-system-apply.py"), "--ban", os.path.basename(ban_dir.rstrip("/")), "--khoi-dong-lai")
+    for dong in (out or "").splitlines():
+        if "CANH BAO" in dong:
+            print("[nang-cap] " + dong.strip(), flush=True)
 
 
 def migration(ban_dir):
