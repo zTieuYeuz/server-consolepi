@@ -75,3 +75,15 @@ def test_don_vi_da_bat_ma_khong_chay_thi_that_bai(T):
 def test_don_vi_chua_bat_thi_khong_doi_hoi(T):
     t, st = T                                                                   # term-phien chua bat (khong trong enabled) va khong chay -> van dat
     assert "console-system-term-phien" not in st["enabled"] and t.suc_khoe("2.0.8")[0]
+
+
+def test_C4_don_vi_phai_go_ma_van_chay_thi_that_bai(T, tmp_path):
+    import json
+    t, st = T
+    mf = tmp_path / "releases" / "2.0.8" / "system" / "config"
+    mf.mkdir(parents=True)
+    (mf / "hethong.json").write_text(json.dumps({"don_vi": {"bat": [], "go": ["console-system-term-ssh"]}}))
+    assert t.suc_khoe("2.0.8") == (True, "ok")                                      # da go va khong chay -> dat
+    st["active"].add("console-system-term-ssh")
+    ok, ly = t.suc_khoe("2.0.8")
+    assert not ok and "console-system-term-ssh" in ly and "go" in ly                 # go loi (con chay) khong duoc bao thanh cong

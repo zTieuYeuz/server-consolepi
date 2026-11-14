@@ -126,6 +126,14 @@ def suc_khoe(ten_ban):
             return False, "qua nginx (cong 80) healthz tra %s" % r2.status_code
     except (requests.RequestException, OSError) as e:
         return False, "khong goi duoc dashboard qua nginx: %s" % type(e).__name__
+    # NV8 C4: don vi manifest bao GO (vd terminal SSH root cu) ma van chay = viec go loi (chi canh bao luc ap_dung) -> KHONG de nang cap bao thanh cong
+    try:
+        mf = PH.doc_hethong(os.path.join(PH.GOC_OPT, "releases", ten_ban))
+        for dv in ((mf or {}).get("don_vi") or {}).get("go") or []:
+            if PH.ten_don_vi_hop_le(dv) and chay_lenh(["systemctl", "is-active", "--quiet", dv], timeout=15).ok:
+                return False, "dich vu %s phai bi go nhung van dang chay" % dv
+    except OSError:
+        pass
     for dv in DICH_VU_KIEM_SAU_NANG_CAP:
         if chay_lenh(["systemctl", "is-enabled", "--quiet", dv], timeout=15).ok and not chay_lenh(["systemctl", "is-active", "--quiet", dv], timeout=15).ok:
             return False, "dich vu %s da bat nhung khong chay" % dv
