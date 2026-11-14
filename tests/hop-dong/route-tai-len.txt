@@ -1,16 +1,17 @@
-/deployos/console/apps/len
-/deployos/console/file/len
-/deployos/console/scripts/len
-/deployos/drivers/<driver_id>/len
-/deployos/font/<bo_id>/len
-/deployos/os/<os_id>/len
-/deployos/os/<os_id>/len-iso
-/deployos/os/<os_id>/len-sxs
-/deployos/ungdung/<ung_id>/len
-/deployos/ungdung/<ung_id>/len-file
-/deployos/wizard/<ma>/<int:buoc>
-/gopy
-/nettools/ifthen/import
-/settings/nap-sao-luu
-/storage/len
-/uem/may/<mid>/duyet-file/tai-len
+POST /deployos/console/apps/len
+POST /deployos/console/file/len
+POST /deployos/console/scripts/len
+POST /deployos/drivers/<driver_id>/len
+POST /deployos/font/<bo_id>/len
+POST /deployos/os/<os_id>/len
+POST /deployos/os/<os_id>/len-iso
+POST /deployos/os/<os_id>/len-sxs
+POST /deployos/ungdung/<ung_id>/len
+POST /deployos/ungdung/<ung_id>/len-file
+POST /deployos/wizard/<ma>/<int:buoc>
+POST /gopy
+POST /nettools/ifthen/import
+POST /settings/nap-sao-luu
+POST /storage/len
+POST /uem/may/<mid>/duyet-file/tai-len
+PUT /uem/agent/tep/<jid>

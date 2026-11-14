@@ -233,7 +233,7 @@ server {{
     ssl_verify_client optional;
     ssl_verify_depth 2;
     ssl_protocols TLSv1.2 TLSv1.3;
-    client_max_body_size 4g;
+    client_max_body_size 16m;          # 2.0.8 (P4): mac dinh nho; CHI duong tai tep len cua agent (/uem/agent/tep/) duoc nang len 4g o khoi rieng ben duoi
     proxy_request_buffering off;
     proxy_buffering off;
 
@@ -255,6 +255,14 @@ server {{
         proxy_read_timeout 7200;
         proxy_send_timeout 7200;
     }}
+
+    # Agent day tep len (PUT, toi da UA.TOI_DA_TEP): DUY NHAT duong duoc nang gioi han body; van bat buoc chung chi khach
+    location ~ ^/uem/agent/tep/[^/]+$ {{
+        client_max_body_size 4g;
+        if ($ssl_client_verify != SUCCESS) {{ return 403; }}
+        proxy_read_timeout 120s;
+        proxy_send_timeout 3600s;
+{proxy}    }}
 
     # Moi duong khac cua agent - bat buoc chung chi khach hop le
     location /uem/agent/ {{

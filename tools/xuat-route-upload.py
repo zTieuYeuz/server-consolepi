@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""V1-4/V6-6 (2.0.8): liet ke route POST co doc `request.files` (truc tiep hoac qua ham tro giup cung module, toi da 3 tang) -> tests/hop-dong/route-tai-len.txt.
+"""V1-4/V6-6 (2.0.8): liet ke route POST/PUT co doc `request.files` hoac `request.stream` (truc tiep hoac qua ham tro giup cung module, toi da 3 tang) -> tests/hop-dong/route-tai-len.txt.
 Dung de (1) sinh/kiem regex nginx 'duoc phep body lon', (2) test bat buoc nginx va danh sach nay khop nhau.
     xuat-route-upload.py [dau-ra]    (mac dinh in ra stdout)"""
 import ast
@@ -21,7 +21,7 @@ def _doc_request_files(ham, goc, depth=3, thay=None):
         nguon = textwrap.dedent(inspect.getsource(ham))
     except (OSError, TypeError):
         return False
-    if "request.files" in nguon or ".files.get(" in nguon:
+    if "request.files" in nguon or ".files.get(" in nguon or "request.stream" in nguon:
         return True
     if depth == 0:
         return False
@@ -50,11 +50,13 @@ def main():
     threading.Thread.start = goc
     ra = set()
     for rule in app.url_map.iter_rules():
-        if "POST" not in rule.methods:
+        pt = sorted(rule.methods & {"POST", "PUT"})
+        if not pt:
             continue
         ham = app.view_functions.get(rule.endpoint)
         if ham and _doc_request_files(inspect.unwrap(ham), GOC):
-            ra.add(str(rule))
+            for m in pt:
+                ra.add("%s %s" % (m, rule))
     out = "\n".join(sorted(ra)) + "\n"
     if len(sys.argv) > 1:
         open(sys.argv[1], "w", encoding="utf-8").write(out)

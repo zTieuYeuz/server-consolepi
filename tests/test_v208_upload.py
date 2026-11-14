@@ -41,8 +41,13 @@ def gioi_han_cua(duong):
     return mac_dinh
 
 
+def _tai_len_day_du():
+    return [x.split(" ", 1) for x in open(os.path.join(GOC, "tests", "hop-dong", "route-tai-len.txt"), encoding="utf-8").read().split("\n") if x]
+
+
 def _tai_len():
-    return [x for x in open(os.path.join(GOC, "tests", "hop-dong", "route-tai-len.txt"), encoding="utf-8").read().split("\n") if x]
+    """Route tai len cua cong web chinh (nginx-console-pi.conf); route /uem/agent/* nam o cong mTLS (nginx do uem_pki sinh) - xem test rieng."""
+    return [r for m, r in _tai_len_day_du() if not r.startswith("/uem/agent/")]
 
 
 def _vi_du(route):
@@ -87,3 +92,18 @@ def test_flask_tu_choi_file_qua_lon_truoc_khi_doc(monkeypatch):
     i = s.index("def uem_tai_len")
     j = s.index("request.files.get", i)
     assert s.index("request.content_length", i) < s.index('request.form.get("cha")', i) < j        # kiem Content-Length TRUOC khi parse form/files
+
+
+def test_P4_cong_mtls_agent_mac_dinh_nho_chi_tep_len_duoc_4g():
+    sys.path.insert(0, os.path.join(GOC, "src"))
+    from consolesystem.features.uem import uem_pki
+    cf = uem_pki.nginx_conf()
+    assert re.search(r"^    client_max_body_size 16m;", cf, re.M) and not re.search(r"^    client_max_body_size 4g;", cf, re.M)
+    blocks = re.findall(r"location (~ )?(\S+) \{(.*?)\n    \}", cf, re.S)
+    lon = [(m, b) for _t, m, b in blocks if "client_max_body_size 4g;" in b]
+    assert len(lon) == 1 and lon[0][0].startswith("^/uem/agent/tep/") and "SUCCESS" in lon[0][1]       # van bat buoc chung chi khach
+    # cac route PUT/POST tai len cua agent trong hop dong deu roi vao khoi nay
+    agent = [(m, r) for m, r in _tai_len_day_du() if r.startswith("/uem/agent/")]
+    assert ("PUT", "/uem/agent/tep/<jid>") in [tuple(x) for x in agent]
+    for m, r in agent:
+        assert re.search(lon[0][0], _vi_du(r)), r
