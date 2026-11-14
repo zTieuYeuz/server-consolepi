@@ -294,7 +294,8 @@ def khoi_phuc_wifi_truoc(truoc):
 def test_wifi_connection(ssid, password):
     conf = (f'ctrl_interface=/var/run/wpa_supplicant\nupdate_config=1\ncountry=VN\n\n'
             f'network={{\n    ssid="{ssid}"\n    psk="{password}"\n}}\n')
-    # V5-4: tep tam quyen 0600 (PSK), ten ngau nhien (khong doan truoc de /tmp/wpa_test.conf bi gan lien ket), thu muc /run (chi root); xoa ngay khi wpa_supplicant da doc
+    # V5-4: tep tam quyen 0600 (PSK), ten ngau nhien (khong doan truoc de /tmp/wpa_test.conf bi gan lien ket), thu muc /run (chi root). Ton tai trong suot luc thu
+    # ket noi va bi xoa trong `finally` khi _thu_noi_wifi tra ve (khong phai "xoa ngay sau khi doc").
     import tempfile
     thu_muc = "/run" if os.path.isdir("/run") and os.access("/run", os.W_OK) else None
     fd, path = tempfile.mkstemp(prefix="cs-wpa-", suffix=".conf", dir=thu_muc)
