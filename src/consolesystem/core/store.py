@@ -13,6 +13,7 @@ lan ghi ke tiep GHI DE mat sach du lieu. Nay:
 import contextlib
 import json
 import os
+import tempfile
 import threading
 import time
 
@@ -53,10 +54,12 @@ def ghi_nguyen_tu(duong, noi_dung, mode=0o644):
     """Ghi bytes: tam + fsync + doi ten + fsync thu muc. Dung cho moi file can an toan khi mat dien."""
     thu_muc = os.path.dirname(os.path.abspath(duong))
     os.makedirs(thu_muc, exist_ok=True)
-    tam = duong + ".tmp"
-    fd = os.open(tam, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+    # Tep tam RIENG moi lan ghi (mkstemp: ten ngau nhien, O_EXCL, khong theo lien ket): hai luong ghi cung duong dan khong dung chung tep tam, va khong ghi
+    # xuyen qua lien ket/tep co san dat truoc ten co dinh `<duong>.tmp` (NV8 C1/C2). Quyen dat bang fchmod nen khong phu thuoc umask.
+    fd, tam = tempfile.mkstemp(prefix=os.path.basename(duong) + ".", suffix=".tmp", dir=thu_muc)
     try:
         with os.fdopen(fd, "wb") as f:
+            os.fchmod(f.fileno(), mode)
             f.write(noi_dung)
             f.flush()
             os.fsync(f.fileno())

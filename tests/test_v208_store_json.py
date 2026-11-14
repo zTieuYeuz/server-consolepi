@@ -96,3 +96,30 @@ def test_cac_noi_ghi_da_chuyen_van_ghi_dung(tmp_path, monkeypatch):
     for duong, mode in cases:
         assert stat.S_IMODE(os.stat(duong).st_mode) == mode, duong
         assert not os.path.exists(duong + ".tmp")
+
+
+def test_C1_C2_tep_tam_rieng_khong_theo_lien_ket_va_song_song_khong_hong(tmp_path):
+    import threading
+    from consolesystem.core.store import ghi_nguyen_tu
+    muc_tieu = tmp_path / "x.json"
+    bi_mat = tmp_path / "bi-mat.txt"
+    bi_mat.write_text("KHONG DUOC GHI DE")
+    os.symlink(str(bi_mat), str(muc_tieu) + ".tmp")                         # ke dat truoc lien ket o ten tam CO DINH cu
+    ghi_nguyen_tu(str(muc_tieu), b'{"a": 1}', 0o600)
+    assert bi_mat.read_text() == "KHONG DUOC GHI DE" and json.load(open(muc_tieu)) == {"a": 1}
+    assert stat.S_IMODE(os.stat(muc_tieu).st_mode) == 0o600
+    # nhieu luong cung ghi 1 duong dan: luon doc lai duoc JSON nguyen ven cua MOT trong cac lan ghi, khong tep tam sot
+    nd = [json.dumps({"n": i, "pad": "x" * 5000}).encode() for i in range(40)]
+    loi = []
+
+    def ghi(b):
+        try:
+            ghi_nguyen_tu(str(muc_tieu), b)
+        except Exception as e:                                                # noqa: BLE001
+            loi.append(e)
+    ts = [threading.Thread(target=ghi, args=(b,)) for b in nd]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert not loi and json.load(open(muc_tieu))["pad"] == "x" * 5000
+    con_lai = [f for f in os.listdir(tmp_path) if f.endswith(".tmp") and f != "x.json.tmp"]
+    assert con_lai == []
