@@ -50,12 +50,28 @@ def _fsync_thu_muc(duong):
             os.close(fd)
 
 
+HAN_TAM_MO_COI = 3600       # giay: tep tam cua lan ghi bi mat dien/kill giua chung, cu hon thi don
+
+
+def _don_tam_mo_coi(duong, thu_muc):
+    """N1 (NV8): lan ghi bi cat giua chung de lai `<ten>.XXXX.tmp`; don cac tep CU (> 1 gio, khong dang duoc ghi) cung tien to truoc khi ghi."""
+    tien_to = os.path.basename(duong) + "."
+    gio = time.time()
+    with contextlib.suppress(OSError):
+        for e in os.scandir(thu_muc):
+            if e.name.startswith(tien_to) and e.name.endswith(".tmp") and e.is_file(follow_symlinks=False):
+                with contextlib.suppress(OSError):
+                    if gio - e.stat(follow_symlinks=False).st_mtime > HAN_TAM_MO_COI:
+                        os.remove(e.path)
+
+
 def ghi_nguyen_tu(duong, noi_dung, mode=0o644):
     """Ghi bytes: tam + fsync + doi ten + fsync thu muc. Dung cho moi file can an toan khi mat dien."""
     thu_muc = os.path.dirname(os.path.abspath(duong))
     os.makedirs(thu_muc, exist_ok=True)
     # Tep tam RIENG moi lan ghi (mkstemp: ten ngau nhien, O_EXCL, khong theo lien ket): hai luong ghi cung duong dan khong dung chung tep tam, va khong ghi
     # xuyen qua lien ket/tep co san dat truoc ten co dinh `<duong>.tmp` (NV8 C1/C2). Quyen dat bang fchmod nen khong phu thuoc umask.
+    _don_tam_mo_coi(duong, thu_muc)
     fd, tam = tempfile.mkstemp(prefix=os.path.basename(duong) + ".", suffix=".tmp", dir=thu_muc)
     try:
         with os.fdopen(fd, "wb") as f:

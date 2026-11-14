@@ -123,3 +123,21 @@ def test_C1_C2_tep_tam_rieng_khong_theo_lien_ket_va_song_song_khong_hong(tmp_pat
     assert not loi and json.load(open(muc_tieu))["pad"] == "x" * 5000
     con_lai = [f for f in os.listdir(tmp_path) if f.endswith(".tmp") and f != "x.json.tmp"]
     assert con_lai == []
+
+
+def test_N1_don_tep_tam_mo_coi_cu_khong_dung_tep_moi(tmp_path):
+    from consolesystem.core import store as S
+    f = tmp_path / "d.json"
+    cu = tmp_path / "d.json.abcd1234.tmp"
+    moi = tmp_path / "d.json.zzzz9999.tmp"
+    khac = tmp_path / "khac.json.qqqq.tmp"
+    for p in (cu, moi, khac):
+        p.write_text("rac")
+    qua_khu = time.time() - S.HAN_TAM_MO_COI - 10
+    os.utime(cu, (qua_khu, qua_khu))
+    os.utime(khac, (qua_khu, qua_khu))
+    S.ghi_nguyen_tu(str(f), b"{}")
+    assert not cu.exists() and moi.exists() and khac.exists() and f.exists()          # chi don tep CU cua CHINH tep nay
+
+
+import time  # noqa: E402
