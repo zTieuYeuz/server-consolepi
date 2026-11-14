@@ -136,8 +136,18 @@ def test_N1_don_tep_tam_mo_coi_cu_khong_dung_tep_moi(tmp_path):
     qua_khu = time.time() - S.HAN_TAM_MO_COI - 10
     os.utime(cu, (qua_khu, qua_khu))
     os.utime(khac, (qua_khu, qua_khu))
+    S._LAN_DON.clear()
     S.ghi_nguyen_tu(str(f), b"{}")
     assert not cu.exists() and moi.exists() and khac.exists() and f.exists()          # chi don tep CU cua CHINH tep nay
+    # P6: lan ghi ke tiep trong 5 phut khong quet lai thu muc
+    cu2 = tmp_path / "d.json.old2.tmp"
+    cu2.write_text("rac")
+    os.utime(cu2, (qua_khu, qua_khu))
+    S.ghi_nguyen_tu(str(f), b"{}")
+    assert cu2.exists()
+    S._LAN_DON.clear()
+    S.ghi_nguyen_tu(str(f), b"{}")
+    assert not cu2.exists()
 
 
 import time  # noqa: E402

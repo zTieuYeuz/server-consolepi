@@ -50,6 +50,7 @@ def _fsync_thu_muc(duong):
             os.close(fd)
 
 
+_LAN_DON = {}
 HAN_TAM_MO_COI = 3600       # giay: tep tam cua lan ghi bi mat dien/kill giua chung, cu hon thi don
 
 
@@ -57,6 +58,9 @@ def _don_tam_mo_coi(duong, thu_muc):
     """N1 (NV8): lan ghi bi cat giua chung de lai `<ten>.XXXX.tmp`; don cac tep CU (> 1 gio, khong dang duoc ghi) cung tien to truoc khi ghi."""
     tien_to = os.path.basename(duong) + "."
     gio = time.time()
+    if gio - _LAN_DON.get(thu_muc, 0) < 300:                 # P6: moi thu muc toi da 1 lan don / 5 phut (khong scandir moi lan ghi)
+        return
+    _LAN_DON[thu_muc] = gio
     with contextlib.suppress(OSError):
         for e in os.scandir(thu_muc):
             if e.name.startswith(tien_to) and e.name.endswith(".tmp") and e.is_file(follow_symlinks=False):
