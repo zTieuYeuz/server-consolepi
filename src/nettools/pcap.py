@@ -35,6 +35,7 @@ def _o_chon_cong(dang_chon=""):
 LOCAL_CAPTURE_DIR = _DD.DIR_CAPTURES
 MAX_DURATION_SEC = 600  # 10 phut, chan runaway capture lam day dia
 MIN_FREE_MB = 200
+MAX_GOI_TEXT = 100000   # P2: chuyen sang van ban toi da chung nay goi (tep .txt khong phinh vo han)
 MAX_FILE_MB = 200   # V5-3: vuot dung luong nay thi tu dung (khong day the nho du chua het gio)
 MAU_CONG = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.:@-]{0,14}$")           # ten giao dien Linux (<= 15 ky tu), khong bat dau bang "-"
 MAU_LOC = re.compile(r"^[A-Za-z0-9 .:/()!&|<>=\[\]_,+*%-]{0,200}$")      # cu phap BPF thong dung; khong co ky tu dac biet cua shell/nhay
@@ -114,6 +115,10 @@ def start_capture(iface=None, bpf_filter="", duration=60):
     fpath = os.path.join(capture_dir, fname)
 
     cmd = ["tcpdump", "-i", iface, "-w", fpath]
+    if shutil.which("prlimit"):
+        # P1: gioi han KICH THUOC TEP o nhan (RLIMIT_FSIZE): tcpdump bi dung dung o MAX_FILE_MB, ke ca link nhanh. (Khong dung -C/-W: -W doi ten tep thanh *.pcap0
+        # lam hong danh sach/tai ve.) _auto_stop ben duoi chi la du phong khi may khong co prlimit.
+        cmd = ["prlimit", "--fsize=%d" % (MAX_FILE_MB * 1024 * 1024)] + cmd
     if bpf_filter:
         cmd += ["--", bpf_filter]       # mot doi so sau "--": khong the chen tuy chon tcpdump (vd -z chay lenh, -w ghi tep khac)
 
@@ -183,7 +188,7 @@ def convert_to_text(filename):
     txt_path = fpath + ".txt"
     try:
         with open(txt_path, "w") as f:                      # ghi thang ra tep (khong giu ca ket qua trong bo nho)
-            subprocess.run(["tshark", "-r", fpath, "-T", "text"], stdout=f, stderr=subprocess.DEVNULL, timeout=60)
+            subprocess.run(["tshark", "-r", fpath, "-c", str(MAX_GOI_TEXT), "-T", "text"], stdout=f, stderr=subprocess.DEVNULL, timeout=60)
         return {"ok": True, "file": os.path.basename(txt_path)}
     except FileNotFoundError:
         return {"ok": False, "error": "Chưa cài tshark."}

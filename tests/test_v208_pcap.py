@@ -44,6 +44,10 @@ def test_chay_binh_thuong_loc_la_mot_doi_so_sau_dau_gach_gach(PC):
     r = PC.start_capture("eth0", "host 192.168.1.5 and tcp port 80", 30)
     assert r["ok"], r
     cmd = PC._goi[-1]
+    if cmd[0] == "prlimit":
+        assert cmd[1] == "--fsize=%d" % (PC.MAX_FILE_MB * 1024 * 1024)       # P1: gioi han kich thuoc tep o nhan, khong dung -C/-W (doi ten tep)
+        cmd = cmd[2:]
+    assert "-W" not in cmd and "-C" not in cmd
     assert cmd[:3] == ["tcpdump", "-i", "eth0"] and cmd[-2:] == ["--", "host 192.168.1.5 and tcp port 80"] and cmd.count("-w") == 1
     PC.stop_capture()
     r = PC.start_capture("eth0.100", "tcp[13] & 2 != 0", 30)                               # cu phap BPF thong dung van duoc
@@ -86,3 +90,20 @@ def test_convert_khong_theo_duong_dan(PC, tmp_path):
 
 def test_N2_xuong_dong_cuoi_khong_lot_qua(PC):
     assert not PC.start_capture("eth0\n", "", 30)["ok"] and not PC._goi
+
+
+def test_P1_co_prlimit_thi_boc_va_khong_co_thi_van_chay(PC, monkeypatch):
+    monkeypatch.setattr(PC.shutil, "which", lambda n: "/usr/bin/prlimit")
+    assert PC.start_capture("eth0", "", 30)["ok"] and PC._goi[-1][0] == "prlimit"
+    PC.stop_capture()
+    monkeypatch.setattr(PC.shutil, "which", lambda n: None)
+    assert PC.start_capture("eth0", "", 30)["ok"] and PC._goi[-1][0] == "tcpdump"
+    PC.stop_capture()
+
+
+def test_P2_convert_gioi_han_so_goi(PC, tmp_path, monkeypatch):
+    (tmp_path / "ok.pcap").write_bytes(b"x")
+    goi = []
+    monkeypatch.setattr(PC.subprocess, "run", lambda cmd, **kw: goi.append(cmd))
+    assert PC.convert_to_text("ok.pcap")["ok"]
+    assert goi[-1][goi[-1].index("-c") + 1] == str(PC.MAX_GOI_TEXT)
