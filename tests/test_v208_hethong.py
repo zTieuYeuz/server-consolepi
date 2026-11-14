@@ -249,3 +249,42 @@ def test_R2_ap_dung_go_term_ssh_tu_manifest_that(tmp_path):
     assert ton_tai == ["console-system-dashboard.service", "console-system-term-local.service", "console-system-term-phien.service"]
     assert bc["go"] == ["console-system-term-ssh.service"] and bc["them"] == []
     assert (tmp_path / "bk/etc/systemd/system/console-system-term-ssh.service").read_text() == "cu"
+
+
+# ------------------------------------------------------------------------------- NV8 C3: loc ten don vi tu manifest
+def test_C3_ten_don_vi_khong_hop_le_bi_bo_qua_va_canh_bao(tmp_path):
+    from consolesystem.core import phathanh as P
+    xau = ["../../etc/passwd", "a b", "x/y", "-oops", "", "ok;rm", "a" * 200, 5, None]
+    for t in xau:
+        assert not P.ten_don_vi_hop_le(t), t
+    for t in ("console-system-tftp", "wpa_supplicant@wlan0", "wifi-fallback.timer", "bt-pan0.service"):
+        assert P.ten_don_vi_hop_le(t), t
+    mf = {"don_vi": {"bat": ["../../etc/cron.d/x", "console-system-nang-cap-phuc-hoi"], "go": ["../../etc/passwd", "a/b"]},
+          "khoi_dong_lai_khi_doi": {"console-system-tftp.service": ["console-system-tftp", "../evil", "a b"]}}
+    ban, e, gia, bc = _ban(tmp_path, mf), _etc(tmp_path, co=["passwd.service"]), Gia(), _bc()
+    P.ap_dung_don_vi(ban, str(tmp_path / "bk"), e, gia, False, bc)
+    assert bc["them"] == ["console-system-nang-cap-phuc-hoi.service"] and bc["go"] == []
+    assert len(bc["canh_bao"]) == 3                                                                  # 1 bat sai + 2 go sai
+    assert not any("etc/passwd" in " ".join(c) for c in gia.goi if c[:2] == ["systemctl", "disable"])   # khong bao gio goi disable voi ten xau
+    assert P.dich_vu_can_khoi_dong_lai(ban, ["console-system-tftp.service"]) == ["console-system-tftp"]
+
+
+def test_C3_hethong_doc_va_install_sh_tu_choi_ten_xau(tmp_path):
+    mf = tmp_path / "m.json"
+    d = json.load(open(MF, encoding="utf-8"))
+    d["don_vi"]["go"] = ["../../etc/x"]
+    mf.write_text(json.dumps(d))
+    r = subprocess.run([sys.executable, os.path.join(GOC, "src", "scripts", "hethong-doc.py"), str(mf), "go"], capture_output=True, text=True, timeout=10)
+    assert r.returncode == 1 and r.stdout == ""
+    nk = tmp_path / "nk.txt"
+    r = _chay_khoi(str(mf), "no", str(nk))                                                            # doc loi -> danh sach du phong (term-ssh), khong chay ten xau
+    log = nk.read_text()
+    assert "etc/x" not in log and "console-system-term-ssh" in log
+    d["don_vi"]["go"] = ["ok-1"]
+    d["goi_apt"]["core"] = ["python3", "bad pkg;x"]
+    mf.write_text(json.dumps(d))
+    r2 = subprocess.run([sys.executable, os.path.join(GOC, "src", "scripts", "hethong-doc.py"), str(mf), "apt-core"], capture_output=True, text=True, timeout=10)
+    assert r2.returncode == 1
+
+
+import sys  # noqa: E402

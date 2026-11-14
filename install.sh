@@ -793,17 +793,20 @@ ENABLE_LIST=( console-system-dashboard console-system-term-local console-system-
 KIOSK_LIST=( console-system-kiosk console-system-kiosk-helper )
 GO_LIST=( console-system-term-ssh )     # du phong: R2 (2.0.8) go terminal SSH kieu cu (shell root dung chung)
 HETHONG_JSON="$SRC_DIR/config/hethong.json"
-if mapfile -t _hl < <(python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" bat 2>/dev/null) && [[ ${#_hl[@]} -gt 0 ]] \
-   && mapfile -t _hk < <(python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" bat-man-hinh 2>/dev/null) \
-   && mapfile -t _hg < <(python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" go 2>/dev/null); then
-    ENABLE_LIST=( "${_hl[@]}" ); KIOSK_LIST=( "${_hk[@]}" ); GO_LIST=( "${_hg[@]}" )
+_hdoc() { python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" "$1" 2>/dev/null; }
+if _hl_out="$(_hdoc bat)" && _hk_out="$(_hdoc bat-man-hinh)" && _hg_out="$(_hdoc go)" && [[ -n "$_hl_out" ]]; then
+    mapfile -t ENABLE_LIST <<< "$_hl_out"
+    mapfile -t KIOSK_LIST <<< "$_hk_out"
+    GO_LIST=(); [[ -n "$_hg_out" ]] && mapfile -t GO_LIST <<< "$_hg_out"
+    [[ -n "$_hk_out" ]] || KIOSK_LIST=()
 else
-    warn "Khong doc duoc manifest he thong, dung danh sach du phong trong install.sh"
+    warn "Khong doc duoc manifest he thong (hoac co ten khong hop le), dung danh sach du phong trong install.sh"
 fi
 [[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( "${KIOSK_LIST[@]}" )
 for u in "${GO_LIST[@]}"; do
+    [[ "$u" =~ ^[A-Za-z0-9@][A-Za-z0-9@._-]*$ && "$u" != *..* ]] || { warn "Bo qua ten don vi khong hop le trong manifest: $u"; continue; }
     systemctl disable --now "$u" >/dev/null 2>&1 || true
-    rm -f "/etc/systemd/system/$u.service"
+    case "$u" in *.service|*.timer) rm -f "/etc/systemd/system/$u" ;; *) rm -f "/etc/systemd/system/$u.service" ;; esac
 done
 
 for s in "${ENABLE_LIST[@]}"; do

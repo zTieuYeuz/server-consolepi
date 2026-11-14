@@ -17,6 +17,7 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -334,6 +335,13 @@ def doc_hethong(ban):
         return None
 
 
+MAU_TEN_DON_VI = re.compile(r"^[A-Za-z0-9@][A-Za-z0-9@._-]*$")      # NV8 C3: ten don vi tu manifest phai theo mau nay (khong "/", khong "..", khong khoang trang)
+
+
+def ten_don_vi_hop_le(ten):
+    return isinstance(ten, str) and bool(MAU_TEN_DON_VI.match(ten)) and ".." not in ten and len(ten) <= 120
+
+
 def _tep_don_vi(ten):
     return ten if ten.endswith((".service", ".timer")) else ten + ".service"
 
@@ -347,6 +355,9 @@ def ap_dung_don_vi(ban, kho, etc_goc, chay, thu, bc):
     etc_sd = os.path.join(etc_goc, "etc/systemd/system")
     them, go = [], []
     for ten in dv.get("bat") or []:
+        if not ten_don_vi_hop_le(ten):
+            bc["canh_bao"].append("bo qua ten don vi khong hop le trong manifest (bat): %r" % (ten if isinstance(ten, str) else type(ten).__name__)[:60])
+            continue
         f = _tep_don_vi(ten)
         nguon, dich = os.path.join(sd, f), os.path.join(etc_sd, f)
         if os.path.isfile(nguon) and not os.path.lexists(dich):
@@ -362,6 +373,9 @@ def ap_dung_don_vi(ban, kho, etc_goc, chay, thu, bc):
                 except OSError as e:
                     bc["canh_bao"].append("khong them duoc don vi %s: %s" % (f, type(e).__name__))
     for ten in dv.get("go") or []:
+        if not ten_don_vi_hop_le(ten):
+            bc["canh_bao"].append("bo qua ten don vi khong hop le trong manifest (go): %r" % (ten if isinstance(ten, str) else type(ten).__name__)[:60])
+            continue
         f = _tep_don_vi(ten)
         dich = os.path.join(etc_sd, f)
         if os.path.lexists(dich):
@@ -392,7 +406,7 @@ def dich_vu_can_khoi_dong_lai(ban, unit_doi):
     ra = []
     for u in unit_doi:
         for dv in anh_xa.get(u, []):
-            if dv not in ra:
+            if ten_don_vi_hop_le(dv) and dv not in ra:
                 ra.append(dv)
     return ra
 
