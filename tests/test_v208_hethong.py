@@ -165,7 +165,7 @@ def test_B2_khoi_dong_lai_theo_manifest_va_thieu_goi(tmp_path):
     assert P.dich_vu_can_khoi_dong_lai(ban, ["console-system-tftp.service", "console-system-dashboard.service"]) == ["console-system-tftp"]
     cu = tmp_path / "cu2"
     cu.mkdir()
-    assert P.dich_vu_can_khoi_dong_lai(_ban(cu, None), ["a.service"]) == ["a.service"]                  # khong manifest: hanh vi cu
+    assert P.dich_vu_can_khoi_dong_lai(_ban(cu, None), ["a.service", "console-system-dashboard.service"]) == ["a.service"]                  # khong manifest: hanh vi cu
     chay = lambda cmd, timeout=60: (1 if cmd[-1] == "khong-co-goi-nay" else 0, "")                      # noqa: E731
     e = _etc(tmp_path)
     assert P.thieu_goi_apt(ban, chay, e) == ["khong-co-goi-nay"]                                        # chi KIEM; kiosk khong co -> khong doi hoi goi man hinh

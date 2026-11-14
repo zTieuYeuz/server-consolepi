@@ -387,7 +387,7 @@ def dich_vu_can_khoi_dong_lai(ban, unit_doi):
     """Dich vu can try-restart khi tep don vi doi, theo manifest cua ban. Ban khong co manifest: tra chinh cac don vi doi (hanh vi cu cua --khoi-dong-lai)."""
     mf = doc_hethong(ban)
     if not mf:
-        return list(unit_doi)
+        return [u for u in unit_doi if u != "console-system-dashboard.service"]     # dashboard do bo nang cap tu khoi dong lai o buoc rieng
     anh_xa = mf.get("khoi_dong_lai_khi_doi") or {}
     ra = []
     for u in unit_doi:
