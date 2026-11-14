@@ -8,6 +8,7 @@ ghi vao thu muc local. Cho phep xem lai bang tshark (convert sang text).
 from consolesystem.core import taisan as _taisan
 import glob
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -34,6 +35,9 @@ def _o_chon_cong(dang_chon=""):
 LOCAL_CAPTURE_DIR = _DD.DIR_CAPTURES
 MAX_DURATION_SEC = 600  # 10 phut, chan runaway capture lam day dia
 MIN_FREE_MB = 200
+MAX_FILE_MB = 200   # V5-3: vuot dung luong nay thi tu dung (khong day the nho du chua het gio)
+MAU_CONG = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.:@-]{0,14}$")           # ten giao dien Linux (<= 15 ky tu), khong bat dau bang "-"
+MAU_LOC = re.compile(r"^[A-Za-z0-9 .:/()!&|<>=\[\]_,+*%-]{0,200}$")      # cu phap BPF thong dung; khong co ky tu dac biet cua shell/nhay
 
 # Trang thai capture dang chay (chi 1 phien tai 1 thoi diem cho don gian)
 CAPTURE_STATE = {"proc": None, "pid": None, "file": None, "started": None}
@@ -92,7 +96,15 @@ def start_capture(iface=None, bpf_filter="", duration=60):
     if is_capturing():
         return {"ok": False, "error": "Đã có 1 phiên capture đang chạy."}
 
-    duration = max(5, min(int(duration or 60), MAX_DURATION_SEC))
+    if not MAU_CONG.match(iface or ""):
+        return {"ok": False, "error": "Tên cổng mạng không hợp lệ."}
+    bpf_filter = (bpf_filter or "").strip()
+    if not MAU_LOC.match(bpf_filter) or any(t.startswith("-") for t in bpf_filter.split()):      # them lop phong thu: khong token nao giong tuy chon
+        return {"ok": False, "error": "Bộ lọc chứa ký tự không hợp lệ (chỉ nhận cú pháp BPF thông thường, tối đa 200 ký tự)."}
+    try:
+        duration = max(5, min(int(duration or 60), MAX_DURATION_SEC))
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "Thời lượng không hợp lệ."}
     capture_dir = get_capture_dir()
 
     if free_space_mb(capture_dir) < MIN_FREE_MB:
@@ -103,7 +115,7 @@ def start_capture(iface=None, bpf_filter="", duration=60):
 
     cmd = ["tcpdump", "-i", iface, "-w", fpath]
     if bpf_filter:
-        cmd += bpf_filter.split()
+        cmd += ["--", bpf_filter]       # mot doi so sau "--": khong the chen tuy chon tcpdump (vd -z chay lenh, -w ghi tep khac)
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
@@ -113,7 +125,14 @@ def start_capture(iface=None, bpf_filter="", duration=60):
     CAPTURE_STATE.update(proc=proc, pid=proc.pid, file=fpath, started=time.time())
 
     def _auto_stop():
-        time.sleep(duration)
+        het = time.time() + duration
+        while time.time() < het and CAPTURE_STATE.get("pid") == proc.pid and proc.poll() is None:
+            try:
+                if os.path.getsize(fpath) > MAX_FILE_MB * 1024 * 1024:
+                    break                                     # V5-3: gioi han kich thuoc tep
+            except OSError:
+                pass
+            time.sleep(1)
         if CAPTURE_STATE.get("pid") == proc.pid and proc.poll() is None:
             stop_capture()
 
@@ -156,17 +175,15 @@ def list_captures():
 
 def convert_to_text(filename):
     capture_dir = get_capture_dir()
+    if filename != os.path.basename(filename or ""):
+        return {"ok": False, "error": "File không hợp lệ."}          # chan "../" va duong dan tuyet doi
     fpath = os.path.join(capture_dir, filename)
     if not os.path.isfile(fpath) or not filename.endswith(".pcap"):
         return {"ok": False, "error": "File không hợp lệ."}
     txt_path = fpath + ".txt"
     try:
-        result = subprocess.run(
-            ["tshark", "-r", fpath, "-T", "text"],
-            capture_output=True, text=True, timeout=60
-        )
-        with open(txt_path, "w") as f:
-            f.write(result.stdout)
+        with open(txt_path, "w") as f:                      # ghi thang ra tep (khong giu ca ket qua trong bo nho)
+            subprocess.run(["tshark", "-r", fpath, "-T", "text"], stdout=f, stderr=subprocess.DEVNULL, timeout=60)
         return {"ok": True, "file": os.path.basename(txt_path)}
     except FileNotFoundError:
         return {"ok": False, "error": "Chưa cài tshark."}
