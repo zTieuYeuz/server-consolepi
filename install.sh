@@ -786,12 +786,12 @@ systemctl daemon-reload
 # 127.0.0.1:5000 - neu bat nginx truoc thi cong 80 con bi giu, nginx chet.
 # 2.0.8 (V1-1): danh sach don vi bat/go lay tu MANIFEST config/hethong.json (cung nguon voi OTA/console-system-apply). Danh sach cung duoi day la DU PHONG
 # neu khong doc duoc manifest (tests/test_v208_hethong.py bat buoc hai ben y het nhau).
-ENABLE_LIST=( console-system-dashboard console-system-term-local console-system-term-ssh console-system-term-phien
+ENABLE_LIST=( console-system-dashboard console-system-term-local console-system-term-phien
               bt-pan0 dnsmasq-bt bt-agent bt-nap
               wifi-fallback.timer lldpd bluetooth avahi-daemon nginx
               wpa_supplicant@wlan0 console-system-selftest console-system-nang-cap-phuc-hoi )
 KIOSK_LIST=( console-system-kiosk console-system-kiosk-helper )
-GO_LIST=()
+GO_LIST=( console-system-term-ssh )     # du phong: R2 (2.0.8) go terminal SSH kieu cu (shell root dung chung)
 HETHONG_JSON="$SRC_DIR/config/hethong.json"
 if mapfile -t _hl < <(python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" bat 2>/dev/null) && [[ ${#_hl[@]} -gt 0 ]] \
    && mapfile -t _hk < <(python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" bat-man-hinh 2>/dev/null) \
@@ -859,7 +859,7 @@ FAIL=0
 if systemd-detect-virt --chroot -q 2>/dev/null; then
     ok "Dang trong chroot - bo qua kiem tra dich vu (se chay o lan khoi dong dau)"
 else
-for s in nginx console-system-dashboard console-system-term-local console-system-term-ssh console-system-term-phien; do
+for s in nginx console-system-dashboard console-system-term-local console-system-term-phien; do
     if systemctl is-active --quiet "$s"; then
         ok "$s: dang chay"
     else

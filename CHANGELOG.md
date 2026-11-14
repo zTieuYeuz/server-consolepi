@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.8 - (đang làm)
+
+**Thay đổi hành vi có chủ ý (đọc trước khi nâng cấp):**
+
+- **Đăng nhập chống đoán mật khẩu:** thử sai nhiều lần thì bị khóa tạm theo tên đăng nhập và địa chỉ (tối đa 5 phút, tăng dần). Người đã đăng nhập đúng từ một địa chỉ vẫn vào được từ địa chỉ đó. Truy cập qua đường hầm Internet được đếm theo địa chỉ thật của khách.
+- **Cổng kiểm quyền không còn "mở khi lỗi":** nếu bản thân việc kiểm quyền gặp lỗi, yêu cầu bị từ chối (403) thay vì được cho qua.
+- **TFTP:** chọn cổng mạng để nghe (không còn nghe mọi cổng), tự tắt sau 60 phút nhàn rỗi, có giới hạn dung lượng thư mục và nút gia hạn; thư mục không còn quyền 777.
+- **Cài Windows qua mạng:** chọn ổ đĩa theo số bây giờ từ chối ổ USB/thẻ nhớ (trước đây chỉ các cách chọn khác mới lọc). Công cụ WinPE gắn qua mạng dùng một tài khoản chỉ đọc riêng, mật khẩu đổi mỗi lần bật PXE.
+- **Terminal SSH dùng chung kiểu cũ (`/term-ssh`) được gỡ:** dùng trang SSH (mỗi người một phiên riêng, không có shell). Nâng cấp tự gỡ dịch vụ cũ; quay về bản cũ thì dịch vụ được thêm lại.
+- **Nâng cấp tại chỗ biết thêm/gỡ dịch vụ hệ thống** theo một danh sách chung với bộ cài; kiểm tra sức khỏe sau nâng cấp đi qua cả web server; thiếu gói hệ thống chỉ được cảnh báo.
+- **Sửa lỗi:** nhiều chỗ nhúng dữ liệu bên ngoài (tên file, tên WiFi, tên cổng...) vào trang hoặc lệnh xác nhận có thể chạy mã trong trình duyệt - đã sửa; lỗi tạm của cơ sở dữ liệu không còn làm mất danh sách; sao lưu cấu hình lấy đúng thư mục ở bố cục dữ liệu mới.
+
 ## 2.0.7 - (đang làm)
 
 **Thay đổi hành vi có chủ ý - phân quyền theo vai trò (đọc kỹ trước khi nâng cấp):**

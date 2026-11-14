@@ -27,7 +27,7 @@ kt "nguon apt khong con tro vao USB"      khong grep -qs '^deb cdrom' /etc/apt/s
 kt "da go file tang toc build dpkg"       test ! -e /etc/apt/apt.conf.d/00-toc-do-build
 
 echo "== Dich vu chinh"
-for s in console-system-dashboard nginx ssh console-system-term-local console-system-term-ssh console-system-term-phien; do
+for s in console-system-dashboard nginx ssh console-system-term-local console-system-term-phien; do
     kt "$s dang chay" systemctl is-active --quiet $s
 done
 echo "== An toan mang: KHONG tu phat DHCP/WiFi/TFTP/Samba khi cam vao mang khach"

@@ -35,10 +35,13 @@ def _chay_khoi(mf_duong, man_hinh, nhat_ky=None):
     return subprocess.run(["bash", "-c", kb], capture_output=True, text=True, timeout=30, env=dict(os.environ, LOGF=nhat_ky or os.devnull))
 
 
-def test_manifest_dung_2_0_7():
+BAT_2_0_8 = [x for x in BAT_2_0_7 if x != "console-system-term-ssh"]        # R2: terminal SSH kieu cu da go
+
+
+def test_manifest_dung_2_0_7_tru_term_ssh():
     d = json.load(open(MF, encoding="utf-8"))
-    assert d["don_vi"]["bat"] == BAT_2_0_7 and d["don_vi"]["bat_khi_co_man_hinh"] == KIOSK_2_0_7
-    assert d["don_vi"]["go"] == []
+    assert d["don_vi"]["bat"] == BAT_2_0_8 and d["don_vi"]["bat_khi_co_man_hinh"] == KIOSK_2_0_7
+    assert d["don_vi"]["go"] == ["console-system-term-ssh"]
 
 
 def test_goi_apt_manifest_trung_install_sh():
@@ -48,14 +51,14 @@ def test_goi_apt_manifest_trung_install_sh():
 
 def test_install_sh_doc_manifest_ra_dung_danh_sach_cu():
     r = _chay_khoi(MF, "no")
-    assert r.returncode == 0 and r.stdout.split() == BAT_2_0_7, r.stderr
+    assert r.returncode == 0 and r.stdout.split() == BAT_2_0_8, r.stderr
     r = _chay_khoi(MF, "yes")
-    assert r.stdout.split() == BAT_2_0_7 + KIOSK_2_0_7                              # co man hinh: them kiosk, dung thu tu cu
+    assert r.stdout.split() == BAT_2_0_8 + KIOSK_2_0_7                              # co man hinh: them kiosk, dung thu tu cu
 
 
 def test_du_phong_va_go_don_vi(tmp_path):
     r = _chay_khoi(str(tmp_path / "khong-co.json"), "yes")                          # manifest mat -> danh sach du phong trong install.sh, canh bao
-    assert r.stdout.split() == BAT_2_0_7 + KIOSK_2_0_7 and "WARN" in r.stderr
+    assert r.stdout.split() == BAT_2_0_8 + KIOSK_2_0_7 and "WARN" in r.stderr
     mf = tmp_path / "m.json"
     d = json.load(open(MF, encoding="utf-8"))
     d["don_vi"]["go"] = ["console-system-cu"]
@@ -198,3 +201,51 @@ def test_B2_ota_chay_ap_dung_cua_BAN_MOI_khong_phai_ma_2_0_7(tmp_path):
             "import consolesystem.core.phathanh as P\nprint('MOI' if getattr(P,'DAU_VET_BAN_MOI',False) else 'CU', P.__file__)\n") % str(ban / "scripts" / "console-system-apply.py")
     r = subprocess.run(["python3", "-c", code], capture_output=True, text=True, timeout=60, env=dict(os.environ, PYTHONPATH=str(cu), CONSOLE_PI_LOG=str(tmp_path)))
     assert "MOI" in r.stdout and str(ban) in r.stdout, (r.stdout, r.stderr[-400:])
+
+
+# ------------------------------------------------------------------------------- B3: go terminal SSH kieu cu (R2)
+def _doc_repo(rel):
+    return open(os.path.join(GOC, rel), encoding="utf-8").read()
+
+
+def test_R2_khong_con_tham_chieu_song_toi_term_ssh():
+    assert not os.path.exists(os.path.join(GOC, "systemd", "console-system-term-ssh.service"))
+    ng = _doc_repo("config/nginx-console-pi.conf")
+    assert "location /term-ssh/" not in ng
+    assert "proxy_pass       http://127.0.0.1:8011" not in ng
+    for rel in ("src/scripts/selftest.sh", "src/scripts/term-launch.sh", "src/consolesystem/web/home.py", "src/consolesystem/core/errlog.py",
+                "src/consolesystem/features/settings/settings.py", "iso/hooks/0100-console-system.hook.chroot", "iso/i386/hook-console-system.chroot",
+                "iso/test/kiem-tra-may-da-cai.sh"):
+        t = _doc_repo(rel)
+        assert "term-ssh" not in t.replace("/term-ssh/, ", ""), rel                      # chu thich lich su cua hook ISO duoc phep
+    # install.sh: chi con trong danh sach GO du phong va vong chuyen ten cu
+    assert [m for m in re.findall(r"[^\n]*term-ssh[^\n]*", _doc_repo("install.sh"))] and "ENABLE_LIST=( console-system-dashboard console-system-term-local console-system-term-phien" in _doc_repo("install.sh")
+
+
+def test_R2_nhanh_ssh_cua_term_launch_da_go():
+    t = _doc_repo("src/scripts/term-launch.sh")
+    assert "ssh)" not in t and "8011" not in t
+    r = subprocess.run(["bash", os.path.join(GOC, "src", "scripts", "term-launch.sh"), "ssh"], capture_output=True, text=True, timeout=10)
+    assert r.returncode == 1 and "Dung:" in r.stdout
+
+
+def test_R2_ap_dung_go_term_ssh_tu_manifest_that(tmp_path):
+    """Dung chinh config/hethong.json that cua repo + ban gia: may 2.0.7 co term-ssh -> bi go (sao luu), don vi con lai khong dung."""
+    from consolesystem.core import phathanh as P
+    import shutil
+    ban = tmp_path / "ban"
+    (ban / "system" / "config").mkdir(parents=True)
+    (ban / "system" / "systemd").mkdir(parents=True)
+    shutil.copy(MF, ban / "system" / "config" / "hethong.json")
+    for u in ("console-system-dashboard", "console-system-term-local", "console-system-term-phien"):
+        (ban / "system" / "systemd" / (u + ".service")).write_text("x")
+    e = tmp_path / "etc"
+    (e / "etc/systemd/system").mkdir(parents=True)
+    for u in ("console-system-dashboard", "console-system-term-local", "console-system-term-phien", "console-system-term-ssh"):
+        (e / "etc/systemd/system" / (u + ".service")).write_text("cu")
+    gia, bc = Gia(), _bc()
+    P.ap_dung_don_vi(str(ban), str(tmp_path / "bk"), str(e), gia, False, bc)
+    ton_tai = sorted(os.listdir(e / "etc/systemd/system"))
+    assert ton_tai == ["console-system-dashboard.service", "console-system-term-local.service", "console-system-term-phien.service"]
+    assert bc["go"] == ["console-system-term-ssh.service"] and bc["them"] == []
+    assert (tmp_path / "bk/etc/systemd/system/console-system-term-ssh.service").read_text() == "cu"

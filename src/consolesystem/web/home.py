@@ -29,7 +29,6 @@ NAMES_FILE = _DD.FILE_TEN_CONG
 SERVICES = [
     ("console-system-dashboard", "Dashboard web"),
     ("console-system-term-local", "Terminal tại chỗ"),
-    ("console-system-term-ssh", "Terminal SSH"),
     ("lldpd", "LLDP/CDP discovery"),
     ("bluetooth", "Bluetooth"),
     ("bt-nap", "Bluetooth PAN"),

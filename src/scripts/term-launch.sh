@@ -10,14 +10,13 @@
 #   1. Phien khong mat khi dong trinh duyet giua chung
 #   2. Ban phim ao tren man hinh cam ung go duoc vao day qua `tmux send-keys`
 #
-# Tham so: local | ssh
+# Tham so: local   (2.0.8: terminal "ssh" kieu cu da go; SSH dung term-phien rieng tung nguoi)
 set -e
 
 KIND="${1:-local}"
 case "$KIND" in
     local) PORT=8010; SESSION=consolepi-local; BASE=/term-local ;;
-    ssh)   PORT=8011; SESSION=consolepi-ssh;   BASE=/term-ssh ;;
-    *)     echo "Dung: $0 [local|ssh]"; exit 1 ;;
+    *)     echo "Dung: $0 [local]"; exit 1 ;;
 esac
 
 # Bang mau: tuong phan cao, phan biet ro trang thai khi doc output thiet bi mang

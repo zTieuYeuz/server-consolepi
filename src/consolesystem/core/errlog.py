@@ -38,7 +38,7 @@ LOG_THAO_TAC = os.path.join(THU_MUC_LOG, "console-pi-audit.log")
 # rieng cho tung dich vu, khong phai doc ca he thong.
 DICH_VU_CAN_THEO_DOI = [
     "console-system-dashboard", "console-system-tunnel", "console-system-term-local",
-    "console-system-term-ssh", "console-system-term-phien", "bluetooth", "bt-agent", "bt-nap", "nginx",
+    "console-system-term-phien", "bluetooth", "bt-agent", "bt-nap", "nginx",
 ]
 
 

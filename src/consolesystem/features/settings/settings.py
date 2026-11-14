@@ -284,7 +284,7 @@ def register_settings(app):
             return _render_settings(msg="Không đọc được config.json (file hỏng, đã giữ nguyên) nên không đổi mật khẩu terminal.", ok=False)
         cfg["terminal_auth"] = "console:" + secrets.token_urlsafe(12)
         save_config(cfg)
-        for svc in ("console-system-term-local", "console-system-term-ssh"):
+        for svc in ("console-system-term-local",):
             subprocess.run(["systemctl", "restart", svc], capture_output=True, timeout=20)
         return _render_settings(msg="Đã đổi mật khẩu terminal và khởi động lại dịch vụ.", ok=True)
 

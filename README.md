@@ -155,7 +155,6 @@ nếu thiết bị không gắn màn hình.
 ```
 Trình duyệt ──> nginx :80 ──┬──> Flask 127.0.0.1:5000    (giao diện)
                             ├──> ttyd 127.0.0.1:8010     (Terminal local)
-                            ├──> ttyd 127.0.0.1:8011     (Terminal SSH)
                             └──> ttyd 127.0.0.1:800x     (Console serial)
 ```
 

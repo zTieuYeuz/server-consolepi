@@ -271,7 +271,7 @@ def muc_he_thong(ban):
     return ra
 
 
-TEN_DV_DOI = ("dashboard", "kiosk-helper", "kiosk", "selftest", "term-local", "term-phien", "term-ssh", "tftp", "tunnel", "ttyd@")
+TEN_DV_DOI = ("dashboard", "kiosk-helper", "kiosk", "selftest", "term-local", "term-phien", "tftp", "tunnel", "ttyd@")
 
 
 def _dich_vu_cua(x, tien_to, dev_glob=("/dev/ttyUSB*", "/dev/ttyACM*")):

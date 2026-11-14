@@ -102,7 +102,11 @@ def test_mau_cau_hinh_o_bo_cuc_cu_giong_het_ban_1_9_5(mt):
             trong = False
         elif not trong:
             ra2.append(x)
-    assert ra2 == _mau_cu("nginx-console-pi.conf").splitlines()
+    cu_ng = _mau_cu("nginx-console-pi.conf")
+    # 2.0.8 R2: location /term-ssh/ (ttyd SSH kieu cu) da go khoi nginx - bo khoi cua ban 1.9.5 truoc khi so sanh
+    i = cu_ng.index("    # ---- Terminal cho SSH ----")
+    k = cu_ng.index("\n    }\n", cu_ng.index("    location /term-ssh/ {", i)) + len("\n    }\n")
+    assert ra2 == (cu_ng[:i] + cu_ng[k:]).splitlines()
 
 
 def test_phien_chay_chon_dung_thu_muc(tmp_path):
