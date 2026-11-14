@@ -102,6 +102,9 @@ def test_mau_cau_hinh_o_bo_cuc_cu_giong_het_ban_1_9_5(mt):
             trong = False
         elif not trong:
             ra2.append(x)
+    ra2 = [x.replace("client_max_body_size 16m;", "client_max_body_size 8g;") for x in ra2 if not x.strip().startswith("# 2.0.8 (V1-4)") and not x.strip().startswith("# Chi cac route TAI LEN")
+           and x.strip() != "client_max_body_size 8g;"]                    # 2.0.8: nguong mac dinh doi, nang rieng trong khoi tai len (xem test_v208_upload)
+    ra2 = [x.replace("deployos/(os|drivers|ungdung|font)/[^/]+/len(-file|-iso|-sxs)?", "deployos/(os|drivers|ungdung)/[^/]+/len(-file|-iso)?") for x in ra2]
     cu_ng = _mau_cu("nginx-console-pi.conf")
     # 2.0.8 R2: location /term-ssh/ (ttyd SSH kieu cu) da go khoi nginx - bo khoi cua ban 1.9.5 truoc khi so sanh
     i = cu_ng.index("    # ---- Terminal cho SSH ----")

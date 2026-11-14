@@ -1,0 +1,16 @@
+/deployos/console/apps/len
+/deployos/console/file/len
+/deployos/console/scripts/len
+/deployos/drivers/<driver_id>/len
+/deployos/font/<bo_id>/len
+/deployos/os/<os_id>/len
+/deployos/os/<os_id>/len-iso
+/deployos/os/<os_id>/len-sxs
+/deployos/ungdung/<ung_id>/len
+/deployos/ungdung/<ung_id>/len-file
+/deployos/wizard/<ma>/<int:buoc>
+/gopy
+/nettools/ifthen/import
+/settings/nap-sao-luu
+/storage/len
+/uem/may/<mid>/duyet-file/tai-len

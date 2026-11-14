@@ -749,6 +749,8 @@ def register_uem(app):
     @app.route("/uem/may/<mid>/duyet-file/tai-len", methods=["POST"])
     def uem_tai_len(mid):
         m = may_theo_id(mid)
+        if (request.content_length or 0) > 210 * 1024 * 1024:       # V6-6: tu choi TRUOC khi doc/ghi bat ky byte nao (truoc day f.save roi moi kiem 200 MB)
+            return chuyen(f"/uem/may/{mid}/duyet-file", "File lớn hơn 200 MB.", False)
         cha = (request.form.get("cha") or "").strip()
         f = request.files.get("tep")
         ten = os.path.basename((f.filename if f else "") or "").replace("\\", "_")
