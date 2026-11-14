@@ -244,13 +244,72 @@ def delete_saved_wifi(ssid):
     return True
 
 
+def thong_tin_wifi_hop_le(ssid, password):
+    """V5-4: SSID/mat khau di vao tep cau hinh wpa_supplicant => khong duoc chua nhay kep, xuong dong, ky tu dieu khien (chen duoc khoi network={...}).
+    Tra thong bao loi hoac None."""
+    if not isinstance(ssid, str) or not isinstance(password, str):
+        return "Thiếu tên WiFi hoặc mật khẩu."
+    for ten, v in (("Tên WiFi", ssid), ("Mật khẩu", password)):
+        if '"' in v or any(ord(c) < 32 or ord(c) == 127 for c in v):
+            return f'{ten} không được chứa dấu nháy kép (") hoặc ký tự xuống dòng/điều khiển.'
+    if not 1 <= len(ssid.encode("utf-8")) <= 32:
+        return "Tên WiFi phải từ 1 đến 32 byte."
+    if not 8 <= len(password) <= 63:
+        return "Mật khẩu WPA2 phải từ 8 đến 63 ký tự."
+    return None
+
+
+def _wifi_truoc():
+    """Trang thai cua cong WiFi TRUOC khi doi: {'mode': 'AP'|'client'|'khac', 'ssid': ...} (de hoan tac dung cho)."""
+    out = _lenh(["iw", "dev", cong_wifi(), "info"], capture_output=True, text=True, timeout=5).stdout
+    mode, ssid = "khac", ""
+    for dong in out.splitlines():
+        d = dong.strip()
+        if d.startswith("type "):
+            mode = "AP" if d.split()[1] == "AP" else ("client" if d.split()[1] == "managed" else "khac")
+        if d.startswith("ssid "):
+            ssid = d[5:].strip()
+    if mode == "client" and not ssid:
+        mode = "khac"
+    return {"mode": mode, "ssid": ssid}
+
+
+def khoi_phuc_wifi_truoc(truoc):
+    """Hoan tac sau khi doi that bai: dua cong WiFi ve DUNG che do truoc do. Dang la client mot mang quen -> noi lai mang do (wpa_supplicant cua he thong),
+    khong bat AP nham; khong noi lai duoc / truoc do la AP -> AP ConsolePi. Tra 'client' | 'AP'."""
+    if truoc and truoc.get("mode") == "client":
+        _lenh(["pkill", "-9", "wpa_supplicant"], timeout=10)
+        _lenh(["ip", "link", "set", cong_wifi(), "up"], timeout=10)
+        _lenh(["systemctl", "restart", f"wpa_supplicant@{cong_wifi()}"], timeout=30)
+        for _ in range(20):
+            time.sleep(1)
+            r = _lenh(["wpa_cli", "-i", cong_wifi(), "status"], capture_output=True, text=True, timeout=10)
+            if "wpa_state=COMPLETED" in r.stdout:
+                _lenh(["networkctl", "reconfigure", cong_wifi()], timeout=15)
+                return "client"
+    restore_ap_mode()
+    return "AP"
+
+
 def test_wifi_connection(ssid, password):
     conf = (f'ctrl_interface=/var/run/wpa_supplicant\nupdate_config=1\ncountry=VN\n\n'
             f'network={{\n    ssid="{ssid}"\n    psk="{password}"\n}}\n')
-    path = "/tmp/wpa_test.conf"
-    with open(path, "w") as f:
-        f.write(conf)
+    # V5-4: tep tam quyen 0600 (PSK), ten ngau nhien (khong doan truoc de /tmp/wpa_test.conf bi gan lien ket), thu muc /run (chi root); xoa ngay khi wpa_supplicant da doc
+    import tempfile
+    thu_muc = "/run" if os.path.isdir("/run") and os.access("/run", os.W_OK) else None
+    fd, path = tempfile.mkstemp(prefix="cs-wpa-", suffix=".conf", dir=thu_muc)
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(conf)
+        return _thu_noi_wifi(path, ssid)
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
 
+
+def _thu_noi_wifi(path, ssid):
     _lenh(["systemctl", "stop", "hostapd"], timeout=20)
     _lenh(["systemctl", "stop", "dnsmasq"], timeout=20)
     _lenh(["pkill", "-9", "wpa_supplicant"], timeout=10)
@@ -296,15 +355,25 @@ def _switch_worker(ssid, password, do_save):
     time.sleep(5)
     WIFI_STATUS.update(state="switching", ssid=ssid,
                        msg=f"Đang chuyển sang '{ssid}'...", ip=None, saved=False)
+    loi = thong_tin_wifi_hop_le(ssid, password)
+    if loi:                                              # chua dung vao mang: khong ha AP khi thong tin khong hop le
+        WIFI_STATUS.update(state="failed", ssid=ssid, ip=None, saved=False, msg=loi)
+        return
+    truoc = _wifi_truoc()
     if test_wifi_connection(ssid, password):
         saved = save_wifi_permanently(ssid, password) if do_save else False
         _, _, ip = get_net_status()
         WIFI_STATUS.update(state="connected", ssid=ssid, ip=ip, saved=saved,
                            msg=f"Đã kết nối '{ssid}'" + (" và đã lưu." if saved else " (không lưu)."))
     else:
-        restore_ap_mode()
-        WIFI_STATUS.update(state="failed", ssid=ssid, ip=AP_IP, saved=False,
-                           msg=f"Kết nối '{ssid}' thất bại. Đã quay lại AP ConsolePi.")
+        ve = khoi_phuc_wifi_truoc(truoc)
+        if ve == "client":
+            _, _, ip = get_net_status()
+            WIFI_STATUS.update(state="failed", ssid=ssid, ip=ip, saved=False,
+                               msg=f"Kết nối '{ssid}' thất bại. Đã nối lại mạng WiFi trước đó '{truoc.get('ssid')}'.")
+        else:
+            WIFI_STATUS.update(state="failed", ssid=ssid, ip=AP_IP, saved=False,
+                               msg=f"Kết nối '{ssid}' thất bại. Đã quay lại AP ConsolePi.")
 
 
 # ---------------------------------------------------------- Bluetooth
@@ -1576,6 +1645,9 @@ def register_network(app):
         do_save = request.form.get("save") == "1"
         if ap_locked():
             return _wifi_page(msg="AP đang bị KHÓA. Gỡ khóa trước khi đổi WiFi.", ok=False)
+        loi = thong_tin_wifi_hop_le(ssid, password)
+        if loi:
+            return _wifi_page(msg=loi, ok=False)
         WIFI_STATUS.update(state="pending", ssid=ssid, msg="Chuẩn bị chuyển mạng...")
         threading.Thread(target=_switch_worker, args=(ssid, password, do_save),
                          daemon=True).start()
@@ -1630,8 +1702,9 @@ def register_network(app):
             return _wifi_page(msg="Tên WiFi không được để trống.", ok=False)
         if len(pw) < 8:
             return _wifi_page(msg="Mật khẩu WPA2 phải từ 8 ký tự trở lên.", ok=False)
-        if '"' in ssid or '"' in pw:
-            return _wifi_page(msg='Không được chứa dấu nháy kép (").', ok=False)
+        loi = thong_tin_wifi_hop_le(ssid, pw)
+        if loi:
+            return _wifi_page(msg=loi, ok=False)
         if save_wifi_permanently(ssid, pw):
             return _wifi_page(msg=f"Đã lưu '{ssid}'.", ok=True)
         return _wifi_page(msg=f"'{ssid}' đã có trong danh sách.", ok=False)
