@@ -59,3 +59,27 @@ def test_d_san_so_phat_hanh_khong_roi_ve_1_khi_mat_release_json(he):
     moi.kho_json("da-cai.json", {}).sua(lambda d: d.pop(cur["ten_ban"], None))
     with pytest.raises(M.LoiCapNhat, match="chống hạ cấp"):
         M.hien_tai(moi)
+
+
+def test_N_release_json_hop_le_nhung_thieu_so_phat_hanh_thi_tu_choi(he):
+    import json
+    moi, _ = san_sang(he)
+    cur = M.hien_tai(moi)
+    rj = os.path.join(he.opt, "releases", cur["ten_ban"], PH.TEN_RELEASE)
+    os.chmod(os.path.dirname(rj), 0o755)
+    os.chmod(rj, 0o644)
+    d = json.load(open(rj))
+    d.pop("so_phat_hanh")
+    json.dump(d, open(rj, "w"))
+    moi.kho_json("da-cai.json", {}).sua(lambda x: x.pop(cur["ten_ban"], None))
+    with pytest.raises(M.LoiCapNhat, match="chống hạ cấp"):
+        M.hien_tai(moi)                                                           # truoc day: rot ve 1
+    d["so_phat_hanh"] = [1]                                                       # sai kieu -> TypeError -> LoiCapNhat, khong 500
+    json.dump(d, open(rj, "w"))
+    with pytest.raises(M.LoiCapNhat):
+        M.hien_tai(moi)
+    moi.kho_json("da-cai.json", {}).sua(lambda x: x.setdefault(cur["ten_ban"], {}).update(so_phat_hanh="abc"))
+    d["so_phat_hanh"] = 3
+    json.dump(d, open(rj, "w"))
+    with pytest.raises(M.LoiCapNhat, match="không hợp lệ"):
+        M.hien_tai(moi)
