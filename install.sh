@@ -784,11 +784,27 @@ systemctl daemon-reload
 # Thu tu quan trong: dashboard phai khoi dong lai TRUOC nginx.
 # Ban cu cua dashboard lang nghe 0.0.0.0:80, ban moi chuyen sang
 # 127.0.0.1:5000 - neu bat nginx truoc thi cong 80 con bi giu, nginx chet.
+# 2.0.8 (V1-1): danh sach don vi bat/go lay tu MANIFEST config/hethong.json (cung nguon voi OTA/console-system-apply). Danh sach cung duoi day la DU PHONG
+# neu khong doc duoc manifest (tests/test_v208_hethong.py bat buoc hai ben y het nhau).
 ENABLE_LIST=( console-system-dashboard console-system-term-local console-system-term-ssh console-system-term-phien
               bt-pan0 dnsmasq-bt bt-agent bt-nap
               wifi-fallback.timer lldpd bluetooth avahi-daemon nginx
               wpa_supplicant@wlan0 console-system-selftest console-system-nang-cap-phuc-hoi )
-[[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( console-system-kiosk console-system-kiosk-helper )
+KIOSK_LIST=( console-system-kiosk console-system-kiosk-helper )
+GO_LIST=()
+HETHONG_JSON="$SRC_DIR/config/hethong.json"
+if mapfile -t _hl < <(python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" bat 2>/dev/null) && [[ ${#_hl[@]} -gt 0 ]] \
+   && mapfile -t _hk < <(python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" bat-man-hinh 2>/dev/null) \
+   && mapfile -t _hg < <(python3 "$SRC_DIR/src/scripts/hethong-doc.py" "$HETHONG_JSON" go 2>/dev/null); then
+    ENABLE_LIST=( "${_hl[@]}" ); KIOSK_LIST=( "${_hk[@]}" ); GO_LIST=( "${_hg[@]}" )
+else
+    warn "Khong doc duoc manifest he thong, dung danh sach du phong trong install.sh"
+fi
+[[ "$WANT_SCREEN" == "yes" ]] && ENABLE_LIST+=( "${KIOSK_LIST[@]}" )
+for u in "${GO_LIST[@]}"; do
+    systemctl disable --now "$u" >/dev/null 2>&1 || true
+    rm -f "/etc/systemd/system/$u.service"
+done
 
 for s in "${ENABLE_LIST[@]}"; do
     systemctl enable "$s" >/dev/null 2>&1 || warn "Khong bat duoc $s"

@@ -1,0 +1,41 @@
+{
+  "ghi_chu": "Nguon DUY NHAT cho danh sach don vi/goi he thong: install.sh (cai moi) va console-system-apply (OTA) cung doc tep nay. Sua o day, khong sua rieng tung noi.",
+  "don_vi": {
+    "bat": [
+      "console-system-dashboard", "console-system-term-local", "console-system-term-ssh", "console-system-term-phien",
+      "bt-pan0", "dnsmasq-bt", "bt-agent", "bt-nap",
+      "wifi-fallback.timer", "lldpd", "bluetooth", "avahi-daemon", "nginx",
+      "wpa_supplicant@wlan0", "console-system-selftest", "console-system-nang-cap-phuc-hoi"
+    ],
+    "bat_khi_co_man_hinh": ["console-system-kiosk", "console-system-kiosk-helper"],
+    "go": []
+  },
+  "goi_apt": {
+    "core": [
+      "python3", "python3-flask", "python3-pam", "python3-scapy", "python3-netmiko",
+      "python3-cryptography", "python3-venv",
+      "tmux", "git", "curl", "nginx",
+      "hostapd", "dnsmasq", "wpasupplicant", "iw", "wireless-tools",
+      "bluez", "avahi-daemon",
+      "lldpd", "arp-scan", "tcpdump", "tshark", "traceroute", "nmap", "eapoltest",
+      "ethtool", "usbutils", "lsof",
+      "tftpd-hpa",
+      "samba",
+      "grc"
+    ],
+    "man_hinh": [
+      "cage", "chromium", "wlr-randr", "fonts-noto-color-emoji",
+      "pipewire", "pipewire-audio", "pipewire-pulse", "wireplumber",
+      "python3-websocket"
+    ],
+    "trien_khai": ["wimtools", "7zip", "parted", "dosfstools", "mtools", "python3-hivex"]
+  },
+  "khoi_dong_lai_khi_doi": {
+    "console-system-tftp.service": ["console-system-tftp"],
+    "console-system-tunnel.service": ["console-system-tunnel"],
+    "console-system-term-local.service": ["console-system-term-local"],
+    "console-system-term-phien.service": ["console-system-term-phien"],
+    "console-system-selftest.service": [],
+    "console-system-dashboard.service": ["console-system-dashboard"]
+  }
+}
