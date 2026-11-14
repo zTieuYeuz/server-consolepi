@@ -377,8 +377,8 @@ def _schema_hien_tai(moi):
     from .. import dichuyen as DMG
     try:
         return DMG.doc_phien_ban(moi.goc)
-    except Exception:
-        return 0
+    except Exception as e:                      # V1-11 (b): FAIL-CLOSED - khong doc duoc schema thi KHONG coi la 0 (se mo cua kiem tuong thich khi ha cap)
+        raise LoiNangCap("không đọc được phiên bản dữ liệu hiện tại (%s)" % type(e).__name__)
 
 
 def bat_dau_ha_cap(moi, tuy_chon=None):
@@ -468,6 +468,7 @@ def chay_job(moi):
         i = ds.index(job["buoc"])
         try:
             while i < len(ds):
+                _hop_nhat_huy(moi, job)                                # V1-11 (c): co Huy do nguoi dung bam (ghi vao tep) khong bi ban trong bo nho de len
                 job["buoc"] = ds[i]
                 _luu_job(moi, job)                                     # WRITE-AHEAD: ghi truoc khi lam
                 if job.get("huy") and job["loai"] == "nang-cap" and ds[i] in ("tai", "cai"):
@@ -489,6 +490,16 @@ def chay_job(moi):
                 _ket_thuc(moi, job, "that-bai", "%s: %s" % (type(e).__name__, e))
                 _bao_cao_kho(moi, job, "loi", "%s: %s" % (type(e).__name__, e))
         return doc_job(moi)
+
+
+def _hop_nhat_huy(moi, job):
+    """Lay co 'huy' trong tep job (nguoi dung bam Huy tu giao dien) vao ban dang chay: vong chay ghi de tep tu `job` trong bo nho nen co nay bi mat."""
+    try:
+        tep = doc_job(moi)
+    except Exception:
+        return
+    if tep and tep.get("id") == job.get("id") and tep.get("huy"):
+        job["huy"] = True
 
 
 def _ket_thuc(moi, job, trang_thai, ly_do):
